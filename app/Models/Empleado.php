@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Empleado extends Model
 {
@@ -19,10 +20,45 @@ class Empleado extends Model
         'status',
         'email',
         'numero',
-        'cargo',
+        'cargo_id',
+        'genero',
+        'descuento_sp_id',
         'salario',
         'fecha_nacimiento',
         'direccion',
     ];
-    
+    public function cargo(){
+        return $this->belongsTo(Cargo::class,'cargo_id');
+    }
+    public function getNombreCompletoAttribute()
+    {
+        return "{$this->apellido_paterno} {$this->apellido_materno}, {$this->nombres}";
+    }
+    public function getTieneAsignacionFamiliarAttribute()
+    {
+        // Obtener todas las asignaciones familiares del empleado
+        $asignaciones = AsignacionFamiliar::where('empleado_id', $this->id)->get();
+
+        $cantidadHijos = 0;
+        
+
+        foreach ($asignaciones as $asignacion) {
+            // Calcular la edad del hijo
+            $edad = Carbon::parse($asignacion->fecha_nacimiento)->age;
+            
+            // Verificar las condiciones
+            if ($edad < 18 || ($edad >= 18 && $asignacion->esta_estudiando)) {
+                $cantidadHijos++;
+            }
+        }
+
+        // Determinar el mensaje basado en la cantidad de hijos
+        $mensaje = $cantidadHijos === 0 ? "No" : ($cantidadHijos === 1 ? "1 Hijo" : "{$cantidadHijos} Hijos");
+
+        // Retornar el array con el mensaje y la cantidad
+        return [
+            'mensaje' => $mensaje,
+            'cantidad' => $cantidadHijos,
+        ];
+    }
 }

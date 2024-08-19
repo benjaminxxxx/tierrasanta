@@ -72,7 +72,7 @@ export default {
             primary: '#056A70',       // Color verde Pantone 7736 C
             secondary: '#80CAEE',     // Manteniendo este color azul claro como contraste
             stroke: '#E2E8F0',        // Sin cambio, color neutro claro
-            gray: '#EFF4FB',          // Sin cambio, color gris claro
+            gray: '#C6C6C6',          // Sin cambio, color gris claro
             graydark: '#3D3D3D',      // Sin cambio, color gris oscuro
             'gray-2': '#F7F9FC',      // Sin cambio, gris muy claro
             'gray-3': '#FAFAFA',      // Sin cambio, casi blanco

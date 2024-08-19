@@ -2,6 +2,11 @@
 
 namespace App\Livewire;
 
+use App\Models\AsignacionFamiliar;
+use App\Models\Cargo;
+use App\Models\DescuentoSP;
+use DateTime;
+use Exception;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\Empleado;
@@ -18,58 +23,24 @@ class EmpleadosImportExportComponent extends Component
     use LivewireAlert;
     public $file;
     public $fileExport;
-   
+
     public function updatedFile()
     {
         if ($this->file) {
-            
+
             try {
                 // Validar el archivo
                 $this->validate([
                     'file' => 'required|file|mimes:xlsx,xls,csv|max:2048',
                 ]);
-                
+
                 // Importar el archivo
                 // Leer el archivo usando PHPSpreadsheet
                 $spreadsheet = IOFactory::load($this->file->getRealPath());
-                $sheet = $spreadsheet->getActiveSheet();
-                $rows = $sheet->toArray();
 
-                // Procesar los datos a partir de la segunda fila (índice 1)
-                foreach ($rows as $index => $row) {
-                    if ($index === 0) {
-                        // Omitir la primera fila (encabezados)
-                        continue;
-                    }
+                $this->processEmpleadosSheet($spreadsheet);
+                $this->processAsignacionFamiliarSheet($spreadsheet);
 
-                    $nombres = $row[3] ?? 'SIN NOMBRE';
-                    $apellido_paterno = $row[1] ?? null;
-                    $apellido_materno = $row[2] ?? null;
-                    $documento = $row[4] ?? null;
-
-                    if ($documento) {
-                        // Buscar si el documento ya existe
-                        $empleado = Empleado::where('documento', $documento)->first();
-
-                        if ($empleado) {
-                            // Actualizar el registro existente
-                            $empleado->update([
-                                'nombres' => $nombres,
-                                'apellido_paterno' => $apellido_paterno,
-                                'apellido_materno' => $apellido_materno,
-                            ]);
-                        } else {
-                            // Crear un nuevo registro
-                            Empleado::create([
-                                'code' => Str::random(15),
-                                'nombres' => $nombres,
-                                'apellido_paterno' => $apellido_paterno,
-                                'apellido_materno' => $apellido_materno,
-                                'documento' => $documento,
-                            ]);
-                        }
-                    }
-                }
                 // Mostrar una alerta de éxito
                 $this->alert('success', 'Los datos se importaron correctamente.');
                 $this->dispatch('EmpleadoRegistrado');
@@ -79,8 +50,177 @@ class EmpleadosImportExportComponent extends Component
             }
         }
     }
-    public function export(){
+    public function export()
+    {
         return Excel::download(new EmpleadosExport, date('Y-m-d') . '_Empleados.xlsx');
+    }
+    protected function processEmpleadosSheet($spreadsheet)
+    {
+        $sheet = $spreadsheet->getSheetByName('Empleados');
+        if (!$sheet) {
+            throw new Exception("La Hoja Empleados dentro del archivo No existe, usar la plantilla correcta");
+        }
+        $rows = $sheet->toArray();
+
+        // Procesar los datos a partir de la segunda fila (índice 1)
+        foreach ($rows as $index => $row) {
+            if ($index === 0) {
+                // Omitir la primera fila (encabezados)
+                continue;
+            }
+
+            $nombres = $row[3] ?? 'SIN NOMBRE';
+            $apellido_paterno = $row[1] ?? null;
+            $apellido_materno = $row[2] ?? null;
+            $documento = $row[4] ?? null;
+            $fecha_ingreso = $row[5] ?? null;
+            $fecha_nacimiento = $row[6] ?? null;
+            $cargo_nombre = $row[7] ?? null;
+            $descuento_sp_codigo = $row[8] ?? null;
+            $genero = strtoupper($row[9] ?? null);
+            $salario = $row[10] ?? null;
+
+            $fecha_ingreso = $this->validarFecha($fecha_ingreso);
+            $fecha_nacimiento = $this->validarFecha($fecha_nacimiento);
+
+            if ($documento) {
+
+                $cargo_codigo = null;
+                $descuento_sp_id = null;
+
+                if ($salario !== '-' && $salario !== '') {
+                    // Eliminar comas (separador de miles) y convertir a número
+                    $salario = str_replace(',', '', $salario);
+
+                    // Verificar si es un número válido, de lo contrario asignar null
+                    $salario = is_numeric($salario) ? $salario : null;
+                } else {
+                    $salario = null;
+                }
+
+                if ($cargo_nombre && $cargo_nombre !== '-') {
+                    $cargo_nombre = strtoupper($cargo_nombre);
+
+                    $cargo = Cargo::whereRaw('LOWER(nombre) = ?', [strtolower($cargo_nombre)])->first();
+
+                    if (!$cargo) {
+                        // Generar un código único para el nuevo cargo
+                        $base_codigo = substr($cargo_nombre, 0, 3);
+                        $codigo = $base_codigo;
+                        $counter = 1;
+
+                        while (Cargo::where('codigo', $codigo)->exists()) {
+                            $codigo = $base_codigo . $counter;
+                            $counter++;
+                        }
+
+                        // Crear un nuevo cargo
+                        $cargo = Cargo::create([
+
+                            'codigo' => mb_strtoupper($codigo),
+                            'nombre' => $cargo_nombre
+                        ]);
+                    }
+
+                    $cargo_codigo = $cargo->codigo;
+                }
+
+                if ($descuento_sp_codigo && $descuento_sp_codigo !== '-') {
+                    $descuento_sp = DescuentoSP::where('codigo', $descuento_sp_codigo)->first();
+                    $descuento_sp_id = $descuento_sp ? $descuento_sp->codigo : null;
+                }
+
+                if ($genero !== 'M' && $genero !== 'F') {
+                    $genero = null;
+                }
+
+                $data = [
+                    'nombres' => $nombres,
+                    'apellido_paterno' => $apellido_paterno,
+                    'apellido_materno' => $apellido_materno,
+                    'documento' => $documento,
+                    'cargo_id' => $cargo_codigo,
+                    'descuento_sp_id' => $descuento_sp_id,
+                    'genero' => $genero,
+                    'fecha_ingreso' => ($fecha_ingreso !== '-' && $fecha_ingreso !== '') ? $fecha_ingreso : null,
+                    'fecha_nacimiento' => ($fecha_nacimiento !== '-' && $fecha_nacimiento !== '') ? $fecha_nacimiento : null,
+                    'salario' => ($salario !== '-' && $fecha_nacimiento !== '') ? $salario : null,
+                ];
+
+                $empleado = Empleado::where('documento', $documento)->first();
+
+                if ($empleado) {
+                    // Actualizar el registro existente
+                    $empleado->update($data);
+                } else {
+                    // Crear un nuevo registro
+                    $data['code'] = Str::random(15);
+                    Empleado::create($data);
+                }
+            }
+        }
+    }
+
+    protected function processAsignacionFamiliarSheet($spreadsheet)
+    {
+        $sheet = $spreadsheet->getSheetByName('AsignacionFamiliar');
+        if (!$sheet) {
+            throw new Exception("La Hoja AsignacionFamiliar dentro del archivo No existe, usar la plantilla correcta");
+        }
+
+        $rows = $sheet->toArray();
+
+        // Procesar los datos a partir de la segunda fila (índice 1)
+        foreach ($rows as $index => $row) {
+            if ($index === 0) {
+                // Omitir la primera fila (encabezados)
+                continue;
+            }
+
+            // Aquí debes ajustar el índice según las columnas en la hoja AsignacionFamiliar
+            $empleado_documento = $row[1] ?? null;
+            $familiar_nombre = $row[3] ?? 'SIN NOMBRE';
+            $familiar_documento = $row[4] ?? null;
+            $familiar_fecha_nacimiento = $row[5] ?? null;
+            $familiar_esta_estudiando = $row[6] == 'SI' ? 1 : 0;
+
+            $familiar_fecha_nacimiento = $this->validarFecha($familiar_fecha_nacimiento);
+
+            if ($empleado_documento && $familiar_documento && $familiar_fecha_nacimiento) {
+
+                $empleado = Empleado::where('documento', $empleado_documento)->first();
+
+                if ($empleado) {
+
+                    AsignacionFamiliar::updateOrCreate(
+                        ['documento' => $familiar_documento],
+                        [
+                            'empleado_id' => $empleado->id,
+                            'nombres' => $familiar_nombre,
+                            'documento' => $familiar_documento,
+                            'fecha_nacimiento' => $familiar_fecha_nacimiento,
+                            'esta_estudiando' => $familiar_esta_estudiando
+                        ]
+                    );
+                }
+            }
+        }
+    }
+    public function validarFecha($fecha)
+    {
+        // Verifica si la fecha no es '-' y no está vacía
+        if ($fecha !== '-' && $fecha !== '') {
+            // Intenta convertir la fecha
+            try {
+                $fechaObj = new DateTime($fecha);
+                return $fechaObj->format('Y-m-d'); // Retorna la fecha en formato correcto
+            } catch (Exception $e) {
+                // Si no es una fecha válida, retorna null
+                return null;
+            }
+        } else {
+            return null;
+        }
     }
     public function render()
     {

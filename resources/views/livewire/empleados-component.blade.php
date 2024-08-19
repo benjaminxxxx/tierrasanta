@@ -6,10 +6,11 @@
                 <x-h2>
                     Empleados
                 </x-h2>
-                <div class="mt-5 md:mt-0" >
-                    <livewire:empleado-form-component/>
+                <div class="mt-5 md:mt-0">
+                    <livewire:empleado-form-component />
+                    <livewire:asignacion-familiar-form-component />
                 </div>
-                
+
                 <livewire:empleados-import-export-component wire:key="eleement" />
             </div>
             <form class="flex my-10">
@@ -26,10 +27,14 @@
                 <x-slot name="thead">
                     <tr>
                         <x-th value="N°" class="text-center" />
-                        <x-th value="Nombres" />
-                        <x-th value="Apellido Paterno" />
-                        <x-th value="Apellido Materno" />
                         <x-th value="Documento" class="text-center" />
+                        <x-th value="Nombre Completo" />
+                        <x-th value="Asignación Familiar" class="text-center" />
+                        <x-th value="SNP/SPP" class="text-center" />
+                        <x-th value="Cargo" class="text-center" />
+                        <x-th value="Fech. Nac." class="text-center" />
+                        <x-th value="Fech. Ingreso." class="text-center" />
+                        <x-th value="Género" class="text-center" />
                         <x-th value="Acciones" class="text-center" />
                     </tr>
                 </x-slot>
@@ -38,31 +43,34 @@
                         @foreach ($empleados as $indice => $empleado)
                             <x-tr>
                                 <x-th value="{{ $indice + 1 }}" class="text-center" />
-                                <x-td value="{{ $empleado->nombres }}" />
-                                <x-td value="{{ $empleado->apellido_paterno }}" />
-                                <x-td value="{{ $empleado->apellido_materno }}" />
                                 <x-td value="{{ $empleado->documento }}" class="text-center" />
+                                <x-td value="{{ $empleado->nombreCompleto }}" />
+                                <x-td class="text-center">
+                                    <x-secondary-button wire:click="asignacionFamiliar('{{ $empleado->code }}')">
+                                        {{ $empleado->tieneAsignacionFamiliar['mensaje'] }}
+                                    </x-secondary-button>
+                                </x-td>
+                                <x-td value="{{ $empleado->descuento_sp_id }}" class="text-center" />
+                                <x-td value="{{ isset($empleado->cargo)?$empleado->cargo->nombre:'-' }}" class="text-center" />
+                                <x-td value="{{ $empleado->fecha_nacimiento }}" class="text-center" />
+                                <x-td value="{{ $empleado->fecha_ingreso }}" class="text-center" />
+                                <x-td value="{{ $empleado->genero }}" class="text-center" />
                                 <x-td class="text-center">
                                     <div class="flex items-center justify-center gap-2">
                                         @if ($empleado->status != 'activo')
-                                            <x-warning-button wire:click="enable('{{ $empleado->code }}')"
-                                                >
+                                            <x-warning-button wire:click="enable('{{ $empleado->code }}')">
                                                 <i class="fa fa-ban"></i>
                                             </x-warning-button>
                                         @else
-                                            <x-success-button wire:click="disable('{{ $empleado->code }}')"
-                                                >
+                                            <x-success-button wire:click="disable('{{ $empleado->code }}')">
                                                 <i class="fa fa-check"></i>
                                             </x-success-button>
                                         @endif
                                         <x-button wire:click="editar('{{ $empleado->code }}')">
-                                            <i class="fa fa-pencil"></i> <span
-                                                class="hidden md:inline-block ml-2">Editar</span>
+                                            <i class="fa fa-pencil"></i>
                                         </x-button>
-                                        <x-danger-button wire:click="confirmarEliminacion('{{ $empleado->code }}')"
-                                            >
-                                            <i class="fa fa-remove"></i> <span
-                                                class="hidden md:inline-block ml-2">Eliminar</span>
+                                        <x-danger-button wire:click="confirmarEliminacion('{{ $empleado->code }}')">
+                                            <i class="fa fa-remove"></i>
                                         </x-danger-button>
                                     </div>
 

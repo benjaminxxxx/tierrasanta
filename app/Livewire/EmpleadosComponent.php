@@ -14,7 +14,7 @@ class EmpleadosComponent extends Component
     public $isFormOpen = true;
     public $empleadoCode;
     public $search = '';
-    protected $listeners = ['EmpleadoRegistrado' => '$refresh', 'eliminacionConfirmada'];
+    protected $listeners = ['EmpleadoRegistrado' => '$refresh', 'eliminacionConfirmada','HijoRegistrado'=>'$refresh'];
     public function render()
     {
         $query = Empleado::query();
@@ -41,6 +41,10 @@ class EmpleadosComponent extends Component
     public function editar($code)
     {
         $this->dispatch('EditarEmpleado', $code);
+    }
+    public function asignacionFamiliar($code)
+    {
+        $this->dispatch('AgregarAsignacionFamiliar', $code);
     }
     public function eliminacionConfirmada()
     {
