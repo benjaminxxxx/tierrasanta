@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\AsignacionFamiliar;
 use App\Models\Cargo;
 use App\Models\DescuentoSP;
+use App\Models\Grupo;
 use DateTime;
 use Exception;
 use Livewire\Component;
@@ -61,6 +62,7 @@ class EmpleadosImportExportComponent extends Component
             throw new Exception("La Hoja Empleados dentro del archivo No existe, usar la plantilla correcta");
         }
         $rows = $sheet->toArray();
+        $grupos = Grupo::all()->pluck('codigo')->toArray();
 
         // Procesar los datos a partir de la segunda fila (índice 1)
         foreach ($rows as $index => $row) {
@@ -79,11 +81,24 @@ class EmpleadosImportExportComponent extends Component
             $descuento_sp_codigo = $row[8] ?? null;
             $genero = strtoupper($row[9] ?? null);
             $salario = $row[10] ?? null;
+            $grupo_codigo = $row[11] ?? null;
+            $compensacion_vacacional = $row[12] ?? null;
+            $esta_jubilado = $row[13] ?? 0;
+            $estado = $row[14] ?? 'inactivo';
 
-            $fecha_ingreso = $this->validarFecha($fecha_ingreso);
-            $fecha_nacimiento = $this->validarFecha($fecha_nacimiento);
+            if($fecha_ingreso!=null){
+                $fecha_ingreso = $this->validarFecha($fecha_ingreso);
+            }
+            if($fecha_nacimiento!=null){
+                $fecha_nacimiento = $this->validarFecha($fecha_nacimiento);
+            }
+            
 
             if ($documento) {
+
+                $grupo_codigo = in_array($grupo_codigo, $grupos) ? $grupo_codigo : null;
+                $compensacion_vacacional = $this->validarCompensacionVacacional($compensacion_vacacional);
+                $esta_jubilado = $this->validarEstadoJubilado($esta_jubilado);
 
                 $cargo_codigo = null;
                 $descuento_sp_id = null;
@@ -145,6 +160,10 @@ class EmpleadosImportExportComponent extends Component
                     'fecha_ingreso' => ($fecha_ingreso !== '-' && $fecha_ingreso !== '') ? $fecha_ingreso : null,
                     'fecha_nacimiento' => ($fecha_nacimiento !== '-' && $fecha_nacimiento !== '') ? $fecha_nacimiento : null,
                     'salario' => ($salario !== '-' && $fecha_nacimiento !== '') ? $salario : null,
+                    'grupo_codigo'=>$grupo_codigo,
+                    'compensacion_vacacional'=>$compensacion_vacacional,
+                    'esta_jubilado'=>$esta_jubilado,
+                    'status'=>$estado
                 ];
 
                 $empleado = Empleado::where('documento', $documento)->first();
@@ -160,7 +179,25 @@ class EmpleadosImportExportComponent extends Component
             }
         }
     }
+    private function validarEstadoJubilado($value)
+    {
+        // Convertir a mayúsculas
+        $value = mb_strtoupper(trim($value));
 
+        // Verificar si el valor es "SI"
+        return ($value === 'SI') ? 1 : 0;
+    }
+    private function validarCompensacionVacacional($value)
+    {
+        // Verificar si el valor es numérico y cumple con el formato 10,2
+        if (is_numeric($value) && preg_match('/^\d{1,8}(\.\d{1,2})?$/', $value)) {
+            // Asegurarse de que el valor tenga hasta 2 decimales
+            return number_format((float) $value, 2, '.', '');
+        }
+
+        // Si no es válido, devolver 0
+        return '0.00';
+    }
     protected function processAsignacionFamiliarSheet($spreadsheet)
     {
         $sheet = $spreadsheet->getSheetByName('AsignacionFamiliar');

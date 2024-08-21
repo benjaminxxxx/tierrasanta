@@ -11,24 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('descuento_sp', function (Blueprint $table) {
+        Schema::create('grupos', function (Blueprint $table) {
             $table->string('codigo')->primary();
-            $table->string('referencia');
-            $table->string('orden');
             $table->string('descripcion');
-            $table->string('tipo')->nullable();
-            $table->decimal('porcentaje', 5, 2);
-            $table->decimal('porcentaje_65', 5, 2);
-            $table->string('color')->nullable();
+            $table->string('color');
             $table->timestamps();
         });
     }
-
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::dropIfExists('descuento_sp');
+        Schema::dropIfExists('grupos');
     }
 };

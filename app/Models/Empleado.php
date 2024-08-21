@@ -26,9 +26,18 @@ class Empleado extends Model
         'salario',
         'fecha_nacimiento',
         'direccion',
+        'grupo_codigo',
+        'compensacion_vacacional',
+        'esta_jubilado'
     ];
+    public function descuento(){
+        return $this->belongsTo(DescuentoSP::class,'descuento_sp_id');
+    }
     public function cargo(){
         return $this->belongsTo(Cargo::class,'cargo_id');
+    }
+    public function grupo(){
+        return $this->belongsTo(Grupo::class,'grupo_codigo');
     }
     public function getNombreCompletoAttribute()
     {

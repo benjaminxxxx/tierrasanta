@@ -31,6 +31,56 @@ class ConfiguracionTableSeeder extends Seeder
                 'valor' => '13',
                 'descripcion' => 'Descuento del SNP',
             ],
+            [
+                'codigo' => 'remuneracion_basica',
+                'valor' => '34.1666666666667',
+                'descripcion' => 'Remuneración Basica',
+            ],
+            [
+                'codigo' => 'cts_porcentaje',
+                'valor' => '9.72',
+                'descripcion' => 'CTS',
+            ],
+            [
+                'codigo' => 'gratificaciones',
+                'valor' => '16.66',
+                'descripcion' => 'Gratificaciones',
+            ],
+            [
+                'codigo' => 'essalud_gratificaciones',
+                'valor' => '6',
+                'descripcion' => 'Essalud Gratificaciones',
+            ],
+            [
+                'codigo' => 'beta30',
+                'valor' => '30',
+                'descripcion' => 'Beta 30%',
+            ],
+            [
+                'codigo' => 'essalud',
+                'valor' => '6',
+                'descripcion' => 'Essalud',
+            ],
+            [
+                'codigo' => 'vida_ley_porcentaje',
+                'valor' => '0.63',
+                'descripcion' => 'Vida Ley Porcentaje',
+            ],
+            [
+                'codigo' => 'vida_ley',
+                'valor' => '1.18',
+                'descripcion' => 'Vida Ley',
+            ],
+            [
+                'codigo' => 'pension_sctr_porcentaje',
+                'valor' => '0.62',
+                'descripcion' => 'Pensión SCTR Porcentaje',
+            ],
+            [
+                'codigo' => 'pension_sctr',
+                'valor' => '1.18',
+                'descripcion' => 'Pensión SCTR',
+            ],
         ]);
     }
 }

@@ -2,6 +2,9 @@
 
 namespace App\Livewire;
 
+use App\Models\Cargo;
+use App\Models\DescuentoSP;
+use App\Models\Grupo;
 use Livewire\Component;
 use App\Models\Empleado;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -14,7 +17,20 @@ class EmpleadosComponent extends Component
     public $isFormOpen = true;
     public $empleadoCode;
     public $search = '';
+    public $cargo_id;
+    public $descuento_sp_id;
+    public $grupo_codigo;
+    public $cargos;
+    public $descuentos;
+    public $grupos;
+    public $estado;
+    public $genero;
     protected $listeners = ['EmpleadoRegistrado' => '$refresh', 'eliminacionConfirmada','HijoRegistrado'=>'$refresh'];
+    public function mount(){
+        $this->cargos = Cargo::all();
+        $this->descuentos = DescuentoSP::all();
+        $this->grupos = Grupo::all();
+    }
     public function render()
     {
         $query = Empleado::query();
@@ -26,6 +42,35 @@ class EmpleadosComponent extends Component
                     ->orWhere('apellido_materno', 'like', '%' . $this->search . '%')
                     ->orWhere('documento', 'like', '%' . $this->search . '%');
             });
+        }
+
+         // Filtro por cargo
+         if (!empty($this->cargo_id)) {
+            $query->where('cargo_id', $this->cargo_id);
+        }
+
+        // Filtro por descuento
+        if (!empty($this->descuento_sp_id)) {
+            $query->where('descuento_sp_id', $this->descuento_sp_id);
+        }
+
+        // Filtro por grupo
+        if (!empty($this->grupo_codigo)) {
+            if ($this->grupo_codigo === 'sg') {
+                $query->whereNull('grupo_codigo');
+            } else {
+                $query->where('grupo_codigo', $this->grupo_codigo);
+            }
+        }
+
+        // Filtro por género
+        if (!empty($this->genero)) {
+            $query->where('genero', $this->genero);
+        }
+
+        // Filtro por estado
+        if (!empty($this->estado)) {
+            $query->where('status', $this->estado);
         }
 
         $empleados = $query->paginate(20);

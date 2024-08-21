@@ -13,14 +13,67 @@
 
                 <livewire:empleados-import-export-component wire:key="eleement" />
             </div>
-            <form class="flex my-10">
-
-                <div class="relative w-full">
-                    <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none text-primary">
-                        <i class="fa fa-search"></i>
+            <form class="md:flex my-10 gap-3">
+                <div>
+                    <x-label for="cargo_id">Cargo</x-label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none text-primary">
+                            <i class="fa fa-search"></i>
+                        </div>
+                        <x-input type="search" wire:model.live="search" id="default-search" class="w-full !pl-10"
+                            autocomplete="off" placeholder="Busca por Nombres, Apellidos o Documento" required />
                     </div>
-                    <x-input type="search" wire:model.live="search" id="default-search" class="w-full !pl-10"
-                        autocomplete="off" placeholder="Busca por Nombres, Apellidos o Documento" required />
+                </div>
+
+                <div>
+                    <x-label for="cargo_id">Cargo</x-label>
+                    <x-select class="uppercase" wire:model.live="cargo_id" id="cargo_id">
+                        <option value="">TODOS</option>
+                        @if ($cargos)
+                            @foreach ($cargos as $cargo)
+                                <option value="{{ $cargo->codigo }}">{{ $cargo->nombre }}</option>
+                            @endforeach
+                        @endif
+                    </x-select>
+                </div>
+                <div>
+                    <x-label for="descuento_sp_id">SPP o SNP</x-label>
+                    <x-select class="uppercase" wire:model.live="descuento_sp_id" id="descuento_sp_id">
+                        <option value="">TODOS</option>
+                        @if ($descuentos)
+                            @foreach ($descuentos as $descuento)
+                                <option value="{{ $descuento->codigo }}">{{ $descuento->descripcion }}</option>
+                            @endforeach
+                        @endif
+                    </x-select>
+                </div>
+                <div>
+                    <x-label for="grupo_codigo">Grupo</x-label>
+                    <x-select class="uppercase" wire:model.live="grupo_codigo" id="grupo_codigo">
+                        <option value="">TODOS</option>
+                        <option value="sg">SIN GRUPO</option>
+                        @if ($grupos)
+                            @foreach ($grupos as $grupo)
+                                <option value="{{ $grupo->codigo }}">{{ $grupo->descripcion }}</option>
+                            @endforeach
+                        @endif
+                    </x-select>
+                </div>
+                <div>
+                    <x-label for="genero">Género</x-label>
+                    <x-select class="uppercase" wire:model.live="genero" id="genero">
+                        <option value="">TODOS</option>
+                        <option value="F">MUJERES</option>
+                        <option value="M">HOMBRES</option>
+                    </x-select>
+                </div>
+                <div>
+                    <x-label for="estado">Estado</x-label>
+                    <x-select class="uppercase" wire:model.live="estado" id="estado">
+                        <option value="">TODOS</option>
+                        <option value="activo">Activo</option>
+                        <option value="inactivo">Inactivo</option>
+                    </x-select>
                 </div>
             </form>
             <x-table class="mt-5">
@@ -41,7 +94,7 @@
                 <x-slot name="tbody">
                     @if ($empleados->count())
                         @foreach ($empleados as $indice => $empleado)
-                            <x-tr>
+                            <x-tr style="background-color:{{ $empleado->grupo ? $empleado->grupo->color : '#ffffff' }}">
                                 <x-th value="{{ $indice + 1 }}" class="text-center" />
                                 <x-td value="{{ $empleado->documento }}" class="text-center" />
                                 <x-td value="{{ $empleado->nombreCompleto }}" />
@@ -51,7 +104,8 @@
                                     </x-secondary-button>
                                 </x-td>
                                 <x-td value="{{ $empleado->descuento_sp_id }}" class="text-center" />
-                                <x-td value="{{ isset($empleado->cargo)?$empleado->cargo->nombre:'-' }}" class="text-center" />
+                                <x-td value="{{ isset($empleado->cargo) ? $empleado->cargo->nombre : '-' }}"
+                                    class="text-center" />
                                 <x-td value="{{ $empleado->fecha_nacimiento }}" class="text-center" />
                                 <x-td value="{{ $empleado->fecha_ingreso }}" class="text-center" />
                                 <x-td value="{{ $empleado->genero }}" class="text-center" />

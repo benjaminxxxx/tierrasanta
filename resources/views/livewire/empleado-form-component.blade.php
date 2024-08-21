@@ -58,7 +58,19 @@
                         <x-input-error for="descuento_sp_id" />
                     </div>
                     <div class="col-span-2 md:col-span-1 mt-3">
-                        <x-label for="genero">Génerp</x-label>
+                        <x-label for="grupo_codigo">Grupo</x-label>
+                        <x-select class="uppercase" wire:model="grupo_codigo" id="grupo_codigo">
+                            <option value="">SIN GRUPO</option>
+                            @if ($grupos)
+                                @foreach ($grupos as $grupo)
+                                    <option value="{{ $grupo->codigo }}">{{ $grupo->descripcion }}</option>
+                                @endforeach
+                            @endif
+                        </x-select>
+                        <x-input-error for="grupo_codigo" />
+                    </div>
+                    <div class="col-span-2 md:col-span-1 mt-3">
+                        <x-label for="genero">Género</x-label>
                         <x-select class="uppercase" wire:model="genero" id="genero">
                             <option value="M">Masculino</option>
                             <option value="F">Femenino</option>
@@ -93,6 +105,20 @@
                         <x-inputn type="number" autocomplete="off" wire:model="salario" class="uppercase"
                             id="salario" />
                         <x-input-error for="salario" />
+                    </div>
+                    <div class="col-span-2 md:col-span-1 mt-3">
+                        <x-label for="compensacion_vacacional">Compensación Vacacional</x-label>
+                        <x-inputn type="number" autocomplete="off" wire:model="compensacion_vacacional" class="uppercase"
+                            id="compensacion_vacacional" />
+                        <x-input-error for="compensacion_vacacional" />
+                    </div>
+                    <div class="col-span-2 md:col-span-1 mt-3">
+                        <x-label for="esta_jubilado">¿Está Jubilado(a)?</x-label>
+                        <x-label for="esta_jubilado" class="mt-4">
+                            <x-checkbox wire:model="esta_jubilado" id="esta_jubilado" class="mr-2" />
+                            Está Jubilado(a)
+                        </x-label>
+                        <x-input-error for="esta_jubilado" />
                     </div>
                 </div>
             </form>

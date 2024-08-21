@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Cargo;
 use App\Models\DescuentoSP;
+use App\Models\Grupo;
 use Livewire\Component;
 use App\Models\Empleado;
 use Illuminate\Database\QueryException;
@@ -22,12 +23,16 @@ class EmpleadoFormComponent extends Component
     public $documento;
     public $descuentos;
     public $cargos;
+    public $grupos;
     public $fecha_ingreso;
     public $fecha_nacimiento;
     public $cargo_id;
     public $descuento_sp_id;
     public $genero;
     public $salario;
+    public $grupo_codigo;
+    public $compensacion_vacacional;
+    public $esta_jubilado;
     protected $listeners = ['EditarEmpleado'];
     protected function rules()
     {
@@ -56,6 +61,7 @@ class EmpleadoFormComponent extends Component
     {
         $this->descuentos = DescuentoSP::all();
         $this->cargos = Cargo::all();
+        $this->grupos = Grupo::all();
     }
     public function EditarEmpleado($code)
     {
@@ -72,6 +78,9 @@ class EmpleadoFormComponent extends Component
             $this->descuento_sp_id = $empleado->descuento_sp_id;
             $this->genero = $empleado->genero;
             $this->salario = $empleado->salario;
+            $this->grupo_codigo = $empleado->grupo_codigo;
+            $this->compensacion_vacacional = $empleado->compensacion_vacacional;
+            $this->esta_jubilado = $empleado->esta_jubilado?true:false;
             $this->CrearEmpleado();
         }
     }
@@ -97,8 +106,11 @@ class EmpleadoFormComponent extends Component
                 'descuento_sp_id' => $this->descuento_sp_id,
                 'genero' => $this->genero,
                 'salario' => $this->salario,
+                'grupo_codigo' => $this->grupo_codigo,
+                'compensacion_vacacional' => $this->compensacion_vacacional,
+                'esta_jubilado' => $this->esta_jubilado?1:0,
             ];
-
+            
             if ($this->empleadoId) {
                 $empleado = Empleado::find($this->empleadoId);
                 if ($empleado) {
@@ -121,7 +133,10 @@ class EmpleadoFormComponent extends Component
                 'fecha_nacimiento',
                 'descuento_sp_id',
                 'genero',
-                'salario'
+                'salario',
+                'grupo_codigo',
+                'compensacion_vacacional',
+                'esta_jubilado'
             ]);
             $this->dispatch('EmpleadoRegistrado');
             $this->closeForm();

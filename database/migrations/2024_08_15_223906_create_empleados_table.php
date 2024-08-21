@@ -30,6 +30,10 @@ return new class extends Migration {
             $table->foreign('descuento_sp_id')->references('codigo')->on('descuento_sp')->onDelete('set null');
             $table->string('cargo_id')->nullable(); // Relación con el cargo
             $table->foreign('cargo_id')->references('codigo')->on('cargos')->onDelete('set null'); // Clave foránea
+            $table->string('grupo_codigo')->nullable();
+            $table->foreign('grupo_codigo')->references('codigo')->on('grupos')->onDelete('set null');
+            $table->decimal('compensacion_vacacional', 10, 2)->nullable();
+            $table->boolean('esta_jubilado')->default(false);
             $table->timestamps();
         });
     }
