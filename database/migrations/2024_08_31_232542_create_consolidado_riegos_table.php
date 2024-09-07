@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('consolidado_riegos', function (Blueprint $table) {
+            $table->id();
+            $table->string('regador_documento');
+            $table->string('regador_nombre');
+            $table->date('fecha');
+            $table->time('hora_inicio');
+            $table->time('hora_fin');
+            $table->time('total_horas_riego');
+            $table->time('total_horas_jornal');
+            $table->enum('estado',['consolidado','noconsolidado'])->default('consolidado');
+            $table->timestamps();
+            $table->index(['regador_documento', 'fecha']);
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('consolidado_riegos');
+    }
+};

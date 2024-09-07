@@ -8,6 +8,7 @@
     <link rel="shortcut icon" href="{{asset('images/icon/favicon.png')}}" type="image/png">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Tierra Santa Holding S.A.C.') }}</title>
+    <link rel="stylesheet" href="{{asset('css/style.css')}}">
     <!-- Scripts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
@@ -52,6 +53,7 @@ $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(valu
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   
     <x-livewire-alert::scripts />
+    
 </body>
 
 </html>

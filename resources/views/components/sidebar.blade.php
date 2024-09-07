@@ -26,7 +26,15 @@
                 <h3 class="mb-4 ml-4 text-sm font-medium text-bodydark2">MENU</h3>
 
                 <ul class="mb-6 flex flex-col gap-1.5">
-               
+                    <x-nav-link-parent name="sectorPlanilla" href="#" :active="request()->routeIs(['planilla.asistencia'])">
+                        <i class="fa fa-table"></i>
+                        Planilla
+                        <x-slot name="children">
+                            <x-nav-link-child href="{{ route('planilla.asistencia') }}" :active="request()->routeIs('planilla.asistencia')">
+                                Asistencia
+                            </x-nav-link-child>
+                        </x-slot>
+                    </x-nav-link-parent>
                     <x-nav-link-parent name="sectorEmpleado" href="{{ route('empleados') }}" :active="request()->routeIs(['empleados','empleados.asignacion_familiar'])">
                         <i class="fa fa-users"></i>
                         Empleado
@@ -36,6 +44,33 @@
                             </x-nav-link-child>
                             <x-nav-link-child href="{{ route('empleados.asignacion_familiar') }}" :active="request()->routeIs('empleados.asignacion_familiar')">
                                 Asignación Familiar
+                            </x-nav-link-child>
+                        </x-slot>
+                    </x-nav-link-parent>
+                    <x-nav-link-parent name="sectorCuadrilla" href="#" :active="request()->routeIs(['cuadrilla.asistencia','cuadrilla.grupos','cuadrilla.cuadrilleros'])">
+                        <i class="fas fa-hard-hat"></i>
+                        Cuadrilla
+                        <x-slot name="children">
+                            <x-nav-link-child href="{{ route('cuadrilla.cuadrilleros') }}" :active="request()->routeIs('cuadrilla.cuadrilleros')">
+                                Cuadrilleros
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('cuadrilla.grupos') }}" :active="request()->routeIs('cuadrilla.grupos')">
+                                Grupos
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('cuadrilla.asistencia') }}" :active="request()->routeIs('cuadrilla.asistencia')">
+                                Asistencia
+                            </x-nav-link-child>
+                        </x-slot>
+                    </x-nav-link-parent>
+                    <x-nav-link-parent name="sectorCampo" href="#" :active="request()->routeIs(['campo.mapa'])">
+                        <i class="fa fa-leaf"></i>
+                        Campo
+                        <x-slot name="children">
+                            <x-nav-link-child href="{{ route('campo.mapa') }}" :active="request()->routeIs('campo.mapa')">
+                                Mapa
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('campo.riego') }}" :active="request()->routeIs('campo.riego')">
+                                Riego
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>

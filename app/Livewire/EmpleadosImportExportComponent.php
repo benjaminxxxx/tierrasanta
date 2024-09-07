@@ -45,7 +45,7 @@ class EmpleadosImportExportComponent extends Component
                 // Mostrar una alerta de éxito
                 $this->alert('success', 'Los datos se importaron correctamente.');
                 $this->dispatch('EmpleadoRegistrado');
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Manejar excepciones
                 $this->alert('error', 'Hubo un error al importar los datos: ' . $e->getMessage());
             }
