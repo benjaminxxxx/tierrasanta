@@ -9,9 +9,9 @@ class HorasAcumuladas extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'dni',
+        'documento',
         'fecha_acumulacion',
-        'horas_acumuladas',
-        'estado'
+        'fecha_uso',
+        'minutos_acomulados'
     ];
 }

@@ -2,10 +2,12 @@
 
 namespace App\Livewire;
 
+use App\Models\Configuracion;
 use App\Models\ConsolidadoRiego;
 use App\Models\Cuadrillero;
 use App\Models\DetalleRiego;
 use App\Models\Empleado;
+use App\Models\HorasAcumuladas;
 use App\Models\Observacion;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -31,38 +33,48 @@ class ConsolidarRegadoresComponent extends Component
             ?? Cuadrillero::where('dni', $documento)->value('nombre_completo')
             ?? 'NN';
     }
-    private function eliminarConsolidadoExistente($documento, $fecha)
+    private function eliminarConsolidadoExistente($fecha)
     {
-        ConsolidadoRiego::where('regador_documento', $documento)
-            ->where('fecha', $fecha)
+        ConsolidadoRiego::where('fecha', $fecha)
             ->delete();
     }
     public function ConsolidarRegadores($fecha)
     {
-        $this->fecha = $fecha;
+
         try {
-            $detallesGlobal = $this->obtenerDetallesGlobales();
+            $detalle_riegos = DetalleRiego::whereDate('fecha', $fecha);
+            $observaciones = Observacion::whereDate('fecha', $fecha);
 
-            if ($detallesGlobal->isNotEmpty()) {
-                foreach ($detallesGlobal as $detalle) {
-                    $documento = $detalle->regador;
-                    $fecha = $this->fecha;
-                    $nombre = $this->obtenerNombreRegador($documento);
+            $informaciones = [];
 
-                    $query = DetalleRiego::query()
-                        ->where('regador', $documento)
-                        ->whereDate('fecha', $fecha)
-                        ->orderBy('hora_inicio');
+            foreach ($detalle_riegos->get() as $detalle_riego) {
+                $informaciones[$detalle_riego->regador]['detalle_riegos'] = $detalle_riegos;
+            }
+            foreach ($observaciones->get() as $observacion) {
+                $informaciones[$observacion->documento]['observaciones'] = $observaciones;
+            }
+
+            $this->eliminarConsolidadoExistente($fecha);
+
+            foreach ($informaciones as $documento => $informacion) {
+
+                $nombre = $this->obtenerNombreRegador($documento);
+                $total_horas_riego = 0;
+                $total_minutos_jornal = 0;
+                $total_minutos_observaciones = 0;
+                $hora_inicio = null;
+                $hora_fin = null;
+
+        
+
+                if (array_key_exists('detalle_riegos', $informacion)) {
+
+                    $query = $informacion['detalle_riegos']->where('regador', $documento)->orderBy('hora_inicio');
 
                     // Obtener los detalles
                     $detalles = $query->get();
                     $total_minutos = $query->selectRaw('SUM(TIME_TO_SEC(total_horas) / 60) as total_minutos')->value('total_minutos');
                     $total_horas_riego_verificacion = gmdate('H:i', $total_minutos * 60);
-
-
-
-
-                    $this->eliminarConsolidadoExistente($documento, $this->fecha);
 
                     if ($detalles->count() == 0) {
                         continue;
@@ -86,8 +98,6 @@ class ConsolidarRegadoresComponent extends Component
 
                     // Cálculo del total de horas riego considerando los solapamientos
                     $total_horas_riego = 0;
-
-                    $total_minutos_jornal = 0;
                     $total_horas_jornal = 0;
                     $intervalos = [];
 
@@ -135,40 +145,103 @@ class ConsolidarRegadoresComponent extends Component
                         $total_minutos_jornal += ($diff->h * 60) + $diff->i;
                     }
 
-                    $observacionesMinutos = Observacion::where('documento', $documento)
-                        ->where('fecha', $fecha)
-                        ->selectRaw('SUM(TIME_TO_SEC(horas) / 60) as total_minutos')->value('total_minutos');
 
-
-                    $total_horas_jornal = (int) $total_minutos_jornal + (int) $observacionesMinutos; // Suma total en minutos
-
-                    $horas = floor($total_horas_jornal / 60); // Horas completas
-                    $minutos_restantes = $total_horas_jornal % 60; // Minutos restantes
-
-                    // Formatear en HH:MM
-                    $total_horas_jornal_formateado = sprintf('%02d:%02d', $horas, $minutos_restantes);
-
-
-                    ConsolidadoRiego::create([
-                        'regador_documento' => $documento,
-                        'regador_nombre' => $nombre, // Asumiendo que tienes el nombre del regador
-                        'fecha' => $fecha,
-                        'hora_inicio' => $hora_inicio,
-                        'hora_fin' => $hora_fin,
-                        'total_horas_riego' => $total_horas_riego, // Convertir a formato H:i
-                        'total_horas_jornal' => $total_horas_jornal_formateado, // Sumar horas adicionales
-                        'estado' => 'consolidado',
-                    ]);
                 }
-                $this->dispatch('RefrescarMapa');
-                $this->alert('success', "Detalles Consolidados con éxito");
-            } else {
-                $this->alert('error', "No hay detalles para Consolidar");
+
+                if (array_key_exists('observaciones', $informacion)) {
+
+                    $total_minutos_observaciones = $informacion['observaciones']->where('documento', $documento)
+                        ->selectRaw('SUM(TIME_TO_SEC(horas) / 60) as total_minutos')->value('total_minutos');
+                }
+
+                $minutos_jornal = $this->calcularMinutosJornal($total_minutos_jornal, $total_minutos_observaciones);
+
+                if ($minutos_jornal < 0) {
+                    $minutos_jornal = 0;
+                }
+
+                $horas_maxima_jornal = 480;
+
+                if ($minutos_jornal > $horas_maxima_jornal) {
+                    $minutos_adicionales = $minutos_jornal - $horas_maxima_jornal;
+                    $minutos_jornal = $horas_maxima_jornal;
+                    $this->procesarHorasAcumuladas($documento, $fecha, $minutos_adicionales);
+                } else {
+                    HorasAcumuladas::where('documento', $documento)->whereDate('fecha_acumulacion', $fecha)->delete();
+                }
+
+                $total_horas_jornal = $this->convertirMinutosAHora($minutos_jornal);
+
+                ConsolidadoRiego::create([
+                    'regador_documento' => $documento,
+                    'regador_nombre' => $nombre, // Asumiendo que tienes el nombre del regador
+                    'fecha' => $fecha,
+                    'hora_inicio' => $hora_inicio,
+                    'hora_fin' => $hora_fin,
+                    'total_horas_riego' => $total_horas_riego, // Convertir a formato H:i
+                    'total_horas_jornal' => $total_horas_jornal, // Sumar horas adicionales
+                    'estado' => 'consolidado',
+                ]);
+
+
             }
+            $this->dispatch('RefrescarMapa');
+            $this->alert('success', "Detalles Consolidados con éxito");
+
         } catch (\Throwable $th) {
             $this->alert('error', "Ocurrió un error: " . $th->getMessage());
         }
+
+
     }
+    private function convertirMinutosAHora($minutos)
+    {
+
+        // Convertir minutos a horas y minutos restantes
+        $horas = floor($minutos / 60);
+        $minutos_restantes = $minutos % 60;
+
+        // Devolver el resultado en formato hh:mm
+        return sprintf('%02d:%02d', $horas, $minutos_restantes);
+    }
+
+    private function calcularMinutosJornal($total_minutos_jornal, $total_minutos_observaciones)
+    {
+        if (!is_numeric($total_minutos_jornal) || !is_numeric($total_minutos_observaciones)) {
+            throw new \InvalidArgumentException('Los parámetros $total_minutos_jornal y $observacionesMinutos deben ser numéricos.');
+        }
+
+        $tiempo_almuerzo = Configuracion::find('tiempo_almuerzo');
+        $minutos_almuerzo = $tiempo_almuerzo && is_numeric($tiempo_almuerzo->valor) ? (int) $tiempo_almuerzo->valor : 0;
+
+        return (int) $total_minutos_jornal + (int) $total_minutos_observaciones - $minutos_almuerzo;
+
+    }
+    private function procesarHorasAcumuladas($documento, $fecha, $minutos_extras)
+    {
+        $horasAcumuladas = HorasAcumuladas::where('documento', $documento)
+            ->where('fecha_acumulacion', $fecha)
+            ->first();
+
+        if ($horasAcumuladas) {
+            // Si ya existe un registro de horas acumuladas en esa fecha
+            if (!$horasAcumuladas->fecha_uso) {
+                // Si no ha sido usado, actualizamos el valor
+                $horasAcumuladas->minutos_acomulados = $minutos_extras;
+                $horasAcumuladas->save();
+            } else {
+                throw new \Exception('Existe un registro con horas acumuladas en la fecha: ' . $horasAcumuladas->fecha_uso);
+            }
+        } else {
+            // Si no existe, creamos un nuevo registro de horas acumuladas
+            HorasAcumuladas::create([
+                'documento' => $documento,
+                'fecha_acumulacion' => $fecha,
+                'minutos_acomulados' => $minutos_extras
+            ]);
+        }
+    }
+
     public function Desconsolidar($fecha)
     {
         ConsolidadoRiego::where('fecha', $fecha)->update(['estado' => 'noconsolidado']);

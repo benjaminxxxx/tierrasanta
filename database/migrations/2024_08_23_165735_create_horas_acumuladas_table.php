@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('documento'); // DNI del trabajador
             $table->date('fecha_acumulacion'); // Fecha en la que se acumularon las horas
-            $table->decimal('horas_acumuladas', 5, 2)->default(0.00); // Horas acumuladas
-            $table->enum('estado', ['por_usar', 'usado'])->default('por_usar'); // Estado de la hora acumulada
+            $table->date('fecha_uso')->nullable();
+            $table->integer('minutos_acomulados'); // Minutos acumuladas
             $table->timestamps();
         });
     }

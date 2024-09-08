@@ -16,8 +16,8 @@ return new class extends Migration
             $table->string('regador_documento');
             $table->string('regador_nombre');
             $table->date('fecha');
-            $table->time('hora_inicio');
-            $table->time('hora_fin');
+            $table->time('hora_inicio')->nullable();
+            $table->time('hora_fin')->nullable();
             $table->time('total_horas_riego');
             $table->time('total_horas_jornal');
             $table->enum('estado',['consolidado','noconsolidado'])->default('consolidado');

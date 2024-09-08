@@ -81,6 +81,11 @@ class ConfiguracionTableSeeder extends Seeder
                 'valor' => '1.18',
                 'descripcion' => 'Pensión SCTR',
             ],
+            [
+                'codigo' => 'tiempo_almuerzo',
+                'valor' => '60',
+                'descripcion' => 'Tiempo de Almuerzo',
+            ],
         ]);
     }
 }
