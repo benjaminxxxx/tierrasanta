@@ -7,7 +7,7 @@ use App\Models\Observacion;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
-class ObservacionesRegadorComponent extends Component
+class DetalleObservacionesComponent extends Component
 {
     use LivewireAlert;
     public $observaciones;
@@ -20,7 +20,8 @@ class ObservacionesRegadorComponent extends Component
     public $fecha;
     public $horasAcumuladas;
     public $totalHorasAcumuladas;
-    protected $listeners = ['asignarObservacionesHoras'];
+    public $activarCopiarExcel;
+    protected $listeners = ['RefrescarMapa'=>'$refresh','desconsolidacion'=>'$refresh'];
     public function render()
     {
         if ($this->regador && $this->fecha) {
@@ -29,7 +30,7 @@ class ObservacionesRegadorComponent extends Component
             $this->totalHorasAcumuladas = $this->obtenerTotalHorasAcumuladas($this->regador);
         }
 
-        return view('livewire.observaciones-regador');
+        return view('livewire.detalle-observaciones-component');
     }
     public function asignarObservacionesHoras($data)
     {
@@ -118,10 +119,5 @@ class ObservacionesRegadorComponent extends Component
     {
         $this->dispatch('Desconsolidar',$this->fecha);
         Observacion::find($id)->delete();
-    }
-    public function closeForm()
-    {
-        $this->isFormOpen = false;
-        $this->dispatch('RefrescarMapa');
     }
 }

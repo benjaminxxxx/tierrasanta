@@ -15,11 +15,14 @@ return new class extends Migration
             $table->id();
             $table->string('regador_documento');
             $table->string('regador_nombre');
+            $table->integer('descuento_horas_almuerzo')->default(0);
             $table->date('fecha');
             $table->time('hora_inicio')->nullable();
             $table->time('hora_fin')->nullable();
             $table->time('total_horas_riego');
             $table->time('total_horas_jornal');
+            $table->time('total_horas_observaciones'); 
+            $table->time('total_horas_acumuladas');
             $table->enum('estado',['consolidado','noconsolidado'])->default('consolidado');
             $table->timestamps();
             $table->index(['regador_documento', 'fecha']);

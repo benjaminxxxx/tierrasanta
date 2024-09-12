@@ -3,33 +3,78 @@
 namespace App\Livewire;
 
 use App\Models\Campo;
+use App\Models\ConsolidadoRiego;
 use App\Models\DetalleRiego;
-use App\Models\Empleado;
 use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
-class AsignarRiegoComponent extends Component
+class DetalleHorasRiegoComponent extends Component
 {
     use LivewireAlert;
     public $horasPorRegador = [];
-    public $isFormOpen;
-    public $regadores;
     public $regador;
     public $fecha;
-    public $campos;
+    public $campos = [];
     public $activarCopiarExcel;
     public $informacionExcel;
     public $tipoPersonal;
     public $regadorNombre;
-    protected $listeners = ['abrirRiego', 'asignarCargarRegadorHoras'];
+    public $noDescontarHoraAlmuerzo;
+    protected $listeners = ['camposSeleccionados'];
     public function mount()
     {
-        $this->regadores = Empleado::orderBy('apellido_paterno')->orderBy('apellido_materno')->orderBy('nombres')->get();
+        //$this->regadores = Empleado::orderBy('apellido_paterno')->orderBy('apellido_materno')->orderBy('nombres')->get();
+        if($this->fecha && $this->regador){
+            $detalle = ConsolidadoRiego::whereDate('fecha',$this->fecha)->where('regador_documento',$this->regador)->first();
+            $this->noDescontarHoraAlmuerzo = $detalle ? $detalle->descuento_horas_almuerzo==1?true:false:false;
+            
+            
+        }
+        
+        $this->cargarRegadorHoras();
     }
     public function render()
     {
-        return view('livewire.asignar-riego-component');
+        return view('livewire.detalle-horas-riego-component');
+    }
+    public function camposSeleccionados($data)
+    {
+        if ($data['documento'] != $this->regador) {
+            return;
+        }
+
+        $camposAsociativos = [];
+
+        // Recorremos los campos seleccionados en $data['campos']
+        foreach ($data['campos'] as $campoSeleccionado) {
+            // Verificar si el campo ya existe en $this->campos con el mismo nombre
+            $campoExistente = collect($this->campos)->firstWhere('nombre', $campoSeleccionado);
+
+            // Si existe, transferimos la información existente
+            if ($campoExistente) {
+                $camposAsociativos[] = [
+                    'nombre' => $campoSeleccionado,
+                    'inicio' => $campoExistente['inicio'],  // Transferimos 'inicio' del campo existente
+                    'fin' => $campoExistente['fin'],        // Transferimos 'fin' del campo existente
+                    'total' => $campoExistente['total'],    // Transferimos 'total' del campo existente
+                ];
+            } else {
+                // Si no existe, creamos uno nuevo con valores nulos
+                $camposAsociativos[] = [
+                    'nombre' => $campoSeleccionado,
+                    'inicio' => null,
+                    'fin' => null,
+                    'total' => null,
+                ];
+            }
+        }
+
+        // Asignar el array asociativo a la propiedad
+        $this->campos = $camposAsociativos;
+
+        // Llamar al método para cargar las horas del regador
+        $this->cargarRegadorHoras();
     }
     public function store()
     {
@@ -50,7 +95,7 @@ class AsignarRiegoComponent extends Component
         $campos = [];
         if ($this->activarCopiarExcel) {
             // Procesar información desde Excel
-            if($this->informacionExcel){
+            if ($this->informacionExcel) {
                 $lineas = explode("\n", trim($this->informacionExcel)); // Separar por líneas
                 foreach ($lineas as $linea) {
                     $datos = preg_split('/\s+/', trim($linea)); // Separar por espacios o tabulaciones
@@ -64,7 +109,7 @@ class AsignarRiegoComponent extends Component
                     }
                 }
             }
-            
+
         } else {
             // Si no está activado, usamos los campos manuales
             $campos = $this->campos;
@@ -110,19 +155,60 @@ class AsignarRiegoComponent extends Component
 
             $this->activarCopiarExcel = false;
             $this->informacionExcel = null;
-            
+
 
             $this->alert('success', 'Registro de Horas de Riego Exitoso.');
-            $this->closeForm();
+            $this->resetear();
         } else {
 
             $this->activarCopiarExcel = false;
             $this->informacionExcel = null;
             $this->alert('success', 'Se limpiaron todos los registros.');
-            $this->closeForm();
+            $this->resetear();
         }
     }
+    public function updatedNoDescontarHoraAlmuerzo(){
+        if (!$this->regador) {
+            return $this->alert('error', 'Selecciona el regador primero');
+        }
 
+        if (!$this->fecha) {
+            return $this->alert('error', 'Digite alguna fecha válida');
+        }
+
+        ConsolidadoRiego::where('regador_documento',$this->regador)->whereDate('fecha',$this->fecha)->update([
+            'descuento_horas_almuerzo'=>$this->noDescontarHoraAlmuerzo?1:0
+        ]);
+        $this->resetear();
+    }
+    public function updatedActivarCopiarExcel()
+    {
+        if ($this->activarCopiarExcel) {
+            // Realizar la conversión de campos a texto para informaciónExcel
+            $lineas = [];
+            foreach ($this->campos as $campo) {
+                // Concatenar los valores del campo como un solo string separado por espacios
+                $lineas[] = "{$campo['nombre']} {$campo['inicio']} {$campo['fin']} {$campo['total']}";
+            }
+            // Convertir las líneas en un texto con saltos de línea
+            $this->informacionExcel = implode("\n", $lineas);
+        } else {
+            $campos = [];
+            $lineas = explode("\n", trim($this->informacionExcel)); // Separar por líneas
+            foreach ($lineas as $linea) {
+                $datos = preg_split('/\s+/', trim($linea)); // Separar por espacios o tabulaciones
+                if (count($datos) === 4) { // Solo procesar líneas con 4 columnas (campo, hora_inicio, hora_fin, total_horas)
+                    $campos[] = [
+                        'nombre' => $datos[0],
+                        'inicio' => $datos[1],
+                        'fin' => $datos[2],
+                        'total' => $datos[3],
+                    ];
+                }
+            }
+            $this->campos = $campos;
+        }
+    }
 
     public function eliminarIndice($indice)
     {
@@ -131,23 +217,16 @@ class AsignarRiegoComponent extends Component
 
     public function abrirRiego($data)
     {
-
-        $this->fecha = $data['fecha'];
-        $this->regador = $data['regador'];
         $this->campos = $data['campos'];
-
-        $this->isFormOpen = true;
     }
     public function asignarCargarRegadorHoras($data)
     {
-        $this->fecha = $data['fecha'];
-        $this->regador = $data['regador'];
         $this->regadorNombre = $data['regadorNombre'];
         $this->campos = $data['campos'];
         $this->tipoPersonal = $data['tipoPersonal'];
         $this->cargarRegadorHoras();
     }
-    
+
     public function cargarRegadorHoras()
     {
         if (!$this->regador || !$this->fecha) {
@@ -184,24 +263,18 @@ class AsignarRiegoComponent extends Component
 
         // Convertir el array de campos existentes a una colección para pasar al evento
         $camposSeleccionados = array_values($camposExistentes);
-
-        // Preparar los datos para despachar el evento
+       
         $data = [
-            'fecha' => $this->fecha,
-            'regador' => $this->regador,
             'campos' => $camposSeleccionados,
         ];
 
         $this->abrirRiego($data);
     }
 
-    public function closeForm()
+    public function resetear()
     {
-        $this->campos = [];
-        $this->regador = null;
-        $this->isFormOpen = false;
-        $this->dispatch('Desconsolidar',$this->fecha);
-        $this->dispatch('RefrescarMapa');
+        $this->dispatch('Desconsolidar', $this->fecha);
+        //$this->dispatch('RefrescarMapa');
     }
     public function clacularTotal($nombreCampo)
     {
@@ -236,4 +309,9 @@ class AsignarRiegoComponent extends Component
 
 
     }
+    public function seleccionarCampos($documento)
+    {
+        $this->dispatch('abrirParaSeleccionarCampos', $documento, $this->campos);
+    }
+
 }

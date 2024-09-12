@@ -72,6 +72,18 @@
                             <x-nav-link-child href="{{ route('campo.riego') }}" :active="request()->routeIs('campo.riego')">
                                 Riego
                             </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('campo.detalle_riego') }}" :active="request()->routeIs('campo.detalle_riego')">
+                                Detalle Riego
+                            </x-nav-link-child>
+                        </x-slot>
+                    </x-nav-link-parent>
+                    <x-nav-link-parent name="sectorConsolidados" :active="request()->routeIs('consolidado.riego')">
+                        <i class="fa fa-database"></i>
+                        Consolidado
+                        <x-slot name="children">
+                            <x-nav-link-child href="{{ route('consolidado.riego') }}" :active="request()->routeIs('consolidado.riego')">
+                                Riego
+                            </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
                     <x-nav-link-parent name="sectorConfiguracion" :active="request()->routeIs('configuracion')">
