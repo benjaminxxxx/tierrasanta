@@ -48,6 +48,7 @@ class ConsolidarRegadoresComponent extends Component
         }
 
         $total_horas_riego = 0;
+        $total_horas_jornal = 0;
         $total_horas_observaciones = null;
         $total_horas_acumuladas = null;
         $total_minutos_jornal = 0;
@@ -67,6 +68,7 @@ class ConsolidarRegadoresComponent extends Component
             $horaInicioMinima = null;
             $horaFinMaxima = null;
 
+
             foreach ($detalles as $registro) {
                 // Comparamos y actualizamos los máximos si es necesario
                 if ($horaInicioMinima === null || $horaInicioMinima > $registro->hora_inicio) {
@@ -75,51 +77,29 @@ class ConsolidarRegadoresComponent extends Component
                 if ($horaFinMaxima === null || $registro->hora_fin > $horaFinMaxima) {
                     $horaFinMaxima = $registro->hora_fin;
                 }
+
+                $intervalos[] = [
+                    'hora_inicio'=>$registro->hora_inicio,
+                    'hora_fin'=>$registro->hora_fin,
+                ];
+
+                $inicio = new \DateTime($registro->hora_inicio);
+                $fin = new \DateTime($registro->hora_fin);
+                $diff = $inicio->diff($fin);
+                $total_horas_riego += $diff->h + ($diff->i / 60);
             }
 
             $hora_inicio = $horaInicioMinima;
             $hora_fin = $horaFinMaxima;
-
-            // Cálculo del total de horas riego considerando los solapamientos
-            $total_horas_riego = 0;
-            $total_horas_jornal = 0;
-            $intervalos = [];
-
-            foreach ($detalles as $detalle) {
-                $inicio = new \DateTime($detalle->hora_inicio);
-                $fin = new \DateTime($detalle->hora_fin);
-                $diff = $inicio->diff($fin);
-                $total_horas_riego += $diff->h + ($diff->i / 60);
-
-                // Verificar si hay solapamientos
-                $nuevo_intervalo = ['inicio' => $inicio, 'fin' => $fin];
-
-
-
-                $solapado = false;
-
-                foreach ($intervalos as $key => $intervalo) {
-                    if ($inicio <= $intervalo['fin'] && $fin >= $intervalo['inicio']) {
-                        // Actualizar el intervalo solapado
-                        $intervalos[$key]['inicio'] = min($intervalo['inicio'], $inicio);
-                        $intervalos[$key]['fin'] = max($intervalo['fin'], $fin);
-                        $solapado = true;
-                        break;
-                    }
-                }
-
-                if (!$solapado) {
-                    // Añadir un nuevo intervalo si no hay solapamientos
-                    $intervalos[] = $nuevo_intervalo;
-                }
-            }
+            $total_minutos_jornal = $this->calcularMinutosJornalParcial($intervalos);
+           
 
             $total_horas_riego = gmdate('H:i', $total_horas_riego * 3600);
 
             if ($total_horas_riego != $total_horas_riego_verificacion) {
                 throw new \Exception("Las horas de riego no coinciden para el regador. Verifica los detalles de riego.");
             }
-
+/*
             // Sumar los intervalos no solapados
             foreach ($intervalos as $intervalo) {
                 // Obtener la diferencia entre el inicio y el fin en horas y minutos
@@ -127,7 +107,7 @@ class ConsolidarRegadoresComponent extends Component
 
                 // Convertir todo a minutos (horas * 60) + minutos
                 $total_minutos_jornal += ($diff->h * 60) + $diff->i;
-            }
+            }*/
         }
         if ($observaciones->count() > 0) {
             $total_minutos_observaciones = Observacion::whereDate('fecha', $fecha)->where('documento', $documento)
@@ -171,6 +151,45 @@ class ConsolidarRegadoresComponent extends Component
 
         // Guarda o actualiza el registro
         $consolidadoRiego->save();
+    }
+    public function calcularMinutosJornalParcial($intervalos) {
+        // Convertir los intervalos de tiempo a minutos
+        $minutos = [];
+        foreach ($intervalos as $intervalo) {
+            $inicio = strtotime($intervalo['hora_inicio']);
+            $fin = strtotime($intervalo['hora_fin']);
+            $minutos[] = [$inicio, $fin];
+        }
+        
+    
+        // Ordenar los intervalos por la hora de inicio
+        usort($minutos, function($a, $b) {
+            return $a[0] <=> $b[0];
+        });
+    
+        // Unir intervalos superpuestos
+        $horasUnidas = [];
+        $horasUnidas[] = $minutos[0];
+    
+        for ($i = 1; $i < count($minutos); $i++) {
+            $ultimoIntervalo = &$horasUnidas[count($horasUnidas) - 1];
+    
+            // Si los intervalos se superponen o tocan, los fusionamos
+            if ($minutos[$i][0] <= $ultimoIntervalo[1]) {
+                $ultimoIntervalo[1] = max($ultimoIntervalo[1], $minutos[$i][1]);
+            } else {
+                // Si no se superponen, simplemente añadimos el nuevo intervalo
+                $horasUnidas[] = $minutos[$i];
+            }
+        }
+    
+        // Calcular el total de horas a partir de los intervalos unidos
+        $totalMinutos = 0;
+        foreach ($horasUnidas as $intervalo) {
+            $totalMinutos += ($intervalo[1] - $intervalo[0]) / 60; // Convertir a minutos
+        }
+    
+        return $totalMinutos; // Convertir minutos a horas
     }
     public function ConsolidarRegadores($fecha)
     {

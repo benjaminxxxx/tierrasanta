@@ -8,10 +8,12 @@ use App\Models\DetalleRiego;
 use App\Models\Empleado;
 use App\Models\HorasAcumuladas;
 use App\Models\Observacion;
+use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
 class DetalleRiegoComponent extends Component
 {
+    use LivewireAlert;
     public $fecha;
     public $regadores;
     public $tipoPersonal;
@@ -196,6 +198,9 @@ class DetalleRiegoComponent extends Component
             $this->riegos[$this->regadorSeleccionado] = $this->obtenerNombreRegador($this->regadorSeleccionado);
             
         }*/
+        if(!$this->regadorSeleccionado){
+            return $this->alert('error','Debe seleccionar un Regador');
+        }
         $this->crearConsolidado($this->regadorSeleccionado);
             $this->regadorSeleccionado = null;
             $this->obtenerRiegos();

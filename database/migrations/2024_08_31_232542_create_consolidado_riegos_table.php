@@ -21,8 +21,8 @@ return new class extends Migration
             $table->time('hora_fin')->nullable();
             $table->time('total_horas_riego');
             $table->time('total_horas_jornal');
-            $table->time('total_horas_observaciones'); 
-            $table->time('total_horas_acumuladas');
+            $table->time('total_horas_observaciones')->nullable(); 
+            $table->time('total_horas_acumuladas')->nullable(); 
             $table->enum('estado',['consolidado','noconsolidado'])->default('consolidado');
             $table->timestamps();
             $table->index(['regador_documento', 'fecha']);
