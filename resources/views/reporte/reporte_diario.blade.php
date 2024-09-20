@@ -151,6 +151,12 @@
                 totalPlanilla: 0
             };
 
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+
             $.ajax({
                 url: "{{ route('reporte.reporte_diario.obtener_campo') }}", // Ruta Laravel
                 method: 'GET',
@@ -174,7 +180,8 @@
                 const data = hot.getData();
 
                 data.forEach(row => {
-                    const asistencia = row[2]; // Suponiendo que la columna de asistencia es la tercera (índice 2)
+                    const asistencia = row[
+                    2]; // Suponiendo que la columna de asistencia es la tercera (índice 2)
                     const nCuadrillas = row[3]; // Columna de número de cuadrillas
 
                     if (asistencia === 'A') totales.asistido++;
@@ -188,7 +195,8 @@
 
                     // Sumar cuadrillas
                     if (row[1] === 'Cuadrilla') {
-                        totales.cuadrillas += nCuadrillas || 0; // Asegurarse de que nCuadrillas sea un número
+                        totales.cuadrillas += nCuadrillas ||
+                        0; // Asegurarse de que nCuadrillas sea un número
                     }
                 });
 
@@ -316,7 +324,7 @@
 
                 $.post(url, {
                         fecha: fecha,
-                        _token: '{{ csrf_token() }}'
+                        _token: $('meta[name="csrf-token"]').attr('content')
                     })
                     .done(function(data) {
                         if (data.success) {
@@ -472,7 +480,7 @@
                 $.post(url, {
                         fecha: $('#fecha').val(),
                         campos: groupCount,
-                        _token: '{{ csrf_token() }}'
+                        _token: $('meta[name="csrf-token"]').attr('content')
                     })
                     .done(function(data) {
                         if (data.success) {
@@ -495,7 +503,7 @@
                         empleados: data,
                         totales: totales,
                         fecha: $('#fecha').val(),
-                        _token: '{{ csrf_token() }}'
+                        _token: $('meta[name="csrf-token"]').attr('content')
                     })
                     .done(function(result) {
                         if (result.success) {
