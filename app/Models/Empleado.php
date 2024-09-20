@@ -28,7 +28,9 @@ class Empleado extends Model
         'direccion',
         'grupo_codigo',
         'compensacion_vacacional',
-        'esta_jubilado'
+        'esta_jubilado',
+        'orden',
+        'asistencia'
     ];
     public function descuento(){
         return $this->belongsTo(DescuentoSP::class,'descuento_sp_id');

@@ -25,8 +25,9 @@ class EmpleadosComponent extends Component
     public $grupos;
     public $estado;
     public $genero;
-    protected $listeners = ['EmpleadoRegistrado' => '$refresh', 'eliminacionConfirmada','HijoRegistrado'=>'$refresh'];
-    public function mount(){
+    protected $listeners = ['EmpleadoRegistrado' => '$refresh', 'eliminacionConfirmada', 'HijoRegistrado' => '$refresh'];
+    public function mount()
+    {
         $this->cargos = Cargo::all();
         $this->descuentos = DescuentoSP::all();
         $this->grupos = Grupo::all();
@@ -44,8 +45,8 @@ class EmpleadosComponent extends Component
             });
         }
 
-         // Filtro por cargo
-         if (!empty($this->cargo_id)) {
+        // Filtro por cargo
+        if (!empty($this->cargo_id)) {
             $query->where('cargo_id', $this->cargo_id);
         }
 
@@ -73,7 +74,7 @@ class EmpleadosComponent extends Component
             $query->where('status', $this->estado);
         }
 
-        $empleados = $query->paginate(20);
+        $empleados = $query->orderBy('orden')->paginate(20);
 
         return view('livewire.empleados-component', [
             'empleados' => $empleados
@@ -133,5 +134,84 @@ class EmpleadosComponent extends Component
             'confirmButtonColor' => '#056A70', // Esto sobrescribiría la configuración global
             'cancelButtonColor' => '#2C2C2C',
         ]);
+    }
+    public function moveUp($id)
+    {
+        $empleado = Empleado::find($id);
+
+        if ($empleado) {
+            // Verificar si el empleado tiene un valor de 'orden' NULL
+            if (is_null($empleado->orden)) {
+                // Asignar valores al campo 'orden' si son NULL
+                $this->assignOrderValues();
+            } else {
+                // Mover el empleado hacia arriba si ya tiene un valor de 'orden'
+                $previous = Empleado::where('orden', '<', $empleado->orden)
+                    ->orderBy('orden', 'desc')
+                    ->first();
+
+                if ($previous) {
+                    $this->swapOrder($empleado, $previous);
+                }
+            }
+        }
+    }
+
+    public function moveDown($id)
+    {
+        $empleado = Empleado::find($id);
+
+        if ($empleado) {
+            // Verificar si el empleado tiene un valor de 'orden' NULL
+            if (is_null($empleado->orden)) {
+                // Asignar valores al campo 'orden' si son NULL
+                $this->assignOrderValues();
+            } else {
+                // Mover el empleado hacia abajo si ya tiene un valor de 'orden'
+                $next = Empleado::where('orden', '>', $empleado->orden)
+                    ->orderBy('orden', 'asc')
+                    ->first();
+
+                if ($next) {
+                    $this->swapOrder($empleado, $next);
+                }
+            }
+        }
+    }
+    public function moveAt($id, $value)
+    {
+        $empleado = Empleado::find($id);
+    
+        if ($empleado) {
+            // Asignar el valor al campo 'orden'
+            $empleado->orden = $value;
+            $empleado->save(); // Guardar los cambios en la base de datos
+        }
+    }
+    private function assignOrderValues()
+    {
+        // Inicializar el valor de orden
+        $empleados = Empleado::orderBy('id')->get();
+        $order = 1;
+
+        foreach ($empleados as $empleado) {
+            // Solo actualizar los empleados con 'orden' NULL
+            if (is_null($empleado->orden)) {
+                $empleado->orden = $order++;
+                $empleado->save();
+            }
+        }
+    }
+
+    private function swapOrder($current, $target)
+    {
+        $tempOrder = $current->orden;
+        $current->orden = $target->orden;
+        $target->orden = $tempOrder;
+
+        $current->save();
+        $target->save();
+
+        $this->empleados = Empleado::orderBy('orden')->get();
     }
 }

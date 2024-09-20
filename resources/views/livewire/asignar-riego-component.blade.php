@@ -85,8 +85,7 @@
         </x-slot>
         <x-slot name="footer">
             <x-secondary-button type="button" wire:click="closeForm" class="mr-2">Cancelar</x-secondary-button>
-            <x-button type="button" wire:click="store" class="mr-2">Guardar Horas de
-                Riego</x-button>
+            <x-button type="button" wire:click="store" class="mr-2">Guardar Horas de Riego</x-button>
         </x-slot>
     </x-dialog-modal-header>
 </div>

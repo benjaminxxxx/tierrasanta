@@ -79,37 +79,51 @@
             <x-table class="mt-5">
                 <x-slot name="thead">
                     <tr>
-                        <x-th value="N°" class="text-center" />
-                        <x-th value="Documento" class="text-center" />
+                        <x-th value="N°" />
+                        <x-th value="Documento" />
                         <x-th value="Nombre Completo" />
-                        <x-th value="Asignación Familiar" class="text-center" />
-                        <x-th value="SNP/SPP" class="text-center" />
-                        <x-th value="Cargo" class="text-center" />
-                        <x-th value="Fech. Nac." class="text-center" />
-                        <x-th value="Fech. Ingreso." class="text-center" />
-                        <x-th value="Género" class="text-center" />
-                        <x-th value="Acciones" class="text-center" />
+                        <x-th value="Orden" />
+                        <x-th value="Asignación Familiar" />
+                        <x-th value="SNP/SPP" />
+                        <x-th value="Cargo" />
+                        <x-th value="Fech. Nac." />
+                        <x-th value="Fech. Ingreso." />
+                        <x-th value="Género" />
+                        <x-th value="Acciones" />
                     </tr>
                 </x-slot>
                 <x-slot name="tbody">
                     @if ($empleados->count())
                         @foreach ($empleados as $indice => $empleado)
                             <x-tr style="background-color:{{ $empleado->grupo ? $empleado->grupo->color : '#ffffff' }}">
-                                <x-th value="{{ $indice + 1 }}" class="text-center" />
-                                <x-td value="{{ $empleado->documento }}" class="text-center" />
-                                <x-td value="{{ $empleado->nombreCompleto }}" />
-                                <x-td class="text-center">
+                                <x-th value="{{ $indice + 1 }}" />
+                                <x-td value="{{ $empleado->documento }}" />
+                                <x-td value="{{ $empleado->nombreCompleto }}"  class="!text-left" />
+                                <x-td>
+                                    <div class="flex items-center gap-2">
+                                        <x-success-button wire:click="moveUp({{ $empleado->id }})"
+                                            class="">
+                                            <i class="fa fa-arrow-up"></i>
+                                        </x-success-button>
+                                        <x-input class="!w-12 !p-2 !mt-0 text-center" value="{{ $empleado->orden }}" wire:keyup.debounce.500ms="moveAt({{ $empleado->id }}, $event.target.value)" />
+                                        <x-button wire:click="moveDown({{ $empleado->id }})"
+                                            class="">
+                                            <i class="fa fa-arrow-down"></i>
+                                        </x-button>
+                                    </div>
+                                </x-td>
+                                <x-td>
                                     <x-secondary-button wire:click="asignacionFamiliar('{{ $empleado->code }}')">
                                         {{ $empleado->tieneAsignacionFamiliar['mensaje'] }}
                                     </x-secondary-button>
                                 </x-td>
-                                <x-td value="{{ $empleado->descuento_sp_id }}" class="text-center" />
+                                <x-td value="{{ $empleado->descuento_sp_id }}" />
                                 <x-td value="{{ isset($empleado->cargo) ? $empleado->cargo->nombre : '-' }}"
-                                    class="text-center" />
-                                <x-td value="{{ $empleado->fecha_nacimiento }}" class="text-center" />
-                                <x-td value="{{ $empleado->fecha_ingreso }}" class="text-center" />
-                                <x-td value="{{ $empleado->genero }}" class="text-center" />
-                                <x-td class="text-center">
+                                    />
+                                <x-td value="{{ $empleado->fecha_nacimiento }}" />
+                                <x-td value="{{ $empleado->fecha_ingreso }}" />
+                                <x-td value="{{ $empleado->genero }}" />
+                                <x-td>
                                     <div class="flex items-center justify-center gap-2">
                                         @if ($empleado->status != 'activo')
                                             <x-warning-button wire:click="enable('{{ $empleado->code }}')">

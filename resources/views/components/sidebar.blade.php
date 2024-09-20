@@ -77,6 +77,15 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
+                    <x-nav-link-parent name="sectorReportes" href="#" :active="request()->routeIs(['reporte.reporte_diario'])">
+                        <i class="fa fa-database"></i>
+                        Reporte
+                        <x-slot name="children">
+                            <x-nav-link-child href="{{ route('reporte.reporte_diario') }}" :active="request()->routeIs('reporte.reporte_diario')">
+                                Reporte Diario de Trabajo
+                            </x-nav-link-child>
+                        </x-slot>
+                    </x-nav-link-parent>
                     <x-nav-link-parent name="sectorConsolidados" :active="request()->routeIs('consolidado.riego')">
                         <i class="fa fa-database"></i>
                         Consolidado

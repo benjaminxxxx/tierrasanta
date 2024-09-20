@@ -21,7 +21,7 @@ class DetalleHorasRiegoComponent extends Component
     public $tipoPersonal;
     public $regadorNombre;
     public $noDescontarHoraAlmuerzo;
-    protected $listeners = ['camposSeleccionados'];
+    protected $listeners = ['camposSeleccionados','generalActualizado'];
     public function mount()
     {
         //$this->regadores = Empleado::orderBy('apellido_paterno')->orderBy('apellido_materno')->orderBy('nombres')->get();
@@ -32,6 +32,9 @@ class DetalleHorasRiegoComponent extends Component
             
         }
         
+        $this->cargarRegadorHoras();
+    }
+    public function generalActualizado(){
         $this->cargarRegadorHoras();
     }
     public function render()

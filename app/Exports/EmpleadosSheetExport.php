@@ -21,18 +21,14 @@ class EmpleadosSheetExport implements FromCollection, WithHeadings, WithMapping,
     public function collection()
     {
         return Empleado::with(['grupo', 'descuento']) // Aseguramos que el grupo y descuento se carguen con los empleados
-            ->orderBy('status')
-            ->orderBy('grupo_codigo', 'desc')
-            ->orderBy('apellido_paterno')
-            ->orderBy('apellido_materno')
-            ->orderBy('nombres')
+            ->orderBy('orden')
             ->get();
     }
 
     public function headings(): array
     {
         return [
-            'N°',
+            'N° Orden',
             'Paterno',
             'Materno',
             'Nombres',
@@ -60,7 +56,7 @@ class EmpleadosSheetExport implements FromCollection, WithHeadings, WithMapping,
         $descuentoColor = $empleado->descuento->color ?? '#000000';
 
         return [
-            ++$index,
+            $empleado->orden,
             $empleado->apellido_paterno,
             $empleado->apellido_materno,
             $empleado->nombres,

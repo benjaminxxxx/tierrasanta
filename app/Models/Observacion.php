@@ -19,7 +19,17 @@ class Observacion extends Model
         'detalle_observacion',
         'horas',
         'fecha',
+        'hora_inicio',
+        'hora_fin',
         'documento',
         'tipo_empleado',
     ];
+    public function getNombreRegadorAttribute()
+    {
+        $documento = $this->documento;
+
+        return optional(Empleado::where('documento', $documento)->first())->nombre_completo
+            ?? Cuadrillero::where('dni', $documento)->value('nombre_completo')
+            ?? 'NN';
+    }
 }

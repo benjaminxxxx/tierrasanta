@@ -24,6 +24,11 @@ class EmpleadosImportExportComponent extends Component
     use LivewireAlert;
     public $file;
     public $fileExport;
+    public $empleadosNoImportados = [];
+    public $empleadosNoImportadosQuery;
+    public $isFormOpen = false;
+    public $empleadoCode;
+    protected $listeners = ['eliminacionEmlpeadoConfirmado'];
 
     public function updatedFile()
     {
@@ -70,7 +75,7 @@ class EmpleadosImportExportComponent extends Component
                 // Omitir la primera fila (encabezados)
                 continue;
             }
-
+            $orden = $row[0] ?? 999;
             $nombres = $row[3] ?? 'SIN NOMBRE';
             $apellido_paterno = $row[1] ?? null;
             $apellido_materno = $row[2] ?? null;
@@ -85,6 +90,7 @@ class EmpleadosImportExportComponent extends Component
             $compensacion_vacacional = $row[12] ?? null;
             $esta_jubilado = $row[13] ?? 0;
             $estado = $row[14] ?? 'inactivo';
+          
 
             if($fecha_ingreso!=null){
                 $fecha_ingreso = $this->validarFecha($fecha_ingreso);
@@ -163,12 +169,15 @@ class EmpleadosImportExportComponent extends Component
                     'grupo_codigo'=>$grupo_codigo,
                     'compensacion_vacacional'=>$compensacion_vacacional,
                     'esta_jubilado'=>$esta_jubilado,
-                    'status'=>$estado
+                    'status'=>$estado,
+                    'orden'=>$orden,
                 ];
 
                 $empleado = Empleado::where('documento', $documento)->first();
 
                 if ($empleado) {
+
+                    
                     // Actualizar el registro existente
                     $empleado->update($data);
                 } else {
@@ -176,6 +185,44 @@ class EmpleadosImportExportComponent extends Component
                     $data['code'] = Str::random(15);
                     Empleado::create($data);
                 }
+                $this->empleadosNoImportados[] = $documento;
+            }
+        }
+
+        $this->empleadosNoImportadosQuery = Empleado::whereNotIn('documento',$this->empleadosNoImportados)->get();
+        if($this->empleadosNoImportadosQuery->count()>0){
+            $this->isFormOpen = true;
+        }
+    }
+    public function cerrarForm(){
+        $this->isFormOpen = false;
+        $this->empleadosNoImportadosQuery = null;
+        $this->empleadosNoImportados = [];
+    }
+    public function confirmarEliminacion($code)
+    {
+        $this->empleadoCode = $code;
+
+        $this->alert('question', '¿Está seguro que desea eliminar al Empleado?', [
+            'showConfirmButton' => true,
+            'confirmButtonText' => 'Si, Eliminar',
+            'onConfirmed' => 'eliminacionEmlpeadoConfirmado',
+            'showCancelButton' => true,
+            'position' => 'center',
+            'toast' => false,
+            'timer' => null,
+            'confirmButtonColor' => '#056A70', // Esto sobrescribiría la configuración global
+            'cancelButtonColor' => '#2C2C2C',
+        ]);
+    }
+    public function eliminacionEmlpeadoConfirmado()
+    {
+        if ($this->empleadoCode) {
+            $empleado = Empleado::where('code', $this->empleadoCode);
+            if ($empleado) {
+                $empleado->delete();
+                $this->empleadoCode = null;
+                $this->cerrarForm();
             }
         }
     }
@@ -229,6 +276,8 @@ class EmpleadosImportExportComponent extends Component
 
                 if ($empleado) {
 
+                    
+
                     AsignacionFamiliar::updateOrCreate(
                         ['documento' => $familiar_documento],
                         [
@@ -242,6 +291,8 @@ class EmpleadosImportExportComponent extends Component
                 }
             }
         }
+
+
     }
     public function validarFecha($fecha)
     {

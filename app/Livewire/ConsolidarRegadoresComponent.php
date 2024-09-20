@@ -99,17 +99,26 @@ class ConsolidarRegadoresComponent extends Component
             if ($total_horas_riego != $total_horas_riego_verificacion) {
                 throw new \Exception("Las horas de riego no coinciden para el regador. Verifica los detalles de riego.");
             }
-/*
-            // Sumar los intervalos no solapados
-            foreach ($intervalos as $intervalo) {
-                // Obtener la diferencia entre el inicio y el fin en horas y minutos
-                $diff = $intervalo['inicio']->diff($intervalo['fin']);
 
-                // Convertir todo a minutos (horas * 60) + minutos
-                $total_minutos_jornal += ($diff->h * 60) + $diff->i;
-            }*/
         }
         if ($observaciones->count() > 0) {
+
+            $horaInicioMinima = $hora_inicio;
+            $horaFinMaxima = $hora_fin;
+
+            foreach ($observaciones as $observacion) {
+                // Comparamos y actualizamos los máximos si es necesario
+                if ($horaInicioMinima === null || $horaInicioMinima > $observacion->hora_inicio) {
+                    $horaInicioMinima = $observacion->hora_inicio;
+                }
+                if ($horaFinMaxima === null || $observacion->hora_fin > $horaFinMaxima) {
+                    $horaFinMaxima = $observacion->hora_fin;
+                }
+            }
+
+            $hora_inicio = $horaInicioMinima;
+            $hora_fin = $horaFinMaxima;
+
             $total_minutos_observaciones = Observacion::whereDate('fecha', $fecha)->where('documento', $documento)
                 ->selectRaw('SUM(TIME_TO_SEC(horas) / 60) as total_minutos')->value('total_minutos');
 
@@ -424,7 +433,7 @@ class ConsolidarRegadoresComponent extends Component
 
         if ($esSabado) {
             // Si es sábado, no descontar el almuerzo y agregar 60 minutos
-            $total_minutos_jornal += 60;
+            //$total_minutos_jornal += 60;
         } else {
             $consolidado = ConsolidadoRiego::where('regador_documento', $documento)
                 ->whereDate('fecha', $fecha)

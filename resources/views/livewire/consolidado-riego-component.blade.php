@@ -19,9 +19,9 @@
             <x-table class="mt-5">
                 <x-slot name="thead">
                     <tr>
-                        <x-th value="N°" class="text-center" />
+                        <x-th value="N°"/>
                         <x-th value="Documento del Regador" />
-                        <x-th value="Nombre del Regador" />
+                        <x-th value="Nombre del Regador"   class="!text-left"/>
                         <x-th value="Fecha" />
                         <x-th value="Hora de Inicio" />
                         <x-th value="Hora de Fin" />
@@ -30,24 +30,24 @@
                         <x-th value="Horas Acum. Usadas" />
                         <x-th value="Total Horas Jornal" />
                         <x-th value="Estado" />
-                        <x-th value="Acciones" class="text-center" />
+                        <x-th value="Acciones"/>
                     </tr>
                 </x-slot>
                 <x-slot name="tbody">
                     @foreach ($consolidado_riegos as $indice => $consolidado)
                         <x-tr>
-                            <x-th value="{{ $indice + 1 }}" class="text-center" />
-                            <x-td value="{{ $consolidado->regador_documento }}" class="text-center" />
-                            <x-td value="{{ $consolidado->regador_nombre }}" />
-                            <x-td value="{{ $consolidado->fecha }}" class="text-center" />
-                            <x-td value="{{ $consolidado->hora_inicio }}" class="text-center" />
-                            <x-td value="{{ $consolidado->hora_fin }}" class="text-center" />
-                            <x-td value="{{ $consolidado->total_horas_riego }}" class="text-center" />
-                            <x-td value="{{ $consolidado->total_horas_observaciones }}" class="text-center" />
-                            <x-td value="{{ $consolidado->total_horas_acumuladas }}" class="text-center" />
-                            <x-td value="{{ $consolidado->total_horas_jornal }}" class="text-center" />
+                            <x-th value="{{ $indice + 1 }}"/>
+                            <x-td value="{{ $consolidado->regador_documento }}"/>
+                            <x-td value="{{ $consolidado->regador_nombre }}"  class="!text-left"  />
+                            <x-td value="{{ $consolidado->fecha }}"/>
+                            <x-td value="{{ $consolidado->hora_inicio }}"/>
+                            <x-td value="{{ $consolidado->hora_fin }}"/>
+                            <x-td value="{{ $consolidado->total_horas_riego }}"/>
+                            <x-td value="{{ $consolidado->total_horas_observaciones }}"/>
+                            <x-td value="{{ $consolidado->total_horas_acumuladas }}"/>
+                            <x-td value="{{ $consolidado->total_horas_jornal }}"/>
                             <x-td value="{{ $consolidado->estado == 'noconsolidado' ? 'No Consolidado' : 'Consolidado' }}"
-                                class="text-center" />
+                               />
                             <x-td>
                                 @if ($consolidado->estado == 'noconsolidado')
                                     <x-button wire:click="consolidarRegistro">

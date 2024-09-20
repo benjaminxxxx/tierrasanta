@@ -23,4 +23,12 @@ class DetalleRiego extends Model
         'hora_fin',
         'total_horas',
     ];
+    public function getNombreRegadorAttribute()
+    {
+        $documento = $this->regador;
+
+        return optional(Empleado::where('documento', $documento)->first())->nombre_completo
+            ?? Cuadrillero::where('dni', $documento)->value('nombre_completo')
+            ?? 'NN';
+    }
 }

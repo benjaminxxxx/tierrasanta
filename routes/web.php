@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CampoController;
+use App\Http\Controllers\ReporteDiarioController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AsistenciaPlanillaController;
 
@@ -59,4 +60,13 @@ Route::middleware([
 
     //Planilla
     Route::get('/planilla/asistencia/cargar-asistencias', [AsistenciaPlanillaController::class, 'cargarAsistencias'])->name('planilla.asistencia.cargar_asistencias');
+
+    //REPORTE
+    Route::get('/reporte/reporte-diario', [ReporteDiarioController::class, 'index'])->name('reporte.reporte_diario');
+    Route::post('/reporte/reporte-diario/importar-empleados', [ReporteDiarioController::class, 'ImportarEmpleados'])->name('reporte.reporte_diario.importar_empleados');
+    Route::post('/reporte/reporte-diario/guardar-empleados', [ReporteDiarioController::class, 'GuardarInformacion'])->name('reporte.reporte_diario.guardar_informacion');
+    Route::post('/reporte/reporte-diario/actualizar-campos', [ReporteDiarioController::class, 'ActualizarCampos'])->name('reporte.reporte_diario.actualizar_campos');
+    Route::get('/reporte/reporte-diario/obtener-campos', [ReporteDiarioController::class, 'ObtenerCampos'])->name('reporte.reporte_diario.obtener_campos');
+    Route::get('/reporte/reporte-diario/obtener-campo', [ReporteDiarioController::class, 'ObtenerCampo'])->name('reporte.reporte_diario.obtener_campo');
+
 });
