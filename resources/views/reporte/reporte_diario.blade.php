@@ -512,11 +512,12 @@
                                 }
                             });
                         } else {
+                            console.log(result);
                             Swal.fire({
                                 toast: true,
                                 position: 'top-end', // Puedes cambiar la posición
                                 icon: 'error', // Tipo de alerta (success, error, warning, info)
-                                title: 'Error al guardar la información: ' + result.message,
+                                title: 'Error: ' + result.message,
                                 showConfirmButton: false, // No mostrar botón de confirmación
                                 timer: 2000,
                                 didOpen: (toast) => {
