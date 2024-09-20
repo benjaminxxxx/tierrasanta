@@ -528,6 +528,7 @@
                         }
                     })
                     .fail(function(error) {
+                        console.log(error);
                         Swal.fire({
                             toast: true,
                             position: 'top-end', // Puedes cambiar la posición

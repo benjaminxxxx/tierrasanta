@@ -202,7 +202,7 @@ class ReporteDiarioController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error al guardar la información: ' . $e->getMessage()
+                'message' => $e->getMessage()
             ]);
         }
     }
