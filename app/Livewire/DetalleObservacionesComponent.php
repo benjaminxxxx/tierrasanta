@@ -187,9 +187,6 @@ class DetalleObservacionesComponent extends Component
     }
     public function eliminarObservacion($indice)
     {
-        //$this->dispatch('Desconsolidar',$this->fecha);
-        //Observacion::find($id)->delete();
         unset($this->observacionesArray[$indice]);
-
     }
 }

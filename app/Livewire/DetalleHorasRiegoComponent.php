@@ -16,31 +16,46 @@ class DetalleHorasRiegoComponent extends Component
     public $regador;
     public $fecha;
     public $campos = [];
+    public $originalCamposArray = [];
     public $activarCopiarExcel;
     public $informacionExcel;
     public $tipoPersonal;
     public $regadorNombre;
     public $noDescontarHoraAlmuerzo;
+    public $cambiosRealizados = false;
     protected $listeners = ['camposSeleccionados','generalActualizado'];
     public function mount()
     {
-        //$this->regadores = Empleado::orderBy('apellido_paterno')->orderBy('apellido_materno')->orderBy('nombres')->get();
         if($this->fecha && $this->regador){
             $detalle = ConsolidadoRiego::whereDate('fecha',$this->fecha)->where('regador_documento',$this->regador)->first();
             $this->noDescontarHoraAlmuerzo = $detalle ? $detalle->descuento_horas_almuerzo==1?true:false:false;
-            
-            
+            $this->cargarRegadorHoras();
+            $this->originalCamposArray = $this->campos;
         }
         
-        $this->cargarRegadorHoras();
+        
     }
-    public function generalActualizado(){
-        $this->cargarRegadorHoras();
-    }
+    
     public function render()
     {
+        
+        if ($this->regador && $this->fecha) {
+            $this->compararOriginal();
+        }
         return view('livewire.detalle-horas-riego-component');
     }
+
+    public function compararOriginal()
+    {
+        $cambiosRealizados = $this->originalCamposArray !== $this->campos;
+        $this->cambiosRealizados = $cambiosRealizados;
+    }
+
+    public function generalActualizado(){
+      
+        $this->cargarRegadorHoras();
+    }
+    
     public function camposSeleccionados($data)
     {
         if ($data['documento'] != $this->regador) {
@@ -61,6 +76,7 @@ class DetalleHorasRiegoComponent extends Component
                     'inicio' => $campoExistente['inicio'],  // Transferimos 'inicio' del campo existente
                     'fin' => $campoExistente['fin'],        // Transferimos 'fin' del campo existente
                     'total' => $campoExistente['total'],    // Transferimos 'total' del campo existente
+                    'sh' => $campoExistente['sh'],
                 ];
             } else {
                 // Si no existe, creamos uno nuevo con valores nulos
@@ -69,14 +85,12 @@ class DetalleHorasRiegoComponent extends Component
                     'inicio' => null,
                     'fin' => null,
                     'total' => null,
+                    'sh'=>false
                 ];
             }
         }
 
-        // Asignar el array asociativo a la propiedad
         $this->campos = $camposAsociativos;
-
-        // Llamar al método para cargar las horas del regador
         $this->cargarRegadorHoras();
     }
     public function store()
@@ -102,12 +116,13 @@ class DetalleHorasRiegoComponent extends Component
                 $lineas = explode("\n", trim($this->informacionExcel)); // Separar por líneas
                 foreach ($lineas as $linea) {
                     $datos = preg_split('/\s+/', trim($linea)); // Separar por espacios o tabulaciones
-                    if (count($datos) === 4) { // Solo procesar líneas con 4 columnas (campo, hora_inicio, hora_fin, total_horas)
+                    if (count($datos) > 3) { // Solo procesar líneas con 4 columnas (campo, hora_inicio, hora_fin, total_horas)
                         $campos[] = [
                             'nombre' => $datos[0],
                             'inicio' => $datos[1],
                             'fin' => $datos[2],
                             'total' => $datos[3],
+                            'sh'=>isset($datos[4])?$datos[4]?true:false:false
                         ];
                     }
                 }
@@ -129,6 +144,7 @@ class DetalleHorasRiegoComponent extends Component
                             // Convertir las horas de inicio y fin a objetos Carbon
                             $horaInicio = Carbon::createFromFormat('H:i', $campo['inicio']);
                             $horaFin = Carbon::createFromFormat('H:i', $campo['fin']);
+                            $sh = $campo['sh']?1:0;
 
                             // Validar que la hora de fin sea mayor que la hora de inicio
                             if ($horaFin <= $horaInicio) {
@@ -148,6 +164,7 @@ class DetalleHorasRiegoComponent extends Component
                                 'hora_inicio' => $horaInicio->format('H:i'),
                                 'hora_fin' => $horaFin->format('H:i'),
                                 'total_horas' => $totalHoras,
+                                'sh'=>$sh
                             ]);
                         } catch (\Exception $e) {
                             return $this->alert('error', $e->getMessage());
@@ -156,6 +173,7 @@ class DetalleHorasRiegoComponent extends Component
                 }
             }
 
+            $this->originalCamposArray = $this->campos;
             $this->activarCopiarExcel = false;
             $this->informacionExcel = null;
 
@@ -190,8 +208,9 @@ class DetalleHorasRiegoComponent extends Component
             // Realizar la conversión de campos a texto para informaciónExcel
             $lineas = [];
             foreach ($this->campos as $campo) {
+                $sh = isset($campo['sh'])?$campo['sh']?'contado':'nocontado':'nocontado';
                 // Concatenar los valores del campo como un solo string separado por espacios
-                $lineas[] = "{$campo['nombre']} {$campo['inicio']} {$campo['fin']} {$campo['total']}";
+                $lineas[] = "{$campo['nombre']} {$campo['inicio']} {$campo['fin']} {$campo['total']} {$sh}";
             }
             // Convertir las líneas en un texto con saltos de línea
             $this->informacionExcel = implode("\n", $lineas);
@@ -200,12 +219,13 @@ class DetalleHorasRiegoComponent extends Component
             $lineas = explode("\n", trim($this->informacionExcel)); // Separar por líneas
             foreach ($lineas as $linea) {
                 $datos = preg_split('/\s+/', trim($linea)); // Separar por espacios o tabulaciones
-                if (count($datos) === 4) { // Solo procesar líneas con 4 columnas (campo, hora_inicio, hora_fin, total_horas)
+                if (count($datos) > 3) { // Solo procesar líneas con 4 columnas (campo, hora_inicio, hora_fin, total_horas)
                     $campos[] = [
                         'nombre' => $datos[0],
                         'inicio' => $datos[1],
                         'fin' => $datos[2],
                         'total' => $datos[3],
+                        'sh' => isset($datos[4])?$datos[4]=='contado'?true:false:false,
                     ];
                 }
             }
@@ -248,6 +268,7 @@ class DetalleHorasRiegoComponent extends Component
                 'inicio' => Carbon::parse($riego->hora_inicio)->format('H:i'), // Formato de hora
                 'fin' => Carbon::parse($riego->hora_fin)->format('H:i'), // Formato de hora
                 'total' => Carbon::parse($riego->total_horas)->format('H:i'), // Formato de total horas
+                'sh'=>$riego->sh==1?true:false
             ];
         })->keyBy('nombre')->toArray(); // Usar 'keyBy' para indexar por nombre del campo
 
@@ -260,6 +281,7 @@ class DetalleHorasRiegoComponent extends Component
                     'inicio' => $campo['inicio'],
                     'fin' => $campo['fin'],
                     'total' => $campo['total'],
+                    'sh' => $campo['sh'],
                 ];
             }
         }
@@ -277,44 +299,14 @@ class DetalleHorasRiegoComponent extends Component
     public function resetear()
     {
         $this->dispatch('Desconsolidar', $this->fecha);
-        //$this->dispatch('RefrescarMapa');
-    }
-    public function clacularTotal($nombreCampo)
-    {
-        $key = null;
-        foreach ($this->campos as $index => $campo) {
-            if ($campo['nombre'] === $nombreCampo) {
-                $key = $index;
-                break;
-            }
-        }
-
-        if ($key !== null) {
-            $inicio = $this->campos[$key]['inicio'] ?? null;
-            $fin = $this->campos[$key]['fin'] ?? null;
-
-            if ($inicio && $fin) {
-                try {
-                    $hora_inicio = new \DateTime($inicio);
-                    $hora_fin = new \DateTime($fin);
-                    $intervalo = $hora_inicio->diff($hora_fin);
-                    $this->campos[$key]['total'] = $intervalo->format('%H:%I');
-                } catch (\Exception $e) {
-                    // Manejar errores en el formato de tiempo
-                    $this->campos[$key]['total'] = '00:00';
-                    \Log::error('Error al calcular el total: ' . $e->getMessage());
-                }
-            } else {
-                // Si falta alguno de los tiempos, dejar el total en blanco o en un valor predeterminado
-                $this->campos[$key]['total'] = '00:00';
-            }
-        }
-
-
     }
     public function seleccionarCampos($documento)
     {
         $this->dispatch('abrirParaSeleccionarCampos', $documento, $this->campos);
     }
-
+    public function cancelarCambios()
+    {
+        $this->campos = $this->originalCamposArray;
+        $this->cambiosRealizados = false;
+    }
 }

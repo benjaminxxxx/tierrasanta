@@ -181,7 +181,7 @@
 
                 data.forEach(row => {
                     const asistencia = row[
-                    2]; // Suponiendo que la columna de asistencia es la tercera (índice 2)
+                        2]; // Suponiendo que la columna de asistencia es la tercera (índice 2)
                     const nCuadrillas = row[3]; // Columna de número de cuadrillas
 
                     if (asistencia === 'A') totales.asistido++;
@@ -196,7 +196,7 @@
                     // Sumar cuadrillas
                     if (row[1] === 'Cuadrilla') {
                         totales.cuadrillas += nCuadrillas ||
-                        0; // Asegurarse de que nCuadrillas sea un número
+                            0; // Asegurarse de que nCuadrillas sea un número
                     }
                 });
 
@@ -224,35 +224,35 @@
                 return [{
                         data: groupIndex * 4 + 4,
                         type: 'dropdown',
-                        width: 100,
+                        width: 70,
                         className: 'text-center',
                         source: campos,
-                        title: `CAMPO ${groupIndex+1}`
+                        title: `CAM. ${groupIndex+1}`
                     },
                     {
                         data: groupIndex * 4 + 5,
                         type: 'text',
-                        width: 100,
+                        width: 70,
                         className: 'text-center',
-                        title: `LABOR ${groupIndex+1}`
+                        title: `LAB. ${groupIndex+1}`
                     },
                     {
                         data: groupIndex * 4 + 6,
                         type: 'time',
-                        width: 100,
+                        width: 70,
                         timeFormat: 'HH:mm',
                         correctFormat: true,
                         className: 'text-center',
-                        title: `ENTRADA ${groupIndex+1}`
+                        title: `ENT. ${groupIndex+1}`
                     },
                     {
                         data: groupIndex * 4 + 7,
                         type: 'time',
-                        width: 100,
+                        width: 70,
                         timeFormat: 'HH:mm',
                         correctFormat: true,
                         className: 'text-center',
-                        title: `SALIDA ${groupIndex+1}`
+                        title: `SAL. ${groupIndex+1}`
                     }
                 ];
             }
@@ -262,7 +262,7 @@
                 columns = [{
                         data: 0,
                         type: 'text',
-                        width: 150,
+                        width: 120,
                         title: 'DOCUMENTO',
                         className: 'text-center',
                         readOnly: true
@@ -270,7 +270,7 @@
                     {
                         data: 1,
                         type: 'text',
-                        width: 380,
+                        width: 270,
                         title: 'APELLIDOS Y NOMBRES'
                     },
                     {
@@ -284,8 +284,8 @@
                     {
                         data: 3,
                         type: 'numeric',
-                        width: 100,
-                        title: 'N° CUADR.',
+                        width: 50,
+                        title: 'N° C.',
                         className: '!text-center'
                     }
                 ];
@@ -499,57 +499,70 @@
                 const data = hot.getData();
                 const url = "{{ route('reporte.reporte_diario.guardar_informacion') }}";
                 //console.log(data);
-                $.post(url, {
-                        empleados: data,
-                        totales: totales,
-                        fecha: $('#fecha').val(),
-                        _token: $('meta[name="csrf-token"]').attr('content')
-                    })
-                    .done(function(result) {
+                const requestData = {
+                    empleados: JSON.stringify(data), // Serializamos el array
+                    totales: JSON.stringify(
+                    totales), // Asegúrate de que totales también sea serializable
+                    fecha: $('#fecha').val(),
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                };
+
+                $.ajax({
+                    url: url,
+                    type: 'POST',
+                    data: requestData,
+                    success: function(result) {
                         if (result.success) {
                             Swal.fire({
                                 toast: true,
-                                position: 'top-end', // Puedes cambiar la posición
-                                icon: 'success', // Tipo de alerta (success, error, warning, info)
+                                position: 'top-end',
+                                icon: 'success',
                                 title: 'Información guardada correctamente',
-                                showConfirmButton: false, // No mostrar botón de confirmación
+                                showConfirmButton: false,
                                 timer: 2000,
                                 didOpen: (toast) => {
-                                    toast.addEventListener('mouseenter', Swal.stopTimer);
-                                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                                    toast.addEventListener('mouseenter', Swal
+                                        .stopTimer);
+                                    toast.addEventListener('mouseleave', Swal
+                                        .resumeTimer);
                                 }
                             });
                         } else {
                             console.log(result);
                             Swal.fire({
                                 toast: true,
-                                position: 'top-end', // Puedes cambiar la posición
-                                icon: 'error', // Tipo de alerta (success, error, warning, info)
+                                position: 'top-end',
+                                icon: 'error',
                                 title: 'Error: ' + result.message,
-                                showConfirmButton: false, // No mostrar botón de confirmación
+                                showConfirmButton: false,
                                 timer: 2000,
                                 didOpen: (toast) => {
-                                    toast.addEventListener('mouseenter', Swal.stopTimer);
-                                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                                    toast.addEventListener('mouseenter', Swal
+                                        .stopTimer);
+                                    toast.addEventListener('mouseleave', Swal
+                                        .resumeTimer);
                                 }
                             });
                         }
-                    })
-                    .fail(function(error) {
-                        console.log(error);
+                    },
+                    error: function(xhr, status, error) {
+                        console.log(xhr);
                         Swal.fire({
                             toast: true,
-                            position: 'top-end', // Puedes cambiar la posición
-                            icon: 'error', // Tipo de alerta (success, error, warning, info)
-                            title: 'Error al guardar la información: ' + error,
-                            showConfirmButton: false, // No mostrar botón de confirmación
+                            position: 'top-end',
+                            icon: 'error',
+                            title: 'Error al guardar la información: Verifique que el formato de la hora sea el correcto o cualquier otro campo',
+                            showConfirmButton: false,
                             timer: 2000,
                             didOpen: (toast) => {
-                                toast.addEventListener('mouseenter', Swal.stopTimer);
-                                toast.addEventListener('mouseleave', Swal.resumeTimer);
+                                toast.addEventListener('mouseenter', Swal
+                                    .stopTimer);
+                                toast.addEventListener('mouseleave', Swal
+                                    .resumeTimer);
                             }
                         });
-                    });
+                    }
+                });
             });
 
             // Inicialmente obtener los campos y empleados para la fecha actual

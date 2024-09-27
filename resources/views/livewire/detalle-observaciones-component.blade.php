@@ -166,13 +166,12 @@
                             @endif
                         </tbody>
                     </table>
-                    <a href="#"
-                        class="text-orange-600 hover:text-orange-700 text-md font-bold mt-3 text-left inline-block float-left"
-                        wire:click.prevent="agregarObservacion">[Agregar Observación]</a>
+
+                    <x-link href="#" wire:click.prevent="agregarObservacion">[Agregar Observación]</x-link>
 
                     <div class="flex items-end justify-end text-left mt-5">
 
-                        <div class="ml-2">
+                        <div>
                             @if ($cambiosRealizados)
                                 <x-danger-button type="button" wire:click="cancelarCambios"
                                     class="ml-2">

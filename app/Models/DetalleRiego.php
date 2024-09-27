@@ -22,6 +22,7 @@ class DetalleRiego extends Model
         'hora_inicio',
         'hora_fin',
         'total_horas',
+        'sh'
     ];
     public function getNombreRegadorAttribute()
     {

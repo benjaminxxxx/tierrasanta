@@ -309,6 +309,7 @@ class DetalleRiegoComponent extends Component
             $hora_fin = $row[5] ?? null;
             $total_horas = $row[6] ?? null;
             
+            
             if(!$fecha){
                 throw new Exception("La fila {$index} no contiene una fecha válida.");
             }
@@ -319,6 +320,7 @@ class DetalleRiegoComponent extends Component
             $total_horas_formatted = substr($total_horas, 0, 5);
             $hora_inicio_formatted = substr($hora_inicio, 0, 5);
             $hora_fin_formatted = substr($hora_fin, 0, 5);
+            
             $horaInicio = null;
             $horaFin = null;
             $totalHoras = null;
@@ -421,6 +423,7 @@ class DetalleRiegoComponent extends Component
             $hora_inicio = $row[4] ?? null;
             $hora_fin = $row[5] ?? null;
             $total_horas = $row[6] ?? null;
+            $sh = isset($row[7])?mb_strtoupper($row[7])=='SI'?1:0:0;
             
             // Procesar e insertar los datos
             DetalleRiego::create([
@@ -430,11 +433,12 @@ class DetalleRiegoComponent extends Component
                 'hora_inicio' => $hora_inicio,
                 'hora_fin' => $hora_fin,
                 'total_horas' => $total_horas,
+                'sh'=>$sh
             ]);
 
 
         }
-        
+    
     }
 
 

@@ -56,13 +56,14 @@ class ConsolidarRegadoresComponent extends Component
         $total_minutos_acumulados = 0;
         $hora_inicio = null;
         $hora_fin = null;
+        $intervalos = [];
 
         $observaciones = Observacion::whereDate('fecha', $fecha)->where('documento', $documento)->get();
         $horasAcumuladas = HorasAcumuladas::whereDate('fecha_uso', $fecha)->where('documento', $documento)->get();
 
         $detalles = DetalleRiego::whereDate('fecha', $fecha)->where('regador', $documento)->get();
-        $total_minutos = DetalleRiego::whereDate('fecha', $fecha)->where('regador', $documento)->selectRaw('SUM(TIME_TO_SEC(total_horas) / 60) as total_minutos')->value('total_minutos');
-        $total_horas_riego_verificacion = gmdate('H:i', $total_minutos * 60);
+        //$total_minutos = DetalleRiego::whereDate('fecha', $fecha)->where('sh','0')->where('regador', $documento)->selectRaw('SUM(TIME_TO_SEC(total_horas) / 60) as total_minutos')->value('total_minutos');
+        //$total_horas_riego_verificacion = gmdate('H:i', $total_minutos * 60);
 
         if ($detalles->count() > 0) {
             $horaInicioMinima = null;
@@ -78,10 +79,14 @@ class ConsolidarRegadoresComponent extends Component
                     $horaFinMaxima = $registro->hora_fin;
                 }
 
-                $intervalos[] = [
-                    'hora_inicio'=>$registro->hora_inicio,
-                    'hora_fin'=>$registro->hora_fin,
-                ];
+                
+                if($registro->sh=='0'){
+                    //Solo las horas con haberes deben ser consideradas para el jornal
+                    $intervalos[] = [
+                        'hora_inicio'=>$registro->hora_inicio,
+                        'hora_fin'=>$registro->hora_fin,
+                    ];
+                }
 
                 $inicio = new \DateTime($registro->hora_inicio);
                 $fin = new \DateTime($registro->hora_fin);
@@ -95,10 +100,12 @@ class ConsolidarRegadoresComponent extends Component
            
 
             $total_horas_riego = gmdate('H:i', $total_horas_riego * 3600);
-
+            /*
+            Se quita la siguiente verificacion
+            Ahora con el campo sh los trabajadores podran tener horas de riego registrado sin considerar sus horas de jornal
             if ($total_horas_riego != $total_horas_riego_verificacion) {
                 throw new \Exception("Las horas de riego no coinciden para el regador. Verifica los detalles de riego.");
-            }
+            }*/
 
         }
         if ($observaciones->count() > 0) {
@@ -163,6 +170,10 @@ class ConsolidarRegadoresComponent extends Component
     }
     public function calcularMinutosJornalParcial($intervalos) {
         // Convertir los intervalos de tiempo a minutos
+        if(count($intervalos)==0){
+            return 0;
+        }
+        
         $minutos = [];
         foreach ($intervalos as $intervalo) {
             $inicio = strtotime($intervalo['hora_inicio']);
@@ -208,196 +219,7 @@ class ConsolidarRegadoresComponent extends Component
             foreach ($consolidados as $consolidado) {
                 $this->consolidarRegador($consolidado->regador_documento, $fecha);
             }
-            /*
-                        $detalle_riegos = DetalleRiego::whereDate('fecha', $fecha)->get();
-                        $observaciones = Observacion::whereDate('fecha', $fecha)->get();
-                        $horasAcumuladas = HorasAcumuladas::whereDate('fecha_uso', $fecha)->get();
-
-                        $informaciones = [];
-
-                        foreach ($detalle_riegos as $detalle_riego) {
-                            $informaciones[$detalle_riego->regador]['detalle_riegos'] = $detalle_riegos;
-                        }
-                        foreach ($observaciones as $observacion) {
-                            $informaciones[$observacion->documento]['observaciones'] = $observaciones;
-                        }
-                        foreach ($horasAcumuladas as $horasAcumulada) {
-                            $informaciones[$horasAcumulada->documento]['horas_acumuladas'] = $horasAcumuladas;
-                        }
-
-                        if (count($informaciones) == 0) {
-                            $this->eliminarConsolidadoExistente($fecha);
-                        }
-
-
-
-                        $contador = 0;
-
-                        foreach ($informaciones as $documento => $informacion) {
-
-                            $contador++;
-
-                            $nombre = $this->obtenerNombreRegador($documento);
-                            $total_horas_riego = 0;
-                            $total_horas_observaciones = null;
-                            $total_horas_acumuladas = null;
-                            $total_minutos_jornal = 0;
-                            $total_minutos_observaciones = 0;
-                            $total_minutos_acumulados = 0;
-                            $hora_inicio = null;
-                            $hora_fin = null;
-
-                            if (array_key_exists('detalle_riegos', $informacion)) {
-
-                                //$query = $informacion['detalle_riegos']->where('regador', $documento)->orderBy('hora_inicio');
-
-                                // Obtener los detalles
-                                $detalles = DetalleRiego::whereDate('fecha', $fecha)->where('regador', $documento)->get();
-                                $total_minutos = DetalleRiego::whereDate('fecha', $fecha)->where('regador', $documento)->selectRaw('SUM(TIME_TO_SEC(total_horas) / 60) as total_minutos')->value('total_minutos');
-                                $total_horas_riego_verificacion = gmdate('H:i', $total_minutos * 60);
-
-
-
-                                if ($detalles->count() == 0) {
-                                    continue;
-                                }
-
-                                $horaInicioMinima = null;
-                                $horaFinMaxima = null;
-
-                                foreach ($detalles as $registro) {
-                                    // Comparamos y actualizamos los máximos si es necesario
-                                    if ($horaInicioMinima === null || $horaInicioMinima > $registro->hora_inicio) {
-                                        $horaInicioMinima = $registro->hora_inicio;
-                                    }
-                                    if ($horaFinMaxima === null || $registro->hora_fin > $horaFinMaxima) {
-                                        $horaFinMaxima = $registro->hora_fin;
-                                    }
-                                }
-
-                                $hora_inicio = $horaInicioMinima;
-                                $hora_fin = $horaFinMaxima;
-
-                                // Cálculo del total de horas riego considerando los solapamientos
-                                $total_horas_riego = 0;
-                                $total_horas_jornal = 0;
-                                $intervalos = [];
-
-                                foreach ($detalles as $detalle) {
-                                    $inicio = new \DateTime($detalle->hora_inicio);
-                                    $fin = new \DateTime($detalle->hora_fin);
-                                    $diff = $inicio->diff($fin);
-                                    $total_horas_riego += $diff->h + ($diff->i / 60);
-
-                                    // Verificar si hay solapamientos
-                                    $nuevo_intervalo = ['inicio' => $inicio, 'fin' => $fin];
-
-
-
-                                    $solapado = false;
-
-                                    foreach ($intervalos as $key => $intervalo) {
-                                        if ($inicio <= $intervalo['fin'] && $fin >= $intervalo['inicio']) {
-                                            // Actualizar el intervalo solapado
-                                            $intervalos[$key]['inicio'] = min($intervalo['inicio'], $inicio);
-                                            $intervalos[$key]['fin'] = max($intervalo['fin'], $fin);
-                                            $solapado = true;
-                                            break;
-                                        }
-                                    }
-
-                                    if (!$solapado) {
-                                        // Añadir un nuevo intervalo si no hay solapamientos
-                                        $intervalos[] = $nuevo_intervalo;
-                                    }
-                                }
-
-                                $total_horas_riego = gmdate('H:i', $total_horas_riego * 3600);
-
-                                if ($total_horas_riego != $total_horas_riego_verificacion) {
-                                    throw new \Exception("Las horas de riego no coinciden para el regador {$nombre}. Verifica los detalles de riego.");
-                                }
-
-                                // Sumar los intervalos no solapados
-                                foreach ($intervalos as $intervalo) {
-                                    // Obtener la diferencia entre el inicio y el fin en horas y minutos
-                                    $diff = $intervalo['inicio']->diff($intervalo['fin']);
-
-                                    // Convertir todo a minutos (horas * 60) + minutos
-                                    $total_minutos_jornal += ($diff->h * 60) + $diff->i;
-                                }
-
-
-                            }
-
-                            if (array_key_exists('observaciones', $informacion)) {
-
-                                $total_minutos_observaciones = Observacion::whereDate('fecha', $fecha)->where('documento', $documento)
-                                    ->selectRaw('SUM(TIME_TO_SEC(horas) / 60) as total_minutos')->value('total_minutos');
-
-                                $total_horas_observaciones = $this->convertirMinutosAHora($total_minutos_observaciones);
-                            }
-
-                            if (array_key_exists('horas_acumuladas', $informacion)) {
-
-                                $total_minutos_acumulados = HorasAcumuladas::whereDate('fecha_uso', $fecha)->where('documento', $documento)
-                                    ->sum('minutos_acomulados');
-
-                                $total_horas_acumuladas = $this->convertirMinutosAHora($total_minutos_acumulados);
-                            }
-
-                            $minutos_jornal = $this->calcularMinutosJornal($total_minutos_jornal, $total_minutos_observaciones, $total_minutos_acumulados, $fecha, $documento);
-
-                            if ($minutos_jornal < 0) {
-                                $minutos_jornal = 0;
-                            }
-
-                            $horas_maxima_jornal = 480;
-
-                            if ($minutos_jornal > $horas_maxima_jornal) {
-                                $minutos_adicionales = $minutos_jornal - $horas_maxima_jornal;
-                                $minutos_jornal = $horas_maxima_jornal;
-                                $this->procesarHorasAcumuladas($documento, $fecha, $minutos_adicionales);
-                            } else {
-                                HorasAcumuladas::where('documento', $documento)->whereDate('fecha_acumulacion', $fecha)->delete();
-                            }
-
-                            $total_horas_jornal = $this->convertirMinutosAHora($minutos_jornal);
-
-                            $consolidadoRiego = ConsolidadoRiego::firstOrNew(
-                                ['regador_documento' => $documento, 'fecha' => $fecha]
-                            );
-
-                            // Asigna los valores a los campos, si ya existe un registro, estos campos serán actualizados
-                            $consolidadoRiego->regador_nombre = $nombre; // Aseguramos que siempre se actualice el nombre del regador
-                            $consolidadoRiego->hora_inicio = $hora_inicio;
-                            $consolidadoRiego->hora_fin = $hora_fin;
-                            $consolidadoRiego->total_horas_riego = $total_horas_riego;
-                            $consolidadoRiego->total_horas_observaciones = $total_horas_observaciones;
-                            $consolidadoRiego->total_horas_acumuladas = $total_horas_acumuladas;
-                            $consolidadoRiego->total_horas_jornal = $total_horas_jornal; // Sumar horas adicionales
-                            $consolidadoRiego->estado = 'consolidado';
-
-                            // Guarda o actualiza el registro
-                            $consolidadoRiego->save();
-
-                            /*
-                            ConsolidadoRiego::create([
-                                'regador_documento' => $documento,
-                                'regador_nombre' => $nombre, // Asumiendo que tienes el nombre del regador
-                                'fecha' => $fecha,
-                                'hora_inicio' => $hora_inicio,
-                                'hora_fin' => $hora_fin,
-                                'total_horas_riego' => $total_horas_riego,
-                                'total_horas_observaciones' => $total_horas_observaciones,
-                                'total_horas_acumuladas' => $total_horas_acumuladas,
-                                'total_horas_jornal' => $total_horas_jornal, // Sumar horas adicionales
-                                'estado' => 'consolidado',
-                            ]);
-
-
-                        }
-                        */
+         
             $this->dispatch('RefrescarMapa');
             $this->alert('success', "Detalles Consolidados con éxito");
 

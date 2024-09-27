@@ -48,7 +48,8 @@ class DetalleRiegoSheetExport implements FromCollection, WithHeadings, WithMappi
             'CAMPO',
             'HORA INICIO',
             'HORA FIN',
-            'TOTAL HORAS'
+            'TOTAL HORAS',
+            'SIN HABERES'
         ];
     }
 
@@ -61,13 +62,14 @@ class DetalleRiegoSheetExport implements FromCollection, WithHeadings, WithMappi
             $detalles->campo,
             $detalles->hora_inicio,
             $detalles->hora_fin,
-            $detalles->total_horas
+            $detalles->total_horas,
+            $detalles->sh=='1'?'SI':'NO',
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getStyle('A1:G1')->applyFromArray([
+        $sheet->getStyle('A1:H1')->applyFromArray([
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
                 'startColor' => [
@@ -83,7 +85,7 @@ class DetalleRiegoSheetExport implements FromCollection, WithHeadings, WithMappi
             ],
         ]);
 
-        $sheet->getStyle('A1:G' . ($sheet->getHighestRow()))->applyFromArray([
+        $sheet->getStyle('A1:H' . ($sheet->getHighestRow()))->applyFromArray([
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
@@ -109,8 +111,7 @@ class DetalleRiegoSheetExport implements FromCollection, WithHeadings, WithMappi
         $sheet->getStyle('E')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('F')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('G')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-
-
+        $sheet->getStyle('H')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
 
         return [];
     }

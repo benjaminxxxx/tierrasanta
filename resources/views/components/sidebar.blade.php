@@ -77,12 +77,15 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorReportes" href="#" :active="request()->routeIs(['reporte.reporte_diario'])">
+                    <x-nav-link-parent name="sectorReportes" href="#" :active="request()->routeIs(['reporte.reporte_diario','reporte.reporte_diario_riego'])">
                         <i class="fa fa-database"></i>
-                        Reporte
+                        Reporte Diario
                         <x-slot name="children">
                             <x-nav-link-child href="{{ route('reporte.reporte_diario') }}" :active="request()->routeIs('reporte.reporte_diario')">
-                                Reporte Diario de Trabajo
+                                De Trabajadores
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('reporte.reporte_diario_riego') }}" :active="request()->routeIs('reporte.reporte_diario_riego')">
+                                De Regadores
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
@@ -95,7 +98,7 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorConfiguracion" :active="request()->routeIs('configuracion')">
+                    <x-nav-link-parent name="sectorConfiguracion" :active="request()->routeIs(['configuracion','descuentos_afp','configuracion.labores_riego'])">
                         <i class="fa fa-cogs"></i>
                         Configuración
                         <x-slot name="children">
@@ -106,6 +109,9 @@
                             <x-nav-link-child href="{{ route('descuentos_afp') }}" :active="request()->routeIs('descuentos_afp')">
                              
                                 Descuentos de AFP
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('configuracion.labores_riego') }}" :active="request()->routeIs('configuracion.labores_riego')">
+                                Labores en Riego
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>

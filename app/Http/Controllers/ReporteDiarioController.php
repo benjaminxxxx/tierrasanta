@@ -17,12 +17,14 @@ class ReporteDiarioController extends Controller
     {
         return view('reporte.reporte_diario');
     }
+    public function riego(){
+        return view('reporte.reporte_diario_riego');
+    }
     public function GuardarInformacion(Request $request)
     {
-        // Obtener los datos del grid enviados en la solicitud
-        $datos = $request->input('empleados');
         $fecha = $request->input('fecha');
-        $totales = $request->input('totales');
+        $datos = json_decode($request->input('empleados'), true);
+        $totales = json_decode($request->input('totales'), true);
 
         // Validar que se recibieron datos
         if (empty($datos)) {
@@ -32,6 +34,7 @@ class ReporteDiarioController extends Controller
             ]);
         }
 
+        
         // Iniciar transacción para asegurar integridad de datos
         \DB::beginTransaction();
 
@@ -58,7 +61,8 @@ class ReporteDiarioController extends Controller
             foreach ($datos as $fila) {
 
                 $documento = $fila[0];
-                $nombresEmpleado = trim($fila[1]);
+                $nombresEmpleado = trim(preg_replace('/[\x00-\x1F\x7F\xA0]/u', ' ', $fila[1]));
+
                 $asistencia = $fila[2];
 
                 if (!$documento) {
@@ -66,61 +70,61 @@ class ReporteDiarioController extends Controller
 
                         $numeroCuadrilleros = $fila[3];
 
-                        if (!$numeroCuadrilleros) {
-                            continue;
+                        if ($numeroCuadrilleros) {
+                            $reporteDiarioCuadrilla = ReporteDiarioCuadrilla::create([
+                                'numero_cuadrilleros' => $numeroCuadrilleros,
+                                'total_horas' => '00:00:00',
+                                'fecha' => $request->input('fecha')
+                            ]);
+    
+                            $totalHoras = new \DateTime('00:00:00');
+    
+                            for ($i = 4; $i < count($fila); $i += 4) {
+                                $campo = $fila[$i] ?? null;
+                                $labor = $fila[$i + 1] ?? null;
+                                $horaEntrada = $fila[$i + 2] ?? null;
+                                $horaSalida = $fila[$i + 3] ?? null;
+    
+                                // Reemplazar puntos por dos puntos en la hora, si es necesario
+                                if ($horaEntrada) {
+                                    $horaEntrada = str_replace('.', ':', $horaEntrada);
+                                }
+                                if ($horaSalida) {
+                                    $horaSalida = str_replace('.', ':', $horaSalida);
+                                }
+    
+                                // Si se tienen los datos necesarios, crear el detalle
+                                if ($campo && $labor && $horaEntrada && $horaSalida) {
+    
+                                    $horaInicioDT = \DateTime::createFromFormat('H:i', $horaEntrada);
+                                    $horaFinDT = \DateTime::createFromFormat('H:i', $horaSalida);
+    
+                                    // Calcular la diferencia entre hora de entrada y salida
+                                    $interval = $horaInicioDT->diff($horaFinDT);
+    
+                                    // Acumular el tiempo trabajado al total
+                                    $totalHoras->add($interval);
+    
+                                    ReporteDiarioCuadrillaDetalle::create([
+                                        'reporte_diario_id' => $reporteDiarioCuadrilla->id,
+                                        'campo' => $campo,
+                                        'labor' => $labor,
+                                        'hora_inicio' => $horaEntrada,
+                                        'hora_salida' => $horaSalida
+                                    ]);
+                                }
+                            }
+    
+                            // Formatear el total de horas acumuladas
+                            $totalHorasFormateadas = $totalHoras->format('H:i');
+    
+                            // Actualizar el total de horas en el reporte de la cuadrilla
+                            $reporteDiarioCuadrilla->update([
+                                'total_horas' => $totalHorasFormateadas
+                            ]);
                         }
 
-                        $reporteDiarioCuadrilla = ReporteDiarioCuadrilla::create([
-                            'numero_cuadrilleros' => $numeroCuadrilleros,
-                            'total_horas' => '00:00:00',
-                            'fecha' => $request->input('fecha')
-                        ]);
-
-                        $totalHoras = new \DateTime('00:00:00');
-
-                        for ($i = 4; $i < count($fila); $i += 4) {
-                            $campo = $fila[$i] ?? null;
-                            $labor = $fila[$i + 1] ?? null;
-                            $horaEntrada = $fila[$i + 2] ?? null;
-                            $horaSalida = $fila[$i + 3] ?? null;
-
-                            // Reemplazar puntos por dos puntos en la hora, si es necesario
-                            if ($horaEntrada) {
-                                $horaEntrada = str_replace('.', ':', $horaEntrada);
-                            }
-                            if ($horaSalida) {
-                                $horaSalida = str_replace('.', ':', $horaSalida);
-                            }
-
-                            // Si se tienen los datos necesarios, crear el detalle
-                            if ($campo && $labor && $horaEntrada && $horaSalida) {
-
-                                $horaInicioDT = \DateTime::createFromFormat('H:i', $horaEntrada);
-                                $horaFinDT = \DateTime::createFromFormat('H:i', $horaSalida);
-
-                                // Calcular la diferencia entre hora de entrada y salida
-                                $interval = $horaInicioDT->diff($horaFinDT);
-
-                                // Acumular el tiempo trabajado al total
-                                $totalHoras->add($interval);
-
-                                ReporteDiarioCuadrillaDetalle::create([
-                                    'reporte_diario_id' => $reporteDiarioCuadrilla->id,
-                                    'campo' => $campo,
-                                    'labor' => $labor,
-                                    'hora_inicio' => $horaEntrada,
-                                    'hora_salida' => $horaSalida
-                                ]);
-                            }
-                        }
-
-                        // Formatear el total de horas acumuladas
-                        $totalHorasFormateadas = $totalHoras->format('H:i');
-
-                        // Actualizar el total de horas en el reporte de la cuadrilla
-                        $reporteDiarioCuadrilla->update([
-                            'total_horas' => $totalHorasFormateadas
-                        ]);
+                        
                     }
                 } else {
                     // Insertar o actualizar el reporte diario

@@ -23,22 +23,14 @@
                 @if ($regador && $activarCopiarExcel == false)
                     <table class="mt-5 w-full border-collapse border border-slate-400" cellpadding="0" cellspacing="0">
                         <thead>
-                            <tr>
-                                <th class="text-center border border-slate-400">
-                                    Campo
-                                </th>
-                                <th class="text-center border border-slate-400">
-                                    Inicio
-                                </th>
-                                <th class="text-center border border-slate-400">
-                                    Fin
-                                </th>
-                                <th class="text-center border border-slate-400">
-                                    Total de Horas
-                                </th>
-                                <th class="border border-slate-400">
-                                </th>
-                            </tr>
+                            <x-tr>
+                                <x-th value="Campo" />
+                                <x-th value="Inicio" />
+                                <x-th value="Fin" />
+                                <x-th value="Total de Horas" />
+                                <x-th value="SH" title="Sin Haberes" />
+                                <x-th />
+                            </x-tr>
                         </thead>
                         <tbody>
                             @if (is_array($campos) && count($campos) > 0)
@@ -90,42 +82,54 @@
                                             }
                                         }
                                     }">
-                                        <td class="text-center border border-slate-400">
-                                            <input type="text" class="text-center w-full border-none focus:ring-0"
-                                                value="{{ $campob['nombre'] }}" readonly />
-                                        </td>
-                                        <td class="text-center border border-slate-400">
-                                            <input type="text" class="text-center w-full border-none focus:ring-0"
-                                                x-model="inicio" @blur="updateInicio()" placeholder="HH:mm" />
-                                        </td>
-                                        <td class="text-center border border-slate-400">
-                                            <input type="text" class="text-center w-full border-none focus:ring-0"
-                                                x-model="fin" @blur="updateFin()" placeholder="HH:mm" />
-                                        </td>
-                                        <td class="text-center border border-slate-400">
-                                            <input type="text" class="text-center w-full border-none focus:ring-0"
-                                                readonly wire:model="campos.{{ $indice }}.total" />
-                                        </td>
-                                        <td class="text-center border border-slate-400 p-2">
+                                        <x-td>
+                                            <x-input-inset type="text" value="{{ $campob['nombre'] }}" readonly />
+                                        </x-td>
+                                        <x-td>
+                                            <x-input-inset type="text" x-model="inicio" @blur="updateInicio()" placeholder="HH:mm" />
+                                        </x-td>
+                                        <x-td>
+                                            <x-input-inset type="text" x-model="fin" @blur="updateFin()" placeholder="HH:mm" />
+                                        </x-td>
+                                        <x-td>
+                                            <x-input-inset type="text" readonly wire:model="campos.{{ $indice }}.total" />
+                                        </x-td>
+                                        <x-td>
+                                            <x-checkbox wire:model.live="campos.{{ $indice }}.sh" />
+                                        </x-td>
+                                        <x-td>
                                             <button class="text-red-500 hover:text-red-700" title="Eliminar Registro"
                                                 wire:click="eliminarIndice({{ $indice }})">
                                                 <i class="fa fa-trash"></i>
                                             </button>
-                                        </td>
+                                        </x-td>
+
                                     </tr>
                                 @endforeach
                             @endif
                         </tbody>
                     </table>
 
+                    <x-link href="#" wire:click.prevent="seleccionarCampos('{{ $regador }}')">[Agregar Horas de Riego]</x-link>
+
                     <div class="flex mt-5 items-center justify-end">
-                        <x-secondary-button type="button" wire:click="seleccionarCampos('{{ $regador }}')"
-                            class="mr-2 bg-gray-200 text-black px-4 py-2 rounded">
-                            Agregar Campos para Regar
-                        </x-secondary-button>
-                        <x-button type="button" wire:click="store" class="ml-2 px-4 py-2 rounded">
-                            Guardar Horas de Riego
-                        </x-button>
+                        
+                        <div>
+                            @if ($cambiosRealizados)
+                                <x-danger-button type="button" wire:click="cancelarCambios"
+                                    class="ml-2">
+                                    Cancelar Cambios
+                                </x-danger-button>
+                                <x-button type="button" wire:click="store"
+                                    class="ml-2">
+                                    Registrar Cambios
+                                </x-button>
+                            @else
+                                <x-button type="button" wire:click="store" class="bg-opacity-60" disabled>
+                                    Registrar Cambios
+                                </x-button>
+                            @endif
+                        </div>
                     </div>
                 @endif
 

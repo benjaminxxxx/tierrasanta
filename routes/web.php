@@ -35,6 +35,10 @@ Route::middleware([
         return view('empleados.asignacion_familiar');
     })->name('empleados.asignacion_familiar');
 
+    Route::get('/configuracion/labores-riego', function () {
+        return view('configuracion.labores_riego');
+    })->name('configuracion.labores_riego');
+
     //CUADRILLA
     Route::get('/cuadrilla/cuadrilleros', function () {
         return view('cuadrilla.cuadrilleros');
@@ -63,6 +67,7 @@ Route::middleware([
 
     //REPORTE
     Route::get('/reporte/reporte-diario', [ReporteDiarioController::class, 'index'])->name('reporte.reporte_diario');
+    Route::get('/reporte/reporte-diario-riego', [ReporteDiarioController::class, 'riego'])->name('reporte.reporte_diario_riego');
     Route::post('/reporte/reporte-diario/importar-empleados', [ReporteDiarioController::class, 'ImportarEmpleados'])->name('reporte.reporte_diario.importar_empleados');
     Route::post('/reporte/reporte-diario/guardar-empleados', [ReporteDiarioController::class, 'GuardarInformacion'])->name('reporte.reporte_diario.guardar_informacion');
     Route::post('/reporte/reporte-diario/actualizar-campos', [ReporteDiarioController::class, 'ActualizarCampos'])->name('reporte.reporte_diario.actualizar_campos');
