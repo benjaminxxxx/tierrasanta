@@ -23,11 +23,4 @@ class ReporteDiarioRiego extends Model
         'descripcion',
     ];
 
-    protected $casts = [
-        'sh' => 'boolean',
-        'hora_inicio' => 'time',
-        'hora_fin' => 'time',
-        'total_horas' => 'time',
-        'fecha' => 'date',
-    ];
 }

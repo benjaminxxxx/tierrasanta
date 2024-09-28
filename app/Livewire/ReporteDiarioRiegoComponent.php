@@ -11,6 +11,8 @@ class ReporteDiarioRiegoComponent extends Component
 {
     public $fecha;
     public $consolidados;
+    public $archivoBackupHoy;
+    public $tipoLabores;
     public function mount(){
 
         $this->fecha = (new \DateTime('now'))->format('Y-m-d');
