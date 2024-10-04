@@ -17,6 +17,7 @@ class ReporteDiarioRiego extends Model
         'hora_fin',
         'total_horas',
         'documento',
+        'regador',
         'fecha',
         'sh',
         'tipo_labor',

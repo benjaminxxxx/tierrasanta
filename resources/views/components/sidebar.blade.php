@@ -27,7 +27,10 @@
 
                 <ul class="mb-6 flex flex-col gap-1.5">
                     <x-nav-link-parent name="sectorPlanilla" href="#" :active="request()->routeIs(['planilla.asistencia'])">
-                        <i class="fa fa-table"></i>
+                        
+                        <div class="w-6 text-center">
+                            <i class="fa fa-table"></i>
+                        </div>
                         Planilla
                         <x-slot name="children">
                             <x-nav-link-child href="{{ route('planilla.asistencia') }}" :active="request()->routeIs('planilla.asistencia')">
@@ -36,7 +39,10 @@
                         </x-slot>
                     </x-nav-link-parent>
                     <x-nav-link-parent name="sectorEmpleado" href="{{ route('empleados') }}" :active="request()->routeIs(['empleados','empleados.asignacion_familiar'])">
-                        <i class="fa fa-users"></i>
+                        
+                        <div class="w-6 text-center">
+                            <i class="fa fa-users"></i>
+                        </div>
                         Empleado
                         <x-slot name="children">
                             <x-nav-link-child href="{{ route('empleados') }}" :active="request()->routeIs('empleados')">
@@ -48,7 +54,10 @@
                         </x-slot>
                     </x-nav-link-parent>
                     <x-nav-link-parent name="sectorCuadrilla" href="#" :active="request()->routeIs(['cuadrilla.asistencia','cuadrilla.grupos','cuadrilla.cuadrilleros'])">
-                        <i class="fas fa-hard-hat"></i>
+                        
+                        <div class="w-6 text-center">
+                            <i class="fas fa-hard-hat"></i>
+                        </div>
                         Cuadrilla
                         <x-slot name="children">
                             <x-nav-link-child href="{{ route('cuadrilla.cuadrilleros') }}" :active="request()->routeIs('cuadrilla.cuadrilleros')">
@@ -63,7 +72,10 @@
                         </x-slot>
                     </x-nav-link-parent>
                     <x-nav-link-parent name="sectorCampo" href="#" :active="request()->routeIs(['campo.mapa'])">
-                        <i class="fa fa-leaf"></i>
+                        
+                        <div class="w-6 text-center">
+                            <i class="fa fa-leaf"></i>
+                        </div>
                         Campo
                         <x-slot name="children">
                             <x-nav-link-child href="{{ route('campo.mapa') }}" :active="request()->routeIs('campo.mapa')">
@@ -78,7 +90,10 @@
                         </x-slot>
                     </x-nav-link-parent>
                     <x-nav-link-parent name="sectorReportes" href="#" :active="request()->routeIs(['reporte.reporte_diario','reporte.reporte_diario_riego'])">
-                        <i class="fa fa-database"></i>
+                      
+                        <div class="w-6 text-center">
+                            <i class="fa fa-database"></i>
+                        </div>
                         Reporte Diario
                         <x-slot name="children">
                             <x-nav-link-child href="{{ route('reporte.reporte_diario') }}" :active="request()->routeIs('reporte.reporte_diario')">
@@ -90,7 +105,10 @@
                         </x-slot>
                     </x-nav-link-parent>
                     <x-nav-link-parent name="sectorConsolidados" :active="request()->routeIs('consolidado.riego')">
-                        <i class="fa fa-database"></i>
+                        
+                        <div class="w-6 text-center">
+                            <i class="fa fa-database"></i>
+                        </div>
                         Consolidado
                         <x-slot name="children">
                             <x-nav-link-child href="{{ route('consolidado.riego') }}" :active="request()->routeIs('consolidado.riego')">
@@ -98,8 +116,10 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorConfiguracion" :active="request()->routeIs(['configuracion','descuentos_afp','configuracion.labores_riego'])">
-                        <i class="fa fa-cogs"></i>
+                    <x-nav-link-parent name="sectorConfiguracion" :active="request()->routeIs(['configuracion','descuentos_afp','configuracion.labores_riego','configuracion.tipo_asistencia'])">
+                        <div class="w-6 text-center">
+                            <i class="fa fa-cogs"></i>
+                        </div>
                         Configuración
                         <x-slot name="children">
                             <x-nav-link-child href="{{ route('configuracion') }}" :active="request()->routeIs('configuracion')">
@@ -112,6 +132,9 @@
                             </x-nav-link-child>
                             <x-nav-link-child href="{{ route('configuracion.labores_riego') }}" :active="request()->routeIs('configuracion.labores_riego')">
                                 Labores en Riego
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('configuracion.tipo_asistencia') }}" :active="request()->routeIs('configuracion.tipo_asistencia')">
+                                Tipo de Asistencia
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>

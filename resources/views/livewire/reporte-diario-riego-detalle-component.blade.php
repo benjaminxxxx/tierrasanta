@@ -1,14 +1,39 @@
 <div>
-    @php
-        $idTable = 'componenteTable' . Str::random(5);
-    @endphp
-    <div x-data="{{ $idTable }}" wire:ignore>
-        <div x-ref="tableContainer" class="h-[25rem] mt-5 overflow-auto"></div>
+    <x-card>
+        <x-spacing>
+            @if ($riego)
+                <div class="flex justify-between items-center mb-3 ">
+                    <x-h3 class="text-left">REGADOR - {{ $riego->regador_nombre }}</x-h3>
+                </div>
+                <div class="text-left mb-5">
+                    <p class="font-2xl dark:text-primaryTextDark">
+                        Total Horas de Riego: <b>{{ $riego->total_horas_riego }}</b>
+                    </p>
+                    <p class="font-2xl dark:text-primaryTextDark">
+                        Total Horas de Jornal: <b>{{ $riego->total_horas_jornal }}</b>
+                        {{ $riego->horasAcumuladas != '00:00' ? ' (y se acumuló ' . $riego->horasAcumuladas . ')' : '' }}
+                    </p>
+                </div>
+            @endif
 
-        <x-button @click="sendData">
-            Guardar Cambios
-        </x-button>
-    </div>
+            <x-label for="activar_descontar_hora_almuerzo{{ $regador }}" class="mt-4">
+                <x-checkbox id="activar_descontar_hora_almuerzo{{ $regador }}"
+                    wire:model.live="noDescontarHoraAlmuerzo" class="mr-2" />
+                No Descontar Hora de Almuerzo
+            </x-label>
+
+            @php
+                $idTable = 'componenteTable' . Str::random(5);
+            @endphp
+            <div x-data="{{ $idTable }}" wire:ignore>
+                <div x-ref="tableContainer" class="min-h-[20rem] mt-5 overflow-auto"></div>
+
+                <x-button @click="sendData" class="mt-5">
+                    Guardar Cambios
+                </x-button>
+            </div>
+        </x-spacing>
+    </x-card>
 </div>
 
 @script
@@ -158,12 +183,13 @@
 
                 console.log('Datos a enviar:', data);
                 $wire.dispatchSelf('storeTableData', data);
-            }/*,
-            destroy() {
-                this.listeners.forEach((listener) => {
-                    listener();
-                });
-            }*/
+            }
+            /*,
+                        destroy() {
+                            this.listeners.forEach((listener) => {
+                                listener();
+                            });
+                        }*/
         }));
     </script>
 @endscript

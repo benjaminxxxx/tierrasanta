@@ -18,6 +18,7 @@ return new class extends Migration
             $table->time('hora_fin');
             $table->time('total_horas');
             $table->string('documento');
+            $table->string('regador');
             $table->date('fecha');
             $table->boolean('sh')->default(false);
             $table->string('tipo_labor');

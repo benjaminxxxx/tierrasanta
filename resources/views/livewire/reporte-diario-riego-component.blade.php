@@ -1,4 +1,5 @@
 <div x-data="{ search: '' }">
+    <x-loading wire:loading />
     <x-card>
         <x-spacing>
             <div class="md:flex items-center justify-between">
@@ -49,17 +50,7 @@
                                         </a>
                                     </li>
                                     <li>
-                                        <div x-data="{ openarchivoBackupHoyDialog() { $refs.archivoBackupHoyInput.click() } }">
-                                            <!-- Botón para abrir el diálogo de archivos -->
-                                            <a @click.prevent="openarchivoBackupHoyDialog()" href="#"
-                                                class="block px-4 py-2 hover:bg-bodydark1 hover:text-primary  whitespace-nowrap">
-                                                Restaurar Backup {{ $fecha }}
-                                            </a>
-                                            <input type="file"
-                                                accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                                                x-ref="archivoBackupHoyInput" style="display: none;"
-                                                wire:model.live="archivoBackupHoy" />
-                                        </div>
+                                        <livewire:reporte-diario-riego-import-export-component :fecha="$fecha"/>
                                     </li>
                                     <li>
                                         <a href="#" wire:click.prevent="descargarBackupCompleto"
@@ -82,18 +73,7 @@
         @foreach ($consolidados as $riego)
             <div x-show="search === '' || '{{ strtolower($riego->regador_nombre) }}'.includes(search.toLowerCase())"
                 class="mt-5 mb-3">
-                <div class="flex justify-between items-center mb-3 ">
-                    <x-h3 class="text-left">REGADOR - {{ $riego->regador_nombre }}</x-h3>
-                </div>
-                <div class="text-left mb-5">
-                    <p class="font-2xl">
-                        Total Horas de Riego: <b>{{ $riego->total_horas_riego }}</b>
-                    </p>
-                    <p class="font-2xl">
-                        Total Horas de Jornal: <b>{{ $riego->total_horas_jornal }}</b>
-                        {{ $riego->horasAcumuladas != '00:00' ? ' (y se acumuló ' . $riego->horasAcumuladas . ')' : '' }}
-                    </p>
-                </div>
+                
 
                 <div class="mb-5">
                     <livewire:reporte-diario-riego-detalle-component :regador="$riego->regador_documento" :fecha="$riego->fecha"
@@ -103,4 +83,57 @@
             </div>
         @endforeach
     @endif
+
+    <x-card class="w-full overflow-auto">
+        <x-spacing>
+            <div class="block md:flex justify-between items-start">
+
+                <div>
+                    <div class="lg:flex lg:flex-wrap items-end gap-3">
+
+                        <div class="my-4">
+                            <x-label for="fecha" class="text-left">Tipo de Personal</x-label>
+                            <x-select class="uppercase !lg:w-auto pr-10 max-w-full lg:max-w-xs"
+                                wire:model.live="tipoPersonal" id="tipoPersonal">
+                                <option value="regadores">Regadores</option>
+                                <option value="empleados">Empleados</option>
+                                <option value="cuadrilleros">Cuadrilleros</option>
+                            </x-select>
+                        </div>
+                        @if ($regadores)
+                            <div class="my-4">
+                                <x-label for="regador" class="text-left">Encargado</x-label>
+                                <x-select class="uppercase !lg:w-auto pr-10 max-w-full lg:max-w-xs"
+                                    wire:model.live="regadorSeleccionado" id="regadorSeleccionado">
+                                    <option value="">Seleccionar Regador</option>
+                                    @foreach ($regadores as $regador)
+                                        <option value="{{ $regador['documento'] }}">
+                                            {{ $regador['nombre_completo'] }}
+                                        </option>
+                                    @endforeach
+                                </x-select>
+                            </div>
+                        @endif
+                        <div class="my-4">
+                            <x-secondary-button type="button" wire:click="agregarDetalle" wire:loading.attr="disabled">
+                                Agregar Regador
+                            </x-secondary-button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </x-spacing>
+    </x-card>
+
 </div>
+@script
+<script>
+    document.addEventListener('delay-riegos', function () {
+        setTimeout(function () {
+            location.href = location.href;
+        }, 1000); // 2000 milisegundos (2 segundos) de retraso
+    });
+</script>
+@endscript

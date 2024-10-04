@@ -68,25 +68,28 @@ export default {
             body: '#556F64',          // Tonalidad oscura derivada del primary
             bodydark: '#7A9985',      // Tonalidad intermedia más suave
             bodydark1: '#E0E0E0',     // Tonalidad clara derivada del primary
-            bodydark2: '#E0E0E0',     // Tonalidad intermedia más cálida
-            primary: '#056A70',       // Color verde Pantone 7736 C
+            bodydark2: '#202A37',     // Tonalidad intermedia más cálida
+            primary: '#056A70',
+            primaryDark: '#056A70',
+            primaryTextDark:'#f3f3f3',       // Color verde Pantone 7736 C
             secondary: '#80CAEE',     // Manteniendo este color azul claro como contraste
-            stroke: '#E2E8F0',        // Sin cambio, color neutro claro
-            gray: '#C6C6C6',          // Sin cambio, color gris claro
+            stroke: '#3B3A3A',        // Sin cambio, color neutro claro
+            //gray: '#C6C6C6',          // Sin cambio, color gris claro
             graydark: '#3D3D3D',      // Sin cambio, color gris oscuro
             'gray-2': '#F7F9FC',      // Sin cambio, gris muy claro
             'gray-3': '#FAFAFA',      // Sin cambio, casi blanco
             whiten: '#F1F5F9',        // Sin cambio, blanco sucio
             whiter: '#F5F7FD',        // Sin cambio, blanco con un toque azul
-            boxdark: '#24303F',       // Sin cambio, color oscuro para cajas
+            boxdark: '#2C2C2C',  
+            boxdarkbase:'#272626',     // Sin cambio, color oscuro para cajas
             'boxdark-2': '#1A222C',   // Sin cambio, tono más oscuro
             strokedark: '#2E3A47',    // Sin cambio, color para líneas oscuras
             'form-strokedark': '#3d4d60', // Sin cambio, borde de formularios oscuros
-            'form-input': '#1d2a39',  // Sin cambio, fondo de inputs oscuros
+            'form-input': '#3B3A3A',  // Sin cambio, fondo de inputs oscuros
             'meta-1': '#DC3545',      // Sin cambio, rojo para errores
             'meta-2': '#EFF2F7',      // Sin cambio, gris claro para fondos
             'meta-3': '#10B981',      // Manteniendo verde claro para éxito
-            'meta-4': '#313D4A',      // Sin cambio, gris oscuro para detalles
+            'meta-4': '#3B3A3A',      // Sin cambio, gris oscuro para detalles
             'meta-5': '#259AE6',      // Sin cambio, azul vibrante
             'meta-6': '#FFBA00',      // Sin cambio, amarillo para advertencias
             'meta-7': '#FF6766',      // Sin cambio, rojo claro para alertas

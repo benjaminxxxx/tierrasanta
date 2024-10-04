@@ -21,8 +21,8 @@ class RiegosExport implements WithMultipleSheets
     public function sheets(): array
     {
         return [
-            'DetalleRiego' => new DetalleRiegoSheetExport($this->fecha),
-            'Observaciones' => new ObservacionesRiegoSheetExport($this->fecha)
+            'DetalleRiego' => new ReporteDiarioRiegoSheetExport($this->fecha),
+           //'Observaciones' => new ObservacionesRiegoSheetExport($this->fecha)
         ];
     }
 }

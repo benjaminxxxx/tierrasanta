@@ -28,7 +28,7 @@ class AsistenciaPlanillaController extends Controller
             return $month['value'] <= Carbon::now()->month;
         });
 
-        return view('planilla.asistencia',[
+        return view('planilla.horas',[
             'meses'=>$meses
         ]);
     }

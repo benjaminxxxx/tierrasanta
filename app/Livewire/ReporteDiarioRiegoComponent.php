@@ -13,22 +13,105 @@ class ReporteDiarioRiegoComponent extends Component
     public $consolidados;
     public $archivoBackupHoy;
     public $tipoLabores;
-    public function mount(){
+    public $tipoPersonal;
+    public $regadores;
+    public $regadorSeleccionado;
+    protected $listeners = ["generalActualizado",'obtenerRiegos'];
+    public function mount()
+    {
 
         $this->fecha = (new \DateTime('now'))->format('Y-m-d');
+        $this->tipoPersonal = 'regadores';
         $this->obtenerRiegos();
+        $this->obtenerMasRegadores();
     }
     public function render()
     {
         return view('livewire.reporte-diario-riego-component');
     }
-    public function obtenerRiegos(){
+    public function generalActualizado(){
+        $this->dispatch('delay-riegos');
+    }
+    public function updatedTipoPersonal()
+    {
+        $this->obtenerMasRegadores();
+    }
+    public function obtenerMasRegadores()
+    {
+        if ($this->tipoPersonal) {
+
+            $documentosAgregados = array_keys(ConsolidadoRiego::where('fecha', $this->fecha)->pluck('regador_documento', 'regador_documento')->toArray());
+
+            if ($this->tipoPersonal) {
+
+                switch ($this->tipoPersonal) {
+                    case 'empleados':
+                        $this->regadores = Empleado::whereNotIn('documento', $documentosAgregados)
+                            ->orderBy('apellido_paterno')
+                            ->orderBy('apellido_materno')
+                            ->orderBy('nombres')
+                            ->get()
+                            ->map(function ($empleado) {
+                                return [
+                                    'nombre_completo' => $empleado->apellido_paterno . ' ' . $empleado->apellido_materno . ', ' . $empleado->nombres,
+                                    'documento' => $empleado->documento,
+                                ];
+                            });
+                        break;
+
+                    case 'cuadrilleros':
+                        $this->regadores = Cuadrillero::whereNotIn('dni', $documentosAgregados)
+                            ->whereNotNull('dni')
+                            ->orderBy('nombre_completo')
+                            ->get(['dni as documento', 'nombre_completo'])
+                            ->map(function ($cuadrillero) {
+                                return [
+                                    'nombre_completo' => $cuadrillero->nombre_completo,
+                                    'documento' => $cuadrillero->documento,
+                                ];
+                            });
+                        break;
+
+                    default:
+                        $this->regadores = Empleado::where('cargo_id', 'RIE')
+                            ->whereNotIn('documento', $documentosAgregados)
+                            ->orderBy('apellido_paterno')
+                            ->orderBy('apellido_materno')
+                            ->orderBy('nombres')
+                            ->get()
+                            ->map(function ($empleado) {
+                                return [
+                                    'nombre_completo' => $empleado->apellido_paterno . ' ' . $empleado->apellido_materno . ', ' . $empleado->nombres,
+                                    'documento' => $empleado->documento,
+                                ];
+                            });
+                        break;
+                }
+
+            }
+
+        }
+    }
+    public function agregarDetalle()
+    {
+        if (!$this->regadorSeleccionado) {
+            return $this->alert('error', 'Debe seleccionar un Regador');
+        }
+        $this->crearConsolidado($this->regadorSeleccionado);
+        $this->regadorSeleccionado = null;
+        $this->obtenerRiegos();
+    }
+   
+    public function obtenerRiegos()
+    {
 
         if (!$this->fecha) {
             return;
         }
 
         $this->consolidados = ConsolidadoRiego::whereDate('fecha', $this->fecha)->get();
+
+        $this->dispatch('$refresh')->self();
 
         if ($this->consolidados->count() != 0) {
             return;
@@ -45,12 +128,12 @@ class ReporteDiarioRiegoComponent extends Component
 
                 // Buscar el consolidado dentro del map
                 $consolidado = ConsolidadoRiego::where('regador_documento', $documento)
-                                               ->whereDate('fecha', $this->fecha)
-                                               ->first();
+                    ->whereDate('fecha', $this->fecha)
+                    ->first();
 
                 // Si no existe el consolidado, lo creamos
                 if (!$consolidado) {
-                    $this->crearConsolidado($documento,$nombre_completo);
+                    $this->crearConsolidado($documento, $nombre_completo);
                 }
 
                 return [
@@ -59,14 +142,17 @@ class ReporteDiarioRiegoComponent extends Component
                 ];
             });
 
-        if($empleados->count()==0){
+        if ($empleados->count() == 0) {
             return;
         }
 
         $this->obtenerRiegos();
     }
-    private function crearConsolidado($documento,$nombre_completo)
+    private function crearConsolidado($documento, $nombre_completo=null)
     {
+        if(!$nombre_completo){
+            $nombre_completo = $this->obtenerNombreRegador($documento);
+        }
 
         ConsolidadoRiego::create([
             'regador_documento' => $documento,
@@ -104,4 +190,13 @@ class ReporteDiarioRiegoComponent extends Component
         $this->fecha = \Carbon\Carbon::parse($this->fecha)->addDay()->format('Y-m-d');
         $this->obtenerRiegos();
     }
+    public function descargarBackup(){
+        
+        $this->dispatch('RDRIE_descargarPorFecha',$this->fecha);
+    }
+    public function descargarBackupCompleto(){
+        
+        $this->dispatch('RDRIE_descargarBackupCompleto');
+    }
+    
 }

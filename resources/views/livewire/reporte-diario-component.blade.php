@@ -1,44 +1,31 @@
 <div>
-    <x-card>
+    
+    <x-loading wire:loading/>
+
+    <x-card class="w-full">
         <x-spacing>
             <x-h3>
                 Reporte Diario de Trabajo
             </x-h3>
-            <x-table>
-                <x-slot name="thead">
-                    <x-tr>
-                        <x-th>N°</x-th>
-                        <x-th class="!text-left">APELLIDOS Y NOMBRES</x-th>
-                        <x-th>ASIST.</x-th>
 
-                        @for ($x = 0; $x < 5; $x++)
-                            <x-th>CAMPO</x-th>
-                            <x-th>LABOR</x-th>
-                            <x-th>HORA INICIO</x-th>
-                            <x-th>HORA DE SALIDA</x-th>
-                        @endfor
-                    </x-tr>
-                </x-slot>
-                <x-slot name="tbody">
-                    @if ($empleados && $empleados->count() > 0)
-                        @foreach ($empleados as $indice => $empleado)
-                            <x-tr>
-                                <x-td>{{$indice+1}}</x-th>
-                                <x-td class="!text-left">{{$empleado->NombreCompleto}}</x-th>
-                                <x-td></x-td>
+            <livewire:seleccionar-labor-component />
+            <div class="md:flex justify-between items-center w-full">
+                <x-secondary-button wire:click="fechaAnterior">
+                    <i class="fa fa-chevron-left"></i> Fecha Anterior
+                </x-secondary-button>
 
-                                @for ($x = 0; $x < 5; $x++)
-                                    <x-td>1</x-td>
-                                    <x-td>2</x-td>
-                                    <x-td>03:35</x-td>
-                                    <x-td>04:00</x-td>
-                                @endfor
-                            </x-tr>
-                        @endforeach
-                    @endif
-                </x-slot>
-            </x-table>
+                <div class="md:flex gap-4">
+                    <x-input type="date" wire:model.live="fecha" class="text-center mx-2 !mt-0 !w-auto" />
+                    <x-button @click="$dispatch('importarPlanilla')">Importar Planilla</x-button>
+                </div>
+
+                <x-secondary-button wire:click="fechaPosterior" class="ml-3">
+                    Fecha Posterior <i class="fa fa-chevron-right"></i>
+                </x-secondary-button>
+            </div>
         </x-spacing>
     </x-card>
+
+    <livewire:reporte-diario-detalle-component wire:key="{{$fecha}}" :fecha="$fecha"/>
 
 </div>

@@ -25,7 +25,7 @@ $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(valu
     <!-- ===== Preloader End ===== -->
 
     <!-- ===== Page Wrapper Start ===== -->
-    <div class="flex h-screen overflow-hidden">
+    <div class="flex h-screen overflow-hidden dark:bg-boxdarkbase">
         <!-- ===== Sidebar Start ===== -->
         <x-sidebar />
         <!-- ===== Sidebar End ===== -->
@@ -37,7 +37,7 @@ $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(valu
             <!-- ===== Header End ===== -->
 
             <!-- ===== Main Content Start ===== -->
-            <main>
+            <main class="">
                 <x-spacing>
                     {{ $slot }}
                 </x-spacing>
