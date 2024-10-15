@@ -23,21 +23,21 @@
                     @endif
                     <div class="col-span-2 md:col-span-1 mt-3">
                         <x-label for="nombres">Nombres y Apellidos de su Hijo</x-label>
-                        <x-inputn type="text" autocomplete="off" wire:model="nombres" class="uppercase"
+                        <x-input type="text" autocomplete="off" wire:model="nombres" class="uppercase"
                             id="nombres" />
                         <x-input-error for="nombres" />
                     </div>
 
                     <div class="col-span-2 md:col-span-1 mt-3">
                         <x-label for="documento">Documento</x-label>
-                        <x-inputn type="text" autocomplete="off" class="uppercase" wire:model="documento"
+                        <x-input type="text" autocomplete="off" class="uppercase" wire:model="documento"
                             id="documento" />
                         <x-input-error for="documento" />
                     </div>
 
                     <div class="col-span-2 md:col-span-1 mt-3">
                         <x-label for="fecha_nacimiento">Fecha de Nacimiento</x-label>
-                        <x-inputn type="date" autocomplete="off" wire:model="fecha_nacimiento" class="uppercase"
+                        <x-input type="date" autocomplete="off" wire:model="fecha_nacimiento" class="uppercase"
                             id="fecha_nacimiento" />
                         <x-input-error for="fecha_nacimiento" />
                     </div>

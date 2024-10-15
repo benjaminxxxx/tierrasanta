@@ -9,29 +9,19 @@ use Illuminate\Http\Request;
 
 class AsistenciaPlanillaController extends Controller
 {
-    public function index(){
-        $meses = collect([
-            ['value' => 1, 'label' => 'Enero'],
-            ['value' => 2, 'label' => 'Febrero'],
-            ['value' => 3, 'label' => 'Marzo'],
-            ['value' => 4, 'label' => 'Abril'],
-            ['value' => 5, 'label' => 'Mayo'],
-            ['value' => 6, 'label' => 'Junio'],
-            ['value' => 7, 'label' => 'Julio'],
-            ['value' => 8, 'label' => 'Agosto'],
-            ['value' => 9, 'label' => 'Septiembre'],
-            ['value' => 10, 'label' => 'Octubre'],
-            ['value' => 11, 'label' => 'Noviembre'],
-            ['value' => 12, 'label' => 'Diciembre'],
-        ])->filter(function ($month) {
-            // Filtrar meses hasta el mes actual
-            return $month['value'] <= Carbon::now()->month;
-        });
-
-        return view('planilla.horas',[
-            'meses'=>$meses
-        ]);
+    public function index($anio=null,$mes=null)
+    {
+        $data = [
+            'anio'=>$anio,
+            'mes'=>$mes,
+        ];
+        return view('planilla.horas',$data);
     }
+    public function blanco()
+    {
+        return view('planilla.blanco');
+    }
+    /*
     public function cargarAsistencias(Request $request){
 
         $mes = $request->input('mes');
@@ -106,5 +96,5 @@ class AsistenciaPlanillaController extends Controller
 
         // Devuelve los días como JSON
         return $dias;
-    }
+    }*/
 }

@@ -35,6 +35,9 @@ class Empleado extends Model
     public function descuento(){
         return $this->belongsTo(DescuentoSP::class,'descuento_sp_id');
     }
+    public function asignacionFamiliar(){
+        return $this->hasMany(AsignacionFamiliar::class,'empleado_id');
+    }
     public function cargo(){
         return $this->belongsTo(Cargo::class,'cargo_id');
     }

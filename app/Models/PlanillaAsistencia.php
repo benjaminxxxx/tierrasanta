@@ -14,6 +14,7 @@ class PlanillaAsistencia extends Model
         'nombres',
         'total_horas',
         'mes',
+        'orden',
         'anio',
     ];
 

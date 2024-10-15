@@ -70,6 +70,7 @@ export default {
             bodydark1: '#E0E0E0',     // Tonalidad clara derivada del primary
             bodydark2: '#202A37',     // Tonalidad intermedia más cálida
             primary: '#056A70',
+            primaryText: '#f3f3f3',
             primaryDark: '#056A70',
             primaryTextDark:'#f3f3f3',       // Color verde Pantone 7736 C
             secondary: '#80CAEE',     // Manteniendo este color azul claro como contraste

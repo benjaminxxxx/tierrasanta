@@ -6,30 +6,22 @@ use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use App\Models\TipoAsistencia;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Artisan;
 
 class TipoAsistenciaComponent extends Component
 {
     use LivewireAlert;
     public $codigo, $descripcion, $horasJornal, $tipoAsistencias;
-    public $color = '#ffffff';
+    public $color;
     public $tipoAsistenciaId = null;
+    protected $listeners = ["confirmarEliminar", 'updateColor' => 'setColor','resturar','rerender'=>'$refresh'];
 
-
-    protected $listeners = ["confirmarEliminar", 'updateColor' => 'setColor'];
-    public function mount()
-    {
-        $this->obtenerTiposAsistencia();
-    }
+   
     public function setColor($colorValue)
     {
         $this->color = $colorValue;
     }
-    public function obtenerTiposAsistencia()
-    {
-        $this->tipoAsistencias = TipoAsistencia::all();
-    }
-
-
+  
     public function agregarTipoAsistencia()
     {
         $id = $this->tipoAsistenciaId;
@@ -40,9 +32,21 @@ class TipoAsistenciaComponent extends Component
             'descripcion' => 'required|string|max:255',
             'horasJornal' => 'required|numeric|min:0',
         ];
+        $messages = [
+            'codigo.required' => 'El campo código es obligatorio.',
+            'codigo.string' => 'El código debe ser una cadena de texto.',
+            'codigo.max' => 'El código no puede tener más de 10 caracteres.',
+            'codigo.unique' => 'El código ya está en uso.',
+            'descripcion.required' => 'El campo descripción es obligatorio.',
+            'descripcion.string' => 'La descripción debe ser una cadena de texto.',
+            'descripcion.max' => 'La descripción no puede tener más de 255 caracteres.',
+            'horasJornal.required' => 'El campo horas jornal es obligatorio.',
+            'horasJornal.numeric' => 'El campo horas jornal debe ser un número.',
+            'horasJornal.min' => 'El campo horas jornal debe ser al menos 0.',
+        ];
 
         // Realizar la validación
-        $this->validate($rules);
+        $this->validate($rules,$messages);
 
         // Preparar los datos para insertar o actualizar
         $data = [
@@ -58,15 +62,15 @@ class TipoAsistenciaComponent extends Component
                 $tipoAsistencia = TipoAsistencia::findOrFail($id);
                 $tipoAsistencia->update($data);
                 $this->alert('success', '¡Tipo de asistencia actualizado con éxito!');
+                
             } else {
                 // Si no hay ID, se realiza un create
-                TipoAsistencia::create($data);
-                $this->alert('success', '¡Tipo de asistencia creado con éxito!');
+                //TipoAsistencia::create($data);
+                //$this->alert('success', '¡Tipo de asistencia creado con éxito!');
             }
 
-            // Resetear los campos y recargar la lista de tipos de asistencia
+            $this->dispatch("setColorEdit");
             $this->resetInputFields();
-            $this->obtenerTiposAsistencia();
 
         } catch (QueryException $e) {
             // Manejar errores de la base de datos
@@ -93,7 +97,7 @@ class TipoAsistenciaComponent extends Component
             'position' => 'center',
             'toast' => false,
             'timer' => null,
-            'confirmButtonColor' => '#056A70', // Esto sobrescribiría la configuración global
+            'confirmButtonColor' => '#056A70', 
             'cancelButtonColor' => '#2C2C2C',
             'data' => [
                 'id' => $id,
@@ -106,8 +110,6 @@ class TipoAsistenciaComponent extends Component
         try {
             $tipoAsistencia = TipoAsistencia::findOrFail($data['id']);
             $tipoAsistencia->delete();
-
-            $this->obtenerTiposAsistencia();
             $this->alert('success', '¡Tipo de asistencia eliminado con éxito!');
 
         } catch (QueryException $e) {
@@ -123,8 +125,37 @@ class TipoAsistenciaComponent extends Component
         $this->color = '';
         $this->tipoAsistenciaId = null;
     }
+    public function preguntarRestaurar(){
+        $this->alert('question', 'Está a punto de restaurar los valores por defecto, ¿desea continuar?', [
+            'showConfirmButton' => true,
+            'confirmButtonText' => 'Si, Resturar',
+            'cancelButtonText' => 'Cancelar',
+            'onConfirmed' => 'resturar',
+            'showCancelButton' => true,
+            'position' => 'center',
+            'toast' => false,
+            'timer' => null,
+            'confirmButtonColor' => '#056A70',
+            'cancelButtonColor' => '#2C2C2C',
+        ]);
+    }
+    public function resturar(){
+        try {
+            TipoAsistencia::truncate();
+
+            Artisan::call('db:seed', [
+                '--class' => 'TipoAsistenciaSeeder'
+            ]);
+            $this->resetInputFields();
+            $this->dispatch("setColorEdit");
+            $this->alert("success","Registro Restaurado con Éxito");
+        } catch (\Throwable $th) {
+            $this->alert("error",$th->getMessage());
+        }
+    }
     public function render()
     {
+        $this->tipoAsistencias = TipoAsistencia::all();
         return view('livewire.tipo-asistencia-component');
     }
 }

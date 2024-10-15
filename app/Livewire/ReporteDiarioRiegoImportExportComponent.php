@@ -6,7 +6,9 @@ use App\Models\Campo;
 use App\Models\Cuadrillero;
 use App\Models\Empleado;
 use App\Models\ReporteDiarioRiego;
+use Carbon\Carbon;
 use Exception;
+use Illuminate\Support\Facades\Storage as FacadesStorage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -24,9 +26,9 @@ class ReporteDiarioRiegoImportExportComponent extends Component
    
     public function updatedArchivoBackupHoy()
     {
-
+        //codigo verificado, este es el oficial
         if ($this->archivoBackupHoy) {
-
+            
             try {
                 // Validar el archivo
                 $this->validate([
@@ -119,8 +121,14 @@ class ReporteDiarioRiegoImportExportComponent extends Component
             $empleado = Empleado::where('documento', $documento)->first();
             $cuadrilla = Cuadrillero::where('dni', $documento)->first();
 
-            if ($fecha != $fechasolicitada) {
-                throw new Exception("La fecha {$fecha} no coincide con la fecha a Restaurar en la fila {$index}.");
+            $fechaExcel = Carbon::parse($fecha);
+            $fechasolicitada = Carbon::parse($fechasolicitada);
+            $fecha = $fechaExcel->format('Y-m-d');
+            
+            
+            // Comparar ambas fechas formateadas a "Y-m-d"
+            if (!$fechaExcel->equalTo($fechasolicitada)) {
+                throw new Exception("La fecha {$fechaExcel->format('Y-m-d')} no coincide con la fecha a Restaurar en la fila {$index}.");
             }
 
             if (!$empleado && !$cuadrilla) {
@@ -168,7 +176,7 @@ class ReporteDiarioRiegoImportExportComponent extends Component
                 $filename = "{$timestamp}-detalleriego.json"; // Nombre del archivo
             
                 // Guardar los datos en formato JSON en el disco 'public'
-                Storage::disk('public')->put("data/backup/{$filename}", json_encode($dataArray, JSON_PRETTY_PRINT));
+                FacadesStorage::disk('public')->put("data/backup/{$filename}", json_encode($dataArray, JSON_PRETTY_PRINT));
             
             
             } catch (\Throwable $th) {
@@ -180,7 +188,8 @@ class ReporteDiarioRiegoImportExportComponent extends Component
             ReporteDiarioRiego::whereDate('fecha', $fecha)->delete();
         }
 
-        // Procesar los datos a partir de la segunda fila (índice 1)
+        $fechas = [];
+
         foreach ($rows as $index => $row) {
             if ($index === 0) {
                 // Omitir la primera fila (encabezados)
@@ -200,7 +209,15 @@ class ReporteDiarioRiegoImportExportComponent extends Component
             $descripcion = $row[8] ?? '';
             $sh = $row[9] ? (mb_strtoupper($row[9])=='SI'?1:0):0;
             
-            // Procesar e insertar los datos
+            $fechaExcel = Carbon::parse($fecha);
+            $fecha = $fechaExcel->format('Y-m-d');
+
+            if(!isset($fechas[$fecha])){
+                $fechas[$fecha] = [];
+            }
+
+            $fechas[$fecha][$documento] = true;
+
             ReporteDiarioRiego::create([
                 'fecha' => $fecha,
                 'documento' => $documento,
@@ -213,10 +230,9 @@ class ReporteDiarioRiegoImportExportComponent extends Component
                 'descripcion' => $descripcion,
                 'sh'=>$sh
             ]);
-
-
         }
-    
+       
+        $this->dispatch('consolidarRegadorMasivo',$fechas);
     }
     public function descargarPorFecha($fecha)
     {

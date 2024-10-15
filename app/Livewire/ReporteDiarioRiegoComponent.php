@@ -5,10 +5,12 @@ namespace App\Livewire;
 use App\Models\ConsolidadoRiego;
 use App\Models\Cuadrillero;
 use App\Models\Empleado;
+use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
 class ReporteDiarioRiegoComponent extends Component
 {
+    use LivewireAlert;
     public $fecha;
     public $consolidados;
     public $archivoBackupHoy;
@@ -108,6 +110,7 @@ class ReporteDiarioRiegoComponent extends Component
         if (!$this->fecha) {
             return;
         }
+        //$this->alert('success','ss');
 
         $this->consolidados = ConsolidadoRiego::whereDate('fecha', $this->fecha)->get();
 

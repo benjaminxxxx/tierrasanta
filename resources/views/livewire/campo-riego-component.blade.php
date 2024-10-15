@@ -24,51 +24,20 @@
                         <x-label for="fecha" class="text-left">Fecha</x-label>
                         <x-input type="date" class="!lg:w-auto" wire:model.live="fecha" id="fecha" />
                     </div>
-                    <div class="my-4">
-                        <x-label for="fecha" class="text-left">Tipo de Personal</x-label>
-                        <x-select class="uppercase !lg:w-auto pr-10 max-w-full lg:max-w-xs"
-                            wire:model.live="tipoPersonal" id="tipoPersonal">
-                            <option value="regadores">Regadores</option>
-                            <option value="empleados">Empleados</option>
-                            <option value="cuadrilleros">Cuadrilleros</option>
-                        </x-select>
-                    </div>
+
                     @if ($regadores)
                         <div class="my-4">
                             <x-label for="regador" class="text-left">Encargado</x-label>
                             <x-select class="uppercase !lg:w-auto pr-10 max-w-full lg:max-w-xs"
                                 wire:model.live="regadorSeleccionado" id="regadorSeleccionado">
                                 <option value="">Seleccionar Regador</option>
-                                @foreach ($regadores as $regador)
-                                    <option value="{{ $regador['documento'] }}">{{ $regador['nombre_completo'] }}
+                                @foreach ($regadores as $documento => $regador)
+                                    <option value="{{ $documento }}">{{ $regador }}
                                     </option>
                                 @endforeach
                             </x-select>
                         </div>
                     @endif
-                    <div class="my-4">
-
-
-                        @if ($regadorSeleccionado && $fecha)
-                            <x-secondary-button id="ver-riego-btn" wire:click="verRiego" class="whitespace-nowrap">
-                                Ver o Asignar Riegos
-                            </x-secondary-button>
-                            <x-secondary-button id="ver-observaciones-btn" wire:click="verObservaciones"
-                                class="whitespace-nowrap">
-                                Ver o Asignar Observaciones
-                            </x-secondary-button>
-                        @endif
-                        @if ($estaConsolidado)
-                        <x-button id="consolidar" wire:click="consolidar" disabled class="!bg-opacity-60  whitespace-nowrap">
-                            Fecha Consolidada
-                        </x-button>
-                        @else
-                        <x-button id="consolidar" wire:click="consolidar"  class=" whitespace-nowrap">
-                            Consolidar Día
-                        </x-button>
-                        @endif
-
-                    </div>
                 </div>
 
 
@@ -76,15 +45,12 @@
                     @foreach ($campos as $campo)
                         @php
                             $borderClass = '';
-                            $regadorDocumento = null;
                             $puedeSeleccionarse = 'true';
-
                             $riegoInfo = $campo->seRegoEnFecha($fecha);
 
                             if ($riegoInfo['result']) {
                                 $borderClass = 'border-blue-dotted-large'; // Borde punteado grande
                                 $puedeSeleccionarse = 'false';
-                                $regadorDocumento = $riegoInfo['regadorDocumento']; // Documento del regador
 
                                 if ($campo->seEstaRegando()) {
                                     $borderClass = 'border-blue-dotted-large-animated'; // Borde punteado animado
@@ -92,9 +58,7 @@
                             }
                         @endphp
                         <div data-nombre="{{ $campo->nombre }}"
-                            @if ($puedeSeleccionarse == 'true') wire:click="seleccionarCampo('{{ $campo->nombre }}', {{ $puedeSeleccionarse }})"
-                            @else
-                                x-data="{ showTooltip: false }"
+                            @if ($puedeSeleccionarse == 'false') x-data="{ showTooltip: false }"
                                 @click="showTooltip = true"
                                 @click.away="showTooltip = false" @endif
                             class="campo {{ array_search($campo->nombre, array_column($camposSeleccionados, 'nombre')) !== false ? 'selectedCampo' : ($campo->orden == 1 ? 'bg-lime-600 text-white' : 'bg-stone-300') }} break-work shadow-lg font-bold text-center flex items-center justify-center rounded-md p-3 {{ $borderClass }}"
@@ -104,7 +68,8 @@
                             <div class="campo-content">
                                 {{ $campo->nombre }}
                                 @if ($regadorSeleccionado != null)
-                                    @if ($regadorDocumento == $regadorSeleccionado)
+                                    <!-- Mostrar icono si coincide el regador -->
+                                    @if (in_array($regadorSeleccionado, array_column($riegoInfo['riegos'], 'regadorDocumento')))
                                         <i class="fa fa-user"></i>
                                     @endif
                                 @endif
@@ -119,18 +84,20 @@
                                         <x-slot name="thead">
                                         </x-slot>
                                         <x-slot name="tbody">
-                                            <x-tr>
-                                                <x-th value="Regador:" class="" />
-                                                <x-td value="{{ $riegoInfo['nombreRegador'] }}" class="font-xs" />
-                                            </x-tr>
-                                            <x-tr>
-                                                <x-th value="Hora Inicio:" class="whitespace-nowrap" />
-                                                <x-td value="{{ $riegoInfo['hora_inicio'] }}" class="font-xs" />
-                                            </x-tr>
-                                            <x-tr>
-                                                <x-th value="Hora Fin:" class="whitespace-nowrap" />
-                                                <x-td value="{{ $riegoInfo['hora_fin'] }}" class="font-xs" />
-                                            </x-tr>
+                                            @foreach ($riegoInfo['riegos'] as $riego)
+                                                <x-tr>
+                                                    <x-th value="Regador:" class="" />
+                                                    <x-td value="{{ $riego['nombreRegador'] }}" class="font-xs" />
+                                                </x-tr>
+                                                <x-tr>
+                                                    <x-th value="Hora Inicio:" class="whitespace-nowrap" />
+                                                    <x-td value="{{ $riego['hora_inicio'] }}" class="font-xs" />
+                                                </x-tr>
+                                                <x-tr>
+                                                    <x-th value="Hora Fin:" class="whitespace-nowrap" />
+                                                    <x-td value="{{ $riego['hora_fin'] }}" class="font-xs" />
+                                                </x-tr>
+                                            @endforeach
                                         </x-slot>
                                     </x-table>
                                 </div>

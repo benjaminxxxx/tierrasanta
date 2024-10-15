@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\AlmacenController;
 use App\Http\Controllers\CampoController;
 use App\Http\Controllers\ReporteDiarioController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AsistenciaPlanillaController;
-
+use App\Http\Controllers\ProductoController;
+use App\Http\Controllers\ProveedorController;
 
 Route::middleware([
     'auth:sanctum',
@@ -20,7 +22,8 @@ Route::middleware([
         return view('empleados');
     })->name('dashboard');
 
-    Route::get('/planilla/asistencia', [AsistenciaPlanillaController::class,'index'])->name('planilla.asistencia');
+    Route::get('/planilla/asistencia/{anio?}/{mes?}', [AsistenciaPlanillaController::class,'index'])->name('planilla.asistencia');
+    Route::get('/planilla/blanco', [AsistenciaPlanillaController::class,'blanco'])->name('planilla.blanco');
 
     Route::get('/empleados', function () {
         return view('empleados');
@@ -56,6 +59,7 @@ Route::middleware([
         return view('cuadrilla.asistencia');
     })->name('cuadrilla.asistencia');
 
+    Route::get('/campo/camapania', [CampoController::class,'campania'])->name('campo.campania');
     Route::get('/campo/mapa', [CampoController::class,'mapa'])->name('campo.mapa');
     Route::get('/campo/riego', [CampoController::class,'riego'])->name('campo.riego');
     Route::get('/campo/detalleriego', [CampoController::class,'detalleriego'])->name('campo.detalle_riego');
@@ -78,4 +82,13 @@ Route::middleware([
     //Route::get('/reporte/reporte-diario/obtener-campos', [ReporteDiarioController::class, 'ObtenerCampos'])->name('reporte.reporte_diario.obtener_campos');
     //Route::get('/reporte/reporte-diario/obtener-campo', [ReporteDiarioController::class, 'ObtenerCampo'])->name('reporte.reporte_diario.obtener_campo');
 
+    //PROVEEDORES
+    Route::get('/proveedores', [ProveedorController::class,'index'])->name('proveedores.index');
+
+    //PRODUCTOS
+    Route::get('/productos', [ProductoController::class,'index'])->name('productos.index');
+
+    //ALMACEN
+    Route::get('/almacen/salida_de_productos', [AlmacenController::class,'salidaProductos'])->name('almacen.salida_productos');
+    
 });

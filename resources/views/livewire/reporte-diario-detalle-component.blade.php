@@ -101,7 +101,7 @@
             hot: null,
             tareas: @json($tareas),
             campos: @json($campos),
-            tipoAsistenciasEntidad:@json($tipoAsistenciasEntidad),
+            tipoAsistenciasEntidad: @json($tipoAsistenciasEntidad),
             tipoAsistencias: @json($tipoAsistencias),
             init() {
                 this.initTable();
@@ -150,49 +150,52 @@
                         // Verificar que el cambio no sea causado por un "loadData" o evento de Livewire
                         if (source !== 'loadData') {
                             this.calcularTotales();
-                            let changedRow1 = changes[0][0];
+                            /*let changedRow1 = changes[0][0];
                             let currentRow1 = changedRow1;
                             const tipoAsistencia = hot.getDataAtCell(currentRow1, 2);
-                            if(tipoAsistencia!='A'){
-                                const totalHours1 = this.minutesToTime(this.tipoAsistenciasEntidad[tipoAsistencia]*60);
-                                hot.setDataAtCell(currentRow1, (4*this.tareas + 4), totalHours1);
+                            if (tipoAsistencia != 'A') {
+                                const totalHours1 = this.minutesToTime(this.tipoAsistenciasEntidad[
+                                    tipoAsistencia] * 60);
+                                hot.setDataAtCell(currentRow1, (4 * this.tareas + 4), totalHours1);
                             }
-
+*/
                         }
-                        if (source !== 'loadData' && source !== 'edit') {
+                        /*if (source !== 'loadData' && source !== 'edit') {
                             if (!changes) {
                                 return;
                             }
-                            
+
                             let changedRow = changes[0][0];
                             let currentRow = changedRow;
                             let startAt = 6;
                             let totalMinutes = 0;
 
-                            
+
 
                             for (let indice = 0; indice < this.tareas; indice++) {
-                                let hora_inicio = hot.getDataAtCell(currentRow, 4*indice + startAt);
-                                let hora_salida = hot.getDataAtCell(currentRow, 4*indice + startAt+1);
+                                let hora_inicio = hot.getDataAtCell(currentRow, 4 * indice +
+                                    startAt);
+                                let hora_salida = hot.getDataAtCell(currentRow, 4 * indice +
+                                    startAt + 1);
 
                                 // Verificar que ambas horas sean válidas
                                 if (this.isValidTimeFormat(hora_inicio) && this.isValidTimeFormat(
                                         hora_salida)) {
-                                            
+
                                     const start = this.timeToMinutes(hora_inicio);
                                     const end = this.timeToMinutes(hora_salida);
 
                                     // Si las horas son válidas y la hora de inicio es menor que la de fin
                                     if (start < end) {
                                         totalMinutes += end - start;
-                                        
+
                                     }
                                 }
                             }
 
                             const totalHours = this.minutesToTime(totalMinutes);
-                            hot.setDataAtCell(currentRow, (4*this.tareas + 4), totalHours);
-                        }
+                            hot.setDataAtCell(currentRow, (4 * this.tareas + 4), totalHours);
+                        }*/
                     }
                 });
 
@@ -236,7 +239,7 @@
                         className: 'text-center'
                     },
                     {
-                        data: 3,
+                        data: 'numero_cuadrilleros',
                         type: 'numeric',
                         width: 50,
                         title: 'N° C.',
@@ -284,8 +287,22 @@
                     width: 70,
                     type: 'time',
                     timeFormat: 'HH:mm',
+                    correctFormat: true,
                     title: 'TOTAL',
-                    className: '!text-center font-bold text-lg'
+                    className: '!text-center font-bold text-lg',
+                    renderer: function(hotInstance, td, row, col, prop, value, cellProperties) {
+                        Handsontable.renderers.TextRenderer.apply(this,
+                        arguments); // Render por defecto
+
+                        // Aplicar estilos condicionales
+                        if (value === '00:00' || value === '0' || value === null) {
+                            // Valor es 0 o nulo -> color rojo
+                            td.classList.add('!text-red-600', 'font-bold');
+                        } else {
+                            // Valor diferente a 0 -> color verde
+                            td.classList.add('!text-green-600', 'font-bold');
+                        }
+                    }
                 });
 
                 return columns;
@@ -305,10 +322,11 @@
                 };
 
                 const data = this.hot.getData();
-                
+
 
                 data.forEach(row => {
-                    const asistencia = row[2]; // Suponiendo que la columna de asistencia es la tercera (índice 2)
+                    const asistencia = row[
+                    2]; // Suponiendo que la columna de asistencia es la tercera (índice 2)
                     const nCuadrillas = row[3]; // Columna de número de cuadrillas
 
                     if (asistencia === 'A') totales.asistido++;
@@ -320,7 +338,7 @@
                     else if (asistencia === 'DM') totales.descansoMedico++;
                     else if (asistencia === 'AM') totales.atencionMedica++;
 
-                    
+
 
                     // Sumar cuadrillas
                     if (row[1] === 'Cuadrilla') {

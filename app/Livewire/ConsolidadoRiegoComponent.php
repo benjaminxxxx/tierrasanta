@@ -4,13 +4,15 @@ namespace App\Livewire;
 
 use App\Models\ConsolidadoRiego;
 use Date;
+use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
 class ConsolidadoRiegoComponent extends Component
 {
+    use LivewireAlert;
     public $fecha;
     public $consolidado_riegos;
-    protected $listeners = ['RefrescarMapa'=>'$refresh'];
+    protected $listeners = ['RefrescarMapa'=>'$refresh','registroConsolidado'=>'$refresh'];
     public function mount()
     {
         $this->fecha = (new \DateTime('now'))->format('Y-m-d');
@@ -33,7 +35,16 @@ class ConsolidadoRiegoComponent extends Component
         // Sumar un día a la fecha seleccionada
         $this->fecha = \Carbon\Carbon::parse($this->fecha)->addDay()->format('Y-m-d');
     }
-    public function consolidarRegistro(){
-        $this->dispatch('ConsolidarRegadores',$this->fecha);
+    public function consolidarRegistro($documento){
+        if(!$documento || !$this->fecha){
+            return;
+        }
+        try {
+            $this->dispatch('consolidarRegador',$documento,$this->fecha);
+            $this->alert("success","Registro consolidado");
+       
+        } catch (\Throwable $th) {
+            $this->alert("error","Ocurrió un error al consolidar el registro");
+        }
     }
 }

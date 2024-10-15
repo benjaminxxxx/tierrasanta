@@ -22,9 +22,6 @@
                 No Descontar Hora de Almuerzo
             </x-label>
 
-            @php
-                $idTable = 'componenteTable' . Str::random(5);
-            @endphp
             <div x-data="{{ $idTable }}" wire:ignore>
                 <div x-ref="tableContainer" class="min-h-[20rem] mt-5 overflow-auto"></div>
 
@@ -44,12 +41,20 @@
             hot: null,
             init() {
                 this.initTable();
+                this.listeners.push(
+                    Livewire.on('actualizarGrilla-{{ $idTable }}', (data) => {
+                       
+                        console.log(data[0]);
+                        this.tableData = data[0];
+                        this.hot.loadData(this.tableData);
+                    })
+                );
             },
             initTable() {
                 const tipoLabores = @json($tipoLabores);
                 const campos = @json($campos);
                 const tableData2 = @json($registros);
-                console.log(tableData2);
+               
                 let columns = [{
                         data: 'campo',
                         type: 'dropdown',

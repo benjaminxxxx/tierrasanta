@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('grupo');
             $table->string('documento');
             $table->string('nombres');
+            $table->integer('orden');
             $table->decimal('total_horas', 8, 2);
             $table->unsignedTinyInteger('mes'); // Mes (1-12)
             $table->unsignedInteger('anio'); // Año

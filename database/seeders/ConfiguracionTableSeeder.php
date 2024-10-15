@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class ConfiguracionTableSeeder extends Seeder
 {
@@ -13,9 +14,9 @@ class ConfiguracionTableSeeder extends Seeder
     public function run(): void
     {
         // Limpiar la tabla 'configuracion'
-        \DB::table('configuracion')->truncate();
+        DB::table('configuracion')->truncate();
 
-        \DB::table('configuracion')->insert([
+        DB::table('configuracion')->insert([
             [
                 'codigo' => 'rmv',
                 'valor' => '1025', // Almacena como texto
@@ -86,6 +87,16 @@ class ConfiguracionTableSeeder extends Seeder
                 'valor' => '60',
                 'descripcion' => 'Tiempo de Almuerzo',
             ],
+            [
+                'codigo' => 'essalud_eps',
+                'valor' => '0.55',
+                'descripcion' => 'Essalud EPS',
+            ],
+            [
+                'codigo' => 'porcentaje_constante',
+                'valor' => '1.18',
+                'descripcion' => 'Porcentaje Constante',
+            ]
         ]);
     }
 }

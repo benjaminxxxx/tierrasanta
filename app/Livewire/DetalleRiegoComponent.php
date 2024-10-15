@@ -204,11 +204,6 @@ class DetalleRiegoComponent extends Component
     }
     public function agregarDetalle()
     {
-        /*
-                if (!array_key_exists($this->regadorSeleccionado, $this->riegos)) {
-                    $this->riegos[$this->regadorSeleccionado] = $this->obtenerNombreRegador($this->regadorSeleccionado);
-                    
-                }*/
         if (!$this->regadorSeleccionado) {
             return $this->alert('error', 'Debe seleccionar un Regador');
         }
@@ -258,6 +253,7 @@ class DetalleRiegoComponent extends Component
         if ($this->archivoBackupHoy) {
 
             try {
+                
                 // Validar el archivo
                 $this->validate([
                     'archivoBackupHoy' => 'required|file|mimes:xlsx,xls,csv|max:2048',

@@ -11,11 +11,10 @@ class PlanillaAsistenciaComponent extends Component
     public $anio;
     public $search = '';
 
-    public function mount()
+    public function mount($mes=null,$anio=null)
     {
-        // Iniciar con el mes y año actuales
-        $this->mes = Carbon::now()->format('m');
-        $this->anio = Carbon::now()->format('Y');
+        $this->mes = $mes?$mes:Carbon::now()->format('m');
+        $this->anio = $anio?$anio:Carbon::now()->format('Y');
     }
 
     public function mesAnterior()

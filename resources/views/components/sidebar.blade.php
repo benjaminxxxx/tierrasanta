@@ -36,6 +36,9 @@
                             <x-nav-link-child href="{{ route('planilla.asistencia') }}" :active="request()->routeIs('planilla.asistencia')">
                                 Asistencia
                             </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('planilla.blanco') }}" :active="request()->routeIs('planilla.blanco')">
+                                Blanco
+                            </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
                     <x-nav-link-parent name="sectorEmpleado" href="{{ route('empleados') }}" :active="request()->routeIs(['empleados','empleados.asignacion_familiar'])">
@@ -66,12 +69,12 @@
                             <x-nav-link-child href="{{ route('cuadrilla.grupos') }}" :active="request()->routeIs('cuadrilla.grupos')">
                                 Grupos
                             </x-nav-link-child>
-                            <x-nav-link-child href="{{ route('cuadrilla.asistencia') }}" :active="request()->routeIs('cuadrilla.asistencia')">
+                            <!--<x-nav-link-child href="{{ route('cuadrilla.asistencia') }}" :active="request()->routeIs('cuadrilla.asistencia')">
                                 Asistencia
-                            </x-nav-link-child>
+                            </x-nav-link-child>-->
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorCampo" href="#" :active="request()->routeIs(['campo.mapa'])">
+                    <x-nav-link-parent name="sectorCampo" href="#" :active="request()->routeIs(['campo.mapa','campo.riego','campo.detalle_riego','campo.campania'])">
                         
                         <div class="w-6 text-center">
                             <i class="fa fa-leaf"></i>
@@ -84,12 +87,16 @@
                             <x-nav-link-child href="{{ route('campo.riego') }}" :active="request()->routeIs('campo.riego')">
                                 Riego
                             </x-nav-link-child>
+                            <!--
                             <x-nav-link-child href="{{ route('campo.detalle_riego') }}" :active="request()->routeIs('campo.detalle_riego')">
                                 Detalle Riego
+                            </x-nav-link-child>-->
+                            <x-nav-link-child href="{{ route('campo.campania') }}" :active="request()->routeIs('campo.campania')">
+                                Campañas
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorReportes" href="#" :active="request()->routeIs(['reporte.reporte_diario','reporte.reporte_diario_riego'])">
+                    <x-nav-link-parent name="sectorReportes" href="#" :active="request()->routeIs(['reporte.reporte_diario','reporte.reporte_diario_riego','almacen.salida_productos'])">
                       
                         <div class="w-6 text-center">
                             <i class="fa fa-database"></i>
@@ -97,10 +104,13 @@
                         Reporte Diario
                         <x-slot name="children">
                             <x-nav-link-child href="{{ route('reporte.reporte_diario') }}" :active="request()->routeIs('reporte.reporte_diario')">
-                                De Trabajadores
+                                Trabajadores
                             </x-nav-link-child>
                             <x-nav-link-child href="{{ route('reporte.reporte_diario_riego') }}" :active="request()->routeIs('reporte.reporte_diario_riego')">
-                                De Regadores
+                                Regadores
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('almacen.salida_productos') }}" :active="request()->routeIs('almacen.salida_productos')">
+                                Salida de Almacén Pesticidas y Fertilizantes
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
@@ -113,6 +123,21 @@
                         <x-slot name="children">
                             <x-nav-link-child href="{{ route('consolidado.riego') }}" :active="request()->routeIs('consolidado.riego')">
                                 Riego
+                            </x-nav-link-child>
+                        </x-slot>
+                    </x-nav-link-parent>
+                    <x-nav-link-parent name="sectorProveedores" :active="request()->routeIs(['proveedores.index','productos.index'])">
+                        
+                        <div class="w-6 text-center">
+                            <i class="fa fa-users"></i>
+                        </div>
+                        Información General
+                        <x-slot name="children">
+                            <x-nav-link-child href="{{ route('proveedores.index') }}" :active="request()->routeIs('proveedores.index')">
+                                Proveedores
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('productos.index') }}" :active="request()->routeIs('productos.index')">
+                                Productos
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>

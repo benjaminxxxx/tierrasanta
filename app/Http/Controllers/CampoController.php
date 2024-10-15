@@ -21,6 +21,10 @@ class CampoController extends Controller
             'campos' => $campos
         ]);
     }
+    public function campania()
+    {
+        return view('campo.campania');
+    }
     public function detalleriego(){
         $campos = Campo::all();
         return view('campo.detalleriego');

@@ -56,21 +56,22 @@ class Campo extends Model
         // Obtener el primer detalle de riego que coincide con la fecha
         $detalleRiego = $this->detalleRiegos()
         ->where('fecha', $fecha)
-        ->first(); // Usamos first() en lugar de exists() para obtener el primer resultado
+        ->get(); // Usamos first() en lugar de exists() para obtener el primer resultado
 
-        if ($detalleRiego) {
-            // Si existe un registro, devolver un array con el resultado y el mensaje
-            //buscar nombre de empleado 
-            $empleado = Empleado::where('documento', $detalleRiego->regador)->first();
-            $empleadoNombre = $empleado ? $empleado->nombres : "";
-
+        if ($detalleRiego && $detalleRiego->count()>0) {
+            $data = [];
+            foreach ($detalleRiego as $riego) {
+                $data[] = [
+                    'regadorDocumento' => $riego->documento,
+                    'hora_inicio' => Carbon::parse($riego->hora_inicio)->format('H:i'), // Convertir a HH:MM
+                    'hora_fin' => Carbon::parse($riego->hora_fin)->format('H:i'), // Convertir a HH:MM
+                    'nombreRegador'=>$riego->regador
+                ];
+            }
             return [
                 'result' => true,
                 'message' => 'El campo se regó en la fecha especificada.',
-                'regadorDocumento' => $detalleRiego->regador,
-                'hora_inicio' => Carbon::parse($detalleRiego->hora_inicio)->format('H:i'), // Convertir a HH:MM
-                'hora_fin' => Carbon::parse($detalleRiego->hora_fin)->format('H:i'), // Convertir a HH:MM
-                'nombreRegador'=>$empleadoNombre
+                'riegos' => $data
             ];
         } else {
             // Si no existe un registro, devolver un array indicando que no se regó
@@ -78,11 +79,12 @@ class Campo extends Model
                 'result' => false,
                 'message' => 'El campo no se regó en la fecha especificada.',
                 'regadorDocumento' => null,
+                'riegos' => []
             ];
         }
     }
     public function detalleRiegos()
     {
-        return $this->hasMany(DetalleRiego::class, 'campo', 'nombre');
+        return $this->hasMany(ReporteDiarioRiego::class, 'campo', 'nombre');
     }
 }

@@ -50,7 +50,7 @@
                                />
                             <x-td>
                                 @if ($consolidado->estado == 'noconsolidado')
-                                    <x-button wire:click="consolidarRegistro">
+                                    <x-button wire:click="consolidarRegistro({{$consolidado->regador_documento}})">
                                         Consolidar
                                     </x-button>
                                 @endif

@@ -60,19 +60,19 @@
 
                                     <div class="col-span-2 md:col-span-1 mt-3">
                                         <x-label for="fecha_inicio">Fecha de inicio</x-label>
-                                        <x-inputn type="date" class="uppercase" wire:model="fecha_inicio" wire:change="evaluarTituloFecha" id="fecha_inicio" />
+                                        <x-input type="date" class="uppercase" wire:model="fecha_inicio" wire:change="evaluarTituloFecha" id="fecha_inicio" />
                                         <x-input-error for="fecha_inicio" />
                                     </div>
 
                                     <div class="col-span-2 md:col-span-1 mt-3">
                                         <x-label for="fecha_fin">Fecha de Fin</x-label>
-                                        <x-inputn type="date" class="uppercase" wire:model="fecha_fin" wire:change="evaluarTituloFecha" id="fecha_fin" />
+                                        <x-input type="date" class="uppercase" wire:model="fecha_fin" wire:change="evaluarTituloFecha" id="fecha_fin" />
                                         <x-input-error for="fecha_fin" />
                                     </div>
 
                                     <div class="col-span-2 mt-3">
                                         <x-label for="titulo">Titulo del Libro</x-label>
-                                        <x-inputn type="text" autocomplete="off" wire:model="titulo" class="uppercase" id="titulo" />
+                                        <x-input type="text" autocomplete="off" wire:model="titulo" class="uppercase" id="titulo" />
                                         <x-input-error for="titulo" />
                                     </div>
 

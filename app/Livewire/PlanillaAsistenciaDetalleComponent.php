@@ -1,13 +1,17 @@
 <?php
 
 namespace App\Livewire;
+
 use App\Models\Empleado;
+use App\Models\Grupo;
 use App\Models\PlanillaAsistencia;
 use App\Models\PlanillaAsistenciaDetalle;
 use App\Models\ReporteDiario;
+use App\Models\TipoAsistencia;
 use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
+use Illuminate\Support\Facades\DB;
 
 class PlanillaAsistenciaDetalleComponent extends Component
 {
@@ -16,42 +20,70 @@ class PlanillaAsistenciaDetalleComponent extends Component
     public $mes;
     public $dias;
     public $empleados;
+    public $informacionAsistenciaAdicional;
+    public $tipoAsistenciaArray;
+    public $grupoColores;
+    public $diasTituloArray;
     protected $listeners = ["storeTableData"];
     public function mount($anio, $mes)
     {
         // Definir el año y mes iniciales
         $this->anio = $anio;
         $this->mes = $mes;
+        $this->grupoColores = Grupo::get()->pluck("color", "codigo")->toArray();
+        $this->tipoAsistenciaArray = TipoAsistencia::get()->mapWithKeys(function ($item) {
+            return [
+                $item->codigo => [
+                    'color' => $item->color,
+                    'descripcion' => $item->descripcion
+                ]
+            ];
+        })->toArray();
 
         // Generar el array de días del mes
-        $this->dias = $this->obtenerDiasDelMes($anio, $mes);
+        $this->dias = $this->obtenerDiasDelMesConTitulo($anio, $mes);
+     
+        //$this->diasTituloArray =
 
         $this->obtenerEmpleados();
-
     }
-    public function obtenerEmpleados(){
+    public function obtenerEmpleados()
+    {
 
         $anio = $this->anio;
         $mes = $this->mes;
 
-        if(!$anio || !$mes){
+        if (!$anio || !$mes) {
             return;
         }
 
         $ultimoDiaMes = Carbon::createFromDate($anio, $mes, 1)->endOfMonth()->day;
+        $informacionAsistenciaAdicional = [];
+
+        $empleadosDatas = Empleado::get()->keyBy('documento')->toArray();
+
 
         $this->empleados = PlanillaAsistencia::where('mes', $mes)
             ->where('anio', $anio)
             ->with('detalles') // Traer los detalles de asistencia relacionados
             ->orderBy('grupo')
             ->get()
-            ->map(function ($empleado, $indice) use ($ultimoDiaMes, $mes, $anio) {
+            ->map(function ($empleado, $indice) use ($ultimoDiaMes, $mes, $anio, &$informacionAsistenciaAdicional, $empleadosDatas) {
                 // Mapea los detalles de asistencia del empleado por fecha
                 $diasAsistencia = [];
+
+                $empleadoData = $empleadosDatas[$empleado->documento] ?? null;
+
+                /*
+esta parte esta en otro codigo, pero lo quite porque a lo mejor el usuario ya no existe pero se requiere su registro
+                if (!$empleadoData) {
+                    continue;
+                }*/
 
                 // Inicializa el array de dias (dia_1, dia_2, ...) con null por defecto
                 for ($dia = 1; $dia <= $ultimoDiaMes; $dia++) {
                     $diasAsistencia["dia_$dia"] = null; // Valor por defecto
+                    $informacionAsistenciaAdicional["dia_$dia"][$empleado->documento] = [];
                 }
 
                 // Recorre los detalles de asistencia y llena los valores en los días correspondientes
@@ -61,19 +93,38 @@ class PlanillaAsistenciaDetalleComponent extends Component
                     if ($fecha->month == $mes && $fecha->year == $anio) {
                         $diaKey = "dia_{$fecha->day}"; // Formato 'dia_1', 'dia_2', etc.
                         $diasAsistencia[$diaKey] = $detalle->horas_jornal; // O el campo que necesites
+                        $informacionAsistenciaAdicional[$diaKey][$empleado->documento] = [
+                            'tipo_asistencia' => $detalle->tipo_asistencia,
+                            'color' => isset($this->tipoAsistenciaArray[$detalle->tipo_asistencia]['color'])
+                                ? $this->tipoAsistenciaArray[$detalle->tipo_asistencia]['color']
+                                : '#ffffff', // Color por defecto si no existe
+                            'descripcion' => isset($this->tipoAsistenciaArray[$detalle->tipo_asistencia]['descripcion'])
+                                ? $this->tipoAsistenciaArray[$detalle->tipo_asistencia]['descripcion']
+                                : ''
+                        ];
                     }
+                }
+                $grupoColor = '#ffffff';
+                $grupo = '';
+                if (isset($empleadoData['grupo_codigo'])) {
+                    $grupoColor = $this->grupoColores[$empleadoData['grupo_codigo']] ?? '#ffffff';
+                    $grupo = $empleadoData['grupo_codigo'];
                 }
 
                 // Retorna los datos del empleado más los días mapeados
                 return array_merge([
                     'orden' => $indice + 1,
-                    'grupo' => $empleado->grupo,
+                    'grupo' => $grupo,
+                    'empleado_grupo_color' => $grupoColor,
                     'documento' => $empleado->documento,
                     'nombres' => $empleado->nombres,
                     'total_horas' => $empleado->total_horas,
                 ], $diasAsistencia);
             })
             ->toArray();
+
+        $this->informacionAsistenciaAdicional = $informacionAsistenciaAdicional;
+        //die(var_dump($informacionAsistenciaAdicional));
     }
     public function obtenerDiasDelMes($anio, $mes)
     {
@@ -82,7 +133,31 @@ class PlanillaAsistenciaDetalleComponent extends Component
 
         // Crear un array desde el día 1 hasta el día final
         return range(1, $totalDias);
+    }
+    public function obtenerDiasDelMesConTitulo($anio, $mes)
+    {
+        $diasConTitulo = [];
 
+        // Obtiene el número total de días en el mes
+        $ultimoDiaMes = Carbon::createFromDate($anio, $mes)->endOfMonth()->day;
+
+        // Recorre cada día del mes
+        for ($dia = 1; $dia <= $ultimoDiaMes; $dia++) {
+            // Obtiene el día de la semana (Lunes, Martes, etc.)
+            $fecha = Carbon::createFromDate($anio, $mes, $dia);
+            $diaSemana = $fecha->format('N'); // 1 para Lunes, 7 para Domingo
+
+            // Array de títulos para los días de la semana
+            $diasTitulo = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+
+            // Guarda en el array el título del día y el índice
+            $diasConTitulo[] = [
+                'titulo' => $diasTitulo[$diaSemana - 1], // -1 porque el índice del array comienza en 0
+                'indice' => $dia
+            ];
+        }
+
+        return $diasConTitulo;
     }
     /*
     public function cargarInformacion()
@@ -91,7 +166,7 @@ class PlanillaAsistenciaDetalleComponent extends Component
         $anio = $this->anio;
         $inicio = microtime(true);
 
-        \DB::beginTransaction(); // Iniciar transacción
+        DB::beginTransaction(); // Iniciar transacción
         try {
             // Buscar todos los reportes diarios del mes y año especificado
             $reportesDiarios = ReporteDiario::whereMonth('fecha', $mes)
@@ -157,14 +232,14 @@ class PlanillaAsistenciaDetalleComponent extends Component
                 $planillaAsistencia->save();
             }
 
-            \DB::commit(); // Confirmar la transacción
+            DB::commit(); // Confirmar la transacción
 
             $this->obtenerEmpleados();
             $this->dispatch("setEmpleados",$this->empleados);
             $this->alert('success', 'Información cargada correctamente.');
 
         } catch (\Exception $e) {
-            \DB::rollBack(); // Revertir la transacción en caso de error
+            DB::rollBack(); // Revertir la transacción en caso de error
 
             // Mostrar mensaje de error usando livewire-alert
             $this->alert('error', 'Error al cargar la información: ' . $e->getMessage());
@@ -183,39 +258,39 @@ class PlanillaAsistenciaDetalleComponent extends Component
         $mes = $this->mes;
         $anio = $this->anio;
         $inicio = microtime(true);
-    
-        \DB::beginTransaction(); // Iniciar transacción
+
+        DB::beginTransaction(); // Iniciar transacción
         try {
             // Buscar todos los reportes diarios del mes y año especificado de una vez
             $reportesDiarios = ReporteDiario::whereMonth('fecha', $mes)
                 ->whereYear('fecha', $anio)
                 ->orderBy('orden')
                 ->get();
-    
+
             // Agrupar por documento
             $reportesAgrupados = $reportesDiarios->groupBy('documento');
-    
+
             // Preparar arrays para inserts masivos
             $asistencias = [];
             $detalles = [];
             $planillaIds = [];
-    
+
             // Obtener los documentos de los reportes
             $documentos = $reportesAgrupados->keys();
-    
+
             // Eliminar los detalles existentes de todas las planillas que se van a procesar
             $planillaIds = PlanillaAsistencia::whereIn('documento', $documentos)
                 ->where('mes', $mes)
                 ->where('anio', $anio)
                 ->pluck('id');
-    
+
             PlanillaAsistenciaDetalle::whereIn('planilla_asistencia_id', $planillaIds)->delete();
-    
+
             // Iterar sobre cada grupo de reportes (uno por documento)
             foreach ($reportesAgrupados as $documento => $reportes) {
                 // Tomar el primer reporte para información de cabecera
                 $primerReporte = $reportes->first();
-    
+
                 // Crear o actualizar PlanillaAsistencia
                 $planillaAsistencia = PlanillaAsistencia::updateOrCreate(
                     [
@@ -226,26 +301,27 @@ class PlanillaAsistenciaDetalleComponent extends Component
                     [
                         'grupo' => $primerReporte->tipo_trabajador,
                         'nombres' => $primerReporte->empleado_nombre,
+                        'orden' => $primerReporte->orden,
                         'total_horas' => 0, // Inicialmente 0 (se sumará luego)
                     ]
                 );
-    
+
                 // Preparar array para detalles
                 $totalHorasDecimal = 0;
                 $diasEnMes = Carbon::create($anio, $mes)->daysInMonth;
-    
+
                 // Procesar todos los días del mes
                 for ($dia = 1; $dia <= $diasEnMes; $dia++) {
                     $fechaDia = Carbon::create($anio, $mes, $dia);
-    
+
                     // Buscar reporte diario para este día
                     $detalle = $reportes->firstWhere('fecha', $fechaDia->toDateString());
-    
+
                     if ($detalle) {
                         // Convertir horas y sumar al total
                         $horasDecimal = $this->convertirHorasADecimal($detalle->total_horas);
                         $totalHorasDecimal += $horasDecimal;
-    
+
                         // Agregar al array de detalles
                         $detalles[] = [
                             'planilla_asistencia_id' => $planillaAsistencia->id,
@@ -255,34 +331,26 @@ class PlanillaAsistenciaDetalleComponent extends Component
                         ];
                     }
                 }
-    
+
                 // Actualizar el total de horas acumulado
                 $planillaAsistencia->total_horas = $totalHorasDecimal;
                 $planillaAsistencia->save();
             }
-    
+
             // Insertar todos los detalles de una vez
             if (!empty($detalles)) {
                 PlanillaAsistenciaDetalle::insert($detalles);
             }
-    
-            \DB::commit(); // Confirmar la transacción
-    
+
+            DB::commit(); // Confirmar la transacción
+
             $this->obtenerEmpleados();
-            $this->dispatch("setEmpleados", $this->empleados);
+            $this->dispatch("setEmpleados", $this->empleados, $this->informacionAsistenciaAdicional);
             $this->alert('success', 'Información cargada correctamente.');
         } catch (\Exception $e) {
-            \DB::rollBack(); // Revertir la transacción en caso de error
+            DB::rollBack(); // Revertir la transacción en caso de error
             $this->alert('error', 'Error al cargar la información: ' . $e->getMessage());
         }
-    
-        $fin = microtime(true);
-    
-        // Calcular el tiempo total de ejecución en segundos
-        $tiempoEjecucion = $fin - $inicio;
-    
-        // Mostrar el tiempo total de ejecución en la consola o como log
-        \Log::info('Tiempo de ejecución: ' . $tiempoEjecucion . ' segundos');
     }
     /**
      * Función para convertir horas en formato H:i:s a formato decimal
@@ -290,11 +358,7 @@ class PlanillaAsistenciaDetalleComponent extends Component
     protected function convertirHorasADecimal($hora)
     {
         list($horas, $minutos, $segundos) = explode(':', $hora);
-
-        // Convertir minutos a fracción de horas
         $minutosDecimal = $minutos / 60;
-
-        // El total en decimal será la suma de las horas + la fracción de los minutos
         return $horas + $minutosDecimal;
     }
     public function storeTableData($tableData)
@@ -348,7 +412,6 @@ class PlanillaAsistenciaDetalleComponent extends Component
                 }
             }
         }
-
     }
     public function render()
     {

@@ -4,6 +4,8 @@ namespace App\Livewire;
 
 use App\Models\Configuracion;
 use App\Models\DescuentoSP;
+use App\Models\DescuentoSpHistorico;
+use Carbon\Carbon;
 use Livewire\Component;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 
@@ -14,33 +16,39 @@ class ConfiguracionDescuentoAfpComponent extends Component
     public $descuentos;
     public $descuentos65;
     public $informacion;
+    public $fechas = [];
+    public $fecha_inicio;
+    public $descuentosSPHistorico;
+    public $fechasRegistradas;
+
     public function mount()
     {
-        $this->informacion = 'HABITAT	1,47%	1,25%	1,70%	10,00%	11 981,55
-INTEGRA	1,55%	0,78%	1,70%	10,00%	11 981,55
-PRIMA	1,60%	1,25%	1,70%	10,00%	11 981,55
-PROFUTURO	1,69%	1,20%	1,70%	10,00%	11 981,55';
-        $this->cargarDescuentos();
+
+
+        $this->descuentosSP = DescuentoSp::orderBy('orden', 'asc')->get();
+        $this->generarFechas();
+        $this->informacion = '';
     }
-    protected function cargarDescuentos()
+    public function generarFechas()
     {
-        $this->descuentosSP = DescuentoSP::orderBy('orden', 'asc')->get();
-        $this->descuentos = $this->descuentosSP->pluck('porcentaje', 'codigo')->toArray();
-        $this->descuentos65 = $this->descuentosSP->pluck('porcentaje_65', 'codigo')->toArray();
+        $inicio = Carbon::createFromDate(1993, 6, 1);
+        $actual = Carbon::now();
+
+        while ($actual > $inicio) {
+            $this->fechas[] = $actual->format('Y-m');
+            $actual->subMonth();
+        }
+        $this->fecha_inicio = Carbon::now()->format('Y-m');
     }
-    public function limpiarMontos()
+
+    public function eliminarDescuentos()
     {
         try {
-            // Limpia los montos estableciendo los porcentajes en 0
-            DescuentoSP::query()->update([
-                'porcentaje' => 0,
-                'porcentaje_65' => 0,
-            ]);
+            $fecha = Carbon::createFromFormat('Y-m', $this->fecha_inicio)->startOfMonth()->format('Y-m-d');
+            DescuentoSpHistorico::whereDate('fecha_inicio', $fecha)->delete();
 
-            $this->cargarDescuentos();
 
-            // Mensaje de éxito
-            $this->alert('success', 'Los montos han sido limpiados exitosamente.');
+            $this->alert('success', 'Los montos para la feccha seleccionada han sido limpiados exitosamente.');
         } catch (\Exception $e) {
             // Captura cualquier excepción y muestra un mensaje de error
             $this->alert('error', 'Ocurrió un error al limpiar los montos: ' . $e->getMessage());
@@ -56,14 +64,13 @@ PROFUTURO	1,69%	1,20%	1,70%	10,00%	11 981,55';
 
             $valoresDescuentos = $this->parsearInformacion($this->informacion);
 
+
             // Recorrer los descuentos desde la base de datos
             foreach ($this->descuentosSP as $descuento) {
                 $this->actualizarDescuento($descuento, $valoresDescuentos);
             }
 
-            $this->cargarDescuentos();
             $this->alert('success', 'Campos Actualizados correctamente');
-
         } catch (\Throwable $th) {
             $this->alert('error', 'Ocurrió un error inesperado: ' . $th->getMessage());
         }
@@ -79,7 +86,6 @@ PROFUTURO	1,69%	1,20%	1,70%	10,00%	11 981,55';
             if (count($columnas) >= 5) {
                 $referencia = strtoupper(trim($columnas[0]));
                 $comisionSobreFlujo = $this->formatearPorcentaje($columnas[1]);
-                $comisionSobreSaldo = $this->formatearPorcentaje($columnas[2]);
                 $primaDeSeguros = $this->formatearPorcentaje($columnas[3]);
                 $aporteObligatorio = $this->formatearPorcentaje($columnas[4]);
 
@@ -98,33 +104,80 @@ PROFUTURO	1,69%	1,20%	1,70%	10,00%	11 981,55';
     {
         if (isset($valoresDescuentos[$descuento->referencia])) {
             $valorDescuento = $valoresDescuentos[$descuento->referencia];
+            $fecha = Carbon::createFromFormat('Y-m', $this->fecha_inicio)->startOfMonth()->format('Y-m-d');
+
+            $porcentaje = 0;
+            $porcentaje_65 = 0;
+
 
             if ($descuento->tipo == 'Flujo') {
-                $descuento->porcentaje = $valorDescuento['flujo'];
-                $descuento->porcentaje_65 = $valorDescuento['flujo_65'];
+                $porcentaje = $valorDescuento['flujo'];
+                $porcentaje_65 = $valorDescuento['flujo_65'];
             } elseif ($descuento->tipo == 'Mixta') {
-                $descuento->porcentaje = $valorDescuento['mixta'];
-                $descuento->porcentaje_65 = $valorDescuento['mixta_65'];
+                $porcentaje = $valorDescuento['mixta'];
+                $porcentaje_65 = $valorDescuento['mixta_65'];
             }
+
+            DescuentoSpHistorico::updateOrCreate(
+                [
+                    'fecha_inicio' => $fecha,
+                    'descuento_codigo' => $descuento->codigo,
+                ],
+                [
+                    'porcentaje' => $porcentaje,
+                    'porcentaje_65' => $porcentaje_65,
+                ]
+            );
         } elseif ($descuento->codigo == 'SNP') {
             $this->actualizarDescuentoSNP($descuento);
         }
-
-        $descuento->save();
     }
     protected function actualizarDescuentoSNP(DescuentoSP $descuento)
     {
         $descuentoSnp = Configuracion::find('descuento_snp');
         $valor = $descuentoSnp ? $descuentoSnp->valor : 0;
-        $descuento->porcentaje = $valor;
-        $descuento->porcentaje_65 = $valor;
+
+        // Obtener la fecha de inicio para el histórico
+        $fecha = Carbon::createFromFormat('Y-m', $this->fecha_inicio)->startOfMonth()->format('Y-m-d');
+
+        // Guardar en el histórico
+        DescuentoSpHistorico::updateOrCreate(
+            [
+                'fecha_inicio' => $fecha,
+                'descuento_codigo' => $descuento->codigo,
+            ],
+            [
+                'porcentaje' => $valor,
+                'porcentaje_65' => $valor,
+            ]
+        );
     }
     protected function formatearPorcentaje($valor)
     {
         return floatval(str_replace(['%', ','], ['', '.'], trim($valor)));
     }
+    public function cambiarFechaA($fecha)
+    {
+        $this->fecha_inicio = $fecha;
+    }
     public function render()
     {
+        $this->fechasRegistradas = DescuentoSpHistorico::select('fecha_inicio')
+            ->distinct()
+            ->orderBy('fecha_inicio', 'desc')
+            ->pluck('fecha_inicio')
+            ->map(function ($fecha) {
+                return Carbon::parse($fecha)->format('Y-m'); // Cambia el formato a Y-m
+            })
+            ->toArray();
+
+        if ($this->fecha_inicio) {
+
+            $this->descuentosSPHistorico = DescuentoSpHistorico::whereDate('fecha_inicio', Carbon::createFromFormat('Y-m', $this->fecha_inicio)->startOfMonth()->format('Y-m-d'))->get();
+        } else {
+            $this->descuentosSPHistorico = null;
+        }
+
         return view('livewire.configuracion-descuento-afp-component');
     }
 }
