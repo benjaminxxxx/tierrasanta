@@ -21,11 +21,32 @@ class AlmacenSalidaProductosFormComponent extends Component
     public $campos;
     public $step = 1;
     public $fecha_salida;
+    public $mes;
+    public $anio;
     protected $listeners = ['nuevoRegistro'];
     public function mount()
     {
-        $this->fecha_salida = Carbon::now()->format('Y-m-d');
+        $this->obtenerFechaSalida();
         $this->campos = Campo::orderBy('orden')->get();
+    }
+    public function obtenerFechaSalida()
+    {
+        // Obtener el mes y año actuales
+        $mesActual = Carbon::now()->month;
+        $anioActual = Carbon::now()->year;
+    
+        if ($this->mes && $this->anio) {
+            // Si el mes y el año son iguales al presente, usar la fecha actual
+            if ($this->mes == $mesActual && $this->anio == $anioActual) {
+                $this->fecha_salida = Carbon::now()->format('Y-m-d');
+            } else {
+                // De lo contrario, crear una fecha con el día 1
+                $this->fecha_salida = Carbon::create($this->anio, $this->mes, 1)->format('Y-m-d');
+            }
+        } else {
+            // Si no hay mes ni año, usar la fecha actual
+            $this->fecha_salida = Carbon::now()->format('Y-m-d');
+        }
     }
     public function toggleCampo($campoNombre)
     {
@@ -37,8 +58,12 @@ class AlmacenSalidaProductosFormComponent extends Component
             $this->camposAgregados[] = $campoNombre;
         }
     }
-    public function nuevoRegistro()
+    public function nuevoRegistro($mes,$anio)
     {
+        $this->mes = $mes;
+        $this->anio = $anio;
+        $this->resetCampos();
+        $this->obtenerFechaSalida();
         $this->mostrarFormulario = true;
     }
     public function updatedNombreComercial()
@@ -109,12 +134,16 @@ class AlmacenSalidaProductosFormComponent extends Component
     {
         return view('livewire.almacen-salida-productos-form-component');
     }
-    public function closeForm(){
+    public function resetCampos(){
         $this->step = 1;
         $this->informacion = [];
-        $this->mostrarFormulario = false;
         $this->nombre_comercial = null;
         $this->productos = null;
         $this->camposAgregados = [];
+    }
+    public function closeForm(){
+        
+        $this->mostrarFormulario = false;
+        $this->resetCampos();
     }
 }

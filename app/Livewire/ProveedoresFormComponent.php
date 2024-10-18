@@ -23,7 +23,8 @@ class ProveedoresFormComponent extends Component
             'nombre' => 'required|string',
             'ruc' => [
                 'nullable',
-                'string',
+                'numeric',
+                'digits:11',
                 Rule::unique('tienda_comercials', 'ruc')->ignore($this->proveedorId),
             ]
         ];
@@ -31,11 +32,17 @@ class ProveedoresFormComponent extends Component
 
     protected $messages = [
         'nombre.required' => 'El Nombre es obligatorio.',
-        'ruc.unique' => 'El Ruc ya está en uso.'
+        'ruc.unique' => 'El Ruc ya está en uso.',
+        'ruc.digits' => 'El Ruc debe tener exactamente 11 dígitos.',
+        'ruc.numeric' => 'El Ruc debe ser numérico.'
     ];
     public function CrearProveedor()
     {
         $this->mostrarFormulario = true;
+        $this->proveedorId = null;
+        $this->nombre = null;
+        $this->ruc = null;
+        $this->contacto = null;
     }
     public function EditarProveedor($id)
     {

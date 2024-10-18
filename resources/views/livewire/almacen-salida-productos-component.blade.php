@@ -4,7 +4,7 @@
         <x-h3>
             Almacen
         </x-h3>
-        <x-button type="button" @click="$wire.dispatch('nuevoRegistro')" class="w-full md:w-auto ">Nuevo
+        <x-button type="button" @click="$wire.dispatch('nuevoRegistro',{mes:{{$mes}},anio:{{$anio}}})" class="w-full md:w-auto ">Nuevo
             Registro</x-button>
     </div>
     <x-card>

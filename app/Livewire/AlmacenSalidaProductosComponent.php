@@ -95,14 +95,21 @@ class AlmacenSalidaProductosComponent extends Component
         }
     }
     public function generarItemCodigoForm(){
-        $this->mostrarGenerarItem = true;
+        
         if($this->registros){
             $primerRegistro = $this->registros->first();
+            if(!$primerRegistro){
+                return $this->alert("error","Para generar la numeración, debe agregar registros");
+            }
+
+            $this->mostrarGenerarItem = true;
             if($primerRegistro->item){
                 $this->inicioItem = $primerRegistro->item;
             }else{
                 $this->inicioItem = 0;
             }
+        }else{
+            return $this->alert("error","Para generar la numeración, debe agregar registros");
         }
         
     }

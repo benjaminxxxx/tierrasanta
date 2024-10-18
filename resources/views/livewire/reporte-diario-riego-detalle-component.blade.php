@@ -43,7 +43,7 @@
                 this.initTable();
                 this.listeners.push(
                     Livewire.on('actualizarGrilla-{{ $idTable }}', (data) => {
-                       
+                   
                         console.log(data[0]);
                         this.tableData = data[0];
                         this.hot.loadData(this.tableData);

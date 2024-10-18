@@ -37,6 +37,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
     }
     public function registroConsolidado(){
         $this->obtenerRegadores();
+        $this->dispatch('actualizarGrilla-' . $this->idTable,$this->registros);
     }
     public function render()
     {
@@ -118,7 +119,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
                 $tipo_labor =  isset($row[4])? (trim($row[4])!=''?$row[4]:'Riego'):'Riego';
                 $descripcion = $row[5] ?? null;
                 $sin_hab = isset($row[6]) ? ($row[6] ? 1 : 0) : 0;
-
+                
                 $regadorNombre = $this->obtenerNombreRegador($this->regador);
 
                 // Guardar nuevo registro
@@ -138,7 +139,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
             $this->dispatch('consolidarRegador',$this->regador, $this->fecha);
             //$this->consolidarRegador($this->regador, $this->fecha);
             //$this->obtenerRegadores(); despues de consolidarRegador este emitira une vento y esperar ese evento para traer obtener regadores
-            $this->dispatch('actualizarGrilla-' . $this->idTable,$this->registros);
+            //
 
             DB::commit(); 
 
