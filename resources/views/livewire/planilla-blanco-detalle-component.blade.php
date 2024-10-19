@@ -13,8 +13,8 @@
                         <x-input class="!w-auto" wire:model="totalHoras" />
                     </div>
                     <div class="w-full md:flex-1">
-                        <p class="w-auto">Factor Rem. Básica {{$rmv}}/{{$diasMes}}</p>
-                        <x-input class="!w-auto" readonly value="{{$factorRemuneracionBasica}}" />
+                        <p class="w-auto">Factor Rem. Básica</p>
+                        <x-input class="!w-auto" wire:model="factorRemuneracionBasica" />
                     </div>
                     <div class="mt-3 w-full md:flex-1">
                         <x-button wire:click="guardarPlanillaDatos">

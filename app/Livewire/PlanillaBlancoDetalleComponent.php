@@ -53,25 +53,29 @@ class PlanillaBlancoDetalleComponent extends Component
 
 
         $this->diasMes = Carbon::createFromDate($this->anio, $this->mes)->daysInMonth;
-
+/*
         $rmvObjecto = Configuracion::where('codigo', 'rmv')->first();
 
         if ($rmvObjecto) {
             $this->rmv = $rmvObjecto->valor;
 
-            $this->factorRemuneracionBasica = $this->rmv / $this->diasMes;
+            $this->factorRemuneracionBasica = $this->rmv / 30;
         } else {
             $this->rmv = 1025;
 
-            $this->factorRemuneracionBasica = $this->rmv / $this->diasMes;
-        }
+            $this->factorRemuneracionBasica = $this->rmv / 30;
+        }*/
 
         $this->informacionBlanco = PlanillaBlanco::where('mes', $this->mes)->where('anio', $this->anio)->first();
 
         if (!$this->informacionBlanco) {
+
+            $factorRemuneracionBasica = $this->buscarDelMesAnterior();
+
             PlanillaBlanco::create([
                 'mes' => $this->mes,
                 'anio' => $this->anio,
+                'factor_remuneracion_basica'=>$factorRemuneracionBasica,
                 'dias_laborables' => 0,
                 'total_horas' => 0,
                 'total_empleados' => 0
@@ -80,8 +84,31 @@ class PlanillaBlancoDetalleComponent extends Component
         } else {
             $this->diasLaborables = $this->informacionBlanco->dias_laborables;
             $this->totalHoras = $this->informacionBlanco->total_horas;
+            $this->factorRemuneracionBasica = $this->informacionBlanco->factor_remuneracion_basica;
             $this->informacionBlancoDetalle = $this->informacionBlanco->detalle;
         }
+    }
+    public function buscarDelMesAnterior(){
+        $mesAnterior = $this->mes - 1;
+        $anioAnterior = $this->anio;
+
+        // Si el mes es enero, cambiar al diciembre del año anterior
+        if ($mesAnterior == 0) {
+            $mesAnterior = 12;
+            $anioAnterior--;
+        }
+
+        // Buscar la información del mes anterior
+        $informacionAnterior = PlanillaBlanco::where('mes', $mesAnterior)
+            ->where('anio', $anioAnterior)
+            ->first();
+
+        // Definir el valor de 'factor_remuneracion_basica'
+        $factorRemuneracionBasica = $informacionAnterior
+            ? ($informacionAnterior->factor_remuneracion_basica?$informacionAnterior->factor_remuneracion_basica:(1025 / 30))  // Si existe, usar el valor anterior
+            : 1025 / 30;
+
+        return $factorRemuneracionBasica;
     }
     public function render()
     {
@@ -99,6 +126,7 @@ class PlanillaBlancoDetalleComponent extends Component
         try {
             $this->informacionBlanco->dias_laborables = $this->diasLaborables;
             $this->informacionBlanco->total_horas = $this->totalHoras;
+            $this->informacionBlanco->factor_remuneracion_basica = $this->factorRemuneracionBasica;
             $this->informacionBlanco->save();
             $this->alert("success", "Información actualizada con éxito");
         } catch (\Throwable $th) {
@@ -295,6 +323,7 @@ class PlanillaBlancoDetalleComponent extends Component
             }
 
             $calculados = 0;
+            $documentosSinBonificacion = [];
 
             foreach ($datos as $indice => $entry) {
                 //indice 4 Bonificacion
@@ -311,8 +340,18 @@ class PlanillaBlancoDetalleComponent extends Component
                         ]
                     );
                     $calculados++;
+                } else {
+                    // Documentos con bonificación cero (solo actualizar si ya existen)
+                    $documentosSinBonificacion[] = $documento;
                 }
             }
+
+            PlanillaBlancoDetalle::where('planilla_blanco_id', $this->informacionBlanco->id)
+            ->whereIn('documento', $documentosSinBonificacion)
+            ->update(['bonificacion' => 0]);
+
+            $this->generarPlanilla();
+
             $this->alert('success', 'Registros Actualizados Correctamente ('.$calculados.').');
         } catch (Exception $ex) {
             return $this->alert('error', $ex->getMessage());

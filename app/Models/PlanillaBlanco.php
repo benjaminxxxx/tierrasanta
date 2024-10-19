@@ -15,6 +15,7 @@ class PlanillaBlanco extends Model
         'anio',
         'dias_laborables',
         'total_horas',
+        'factor_remuneracion_basica',
         'total_empleados'
     ];
    
