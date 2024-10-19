@@ -7,9 +7,12 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AsistenciaPlanillaController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProveedorController;
+use App\Http\Controllers\UsuarioController;
+use App\Http\Middleware\CheckUserStatus;
 
 Route::middleware([
     'auth:sanctum',
+    CheckUserStatus::class,
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
@@ -90,5 +93,8 @@ Route::middleware([
 
     //ALMACEN
     Route::get('/almacen/salida_de_productos', [AlmacenController::class,'salidaProductos'])->name('almacen.salida_productos');
+
+     //USUARIOS
+     Route::get('/usuarios', [UsuarioController::class,'index'])->name('usuarios');
     
 });

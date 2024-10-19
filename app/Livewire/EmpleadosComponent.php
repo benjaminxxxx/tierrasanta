@@ -212,6 +212,6 @@ class EmpleadosComponent extends Component
         $current->save();
         $target->save();
 
-        $this->empleados = Empleado::orderBy('orden')->get();
+        //$this->empleados = Empleado::orderBy('orden')->get();
     }
 }

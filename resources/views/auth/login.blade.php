@@ -11,6 +11,7 @@
                         Bienvenido al Sistema Administrativo
                     </h2>
                     <span class=" mb-9  block font-medium text-center">Inicia Sesión en tu Cuenta</span>
+                    <x-validation-errors class="mb-4" />
                     <div class="xl:hidden mb-5">
                         <img src="{{asset('images/logo/logo.svg')}}" class="w-full h-full" alt="illustration" />
                     </div>

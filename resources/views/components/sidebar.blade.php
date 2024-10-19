@@ -56,6 +56,18 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
+                    <x-nav-link-parent name="sectorSistema" href="{{ route('usuarios') }}" :active="request()->routeIs(['usuarios'])">
+                        
+                        <div class="w-6 text-center">
+                            <i class="fas fa-palette"></i>
+                        </div>
+                        Sistema
+                        <x-slot name="children">
+                            <x-nav-link-child href="{{ route('usuarios') }}" :active="request()->routeIs('usuarios')">
+                                Usuarios
+                            </x-nav-link-child>
+                        </x-slot>
+                    </x-nav-link-parent>
                     <x-nav-link-parent name="sectorCuadrilla" href="#" :active="request()->routeIs(['cuadrilla.asistencia','cuadrilla.grupos','cuadrilla.cuadrilleros'])">
                         
                         <div class="w-6 text-center">
