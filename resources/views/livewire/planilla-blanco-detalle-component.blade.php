@@ -39,7 +39,7 @@
                     @endif
                 </div>
                 <div class="mt-5" wire:ignore>
-                    <div x-ref="tableContainer" class="min-h-[45rem] overflow-auto"></div>
+                    <div x-ref="tableContainer" class="overflow-auto"></div>
                 </div>
                 <div class="mt-5 flex justify-end">
                     <x-button @click="sendData">Guardar Bonificaciones</x-button>
@@ -60,13 +60,15 @@
                 this.initTable();
                 this.listeners.push(
                     Livewire.on('renderTable', (data) => {
+                        /*
                         console.log(data);
                         let empleados = data[0];
                         this.tableData = empleados;
-                        this.hot.loadData(this.tableData);
+                        this.hot.loadData(this.tableData);*/
+                        location.href = location.href;
                     })
                 );
-                this.listeners.push(
+                /*this.listeners.push(
                     Livewire.on('setColumnas', (data) => {
                         console.log(data);
                         const tareas = data[0];
@@ -78,7 +80,7 @@
                         // Vuelve a cargar los datos actuales en la tabla (si fuera necesario)
                         this.hot.loadData(this.tableData);
                     })
-                );
+                );*/
             },
             initTable() {
                 const tareas = this.tareas;
@@ -99,11 +101,20 @@
                     autoColumnSize: true,
                     fixedColumnsLeft: 2,
                     licenseKey: 'non-commercial-and-evaluation',
-                    
+                    afterRender: function() {
+                        
+                        const htCoreTable = document.querySelector('.htCore');
+                        let tableHeight = htCoreTable.offsetHeight;
+                        if (tableHeight > 0) {
+                            tableHeight = tableHeight + 70;
+                            container.style.minHeight = `${tableHeight}px`;
+                        }
+                    },
 
                 });
 
                 this.hot = hot;
+                this.hot.render();
 
                 //this.calcularTotales();
             },

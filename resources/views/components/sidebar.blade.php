@@ -81,9 +81,9 @@
                             <x-nav-link-child href="{{ route('cuadrilla.grupos') }}" :active="request()->routeIs('cuadrilla.grupos')">
                                 Grupos
                             </x-nav-link-child>
-                            <!--<x-nav-link-child href="{{ route('cuadrilla.asistencia') }}" :active="request()->routeIs('cuadrilla.asistencia')">
+                            <x-nav-link-child href="{{ route('cuadrilla.asistencia') }}" :active="request()->routeIs('cuadrilla.asistencia')">
                                 Asistencia
-                            </x-nav-link-child>-->
+                            </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
                     <x-nav-link-parent name="sectorCampo" href="#" :active="request()->routeIs(['campo.mapa','campo.riego','campo.detalle_riego','campo.campania'])">

@@ -29,10 +29,13 @@ class ReporteDiarioDetalleComponent extends Component
     protected $listeners = ["importarPlanilla", "GuardarInformacion"];
     public function mount()
     {
-        $this->campos = Campo::orderBy('nombre')->get(['nombre'])->pluck('nombre')->toArray();
+        $this->campos = [""];
+        $camposNuevos = Campo::orderBy('nombre')->get(['nombre'])->pluck('nombre')->toArray();
+        $this->campos = array_merge($this->campos,$camposNuevos);
         $this->tipoAsistenciasEntidad = TipoAsistencia::get(['codigo', 'horas_jornal'])->pluck('horas_jornal', 'codigo')->toArray();
 
         $this->tipoAsistencias = TipoAsistencia::all()->pluck('codigo')->toArray();
+        $this->tipoAsistencias = array_merge([''],$this->tipoAsistencias);
 
         $this->ImportarEmpleados();
         $this->ObtenerTareas();
@@ -81,6 +84,20 @@ class ReporteDiarioDetalleComponent extends Component
                 $nombresEmpleado = trim(preg_replace('/[\x00-\x1F\x7F\xA0]/u', ' ', $fila[1]));
 
                 $asistencia = $fila[2];
+                $indiceTotal = count($fila) - 2;
+                $indiceBono = count($fila) - 1;
+
+
+                $bonoProductividad = trim(preg_replace('/[\x00-\x1F\x7F\xA0]/u', ' ', $fila[$indiceBono]));
+
+                // Validar que el valor es un número decimal o entero
+                if (preg_match('/^[-+]?[0-9]*\.?[0-9]+$/', $bonoProductividad)) {
+                    // Convertir a decimal
+                    $bonoProductividad = (float)$bonoProductividad; // O puedes usar number_format($bonoProductividad, 2)
+                } else {
+                    // Manejar el error: el valor no es un número válido
+                    $bonoProductividad = null; // O asignar un valor predeterminado
+                }
 
                 if (!$documento) {
                     if (mb_strtolower($nombresEmpleado) == 'cuadrilla') {
@@ -137,9 +154,13 @@ class ReporteDiarioDetalleComponent extends Component
                             }
 
                             // Formatear el total de horas acumuladas
-                            $indiceTotal = count($fila) - 1;
-                            $totalHorasFormateadas = isset($fila[$indiceTotal]) ? $fila[$indiceTotal] : '00:00';
-
+                        
+                            $totalHorasFormateadas = isset($fila[$indiceTotal]) ? trim(preg_replace('/[\x00-\x1F\x7F\xA0]/u', ' ', $fila[$indiceTotal])) : '00:00';
+                            $totalHorasFormateadas = str_replace('.', ':', $totalHorasFormateadas);
+                            if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $totalHorasFormateadas)) {
+                                // Si no es válido, asignar '00:00' por defecto
+                                $totalHorasFormateadas = '00:00';
+                            }
                             // Actualizar el total de horas en el reporte de la cuadrilla
                             $reporteDiarioCuadrilla->update([
                                 'total_horas' => $totalHorasFormateadas
@@ -155,7 +176,8 @@ class ReporteDiarioDetalleComponent extends Component
                             'fecha' => $this->fecha,
                             'total_horas' => '00:00:00', // Puedes ajustar esto según sea necesario
                             'tipo_trabajador' => 'planilla',
-                            'asistencia' => $asistencia // Asistencia
+                            'asistencia' => $asistencia,
+                            'bono_productividad'=>$bonoProductividad
                         ]
                     );
 
@@ -205,10 +227,13 @@ class ReporteDiarioDetalleComponent extends Component
                         }
                     }
 
-                    $indiceTotal = count($fila) - 1;
-                    // Formatear el total de horas acumuladas
-                    $totalHorasFormateadas = isset($fila[$indiceTotal]) ? $fila[$indiceTotal] : '00:00';
-
+                    //$totalHorasFormateadas = isset($fila[$indiceTotal]) ? $fila[$indiceTotal] : '00:00';
+                    $totalHorasFormateadas = isset($fila[$indiceTotal]) ? trim(preg_replace('/[\x00-\x1F\x7F\xA0]/u', ' ', $fila[$indiceTotal])) : '00:00';
+                    $totalHorasFormateadas = str_replace('.', ':', $totalHorasFormateadas);
+                    if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $totalHorasFormateadas)) {
+                        // Si no es válido, asignar '00:00' por defecto
+                        $totalHorasFormateadas = '00:00';
+                    }
                     // Formatear el total de horas acumuladas
                     //$totalHorasFormateadas = $totalHoras->format('H:i');
 
@@ -234,6 +259,7 @@ class ReporteDiarioDetalleComponent extends Component
     }
     function validarCampo($campo)
     {
+        /*
         $aliasMap = [
             'a1' => 'a-1',
             'a2' => 'a-2',
@@ -280,7 +306,7 @@ class ReporteDiarioDetalleComponent extends Component
 
         if (array_key_exists(mb_strtolower($campo), $aliasMap)) {
             return mb_strtoupper($aliasMap[mb_strtolower($campo)]);
-        }
+        }*/
         return $campo;
     }
     public function importarPlanilla()
@@ -313,7 +339,8 @@ class ReporteDiarioDetalleComponent extends Component
                     'total_horas' => '00:00:00',
                     'tipo_trabajador' => 'planilla',
                     'asistencia' => $empleado->asistencia ?? '',
-                    'orden' => $empleado->orden
+                    'orden' => $empleado->orden,
+                    'bono_productividad'=>0
                 ]);
             }
         }
@@ -396,7 +423,8 @@ innecesario si abajo se hace una busqueda
                     'documento' => $empleado->documento,
                     'empleado_nombre' => $empleado->empleado_nombre,
                     'asistencia' => $empleado->asistencia ?? '',
-                    'total_horas' => $empleado->total_horas ? Carbon::parse($empleado->total_horas)->format("H:i") : ''
+                    'total_horas' => $empleado->total_horas ? Carbon::parse($empleado->total_horas)->format("G.i") : '',
+                    'bono_productividad' => $empleado->bono_productividad
                 ];
 
                 // Si tiene detalles, agregarlos como campos adicionales dinámicos
@@ -407,8 +435,8 @@ innecesario si abajo se hace una busqueda
                         // Crear claves dinámicas basadas en el índice $i
                         $empleadoData['campo_' . ($i + 1)] = $detalle->campo ?? '';
                         $empleadoData['labor_' . ($i + 1)] = $detalle->labor ?? '';
-                        $empleadoData['entrada_' . ($i + 1)] = $detalle->hora_inicio ? Carbon::parse($detalle->hora_inicio)->format("H:i") : '';
-                        $empleadoData['salida_' . ($i + 1)] = $detalle->hora_salida ? Carbon::parse($detalle->hora_salida)->format("H:i") : '';
+                        $empleadoData['entrada_' . ($i + 1)] = $detalle->hora_inicio ? Carbon::parse($detalle->hora_inicio)->format("G.i") : '';
+                        $empleadoData['salida_' . ($i + 1)] = $detalle->hora_salida ? Carbon::parse($detalle->hora_salida)->format("G.i") : '';
                     }
                 }
 
@@ -424,7 +452,7 @@ innecesario si abajo se hace una busqueda
                     'empleado_nombre' => 'CUADRILLA',
                     'numero_cuadrilleros' => $cuadrilla->numero_cuadrilleros,
                     'asistencia' => '',
-                    'total_horas' => $cuadrilla->total_horas ? Carbon::parse($cuadrilla->total_horas)->format("H:i") : ''
+                    'total_horas' => $cuadrilla->total_horas ? Carbon::parse($cuadrilla->total_horas)->format("G.i") : ''
                 ];
 
                 // Si tiene detalles, agregarlos como campos adicionales dinámicos
@@ -435,8 +463,8 @@ innecesario si abajo se hace una busqueda
                         // Crear claves dinámicas basadas en el índice $i
                         $cuadrillaData['campo_' . ($i + 1)] = $detalle->campo ?? '';
                         $cuadrillaData['labor_' . ($i + 1)] = $detalle->labor ?? '';
-                        $cuadrillaData['entrada_' . ($i + 1)] = $detalle->hora_inicio ? Carbon::parse($detalle->hora_inicio)->format("H:i") : '';
-                        $cuadrillaData['salida_' . ($i + 1)] = $detalle->hora_salida ? Carbon::parse($detalle->hora_salida)->format("H:i") : '';
+                        $cuadrillaData['entrada_' . ($i + 1)] = $detalle->hora_inicio ? Carbon::parse($detalle->hora_inicio)->format("G.i") : '';
+                        $cuadrillaData['salida_' . ($i + 1)] = $detalle->hora_salida ? Carbon::parse($detalle->hora_salida)->format("G.i") : '';
                     }
                 }
 

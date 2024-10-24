@@ -7,7 +7,7 @@
             @endphp
             <div x-data="{{ $idTable }}" wire:ignore>
 
-                <div x-ref="tableContainer" class="min-h-[37rem] mt-5 overflow-auto"></div>
+                <div x-ref="tableContainer" class="mt-5 overflow-auto"></div>
 
                 <div>
                     <x-button-a href="{{ route('reporte.reporte_diario') }}" class="mt-5 mr-5">
@@ -33,12 +33,13 @@
                 this.initTable();
                 this.listeners.push(
                     Livewire.on('setEmpleados', (data) => {
-
+/*
                         this.informacionAsistenciaAdicional = data[1];
 
 
                         this.tableData = data[0];
-                        this.hot.loadData(this.tableData);
+                        this.hot.loadData(this.tableData);*/
+                        location.href = location.href;
                     })
                 );
             },
@@ -51,14 +52,14 @@
                         data: 'orden',
                         type: 'numeric',
                         title: 'N°',
-                        className: '!text-center',
+                        className: '!text-center !bg-gray-100',
                         readOnly: true
                     },
                     {
                         data: 'grupo',
                         type: 'text',
                         width: 60,
-                        className: 'text-center',
+                        className: 'text-center !bg-gray-100',
                         title: `GRUPO`,
                         readOnly: true
                     },
@@ -67,6 +68,7 @@
                         type: 'text',
                         width: 80,
                         title: `DNI`,
+                        className: 'text-center !bg-gray-100',
                         readOnly: true
                     },
                     {
@@ -192,10 +194,20 @@
                     stretchH: 'all',
                     autoColumnSize: true,
                     fixedColumnsLeft: 4,
-                    licenseKey: 'non-commercial-and-evaluation'
+                    licenseKey: 'non-commercial-and-evaluation',
+                    afterRender: function() {
+                        
+                        const htCoreTable = document.querySelector('.htCore');
+                        let tableHeight = htCoreTable.offsetHeight;
+                        if (tableHeight > 0) {
+                            tableHeight = tableHeight + 70;
+                            container.style.minHeight = `${tableHeight}px`;
+                        }
+                    },
                 });
 
                 this.hot = hot;
+                this.hot.render();
             },
             obtenerEmpleados() {
 

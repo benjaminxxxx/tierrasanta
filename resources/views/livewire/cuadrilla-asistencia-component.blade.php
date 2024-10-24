@@ -1,13 +1,41 @@
 <div>
+    <div class="md:flex items-center gap-5 mb-5">
+        <x-h3>
+            Asistencias Cuadrilla
+        </x-h3>
+        <livewire:cuadrilla-asistencia-form-component />
+    </div>
+
     <x-card>
         <x-spacing>
-            <div class="block md:flex items-center gap-5">
-                <x-h2>
-                    Asistencias Cuadrilla
-                </x-h2>
-                <div class="mt-5 md:mt-0">
-                    <livewire:cuadrilla-asistencia-form-component />
+            <div class="md:flex justify-between items-center w-full">
+                <x-secondary-button wire:click="fechaAnterior">
+                    <i class="fa fa-chevron-left"></i> Semana Anterior
+                </x-secondary-button>
+
+                <div class="hidden md:flex items-center gap-5">
+                    <!-- Selección de mes -->
+                    <div class="mx-2">
+                        <x-select wire:model.live="mes" class="!mt-0  !w-auto">
+                            <option value="01">Enero</option>
+                            <option value="02">Febrero</option>
+                            <option value="03">Marzo</option>
+                            <option value="04">Abril</option>
+                            <option value="05">Mayo</option>
+                            <option value="06">Junio</option>
+                            <option value="07">Julio</option>
+                            <option value="08">Agosto</option>
+                            <option value="09">Septiembre</option>
+                            <option value="10">Octubre</option>
+                            <option value="11">Noviembre</option>
+                            <option value="12">Diciembre</option>
+                        </x-select>
+                    </div>
                 </div>
+
+                <x-secondary-button wire:click="fechaPosterior" class="ml-3">
+                    Semana Posterior <i class="fa fa-chevron-right"></i>
+                </x-secondary-button>
             </div>
         </x-spacing>
     </x-card>

@@ -5,7 +5,7 @@
                 <x-h3>MES DE {{ mb_strtoupper($mesTitulo) }} - {{ $anio }}</x-h3>
                 
                 <div class="mt-5" wire:ignore>
-                    <div x-ref="tableContainer" class="min-h-[45rem] overflow-auto"></div>
+                    <div x-ref="tableContainer" class="overflow-auto"></div>
                 </div>
             </x-spacing>
         </x-card>
@@ -22,9 +22,9 @@
             hot: null,
             init() {
                 this.initTable();
-                this.listeners.push(
+                /*this.listeners.push(
                     Livewire.on('renderTable', (data) => {
-                        console.log(data);
+                        /*console.log(data);
                         let empleados = data[0];
                         this.tableData = empleados;
                         this.hot.loadData(this.tableData);
@@ -42,7 +42,7 @@
                         // Vuelve a cargar los datos actuales en la tabla (si fuera necesario)
                         this.hot.loadData(this.tableData);
                     })
-                );
+                );*/
             },
             initTable() {
                 const tareas = this.tareas;
@@ -63,11 +63,19 @@
                     autoColumnSize: true,
                     fixedColumnsLeft: 2,
                     licenseKey: 'non-commercial-and-evaluation',
-                    
+                    afterRender: function() {
+                        
+                        const htCoreTable = document.querySelector('.htCore');
+                        const tableHeight = htCoreTable.offsetHeight;
+                        if (tableHeight > 0) {
+                            container.style.minHeight = `${tableHeight}px`;
+                        }
+                    },
 
                 });
 
                 this.hot = hot;
+                this.hot.render();
 
                 //this.calcularTotales();
             },

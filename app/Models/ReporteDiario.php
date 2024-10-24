@@ -17,7 +17,8 @@ class ReporteDiario extends Model
         'tipo_trabajador',
         'total_horas',
         'fecha',
-        'orden'
+        'orden',
+        'bono_productividad'
     ];
 
     public function detalles()

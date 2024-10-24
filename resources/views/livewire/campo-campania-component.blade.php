@@ -10,7 +10,7 @@
                 <x-spacing>
 
                     <div class="mt-5" wire:ignore>
-                        <div x-ref="tableContainer" class="min-h-[45rem] overflow-auto"></div>
+                        <div x-ref="tableContainer" class="overflow-auto"></div>
                     </div>
                     <div class="my-5 md:flex gap-5 items-center justify-end">
                         
@@ -124,13 +124,20 @@
                     minSpareRows: 1,
                     stretchH: 'all',
                     autoColumnSize: true,
-                    fixedColumnsLeft: 2,
                     licenseKey: 'non-commercial-and-evaluation',
-
+                    afterRender: function() {
+                        
+                        const htCoreTable = document.querySelector('.htCore');
+                        const tableHeight = htCoreTable.offsetHeight;
+                        if (tableHeight > 0) {
+                            container.style.minHeight = `${tableHeight}px`;
+                        }
+                    },
 
                 });
 
                 this.hot = hot;
+                this.hot.render();
             },
             isValidTimeFormat(time) {
                 const timePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;

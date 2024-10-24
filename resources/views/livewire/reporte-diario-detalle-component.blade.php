@@ -13,7 +13,7 @@
                 <x-danger-button wire:click="removeGroupBtn"><i class="fa fa-minus"></i></x-danger-button>
             </div>
 
-            <div x-ref="tableContainer" class="min-h-[45rem] mt-5 overflow-auto"></div>
+            <div x-ref="tableContainer" class="mt-5 overflow-auto"></div>
 
             <div class="text-right mt-5">
                 <x-button @click="sendData">Guardar Información</x-button>
@@ -111,6 +111,8 @@
                         let empleados = data[0];
                         this.tableData = empleados;
                         this.hot.loadData(this.tableData);
+                        
+                        //location.href = location.href;
                     })
                 );
                 this.listeners.push(
@@ -121,15 +123,19 @@
                         this.hot.updateSettings({
                             columns: columns
                         });
+                        this.tareas = tareas;
 
                         // Vuelve a cargar los datos actuales en la tabla (si fuera necesario)
                         this.hot.loadData(this.tableData);
+                        //location.href = location.href;
                     })
                 );
             },
             initTable() {
                 const tareas = this.tareas;
                 const columns = this.generateColumns(tareas);
+                let primeraCarga = 0;
+                let isUpdating = false
 
                 const container = this.$refs.tableContainer;
                 const hot = new Handsontable(container, {
@@ -138,68 +144,141 @@
                     rowHeaders: true,
                     columns: columns,
                     width: '100%',
-                    height: '90%',
+                    height:'auto',
                     manualColumnResize: false,
                     manualRowResize: true,
                     minSpareRows: 1,
                     stretchH: 'all',
                     autoColumnSize: true,
+                    autoRowSize: true,
                     fixedColumnsLeft: 4,
                     licenseKey: 'non-commercial-and-evaluation',
+                    afterRender: function() {
+/*
+                        const htCoreTable = document.querySelector('.htCore');
+                        let tableHeight = htCoreTable.offsetHeight;
+
+                        // Establecemos el min-height dinámicamente basado en la altura de la tabla
+                        if (tableHeight > 0 && primeraCarga < 2) {
+                            tableHeight = tableHeight + 70;
+                            container.style.minHeight = `${tableHeight}px`;
+                            primeraCarga++;
+                        }*/
+                    },
                     afterChange: (changes, source) => {
                         // Verificar que el cambio no sea causado por un "loadData" o evento de Livewire
                         if (source !== 'loadData') {
                             this.calcularTotales();
                             /*let changedRow1 = changes[0][0];
-                            let currentRow1 = changedRow1;
-                            const tipoAsistencia = hot.getDataAtCell(currentRow1, 2);
-                            if (tipoAsistencia != 'A') {
-                                const totalHours1 = this.minutesToTime(this.tipoAsistenciasEntidad[
-                                    tipoAsistencia] * 60);
-                                hot.setDataAtCell(currentRow1, (4 * this.tareas + 4), totalHours1);
-                            }
-*/
+                                                        let currentRow1 = changedRow1;
+                                                        const tipoAsistencia = hot.getDataAtCell(currentRow1, 2);
+                                                        if (tipoAsistencia != 'A') {
+                                                            const totalHours1 = this.minutesToTime(this.tipoAsistenciasEntidad[
+                                                                tipoAsistencia] * 60);
+                                                            hot.setDataAtCell(currentRow1, (4 * this.tareas + 4), totalHours1);
+                                                        }
+                            */
                         }
-                        /*if (source !== 'loadData' && source !== 'edit') {
-                            if (!changes) {
-                                return;
-                            }
 
-                            let changedRow = changes[0][0];
-                            let currentRow = changedRow;
-                            let startAt = 6;
-                            let totalMinutes = 0;
+                        if (source == 'edit' || source == 'CopyPaste.paste' || source ==
+                            'timeValidator' || source == 'Autofill.fill') {
 
 
 
-                            for (let indice = 0; indice < this.tareas; indice++) {
-                                let hora_inicio = hot.getDataAtCell(currentRow, 4 * indice +
-                                    startAt);
-                                let hora_salida = hot.getDataAtCell(currentRow, 4 * indice +
-                                    startAt + 1);
+                            changes.forEach((change) => {
+                                const changedRow = change[0]; // Fila que cambió
+                                const fieldName = change[1]; // Nombre del campo o columna
+                                const oldValue = change[2]; // Valor antiguo
+                                const newValue = change[3]; // Valor nuevo
 
-                                // Verificar que ambas horas sean válidas
-                                if (this.isValidTimeFormat(hora_inicio) && this.isValidTimeFormat(
-                                        hora_salida)) {
+                                if (fieldName == 'total_horas') {
+                                    return;
+                                }
+                                if (fieldName == 'bono_productividad') {
+                                    return;
+                                }
 
-                                    const start = this.timeToMinutes(hora_inicio);
-                                    const end = this.timeToMinutes(hora_salida);
+                                if (fieldName == 'asistencia') {
+                                    // Verificar si el nuevo valor es válido en tipoAsistenciasEntidad
+                                    if (!this.tipoAsistenciasEntidad.hasOwnProperty(
+                                            newValue)) {
+                                        return; // Si no existe el valor en tipoAsistenciasEntidad, retornar sin hacer nada
+                                    }
 
-                                    // Si las horas son válidas y la hora de inicio es menor que la de fin
-                                    if (start < end) {
-                                        totalMinutes += end - start;
+                                    // Continuar solo si newValue no es 'A' ni vacío
+                                    if (newValue != 'A' && newValue != '') {
+                                        const totalHours1 = this.minutesToTime(this
+                                            .tipoAsistenciasEntidad[newValue] * 60);
+                                        hot.setDataAtCell(changedRow, (4 * this.tareas + 4),
+                                            totalHours1);
+
+                                            return;
+                                    }
+                                    
+                                }
+
+                                /*
+                                                                if (source == 'edit') {
+                                                                    const regexTime =
+                                                                        /^\d{1,2}\.\d{2}$/; // Expresión regular para validar formato H.mm
+
+                                                                    // Si el valor no coincide con el formato esperado, retorna
+                                                                    if (!regexTime.test(newValue) && newValue != '') {
+                                                                        console.log(newValue);
+                                                                        //return; // Evitar el cálculo o la validación si no cumple con el formato
+                                                                    }
+                                                                }*/
+
+                                let totalMinutes = 0;
+
+                                const startAt = 6;
+
+
+                                if (oldValue != newValue) {
+                                    
+
+                                    for (let indice = 0; indice < this.tareas; indice++) {
+
+                                        const hora_inicio = hot.getDataAtCell(changedRow,
+                                            4 * indice +
+                                            startAt);
+                                        const hora_salida = hot.getDataAtCell(changedRow,
+                                            4 * indice +
+                                            startAt + 1);
+
+                                           
+
+                                        if (hora_inicio != null && hora_salida != null) {
+
+
+                                            const start = this.timeToMinutes(hora_inicio);
+                                            const end = this.timeToMinutes(hora_salida);
+
+                                            // Si las horas son válidas y la hora de inicio es menor que la de fin
+                                            if (start < end) {
+                                                totalMinutes += end - start;
+
+
+                                            }
+                                        }
+                                        
 
                                     }
+                                    const totalHours = this.minutesToTime(
+                                        totalMinutes - 60);
+                                    hot.setDataAtCell(changedRow, (4 * this
+                                            .tareas + 4),
+                                        totalHours);
                                 }
-                            }
 
-                            const totalHours = this.minutesToTime(totalMinutes);
-                            hot.setDataAtCell(currentRow, (4 * this.tareas + 4), totalHours);
-                        }*/
+                            });
+
+                        }
                     }
                 });
 
                 this.hot = hot;
+                this.hot.render();
                 this.calcularTotales();
             },
             isValidTimeFormat(time) {
@@ -207,13 +286,13 @@
                 return timePattern.test(time);
             },
             timeToMinutes(time) {
-                const [hours, minutes] = time.split(':').map(Number);
+                const [hours, minutes] = time.split('.').map(Number);
                 return hours * 60 + minutes;
             },
             minutesToTime(minutes) {
                 const hours = Math.floor(minutes / 60);
                 const mins = minutes % 60;
-                return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+                return `${String(hours).padStart(2, '0')}.${String(mins).padStart(2, '0')}`;
             },
             generateColumns(tareas) {
                 let columns = [{
@@ -221,13 +300,14 @@
                         type: 'text',
                         width: 80,
                         title: 'DNI',
-                        className: 'text-center',
+                        className: 'text-center !bg-gray-100',
                         readOnly: true
                     },
                     {
                         data: "empleado_nombre",
                         type: 'text',
                         width: 270,
+                        className: '!bg-gray-100',
                         title: 'APELLIDOS Y NOMBRES'
                     },
                     {
@@ -236,14 +316,14 @@
                         source: this.tipoAsistencias,
                         width: 60,
                         title: 'ASIST.',
-                        className: 'text-center'
+                        className: 'text-center !bg-gray-100'
                     },
                     {
                         data: 'numero_cuadrilleros',
                         type: 'numeric',
                         width: 50,
                         title: 'N° C.',
-                        className: '!text-center'
+                        className: '!text-center !bg-gray-100'
                     }
                 ];
 
@@ -266,7 +346,7 @@
                         data: "entrada_" + indice,
                         type: 'time',
                         width: 70,
-                        timeFormat: 'HH:mm',
+                        timeFormat: 'H.mm',
                         correctFormat: true,
                         className: 'text-center',
                         title: `ENT. ${indice}`
@@ -274,7 +354,7 @@
                         data: "salida_" + indice,
                         type: 'time',
                         width: 70,
-                        timeFormat: 'HH:mm',
+                        timeFormat: 'H.mm',
                         correctFormat: true,
                         className: 'text-center',
                         title: `SAL. ${indice}`
@@ -286,21 +366,54 @@
                     data: 'total_horas',
                     width: 70,
                     type: 'time',
-                    timeFormat: 'HH:mm',
+                    timeFormat: 'H.mm',
                     correctFormat: true,
                     title: 'TOTAL',
                     className: '!text-center font-bold text-lg',
                     renderer: function(hotInstance, td, row, col, prop, value, cellProperties) {
                         Handsontable.renderers.TextRenderer.apply(this,
-                        arguments); // Render por defecto
+                            arguments); // Render por defecto
 
                         // Aplicar estilos condicionales
-                        if (value === '00:00' || value === '0' || value === null) {
+                        if (value === '00:00' || value === '0' || value === '0.00' || value ===
+                            '00.00' || value === null) {
                             // Valor es 0 o nulo -> color rojo
                             td.classList.add('!text-red-600', 'font-bold');
                         } else {
                             // Valor diferente a 0 -> color verde
                             td.classList.add('!text-green-600', 'font-bold');
+                        }
+                    }
+                }, {
+                    data: 'bono_productividad',
+                    width: 70,
+                    type: 'numeric',
+                    numericFormat: {
+                        pattern: '##,##0.00', // Formato de miles con al menos dos decimales
+                        culture: 'en-US' // Cultura para usar coma como separador de miles y punto para decimales
+                    },
+                    correctFormat: true,
+                    title: 'BONO',
+                    className: '!text-right font-bold text-lg',
+                    renderer: function(hotInstance, td, row, col, prop, value, cellProperties) {
+                        Handsontable.renderers.TextRenderer.apply(this,
+                            arguments); // Render por defecto
+
+                        // Aplicar estilos condicionales
+                        if (value > 0) {
+                            // Valor es 0 o nulo -> color rojo
+
+                            td.classList.add('!text-green-600', 'font-bold');
+                        } else {
+                            // Valor diferente a 0 -> color verde
+                            td.classList.add('!text-red-600', 'font-bold');
+                        }
+
+                        if (typeof value === 'number') {
+                            td.innerHTML = new Intl.NumberFormat('en-US', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            }).format(value);
                         }
                     }
                 });
@@ -326,7 +439,7 @@
 
                 data.forEach(row => {
                     const asistencia = row[
-                    2]; // Suponiendo que la columna de asistencia es la tercera (índice 2)
+                        2]; // Suponiendo que la columna de asistencia es la tercera (índice 2)
                     const nCuadrillas = row[3]; // Columna de número de cuadrillas
 
                     if (asistencia === 'A') totales.asistido++;
