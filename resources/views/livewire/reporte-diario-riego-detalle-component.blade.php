@@ -43,10 +43,13 @@
                 this.initTable();
                 this.listeners.push(
                     Livewire.on('actualizarGrilla-{{ $idTable }}', (data) => {
-                   
+
                         console.log(data[0]);
                         this.tableData = data[0];
                         this.hot.loadData(this.tableData);
+                    }),
+                    Livewire.on('guardarTodo', (data) => {
+                        this.sendData();
                     })
                 );
             },
@@ -54,7 +57,7 @@
                 const tipoLabores = @json($tipoLabores);
                 const campos = @json($campos);
                 const tableData2 = @json($registros);
-               
+
                 let columns = [{
                         data: 'campo',
                         type: 'dropdown',
@@ -66,7 +69,7 @@
                         data: 'hora_inicio',
                         type: 'time',
                         width: 60,
-                        timeFormat: 'HH:mm',
+                        timeFormat: 'H.mm',
                         correctFormat: true,
                         className: 'text-center',
                         title: `HORA INICIO`
@@ -75,7 +78,7 @@
                         data: 'hora_fin',
                         type: 'time',
                         width: 60,
-                        timeFormat: 'HH:mm',
+                        timeFormat: 'H.mm',
                         correctFormat: true,
                         className: 'text-center',
                         title: `HORA FIN`
@@ -84,7 +87,7 @@
                         data: 'total_horas',
                         type: 'time',
                         width: 60,
-                        timeFormat: 'HH:mm',
+                        timeFormat: 'H.mm',
                         correctFormat: true,
                         className: 'text-center',
                         title: `TOTAL HORAS`
@@ -129,51 +132,61 @@
                     licenseKey: 'non-commercial-and-evaluation',
                     afterChange: (changes, source) => {
                         // Verificar que el cambio no sea causado por un "loadData" o evento de Livewire
-                        if (source !== 'loadData' && source !== 'edit') {
-                            if (!changes) {
-                                return;
-                            }
 
-                            let changedRow = changes[0][0];
-                            let currentRow = changedRow;
+                        if (source == 'edit' || source == 'CopyPaste.paste' || source ==
+                            'timeValidator' || source == 'Autofill.fill') {
+                            changes.forEach((change) => {
+                                const changedRow = change[0]; // Fila que cambió
+                                const fieldName = change[1]; // Nombre del campo o columna
+                                const oldValue = change[2]; // Valor antiguo
+                                const newValue = change[3]; // Valor nuevo
 
-                            let hora_inicio = hot.getDataAtCell(currentRow, 1);
-                            let hora_salida = hot.getDataAtCell(currentRow, 2);
+                                if (fieldName == 'hora_inicio' || fieldName == 'hora_fin') {
+                                    if (oldValue != newValue) {
+                                        const hora_inicio = hot.getDataAtCell(changedRow,
+                                        1);
+                                        const hora_salida = hot.getDataAtCell(changedRow,
+                                        2);
 
-                            // Verificar que ambas horas sean válidas
-                            if (this.isValidTimeFormat(hora_inicio) && this.isValidTimeFormat(
-                                    hora_salida)) {
-                                console.log(hora_salida);
-                                const start = this.timeToMinutes(hora_inicio);
-                                const end = this.timeToMinutes(hora_salida);
+                                        if (hora_inicio != null && hora_salida != null && hora_inicio.trim() != '' && hora_salida.trim() != '') {
 
-                                // Si las horas son válidas y la hora de inicio es menor que la de fin
-                                if (start < end) {
-                                    const totalMinutes = end - start;
-                                    const totalHours = this.minutesToTime(totalMinutes);
 
-                                    // Actualizar TOTAL HORAS
-                                    hot.setDataAtCell(currentRow, 3, totalHours);
+                                            const start = this.timeToMinutes(hora_inicio);
+                                            const end = this.timeToMinutes(hora_salida);
+
+                                            // Si las horas son válidas y la hora de inicio es menor que la de fin
+                                            if (start <= end) {
+                                                totalMinutes = end - start;
+                                                const totalHours = this.minutesToTime(totalMinutes);
+                                                hot.setDataAtCell(changedRow, 3, totalHours);
+
+                                            }
+                                        }else{
+                                            console.log(hora_inicio);
+                                            hot.setDataAtCell(changedRow, 3, 0);
+                                        }
+                                    }
                                 }
-                            }
+                            });
                         }
+                       
                     }
                 });
 
                 this.hot = hot;
             },
             isValidTimeFormat(time) {
-                const timePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
+                const timePattern = /^([01]\d|2[0-3]).([0-5]\d)$/;
                 return timePattern.test(time);
             },
             timeToMinutes(time) {
-                const [hours, minutes] = time.split(':').map(Number);
+                const [hours, minutes] = time.split('.').map(Number);
                 return hours * 60 + minutes;
             },
             minutesToTime(minutes) {
                 const hours = Math.floor(minutes / 60);
                 const mins = minutes % 60;
-                return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+                return `${String(hours).padStart(2, '0')}.${String(mins).padStart(2, '0')}`;
             },
             sendData() {
                 const rawData = this.hot.getData();

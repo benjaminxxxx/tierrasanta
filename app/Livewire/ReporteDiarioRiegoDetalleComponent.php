@@ -26,24 +26,29 @@ class ReporteDiarioRiegoDetalleComponent extends Component
     public $riego;
     public $noDescontarHoraAlmuerzo;
     public $idTable;
-    
-    protected $listeners = ["storeTableData","registroConsolidado"];
+
+    protected $listeners = ["storeTableData", "registroConsolidado"];
     public function mount()
     {
         $this->idTable = 'componenteTable' . Str::random(5);
         $this->tipoLabores = LaboresRiego::pluck('nombre_labor')->toArray();
+        array_unshift($this->tipoLabores, '');
+
         $this->campos = Campo::pluck('nombre')->toArray();
+        array_unshift($this->campos, '');
+
         $this->obtenerRegadores();
     }
-    public function registroConsolidado(){
+    public function registroConsolidado()
+    {
         $this->obtenerRegadores();
-        $this->dispatch('actualizarGrilla-' . $this->idTable,$this->registros);
+        $this->dispatch('actualizarGrilla-' . $this->idTable, $this->registros);
     }
     public function render()
     {
         return view('livewire.reporte-diario-riego-detalle-component');
     }
-    
+
     public function obtenerRegadores()
     {
         if (!$this->fecha || !$this->regador) {
@@ -63,9 +68,9 @@ class ReporteDiarioRiegoDetalleComponent extends Component
             ->map(function ($registro) {
                 return [
                     'campo' => $registro->campo,
-                    'hora_inicio' => substr($registro->hora_inicio, 0, 5), // Solo los primeros 5 caracteres
-                    'hora_fin' => substr($registro->hora_fin, 0, 5),       // Solo los primeros 5 caracteres
-                    'total_horas' => substr($registro->total_horas, 0, 5), // Solo los primeros 5 caracteres
+                    'hora_inicio' => str_replace(':', '.', substr($registro->hora_inicio, 0, 5)), // Cambia ":" por "."
+                    'hora_fin' => str_replace(':', '.', substr($registro->hora_fin, 0, 5)),       // Cambia ":" por "."
+                    'total_horas' => str_replace(':', '.', substr($registro->total_horas, 0, 5)), // Cambia ":" por "."
                     'tipo_labor' => $registro->tipo_labor,
                     'descripcion' => $registro->descripcion,
                     'sh' => $registro->sh ? true : false, // Convertir 0 o 1 a true o false
@@ -73,7 +78,8 @@ class ReporteDiarioRiegoDetalleComponent extends Component
             })
             ->toArray();
     }
-    public function updatedNoDescontarHoraAlmuerzo(){
+    public function updatedNoDescontarHoraAlmuerzo()
+    {
         if (!$this->regador) {
             return $this->alert('error', 'Selecciona el regador primero');
         }
@@ -82,16 +88,16 @@ class ReporteDiarioRiegoDetalleComponent extends Component
             return $this->alert('error', 'Digite alguna fecha válida');
         }
 
-        ConsolidadoRiego::where('regador_documento',$this->regador)->whereDate('fecha',$this->fecha)->update([
-            'descuento_horas_almuerzo'=>$this->noDescontarHoraAlmuerzo?1:0
+        ConsolidadoRiego::where('regador_documento', $this->regador)->whereDate('fecha', $this->fecha)->update([
+            'descuento_horas_almuerzo' => $this->noDescontarHoraAlmuerzo ? 1 : 0
         ]);
         $this->resetear();
     }
     public function resetear()
     {
         $data = [
-            'fecha'=>$this->fecha,
-            'documento'=>$this->regador,
+            'fecha' => $this->fecha,
+            'documento' => $this->regador,
         ];
         $this->dispatch('Desconsolidar', $data);
     }
@@ -101,7 +107,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
 
         try {
             if (!is_array($data) || count($data) == 0) {
-                throw new \Exception("Falta información");
+                $data = [];
             }
 
             ReporteDiarioRiego::where('documento', $this->regador)
@@ -116,10 +122,10 @@ class ReporteDiarioRiegoDetalleComponent extends Component
                 $hora_inicio = isset($row[1]) ? $this->formatTime($row[1]) : '00:00';
                 $hora_fin = isset($row[2]) ? $this->formatTime($row[2]) : '00:00';
                 $total_horas = isset($row[3]) ? $this->formatTime($row[3]) : '00:00';
-                $tipo_labor =  isset($row[4])? (trim($row[4])!=''?$row[4]:'Riego'):'Riego';
+                $tipo_labor =  isset($row[4]) ? (trim($row[4]) != '' ? $row[4] : 'Riego') : 'Riego';
                 $descripcion = $row[5] ?? null;
                 $sin_hab = isset($row[6]) ? ($row[6] ? 1 : 0) : 0;
-                
+
                 $regadorNombre = $this->obtenerNombreRegador($this->regador);
 
                 // Guardar nuevo registro
@@ -136,12 +142,12 @@ class ReporteDiarioRiegoDetalleComponent extends Component
                     'descripcion' => $descripcion,
                 ]);
             }
-            $this->dispatch('consolidarRegador',$this->regador, $this->fecha);
+            $this->dispatch('consolidarRegador', $this->regador, $this->fecha);
             //$this->consolidarRegador($this->regador, $this->fecha);
             //$this->obtenerRegadores(); despues de consolidarRegador este emitira une vento y esperar ese evento para traer obtener regadores
             //
 
-            DB::commit(); 
+            DB::commit();
 
             $this->alert("success", "Registro Guardado");
         } catch (\Throwable $th) {
@@ -155,11 +161,11 @@ class ReporteDiarioRiegoDetalleComponent extends Component
             ?? Cuadrillero::where('dni', $documento)->value('nombre_completo')
             ?? 'NN';
     }
-    
+
     private function formatTime($time)
     {
         // Aquí puedes asegurarte de que el tiempo tenga el formato adecuado HH:mm:ss
-        $date = \DateTime::createFromFormat('H:i', $time);
+        $date = \DateTime::createFromFormat('H.i', $time);
         return $date ? $date->format('H:i:s') : null;
     }
 }

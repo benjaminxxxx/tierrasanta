@@ -30,6 +30,10 @@ class ReporteDiarioComponent extends Component
         $this->fecha = Carbon::parse($this->fecha)->addDay()->format('Y-m-d');
         Session::put('fecha_reporte', $this->fecha);
     }
+    public function updatedFecha()
+    {
+        Session::put('fecha_reporte', $this->fecha);
+    }
     public function render()
     {
         return view('livewire.reporte-diario-component');

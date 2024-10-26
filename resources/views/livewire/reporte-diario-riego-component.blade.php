@@ -6,11 +6,11 @@
 
                 <div>
                     <div class="md:flex items-center">
-                        <x-secondary-button wire:click="fechaAnterior">
+                        <x-secondary-button wire:click="fechaAnterior" class="my-2 lg:my-0 w-full lg:w-auto">
                             <i class="fa fa-chevron-left"></i> Fecha Anterior
                         </x-secondary-button>
-                        <x-input type="date" wire:model.live="fecha" class="text-center mx-2 !mt-0 !w-auto" />
-                        <div class="relative w-auto">
+                        <x-input type="date" wire:model.live="fecha" class="text-center lg:mx-2 my-2 lg:my-0 w-full lg:w-auto" />
+                        <div class="relative w-auto my-2 lg:my-0">
                             <div
                                 class="absolute inset-y-0 start-0 flex items-center ps-4 pointer-events-none text-primary">
                                 <i class="fa fa-search"></i>
@@ -20,48 +20,52 @@
                         </div>
 
                         <!-- Botón para fecha posterior -->
-                        <x-secondary-button wire:click="fechaPosterior" class="ml-3">
+                        <x-secondary-button wire:click="fechaPosterior" class="w-full lg:w-auto my-3 lg:my-0 lg:ml-3">
                             Fecha Posterior <i class="fa fa-chevron-right"></i>
                         </x-secondary-button>
                     </div>
 
                 </div>
                 <div>
-                    <div x-data="{ open: false }" class="">
-                        <!-- Dropdown Button -->
-                        <x-button @click="open = !open" class="flex items-center" type="button">
-                            Opciones Adicionales
-                            <svg class="w-2.5 h-2.5 ms-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
-                                fill="none" viewBox="0 0 10 6">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                                    stroke-width="2" d="m1 1 4 4 4-4" />
-                            </svg>
-                        </x-button>
-                        <!-- Dropdown Menu -->
-                        <div x-show="open" @click.outside="open = false"
-                            class="z-10 text-base relative mr-5 list-none border-1 border-gray-500 bg-white divide-y divide-gray-100 rounded-lg shadow-lg w-auto dark:bg-gray-700">
-                            <div class="absolute bg-white shadow-lg">
-                                <ul class="py-2">
-
-                                    <li>
-                                        <a href="#" wire:click.prevent="descargarBackup"
-                                            class="block px-4 py-2 hover:bg-bodydark1 hover:text-primary whitespace-nowrap">
-                                            Descargar Backup {{ $fecha }}
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <livewire:reporte-diario-riego-import-export-component :fecha="$fecha"/>
-                                    </li>
-                                    <li>
-                                        <a href="#" wire:click.prevent="descargarBackupCompleto"
-                                            class="block px-4 py-2 hover:bg-bodydark1 hover:text-primary  whitespace-nowrap">
-                                            Descargar Backup Completo
-                                        </a>
-                                    </li>
-                                </ul>
+                    <div class="lg:flex items-center gap-4">
+                        <x-button @click="$wire.dispatch('guardarTodo')" class="w-full lg:auto">Guardar Todo</x-button>
+                        <div x-data="{ open: false }" class="my-4 lg:my-0">
+                            <!-- Dropdown Button -->
+                            <x-secondary-button @click="open = !open" class="flex items-center justify-center w-full lg:w-auto whitespace-nowrap" type="button">
+                                Opciones Adicionales
+                                <svg class="w-2.5 h-2.5 ms-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+                                    fill="none" viewBox="0 0 10 6">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                        stroke-width="2" d="m1 1 4 4 4-4" />
+                                </svg>
+                            </x-secondary-button>
+                            <!-- Dropdown Menu -->
+                            <div x-show="open" @click.outside="open = false"
+                                class="z-10 text-base relative mr-5 list-none border-1 border-gray-500 bg-white divide-y divide-gray-100 rounded-lg shadow-lg w-auto dark:bg-gray-700">
+                                <div class="absolute bg-white shadow-lg">
+                                    <ul class="py-2">
+    
+                                        <li>
+                                            <a href="#" wire:click.prevent="descargarBackup"
+                                                class="block px-4 py-2 hover:bg-bodydark1 hover:text-primary whitespace-nowrap">
+                                                Descargar Backup {{ $fecha }}
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <livewire:reporte-diario-riego-import-export-component :fecha="$fecha"/>
+                                        </li>
+                                        <li>
+                                            <a href="#" wire:click.prevent="descargarBackupCompleto"
+                                                class="block px-4 py-2 hover:bg-bodydark1 hover:text-primary  whitespace-nowrap">
+                                                Descargar Backup Completo
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    
 
                 </div>
 

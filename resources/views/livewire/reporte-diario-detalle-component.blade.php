@@ -8,9 +8,18 @@
 
     <x-card class="mt-5">
         <x-spacing>
-            <div class="w-full flex justify-end gap-3 mb-4">
-                <x-button wire:click="addGroupBtn"><i class="fa fa-plus"></i></x-button>
-                <x-danger-button wire:click="removeGroupBtn"><i class="fa fa-minus"></i></x-danger-button>
+            <div class="w-full lg:flex justify-between gap-3 mb-4">
+                <div class="flex items-center gap-3">
+                    <x-input type="number" wire:model="minutosDescontados" placeholder="Descuento en minutos" />
+                    <x-secondary-button wire:click="aplicarDescuento" class="whitespace-nowrap">
+                        Aplicar <span class="hidden lg:inline">descuento</span>
+                    </x-secondary-button>
+                </div>
+                <div class="flex justify-end gap-3 mb-4 my-3 lg:my-0">
+                    <x-button wire:click="addGroupBtn" class="w-full lg:w-auto"><i class="fa fa-plus"></i></x-button>
+                    <x-danger-button wire:click="removeGroupBtn" class="w-full lg:w-auto"><i
+                            class="fa fa-minus"></i></x-danger-button>
+                </div>
             </div>
 
             <div x-ref="tableContainer" class="mt-5 overflow-auto"></div>
@@ -90,6 +99,8 @@
 
         </x-spacing>
     </x-card>
+
+
 </div>
 
 @script
@@ -103,6 +114,8 @@
             campos: @json($campos),
             tipoAsistenciasEntidad: @json($tipoAsistenciasEntidad),
             tipoAsistencias: @json($tipoAsistencias),
+            hasUnsavedChanges: false,
+            minutosDescontados: @json($minutosDescontados),
             init() {
                 this.initTable();
                 this.listeners.push(
@@ -111,13 +124,13 @@
                         let empleados = data[0];
                         this.tableData = empleados;
                         this.hot.loadData(this.tableData);
-                        
+
                         //location.href = location.href;
                     })
                 );
                 this.listeners.push(
                     Livewire.on('setColumnas', (data) => {
-                        console.log(data);
+
                         const tareas = data[0];
                         const columns = this.generateColumns(tareas);
                         this.hot.updateSettings({
@@ -128,6 +141,69 @@
                         // Vuelve a cargar los datos actuales en la tabla (si fuera necesario)
                         this.hot.loadData(this.tableData);
                         //location.href = location.href;
+                    })
+                );
+                this.listeners.push(
+                    Livewire.on('recalcular', (data) => {
+                        const rawData = this.hot.getData();
+                        this.minutosDescontados = data[1];
+                        this.hasUnsavedChanges = data[0];
+
+                        rawData.forEach((row, rowIndex) => {
+                            const camposNoNulos = row[1] != null && row[2] != null;
+
+                            const nombreCuadrilla = row[1].trim();
+                            const tipoAsistencia = row[2];
+                            const numeroCuadrilla = row[3];
+                            const campo1 = row[4];
+                            const labor1 = row[5];
+
+                            //FILTRO PARA EVITAR A LOS CUADRILLEROS QUE YA TIENEN TODO CALCULADO
+                            if ((labor1 == '81' || labor1 == 81) && campo1 == 'FDM' &&
+                                tipoAsistencia == 'A') {
+
+                                console.log('noper' + labor1 + ' campo: ' + campo1 +
+                                    ' tipoAsistencia: ' + tipoAsistencia);
+                            } else {
+
+                                let totalMinutes = 0;
+                                const startAt = 6;
+
+                                const indiceTotal = (4 * this.tareas + 4);
+
+                                for (let indice = 0; indice < this.tareas; indice++) {
+                                    const hora_inicio = row[4 * indice + startAt];
+                                    const hora_salida = row[4 * indice + startAt + 1];
+
+                                    if (hora_inicio != null && hora_salida != null) {
+                                        const start = this.timeToMinutes(hora_inicio);
+                                        const end = this.timeToMinutes(hora_salida);
+
+                                        if (start < end) {
+                                            totalMinutes += end - start;
+                                        }
+                                    }
+                                }
+
+                                if (totalMinutes != 0) {
+                                    const nombreCuadrillaLower = nombreCuadrilla?.toString()
+                                        .toLowerCase();
+                                    const totalMinutesAdjusted = totalMinutes - this
+                                        .minutosDescontados;
+                                    let totalHours = this.minutesToTime(totalMinutesAdjusted);
+
+                                    if (nombreCuadrillaLower == 'cuadrilla') {
+                                        totalHours = this.minutesToTime(totalMinutesAdjusted *
+                                            numeroCuadrilla);
+                                    }
+                                    this.hot.setDataAtCell(rowIndex, indiceTotal, totalHours);
+                                }
+                            }
+                            /*
+                                                        if (camposNoNulos) {
+                                                            
+                                                        }*/
+                        });
                     })
                 );
             },
@@ -144,7 +220,7 @@
                     rowHeaders: true,
                     columns: columns,
                     width: '100%',
-                    height:'auto',
+                    height: 'auto',
                     manualColumnResize: false,
                     manualRowResize: true,
                     minSpareRows: 1,
@@ -153,37 +229,21 @@
                     autoRowSize: true,
                     fixedColumnsLeft: 4,
                     licenseKey: 'non-commercial-and-evaluation',
-                    afterRender: function() {
-/*
-                        const htCoreTable = document.querySelector('.htCore');
-                        let tableHeight = htCoreTable.offsetHeight;
-
-                        // Establecemos el min-height dinámicamente basado en la altura de la tabla
-                        if (tableHeight > 0 && primeraCarga < 2) {
-                            tableHeight = tableHeight + 70;
-                            container.style.minHeight = `${tableHeight}px`;
-                            primeraCarga++;
-                        }*/
-                    },
                     afterChange: (changes, source) => {
+
+                        if (source === 'loadData') {
+                            return; // No hacer nada si los datos se están cargando.
+                        }
+
                         // Verificar que el cambio no sea causado por un "loadData" o evento de Livewire
                         if (source !== 'loadData') {
                             this.calcularTotales();
-                            /*let changedRow1 = changes[0][0];
-                                                        let currentRow1 = changedRow1;
-                                                        const tipoAsistencia = hot.getDataAtCell(currentRow1, 2);
-                                                        if (tipoAsistencia != 'A') {
-                                                            const totalHours1 = this.minutesToTime(this.tipoAsistenciasEntidad[
-                                                                tipoAsistencia] * 60);
-                                                            hot.setDataAtCell(currentRow1, (4 * this.tareas + 4), totalHours1);
-                                                        }
-                            */
                         }
 
                         if (source == 'edit' || source == 'CopyPaste.paste' || source ==
                             'timeValidator' || source == 'Autofill.fill') {
 
-
+                            this.hasUnsavedChanges = true;
 
                             changes.forEach((change) => {
                                 const changedRow = change[0]; // Fila que cambió
@@ -191,12 +251,19 @@
                                 const oldValue = change[2]; // Valor antiguo
                                 const newValue = change[3]; // Valor nuevo
 
-                                if (fieldName == 'total_horas') {
+
+
+                                if (fieldName === 'total_horas' || fieldName ===
+                                    'bono_productividad' || fieldName === 'empleado_nombre'
+                                    ) {
                                     return;
                                 }
-                                if (fieldName == 'bono_productividad') {
+
+                                // Verificar si el nombre del campo comienza con "campo_" o "labor_"
+                                if (/^(campo_|labor_)/.test(fieldName)) {
                                     return;
                                 }
+
 
                                 if (fieldName == 'asistencia') {
                                     // Verificar si el nuevo valor es válido en tipoAsistenciasEntidad
@@ -212,22 +279,10 @@
                                         hot.setDataAtCell(changedRow, (4 * this.tareas + 4),
                                             totalHours1);
 
-                                            return;
+                                        return;
                                     }
-                                    
+
                                 }
-
-                                /*
-                                                                if (source == 'edit') {
-                                                                    const regexTime =
-                                                                        /^\d{1,2}\.\d{2}$/; // Expresión regular para validar formato H.mm
-
-                                                                    // Si el valor no coincide con el formato esperado, retorna
-                                                                    if (!regexTime.test(newValue) && newValue != '') {
-                                                                        console.log(newValue);
-                                                                        //return; // Evitar el cálculo o la validación si no cumple con el formato
-                                                                    }
-                                                                }*/
 
                                 let totalMinutes = 0;
 
@@ -235,7 +290,7 @@
 
 
                                 if (oldValue != newValue) {
-                                    
+
 
                                     for (let indice = 0; indice < this.tareas; indice++) {
 
@@ -246,7 +301,7 @@
                                             4 * indice +
                                             startAt + 1);
 
-                                           
+
 
                                         if (hora_inicio != null && hora_salida != null) {
 
@@ -261,14 +316,33 @@
 
                                             }
                                         }
-                                        
+
 
                                     }
-                                    const totalHours = this.minutesToTime(
-                                        totalMinutes - 60);
-                                    hot.setDataAtCell(changedRow, (4 * this
-                                            .tareas + 4),
+
+                                    const numeroCuadrilla = hot.getDataAtCell(changedRow,
+                                    3);
+                                    const esCuadrilla = hot.getDataAtCell(changedRow, 1)
+                                        ?.toString().toLowerCase()
+                                    .trim(); // Convertir a string y minúsculas
+                                    console.log(esCuadrilla);
+
+                                    const totalMinutesAdjusted = totalMinutes - this
+                                        .minutosDescontados;
+                                    let totalHours;
+                                    // Calcular el total de horas dependiendo de si es "cuadrilla"
+                                    if (esCuadrilla == 'cuadrilla') {
+                                        totalHours = this.minutesToTime(
+                                            totalMinutesAdjusted * numeroCuadrilla);
+                                    } else {
+                                        totalHours = this.minutesToTime(
+                                            totalMinutesAdjusted);
+                                    }
+
+                                    // Establecer el valor calculado en la celda correspondiente
+                                    hot.setDataAtCell(changedRow, 4 * this.tareas + 4,
                                         totalHours);
+
                                 }
 
                             });
@@ -280,6 +354,15 @@
                 this.hot = hot;
                 this.hot.render();
                 this.calcularTotales();
+
+                window.addEventListener('beforeunload', (event) => {
+                    if (this.hasUnsavedChanges) {
+                        const confirmationMessage =
+                            'Tienes cambios no guardados. ¿Estás seguro de que deseas salir?';
+                        event.returnValue = confirmationMessage; // Mostrar el mensaje de advertencia
+                        return confirmationMessage;
+                    }
+                });
             },
             isValidTimeFormat(time) {
                 const timePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -332,20 +415,20 @@
                     columns.push({
                         data: "campo_" + indice,
                         type: 'dropdown',
-                        width: 70,
+                        width: 50,
                         className: 'text-center',
                         source: this.campos,
                         title: `CAM. ${indice}`
                     }, {
                         data: "labor_" + indice,
                         type: 'text',
-                        width: 70,
+                        width: 40,
                         className: 'text-center',
                         title: `LAB. ${indice}`
                     }, {
                         data: "entrada_" + indice,
                         type: 'time',
-                        width: 70,
+                        width: 50,
                         timeFormat: 'H.mm',
                         correctFormat: true,
                         className: 'text-center',
@@ -353,7 +436,7 @@
                     }, {
                         data: "salida_" + indice,
                         type: 'time',
-                        width: 70,
+                        width: 50,
                         timeFormat: 'H.mm',
                         correctFormat: true,
                         className: 'text-center',
@@ -367,7 +450,7 @@
                     width: 70,
                     type: 'time',
                     timeFormat: 'H.mm',
-                    correctFormat: true,
+                    //correctFormat: true,
                     title: 'TOTAL',
                     className: '!text-center font-bold text-lg',
                     renderer: function(hotInstance, td, row, col, prop, value, cellProperties) {
@@ -491,8 +574,8 @@
                     totales: this.totales
                 };
 
-                console.log('Datos a enviar:', data);
                 $wire.dispatchSelf('GuardarInformacion', data);
+                this.hasUnsavedChanges = false;
             }
         }));
     </script>

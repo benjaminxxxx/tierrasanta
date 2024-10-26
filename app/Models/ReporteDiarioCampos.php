@@ -20,6 +20,7 @@ class ReporteDiarioCampos extends Model
         'total_descanso_medico',
         'total_atencion_medica',
         'total_cuadrillas',
-        'total_planilla'
+        'total_planilla',
+        'descuento_minutos'
     ];
 }
