@@ -2,13 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
-class GruposCuadrilla extends Model
+//antes GruposCuadrilla
+class CuaGrupo extends Model
 {
-    use HasFactory;
-    protected $table = 'grupos_cuadrilla';
+    protected $table = 'cua_grupos';
 
     protected $primaryKey = 'codigo';
 
@@ -21,6 +19,7 @@ class GruposCuadrilla extends Model
         'color',
         'nombre',
         'costo_dia_sugerido',
-        'modalidad_pago'
+        'modalidad_pago',
+        'estado'
     ];
 }

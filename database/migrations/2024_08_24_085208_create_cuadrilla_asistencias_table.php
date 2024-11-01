@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('cuadrilla_asistencias', function (Blueprint $table) {
+        Schema::create('cua_asistencia_semanal', function (Blueprint $table) {
             $table->id();
             $table->string('titulo');
             $table->date('fecha_inicio');
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cuadrilla_asistencias');
+        Schema::dropIfExists('cua_asistencia_semanal');
     }
 };

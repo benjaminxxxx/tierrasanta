@@ -51,7 +51,7 @@ class CuadrillaCuadrilleroImportExportComponent extends Component
         }
 
         $rows = $sheet->toArray();
-        $grupos = GruposCuadrilla::all()->pluck('codigo')->toArray();
+        $grupos = CuaGrupo::all()->pluck('codigo')->toArray();
 
         foreach ($rows as $index => $row) {
             if ($index === 0) {

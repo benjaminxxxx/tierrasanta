@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\GruposCuadrilla;
+use App\Models\CuaGrupo;
 use Illuminate\Database\Seeder;
 
 class GruposCuadrillaSeeder extends Seeder
@@ -24,7 +24,7 @@ class GruposCuadrillaSeeder extends Seeder
         ];
 
         foreach ($cuadrillas as $cuadrilla) {
-            GruposCuadrilla::create([
+            CuaGrupo::create([
                 'codigo' => $cuadrilla['codigo'],
                 'nombre' => $cuadrilla['nombre'],
                 'costo_dia_sugerido' => $cuadrilla['costo_dia_sugerido'],

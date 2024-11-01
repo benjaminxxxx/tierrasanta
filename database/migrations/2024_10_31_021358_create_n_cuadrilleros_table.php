@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('cuadrilla_asistencia_horas', function (Blueprint $table) {
+        Schema::create('cuadrilleros', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('cuadrillero_id')->constrained('cuadrilla_asistencia_cuadrilleros')->onDelete('cascade');
-            $table->date('fecha');
-            $table->decimal('horas_trabajadas',10,2);
+            $table->string('nombres');
+            $table->string('dni')->nullable()->unique();
+            $table->boolean('estado')->default(true);
             $table->timestamps();
         });
     }
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cuadrilla_asistencia_horas');
+        Schema::dropIfExists('cuadrilleros');
     }
 };
