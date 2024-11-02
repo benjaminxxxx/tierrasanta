@@ -86,7 +86,7 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorCampo" href="#" :active="request()->routeIs(['campo.mapa','campo.riego','campo.detalle_riego','campo.campania'])">
+                    <x-nav-link-parent name="sectorCampo" href="#" :active="request()->routeIs(['campo.mapa','campo.riego','campo.campania'])">
                         
                         <div class="w-6 text-center">
                             <i class="fa fa-leaf"></i>
@@ -99,10 +99,6 @@
                             <x-nav-link-child href="{{ route('campo.riego') }}" :active="request()->routeIs('campo.riego')">
                                 Riego
                             </x-nav-link-child>
-                            <!--
-                            <x-nav-link-child href="{{ route('campo.detalle_riego') }}" :active="request()->routeIs('campo.detalle_riego')">
-                                Detalle Riego
-                            </x-nav-link-child>-->
                             <x-nav-link-child href="{{ route('campo.campania') }}" :active="request()->routeIs('campo.campania')">
                                 Campañas
                             </x-nav-link-child>

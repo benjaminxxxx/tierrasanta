@@ -21,7 +21,7 @@ class CuadrillaAsistenciaAgregarComponent extends Component
     public $cuadrilla_asistencia_id;
     public $grupos = [];
     public $codigo_grupo;
-    protected $listeners = ['agregarCuadrilleros', 'cuadrilleroRegistrado','grupoRegistrado'];
+    protected $listeners = ['agregarCuadrilleros', 'cuadrilleroRegistrado','cuadrilleroRegistradoDeEmpleados','grupoRegistrado'];
     public function mount(){
         $this->grupos = CuaGrupo::where('estado',true)->get();
         if ($this->grupos->isNotEmpty()) {
@@ -79,6 +79,16 @@ class CuadrillaAsistenciaAgregarComponent extends Component
     public function cuadrilleroRegistrado($cuadrillero)
     {
         $this->agregarCuadrillero($cuadrillero['id']);
+    }
+    public function cuadrilleroRegistradoDeEmpleados($cuadrilleros)
+    {
+        if(!is_array($cuadrilleros)){
+            return;
+        }
+        foreach ($cuadrilleros as $idCuadrillero) {
+            $this->agregarCuadrillero($idCuadrillero);
+        }
+        
     }
     public function grupoRegistrado($grupo)
     {

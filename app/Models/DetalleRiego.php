@@ -29,7 +29,7 @@ class DetalleRiego extends Model
         $documento = $this->regador;
 
         return optional(Empleado::where('documento', $documento)->first())->nombre_completo
-            ?? Cuadrillero::where('dni', $documento)->value('nombre_completo')
+            ?? Cuadrillero::where('dni', $documento)->value('nombres')
             ?? 'NN';
     }
 }

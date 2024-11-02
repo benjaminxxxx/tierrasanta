@@ -42,6 +42,10 @@
                             title="Registrar Cuadrillero">
                             <i class="fa fa-plus"></i>
                         </x-button>
+                        <x-button type="button" class="whitespace-nowrap" @click="$wire.dispatch('registrarCuadrilleroDePlanilla',{seleccionable:true})"
+                            title="Registrar Cuadrillero de Planilla">
+                            P <i class="fa fa-plus"></i>
+                        </x-button>
                     </div>
                     <ul x-ref="results" class="mt-2">
 

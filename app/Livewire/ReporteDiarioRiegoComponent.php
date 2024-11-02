@@ -64,11 +64,11 @@ class ReporteDiarioRiegoComponent extends Component
                     case 'cuadrilleros':
                         $this->regadores = Cuadrillero::whereNotIn('dni', $documentosAgregados)
                             ->whereNotNull('dni')
-                            ->orderBy('nombre_completo')
-                            ->get(['dni as documento', 'nombre_completo'])
+                            ->orderBy('nombres')
+                            ->get(['dni as documento', 'nombres'])
                             ->map(function ($cuadrillero) {
                                 return [
-                                    'nombre_completo' => $cuadrillero->nombre_completo,
+                                    'nombre_completo' => $cuadrillero->nombres,
                                     'documento' => $cuadrillero->documento,
                                 ];
                             });
@@ -173,7 +173,7 @@ class ReporteDiarioRiegoComponent extends Component
     private function obtenerNombreRegador($documento)
     {
         return optional(Empleado::where('documento', $documento)->first())->nombre_completo
-            ?? Cuadrillero::where('dni', $documento)->value('nombre_completo')
+            ?? Cuadrillero::where('dni', $documento)->value('nombres')
             ?? 'NN';
     }
     public function updatedFecha()

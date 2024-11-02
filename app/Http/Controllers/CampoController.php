@@ -25,10 +25,6 @@ class CampoController extends Controller
     {
         return view('campo.campania');
     }
-    public function detalleriego(){
-        $campos = Campo::all();
-        return view('campo.detalleriego');
-    }
     public function guardarPosicion(Request $request, $nombre)
     {
         try {

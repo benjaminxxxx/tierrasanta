@@ -5,6 +5,7 @@
     <livewire:cuadrilla-asistencia-component/>
     <livewire:cuadrilla-asistencia-agregar-component/>
     <livewire:cuadrilla-form-component/>
+    <livewire:cuadrilla-desde-empleados-component/>
     <livewire:cuadrilla-grupo-form-component/>
     
 </x-app-layout>

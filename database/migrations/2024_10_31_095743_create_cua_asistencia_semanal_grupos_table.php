@@ -19,6 +19,7 @@ return new class extends Migration
             $table->decimal('costo_hora', 10, 2)->nullable();
             $table->string('numero_recibo')->nullable();
             $table->decimal('total_costo', 10, 2)->nullable();
+            $table->string('estado_pago')->default('pendiente');
             $table->date('fecha_pagado')->nullable();
             $table->decimal('dinero_recibido', 10, 2)->nullable();
             $table->decimal('saldo', 10, 2)->nullable();

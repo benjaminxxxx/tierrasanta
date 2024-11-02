@@ -65,7 +65,6 @@ Route::middleware([
     Route::get('/campo/camapania', [CampoController::class,'campania'])->name('campo.campania');
     Route::get('/campo/mapa', [CampoController::class,'mapa'])->name('campo.mapa');
     Route::get('/campo/riego', [CampoController::class,'riego'])->name('campo.riego');
-    Route::get('/campo/detalleriego', [CampoController::class,'detalleriego'])->name('campo.detalle_riego');
     Route::post('/campo/mapa/guardar-posicion/{nombre}', [CampoController::class,'guardarPosicion'])->name('campo.mapa.guardar-posicion');
 
     //Consolidados

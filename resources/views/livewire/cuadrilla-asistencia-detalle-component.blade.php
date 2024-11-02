@@ -20,6 +20,60 @@
             </x-button>
         </div>
     </div>
+    <div class="grid lg:grid-cols-2 mb-5">
+        <div>
+
+        </div>
+        <div>
+            <x-table>
+                <x-slot name="thead">
+                    <x-tr>
+                        <x-th>
+                            Cuadro Resumen
+                        </x-th>
+                        <x-th class="text-right">Monto a pagar</x-th>
+                        <x-th class="text-center">Condición</x-th>
+                        <x-th class="text-center">Fecha</x-th>
+                    </x-tr>
+                </x-slot>
+                <x-slot name="tbody">
+                    @if ($gruposTotales)
+                        @foreach ($gruposTotales as $grupoTotal)
+                            <x-tr>
+                                <x-th style="background-color:{{$grupoTotal->grupo->color}}">
+                                    {{ $grupoTotal->grupo->nombre }}
+                                </x-th>
+                                <x-th class="text-right">
+                                    {{ $grupoTotal->total_costo }}
+                                </x-th>
+                                <x-th class="text-center">
+                                    <x-select wire:change="actualizarEstadoGrupoEnSemana({{$grupoTotal->id}},$event.target.value)" class="px-1 py-2 !text-sm">
+                                        <option value="pendiente" {{$grupoTotal->estado_pago=='pendiente'?'selected':''}}>Pendiente</option>
+                                        <option value="pagado" {{$grupoTotal->estado_pago=='pagado'?'selected':''}}>Pagado</option>
+                                    </x-select>
+                                </x-th>
+                                <x-th class="text-center">
+                                    <x-input type="date" class="px-1 py-2 !text-sm" value="{{$grupoTotal->fecha_pagado}}" wire:change="actualizarFechaGrupoEnSemana({{$grupoTotal->id}},$event.target.value)" />
+                                </x-th>
+                            </x-tr>
+                        @endforeach
+                        @IF($this->semana)
+                        <x-tr>
+                            <x-th>
+                                TOTAL
+                            </x-th>
+                            <x-th class="text-right">
+                                {{ $this->semana->total}}
+                            </x-th>
+                            <x-th></x-th>
+                            <x-th></x-th>
+                        </x-tr>
+                        @endif
+                    @endif
+                </x-slot>
+            </x-table>
+        </div>
+    </div>
 </div>
 @script
     <script>
@@ -92,6 +146,7 @@
                     data: 'monto',
                     type: 'numeric',
                     title: 'MONTO',
+                    className: '!text-center',
                     numericFormat: {
                         pattern: '0.00',
                     },
@@ -116,6 +171,16 @@
                                 callback: () => this.eliminarCuadrillerosSeleccionados()
                             }
                         }
+                    },
+                    cells: (row, col) => {
+                        const cellProperties = {};
+
+                        if (row === this.tableData.length - 1) {
+                            // Asigna una clase particular a todas las celdas de la última fila
+                            cellProperties.className = '!bg-gray-200 font-bold !text-center';
+                        }
+
+                        return cellProperties;
                     },
                     licenseKey: 'non-commercial-and-evaluation'
                 });

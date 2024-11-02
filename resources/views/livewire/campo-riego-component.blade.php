@@ -61,7 +61,7 @@
                             @if ($puedeSeleccionarse == 'false') x-data="{ showTooltip: false }"
                                 @click="showTooltip = true"
                                 @click.away="showTooltip = false" @endif
-                            class="campo {{ array_search($campo->nombre, array_column($camposSeleccionados, 'nombre')) !== false ? 'selectedCampo' : ($campo->orden == 1 ? 'bg-lime-600 text-white' : 'bg-stone-300') }} break-work shadow-lg font-bold text-center flex items-center justify-center rounded-md p-3 {{ $borderClass }}"
+                            class="campo bg-stone-300 break-work shadow-lg font-bold text-center flex items-center justify-center rounded-md p-3 {{ $borderClass }}"
                             style="left: {{ $campo->pos_x }}px; top: {{ $campo->pos_y }}px; }}">
 
 
