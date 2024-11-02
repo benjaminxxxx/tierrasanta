@@ -68,7 +68,7 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorCuadrilla" href="#" :active="request()->routeIs(['cuadrilla.asistencia','cuadrilla.grupos','cuadrilla.cuadrilleros'])">
+                    <x-nav-link-parent name="sectorCuadrilla" href="#" :active="request()->routeIs(['cuadrilla.grupos','cuadrilla.cuadrilleros'])">
                         
                         <div class="w-6 text-center">
                             <i class="fas fa-hard-hat"></i>
@@ -81,9 +81,7 @@
                             <x-nav-link-child href="{{ route('cuadrilla.grupos') }}" :active="request()->routeIs('cuadrilla.grupos')">
                                 Grupos
                             </x-nav-link-child>
-                            <x-nav-link-child href="{{ route('cuadrilla.asistencia') }}" :active="request()->routeIs('cuadrilla.asistencia')">
-                                Asistencia
-                            </x-nav-link-child>
+                            
                         </x-slot>
                     </x-nav-link-parent>
                     <x-nav-link-parent name="sectorCampo" href="#" :active="request()->routeIs(['campo.mapa','campo.riego','campo.campania'])">
@@ -104,7 +102,7 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorReportes" href="#" :active="request()->routeIs(['reporte.reporte_diario','reporte.reporte_diario_riego','almacen.salida_productos'])">
+                    <x-nav-link-parent name="sectorReportes" href="#" :active="request()->routeIs(['reporte.reporte_diario','reporte.reporte_diario_riego','cuadrilla.asistencia','almacen.salida_productos'])">
                       
                         <div class="w-6 text-center">
                             <i class="fa fa-database"></i>
@@ -112,10 +110,13 @@
                         Reporte Diario
                         <x-slot name="children">
                             <x-nav-link-child href="{{ route('reporte.reporte_diario') }}" :active="request()->routeIs('reporte.reporte_diario')">
-                                Trabajadores
+                                Planilla
                             </x-nav-link-child>
                             <x-nav-link-child href="{{ route('reporte.reporte_diario_riego') }}" :active="request()->routeIs('reporte.reporte_diario_riego')">
                                 Regadores
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('cuadrilla.asistencia') }}" :active="request()->routeIs('cuadrilla.asistencia')">
+                                Cuadrilleros
                             </x-nav-link-child>
                             <x-nav-link-child href="{{ route('almacen.salida_productos') }}" :active="request()->routeIs('almacen.salida_productos')">
                                 Salida de Almacén Pesticidas y Fertilizantes
