@@ -33,6 +33,7 @@
                     <div class="col-span-2 md:col-span-1 mt-3">
                         <x-label for="unidad_medida">Unidad de Medida</x-label>
                         <x-select class="uppercase" wire:model="unidad_medida" id="unidad_medida">
+                            <option value="GR">GR</option>
                             <option value="KG">KG</option>
                             <option value="LT">LT</option>
                         </x-select>
@@ -55,9 +56,12 @@
         </x-slot>
         <x-slot name="footer">
             <x-secondary-button type="button" wire:click="closeForm" class="mr-2">Cerrar</x-secondary-button>
+            @if ($productoId)
             <x-secondary-button  class="mr-2" @click="$wire.dispatch('VerComprasProducto',{'id':{{ $productoId }}})">
                 <i class="fa fa-money-bill"></i> Compras
-            </x-secondary-button>
+            </x-secondary-button> 
+            @endif
+            
             <x-button type="submit" wire:click="store" class="ml-3">Guardar</x-button>
         </x-slot>
     </x-dialog-modal>

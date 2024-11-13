@@ -7,5 +7,6 @@
     <livewire:cuadrilla-form-component/>
     <livewire:cuadrilla-desde-empleados-component/>
     <livewire:cuadrilla-grupo-form-component/>
+    <livewire:cuadrillero-precio-por-dia-component/>
     
 </x-app-layout>

@@ -26,6 +26,11 @@ class CuaAsistenciaSemanalGrupo extends Model
         'total_pagado',
     ];
 
+    public function getCostoHoraAttribute()
+    {
+        return $this->costo_dia/8;
+    }
+
     // Relación con CuaAsistenciaSemanal
     public function asistenciaSemanal()
     {

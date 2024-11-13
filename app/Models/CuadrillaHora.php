@@ -15,6 +15,7 @@ class CuadrillaHora extends Model
         'cua_asi_sem_cua_id',
         'fecha',
         'horas',
+        'bono',
         'costo_dia',
     ];
 

@@ -3,10 +3,8 @@
 namespace App\Livewire;
 
 use App\Models\CompraProducto;
+use App\Models\Producto;
 use App\Models\TiendaComercial;
-use Carbon\Carbon;
-use Exception;
-use Illuminate\Database\QueryException;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -19,50 +17,30 @@ class ProductosCompraComponent extends Component
     public $productoId;
     public $compraId;
     public $mostrarFormulario = false;
-    public $proveedores;
-
-    public $tienda_comercial_id;
-    public $fecha_compra;
-    public $costo_por_kg;
-    public $factura;
-
-    public $sortField = 'fecha_compra'; 
+    public $sortField = 'fecha_compra';
     public $sortDirection = 'desc';
-
     public $compraIdEliminar;
-
+    public $producto;
     public $modo;
 
-    protected $listeners = ['VerComprasProducto','eliminacionConfirmadaCompra'];
-    protected function rules()
-    {
-        return [
-            'tienda_comercial_id' => 'required',
-            'fecha_compra' => 'required',
-            'costo_por_kg' => 'required|numeric|regex:/^\d+(\.\d{1,2})?$/',  // Permite valores decimales con hasta 2 dígitos
-            'factura' => 'nullable'
-        ];
-    }
-
-    protected $messages = [
-        'tienda_comercial_id.required' => 'La tienda comercial es obligatoria.',
-        'fecha_compra.required' => 'La fecha de compra es obligatoria.',
-        'costo_por_kg.required' => 'El costo por kilogramo/Listro debe ser un número válido.',
-        'costo_por_kg.numeric' => 'El costo por kilogramo debe ser un número válido.',
-        'costo_por_kg.regex' => 'El costo por kilogramo debe ser un valor decimal con hasta 2 dígitos después del punto.',
-    ];
+    protected $listeners = ['VerComprasProducto', 'eliminacionConfirmadaCompra', 'actualizarAlmacen' => '$refresh'];
 
     public function VerComprasProducto($id)
     {
         $this->productoId = $id;
+
+        $this->producto = Producto::find($this->productoId);
+        if (!$this->producto) {
+            return $this->alert('error', 'El producto ya no existe.');
+        }
+
         $this->mostrarFormulario = true;
-        $this->sortField = 'fecha_compra'; 
+        $this->sortField = 'fecha_compra';
         $this->sortDirection = 'desc';
     }
     public function mount()
     {
-        $this->proveedores = TiendaComercial::orderBy('nombre')->get();
-        $this->resetearValoresDefecto();
+
     }
     public function enable($id)
     {
@@ -80,71 +58,16 @@ class ProductosCompraComponent extends Component
             $compra->save();
         }
     }
-    public function editarCompra($id){
-        $this->compraId = $id;
-        $compra = CompraProducto::find($this->compraId);
-        if($compra){
-            $this->tienda_comercial_id = $compra->tienda_comercial_id;
-            $this->fecha_compra = $compra->fecha_compra;
-            $this->factura = $compra->factura;
-            $this->costo_por_kg = $compra->costo_por_kg;
-        }
-    }
-    public function agregarCompra()
+
+
+
+    public function closeForm()
     {
-
-        $this->validate();
-
-        try {
-
-            if(!$this->productoId){
-                throw new Exception("Debe Seleccionar un Producto");
-            }
-
-            $data = [
-                'producto_id' => $this->productoId,
-                'tienda_comercial_id' => $this->tienda_comercial_id,
-                'fecha_compra' => $this->fecha_compra,
-                'factura' => mb_strtoupper($this->factura),
-                'costo_por_kg'=>$this->costo_por_kg
-            ];
-
-            if ($this->compraId) {
-                $compra = CompraProducto::find($this->compraId);
-                if ($compra) {
-                    $compra->update($data);
-                    $this->alert('success', 'Registro actualizado exitosamente.');
-                }
-            } else {
-                $data['estado']='1';
-                CompraProducto::create($data);
-                $this->alert('success', 'Registro creado exitosamente.');
-            }
-
-            // Limpiar los campos después de guardar
-            $this->reset([
-                'tienda_comercial_id',
-                'factura',
-                'costo_por_kg'
-            ]);
-
-            $this->dispatch('actualizarAlmacen');
-            $this->resetearValoresDefecto();
-        } catch (QueryException $e) {
-            $this->alert('error', 'Ocurrió un error inesperado: ' . $e->getMessage());
-        } catch (Exception $e) {
-            $this->alert('error', 'Ocurrió un error inesperado: ' . $e->getMessage());
-        }
-    }
-   
-    public function resetearValoresDefecto(){
-        $this->fecha_compra = Carbon::now()->format('Y-m-d');
-    }
-    public function closeForm(){
         $this->mostrarFormulario = false;
     }
-    public function continuar(){
-        $this->dispatch("continuar",$this->productoId);
+    public function continuar()
+    {
+        $this->dispatch("continuar", $this->productoId);
     }
     public function sortBy($field)
     {
@@ -186,11 +109,11 @@ class ProductosCompraComponent extends Component
     public function render()
     {
         $compras = null;
-        if($this->productoId){
-            $compras = CompraProducto::where('producto_id',$this->productoId)->orderBy($this->sortField, $this->sortDirection)->paginate(5);
+        if ($this->productoId) {
+            $compras = CompraProducto::where('producto_id', $this->productoId)->orderBy($this->sortField, $this->sortDirection)->paginate(5);
         }
-        return view('livewire.productos-compra-component',[
-            'compras'=>$compras
+        return view('livewire.productos-compra-component', [
+            'compras' => $compras
         ]);
     }
 }

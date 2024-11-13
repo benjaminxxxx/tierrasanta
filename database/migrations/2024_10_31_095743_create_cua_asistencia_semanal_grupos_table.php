@@ -15,15 +15,15 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('cua_asi_sem_id'); // Referencia a cua_asistencia_semanal->id
             $table->string('gru_cua_cod'); // Referencia a cua_grupos->codigo
-            $table->decimal('costo_dia', 10, 2)->nullable();
-            $table->decimal('costo_hora', 10, 2)->nullable();
+            $table->decimal('costo_dia', 10, 3)->nullable();
+            $table->decimal('costo_hora', 10, 3)->nullable();
             $table->string('numero_recibo')->nullable();
-            $table->decimal('total_costo', 10, 2)->nullable();
+            $table->decimal('total_costo', 10, 3)->nullable();
             $table->string('estado_pago')->default('pendiente');
             $table->date('fecha_pagado')->nullable();
-            $table->decimal('dinero_recibido', 10, 2)->nullable();
-            $table->decimal('saldo', 10, 2)->nullable();
-            $table->decimal('total_pagado', 10, 2)->nullable();
+            $table->decimal('dinero_recibido', 10, 3)->nullable();
+            $table->decimal('saldo', 10, 3)->nullable();
+            $table->decimal('total_pagado', 10, 3)->nullable();
             $table->timestamps();
 
             // Definición de las llaves foráneas

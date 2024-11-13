@@ -15,6 +15,9 @@ class CompraProducto extends Model
         'orden_compra',
         'factura',
         'costo_por_kg',
+        'total',
+        'stock',
+        'fecha_termino',
         'estado'
     ];
 

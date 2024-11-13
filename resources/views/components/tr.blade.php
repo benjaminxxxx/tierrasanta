@@ -1,5 +1,5 @@
 @props(['value'])
 
-<tr {{ $attributes->merge(['class' => 'bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600']) }}>
+<tr {{ $attributes->merge(['class' => 'bg-white border-b  dark:bg-boxdark dark:border-primaryDark hover:bg-gray-50 dark:hover:bg-primaryDark']) }}>
     {{ $value ?? $slot }}
 </tr>

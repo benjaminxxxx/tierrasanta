@@ -20,59 +20,91 @@
             </x-button>
         </div>
     </div>
-    <div class="grid lg:grid-cols-2 mb-5">
-        <div>
-
-        </div>
-        <div>
-            <x-table>
-                <x-slot name="thead">
+    <div class="my-5 md:flex justify-end">
+        <x-table class="!w-auto">
+            <x-slot name="thead">
+                @if ($periodo)
+                <x-tr>
+                    <x-th rowspan="3">
+                        Cuadro Resumen
+                    </x-th>
+                    <x-th colspan="{{count($periodo)}}" class="text-center">
+                        Precios por día
+                    </x-th>
+                    <x-th colspan="3" class="text-center">
+                        Reporte semanal
+                    </x-th>
+                </x-tr>
+                @endif
+                <x-tr>
+                    
+                    @if ($periodo)
+                        @foreach ($periodo as $diaBase)
+                        <x-th class="text-center">{{$diaBase['dia']}}</x-th>
+                        @endforeach
+                    @endif
+                    <x-th rowspan="2" class="text-right">Monto a pagar</x-th>
+                    <x-th rowspan="2" class="text-center">Condición</x-th>
+                    <x-th rowspan="2" class="text-center">Fecha</x-th>
+                </x-tr>
+                <x-tr>
+                    @if ($periodo)
+                        @foreach ($periodo as $diaBase)
+                        <x-th class="text-center">{{$diaBase['nombre']}}</x-th>
+                        @endforeach
+                    @endif
+                </x-tr>
+            </x-slot>
+            <x-slot name="tbody">
+                @if ($gruposTotales)
+                    @foreach ($gruposTotales as $grupoTotal)
+                        <x-tr>
+                            <x-th style="background-color:{{$grupoTotal->grupo->color}}" class="!text-gray-900">
+                                {{ $grupoTotal->grupo->nombre }}
+                            </x-th>
+                            @if ($periodo)
+                                @foreach ($periodo as $indicePeriodo => $diaBase)
+                                @php
+                                    $claseBase = "";
+                                    if(!$precios[$grupoTotal->id][$indicePeriodo]['base']){
+                                        $claseBase = "!text-lime-600";
+                                    }
+                                @endphp
+                                <x-th class="text-center">
+                                    <x-input type="number" class="!w-[5rem] text-center !p-1 {{$claseBase}}"
+                                        wire:model.live.debounce.1000ms="precios.{{ $grupoTotal->id }}.{{ $indicePeriodo }}.costo_dia" wire:key="cantidad{{ $grupoTotal->id }}.{{ $indicePeriodo }}" />
+                                </x-th>
+                                @endforeach
+                            @endif
+                            <x-th class="text-right">
+                                {{ $grupoTotal->total_costo }}
+                            </x-th>
+                            <x-th class="text-center">
+                                <x-select wire:change="actualizarEstadoGrupoEnSemana({{$grupoTotal->id}},$event.target.value)" class="px-1 py-2 !text-sm">
+                                    <option value="pendiente" {{$grupoTotal->estado_pago=='pendiente'?'selected':''}}>Pendiente</option>
+                                    <option value="pagado" {{$grupoTotal->estado_pago=='pagado'?'selected':''}}>Pagado</option>
+                                </x-select>
+                            </x-th>
+                            <x-th class="text-center">
+                                <x-input type="date" class="px-1 py-2 !text-sm" value="{{$grupoTotal->fecha_pagado}}" wire:change="actualizarFechaGrupoEnSemana({{$grupoTotal->id}},$event.target.value)" />
+                            </x-th>
+                        </x-tr>
+                    @endforeach
+                    @IF($this->semana)
                     <x-tr>
                         <x-th>
-                            Cuadro Resumen
+                            TOTAL
                         </x-th>
-                        <x-th class="text-right">Monto a pagar</x-th>
-                        <x-th class="text-center">Condición</x-th>
-                        <x-th class="text-center">Fecha</x-th>
+                        <x-th class="text-right">
+                            {{ $this->semana->total}}
+                        </x-th>
+                        <x-th></x-th>
+                        <x-th></x-th>
                     </x-tr>
-                </x-slot>
-                <x-slot name="tbody">
-                    @if ($gruposTotales)
-                        @foreach ($gruposTotales as $grupoTotal)
-                            <x-tr>
-                                <x-th style="background-color:{{$grupoTotal->grupo->color}}">
-                                    {{ $grupoTotal->grupo->nombre }}
-                                </x-th>
-                                <x-th class="text-right">
-                                    {{ $grupoTotal->total_costo }}
-                                </x-th>
-                                <x-th class="text-center">
-                                    <x-select wire:change="actualizarEstadoGrupoEnSemana({{$grupoTotal->id}},$event.target.value)" class="px-1 py-2 !text-sm">
-                                        <option value="pendiente" {{$grupoTotal->estado_pago=='pendiente'?'selected':''}}>Pendiente</option>
-                                        <option value="pagado" {{$grupoTotal->estado_pago=='pagado'?'selected':''}}>Pagado</option>
-                                    </x-select>
-                                </x-th>
-                                <x-th class="text-center">
-                                    <x-input type="date" class="px-1 py-2 !text-sm" value="{{$grupoTotal->fecha_pagado}}" wire:change="actualizarFechaGrupoEnSemana({{$grupoTotal->id}},$event.target.value)" />
-                                </x-th>
-                            </x-tr>
-                        @endforeach
-                        @IF($this->semana)
-                        <x-tr>
-                            <x-th>
-                                TOTAL
-                            </x-th>
-                            <x-th class="text-right">
-                                {{ $this->semana->total}}
-                            </x-th>
-                            <x-th></x-th>
-                            <x-th></x-th>
-                        </x-tr>
-                        @endif
                     @endif
-                </x-slot>
-            </x-table>
-        </div>
+                @endif
+            </x-slot>
+        </x-table>
     </div>
 </div>
 @script
@@ -118,13 +150,11 @@
                     title: 'NOMBRES',
                 });
 
-                console.log(this.periodo);
-
                 this.periodo.forEach(dia => {
                     columns.push({
                         data: `dia_${dia.dia}`, // data como "dia_29" por ejemplo
                         type: 'numeric', // tipo número, acepta decimales
-                        title: `${dia.dia} <br/> ${dia.nombre}`,
+                        title: `HORA <br/> ${dia.dia} <br/> ${dia.nombre}`,
                         width: 50,
                         className: '!text-center'
                     });
@@ -134,8 +164,18 @@
                     columns.push({
                         data: `dia_${dia.dia}_monto`, // data como "dia_29" por ejemplo
                         type: 'numeric', // tipo número, acepta decimales
-                        title: `${dia.dia} <br/> ${dia.nombre}`, // título en formato día + nombre
+                        title: `DIA <br/> ${dia.dia} <br/> ${dia.nombre}`, // título en formato día + nombre
                         readOnly: true,
+                        width: 50,
+                        className: '!text-center'
+                    });
+                });
+
+                this.periodo.forEach(dia => {
+                    columns.push({
+                        data: `dia_${dia.dia}_bono`,
+                        type: 'numeric', // tipo número, acepta decimales
+                        title: `BONO <br/> ${dia.dia} <br/> ${dia.nombre}`,
                         width: 50,
                         className: '!text-center'
                     });
@@ -166,6 +206,10 @@
                     autoColumnSize: true,
                     contextMenu: {
                         items: {
+                            "customize_quadrillero": {
+                                name: 'Personalizar costo por día',
+                                callback: () => this.customizeCuadrillero()
+                            },
                             "remove_quadrillero": {
                                 name: 'Eliminar cuadrilleros',
                                 callback: () => this.eliminarCuadrillerosSeleccionados()
@@ -186,6 +230,25 @@
                 });
 
                 this.hot = hot;
+            },
+            customizeCuadrillero(){
+                const selected = this.hot.getSelected();
+                let preciosamodificar = [];
+
+                if (selected) {
+                    selected.forEach(range => {
+
+                        const [startRow, , endRow] = range;
+                        for (let row = startRow; row <= endRow; row++) {
+                            const cuadrillero = this.hot.getSourceDataAtRow(row);
+                            preciosamodificar.push(cuadrillero);
+                        }
+                    });
+                    const data = {
+                        cuadrilleros: preciosamodificar
+                    };
+                    $wire.dispatch('customizarMontosPorDia', data);
+                }
             },
             eliminarCuadrillerosSeleccionados() {
                 // Obtener las filas seleccionadas
