@@ -1,8 +1,12 @@
 <div>
+    <x-loading wire:loading />
     <div class="md:flex items-center gap-5 mb-5">
         <x-h3>
             Asistencias Cuadrilla
         </x-h3>
+        @if ($currentSemana)
+            <x-secondary-button type="button" @click="$wire.dispatch('editarSemana',{semanaId:{{$currentSemana}}})">Editar semana actual <i class="fa fa-edit"></i></x-secondary-button>
+        @endif
         <livewire:cuadrilla-asistencia-form-component />
     </div>
     <x-card>

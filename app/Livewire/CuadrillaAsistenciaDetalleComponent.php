@@ -25,7 +25,7 @@ class CuadrillaAsistenciaDetalleComponent extends Component
     public $gruposTotales;
     public $precios = [];
     public $observaciones = [];
-    protected $listeners = ['eliminarCuadrilleros', 'cuadrillerosAgregadosAsistencia', 'storeTableDataCuadrilla', 'actualizarTabla'];
+    protected $listeners = ['eliminarCuadrilleros', 'cuadrillerosAgregadosAsistencia', 'storeTableDataCuadrilla', 'actualizarTabla', 'actualizarTablaCompleta'];
 
     public function mount()
     {
@@ -69,7 +69,7 @@ class CuadrillaAsistenciaDetalleComponent extends Component
         }
         $this->periodo = $this->generarDiasSemana($this->semana->fecha_inicio, $this->semana->fecha_fin);
     }
-    public function storeTableDataCuadrilla($data)
+    public function storeTableDataCuadrilla($data,$completo = false)
     {
 
         if (!$this->semana) {
@@ -209,7 +209,7 @@ class CuadrillaAsistenciaDetalleComponent extends Component
 
         $this->obtenerSemana();
         $this->obtenerCuadrilleros();
-        $this->dispatch('obtenerCuadrilleros', $this->cuadrilleros);
+        $this->dispatch('obtenerCuadrilleros', $this->cuadrilleros,$completo);
         $this->alert('success', 'Datos de horas guardados exitosamente.');
     }
     public function obtenerCuadrilleros()
@@ -420,6 +420,9 @@ class CuadrillaAsistenciaDetalleComponent extends Component
     public function actualizarTabla()
     {
         $this->storeTableDataCuadrilla($this->cuadrilleros);
+    }
+    public function actualizarTablaCompleta(){
+        $this->storeTableDataCuadrilla($this->cuadrilleros,true);
     }
     public function render()
     {

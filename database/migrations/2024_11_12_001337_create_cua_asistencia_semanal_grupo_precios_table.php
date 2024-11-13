@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('cua_asistencia_semanal_grupo_id');
             $table->unsignedBigInteger('cua_asi_sem_id');
             $table->string('gru_cua_cod');
-            $table->decimal('costo_dia', 10, 3)->nullable();
+            $table->decimal('costo_dia', 10, 2)->nullable();
             $table->decimal('costo_hora', 10, 3)->nullable();
             $table->date('fecha');
             $table->unsignedBigInteger('cua_asi_sem_cua_id')->nullable();

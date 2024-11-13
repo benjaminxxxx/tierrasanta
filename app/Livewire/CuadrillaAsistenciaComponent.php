@@ -7,6 +7,7 @@ use App\Models\CuaAsistenciaSemanalCuadrillero;
 use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
+use Session;
 
 class CuadrillaAsistenciaComponent extends Component
 {
@@ -45,6 +46,8 @@ class CuadrillaAsistenciaComponent extends Component
     }
     public function revisarSemana()
     {
+        $this->currentSemana = Session::get('currentSemana');
+        
 
         if ($this->currentSemana) {
             $this->CuaAsistenciaSemanal = CuaAsistenciaSemanal::find($this->currentSemana);
@@ -59,6 +62,7 @@ class CuadrillaAsistenciaComponent extends Component
         if ($this->CuaAsistenciaSemanal) {
             
             $this->currentSemana = $this->CuaAsistenciaSemanal->id;
+            Session::put('currentSemana',$this->currentSemana);
             // Buscar el id de la semana anterior (si existe)
             $anterior = CuaAsistenciaSemanal::whereDate('fecha_fin', '<', $this->CuaAsistenciaSemanal->fecha_inicio)
                 ->orderBy('fecha_fin', 'desc')
@@ -112,6 +116,7 @@ class CuadrillaAsistenciaComponent extends Component
         $semanaId = $data['semanaId'];
         CuaAsistenciaSemanal::find($semanaId)->delete();        
         $this->currentSemana = null;
+        Session::forget('currentSemana');
         $this->CuaAsistenciaSemanal = null;
         $this->revisarSemana();
         $this->alert('success', 'Registro Eliminado Correctamente.');
@@ -119,16 +124,19 @@ class CuadrillaAsistenciaComponent extends Component
     public function fechaAnterior()
     {
         $this->currentSemana = $this->haySemanaAnterior;
+        Session::put('currentSemana',$this->currentSemana);
         $this->revisarSemana();
     }
     public function fechaPosterior()
     {
         $this->currentSemana = $this->haySemanaPosterior;
+        Session::put('currentSemana',$this->currentSemana);
         $this->revisarSemana();
     }
     public function seleccionarSemana($currentSemana)
     {
         $this->currentSemana = $currentSemana;
+        Session::put('currentSemana',$this->currentSemana);
         $this->estaBuscadorAbierto = false;
         $this->aniosDisponibles = null;
         $this->busquedaAnio = null;

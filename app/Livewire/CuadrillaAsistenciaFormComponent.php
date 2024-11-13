@@ -22,6 +22,7 @@ class CuadrillaAsistenciaFormComponent extends Component
     public $fecha_inicio;
     public $fecha_fin;
     public $titulo;
+    public $semanaId;
     protected $meses = [
         'January' => 'Enero',
         'February' => 'Febrero',
@@ -36,7 +37,82 @@ class CuadrillaAsistenciaFormComponent extends Component
         'November' => 'Noviembre',
         'December' => 'Diciembre',
     ];
-    public function mount() {}
+    protected $listeners = ['editarSemana'];
+
+    public function mount()
+    {
+    }
+    public function editarSemana($semanaId)
+    {
+        $this->semanaId = $semanaId;
+        $semana = CuaAsistenciaSemanal::find($this->semanaId);
+        if (!$semana) {
+            return $this->alert("error", "La semana ya no existe.");
+        }
+        $this->fecha_inicio = $semana->fecha_inicio;
+        $this->fecha_fin = $semana->fecha_fin;
+        $this->titulo = $semana->titulo;
+        $this->gruposCuadrilla = CuaGrupo::where('estado', true)->get();
+
+        if ($this->gruposCuadrilla) {
+
+            $gruposActuales = $semana->grupos()->get()->pluck('gru_cua_cod')->toArray();
+
+            foreach ($this->gruposCuadrilla as $grupoCuadrilla) {
+
+                $grupo = $semana->grupos()->where('gru_cua_cod', $grupoCuadrilla->codigo)->first();
+                if (!$grupo) {
+                    continue;
+                }
+                $this->grupos[$grupoCuadrilla->codigo] = [
+                    'activo' => in_array($grupoCuadrilla->codigo, $gruposActuales),  // Si no hay registro anterior, por defecto se activa
+                    'costo_dia_sugerido' => $grupo->costo_dia,
+                    'total' => $grupo->costo_dia / 8,
+                ];
+            }
+        }
+
+        $this->isFormOpen = true;
+    }
+    public function CrearRegistroSemanal()
+    {
+        $this->fecha_inicio = null;
+        $this->fecha_fin = null;
+        $this->titulo = null;
+
+        $this->gruposCuadrilla = CuaGrupo::where('estado', true)->get();
+
+        $CuaAsistenciaSemanalAnterior = CuaAsistenciaSemanal::orderBy('fecha_inicio', 'desc')->first();
+
+        if ($CuaAsistenciaSemanalAnterior) {
+            // Obtener grupos de CuaAsistenciaSemanalGrupo con 'activo' en true
+
+            $gruposAnteriores = CuaAsistenciaSemanalGrupo::where('cua_asi_sem_id', $CuaAsistenciaSemanalAnterior->id)
+                ->get()->pluck('gru_cua_cod')->toArray();
+
+            if ($this->gruposCuadrilla) {
+                foreach ($this->gruposCuadrilla as $grupoCuadrilla) {
+                    $this->grupos[$grupoCuadrilla->codigo] = [
+                        'activo' => in_array($grupoCuadrilla->codigo, $gruposAnteriores),  // Si no hay registro anterior, por defecto se activa
+                        'costo_dia_sugerido' => $grupoCuadrilla->costo_dia_sugerido,
+                        'total' => $grupoCuadrilla->costo_dia_sugerido / 8,
+                    ];
+                }
+            }
+        } else {
+            if ($this->gruposCuadrilla) {
+                foreach ($this->gruposCuadrilla as $grupoCuadrilla) {
+                    $this->grupos[$grupoCuadrilla->codigo] = [
+                        'activo' => true,  // Si no hay registro anterior, por defecto se activa
+                        'costo_dia_sugerido' => $grupoCuadrilla->costo_dia_sugerido,
+                        'total' => $grupoCuadrilla->costo_dia_sugerido / 8,
+                    ];
+                }
+            }
+        }
+
+        $this->isFormOpen = true;
+    }
     public function render()
     {
         return view('livewire.cuadrilla-asistencia-form-component');
@@ -56,7 +132,9 @@ class CuadrillaAsistenciaFormComponent extends Component
                     $query->where('fecha_inicio', '<=', $this->fecha_inicio)
                         ->where('fecha_fin', '>=', $this->fecha_fin);
                 });
-        })->exists();
+        })
+        ->whereNot('id',$this->semanaId)
+        ->exists();
 
         if ($conflicto) {
             $this->alert('error', 'El rango de fechas seleccionado entra en conflicto con otro registro existente.');
@@ -66,13 +144,30 @@ class CuadrillaAsistenciaFormComponent extends Component
         DB::beginTransaction();
 
         try {
+            $CuaAsistenciaSemanal = null;
             // Insertar en CuaAsistenciaSemanal
-            $CuaAsistenciaSemanal = CuaAsistenciaSemanal::create([
-                'titulo' => $this->titulo,
-                'fecha_inicio' => $this->fecha_inicio,
-                'fecha_fin' => $this->fecha_fin,
-                'estado' => 'pendiente'
-            ]);
+            if($this->semanaId){
+                $CuaAsistenciaSemanal  = CuaAsistenciaSemanal::find($this->semanaId);
+                if($CuaAsistenciaSemanal){
+                    $CuaAsistenciaSemanal->update([
+                        'titulo' => $this->titulo,
+                        'fecha_inicio' => $this->fecha_inicio,
+                        'fecha_fin' => $this->fecha_fin
+                    ]);
+                }
+                
+            }else{
+                $CuaAsistenciaSemanal = CuaAsistenciaSemanal::create([
+                    'titulo' => $this->titulo,
+                    'fecha_inicio' => $this->fecha_inicio,
+                    'fecha_fin' => $this->fecha_fin,
+                    'estado' => 'pendiente'
+                ]);
+            }
+            
+            if(!$CuaAsistenciaSemanal){
+                return;
+            }
 
             // Obtener el ID insertado
             $CuaAsistenciaSemanalId = $CuaAsistenciaSemanal->id;
@@ -81,83 +176,53 @@ class CuadrillaAsistenciaFormComponent extends Component
                 ->orderBy('fecha_fin', 'desc')
                 ->first();
 
-            //$CuaAsistenciaSemanal->grupos()->delete();
-
-            // Recorrer los grupos y guardar en CuaAsistenciaSemanalGrupo
             foreach ($this->gruposCuadrilla as $grupo) {
-                if (array_key_exists($grupo->codigo, $this->grupos) && $this->grupos[$grupo->codigo]['activo'] && (float)$this->grupos[$grupo->codigo]['costo_dia_sugerido']>0) {
-                    $nuevoGrupo = CuaAsistenciaSemanalGrupo::create([
-                        'cua_asi_sem_id' => $CuaAsistenciaSemanalId,
-                        'gru_cua_cod' => $grupo->codigo,
-                        'costo_dia' => $this->grupos[$grupo->codigo]['costo_dia_sugerido'],
-                        'costo_hora' => $this->grupos[$grupo->codigo]['costo_dia_sugerido'] / 8,
-                        'total_costo' => 0
-                    ]);
-    
-                    // Si hay una semana anterior, buscar el grupo equivalente y copiar cuadrilleros
-                    if ($CuaAsistenciaSemanalAnterior) {
-
-                        $grupoAnterior = CuaAsistenciaSemanalGrupo::where('cua_asi_sem_id', $CuaAsistenciaSemanalAnterior->id)
-                            ->where('gru_cua_cod', $grupo->codigo)
-                            ->first();
-    
-                        // Si el grupo existía en la semana anterior, copiar sus cuadrilleros al nuevo grupo
-                        if ($grupoAnterior) {
-                            $cuadrillerosAnteriores = CuaAsistenciaSemanalCuadrillero::where('cua_asi_sem_gru_id', $grupoAnterior->id)->get();
-    
-                            foreach ($cuadrillerosAnteriores as $cuadrilleroAnterior) {
-                                CuaAsistenciaSemanalCuadrillero::create([
-                                    'cua_id' => $cuadrilleroAnterior->cua_id,
-                                    'cua_asi_sem_gru_id' => $nuevoGrupo->id,
-                                    'monto_recaudado' => 0
-                                ]);
-                            }
-                        }
-                    }
-                }
-            }
-/*
-
-                
-
-            if ($CuaAsistenciaSemanalAnterior) {
-
-                $gruposAnteriores = $CuaAsistenciaSemanalAnterior->grupos()->get();
-                foreach ($gruposAnteriores as $grupoAnterior) {
-                  
-    
-                    // Obtener cuadrilleros del grupo anterior y duplicarlos para el nuevo grupo
-                    $cuadrillerosAnteriores = CuaAsistenciaSemanalCuadrillero::where('cua_asi_sem_gru_id', $grupoAnterior->id)->get();
-    
-                    foreach ($cuadrillerosAnteriores as $cuadrilleroAnterior) {
-                        CuaAsistenciaSemanalCuadrillero::create([
-                            'cua_id' => $CuaAsistenciaSemanalId,
-                            'cua_asi_sem_gru_id' => $nuevoGrupo->id,
-                            'monto_recaudado' => $cuadrilleroAnterior->monto_recaudado
+                if (array_key_exists($grupo->codigo, $this->grupos) && $this->grupos[$grupo->codigo]['activo'] && (float) $this->grupos[$grupo->codigo]['costo_dia_sugerido'] > 0) {
+                    
+                    if($this->semanaId){
+                        CuaAsistenciaSemanalGrupo::where('cua_asi_sem_id',$CuaAsistenciaSemanalId)
+                        ->where('gru_cua_cod',$grupo->codigo)->update([
+                            'costo_dia' => $this->grupos[$grupo->codigo]['costo_dia_sugerido'],
+                            'costo_hora' => $this->grupos[$grupo->codigo]['costo_dia_sugerido'] / 8
                         ]);
-                    }
-                }
-
-                $gruposEnCuadrilla = $CuaAsistenciaSemanalAnterior->grupos()->get();
-                if($gruposEnCuadrilla){
-                    foreach ($gruposEnCuadrilla as $grupoEnCuadrilla) {
-                        
-                        $cuadrillerosAnteriores = CuaAsistenciaSemanalCuadrillero::where('cua_asi_sem_gru_id', $grupoEnCuadrilla->id)->get();
-                        if($cuadrillerosAnteriores){
-                            foreach ($cuadrillerosAnteriores as $cuadrilleroAnterior) {
-                                dd($cuadrilleroAnterior->codigo_grupo);
-                                if (array_key_exists($cuadrilleroAnterior->codigo_grupo, $this->grupos) && $this->grupos[$cuadrilleroAnterior->cua_asi_sem_gru_id]['activo']) {
+                    }else{
+                        $nuevoGrupo = CuaAsistenciaSemanalGrupo::create([
+                            'cua_asi_sem_id' => $CuaAsistenciaSemanalId,
+                            'gru_cua_cod' => $grupo->codigo,
+                            'costo_dia' => $this->grupos[$grupo->codigo]['costo_dia_sugerido'],
+                            'costo_hora' => $this->grupos[$grupo->codigo]['costo_dia_sugerido'] / 8,
+                            'total_costo' => 0
+                        ]);
+    
+                        // Si hay una semana anterior, buscar el grupo equivalente y copiar cuadrilleros
+                        if ($CuaAsistenciaSemanalAnterior) {
+    
+                            $grupoAnterior = CuaAsistenciaSemanalGrupo::where('cua_asi_sem_id', $CuaAsistenciaSemanalAnterior->id)
+                                ->where('gru_cua_cod', $grupo->codigo)
+                                ->first();
+    
+                            // Si el grupo existía en la semana anterior, copiar sus cuadrilleros al nuevo grupo
+                            if ($grupoAnterior) {
+                                $cuadrillerosAnteriores = CuaAsistenciaSemanalCuadrillero::where('cua_asi_sem_gru_id', $grupoAnterior->id)->get();
+    
+                                foreach ($cuadrillerosAnteriores as $cuadrilleroAnterior) {
                                     CuaAsistenciaSemanalCuadrillero::create([
-                                        'cua_asi_sem_gru_id' => $CuaAsistenciaSemanal->id,
                                         'cua_id' => $cuadrilleroAnterior->cua_id,
-                                        'monto_recaudado' => 0,
+                                        'cua_asi_sem_gru_id' => $nuevoGrupo->id,
+                                        'monto_recaudado' => 0
                                     ]);
                                 }
                             }
                         }
                     }
+                    
+                }else{
+                    //este codigo es para que al momento de editar, si deselecciono un grupo, este sea eliminado
+                    CuaAsistenciaSemanalGrupo::where('cua_asi_sem_id', $CuaAsistenciaSemanalId)
+                            ->where('gru_cua_cod', $grupo->codigo)
+                            ->delete();
                 }
-            }*/
+            }
 
             // Commit de la transacción
             DB::commit();
@@ -166,6 +231,11 @@ class CuadrillaAsistenciaFormComponent extends Component
             $this->alert('success', 'La cuadrilla se guardó correctamente.');
             $this->closeForm(); // Si quieres cerrar el formulario
             $this->dispatch('NuevaCuadrilla');
+            if($this->semanaId){
+                $this->semanaId = null;
+                $this->dispatch('actualizarTablaCompleta');
+            }
+            
         } catch (QueryException $e) {
             // Rollback de la transacción en caso de error
             DB::rollBack();
@@ -204,45 +274,7 @@ class CuadrillaAsistenciaFormComponent extends Component
             $this->titulo = '';
         }
     }
-    public function CrearRegistroSemanal()
-    {
-        $this->fecha_inicio = null;
-        $this->fecha_fin = null;
-        $this->titulo = null;
 
-        $this->gruposCuadrilla = CuaGrupo::where('estado',true)->get();
-
-        $CuaAsistenciaSemanalAnterior = CuaAsistenciaSemanal::orderBy('fecha_inicio', 'desc')->first();
-
-        if ($CuaAsistenciaSemanalAnterior) {
-            // Obtener grupos de CuaAsistenciaSemanalGrupo con 'activo' en true
-           
-            $gruposAnteriores = CuaAsistenciaSemanalGrupo::where('cua_asi_sem_id', $CuaAsistenciaSemanalAnterior->id)
-                ->get()->pluck('gru_cua_cod')->toArray();
-           
-            if ($this->gruposCuadrilla) {
-                foreach ($this->gruposCuadrilla as $grupoCuadrilla) {
-                    $this->grupos[$grupoCuadrilla->codigo] = [
-                        'activo' => in_array($grupoCuadrilla->codigo, $gruposAnteriores),  // Si no hay registro anterior, por defecto se activa
-                        'costo_dia_sugerido' => $grupoCuadrilla->costo_dia_sugerido,
-                        'total' => $grupoCuadrilla->costo_dia_sugerido / 8,
-                    ];
-                }
-            }
-        } else {
-            if ($this->gruposCuadrilla) {
-                foreach ($this->gruposCuadrilla as $grupoCuadrilla) {
-                    $this->grupos[$grupoCuadrilla->codigo] = [
-                        'activo' => true,  // Si no hay registro anterior, por defecto se activa
-                        'costo_dia_sugerido' => $grupoCuadrilla->costo_dia_sugerido,
-                        'total' => $grupoCuadrilla->costo_dia_sugerido / 8,
-                    ];
-                }
-            }
-        }
-
-        $this->isFormOpen = true;
-    }
     public function updated($propertyName)
     {
         if (str_contains($propertyName, 'grupos') && str_contains($propertyName, 'costo_dia_sugerido')) {

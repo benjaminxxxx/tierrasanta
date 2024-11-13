@@ -144,9 +144,15 @@
                 this.listeners.push(
                     Livewire.on('obtenerCuadrilleros', (data) => {
 
-                        console.log(data[0]);
+                        console.log(data[1]);
                         this.tableData = data[0];
                         this.hot.loadData(this.tableData);
+                     
+                        const completo = data[1];
+                        if(completo){
+                            location.href = location.href;
+                        }
+                        
                     })
                 );
             },
