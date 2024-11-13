@@ -43,18 +43,58 @@
                                         </x-td>
                                         @if ($diasSemana)
                                             @foreach ($diasSemana as $diaFecha => $diaSemana)
+                                                @php
+                                                    $claseBase =  $diasSemana[$diaFecha]['cuadrillero'][$cuadrillero['cua_asi_sem_cua_id']]['costoReferencia'];
+                                                    $claseColor = '';
+                                                    if($claseBase == 'semana'){
+                                                        $claseColor = '!text-lime-600';
+                                                    }elseif($claseBase == 'cuadrillero'){
+                                                        $claseColor = '!text-amber-400';
+                                                    }
+                                                @endphp
                                                 <x-td class="text-center">
-                                                    <x-input class="!w-20 !p-2 text-center" wire:key="{{$diaFecha}}.{{$cuadrillero['cua_asi_sem_cua_id']}}" wire:model.live.debounce.1000ms="diasSemana.{{$diaFecha}}.cuadrillero.{{$cuadrillero['cua_asi_sem_cua_id']}}"  />
+                                                    <x-input class="!w-20 !p-2 text-center {{$claseColor}}"
+                                                        wire:key="{{ $diaFecha }}.{{ $cuadrillero['cua_asi_sem_cua_id'] }}"
+                                                        wire:model.live.debounce.1000ms="diasSemana.{{ $diaFecha }}.cuadrillero.{{ $cuadrillero['cua_asi_sem_cua_id'] }}.costoDia" />
                                                 </x-td>
                                             @endforeach
                                         @endif
                                     </x-tr>
                                 @endforeach
                             @endif
+                            
                         </x-slot>
                     </x-table>
                 </div>
             </x-flex>
+            <div>
+                <b class="block my-2">Referencia:</b>
+                <ul>
+                    <li>
+                        <x-flex>
+                            <div class="w-5 h-5 block bg-lime-600"></div>
+                            Montos Personalizados por Día
+                        </x-flex>
+                    </li>
+                    <li>
+                        <x-flex>
+                            <div class="w-5 h-5 block bg-amber-400"></div>
+                            Montos Personalizados por Cuadrillero
+                        </x-flex>
+                    </li>
+                </ul>
+                <b class="block my-2">Instrucciones:</b>
+                <ul>
+                    <li>
+                        <p>Modifique directamente los precios, el sistema te permitirá 1 segundo para que puedas digitar y luego lo guardará de forma automática.</p>
+                    </li>
+                    <li>
+                        <p>
+                            Si deseas quitar el precio personalizado, simplemente bórralo, el sistema borrará el registro y usará el precio semanal o si existe, el precio personalizado por día.
+                        </p>
+                    </li>
+                </ul>
+            </div>
         </x-slot>
 
         <x-slot name="footer">

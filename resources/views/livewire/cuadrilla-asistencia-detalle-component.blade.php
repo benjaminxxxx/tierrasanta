@@ -24,23 +24,23 @@
         <x-table class="!w-auto">
             <x-slot name="thead">
                 @if ($periodo)
-                <x-tr>
-                    <x-th rowspan="3">
-                        Cuadro Resumen
-                    </x-th>
-                    <x-th colspan="{{count($periodo)}}" class="text-center">
-                        Precios por día
-                    </x-th>
-                    <x-th colspan="3" class="text-center">
-                        Reporte semanal
-                    </x-th>
-                </x-tr>
+                    <x-tr>
+                        <x-th rowspan="3">
+                            Cuadro Resumen
+                        </x-th>
+                        <x-th colspan="{{ count($periodo) }}" class="text-center">
+                            Precios por día
+                        </x-th>
+                        <x-th colspan="3" class="text-center">
+                            Reporte semanal
+                        </x-th>
+                    </x-tr>
                 @endif
                 <x-tr>
-                    
+
                     @if ($periodo)
                         @foreach ($periodo as $diaBase)
-                        <x-th class="text-center">{{$diaBase['dia']}}</x-th>
+                            <x-th class="text-center">{{ $diaBase['dia'] }}</x-th>
                         @endforeach
                     @endif
                     <x-th rowspan="2" class="text-right">Monto a pagar</x-th>
@@ -50,7 +50,7 @@
                 <x-tr>
                     @if ($periodo)
                         @foreach ($periodo as $diaBase)
-                        <x-th class="text-center">{{$diaBase['nombre']}}</x-th>
+                            <x-th class="text-center">{{ $diaBase['nombre'] }}</x-th>
                         @endforeach
                     @endif
                 </x-tr>
@@ -59,52 +59,77 @@
                 @if ($gruposTotales)
                     @foreach ($gruposTotales as $grupoTotal)
                         <x-tr>
-                            <x-th style="background-color:{{$grupoTotal->grupo->color}}" class="!text-gray-900">
+                            <x-th style="background-color:{{ $grupoTotal->grupo->color }}" class="!text-gray-900">
                                 {{ $grupoTotal->grupo->nombre }}
                             </x-th>
                             @if ($periodo)
                                 @foreach ($periodo as $indicePeriodo => $diaBase)
-                                @php
-                                    $claseBase = "";
-                                    if(!$precios[$grupoTotal->id][$indicePeriodo]['base']){
-                                        $claseBase = "!text-lime-600";
-                                    }
-                                @endphp
-                                <x-th class="text-center">
-                                    <x-input type="number" class="!w-[5rem] text-center !p-1 {{$claseBase}}"
-                                        wire:model.live.debounce.1000ms="precios.{{ $grupoTotal->id }}.{{ $indicePeriodo }}.costo_dia" wire:key="cantidad{{ $grupoTotal->id }}.{{ $indicePeriodo }}" />
-                                </x-th>
+                                    @php
+                                        $claseBase = '';
+                                        if (!$precios[$grupoTotal->id][$indicePeriodo]['base']) {
+                                            $claseBase = '!text-lime-600';
+                                        }
+                                    @endphp
+                                    <x-th class="text-center">
+                                        <x-input type="number" class="!w-[5rem] text-center !p-1 {{ $claseBase }}"
+                                            wire:model.live.debounce.1000ms="precios.{{ $grupoTotal->id }}.{{ $indicePeriodo }}.costo_dia"
+                                            wire:key="cantidad{{ $grupoTotal->id }}.{{ $indicePeriodo }}" />
+                                    </x-th>
                                 @endforeach
                             @endif
                             <x-th class="text-right">
                                 {{ $grupoTotal->total_costo }}
                             </x-th>
                             <x-th class="text-center">
-                                <x-select wire:change="actualizarEstadoGrupoEnSemana({{$grupoTotal->id}},$event.target.value)" class="px-1 py-2 !text-sm">
-                                    <option value="pendiente" {{$grupoTotal->estado_pago=='pendiente'?'selected':''}}>Pendiente</option>
-                                    <option value="pagado" {{$grupoTotal->estado_pago=='pagado'?'selected':''}}>Pagado</option>
+                                <x-select
+                                    wire:change="actualizarEstadoGrupoEnSemana({{ $grupoTotal->id }},$event.target.value)"
+                                    class="px-1 py-2 !text-sm">
+                                    <option value="pendiente"
+                                        {{ $grupoTotal->estado_pago == 'pendiente' ? 'selected' : '' }}>Pendiente</option>
+                                    <option value="pagado" {{ $grupoTotal->estado_pago == 'pagado' ? 'selected' : '' }}>
+                                        Pagado</option>
                                 </x-select>
                             </x-th>
                             <x-th class="text-center">
-                                <x-input type="date" class="px-1 py-2 !text-sm" value="{{$grupoTotal->fecha_pagado}}" wire:change="actualizarFechaGrupoEnSemana({{$grupoTotal->id}},$event.target.value)" />
+                                <x-input type="date" class="px-1 py-2 !text-sm"
+                                    value="{{ $grupoTotal->fecha_pagado }}"
+                                    wire:change="actualizarFechaGrupoEnSemana({{ $grupoTotal->id }},$event.target.value)" />
                             </x-th>
                         </x-tr>
                     @endforeach
-                    @IF($this->semana)
-                    <x-tr>
-                        <x-th>
-                            TOTAL
-                        </x-th>
-                        <x-th class="text-right">
-                            {{ $this->semana->total}}
-                        </x-th>
-                        <x-th></x-th>
-                        <x-th></x-th>
-                    </x-tr>
+                    @if ($this->semana)
+                        <x-tr>
+                            @if ($periodo)
+                                @foreach ($periodo as $indicePeriodo => $diaBase)
+                                    <x-th class="text-center"></x-th>
+                                @endforeach
+                            @endif
+                            <x-th>
+                                TOTAL
+                            </x-th>
+                            <x-th class="text-right">
+                                {{ $this->semana->total }}
+                            </x-th>
+                            <x-th></x-th>
+                            <x-th></x-th>
+                        </x-tr>
                     @endif
                 @endif
+
+                
             </x-slot>
         </x-table>
+    </div>
+
+    <div class="my-4">
+        <x-h3>Observaciones:</x-h3>
+        <ul style="list-style: disc" class="dark:text-white">
+            @foreach ($observaciones as $observacionDetalle)
+                <li>
+                    <p class="dark:text-white">{{$observacionDetalle}}</p>
+                </li>
+            @endforeach
+        </ul>
     </div>
 </div>
 @script
@@ -231,7 +256,7 @@
 
                 this.hot = hot;
             },
-            customizeCuadrillero(){
+            customizeCuadrillero() {
                 const selected = this.hot.getSelected();
                 let preciosamodificar = [];
 

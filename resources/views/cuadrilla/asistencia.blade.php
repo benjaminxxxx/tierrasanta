@@ -1,7 +1,7 @@
 <x-app-layout>
 
-    <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css">
+    <script src="{{asset('js/handsontable-14-6-1.min.js')}}"></script>
+    <link rel="stylesheet" href="{{asset('css/handsontable-14-6-1.min.css')}}">
     <livewire:cuadrilla-asistencia-component/>
     <livewire:cuadrilla-asistencia-agregar-component/>
     <livewire:cuadrilla-form-component/>

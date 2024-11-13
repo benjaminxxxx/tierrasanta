@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -19,7 +18,7 @@ return new class extends Migration
             $table->decimal('costo_dia', 10, 3)->nullable();
             $table->decimal('costo_hora', 10, 3)->nullable();
             $table->date('fecha');
-            $table->unsignedBigInteger('cuadrillero_id')->nullable();
+            $table->unsignedBigInteger('cua_asi_sem_cua_id')->nullable();
             $table->timestamps();
 
             // Definición de las llaves foráneas con nombres personalizados
@@ -38,9 +37,9 @@ return new class extends Migration
                 ->on('cua_grupos')
                 ->onDelete('cascade');
 
-            $table->foreign('cuadrillero_id', 'fk_cuadrillero')
+            $table->foreign('cua_asi_sem_cua_id')
                 ->references('id')
-                ->on('cuadrilleros')
+                ->on('cua_asistencia_semanal_cuadrilleros')
                 ->onDelete('cascade');
         });
     }

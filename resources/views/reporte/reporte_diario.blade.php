@@ -3,8 +3,8 @@
     <link rel="stylesheet" href="{{ asset('css/handsontable.css') }}">
     <script src="{{ asset('js/handsontable.js') }}"></script>-->
 
-    <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css">
+    <script src="{{asset('js/handsontable-14-6-1.min.js')}}"></script>
+    <link rel="stylesheet" href="{{asset('css/handsontable-14-6-1.min.css')}}">
 
     
     <div class="md:flex items-center gap-5 mb-5">

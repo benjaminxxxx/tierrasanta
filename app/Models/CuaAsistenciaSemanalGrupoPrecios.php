@@ -18,7 +18,7 @@ class CuaAsistenciaSemanalGrupoPrecios extends Model
         'costo_dia',
         'costo_hora',
         'fecha',
-        'cuadrillero_id',
+        'cua_asi_sem_cua_id',
     ];
 
     // Relación con el modelo CuaAsistenciaSemanalGrupo
@@ -42,6 +42,6 @@ class CuaAsistenciaSemanalGrupoPrecios extends Model
     // Relación con el modelo Cuadrillero
     public function cuadrillero()
     {
-        return $this->belongsTo(Cuadrillero::class, 'cuadrillero_id');
+        return $this->belongsTo(CuaAsistenciaSemanalCuadrillero::class, 'cua_asi_sem_cua_id');
     }
 }
