@@ -2,7 +2,7 @@
     $idTable = 'reporte_diario' . Str::random(5);
 @endphp
 
-<div x-data="{{ $idTable }}" wire:ignore>
+<div>
 
     <x-loading wire:loading />
 
@@ -22,77 +22,59 @@
                 </div>
             </div>
 
-            <div x-ref="tableContainer" class="mt-5 overflow-auto"></div>
-
-            <div class="text-right mt-5">
-                <x-button @click="sendData">Guardar Información</x-button>
+            <div x-data="{{ $idTable }}" wire:ignore>
+                <div x-ref="tableContainer" class="mt-5 overflow-auto" ></div>
+                <div class="my-3">
+                    <p>Si quiere agregar el resumen de las labores de Cuadrilla debe colocar el texto <b>Cuadrilla</b> en la columna de nombres y apellidos, 
+                        debe dejar el campo de dni en blanco, asitencia en blanco y debe digitar EN la columna Cuadrilleros (N°C) el número de cuadrilleros para dicha actividad.</p>
+                        @if ($totalCuadrilleroSegunHora!=$totalesAsistenciasCuadrilleros)
+                            <div class="my-2 bg-red-100 text-red-600 p-5 rounded-lg border border-1 border-red-200">
+                                <p>La cantidad registrada en este módulo no coincide con la cantidad de asistencias registradas en el reporte diario de cuadrilla</p>
+                                <p>Resumen en este módulo: {{$totalesAsistenciasCuadrilleros}}</p>
+                                <p>Reporte diario cuadrilleros: {{$totalCuadrilleroSegunHora}}</p>
+                            </div>
+                        @endif
+                </div>
+                <div class="text-right mt-5">
+                    <x-button @click="sendData">
+                        <i class="fa fa-save"></i> Guardar Información
+                    </x-button>
+                </div>
             </div>
+
+            
 
             <div class="my-4">
                 <x-table>
                     <x-slot name="thead">
                     </x-slot>
                     <x-slot name="tbody">
-                        <x-tr>
-                            <x-th class="!text-left">TOTAL PLANILLAS ASISTIDO</x-th>
-                            <x-td class="w-[10rem]">
-                                <div x-ref="total_planillas_asistido" class="p-2"></div>
-                            </x-td>
-                        </x-tr>
-                        <x-tr>
-                            <x-th class="!text-left">TOTAL FALTAS</x-th>
-                            <x-td>
-                                <div x-ref="total_faltas" class="p-2"></div>
-                            </x-td>
-                        </x-tr>
-                        <x-tr>
-                            <x-th class="!text-left">TOTAL VACACIONES</x-th>
-                            <x-td>
-                                <div x-ref="total_vacaciones" class="p-2"></div>
-                            </x-td>
-                        </x-tr>
-                        <x-tr>
-                            <x-th class="!text-left">TOTAL LICENCIA MATERNIDAD</x-th>
-                            <x-td>
-                                <div x-ref="total_licencia_maternidad" class="p-2"></div>
-                            </x-td>
-                        </x-tr>
-                        <x-tr>
-                            <x-th class="!text-left">TOTAL LICENCIA SIN GOCE</x-th>
-                            <x-td>
-                                <div x-ref="total_licencia_sin_goce" class="p-2"></div>
-                            </x-td>
-                        </x-tr>
-                        <x-tr>
-                            <x-th class="!text-left">TOTAL LICENCIA CON GOCE</x-th>
-                            <x-td>
-                                <div x-ref="total_licencia_con_goce" class="p-2"></div>
-                            </x-td>
-                        </x-tr>
-                        <x-tr>
-                            <x-th class="!text-left">TOTAL DESCANSO MÉDICO</x-th>
-                            <x-td>
-                                <div x-ref="total_descanso_medico" class="p-2"></div>
-                            </x-td>
-                        </x-tr>
-                        <x-tr>
-                            <x-th class="!text-left">TOTAL ATENCIÓN MÉDICA</x-th>
-                            <x-td>
-                                <div x-ref="total_atencion_medica" class="p-2"></div>
-                            </x-td>
-                        </x-tr>
+                        @if ($totalesAsistencias)
+                            @foreach ($totalesAsistencias as $totalesAsistencia)
+                            <x-tr>
+                                <x-th class="!text-left">TOTAL {{mb_strtoupper($totalesAsistencia['descripcion'])}}</x-th>
+                                <x-td class="w-[10rem]">
+                                    <div x-ref="total_planillas_asistido" class="p-2">{{$totalesAsistencia['total']}}</div>
+                                </x-td>
+                            </x-tr>
+                            @endforeach
+                        @endif
+                       
                         <x-tr>
                             <x-th class="!text-left">TOTAL CUADRILLAS</x-th>
                             <x-td>
-                                <div x-ref="total_cuadrillas" class="p-2"></div>
+                                <div x-ref="total_cuadrillas" class="p-2">{{$totalesAsistenciasCuadrilleros}}</div>
                             </x-td>
                         </x-tr>
+                        @if ($reporteDiarioCampos)
                         <x-tr>
-                            <x-th class="!text-left">TOTAL PLANILLA</x-th>
+                            <x-th class="!text-left"><b>TOTAL PLANILLA</b></x-th>
                             <x-td>
-                                <div x-ref="total_planilla" class="p-2"></div>
+                                <div x-ref="total_planilla" class="p-2">{{$reporteDiarioCampos->total_planilla}}</div>
                             </x-td>
-                        </x-tr>
+                        </x-tr> 
+                        @endif
+                        
                     </x-slot>
                 </x-table>
             </div>
@@ -112,8 +94,8 @@
             hot: null,
             tareas: @json($tareas),
             campos: @json($campos),
-            tipoAsistenciasEntidad: @json($tipoAsistenciasEntidad),
-            tipoAsistencias: @json($tipoAsistencias),
+            tipoAsistenciasHoras: @json($tipoAsistenciasHoras),
+            tipoAsistenciasCodigos: @json($tipoAsistenciasCodigos),
             hasUnsavedChanges: false,
             minutosDescontados: @json($minutosDescontados),
             init() {
@@ -235,11 +217,6 @@
                             return; // No hacer nada si los datos se están cargando.
                         }
 
-                        // Verificar que el cambio no sea causado por un "loadData" o evento de Livewire
-                        if (source !== 'loadData') {
-                            this.calcularTotales();
-                        }
-
                         if (source == 'edit' || source == 'CopyPaste.paste' || source ==
                             'timeValidator' || source == 'Autofill.fill') {
 
@@ -266,16 +243,16 @@
 
 
                                 if (fieldName == 'asistencia') {
-                                    // Verificar si el nuevo valor es válido en tipoAsistenciasEntidad
-                                    if (!this.tipoAsistenciasEntidad.hasOwnProperty(
+                                    // Verificar si el nuevo valor es válido en tipoAsistenciasHoras
+                                    if (!this.tipoAsistenciasHoras.hasOwnProperty(
                                             newValue)) {
-                                        return; // Si no existe el valor en tipoAsistenciasEntidad, retornar sin hacer nada
+                                        return; // Si no existe el valor en tipoAsistenciasHoras, retornar sin hacer nada
                                     }
 
                                     // Continuar solo si newValue no es 'A' ni vacío
                                     if (newValue != 'A' && newValue != '') {
                                         const totalHours1 = this.minutesToTime(this
-                                            .tipoAsistenciasEntidad[newValue] * 60);
+                                            .tipoAsistenciasHoras[newValue] * 60);
                                         hot.setDataAtCell(changedRow, (4 * this.tareas + 4),
                                             totalHours1);
 
@@ -352,8 +329,7 @@
                 });
 
                 this.hot = hot;
-                this.hot.render();
-                this.calcularTotales();
+                //this.hot.render();
 
                 window.addEventListener('beforeunload', (event) => {
                     if (this.hasUnsavedChanges) {
@@ -396,7 +372,7 @@
                     {
                         data: "asistencia",
                         type: 'dropdown',
-                        source: this.tipoAsistencias,
+                        source: this.tipoAsistenciasCodigos,
                         width: 60,
                         title: 'ASIST.',
                         className: 'text-center !bg-gray-100'
@@ -503,65 +479,6 @@
 
                 return columns;
             },
-            calcularTotales() {
-                let totales = {
-                    asistido: 0,
-                    faltas: 0,
-                    vacaciones: 0,
-                    licenciaMaternidad: 0,
-                    licenciaSinGoce: 0,
-                    licenciaConGoce: 0,
-                    descansoMedico: 0,
-                    atencionMedica: 0,
-                    cuadrillas: 0,
-                    totalPlanilla: 0
-                };
-
-                const data = this.hot.getData();
-
-
-                data.forEach(row => {
-                    const asistencia = row[
-                        2]; // Suponiendo que la columna de asistencia es la tercera (índice 2)
-                    const nCuadrillas = row[3]; // Columna de número de cuadrillas
-
-                    if (asistencia === 'A') totales.asistido++;
-                    else if (asistencia === 'F') totales.faltas++;
-                    else if (asistencia === 'V') totales.vacaciones++;
-                    else if (asistencia === 'LM') totales.licenciaMaternidad++;
-                    else if (asistencia === 'LSG') totales.licenciaSinGoce++;
-                    else if (asistencia === 'LCG') totales.licenciaConGoce++;
-                    else if (asistencia === 'DM') totales.descansoMedico++;
-                    else if (asistencia === 'AM') totales.atencionMedica++;
-
-
-
-                    // Sumar cuadrillas
-                    if (row[1] === 'Cuadrilla') {
-                        totales.cuadrillas += nCuadrillas ||
-                            0; // Asegurarse de que nCuadrillas sea un número
-                    }
-                });
-
-                // Calcular el total de la planilla
-                totales.totalPlanilla = totales.asistido + totales.faltas + totales.vacaciones +
-                    totales.licenciaMaternidad + totales.licenciaSinGoce +
-                    totales.licenciaConGoce + totales.descansoMedico +
-                    totales.atencionMedica;
-
-                this.$refs.total_planillas_asistido.textContent = totales.asistido;
-                this.$refs.total_faltas.textContent = totales.faltas;
-                this.$refs.total_vacaciones.textContent = totales.vacaciones;
-                this.$refs.total_licencia_maternidad.textContent = totales.licenciaMaternidad;
-                this.$refs.total_licencia_sin_goce.textContent = totales.licenciaSinGoce;
-                this.$refs.total_licencia_con_goce.textContent = totales.licenciaConGoce;
-                this.$refs.total_descanso_medico.textContent = totales.descansoMedico;
-                this.$refs.total_atencion_medica.textContent = totales.atencionMedica;
-                this.$refs.total_cuadrillas.textContent = totales.cuadrillas;
-                this.$refs.total_planilla.textContent = totales.totalPlanilla;
-
-                this.totales = totales;
-            },
             sendData() {
                 const rawData = this.hot.getData();
 
@@ -570,8 +487,7 @@
                 });
 
                 const data = {
-                    datos: filteredData,
-                    totales: this.totales
+                    datos: filteredData
                 };
 
                 $wire.dispatchSelf('GuardarInformacion', data);

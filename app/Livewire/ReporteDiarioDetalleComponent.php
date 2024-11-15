@@ -12,6 +12,7 @@ use App\Models\ReporteDiarioCuadrillaDetalle;
 use App\Models\TipoAsistencia;
 use App\Models\ReporteDiarioDetalle;
 use App\Models\ReporteDiarioRiego;
+use App\Services\CuadrillaServicio;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -25,24 +26,33 @@ class ReporteDiarioDetalleComponent extends Component
     public $fecha;
     public $empleados;
     public $tipoAsistencias;
-    public $tipoAsistenciasEntidad;
+    public $tipoAsistenciasCodigos;
+    public $tipoAsistenciasHoras;
     public $minutosDescontados;
     public $hasUnsavedChanges = false;
+    public $totalesAsistencias = [];
+    public $reporteDiarioCampos;
+    public $totalesAsistenciasCuadrilleros = 0;
+    public $totalCuadrilleroSegunHora = 0;
     protected $listeners = ["importarPlanilla", "GuardarInformacion"];
     public function mount()
     {
+        $this->reporteDiarioCampos = ReporteDiarioCampos::whereDate('fecha',$this->fecha)->first();
         $this->campos = [""];
         $camposNuevos = Campo::orderBy('nombre')->get(['nombre'])->pluck('nombre')->toArray();
         $this->campos = array_merge($this->campos, $camposNuevos);
-        $this->tipoAsistenciasEntidad = TipoAsistencia::get(['codigo', 'horas_jornal'])->pluck('horas_jornal', 'codigo')->toArray();
-
-        $this->tipoAsistencias = TipoAsistencia::all()->pluck('codigo')->toArray();
-        $this->tipoAsistencias = array_merge([''], $this->tipoAsistencias);
-
+        $this->tipoAsistenciasHoras = TipoAsistencia::get(['codigo', 'horas_jornal'])->pluck('horas_jornal', 'codigo')->toArray();
+    
+        
+        $this->tipoAsistencias = TipoAsistencia::all();
+        $this->tipoAsistenciasCodigos = $this->tipoAsistencias->pluck('codigo')->toArray();
+        $this->tipoAsistenciasCodigos = array_merge([''], $this->tipoAsistenciasCodigos);
+        
+        $this->obtenerTotales();
         $this->ImportarEmpleados();
         $this->ObtenerTareas();
     }
-    public function GuardarInformacion($datos, $totales)
+    public function GuardarInformacion($datos)
     {
         if (!$this->fecha) {
             return;
@@ -51,9 +61,11 @@ class ReporteDiarioDetalleComponent extends Component
         if (!is_array($datos)) {
             return;
         }
+        
+        /*
         if (!is_array($totales)) {
             return;
-        }
+        }*/
 
         $fecha = $this->fecha;
 
@@ -62,23 +74,9 @@ class ReporteDiarioDetalleComponent extends Component
 
         try {
 
-            $tablaTotales = ReporteDiarioCampos::whereDate('fecha', $fecha)->first();
-            if ($tablaTotales) {
-                $tablaTotales->update([
-                    'total_planillas_asistidos' => $totales['asistido'],
-                    'total_faltas' => $totales['faltas'],
-                    'total_vacaciones' => $totales['vacaciones'],
-                    'total_licencia_maternidad' => $totales['licenciaMaternidad'],
-                    'total_licencia_sin_goce' => $totales['licenciaSinGoce'],
-                    'total_licencia_con_goce' => $totales['licenciaConGoce'],
-                    'total_descanso_medico' => $totales['descansoMedico'],
-                    'total_atencion_medica' => $totales['atencionMedica'],
-                    'total_cuadrillas' => $totales['cuadrillas'],
-                    'total_planilla' => $totales['totalPlanilla']
-                ]);
-            }
 
             ReporteDiarioCuadrilla::whereDate('fecha', $fecha)->delete();
+            $contadorAsistencias = [];
             // Iterar sobre cada fila de datos
             foreach ($datos as $fila) {
 
@@ -113,7 +111,7 @@ class ReporteDiarioDetalleComponent extends Component
                                 'fecha' => $this->fecha
                             ]);
 
-                            $totalHoras = new \DateTime('00:00:00');
+                            //$totalHoras = new \DateTime('00:00:00');
 
                             for ($i = 4; $i < count($fila); $i += 4) {
                                 $campo = $fila[$i] ?? null;
@@ -132,6 +130,8 @@ class ReporteDiarioDetalleComponent extends Component
                                 // Si se tienen los datos necesarios, crear el detalle
                                 if ($campo && $labor && $horaEntrada && $horaSalida) {
 
+                                    
+
                                     $horaInicioDT = \DateTime::createFromFormat('H:i', $horaEntrada);
                                     $horaFinDT = \DateTime::createFromFormat('H:i', $horaSalida);
 
@@ -139,15 +139,10 @@ class ReporteDiarioDetalleComponent extends Component
                                         continue;
                                     }
 
-                                    // Calcular la diferencia entre hora de entrada y salida
-                                    //$interval = $horaInicioDT->diff($horaFinDT);
-
-                                    // Acumular el tiempo trabajado al total
-                                    //$totalHoras->add($interval);
 
                                     ReporteDiarioCuadrillaDetalle::create([
                                         'reporte_diario_id' => $reporteDiarioCuadrilla->id,
-                                        'campo' => $this->validarCampo($campo),
+                                        'campo' => $campo,
                                         'labor' => $labor,
                                         'hora_inicio' => $horaEntrada,
                                         'hora_salida' => $horaSalida
@@ -172,6 +167,11 @@ class ReporteDiarioDetalleComponent extends Component
                     }
                 } else {
                     // Insertar o actualizar el reporte diario
+                    if(!array_key_exists($asistencia,$contadorAsistencias))
+                        $contadorAsistencias[$asistencia] = 0;
+                    
+                    $contadorAsistencias[$asistencia]++;
+
                     $reporteDiario = ReporteDiario::updateOrCreate(
                         ['documento' => $documento, 'fecha' => $this->fecha], // Suponiendo que el documento está en la primera columna
                         [
@@ -214,15 +214,9 @@ class ReporteDiarioDetalleComponent extends Component
                                 continue;
                             }
 
-                            // Calcular la diferencia entre hora de entrada y salida
-                            //$interval = $horaInicioDT->diff($horaFinDT);
-
-                            // Acumular el tiempo trabajado al total
-                            //$totalHoras->add($interval);
-
                             ReporteDiarioDetalle::create([
                                 'reporte_diario_id' => $reporteDiario->id,
-                                'campo' => $this->validarCampo($campo),
+                                'campo' => $campo,
                                 'labor' => $labor,
                                 'hora_inicio' => $horaEntrada,
                                 'hora_salida' => $horaSalida
@@ -230,22 +224,49 @@ class ReporteDiarioDetalleComponent extends Component
                         }
                     }
 
-                    //$totalHorasFormateadas = isset($fila[$indiceTotal]) ? $fila[$indiceTotal] : '00:00';
+                    
                     $totalHorasFormateadas = isset($fila[$indiceTotal]) ? trim(preg_replace('/[\x00-\x1F\x7F\xA0]/u', ' ', $fila[$indiceTotal])) : '00:00';
+                    
                     $totalHorasFormateadas = str_replace('.', ':', $totalHorasFormateadas);
+
+                    if (preg_match('/^\d+$/', $totalHorasFormateadas)) {
+                        $totalHorasFormateadas .= ':00';
+                    } elseif (preg_match('/^\d+:\d$/', $totalHorasFormateadas)) {
+                        // Si el formato es algo como "3:5", convertirlo en "03:05"
+                        list($hours, $minutes) = explode(':', $totalHorasFormateadas);
+                        $totalHorasFormateadas = str_pad($hours, 2, '0', STR_PAD_LEFT) . ':' . str_pad($minutes, 2, '0', STR_PAD_RIGHT);
+                    }
+                    
                     if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $totalHorasFormateadas)) {
                         // Si no es válido, asignar '00:00' por defecto
                         $totalHorasFormateadas = '00:00';
+                    } else {
+                        // Si es válido, formatea a H:i (asegura que tenga dos dígitos en horas y minutos)
+                        $totalHorasFormateadas = date('H:i', strtotime($totalHorasFormateadas));
                     }
-                    // Formatear el total de horas acumuladas
-                    //$totalHorasFormateadas = $totalHoras->format('H:i');
-
-                    // Actualizar el total de horas en el reporte de la cuadrilla
+                    
                     $reporteDiario->update([
                         'total_horas' => $totalHorasFormateadas
                     ]);
                 }
+                
             }
+
+            $reporteDiarioCampos = ReporteDiarioCampos::whereDate('fecha',$this->fecha)->first();
+            if($reporteDiarioCampos){
+                
+                $reporteDiarioCampos->totales()->detach();
+
+                foreach ($contadorAsistencias as $codigoAsistencia => $contadorAsistencia) {
+                    $tipoAsistencia = TipoAsistencia::where('codigo',$codigoAsistencia)->first();
+                    if($tipoAsistencia){
+                        $reporteDiarioCampos->totales()->attach($tipoAsistencia->id,['total'=>$contadorAsistencia]);
+                        
+                    }
+                }
+                $this->obtenerTotales();
+            }
+            
 
             // Confirmar la transacción
             DB::commit();
@@ -257,62 +278,41 @@ class ReporteDiarioDetalleComponent extends Component
         } catch (\Exception $e) {
             // Revertir la transacción en caso de error
             DB::rollBack();
-
             $this->alert("error", $e->getMessage());
         }
     }
-    function validarCampo($campo)
-    {
-        /*
-        $aliasMap = [
-            'a1' => 'a-1',
-            'a2' => 'a-2',
-            'a3' => 'a-3',
-            'a4' => 'a-4',
-            'a5' => 'a-5',
-            'a6' => 'a-6',
-            'a7' => 'a-7',
-            'a8' => 'a-8',
-            'a9' => 'a-9',
-            'a10' => 'a-10',
-            'a11' => 'a-11',
-            'b1' => 'b-1',
-            'b2' => 'b-2',
-            'b3' => 'b-3',
-            'b4' => 'b-4',
-            'b5' => 'b-5',
-            'b6' => 'b-6',
-            'b7' => 'b-7',
-            'b8' => 'b-8',
-            'b9' => 'b-9',
-            'b10' => 'b-10',
-            'b11' => 'b-11',
-            'c1' => 'c-1',
-            'c2' => 'c-2',
-            'c3' => 'c-3',
-            'c4' => 'c-4',
-            'c5' => 'c-5',
-            'd1' => 'd-1',
-            'd2' => 'd-2',
-            'd3' => 'd-3',
-            'd4' => 'd-4',
-            'd5' => 'd-5',
-            'e1' => 'e-1',
-            'e2' => 'e-2',
-            'e3' => 'e-3',
-            'e4' => 'e-4',
-            'e5' => 'e-5',
-            'f1' => 'f-1',
-            'l3' => 'l-3',
-            'l4' => 'l-4',
-            'l5' => 'l-5',
-        ];
+    public function obtenerTotales(){
+        if(!$this->reporteDiarioCampos || !$this->tipoAsistencias){
+            return;
+        }
 
-        if (array_key_exists(mb_strtolower($campo), $aliasMap)) {
-            return mb_strtoupper($aliasMap[mb_strtolower($campo)]);
-        }*/
-        return $campo;
+        $totales = $this->reporteDiarioCampos->totales()->pluck('total','tipo_asistencia_id')->toArray();
+
+        $arrayDatos = [];
+        $sumaTotal = 0;
+
+        foreach ($this->tipoAsistencias as $tipoAsistencia) {
+            $total = 0;
+            if(array_key_exists($tipoAsistencia->id,$totales)){
+                $total = $totales[$tipoAsistencia->id];
+            }
+            $arrayDatos[$tipoAsistencia->codigo] = [
+                'descripcion'=>$tipoAsistencia->descripcion,
+                'total'=>$total,
+            ];
+            $sumaTotal+=$total;
+        }
+
+        $totalCuadrilleros = ReporteDiarioCuadrilla::whereDate('fecha',$this->reporteDiarioCampos->fecha)->sum('numero_cuadrilleros');
+        $sumaTotal+=$totalCuadrilleros;
+        
+        $this->totalesAsistencias = $arrayDatos;
+        $this->totalesAsistenciasCuadrilleros = $totalCuadrilleros;
+        $this->reporteDiarioCampos->total_planilla = $sumaTotal;
+        $this->reporteDiarioCampos->save();
+        $this->totalCuadrilleroSegunHora = CuadrillaServicio::cantidadCuadrilleros($this->reporteDiarioCampos->fecha);
     }
+    
     public function importarPlanilla()
     {
         $empleados = Empleado::where('status', 'activo')->get();

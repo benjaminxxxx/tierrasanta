@@ -33,13 +33,13 @@
                 this.initTable();
                 this.listeners.push(
                     Livewire.on('setEmpleados', (data) => {
-/*
+
                         this.informacionAsistenciaAdicional = data[1];
 
 
                         this.tableData = data[0];
-                        this.hot.loadData(this.tableData);*/
-                        location.href = location.href;
+                        this.hot.loadData(this.tableData);
+                        //location.href = location.href;
                     })
                 );
             },
@@ -93,7 +93,7 @@
                         data: `dia_${dia.indice}`,
                         type: 'numeric',
                         width: 30,
-                        title: `${dia.titulo}`,
+                        title: `${dia.titulo} <br/> ${dia.indice}`,
                         className: '!text-center',
                         renderer: function(instance, td, row, col, prop, value,
                             cellProperties) {
@@ -187,7 +187,7 @@
                     rowHeaders: true,
                     columns: columns,
                     width: '100%',
-                    height: '90%',
+                    height: 'auto',
                     manualColumnResize: false,
                     manualRowResize: true,
                     minSpareRows: 1,
@@ -195,7 +195,7 @@
                     autoColumnSize: true,
                     fixedColumnsLeft: 4,
                     licenseKey: 'non-commercial-and-evaluation',
-                    afterRender: function() {
+                    /*afterRender: function() {
                         
                         const htCoreTable = document.querySelector('.htCore');
                         let tableHeight = htCoreTable.offsetHeight;
@@ -203,11 +203,11 @@
                             tableHeight = tableHeight + 70;
                             container.style.minHeight = `${tableHeight}px`;
                         }
-                    },
+                    },*/
                 });
 
                 this.hot = hot;
-                this.hot.render();
+                //this.hot.render();
             },
             obtenerEmpleados() {
 

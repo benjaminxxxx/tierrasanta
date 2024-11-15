@@ -23,4 +23,8 @@ class ReporteDiarioCampos extends Model
         'total_planilla',
         'descuento_minutos'
     ];
+    public function totales()
+    {
+        return $this->belongsToMany(TipoAsistencia::class, 'asistencia_planillas_totales','reporte_diario_planilla_id')->withPivot('totales');
+    }
 }
