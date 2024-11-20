@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\AlmacenProductoSalida;
 use App\Models\CompraProducto;
+use App\Models\CompraSalidaStock;
 use Livewire\Component;
 
 class AlmacenSalidaHistorialPorCompraComponent extends Component
@@ -16,16 +17,29 @@ class AlmacenSalidaHistorialPorCompraComponent extends Component
     public $entrada;
     public $unidad = '';
     public $salidaId;
+    public $historiales = [];
     protected $listeners = ['verHistorialSalidaPorCompra'];
-    public function verHistorialSalidaPorCompra($compraId,$salidaId){
+    public function verHistorialSalidaPorCompra($salidaId){
         $this->salidaId = $salidaId;
+        $this->historiales = [];
+        $salida = AlmacenProductoSalida::find($this->salidaId);
+        if($salida){
+            $compras = $salida->compraStock;
+            foreach ($compras as $compra) {
+                $historial = CompraSalidaStock::where('compra_producto_id',$compra->compra_producto_id)->get();
+                $this->historiales[] = [
+                    'entrada'=>CompraProducto::find($compra->compra_producto_id),
+                    'historial'=>$historial,
+                ];
+            }
+            
+        }
+        /*
         $this->entrada = CompraProducto::find($compraId);
         $this->historial = AlmacenProductoSalida::where('compra_producto_id',$compraId)->get();
-        $this->historiaCantidad = number_format($this->historial->sum('cantidad'),3);
-        $this->historiaCostoPorUnidad = number_format($this->historial->sum('costo_por_kg'),2);
-        $this->historiaTotalCosto = number_format($this->historial->sum('total_costo'),2);
+        */
         $this->mostrarHistorial = true;
-        $this->dispatch('mostrarHistorial2');
+        //$this->dispatch('mostrarHistorial2');
 
     }
     public function render()

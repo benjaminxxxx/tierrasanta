@@ -5,7 +5,10 @@
     user-select: none;
     cursor: pointer;
 }
-
+.swal2-title{
+    font-size: 1.3rem !important;
+    line-height: 1.6rem !important;
+}
 #campos-container {
     width: 800px;
     height: 1800px;

@@ -69,7 +69,7 @@
                         @foreach ($compras as $indice => $producto)
                             <x-tr>
                                 <x-th value="{{ $indice + 1 }}" class="text-center" />
-                                <x-td value="{{ $producto->tiendaComercial->nombre }}" />
+                                <x-td value="{{ $producto->tiendaComercial ? $producto->tiendaComercial->nombre:'Sin tienda' }}" />
                                 <x-td value="{{ $producto->fecha_compra }}" class="text-center" />
                                 <x-td value="{{ $producto->costo_por_kg }}" class="text-center" />
                                 <x-td value="{{ $producto->stock }}" class="text-center" />

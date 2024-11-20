@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AlmacenController;
 use App\Http\Controllers\CampoController;
+use App\Http\Controllers\KardexController;
 use App\Http\Controllers\ReporteDiarioController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AsistenciaPlanillaController;
@@ -95,5 +96,9 @@ Route::middleware([
 
      //USUARIOS
      Route::get('/usuarios', [UsuarioController::class,'index'])->name('usuarios');
+
+    //KARDEX
+    Route::get('/kardex/lista', [KardexController::class,'lista'])->name('kardex.lista');
+    Route::get('/kardex/ver/{id}', [KardexController::class,'ver'])->name('kardex.ver');
     
 });

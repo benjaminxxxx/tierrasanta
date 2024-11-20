@@ -5,6 +5,8 @@ namespace App\Livewire;
 use App\Models\AlmacenProductoSalida;
 use App\Models\CompraProducto;
 use App\Models\Producto;
+use App\Models\SunatTabla10TipoComprobantePago;
+use App\Models\SunatTabla6CodigoUnidadMedida;
 use App\Models\TiendaComercial;
 use App\Services\AlmacenServicio;
 use Carbon\Carbon;
@@ -23,31 +25,40 @@ class ProductoCompraFormComponent extends Component
     public $stock;
     public $total;
     public $proveedores;
-    public $factura;
+    public $serie;
+    public $numero;
+    public $tipoKardex = 'blanco';
     public $mostrarFormulario = false;
     public $productoId;
     public $producto;
     public $compraId;
+    public $tabla10TipoComprobantePago;
+    public $tabla12TipoOperacion = 2;
+    public $tipoCompraSeleccionada;
     protected $listeners = ['agregarCompra','editarCompra'];
     protected function rules()
     {
         return [
             'tienda_comercial_id' => 'required',
             'fecha_compra' => 'required',
+            'total' => 'required',
             'costo_por_kg' => 'required|numeric|regex:/^\d+(\.\d{1,2})?$/',  // Permite valores decimales con hasta 2 dígitos
-            'factura' => 'nullable'
+           'tipoCompraSeleccionada'=>'required'
         ];
     }
 
     protected $messages = [
         'tienda_comercial_id.required' => 'La tienda comercial es obligatoria.',
+        'tipoCompraSeleccionada.required' => 'El tipo de compra es obligatorio.',
         'fecha_compra.required' => 'La fecha de compra es obligatoria.',
+        'total.required'=>'El total de la compra es obligatoria.',
         'costo_por_kg.required' => 'El costo por unidad debe ser un número válido.',
         'costo_por_kg.numeric' => 'El costo por kilogramo debe ser un número válido.',
         'costo_por_kg.regex' => 'El costo por kilogramo debe ser un valor decimal con hasta 2 dígitos después del punto.',
     ];
     public function mount()
     {
+        $this->tabla10TipoComprobantePago = SunatTabla10TipoComprobantePago::all();
         $this->proveedores = TiendaComercial::orderBy('nombre')->get();
         $this->resetearValoresDefecto();
     }
@@ -67,11 +78,16 @@ class ProductoCompraFormComponent extends Component
         if ($compra) {
             $this->tienda_comercial_id = $compra->tienda_comercial_id;
             $this->fecha_compra = $compra->fecha_compra;
-            $this->factura = $compra->factura;
+            $this->serie = $compra->serie;
+            $this->numero = $compra->numero;
             $this->stock = $compra->stock;
             $this->total = $compra->total;
             $this->costo_por_kg = $compra->costo_por_kg;
             $this->mostrarFormulario = true;
+            $this->tipoKardex = $compra->tipo_kardex;
+            $this->tabla12TipoOperacion = $compra->tabla12_tipo_operacion;
+            $this->tipoCompraSeleccionada = $compra->tipo_compra_codigo;
+
         }
     }
     public function agregarCompra($productoId)
@@ -105,10 +121,14 @@ class ProductoCompraFormComponent extends Component
                 'producto_id' => $this->productoId,
                 'tienda_comercial_id' => $this->tienda_comercial_id,
                 'fecha_compra' => $this->fecha_compra,
-                'factura' => mb_strtoupper($this->factura),
+                'sere' => mb_strtoupper($this->serie),
+                'numero' => $this->numero,
                 'costo_por_kg' => $this->costo_por_kg,
                 'stock'=>$this->stock,
-                'total'=>$this->total
+                'total'=>$this->total,
+                'tipo_kardex'=>$this->tipoKardex,
+                'tabla12_tipo_operacion'=>$this->tabla12TipoOperacion,
+                'tipo_compra_codigo'=>$this->tipoCompraSeleccionada
             ];
 
             if ($this->compraId) {
@@ -141,12 +161,15 @@ class ProductoCompraFormComponent extends Component
     public function resetearValoresDefecto()
     {
         $this->fecha_compra = Carbon::now()->format('Y-m-d');
+        $this->tipoKardex = 'blanco';
         $this->reset([
             'tienda_comercial_id',
-            'factura',
+            'serie',
+            'numero',
             'costo_por_kg',
             'stock',
-            'total'
+            'total',
+            'tipoCompraSeleccionada'
         ]);
 
         $this->resetErrorBag();

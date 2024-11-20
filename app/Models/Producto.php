@@ -9,40 +9,61 @@ class Producto extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nombre_comercial', 'ingrediente_activo', 'unidad_medida', 'categoria_id'];
+    protected $fillable = ['codigo_existencia', 'nombre_comercial', 'ingrediente_activo', 'unidad_medida', 'categoria_id', 'codigo_tipo_existencia', 'codigo_unidad_medida'];
 
     public function getCompraActivaAttribute()
     {
         return $this->compras()->where('estado', 1)->exists();
+    }
+    public function getNombreCompletoAttribute()
+    {
+        $nombreComercial = trim($this->nombre_comercial);
+        $ingredienteActivo = trim($this->ingrediente_activo);
+
+        return $ingredienteActivo
+            ? "{$nombreComercial} - {$ingredienteActivo}"
+            : $nombreComercial;
     }
     public function getDatosUsoAttribute()
     {
         $comprasActivas = $this->compras()->whereNull('fecha_termino')->get();
         $stockUsado = 0;
         $response = [];
-        $response['fecha']='';
-        $response['agotado']=false;
+        $response['fecha'] = '';
+        $response['agotado'] = false;
         foreach ($comprasActivas as $compraActiva) {
-            $stockUsado+=AlmacenProductoSalida::where('compra_producto_id',$compraActiva->id)->sum('cantidad');
+            $stockUsado += AlmacenProductoSalida::where('compra_producto_id', $compraActiva->id)->sum('cantidad');
         }
         $capacidad = $comprasActivas->sum('stock');
 
-        if($comprasActivas->count()==0){
-            $response['agotado']=true;
-            $response['fecha']=$this->compras()->orderBy('fecha_termino','desc')->first()->fecha_termino;
+        if ($comprasActivas->count() == 0) {
+            $response['agotado'] = true;
+            $response['fecha'] = $this->compras()->orderBy('fecha_termino', 'desc')->first()->fecha_termino;
         }
         $restante = $capacidad - $stockUsado;
-        $response['capacidad']=$capacidad;
-        $response['stockUsado']=$stockUsado;
-        $response['restante']=$restante;
+        $response['capacidad'] = $capacidad;
+        $response['stockUsado'] = $stockUsado;
+        $response['restante'] = $restante;
         return $response;
     }
     public function categoria()
     {
         return $this->belongsTo(CategoriaProducto::class, 'categoria_id');
     }
+    public function tabla5()
+    {
+        return $this->belongsTo(SunatTabla5TipoExistencia::class, 'codigo_tipo_existencia');
+    }
+    public function tabla6()
+    {
+        return $this->belongsTo(SunatTabla6CodigoUnidadMedida::class, 'codigo_unidad_medida');
+    }
     public function compras()
     {
         return $this->hasMany(CompraProducto::class);
+    }
+    public function kardexProductos()
+    {
+        return $this->hasMany(KardexProducto::class, 'producto_id');
     }
 }

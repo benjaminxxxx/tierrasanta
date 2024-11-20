@@ -41,19 +41,23 @@
                                 </x-td>
                                 <x-td value="{{ $registro->producto->categoria->nombre }}" class="text-center" />
                                 <x-td value="{{ $registro->observacion }}" class="text-center" />
-                                <x-td value="{{ $registro->costo_por_unidad }}" class="text-center" />
-                                <x-td value="{{ $registro->total_costo_calculado }}" class="text-center" />
+                                <x-td class="text-center">
+                                    <x-button type="button" @click="$wire.dispatch('determinarCosto',{'id':{{ $registro->id }}})">
+                                        Costo
+                                    </x-button>
+                                </x-td>
+                                <x-td value="{{ $registro->total_costo }}" class="text-center" />
                                 <x-td class="text-center">
 
                                     <x-flex class="justify-end">
-                                        @if ($registro->compra_producto_id)
+                                        @if ($registro->perteneceAUnaCompra)
                                             <x-secondary-button type="button"
                                                 title="Quitar costos para este tipo de producto de aqui en adelante."
                                                 wire:click="quitarCompraVinculada({{ $registro->id }})">
                                                 <i class="fa fa-remove"></i> <i class="fa fa-money-bill"></i>
                                             </x-secondary-button>
                                             <x-secondary-button type="button" title="Ver historial de compra."
-                                                @click="$wire.dispatch('verHistorialSalidaPorCompra',{compraId:{{$registro->compra_producto_id}},salidaId:{{$registro->id}}})">
+                                                @click="$wire.dispatch('verHistorialSalidaPorCompra',{salidaId:{{$registro->id}}})">
                                                 <i class="fa fa-eye"></i> <i class="fa fa-money-bill"></i>
                                             </x-secondary-button>
                                         @endif

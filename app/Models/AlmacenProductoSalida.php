@@ -17,8 +17,11 @@ class AlmacenProductoSalida extends Model
         'fecha_reporte',
         'compra_producto_id',
         'costo_por_kg',
-        'total_costo'
+        'total_costo',
+        'cantidad_kardex_producto_id',
+        'cantidad_stock_inicial'
     ];
+    
 
     // Relación con Producto
     public function producto()
@@ -31,41 +34,12 @@ class AlmacenProductoSalida extends Model
     {
         return $this->belongsTo(CompraProducto::class, 'compra_producto_id');
     }
-/*
-    // Calcula el total costo basado en la cantidad y el costo por kilogramo
-    public function calcularTotalCosto()
+    public function compraStock()
     {
-        return $this->cantidad * $this->costo_por_kg;
-    }*/
-    public function getCostoPorUnidadAttribute()
-    {
-        // Si tiene asignado un compra_producto_id
-        if ($this->compra_producto_id && $this->compra) {
-            return $this->compra->costo_por_kg; // Retorna el costo por kilogramo de la compra
-        }
-        return null; // Si no, retorna null
+        return $this->hasMany(CompraSalidaStock::class, 'salida_almacen_id');
     }
-
-    // Método para calcular el total costo basado en la cantidad y el costo por unidad
-    public function getTotalCostoCalculadoAttribute()
+    public function getPerteneceAUnaCompraAttribute()
     {
-        // Si tiene asignado un compra_producto_id y la compra existe
-        if ($this->compra_producto_id && $this->compra) {
-            return $this->cantidad * $this->compra->costo_por_kg; // Calcula el total
-        }
-        return null; // Si no, retorna null
-    }
-
-    // Método para la observación basada en la existencia de la factura en CompraProducto
-    public function getObservacionAttribute()
-    {
-        // Si tiene asignado un compra_producto_id y la compra existe
-        if ($this->compra_producto_id && $this->compra) {
-            // Si la factura es 'ng', retorna 'No registra contabilidad'
-            if (mb_strtolower(trim($this->compra->factura)) === 'ng') {
-                return 'No registra contabilidad';
-            }
-        }
-        return ''; // Si no, retorna vacío
+        return $this->compraStock()->count()>0;
     }
 }

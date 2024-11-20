@@ -18,13 +18,31 @@ class CompraProducto extends Model
         'total',
         'stock',
         'fecha_termino',
-        'estado'
+        'estado',
+        
+        'tipo_compra_codigo',
+        'serie',
+        'numero',
+        'tabla12_tipo_operacion',
+        'tipo_kardex'
     ];
 
     // Relación con Producto
     public function producto()
     {
         return $this->belongsTo(Producto::class, 'producto_id');
+    }
+    public function getCantidadDisponibleAttribute()
+    {
+        return (float)$this->stock -  (float)$this->almacenSalida()->sum('stock');
+    }
+    public function almacen()
+    {
+        return $this->hasMany(AlmacenProductoSalida::class, 'compra_producto_id');
+    }
+    public function almacenSalida()
+    {
+        return $this->hasMany(CompraSalidaStock::class, 'compra_producto_id');
     }
 
     // Relación con TiendaComercial

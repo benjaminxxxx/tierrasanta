@@ -69,11 +69,33 @@
 
 
                 <div>
-                    <x-label for="factura">Factura</x-label>
-                    <x-input type="text" class="uppercase" wire:model="factura" />
-                    <small>
-                        Colocar NG si es un Producto sin factura
-                    </small>
+                    <x-label for="serie">Serie</x-label>
+                    <x-input type="text" class="uppercase" wire:model="serie" />
+                </div>
+                <div>
+                    <x-label for="numero">Número</x-label>
+                    <x-input type="text" class="uppercase" wire:model="numero" />
+                </div>
+                <div>
+                    <x-label for="serie">Tipo de operación (Tabla 12)</x-label>
+                    <x-input type="text" readonly class="uppercase !bg-gray-100" wire:model="tabla12TipoOperacion" />
+                </div>
+                <div>
+                    <x-label for="tipoCompraSeleccionada">Tipo de comprobante (Tabla 10)</x-label>
+                    <x-select wire:model="tipoCompraSeleccionada">
+                        <option value="">Seleccione</option>
+                        @foreach ($tabla10TipoComprobantePago as $tipoCompra)
+                            <option value="{{ $tipoCompra->codigo }}">{{ $tipoCompra->descripcion }}</option>
+                        @endforeach
+                    </x-select>
+                    <x-input-error for="tipoCompraSeleccionada" />
+                </div>
+                <div>
+                    <x-label for="tipoKardex">Tipo de Kardex</x-label>
+                    <x-select wire:model="tipoKardex">
+                        <option value="blanco">Blanco</option>
+                        <option value="negro">Negro</option>
+                    </x-select>
                 </div>
             </div>
         </x-slot>
@@ -97,24 +119,24 @@
             total: @entangle('total').defer,
 
             actualizarTotal() {
-                if(this.costoPorKg==undefined){
+                if (this.costoPorKg == undefined) {
                     this.costoPorKg = $wire.get('costo_por_kg');
                 }
-                if(this.cantidad==undefined){
+                if (this.cantidad == undefined) {
                     this.cantidad = $wire.get('stock');
                 }
                 if (this.costoPorKg && this.cantidad) {
-                    this.total = this.costoPorKg * this.cantidad;                    
-                    $wire.set('total',this.total);
+                    this.total = this.costoPorKg * this.cantidad;
+                    $wire.set('total', this.total);
                 }
             },
 
             actualizarSubtotal() {
-                if(this.cantidad==undefined){
+                if (this.cantidad == undefined) {
                     this.cantidad = $wire.get('stock');
                 }
                 this.costoPorKg = this.total / this.cantidad;
-                $wire.set('costo_por_kg',this.costoPorKg);
+                $wire.set('costo_por_kg', this.costoPorKg);
             }
         }));
     </script>

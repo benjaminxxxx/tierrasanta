@@ -6,6 +6,7 @@ use App\Models\AlmacenProductoSalida;
 use App\Models\CompraProducto;
 use App\Services\AlmacenServicio;
 use Carbon\Carbon;
+use Exception;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
@@ -30,8 +31,35 @@ class AlmacenSalidaDetalleComponent extends Component
     }
     public function updatedCantidad($cantidad, $id)
     {
+        try {
+            $registro = AlmacenProductoSalida::find($id);
+            if($registro){
+                $registro->cantidad = $cantidad;
+                $registro->save();
+            }
+            /*
+            $registro = AlmacenProductoSalida::find($id);
+            
+            if(!$registro){
+                throw new Exception("No existe el registro");                
+            }
+
+            AlmacenServicio::registrarStock($registro,$cantidad);*/
+
+            $this->alert("success", "Cantidad modificada correctamente");
+        } catch (\Throwable $th) {
+            
+            $this->alert('error', $th->getMessage(), [
+                 
+                'position' => 'center',
+                'toast' => false,
+                'timer' => null,
+            ]);
+        }
+        /*
         $registro = AlmacenProductoSalida::find($id);
         if ($registro) {
+            
             $fechaDesde = $registro->fecha_reporte;
             $registro->cantidad = $cantidad;
             $registro->save();            
@@ -43,7 +71,7 @@ class AlmacenSalidaDetalleComponent extends Component
             }
             
             $this->alert("success", "Cantidad modificada correctamente");
-        }
+        }*/
     }
     public function quitarCompraVinculada($registroId)
     {

@@ -123,6 +123,18 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
+                    <x-nav-link-parent name="sectorKardex" href="#" :active="request()->routeIs(['kardex.lista'])">
+                      
+                        <div class="w-6 text-center">
+                            <i class="fa fa-clipboard-list"></i>
+                        </div>
+                        Kardex
+                        <x-slot name="children">
+                            <x-nav-link-child href="{{ route('kardex.lista') }}" :active="request()->routeIs('kardex.lista')">
+                                Ver Kardex
+                            </x-nav-link-child>
+                        </x-slot>
+                    </x-nav-link-parent>
                     <x-nav-link-parent name="sectorConsolidados" :active="request()->routeIs('consolidado.riego')">
                         
                         <div class="w-6 text-center">

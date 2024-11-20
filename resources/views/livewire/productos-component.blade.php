@@ -4,8 +4,9 @@
         <x-h3>
             Productos
         </x-h3>
-        <x-button type="button" @click="$wire.dispatch('CrearProducto')" class="w-full md:w-auto ">Nuevo
-            Producto</x-button>
+        <x-button type="button" @click="$wire.dispatch('CrearProducto')" class="w-full md:w-auto ">
+            <i class="fa fa-plus"></i> Nuevo Producto
+        </x-button>
     </div>
     <x-card>
         <x-spacing>
@@ -38,6 +39,9 @@
                         <x-th class="text-center">
                             N°
                         </x-th>
+                        <x-th class="text-center">
+                            CÓDIGO DE EXISTENCIA
+                        </x-th>
                         <x-th>
                             <button wire:click="sortBy('nombre_comercial')" class="focus:outline-none">
                                 NOMBRE COMERCIAL <i class="fa fa-sort"></i>
@@ -54,6 +58,8 @@
                                 CATEGORÍA <i class="fa fa-sort"></i>
                             </button>
                         </x-th>
+                        <x-th value="TIPO DE EXISTENCIA (TABLA 5)" class="text-center" />
+                        <x-th value="UNIDAD DE MEDIDA (TABLA 6)" class="text-center" />
                         <x-th value="ACCIONES" class="text-center" />
                     </tr>
                 </x-slot>
@@ -62,10 +68,15 @@
                         @foreach ($productos as $indice => $producto)
                             <x-tr>
                                 <x-th value="{{ $indice + 1 }}" class="text-center" />
+                                <x-td value="{{ $producto->codigo_existencia }}" class="text-center" />
                                 <x-td value="{{ $producto->nombre_comercial }}" />
                                 <x-td value="{{ $producto->ingrediente_activo }}" />
                                 <x-td value="{{ $producto->unidad_medida }}" class="text-center" />
                                 <x-td value="{{ $producto->categoria->nombre }}" class="text-center" />
+                                <x-td value="({{ $producto->tabla5->codigo }}) {{ $producto->tabla5->descripcion }}"
+                                    class="text-center" />
+                                <x-td value="({{ $producto->tabla5->codigo }}) {{ $producto->tabla6->descripcion }}"
+                                    class="text-center" />
 
                                 <x-td class="text-center">
                                     <div class="flex items-center justify-center gap-2">
