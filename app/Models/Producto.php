@@ -32,7 +32,7 @@ class Producto extends Model
         $response['fecha'] = '';
         $response['agotado'] = false;
         foreach ($comprasActivas as $compraActiva) {
-            $stockUsado += AlmacenProductoSalida::where('compra_producto_id', $compraActiva->id)->sum('cantidad');
+            $stockUsado += $compraActiva->almacenSalida()->sum('stock');
         }
         $capacidad = $comprasActivas->sum('stock');
 
@@ -45,6 +45,21 @@ class Producto extends Model
         $response['stockUsado'] = $stockUsado;
         $response['restante'] = $restante;
         return $response;
+    }
+    public function kardexesDisponibles($fechaSalida)
+    {
+        //este productos whereHas es porque en Kardex en vez de KardexProducto puse solo productos
+        return Kardex::whereHas('productos', function ($query) {
+            $query->where('producto_id', $this->id);
+        })
+            ->where('fecha_inicial', '<=', $fechaSalida)
+            ->where('fecha_final', '>=', $fechaSalida)
+            ->where('eliminado',false)
+            ->get();
+    }
+    public function kardexProductos()
+    {
+        return $this->hasMany(KardexProducto::class, 'producto_id');
     }
     public function categoria()
     {
@@ -62,8 +77,5 @@ class Producto extends Model
     {
         return $this->hasMany(CompraProducto::class);
     }
-    public function kardexProductos()
-    {
-        return $this->hasMany(KardexProducto::class, 'producto_id');
-    }
+
 }

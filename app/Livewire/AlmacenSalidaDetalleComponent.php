@@ -27,13 +27,13 @@ class AlmacenSalidaDetalleComponent extends Component
     {
         $this->mes = $mes ? $mes : Carbon::now()->format('m');
         $this->anio = $anio ? $anio : Carbon::now()->format('Y');
-        
+
     }
     public function updatedCantidad($cantidad, $id)
     {
         try {
             $registro = AlmacenProductoSalida::find($id);
-            if($registro){
+            if ($registro) {
                 $registro->cantidad = $cantidad;
                 $registro->save();
             }
@@ -48,9 +48,9 @@ class AlmacenSalidaDetalleComponent extends Component
 
             $this->alert("success", "Cantidad modificada correctamente");
         } catch (\Throwable $th) {
-            
+
             $this->alert('error', $th->getMessage(), [
-                 
+
                 'position' => 'center',
                 'toast' => false,
                 'timer' => null,
@@ -76,21 +76,19 @@ class AlmacenSalidaDetalleComponent extends Component
     public function quitarCompraVinculada($registroId)
     {
 
-        $registro = AlmacenProductoSalida::find($registroId);
+        try {
+            $registro = AlmacenProductoSalida::find($registroId);
 
-        if ($registro) {
-            
-            $fechaDesde = $registro->fecha_reporte;
-            $compraProductoId = $registro->compra_producto_id;
-            $compra = CompraProducto::find($compraProductoId);
-            if ($compra) {
-                AlmacenServicio::eliminarRegistrosPosteriores($compra,$fechaDesde);
+            if ($registro) {
+                AlmacenServicio::eliminarRegistrosStocksPosteriores($registro);
+                $this->alert("success", "Compra vinculada removida");
             }
-            
-            $this->alert("success", "Compra vinculada removida");
+        } catch (\Throwable $th) {
+
+            $this->alert("error", $th->getMessage());
         }
     }
-   
+
     public function confirmarEliminacion($id)
     {
         $this->registroIdEliminar = $id;
@@ -128,11 +126,11 @@ class AlmacenSalidaDetalleComponent extends Component
 
             $this->mostrarGenerarItem = true;
 
-            $maximoItemAnterior = AlmacenProductoSalida::whereMonth('fecha_reporte', $this->mes-1)
-            ->whereYear('fecha_reporte', $this->anio)->max('item');
-            
+            $maximoItemAnterior = AlmacenProductoSalida::whereMonth('fecha_reporte', $this->mes - 1)
+                ->whereYear('fecha_reporte', $this->anio)->max('item');
+
             if ($maximoItemAnterior) {
-                $this->inicioItem = $maximoItemAnterior+1;
+                $this->inicioItem = $maximoItemAnterior + 1;
             } else {
                 $this->inicioItem = 1;
             }
@@ -155,7 +153,11 @@ class AlmacenSalidaDetalleComponent extends Component
 
             foreach ($this->registros as $registro) {
                 if ($registro->cantidad) {
-                    if (!$registro->compra_producto_id) {
+                    $registro->item = $correlativo;
+                    $correlativo++;
+                    $registro->save();
+
+                    /*if (!$registro->compra_producto_id) {
                         $compraActiva = CompraProducto::where('producto_id', $registro->producto_id)
                             ->whereNull('fecha_termino')
                             ->orderBy('fecha_compra')
@@ -212,7 +214,7 @@ class AlmacenSalidaDetalleComponent extends Component
                         $registro->item = $correlativo;
                         $correlativo++;
                         $registro->save();
-                    }
+                    }*/
                 } else {
                     $registro->item = null;
                     $registro->save();
@@ -231,19 +233,20 @@ class AlmacenSalidaDetalleComponent extends Component
         $this->mostrarGenerarItem = false;
         $this->inicioItem = null;
     }
-    public function obtenerRegistros(){
+    public function obtenerRegistros()
+    {
         if ($this->mes && $this->anio) {
             $this->registros = AlmacenProductoSalida::whereMonth('fecha_reporte', $this->mes)
                 ->whereYear('fecha_reporte', $this->anio)
                 ->orderBy('fecha_reporte')
-                ->orderBy('campo_nombre')
                 ->orderBy('created_at')
+                ->orderBy('campo_nombre')
                 ->get();
             $this->cantidad = $this->registros->pluck('cantidad', 'id')->toArray();
 
         }
     }
-   
+
     public function render()
     {
         $this->obtenerRegistros();

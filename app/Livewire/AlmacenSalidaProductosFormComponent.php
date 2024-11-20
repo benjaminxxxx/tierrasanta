@@ -5,7 +5,9 @@ namespace App\Livewire;
 use App\Models\AlmacenProductoSalida;
 use App\Models\Campo;
 use App\Models\CompraProducto;
+use App\Models\KardexProducto;
 use App\Models\Producto;
+use App\Services\AlmacenServicio;
 use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -23,6 +25,12 @@ class AlmacenSalidaProductosFormComponent extends Component
     public $fecha_salida;
     public $mes;
     public $anio;
+
+    public $productoSeleccionado;
+    public $kardexProducto;
+    public $almacenes;
+    public $stockDisponibleSeleccionado = 0;
+    public $cantidades = [];
     protected $listeners = ['nuevoRegistro'];
     public function mount()
     {
@@ -34,7 +42,7 @@ class AlmacenSalidaProductosFormComponent extends Component
         // Obtener el mes y año actuales
         $mesActual = Carbon::now()->month;
         $anioActual = Carbon::now()->year;
-    
+
         if ($this->mes && $this->anio) {
             // Si el mes y el año son iguales al presente, usar la fecha actual
             if ($this->mes == $mesActual && $this->anio == $anioActual) {
@@ -58,7 +66,7 @@ class AlmacenSalidaProductosFormComponent extends Component
             $this->camposAgregados[] = $campoNombre;
         }
     }
-    public function nuevoRegistro($mes,$anio)
+    public function nuevoRegistro($mes, $anio)
     {
         $this->mes = $mes;
         $this->anio = $anio;
@@ -69,7 +77,7 @@ class AlmacenSalidaProductosFormComponent extends Component
     public function updatedNombreComercial()
     {
         // Hacer la búsqueda en base a lo que se escribe en el campo nombre_comercial
-        if (strlen($this->nombre_comercial) > 2) { // Solo buscar si tiene más de 2 caracteres
+        if (strlen($this->nombre_comercial) > 0) { // Solo buscar si tiene más de 2 caracteres
             $this->productos = Producto::where('nombre_comercial', 'like', '%' . $this->nombre_comercial . '%')
                 ->orWhere('ingrediente_activo', 'like', '%' . $this->nombre_comercial . '%')
                 ->take(5) // Limitar los resultados a 5 para no saturar la lista flotante
@@ -80,69 +88,103 @@ class AlmacenSalidaProductosFormComponent extends Component
     }
     public function seleccionarProducto($productoId)
     {
-        $producto = Producto::find($productoId);
-        if ($producto) {
+        $this->productoSeleccionado = Producto::find($productoId);
 
-            $this->informacion['producto'] = $producto;
-            $this->elegirCampos();
+        if (!$this->productoSeleccionado) {
+            return;
+        }
+
+        $this->almacenes = $this->productoSeleccionado->kardexesDisponibles($this->fecha_salida);
+        if (!$this->almacenes) {
+            $this->alert("error", "No hay Kardex disponible para este producto, debe ir a Kardex a registrar el producto primero.");
         }
     }
-    
+    public function seleccionarKardexProducto($kardexProductoId, $stockDisponible)
+    {
+        $this->kardexProducto = KardexProducto::find($kardexProductoId);
+        $this->stockDisponibleSeleccionado = $stockDisponible;
+    }
+
     public function retroceder()
     {
-        $this->informacion = [];
-        $this->step = 1;
+        if ($this->step == 2) {
+            $this->productoSeleccionado = null;
+        }
+        if ($this->step == 3) {
+            $this->kardexProducto = null;
+            $this->stockDisponibleSeleccionado = 0;
+        }
     }
     public function store()
     {
         try {
-            if(!isset($this->informacion['producto'])){
-                return $this->alert('error','No ha seleccionado el producto');
+            if (!$this->fecha_salida) {
+                return $this->alert('error', 'No ha seleccionado la fecha.');
             }
-            if($this->step==2 && count($this->camposAgregados)==0){
-                return $this->alert('error','Debe seleccionar los campos');
+            if (!$this->productoSeleccionado) {
+                return $this->alert('error', 'No ha seleccionado el producto.');
+            }
+            if (!$this->kardexProducto) {
+                return $this->alert('error', 'No ha seleccionado el almacen.');
+            }
+            if ($this->step == 3 && count($this->camposAgregados) == 0) {
+                return $this->alert('error', 'Debe seleccionar los campos.');
+            }
+
+            if (array_sum($this->cantidades) > $this->stockDisponibleSeleccionado) {
+                return $this->alert('error', 'No hay suficiente stock para esa cantidad de salida.');
             }
             
-    
-            if($this->fecha_salida && $this->step==2 && isset($this->informacion['producto']) && count($this->camposAgregados)>0){
-                $producto = $this->informacion['producto'];
-                foreach ($this->camposAgregados as $campo) {
-                    $compraActiva = CompraProducto::where('estado','1')->where('producto_id',$producto->id)->first();
-                    AlmacenProductoSalida::create([                 
-                        'producto_id'=>$producto->id,
+            foreach ($this->camposAgregados as $campo) {
+                $cantidad = round($this->cantidades[$campo],3);
+                if($cantidad>0){
+                    $data = [
+                        //'item',
+                        'producto_id' => $this->productoSeleccionado->id,
                         'campo_nombre'=>$campo,
+                        'cantidad'=>$this->cantidades[$campo],
                         'fecha_reporte'=>$this->fecha_salida,
-                        //'compra_producto_id'=>$compraActiva?$compraActiva->id:null,
-                        /*
-                        a futuro activar, pueda que una compra no este actualizada y generara conflicto
-                        */
-                    ]);
+                        //'compra_producto_id',
+                        'costo_por_kg'=>null,
+                        'total_costo'=>null
+                    ];
+    
+                    AlmacenServicio::registrarSalida($data,$this->kardexProducto);
                 }
-                $this->alert('success','Registro Actualizado correctamente');
-                $this->dispatch('actualizarAlmacen');
-                $this->closeForm();
+                
+               
             }
+            $this->alert('success', 'Registro Actualizado correctamente');
+            $this->dispatch('actualizarAlmacen');
+            $this->closeForm();
+
         } catch (\Throwable $th) {
-            $this->alert('error',$th->getMessage());
+            $this->alert('error', $th->getMessage());
         }
-    }
-    public function elegirCampos()
-    {
-        $this->step = 2;
     }
     public function render()
     {
+        $this->step = 1;
+        if ($this->productoSeleccionado && !$this->kardexProducto) {
+            $this->step = 2;
+        } else if ($this->kardexProducto) {
+            $this->step = 3;
+        }
         return view('livewire.almacen-salida-productos-form-component');
     }
-    public function resetCampos(){
-        $this->step = 1;
+    public function resetCampos()
+    {
+        /*$this->step = 1;
         $this->informacion = [];
         $this->nombre_comercial = null;
         $this->productos = null;
-        $this->camposAgregados = [];
+        $this->camposAgregados = [];*/
+        $this->productoSeleccionado = null;
+        $this->kardexProducto = null;
     }
-    public function closeForm(){
-        
+    public function closeForm()
+    {
+
         $this->mostrarFormulario = false;
         $this->resetCampos();
     }

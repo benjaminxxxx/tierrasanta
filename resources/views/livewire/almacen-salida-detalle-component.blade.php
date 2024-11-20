@@ -42,9 +42,7 @@
                                 <x-td value="{{ $registro->producto->categoria->nombre }}" class="text-center" />
                                 <x-td value="{{ $registro->observacion }}" class="text-center" />
                                 <x-td class="text-center">
-                                    <x-button type="button" @click="$wire.dispatch('determinarCosto',{'id':{{ $registro->id }}})">
-                                        Costo
-                                    </x-button>
+                                    {{ $registro->costo_por_kg }}
                                 </x-td>
                                 <x-td value="{{ $registro->total_costo }}" class="text-center" />
                                 <x-td class="text-center">

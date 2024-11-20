@@ -14,6 +14,7 @@ use Livewire\Component;
 use App\Models\KardexProducto;
 use Livewire\WithFileUploads;
 use Maatwebsite\Excel\Facades\Excel;
+use Str;
 
 class KardexDetalleComponent extends Component
 {
@@ -36,6 +37,7 @@ class KardexDetalleComponent extends Component
     }
     public function recalcularCostos()
     {
+        /*
         foreach ($this->kardexLista as $key => $fila) {
 
             if ($key == 0) {
@@ -86,42 +88,69 @@ class KardexDetalleComponent extends Component
                 }
             }
         }
-        $this->kardexCalculado = true;
-        /*
-        if ($this->metodoValuacion == 'promedio') {
-            $this->calcularPromedio();
-        }*/
-    }
-    public function descargarKardex()
-    {
-        if(!$this->kardex){
+        $this->kardexCalculado = true;*/
+        if (!$this->kardex) {
             return;
         }
-        if(!$this->empresa){
-            return $this->alert('error','No hay datos de empresa registrada.');
+        if (!$this->empresa) {
+            return $this->alert('error', 'No hay datos de empresa registrada.');
         }
-        
+
         $periodo = Carbon::parse($this->kardex->fecha_inicial)->format('Y');
 
         $data = [
-            'kardexId'=>$this->kardexId,
-            'productoId'=>$this->productoKardexSeleccionado,
-            'kardexLista'=>$this->kardexLista,
-            'informacionHeader'=>[
-                'periodo'=>$periodo,
-                'ruc'=>$this->empresa->ruc,
-                'razon_social'=>$this->empresa->razon_social,
-                'establecimiento'=>$this->empresa->establecimiento,
-                'codigo_existencia'=>$this->kardexProducto->producto->codigo_existencia,
-                'tipo'=>$this->kardexProducto->producto->tabla5->codigo . ' - ' . $this->kardexProducto->producto->tabla5->descripcion,
-                'descripcion'=>$this->kardexProducto->producto->nombre_comercial,
-                'codigo_unidad_medida'=>$this->kardexProducto->producto->tabla6->codigo . ' - ' . $this->kardexProducto->producto->tabla6->descripcion,
-                'metodo_valuacion'=>'PROMEDIO',
+            'kardexId' => $this->kardexId,
+            'productoId' => $this->productoKardexSeleccionado,
+            'kardexLista' => $this->kardexLista,
+            'informacionHeader' => [
+                'periodo' => $periodo,
+                'ruc' => $this->empresa->ruc,
+                'razon_social' => $this->empresa->razon_social,
+                'establecimiento' => $this->empresa->establecimiento,
+                'codigo_existencia' => $this->kardexProducto->producto->codigo_existencia,
+                'tipo' => $this->kardexProducto->producto->tabla5->codigo . ' - ' . $this->kardexProducto->producto->tabla5->descripcion,
+                'descripcion' => $this->kardexProducto->producto->nombre_comercial,
+                'codigo_unidad_medida' => $this->kardexProducto->producto->tabla6->codigo . ' - ' . $this->kardexProducto->producto->tabla6->descripcion,
+                'metodo_valuacion' => 'PROMEDIO',
             ]
         ];
-        
+
+        $filePath = 'kadex/' . date('Y-m') . '/' . $this->kardexProducto->producto->codigo_existencia . '_' . Str::slug($this->kardexProducto->producto->nombre_completo) . '.xlsx';
+        $file = Excel::store(new KardexProductoExport($data), $filePath, 'public');
+        $this->kardexProducto->file = $filePath;
+        $this->kardexProducto->save();
+        $this->dispatch('procesarFile', $filePath);
+    }
+    public function descargarKardex()
+    {
+        if (!$this->kardex) {
+            return;
+        }
+        if (!$this->empresa) {
+            return $this->alert('error', 'No hay datos de empresa registrada.');
+        }
+
+        $periodo = Carbon::parse($this->kardex->fecha_inicial)->format('Y');
+
+        $data = [
+            'kardexId' => $this->kardexId,
+            'productoId' => $this->productoKardexSeleccionado,
+            'kardexLista' => $this->kardexLista,
+            'informacionHeader' => [
+                'periodo' => $periodo,
+                'ruc' => $this->empresa->ruc,
+                'razon_social' => $this->empresa->razon_social,
+                'establecimiento' => $this->empresa->establecimiento,
+                'codigo_existencia' => $this->kardexProducto->producto->codigo_existencia,
+                'tipo' => $this->kardexProducto->producto->tabla5->codigo . ' - ' . $this->kardexProducto->producto->tabla5->descripcion,
+                'descripcion' => $this->kardexProducto->producto->nombre_comercial,
+                'codigo_unidad_medida' => $this->kardexProducto->producto->tabla6->codigo . ' - ' . $this->kardexProducto->producto->tabla6->descripcion,
+                'metodo_valuacion' => 'PROMEDIO',
+            ]
+        ];
+
         return Excel::download(new KardexProductoExport($data), 'kardex_almacen.xlsx');
-        
+
     }
 
 
@@ -157,11 +186,12 @@ class KardexDetalleComponent extends Component
         ];
 
         $compras = CompraProducto::where('producto_id', $this->productoKardexSeleccionado)
-            ->where('tipo_kardex',$this->kardex->tipo_kardex)
+            ->where('tipo_kardex', $this->kardex->tipo_kardex)
             ->whereBetween('fecha_compra', [$this->kardex->fecha_inicial, $this->kardex->fecha_final])
             ->get();
 
         $salidas = AlmacenProductoSalida::where('producto_id', $this->productoKardexSeleccionado)
+            ->where('kardex_producto_id',$this->kardexProducto->id)
             ->whereBetween('fecha_reporte', [$this->kardex->fecha_inicial, $this->kardex->fecha_final])
             ->get();
 

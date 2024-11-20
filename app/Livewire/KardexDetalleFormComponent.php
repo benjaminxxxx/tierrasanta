@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Kardex;
 use App\Models\KardexProducto;
 use App\Models\Producto;
+use Exception;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
@@ -82,6 +83,12 @@ class KardexDetalleFormComponent extends Component
             if ($this->kardexProductoId) {
                 KardexProducto::find($this->kardexProductoId)->update($data);
             } else {
+                $kardexExiste = KardexProducto::where('kardex_id',$this->kardexId)
+                ->where('producto_id',$this->productoId)
+                ->exists();
+                if($kardexExiste){
+                    throw new Exception("El producto ya existe en este Kardex");                    
+                }
                 KardexProducto::create($data);
             }
 

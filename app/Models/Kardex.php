@@ -15,7 +15,13 @@ class Kardex extends Model
         'estado',
         'eliminado'
     ];
-    public function productos(){
+    public function productos()
+    {
         return $this->hasMany(KardexProducto::class);
     }
+    /*  
+    public function kardexProductos()
+    {
+        return $this->hasMany(KardexProducto::class, 'kardex_id');
+    }*/
 }

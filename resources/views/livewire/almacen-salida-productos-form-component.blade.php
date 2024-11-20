@@ -20,29 +20,68 @@
                         placeholder="Escriba la fecha de salida..." autocomplete="nope" class="uppercase"
                         id="fecha_salida" />
                 </div>
-                @if($fecha_salida)
-                <div class="col-span-2 md:col-span-1 mt-3 relative">
-                    <x-label for="nombre_comercial">Nombre del Producto</x-label>
-                    <x-input type="text" wire:model.live="nombre_comercial" autofocus
-                        placeholder="Escriba el nombre del producto..." autocomplete="nope" class="uppercase"
-                        id="nombre_comercial" />
+                @if ($fecha_salida)
+                    <div class="col-span-2 md:col-span-1 mt-3 relative">
+                        <x-label for="nombre_comercial">Nombre del Producto</x-label>
+                        <x-input type="search" wire:model.live="nombre_comercial" autofocus
+                            placeholder="Escriba el nombre del producto..." autocomplete="off" class="uppercase"
+                            id="nombre_comercial" />
 
-                    @if (!empty($productos))
-                        <div class="absolute z-10 bg-white border border-gray-300 mt-1 w-full rounded-lg shadow-lg">
-                            <ul>
-                                @foreach ($productos as $producto)
-                                    <li class="p-2 hover:bg-gray-100 cursor-pointer"
-                                        wire:click="seleccionarProducto({{ $producto->id }})">
-                                        {{ $producto->nombre_comercial }} - {{ $producto->ingrediente_activo }}
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
-                </div>
+                        @if (!empty($productos))
+                            <div class="absolute z-10 bg-white border border-gray-300 mt-1 w-full rounded-lg shadow-lg">
+                                <ul>
+                                    @foreach ($productos as $producto)
+                                        <li class="p-2 hover:bg-gray-100 cursor-pointer"
+                                            wire:click="seleccionarProducto({{ $producto->id }})">
+                                            {{ $producto->nombre_comercial }} - {{ $producto->ingrediente_activo }}
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+                    </div>
                 @endif
             @endif
             @if ($step == 2)
+                <div>
+                    <x-label for="seleccionar_almacen">Seleccionar Almacen</x-label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                        @if ($almacenes && $almacenes->count() > 0)
+                            @foreach ($almacenes as $almacen)
+                                @php
+                                    $kardexProducto = $almacen->productos()->first();
+                                    $stockDisponible = $kardexProducto->StockDiponible($fecha_salida);
+                                @endphp
+                                @if ($stockDisponible > 0)
+                                    <x-card
+                                        wire:click="seleccionarKardexProducto({{ $kardexProducto->id }},{{ $stockDisponible }})"
+                                        class="{{ $almacen->tipo_kardex == 'blanco' ? 'bg-white hover:bg-gray-200 text-gray-900' : '!bg-gray-800 text-white' }} hover:opacity-90 hover:cursor-pointer">
+                                        <x-spacing>
+                                            <p>{{ $almacen->nombre }} (Tipo Kardex: {{ $almacen->tipo_kardex }})</p>
+                                            <p>Stock disponible:
+                                                <b>{{ $stockDisponible }}</b>
+                                            </p>
+                                        </x-spacing>
+                                    </x-card>
+                                @else
+                                    <x-card
+                                        class="{{ $almacen->tipo_kardex == 'blanco' ? 'bg-white hover:bg-gray-200 text-gray-900' : '!bg-gray-800 text-white' }} hover:opacity-90 hover:cursor-pointer">
+                                        <x-spacing>
+                                            <p>{{ $almacen->nombre }} (Tipo Kardex: {{ $almacen->tipo_kardex }})</p>
+                                            <p>Stock disponible:
+                                                <b>{{ $stockDisponible }}</b>
+                                            </p>
+                                        </x-spacing>
+                                    </x-card>
+                                @endif
+                            @endforeach
+                        @else
+                            <p>No se ha registrado un stock para este producto, por favor dirigirse a Kardex</p>
+                        @endif
+                    </div>
+                </div>
+            @endif
+            @if ($step == 3)
                 <div class="col-span-2 md:col-span-1 mt-3 relative">
                     <x-label for="nombre_comercial">Seleccionar Campos</x-label>
                     <div class="flex flex-wrap gap-2 mt-2">
@@ -61,11 +100,58 @@
                             @endforeach
                         @endif
                     </div>
+
+                    <div class="my-4">
+                        @if (is_array($camposAgregados) && count($camposAgregados) > 0)
+                            <x-table>
+                                <x-slot name="thead">
+                                    <x-tr>
+                                        <x-th>
+                                            Campo
+                                        </x-th>
+                                        <x-th>
+                                            Cantidad
+                                        </x-th>
+                                    </x-tr>
+                                </x-slot>
+                                <x-slot name="tbody">
+                                    @foreach ($camposAgregados as $campoAgregadoTable)
+                                        <x-tr>
+                                            <x-th>
+                                                {{ $campoAgregadoTable }}
+                                            </x-th>
+                                            <x-th>
+                                                <x-input type="number" class="text-right" wire:model.live="cantidades.{{$campoAgregadoTable}}" />
+                                            </x-th>
+                                        </x-tr>
+                                    @endforeach
+                                    <x-tr class="bg-gray-50">
+                                        <x-th>
+                                            Stock Sumado
+                                        </x-th>
+                                        <x-th>
+                                            
+                                            <x-input type="number" readonly class="!bg-gray-100 text-right" value="{{array_sum($cantidades)}}"/>
+                                        </x-th>
+                                    </x-tr>
+                                    <x-tr class="bg-gray-50">
+                                        <x-th>
+                                            Stock Disponible
+                                        </x-th>
+                                        <x-th>
+                                            <x-input type="number" readonly class="!bg-gray-100 text-right" wire:model="stockDisponibleSeleccionado"/>
+                                        </x-th>
+                                    </x-tr>
+                                </x-slot>
+                            </x-table>
+                        @endif
+
+                    </div>
                 </div>
             @endif
         </x-slot>
         <x-slot name="footer">
-            @if ($step == 2)
+            @if ($step > 1)
                 <x-secondary-button type="button" wire:click="retroceder" wire:loading.attr="disabled"
                     class="mr-2">Atrás</x-secondary-button>
             @endif

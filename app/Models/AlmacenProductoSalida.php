@@ -19,7 +19,8 @@ class AlmacenProductoSalida extends Model
         'costo_por_kg',
         'total_costo',
         'cantidad_kardex_producto_id',
-        'cantidad_stock_inicial'
+        'cantidad_stock_inicial',
+        'kardex_producto_id',
     ];
     
 

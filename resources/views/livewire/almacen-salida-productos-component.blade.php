@@ -10,8 +10,6 @@
 
         <x-button type="button" @click="$wire.dispatch('verStock')" class="w-full md:w-auto ">Ver Stock de
             Productos</x-button>
-
-        <x-button type="button" @click="$wire.dispatch('descargarKardex',{mes:{{$mes}},anio:{{$anio}}})" class="w-full md:w-auto ">Descargar Kardex Mensual</x-button>
     </div>
     <x-card>
         <x-spacing>

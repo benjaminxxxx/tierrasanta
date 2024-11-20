@@ -2,7 +2,7 @@
     <x-loading wire:loading />
     <x-flex>
         <x-h3>
-            <a href="{{route('kardex.lista')}}" class="underline text-blue-600">Kardex Indice</a> / Kardex por Producto
+            <a href="{{route('kardex.lista')}}" class="underline text-blue-600">Kardex Indice</a> / Kardex por Producto ({{$kardex->tipo_kardex}})
         </x-h3>
         <x-button type="button" @click="$wire.dispatch('crearKardexProducto')">
             <i class="fa fa-plus"></i> Registrar Producto
@@ -56,6 +56,13 @@
                             <x-button type="button" type="button" @click="$wire.dispatch('editarKardexProducto',{kardexProductoId:{{$kardexProducto->id}}})">
                                 <i class="fa fa-edit"></i> Editar Kardex {{$kardexProducto->producto->codigo_existencia}}
                             </x-button>
+
+                            @if ($kardexProducto->file)
+                                <x-button-a href="{{Storage::disk('public')->url($kardexProducto->file)}}">
+                                    <i class="fa fa-file-excel"></i> 
+                                    Descargar Excel
+                                </x-button-a>
+                            @endif
                         </div>
                     </x-flex>
                     <x-table>

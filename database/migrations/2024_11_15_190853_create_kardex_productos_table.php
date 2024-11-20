@@ -22,6 +22,7 @@ return new class extends Migration
             $table->decimal('costo_final', 18, 13)->nullable(); // Costo promedio final al cerrar
             $table->enum('estado', ['activo', 'cerrado'])->default('activo'); // Estado del kardex del producto
             $table->enum('metodo_valuacion', ['promedio', 'peps'])->default('promedio');
+            $table->string('file',255)->nullable();
             $table->timestamps(); // created_at y updated_at
 
             // Claves foráneas

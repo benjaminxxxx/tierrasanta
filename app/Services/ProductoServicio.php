@@ -16,6 +16,7 @@ class ProductoServicio
     }
     public static function registrarCompra($data)
     {
+        
         try {
             if (!isset($data['producto_id']))
                 throw new Exception("El campo producto_id es obligatorio.");
@@ -27,9 +28,15 @@ class ProductoServicio
             $data['serie'] = isset($data['serie']) ? $data['serie'] : null;
             $data['numero'] = isset($data['numero']) ? $data['numero'] : null;
 
-            $compraExiste = CompraProducto::where('serie', $data['serie'])->where('numero', $data['numero'])->exists();
+            $compraExiste = CompraProducto::where('serie', $data['serie'])
+            ->where('numero', $data['numero'])
+            ->where('producto_id', $data['producto_id'])
+            ->where('stock', $data['stock'])
+            ->exists();
             if(!$compraExiste){
                 return CompraProducto::create($data);
+            }else{
+                return $compraExiste;
             }
                 
         } catch (\Throwable $th) {

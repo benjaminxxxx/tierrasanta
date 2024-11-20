@@ -9,8 +9,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
                 @foreach ($productos as $producto)
                     <div>
-                        <x-h3 class="w-full text-center !text-md my-2">{{ $producto->nombre_comercial }}
-                            {{ $producto->ingrediente_activo ? '(' . $producto->ingrediente_activo . ')' : '' }}</x-h3>
+                        <x-h3 class="w-full text-center !text-md my-2">{{ $producto->nombre_completo }}</x-h3>
                         @if ($producto->compras->count() > 0)
                             @if ($producto->datos_uso['agotado'] == true)
                                 <div
