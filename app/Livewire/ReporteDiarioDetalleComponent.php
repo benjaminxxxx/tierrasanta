@@ -304,7 +304,7 @@ class ReporteDiarioDetalleComponent extends Component
         }
 
         $totalCuadrilleros = ReporteDiarioCuadrilla::whereDate('fecha',$this->reporteDiarioCampos->fecha)->sum('numero_cuadrilleros');
-        $sumaTotal+=$totalCuadrilleros;
+        //$sumaTotal+=$totalCuadrilleros; SE SOLICITO NO SUMAR LAS CUADRILLAS
         
         $this->totalesAsistencias = $arrayDatos;
         $this->totalesAsistenciasCuadrilleros = $totalCuadrilleros;

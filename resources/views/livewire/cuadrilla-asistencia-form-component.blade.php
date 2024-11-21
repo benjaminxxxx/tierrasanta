@@ -24,6 +24,7 @@
                         <x-th value="Horas por Jornal" class="text-center" />
                         <x-th value="Precio por Hora" class="text-center" />
                         <x-th value="Incluir" class="text-center" />
+                        <x-th value="Incluir personales" class="text-center" />
                     </tr>
                 </x-slot>
                 <x-slot name="tbody">
@@ -48,7 +49,12 @@
                                         readonly  />
                                 </x-th>
                                 <x-th class="text-center">
-                                    <x-checkbox wire:model="grupos.{{$grupo->codigo}}.activo" class="" />
+                                    <x-checkbox wire:model.live="grupos.{{$grupo->codigo}}.activo" class="" />
+                                </x-th>
+                                <x-th class="text-center">
+                                    @if (array_key_exists($grupo->codigo,$grupos) && $grupos[$grupo->codigo]['activo'])
+                                    <x-checkbox wire:model="grupos.{{$grupo->codigo}}.conpersonales" class="" />    
+                                    @endif                                    
                                 </x-th>
                             </x-tr>
                         @endforeach
@@ -60,6 +66,7 @@
                 </x-slot>
             </x-table>
             <form wire:submit.prevent="store" class="my-5">
+             
                 <div class="grid grid-cols-2 gap-5">
 
                     <div class="col-span-2 md:col-span-1 mt-3">

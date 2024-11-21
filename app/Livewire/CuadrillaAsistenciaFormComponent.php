@@ -202,7 +202,11 @@ class CuadrillaAsistenciaFormComponent extends Component
                                 ->first();
     
                             // Si el grupo existía en la semana anterior, copiar sus cuadrilleros al nuevo grupo
-                            if ($grupoAnterior) {
+                            $conpersonales = false;
+                            if(array_key_exists('conpersonales',$this->grupos[$grupo->codigo])){
+                                $conpersonales = $this->grupos[$grupo->codigo]['conpersonales'];
+                            }
+                            if ($grupoAnterior && $conpersonales) {
                                 $cuadrillerosAnteriores = CuaAsistenciaSemanalCuadrillero::where('cua_asi_sem_gru_id', $grupoAnterior->id)->get();
     
                                 foreach ($cuadrillerosAnteriores as $cuadrilleroAnterior) {

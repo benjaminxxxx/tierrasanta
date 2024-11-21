@@ -223,7 +223,12 @@ class CuadrillaAsistenciaDetalleComponent extends Component
             $totalesDiarios = [];
             foreach ($periodo as $fecha) {
                 $diaKey = 'dia_' . $fecha->day;
-                $totalesDiarios[$diaKey] = ['horas' => 0, 'monto' => 0];
+                $totalesDiarios[$diaKey] = [
+                    'horas' => 0,
+                    'monto' => 0,
+                    'bono' => 0,
+                    'cuadrilleros' => []
+                ];
             }
 
             $this->cuadrilleros = CuaAsistenciaSemanalGrupo::where('cua_asi_sem_id', $this->cuaAsistenciaSemanalId)
@@ -266,17 +271,23 @@ class CuadrillaAsistenciaDetalleComponent extends Component
                             $cuadrilleroData[$diaKey . '_monto'] = $monto;
                             $cuadrilleroData[$diaKey . '_bono'] = $bono;
 
+                            if ($horas > 0) {
+                                // Contar cuadrillero único si tiene horas trabajadas
+                                $totalesDiarios[$diaKey]['cuadrilleros'][$cuadrilleroDeAsistencia->id] = true;
+                            }
+
                             // Acumular en los totales diarios
                             $totalesDiarios[$diaKey]['horas'] += $horas;
+                            $totalesDiarios[$diaKey]['bono'] += $bono;
                             $totalesDiarios[$diaKey]['monto'] += $monto;
                         }
                         return $cuadrilleroData;
                     });
                 })
                 ->flatten(1)
-                ->sortBy(['codigo_grupo', 'nombres'])
+                ->sortBy(['codigo_grupo', 'created_at'])
                 ->values();
-
+/*
             $totalesData = [
                 'cua_id' => '',
                 'cua_asi_sem_cua_id' => '',
@@ -292,8 +303,23 @@ class CuadrillaAsistenciaDetalleComponent extends Component
             foreach ($totalesDiarios as $diaKey => $totales) {
                 $totalesData[$diaKey] = $totales['horas'];
                 $totalesData[$diaKey . '_monto'] = round($totales['monto'], 2);
+            }*/
+            $totalesData = [
+                'cua_id' => '',
+                'cua_asi_sem_cua_id' => '',
+                'cua_asi_sem_gru_id' => '',
+                'dni' => '',
+                'color' => '',
+                'codigo_grupo' => 'TOTALES',
+                'nombres' => '',
+                'monto' => array_sum(array_column($totalesDiarios, 'monto'))
+            ];
+    
+            foreach ($totalesDiarios as $diaKey => $totales) {
+                $totalesData[$diaKey] = count($totales['cuadrilleros']); // Total de cuadrilleros únicos por día
+                $totalesData[$diaKey . '_monto'] = round($totales['monto'], 2);
+                $totalesData[$diaKey . '_bono'] = round($totales['bono'], 2);
             }
-
             $this->cuadrilleros[] = $totalesData;
         }
     }
