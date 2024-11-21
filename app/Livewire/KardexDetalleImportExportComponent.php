@@ -166,7 +166,7 @@ class KardexDetalleImportExportComponent extends Component
             if ($i == $indiceInicio) {
 
                 if (!$this->validarCostoUnitario($entradaCantidad, $entradaCostoUnitario, $entradaCostoTotal)) {
-                    throw new Exception("El saldo inicial no coincide:" . round($entradaCostoTotal / $entradaCantidad, 2) . " es diferente de " . round($entradaCostoUnitario, 2));
+                    throw new Exception("El saldo inicial no coincide:" . round($entradaCostoTotal / $entradaCantidad, 3) . " es diferente de " . round($entradaCostoUnitario, 3));
                 }
 
                 $this->kardexProducto->stock_inicial = $entradaCantidad;
@@ -176,29 +176,29 @@ class KardexDetalleImportExportComponent extends Component
                 $operacionTrabajada = true;
             } else {
 
-                
+
 
                 $tabla10 = trim($fila[1]);
                 $serie = trim($fila[2]);
                 $numero = trim($fila[3]);
                 $tipoOperacion = trim($fila[4]);
 
-                
+
                 if ((int) $fila[$indiceColumnaTabla12] == 2 && $tabla10 && $serie && $numero && $tipoOperacion && $entradaCantidad && $entradaCostoUnitario && $entradaCostoTotal) {
                     //COMPRA
-                    
-    
+
+
                     if (!$this->validarCostoUnitario($entradaCantidad, $entradaCostoUnitario, $entradaCostoTotal)) {
                         throw new Exception("Valores de Compra Inválidos en la fila: " . ($i + 1) . ", " . round($entradaCostoTotal / $entradaCantidad, 2) . " es diferente de " . round($entradaCostoUnitario, 2));
                     }
 
-                    
+
 
                     $this->registrarCompra($fechaCurrent, $tabla10, $serie, $numero, $tipoOperacion, $entradaCantidad, $entradaCostoUnitario, $entradaCostoTotal);
-/*
-                    if($i == 26){
-                        dd($fechaCurrent->format('Y-m-d') . ' - ' . $tabla10);
-                    }*/
+                    /*
+                                        if($i == 26){
+                                            dd($fechaCurrent->format('Y-m-d') . ' - ' . $tabla10);
+                                        }*/
                 }
 
             }
@@ -235,7 +235,7 @@ class KardexDetalleImportExportComponent extends Component
     }
     private function registrarCompra($fecha, $tabla10, $serie, $numero, $tipoOperacion, $entradaCantidad, $entradaCostoUnitario, $entradaCostoTotal)
     {
-        
+
         try {
             $data = [
                 'producto_id' => $this->productoId,
@@ -247,17 +247,17 @@ class KardexDetalleImportExportComponent extends Component
                 'total' => $entradaCostoTotal,
                 'stock' => $entradaCantidad,
                 //'estado',
-    
+
                 'tipo_compra_codigo' => $tabla10,
                 'serie' => $serie,
                 'numero' => $numero,
                 'tabla12_tipo_operacion' => $tipoOperacion,
                 'tipo_kardex' => $this->kardex->tipo_kardex,
-    
+
             ];
-            
+
             $result = ProductoServicio::registrarCompra($data);
-            
+
         } catch (\Throwable $th) {
             throw $th;
         }
@@ -280,12 +280,22 @@ class KardexDetalleImportExportComponent extends Component
     }*/
     private function validarCostoUnitario($cantidad, $precioUnitario, $costoTotal)
     {
-        if( $cantidad>0){
-            return round($costoTotal / $cantidad, 2) == round($precioUnitario, 2);
+        if ($cantidad > 0) {
+            return $this->validarConPrecision($cantidad, $precioUnitario, $costoTotal, 4);
         }
         return true;
-        
+
     }
+    private function validarConPrecision($cantidad, $precioUnitario, $costoTotal, $intentosMaximos)
+    {
+        for ($precision = 1; $precision <= $intentosMaximos; $precision++) {
+            if (round($costoTotal / $cantidad, $precision) == round($precioUnitario, $precision)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function render()
     {
         return view('livewire.kardex-detalle-import-export-component');
