@@ -23,7 +23,7 @@
                         <x-table>
                             <x-slot name="thead">
                                 <x-tr class="dark:bg-boxdarkbase mt-2">
-                                    <x-th colspan="100%" class="text-center py-2">Entrada</x-th>
+                                    <x-th colspan="100%" class="text-center py-2">Entrada ({{$entrada->tipo_kardex}})</x-th>
                                 </x-tr>
                                 <x-tr>
                                     <x-th class="text-center">-</x-th>

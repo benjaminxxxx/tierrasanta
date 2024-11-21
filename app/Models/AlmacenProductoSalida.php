@@ -35,6 +35,10 @@ class AlmacenProductoSalida extends Model
     {
         return $this->belongsTo(CompraProducto::class, 'compra_producto_id');
     }
+    public function kardexProducto()
+    {
+        return $this->belongsTo(KardexProducto::class, 'kardex_producto_id');
+    }
     public function compraStock()
     {
         return $this->hasMany(CompraSalidaStock::class, 'salida_almacen_id');
@@ -42,5 +46,13 @@ class AlmacenProductoSalida extends Model
     public function getPerteneceAUnaCompraAttribute()
     {
         return $this->compraStock()->count()>0;
+    }
+    public function getObservacionAttribute()
+    {
+        $kardexProducto = $this->kardexProducto()->first();
+        if($kardexProducto){
+            return $kardexProducto->kardex()->first()->tipo_kardex=='negro'?'No registra contabilidad':'';
+        }
+        return '';
     }
 }
