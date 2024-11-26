@@ -49,7 +49,8 @@
                         @if ($almacenes && $almacenes->count() > 0)
                             @foreach ($almacenes as $almacen)
                                 @php
-                                    $kardexProducto = $almacen->productos()->first();
+                                
+                                    $kardexProducto = $almacen->productos()->where('producto_id',$productoSeleccionado->id)->first();                                 
                                     $stockDisponible = $kardexProducto->StockDiponible($fecha_salida);
                                 @endphp
                                 @if ($stockDisponible > 0)

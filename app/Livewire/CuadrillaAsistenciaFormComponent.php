@@ -180,11 +180,25 @@ class CuadrillaAsistenciaFormComponent extends Component
                 if (array_key_exists($grupo->codigo, $this->grupos) && $this->grupos[$grupo->codigo]['activo'] && (float) $this->grupos[$grupo->codigo]['costo_dia_sugerido'] > 0) {
                     
                     if($this->semanaId){
-                        CuaAsistenciaSemanalGrupo::where('cua_asi_sem_id',$CuaAsistenciaSemanalId)
-                        ->where('gru_cua_cod',$grupo->codigo)->update([
-                            'costo_dia' => $this->grupos[$grupo->codigo]['costo_dia_sugerido'],
-                            'costo_hora' => $this->grupos[$grupo->codigo]['costo_dia_sugerido'] / 8
-                        ]);
+                        $grupoExistente = CuaAsistenciaSemanalGrupo::where('cua_asi_sem_id',$CuaAsistenciaSemanalId)
+                        ->where('gru_cua_cod',$grupo->codigo)
+                        ->first();
+
+                        if($grupoExistente){
+                            $grupoExistente->update([
+                                'costo_dia' => $this->grupos[$grupo->codigo]['costo_dia_sugerido'],
+                                'costo_hora' => $this->grupos[$grupo->codigo]['costo_dia_sugerido'] / 8
+                            ]);
+                        }else{
+                            $nuevoGrupo = CuaAsistenciaSemanalGrupo::create([
+                                'cua_asi_sem_id' => $CuaAsistenciaSemanalId,
+                                'gru_cua_cod' => $grupo->codigo,
+                                'costo_dia' => $this->grupos[$grupo->codigo]['costo_dia_sugerido'],
+                                'costo_hora' => $this->grupos[$grupo->codigo]['costo_dia_sugerido'] / 8,
+                                'total_costo' => 0
+                            ]);
+                        }
+                        
                     }else{
                         $nuevoGrupo = CuaAsistenciaSemanalGrupo::create([
                             'cua_asi_sem_id' => $CuaAsistenciaSemanalId,
