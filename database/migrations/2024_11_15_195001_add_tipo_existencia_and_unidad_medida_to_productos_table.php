@@ -15,7 +15,7 @@ return new class extends Migration
             // Agregar los campos como nullable
             $table->string('codigo_tipo_existencia', 4)->nullable(); // Ajusta el campo 'after' según la posición que quieras
             $table->string('codigo_unidad_medida', 4)->nullable(); // Ajusta el campo 'after' según la posición que quieras
-            $table->string('codigo_existencia')->nullable();
+            
             // Establecer las claves foráneas
             $table->foreign('codigo_tipo_existencia')->references('codigo')->on('sunat_tabla5_tipo_existencias')->onDelete('set null');
             $table->foreign('codigo_unidad_medida')->references('codigo')->on('sunat_tabla6_codigo_unidad_medida')->onDelete('set null');
@@ -33,7 +33,7 @@ return new class extends Migration
             $table->dropForeign(['codigo_unidad_medida']);
             
             // Eliminar los campos
-            $table->dropColumn(['codigo_tipo_existencia', 'codigo_unidad_medida','codigo_existencia']);
+            $table->dropColumn(['codigo_tipo_existencia', 'codigo_unidad_medida']);
         });
     }
 };

@@ -16,7 +16,8 @@ class KardexProducto extends Model
         'costo_final',       // Costo promedio final al cerrar (nullable)
         'estado',            // Estado del kardex del producto (activo o cerrado)
         'metodo_valuacion',  // Método de valuación (promedio o peps)
-        'file'
+        'file',
+        'codigo_existencia'
     ];
     public function StockDiponible($fecha_salida)
     {

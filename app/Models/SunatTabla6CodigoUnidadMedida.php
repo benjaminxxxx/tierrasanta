@@ -13,7 +13,7 @@ class SunatTabla6CodigoUnidadMedida extends Model
     public $incrementing = false; // No incrementará automáticamente el campo código, ya que es un valor fijo.
 
     protected $fillable = [
-        'codigo', 'descripcion'
+        'codigo', 'descripcion','alias'
     ];
 
     public $timestamps = false;

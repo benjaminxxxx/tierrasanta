@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('kardex_producto_id');
             $table->unsignedBigInteger('compra_producto_id');
             $table->unsignedBigInteger('salida_almacen_id');
-            $table->decimal('stock',8,2);
+            $table->decimal('stock',8,3);
             
             $table->foreign('salida_almacen_id')->references('id')->on('almacen_producto_salidas')->onDelete('cascade');
             $table->foreign('compra_producto_id')->references('id')->on('compra_productos')->onDelete('cascade');

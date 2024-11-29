@@ -28,6 +28,12 @@
                     <x-input-error for="productoId" />
                 </div>
                 <div class="mb-3">
+                    <x-label for="codigo_existencia">Código de existencia</x-label>
+                    <x-input type="text" wire:keydown.enter="store" wire:model="codigo_existencia"
+                        class="uppercase"/>
+                    <x-input-error for="codigo_existencia" />
+                </div>
+                <div class="mb-3">
                     <x-label for="stockInicial" value="Stock Inicial"/>
                     <x-input type="number" wire:model="stockInicial" />
                     <x-input-error for="stockInicial" />

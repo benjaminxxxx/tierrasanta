@@ -8,6 +8,7 @@ use App\Models\AlmacenProductoSalida;
 use App\Models\CompraProducto;
 use App\Models\Empresa;
 use App\Models\Kardex;
+use App\Models\Producto;
 use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -29,6 +30,7 @@ class KardexDetalleComponent extends Component
     public $metodoValuacion = "promedio";
     public $kardexCalculado = false;
     public $empresa;
+    public $esCombustible = false;
     protected $listeners = ['kardexProductoRegistrado' => 'listarKardex', 'importacionRealizada' => 'listarKardex'];
     public function mount()
     {
@@ -107,7 +109,7 @@ class KardexDetalleComponent extends Component
                 'ruc' => $this->empresa->ruc,
                 'razon_social' => $this->empresa->razon_social,
                 'establecimiento' => $this->empresa->establecimiento,
-                'codigo_existencia' => $this->kardexProducto->producto->codigo_existencia,
+                'codigo_existencia' => $this->kardexProducto->codigo_existencia,
                 'tipo' => $this->kardexProducto->producto->tabla5->codigo . ' - ' . $this->kardexProducto->producto->tabla5->descripcion,
                 'descripcion' => $this->kardexProducto->producto->nombre_comercial,
                 'codigo_unidad_medida' => $this->kardexProducto->producto->tabla6->codigo . ' - ' . $this->kardexProducto->producto->tabla6->descripcion,
@@ -115,7 +117,7 @@ class KardexDetalleComponent extends Component
             ]
         ];
 
-        $filePath = 'kadex/' . date('Y-m') . '/' . $this->kardexProducto->producto->codigo_existencia . '_' . Str::slug($this->kardexProducto->producto->nombre_completo) . '.xlsx';
+        $filePath = 'kadex/' . date('Y-m') . '/' . $this->kardexProducto->codigo_existencia . '_' . Str::slug($this->kardexProducto->producto->nombre_completo) . '.xlsx';
         $file = Excel::store(new KardexProductoExport($data), $filePath, 'public');
         $this->kardexProducto->file = $filePath;
         $this->kardexProducto->save();
@@ -136,12 +138,13 @@ class KardexDetalleComponent extends Component
             'kardexId' => $this->kardexId,
             'productoId' => $this->productoKardexSeleccionado,
             'kardexLista' => $this->kardexLista,
+            'esCombustible'=>$this->esCombustible,
             'informacionHeader' => [
                 'periodo' => $periodo,
                 'ruc' => $this->empresa->ruc,
                 'razon_social' => $this->empresa->razon_social,
                 'establecimiento' => $this->empresa->establecimiento,
-                'codigo_existencia' => $this->kardexProducto->producto->codigo_existencia,
+                'codigo_existencia' => $this->kardexProducto->codigo_existencia,
                 'tipo' => $this->kardexProducto->producto->tabla5->codigo . ' - ' . $this->kardexProducto->producto->tabla5->descripcion,
                 'descripcion' => $this->kardexProducto->producto->nombre_comercial,
                 'codigo_unidad_medida' => $this->kardexProducto->producto->tabla6->codigo . ' - ' . $this->kardexProducto->producto->tabla6->descripcion,
@@ -164,6 +167,9 @@ class KardexDetalleComponent extends Component
         if (!$this->kardexProducto) {
             return;
         }
+
+        $this->esCombustible = Producto::esCombustible($this->productoKardexSeleccionado);
+
         $this->kardexLista = [];
 
         $this->kardexLista[] = [
@@ -178,6 +184,7 @@ class KardexDetalleComponent extends Component
             'entrada_costo_total' => $this->kardexProducto->costo_total,
             'salida_cantidad' => '',
             'salida_lote' => '',
+            'salida_maquinaria' => '',
             'salida_costo_unitario' => '',
             'salida_costo_total' => '',
             'saldofinal_cantidad' => '',
@@ -210,6 +217,7 @@ class KardexDetalleComponent extends Component
                     'entrada_costo_total' => $compra->total,
                     'salida_cantidad' => '',
                     'salida_lote' => '',
+                    'salida_maquinaria' => '',
                     'salida_costo_unitario' => '',
                     'salida_costo_total' => '',
                     'saldofinal_cantidad' => '',
@@ -234,6 +242,7 @@ class KardexDetalleComponent extends Component
                     'entrada_costo_total' => '',
                     'salida_cantidad' => $salida->cantidad,
                     'salida_lote' => $salida->campo_nombre,
+                    'salida_maquinaria' => $salida->maquina_nombre,
                     'salida_costo_unitario' => $salida->costo_por_kg,
                     'salida_costo_total' => $salida->total_costo,
                     'saldofinal_cantidad' => '',

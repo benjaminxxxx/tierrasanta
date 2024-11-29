@@ -22,6 +22,7 @@ class AlmacenSalidaDetalleComponent extends Component
     public $inicioItem;
     public $registroIdEliminar;
     public $cantidad = [];
+    public $tipo;
     protected $listeners = ['actualizarAlmacen' => '$refresh', 'ActualizarProductos' => '$refresh', 'eliminacionConfirmar'];
     public function mount($mes = null, $anio = null)
     {
@@ -37,14 +38,6 @@ class AlmacenSalidaDetalleComponent extends Component
                 $registro->cantidad = $cantidad;
                 $registro->save();
             }
-            /*
-            $registro = AlmacenProductoSalida::find($id);
-            
-            if(!$registro){
-                throw new Exception("No existe el registro");                
-            }
-
-            AlmacenServicio::registrarStock($registro,$cantidad);*/
 
             $this->alert("success", "Cantidad modificada correctamente");
         } catch (\Throwable $th) {
@@ -56,22 +49,6 @@ class AlmacenSalidaDetalleComponent extends Component
                 'timer' => null,
             ]);
         }
-        /*
-        $registro = AlmacenProductoSalida::find($id);
-        if ($registro) {
-            
-            $fechaDesde = $registro->fecha_reporte;
-            $registro->cantidad = $cantidad;
-            $registro->save();            
-            $compraProductoId = $registro->compra_producto_id;
-            $compra = CompraProducto::find($compraProductoId);
-            //dd($compra);
-            if ($compra) {
-                AlmacenServicio::eliminarRegistrosPosteriores($compra,$fechaDesde);
-            }
-            
-            $this->alert("success", "Cantidad modificada correctamente");
-        }*/
     }
     public function quitarCompraVinculada($registroId)
     {
@@ -236,12 +213,25 @@ class AlmacenSalidaDetalleComponent extends Component
     public function obtenerRegistros()
     {
         if ($this->mes && $this->anio) {
-            $this->registros = AlmacenProductoSalida::whereMonth('fecha_reporte', $this->mes)
+
+            if($this->tipo=='combustible'){
+                $this->registros = AlmacenProductoSalida::whereMonth('fecha_reporte', $this->mes)
                 ->whereYear('fecha_reporte', $this->anio)
+                ->whereNotNull('maquinaria_id')
                 ->orderBy('fecha_reporte')
                 ->orderBy('created_at')
                 ->orderBy('campo_nombre')
                 ->get();
+            }else{
+                $this->registros = AlmacenProductoSalida::whereMonth('fecha_reporte', $this->mes)
+                ->whereYear('fecha_reporte', $this->anio)
+                ->whereNull('maquinaria_id')
+                ->orderBy('fecha_reporte')
+                ->orderBy('created_at')
+                ->orderBy('campo_nombre')
+                ->get();
+            }
+            
             $this->cantidad = $this->registros->pluck('cantidad', 'id')->toArray();
 
         }

@@ -39,9 +39,6 @@
                         <x-th class="text-center">
                             N°
                         </x-th>
-                        <x-th class="text-center">
-                            CÓDIGO DE EXISTENCIA
-                        </x-th>
                         <x-th>
                             <button wire:click="sortBy('nombre_comercial')" class="focus:outline-none">
                                 NOMBRE COMERCIAL <i class="fa fa-sort"></i>
@@ -52,7 +49,6 @@
                                 INGREDIENTE ACTIVO <i class="fa fa-sort"></i>
                             </button>
                         </x-th>
-                        <x-th value="UNIDAD DE MEDIDA" class="text-center" />
                         <x-th class="text-center">
                             <button wire:click="sortBy('categoria_id')" class="focus:outline-none">
                                 CATEGORÍA <i class="fa fa-sort"></i>
@@ -68,14 +64,12 @@
                         @foreach ($productos as $indice => $producto)
                             <x-tr>
                                 <x-th value="{{ $indice + 1 }}" class="text-center" />
-                                <x-td value="{{ $producto->codigo_existencia }}" class="text-center" />
                                 <x-td value="{{ $producto->nombre_comercial }}" />
                                 <x-td value="{{ $producto->ingrediente_activo }}" />
-                                <x-td value="{{ $producto->unidad_medida }}" class="text-center" />
                                 <x-td value="{{ $producto->categoria->nombre }}" class="text-center" />
-                                <x-td value="({{ $producto->tabla5->codigo }}) {{ $producto->tabla5->descripcion }}"
+                                <x-td value="{{ $producto->tipo_existencia }}"
                                     class="text-center" />
-                                <x-td value="({{ $producto->tabla5->codigo }}) {{ $producto->tabla6->descripcion }}"
+                                <x-td value="{{ $producto->unidad_medida }}"
                                     class="text-center" />
 
                                 <x-td class="text-center">

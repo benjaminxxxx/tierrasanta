@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -10,11 +11,17 @@ class Producto extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['codigo_existencia', 'nombre_comercial', 'ingrediente_activo', 'unidad_medida', 'categoria_id', 'codigo_tipo_existencia', 'codigo_unidad_medida'];
+    protected $fillable = ['nombre_comercial', 'ingrediente_activo', 'categoria_id', 'codigo_tipo_existencia', 'codigo_unidad_medida'];
 
     public function getCompraActivaAttribute()
     {
         return $this->compras()->where('estado', 1)->exists();
+    }
+    public function getUnidadMedidaAttribute(){
+        return $this->tabla6?$this->tabla6->alias:'-';
+    }
+    public function getTipoExistenciaAttribute(){
+        return $this->tabla5?$this->tabla5->descripcion:'-';
     }
     public function getTabla6DetalleAttribute()
     {
@@ -101,4 +108,55 @@ class Producto extends Model
         return $this->hasMany(CompraProducto::class);
     }
 
+    public static function buscarCombustible(string $nombre)
+    {
+        // Verificar si la categoría "Combustible" existe
+        $descripcionCombustible = strtolower(env('DESCRIPCION_COMBUSTIBLE', 'Combustible'));
+        $categoriaCombustible = CategoriaProducto::where('nombre', $descripcionCombustible)->first();
+
+        if (!$categoriaCombustible) {
+            throw new Exception('La categoría "Combustible" no existe.');
+        }
+
+        // Buscar productos de la categoría "Combustible" que coincidan con el nombre proporcionado
+        return self::where('categoria_id', $categoriaCombustible->id)
+            ->where('nombre_comercial', 'like', '%' . $nombre . '%')
+            ->get();
+    }
+/**
+     * Verifica si un producto pertenece a la categoría "Combustible".
+     *
+     * @param int $productoId
+     * @return bool
+     */
+    public static function esCombustible(int $productoId): bool
+    {
+        // Obtener el producto
+        $producto = self::find($productoId);
+
+        // Retornar false si no existe el producto o no tiene categoría asignada
+        if (!$producto || !$producto->categoria_id) {
+            return false;
+        }
+
+        // Obtener la descripción de la categoría "Combustible" desde el archivo .env
+        $descripcionCombustible = env('DESCRIPCION_COMBUSTIBLE', 'Combustible');
+
+        // Verificar si la categoría del producto coincide con "Combustible"
+        $categoria = CategoriaProducto::find($producto->categoria_id);
+
+        return $categoria && $categoria->nombre == $descripcionCombustible;
+    }
+    public static function deTipo($tipo){
+        $descripcionCombustible = env('DESCRIPCION_COMBUSTIBLE', 'Combustible');
+        $categoria = CategoriaProducto::where('nombre', $descripcionCombustible)->first();
+        if(!$categoria){
+            throw new Exception('No existe la categoria para combustible');
+        }
+        if($tipo=='combustible'){
+            return self::where('categoria_id',$categoria->id)->with('compras')->get();
+        }else{
+            return self::whereNot('categoria_id',$categoria->id)->with('compras')->get();
+        }
+    }
 }

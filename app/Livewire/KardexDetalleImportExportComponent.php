@@ -4,8 +4,10 @@ namespace App\Livewire;
 
 use App\Models\AlmacenProductoSalida;
 use App\Models\CompraProducto;
+use Illuminate\Support\Facades\DB;
 use App\Models\Kardex;
 use App\Models\KardexProducto;
+use App\Models\Maquinaria;
 use App\Models\Producto;
 use App\Services\AlmacenServicio;
 use App\Services\ProductoServicio;
@@ -99,14 +101,14 @@ class KardexDetalleImportExportComponent extends Component
         if (!$this->kardexProducto) {
             throw new Exception("El kardex del producto no es válido.");
         }
-        if (trim($this->producto->codigo_existencia) == '') {
+        if (trim($this->kardexProducto->codigo_existencia) == '') {
             throw new Exception("El producto no tiene un código de existencia válido, debe actualizar la información.");
         }
 
-        $sheet = $spreadsheet->getSheetByName($this->producto->codigo_existencia);
+        $sheet = $spreadsheet->getSheetByName($this->kardexProducto->codigo_existencia);
 
         if (!$sheet) {
-            throw new Exception("El Excel no tiene una hoja llamada: " . $this->producto->codigo_existencia);
+            throw new Exception("El Excel no tiene una hoja llamada: " . $this->kardexProducto->codigo_existencia);
         }
 
         $rows = $sheet->toArray();
@@ -192,13 +194,8 @@ class KardexDetalleImportExportComponent extends Component
                         throw new Exception("Valores de Compra Inválidos en la fila: " . ($i + 1) . ", " . round($entradaCostoTotal / $entradaCantidad, 2) . " es diferente de " . round($entradaCostoUnitario, 2));
                     }
 
-
-
                     $this->registrarCompra($fechaCurrent, $tabla10, $serie, $numero, $tipoOperacion, $entradaCantidad, $entradaCostoUnitario, $entradaCostoTotal);
-                    /*
-                                        if($i == 26){
-                                            dd($fechaCurrent->format('Y-m-d') . ' - ' . $tabla10);
-                                        }*/
+
                 }
 
             }
@@ -208,24 +205,33 @@ class KardexDetalleImportExportComponent extends Component
                     throw new Exception("Valores de Salida Inválidos en la fila: " . ($i + 1) . ", " . round($salidaCostoTotal / $salidaCantidad, 2) . " es diferente de " . round($salidaCostoUnitario, 2));
                 }
 
+                $esCombustible = Producto::esCombustible($this->productoId);
+                $maquinaria_id = null;
+                if ($esCombustible) {
+
+                    $maquinaria = Maquinaria::where(DB::raw('LOWER(nombre) COLLATE utf8mb4_general_ci'), strtolower($salidaLote))
+                        ->orWhere(DB::raw('LOWER(alias_blanco) COLLATE utf8mb4_general_ci'), strtolower($salidaLote))
+                        ->first();
+
+                    if ($maquinaria) {
+                        $maquinaria_id = $maquinaria->id;
+                    } else {
+                        throw new Exception("No existe una Maquinaria con el nombre o alias: " . $salidaLote);
+                    }
+                    $salidaLote = '';
+                }
+
                 $data = [
-                    //'item',
                     'producto_id' => $this->productoId,
                     'campo_nombre' => $salidaLote,
                     'cantidad' => $salidaCantidad,
                     'fecha_reporte' => $fechaCurrent->format('Y-m-d'),
-                    //'compra_producto_id',
                     'costo_por_kg' => $salidaCostoUnitario,
-                    'total_costo' => $salidaCostoTotal
+                    'total_costo' => $salidaCostoTotal,
+                    'maquinaria_id' => $maquinaria_id
                 ];
                 AlmacenServicio::registrarSalida($data, $this->kardexProducto);
-
-                //$operacionTrabajada = $this->registrarSalida($fechaCurrent,$salidaCantidad,$salidaLote,$salidaCostoUnitario,$salidaCostoTotal);
             }
-            /*
-            if(!$operacionTrabajada && ){
-                throw new Exception("No se trabajó ninguna operación en la fila: " . ($i+1) . ".");
-            }*/
 
         }
         $this->file = null;

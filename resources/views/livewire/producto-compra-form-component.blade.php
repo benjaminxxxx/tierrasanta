@@ -8,7 +8,7 @@
             @if ($producto)
                 <div class="mb-4">
                     <p class="font-bold">
-                        PRODUCTO: {{ $producto->nombre_comercial }} - {{ $producto->ingrediente_activo }}
+                        PRODUCTO: {{ $producto->nombre_completo }}
                     </p>
                 </div>
             @endif

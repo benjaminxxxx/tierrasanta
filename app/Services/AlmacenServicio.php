@@ -48,10 +48,12 @@ class AlmacenServicio
         $data['campo_nombre'] = isset($data['campo_nombre']) ? $data['campo_nombre'] : null;
         $data['cantidad'] = isset($data['cantidad']) ? $data['cantidad'] : 0;
         $data['kardex_producto_id'] = $kardexProducto->id;
+        $data['maquinaria_id'] = isset($data['maquinaria_id']) ? $data['maquinaria_id'] : null;
 
         $salidaRegistro = AlmacenProductoSalida::where('producto_id', $data['producto_id'])
             ->where('fecha_reporte', $data['fecha_reporte'])
             ->where('campo_nombre', $data['campo_nombre'])
+            ->where('maquinaria_id', $data['maquinaria_id'])            
             ->where('cantidad', $data['cantidad'])->first();
 
         if ($salidaRegistro) {
@@ -87,7 +89,7 @@ class AlmacenServicio
             ->get();
 
         if ($compras->isEmpty()) {
-            throw new Exception("No hay stock disponible para la salida en la fecha: {$data['fecha_reporte']}");
+            throw new Exception("No hay stock disponible para la salida en la fecha: {$data['fecha_reporte']}" . $data);
         }
 
 
@@ -156,54 +158,7 @@ class AlmacenServicio
 
 
         }
-        /*
-        foreach ($compras as $compra) {
-            $cantidadCompraDisponible = round($compra->cantidadDisponible, 3);
-
-            if ($cantidadCompraDisponible <= 0) {
-                continue;
-            }
-
-            if ($salidaTotal <= $stockExcedente + $cantidadCompraDisponible) {
-                $usoStock = $salidaTotal - $stockExcedente;
-
-                $salidas[] = CompraSalidaStock::create([
-                    'compra_producto_id' => $compra->id,
-                    'salida_almacen_id' => null, // Esto se actualizará después
-                    'stock' => $usoStock,
-                    'kardex_producto_id' => $kardexProducto->id
-                ]);
-
-                $compra->update([
-                    'fecha_termino' => $usoStock == $cantidadCompraDisponible ? $data['fecha_reporte'] : null,
-                ]);
-
-                $stockExcedente = max($stockExcedente + $cantidadCompraDisponible - $salidaTotal, 0);
-                $salidaTotal = 0;
-                break;
-            } else {
-                $salidas[] = CompraSalidaStock::create([
-                    'compra_producto_id' => $compra->id,
-                    'salida_almacen_id' => null,
-                    'stock' => $cantidadCompraDisponible,
-                    'kardex_producto_id' => $kardexProducto->id
-                ]);
-
-                $compra->update(['fecha_termino' => $data['fecha_reporte']]);
-                $salidaTotal -= $cantidadCompraDisponible;
-            }
-        }
-
-        if ($salidaTotal > 0) {
-
-        }
-
-        $almacenSalida = AlmacenProductoSalida::create($data);
-        foreach ($salidas as $salida) {
-            $salida->update(['salida_almacen_id' => $almacenSalida->id]);
-        }
-
-        return $almacenSalida;*/
+        
     }
     public static function eliminarRegistroSalida($registroId = null)
     {

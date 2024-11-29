@@ -121,6 +121,9 @@
                             <x-nav-link-child href="{{ route('almacen.salida_productos') }}" :active="request()->routeIs('almacen.salida_productos')">
                                 Salida de Almacén Pesticidas y Fertilizantes
                             </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('almacen.salida_combustible') }}" :active="request()->routeIs('almacen.salida_combustible')">
+                                Salida de Combustible
+                            </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
                     <x-nav-link-parent name="sectorKardex" href="#" :active="request()->routeIs(['kardex.lista'])">
@@ -147,7 +150,7 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorProveedores" :active="request()->routeIs(['proveedores.index','productos.index'])">
+                    <x-nav-link-parent name="sectorProveedores" :active="request()->routeIs(['proveedores.index','productos.index','maquinarias.index'])">
                         
                         <div class="w-6 text-center">
                             <i class="fa fa-users"></i>
@@ -159,6 +162,9 @@
                             </x-nav-link-child>
                             <x-nav-link-child href="{{ route('productos.index') }}" :active="request()->routeIs('productos.index')">
                                 Productos
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('maquinarias.index') }}" :active="request()->routeIs('maquinarias.index')">
+                                Maquinarias
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>

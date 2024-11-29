@@ -3,16 +3,16 @@
 namespace App\Livewire;
 
 use Carbon\Carbon;
-use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
-class AlmacenSalidaProductosComponent extends Component
+class AlmacenSalidaCombustibleComponent extends Component
 {
-    use LivewireAlert;
     public $anio;
     public $mes;
+    public $tipo;
     public function mount($mes = null, $anio = null)
     {
+        $this->tipo="combustible";
         $this->mes = $mes ? $mes : Carbon::now()->format('m');
         $this->anio = $anio ? $anio : Carbon::now()->format('Y');
     }
@@ -30,9 +30,8 @@ class AlmacenSalidaProductosComponent extends Component
         $this->mes = $fecha->format('m');
         $this->anio = $fecha->format('Y');
     }
-   
     public function render()
-    {        
-        return view('livewire.almacen-salida-productos-component');
+    {
+        return view('livewire.almacen-salida-combustible-component');
     }
 }

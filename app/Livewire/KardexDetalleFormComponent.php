@@ -21,16 +21,19 @@ class KardexDetalleFormComponent extends Component
     public $metodoValuacion;
     public $costoTotal;
     public $kardex;
+    public $codigo_existencia;
     public $productosDisponibles = [];
     protected $listeners = ['crearKardexProducto', 'editarKardexProducto'];
     protected $rules = [
         "productoId" => "required",
         "stockInicial" => "required",
         "costoUnitario" => "required",
-        "metodoValuacion" => "required"
+        "metodoValuacion" => "required",
+        "codigo_existencia"=>"required"
     ];
     protected $messages = [
         "productoId.required" => "El producto es requerido",
+        "codigo_existencia.required" => "El código de existencia es requerido",
         "stockInicial.required" => "El stock inicial es requerido",
         "costoTotal.required" => "El costo total es requerido",
         'costoUnitario.required'=>'El costo unitario es obligatorio'
@@ -54,6 +57,7 @@ class KardexDetalleFormComponent extends Component
         $kardexProducto = KardexProducto::find($this->kardexProductoId);
         if ($kardexProducto) {
             $this->productoId = $kardexProducto->producto_id;
+            $this->codigo_existencia = $kardexProducto->codigo_existencia;
             $this->stockInicial = $kardexProducto->stock_inicial;
             $this->costoUnitario = $kardexProducto->costo_unitario;
             $this->costoTotal = $kardexProducto->costo_total;
@@ -78,6 +82,7 @@ class KardexDetalleFormComponent extends Component
                 'costo_unitario' => $this->costoUnitario,
                 'costo_total' => $this->costoTotal,
                 'metodo_valuacion' => $this->metodoValuacion,
+                'codigo_existencia'=>$this->codigo_existencia,
             ];
 
             if ($this->kardexProductoId) {
@@ -103,7 +108,7 @@ class KardexDetalleFormComponent extends Component
     public function resetForm()
     {
         $this->resetErrorBag();
-        $this->reset(['costoUnitario', 'stockInicial', 'kardexProductoId']);
+        $this->reset(['costoUnitario', 'stockInicial', 'kardexProductoId','codigo_existencia']);
     }
     public function render()
     {

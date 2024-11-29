@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('compra_productos', function (Blueprint $table) {
             $table->decimal('total', 10, 2)->default(0); // Reemplaza 'existing_column' por el nombre de una columna existente si quieres un orden específico
-            $table->decimal('stock', 10, 2)->default(0);
+            $table->decimal('stock', 10, 3)->default(0);
             $table->date('fecha_termino')->nullable();
         });
     }

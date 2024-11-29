@@ -2,7 +2,7 @@
     <x-loading wire:loading />
     <x-flex>
         <x-h3>
-            <a href="{{ route('kardex.lista') }}" class="underline text-blue-600">Kardex Indice</a> / Kardex por Producto
+            <a href="{{ route('kardex.lista') }}" class="underline text-blue-600">Kardex</a> / {{ $kardex->nombre }}
             ({{ $kardex->tipo_kardex }})
         </x-h3>
         <x-button type="button" @click="$wire.dispatch('crearKardexProducto')">
@@ -16,7 +16,7 @@
                     <option value="">SELECCIONE UN PRODUCTO</option>
                     @foreach ($kardexDetalleProductos as $kardexDetalleProducto)
                         <option value="{{ $kardexDetalleProducto->producto_id }}">
-                            {{ $kardexDetalleProducto->producto->codigo_existencia . ' - ' . $kardexDetalleProducto->producto->nombre_completo }}
+                            {{ $kardexDetalleProducto->codigo_existencia . ' - ' . $kardexDetalleProducto->producto->nombre_completo }}
                         </option>
                     @endforeach
                 </x-select>
@@ -44,7 +44,7 @@
                                 <i class="fa fa-sync"></i> Recalcular Costos
                             </x-button>
                         </div>
-                        @if ($kardexCalculado)
+                        @if (count($kardexLista)>0)
                             <div>
                                 <x-button type="button" type="button" wire:click="descargarKardex">
                                     <i class="fa fa-file-excel"></i> Descargar Kardex
@@ -56,7 +56,7 @@
                             <x-button type="button" type="button"
                                 @click="$wire.dispatch('editarKardexProducto',{kardexProductoId:{{ $kardexProducto->id }}})">
                                 <i class="fa fa-edit"></i> Editar Kardex
-                                {{ $kardexProducto->producto->codigo_existencia }}
+                                {{ $kardexProducto->codigo_existencia }}
                             </x-button>
 
                             @if ($kardexProducto->file)
@@ -111,9 +111,16 @@
                                 <x-th class="text-center">
                                     CANTIDAD
                                 </x-th>
-                                <x-th class="text-center">
-                                    LOTE
-                                </x-th>
+                                @if ($esCombustible)
+                                    <x-th class="text-center">
+                                        MAQUINARIA
+                                    </x-th>
+                                @else
+                                    <x-th class="text-center">
+                                        LOTE
+                                    </x-th>
+                                @endif
+
                                 <x-th class="text-center">
                                     COSTO UNITARIO
                                 </x-th>
@@ -151,7 +158,7 @@
                                             {{ $kardexRegistro['tipo_operacion'] }}
                                         </x-td>
                                         <x-td class="bg-amber-50 text-center">
-                                            {{ is_numeric($kardexRegistro['entrada_cantidad']) ? number_format($kardexRegistro['entrada_cantidad'], 2) : $kardexRegistro['entrada_cantidad'] }}
+                                            {{ is_numeric($kardexRegistro['entrada_cantidad']) ? number_format($kardexRegistro['entrada_cantidad'], 3) : $kardexRegistro['entrada_cantidad'] }}
                                         </x-td>
                                         <x-td class="bg-amber-50 text-center">
                                             {{ is_numeric($kardexRegistro['entrada_costo_unitario']) ? number_format($kardexRegistro['entrada_costo_unitario'], 6) : $kardexRegistro['entrada_costo_unitario'] }}
@@ -162,9 +169,16 @@
                                         <x-td class="text-center">
                                             {{ $kardexRegistro['salida_cantidad'] }}
                                         </x-td>
-                                        <x-td class="text-center">
-                                            {{ $kardexRegistro['salida_lote'] }}
-                                        </x-td>
+
+                                        @if ($esCombustible)
+                                            <x-td class="text-center">
+                                                {{ $kardexRegistro['salida_maquinaria'] }}
+                                            </x-td>
+                                        @else
+                                            <x-td class="text-center">
+                                                {{ $kardexRegistro['salida_lote'] }}
+                                            </x-td>
+                                        @endif
                                         <x-td class="text-center">
                                             {{ is_numeric($kardexRegistro['salida_costo_unitario']) ? number_format($kardexRegistro['salida_costo_unitario'], 2) : $kardexRegistro['salida_costo_unitario'] }}
                                         </x-td>
@@ -190,6 +204,6 @@
             </x-card>
         @endif
     @else
-        
+        <livewire:kardex-indice-component :kardexId="$kardexId" wire:key="kardexGeneral{{ $kardexId }}" />
     @endif
 </div>

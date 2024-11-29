@@ -2,14 +2,15 @@
     <x-loading wire:loading />
     <div class="md:flex items-center gap-5 mb-5">
         <x-h3>
-            Almacen
+            Combustible
         </x-h3>
         <x-button type="button"
             @click="$wire.dispatch('nuevoRegistro',{mes:{{ $mes }},anio:{{ $anio }}})"
             class="w-full md:w-auto ">Nuevo Registro de Salida</x-button>
 
-        <x-button type="button" @click="$wire.dispatch('verStock',{tipo:'combustible'})" class="w-full md:w-auto ">Ver Stock de
-            Productos</x-button>
+        <x-button type="button" @click="$wire.dispatch('verStock')" class="w-full md:w-auto ">
+            Ver Stock de Combustible
+        </x-button>
     </div>
     <x-card>
         <x-spacing>
@@ -53,7 +54,6 @@
             </div>
         </x-spacing>
     </x-card>
-
-    <livewire:almacen-salida-detalle-component wire:key="{{ $mes }}.{{ $anio }}" :mes="$mes"
+    <livewire:almacen-salida-detalle-component :tipo="$tipo" wire:key="{{ $mes }}.{{ $anio }}" :mes="$mes"
         :anio="$anio" />
 </div>

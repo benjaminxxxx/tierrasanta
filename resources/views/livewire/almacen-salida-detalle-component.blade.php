@@ -10,7 +10,12 @@
                             </x-warning-button>
                         </x-th>
                         <x-th value="FECHA SALIDA" class="text-center" />
-                        <x-th value="CAMPO" class="text-center" />
+                        @if ($tipo == 'combustible')
+                            <x-th value="MAQUINARIA" class="text-center" />
+                        @else
+                            <x-th value="CAMPO" class="text-center" />
+                        @endif
+
                         <x-th value="DESCRIPCION DEL PRODUCTO" />
                         <x-th value="UND. MEDIDA" class="text-center" />
                         <x-th value="CANTIDAD" class="text-center" />
@@ -27,7 +32,12 @@
                             <x-tr>
                                 <x-th value="{{ $registro->item }}" class="text-center" />
                                 <x-td value="{{ $registro->fecha_reporte }}" class="text-center" />
-                                <x-td value="{{ $registro->campo_nombre }}" class="text-center" />
+                                @if ($tipo == 'combustible')
+                                    <x-td value="{{ $registro->maquina_nombre }}" class="text-center" />
+                                @else
+                                    <x-td value="{{ $registro->campo_nombre }}" class="text-center" />
+                                @endif
+
                                 <x-td>
                                     <div @click="$wire.dispatch('EditarProducto',{'id':{{ $registro->producto->id }}})"
                                         class="cursor-pointer underline text-indigo-600 dark:text-blue-200">
@@ -37,7 +47,8 @@
                                 <x-td value="{{ $registro->producto->unidad_medida }}" class="text-center" />
                                 <x-td class="text-center">
                                     <x-input type="number" step="3" class="!w-[8rem] text-center"
-                                        wire:model.live.debounce.1000ms="cantidad.{{ $registro->id }}" wire:key="cantidad{{ $registro->id }}" />
+                                        wire:model.live.debounce.1000ms="cantidad.{{ $registro->id }}"
+                                        wire:key="cantidad{{ $registro->id }}" />
                                 </x-td>
                                 <x-td value="{{ $registro->producto->categoria->nombre }}" class="text-center" />
                                 <x-td value="{{ $registro->observacion }}" class="text-center" />
@@ -55,7 +66,7 @@
                                                 <i class="fa fa-remove"></i> <i class="fa fa-money-bill"></i>
                                             </x-secondary-button>
                                             <x-secondary-button type="button" title="Ver historial de compra."
-                                                @click="$wire.dispatch('verHistorialSalidaPorCompra',{salidaId:{{$registro->id}}})">
+                                                @click="$wire.dispatch('verHistorialSalidaPorCompra',{salidaId:{{ $registro->id }}})">
                                                 <i class="fa fa-eye"></i> <i class="fa fa-money-bill"></i>
                                             </x-secondary-button>
                                         @endif
@@ -78,7 +89,7 @@
             </x-table>
         </x-spacing>
     </x-card>
-   
+
     <x-dialog-modal wire:model.live="mostrarGenerarItem">
         <x-slot name="title">
             Escribe desde que numero iniciarán los correlativos

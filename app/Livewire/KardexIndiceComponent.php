@@ -18,7 +18,7 @@ class KardexIndiceComponent extends Component
             ->get()
             ->map(function($productoKardex){
                 return [
-                    'codigo_existencia'=>$productoKardex->producto->codigo_existencia,
+                    'codigo_existencia'=>$productoKardex->codigo_existencia,
                     'nombre_comercial'=>$productoKardex->producto->nombre_comercial,
                     'tabla_6'=>$productoKardex->producto->tabla6_detalle ,
                 ];

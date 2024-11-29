@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->string('nombre_comercial');
             $table->string('ingrediente_activo')->nullable();
-            $table->string('unidad_medida');
             $table->unsignedBigInteger('categoria_id');
             $table->timestamps();
             

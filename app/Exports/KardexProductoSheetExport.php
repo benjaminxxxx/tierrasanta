@@ -14,11 +14,13 @@ class KardexProductoSheetExport implements FromArray, WithHeadings, WithStyles, 
 {
     private $kardexLista;
     private $informacionHeader;
+    private $esCombustible = false;
 
     public function __construct(array $data)
     {
         $this->kardexLista = $data['kardexLista'];
         $this->informacionHeader = $data['informacionHeader'];
+        $this->esCombustible = $data['esCombustible'];
     }
 
     public function title(): string
@@ -230,6 +232,8 @@ class KardexProductoSheetExport implements FromArray, WithHeadings, WithStyles, 
      */
     public function headings(): array
     {
+        $campoDescripcion = $this->esCombustible?'MAQUINARIA':'LOTE';
+
         return [
             ['FORMATO 13.1: "REGISTRO DE INVENTARIO PERMANENTE VALORIZADO - DETALLE DEL INVENTARIO VALORIZADO"'],
             [],
@@ -271,7 +275,7 @@ class KardexProductoSheetExport implements FromArray, WithHeadings, WithStyles, 
                 'COSTO UNITARIO',
                 'COSTO TOTAL',
                 'CANTIDAD',
-                'LOTE',
+                $campoDescripcion,
                 'COSTO UNITARIO',
                 'COSTO TOTAL',
                 'CANTIDAD',
@@ -319,7 +323,7 @@ class KardexProductoSheetExport implements FromArray, WithHeadings, WithStyles, 
                 "=+G{$rowIndex}*F{$rowIndex}",
 
                 $item['salida_cantidad'] ?? 0,
-                $item['salida_lote'] ?? 0,
+                $this->esCombustible?$item['salida_maquinaria']:$item['salida_lote'],
                 "=N{$rowIndexAnterior}",
                 "=I{$rowIndex}*K{$rowIndex}",
 

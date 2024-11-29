@@ -3,6 +3,7 @@
 use App\Http\Controllers\AlmacenController;
 use App\Http\Controllers\CampoController;
 use App\Http\Controllers\KardexController;
+use App\Http\Controllers\MaquinariaController;
 use App\Http\Controllers\ReporteDiarioController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AsistenciaPlanillaController;
@@ -91,8 +92,12 @@ Route::middleware([
     //PRODUCTOS
     Route::get('/productos', [ProductoController::class,'index'])->name('productos.index');
 
+    //MAQUINARIAS
+    Route::get('/maquinarias', [MaquinariaController::class,'index'])->name('maquinarias.index');
+
     //ALMACEN
     Route::get('/almacen/salida_de_productos', [AlmacenController::class,'salidaProductos'])->name('almacen.salida_productos');
+    Route::get('/almacen/salida_de_combustible', [AlmacenController::class,'salidaCombustible'])->name('almacen.salida_combustible');
 
      //USUARIOS
      Route::get('/usuarios', [UsuarioController::class,'index'])->name('usuarios');

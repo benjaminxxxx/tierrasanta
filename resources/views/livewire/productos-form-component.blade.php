@@ -16,13 +16,7 @@
             <form wire:submit.prevent="store">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-                    <div class="mt-3">
-                        <x-label for="codigo_existencia">Código de existencia</x-label>
-                        <x-input type="text" wire:keydown.enter="store" wire:model="codigo_existencia"
-                            class="uppercase"/>
-                        <x-input-error for="codigo_existencia" />
-                    </div>
-
+                   
                     <div class="mt-3">
                         <x-label for="nombre_comercial">Nombre del Producto</x-label>
                         <x-input type="text" wire:keydown.enter="store" wire:model="nombre_comercial"
@@ -37,15 +31,6 @@
                         <x-input-error for="ingrediente_activo" />
                     </div>
 
-                    <div class="mt-3">
-                        <x-label for="unidad_medida">Unidad de Medida</x-label>
-                        <x-select class="uppercase" wire:model="unidad_medida" id="unidad_medida">
-                            <option value="GR">GR</option>
-                            <option value="KG">KG</option>
-                            <option value="LT">LT</option>
-                        </x-select>
-                        <x-input-error for="unidad_medida" />
-                    </div>
                     <div class="mt-3">
                         <x-label for="categoria_id">Categoría</x-label>
                         <x-select class="uppercase" wire:model="categoria_id" id="categoria_id">
@@ -64,7 +49,7 @@
                             <option value="">SELECCIONAR TIPO</option>
                             @if ($sunatTipoExistencias)
                                 @foreach ($sunatTipoExistencias as $sunatTipoExistencia)
-                                    <option value="{{ $sunatTipoExistencia->codigo }}">{{ $sunatTipoExistencia->descripcion }}</option>
+                                    <option value="{{ $sunatTipoExistencia->codigo }}">{{ $sunatTipoExistencia->codigo }} - {{ $sunatTipoExistencia->descripcion }}</option>
                                 @endforeach
                             @endif
                         </x-select>
@@ -76,7 +61,7 @@
                             <option value="">SELECCIONAR UNIDAD</option>
                             @if ($sunatCodigoUnidadMedidas)
                                 @foreach ($sunatCodigoUnidadMedidas as $sunatCodigoUnidadMedida)
-                                    <option value="{{ $sunatCodigoUnidadMedida->codigo }}">{{ $sunatCodigoUnidadMedida->descripcion }}</option>
+                                    <option value="{{ $sunatCodigoUnidadMedida->codigo }}">{{ $sunatCodigoUnidadMedida->alias }} - {{ $sunatCodigoUnidadMedida->descripcion }}</option>
                                 @endforeach
                             @endif
                         </x-select>

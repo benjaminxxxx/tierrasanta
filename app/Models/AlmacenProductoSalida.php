@@ -21,6 +21,7 @@ class AlmacenProductoSalida extends Model
         'cantidad_kardex_producto_id',
         'cantidad_stock_inicial',
         'kardex_producto_id',
+        'maquinaria_id'
     ];
     
 
@@ -43,10 +44,25 @@ class AlmacenProductoSalida extends Model
     {
         return $this->hasMany(CompraSalidaStock::class, 'salida_almacen_id');
     }
+    public function maquinaria()
+    {
+        return $this->belongsTo(Maquinaria::class, 'maquinaria_id');
+    }
+    public function getMaquinaNombreAttribute()
+    {
+        $tipoKardex = $this->kardexProducto->kardex->tipo_kardex;
+        if($tipoKardex=='blanco'){
+            return $this->maquinaria?$this->maquinaria->alias_blanco:'-';
+        }else{
+            return $this->maquinaria?$this->maquinaria->nombre:'-';
+        }
+        
+    }
     public function getPerteneceAUnaCompraAttribute()
     {
         return $this->compraStock()->count()>0;
     }
+    
     public function getObservacionAttribute()
     {
         $kardexProducto = $this->kardexProducto()->first();
