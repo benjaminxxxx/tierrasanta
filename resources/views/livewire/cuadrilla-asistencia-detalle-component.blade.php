@@ -31,7 +31,7 @@
                         <x-th colspan="{{ count($periodo) }}" class="text-center">
                             Precios por día
                         </x-th>
-                        <x-th colspan="3" class="text-center">
+                        <x-th colspan="5" class="text-center">
                             Reporte semanal
                         </x-th>
                     </x-tr>
@@ -44,6 +44,8 @@
                         @endforeach
                     @endif
                     <x-th rowspan="2" class="text-right">Monto a pagar</x-th>
+                    <x-th rowspan="2" class="text-right">Gastos adicionales</x-th>
+                    <x-th rowspan="2" class="text-right">Total</x-th>
                     <x-th rowspan="2" class="text-center">Condición</x-th>
                     <x-th rowspan="2" class="text-center">Fecha</x-th>
                 </x-tr>
@@ -79,6 +81,14 @@
                             @endif
                             <x-th class="text-right">
                                 {{ $grupoTotal->total_costo }}
+                            </x-th>
+                            <x-th class="text-right">
+                                <x-button @click="$wire.dispatch('verDetalleGastosAdicionalesPorGrupo',{grupoId:{{$grupoTotal->id}}})">
+                                    <i class="fa fa-plus"></i> Agregar gasto
+                                </x-button>
+                            </x-th>
+                            <x-th class="text-right">
+                                {{$grupoTotal->total}}
                             </x-th>
                             <x-th class="text-center">
                                 <x-select

@@ -60,13 +60,23 @@
                             </x-button>
 
                             @if ($kardexProducto->file)
-                                <x-button-a href="{{ Storage::disk('public')->url($kardexProducto->file) }}">
+                                <!--<x-button-a href="{{ Storage::disk('public')->url($kardexProducto->file) }}">
                                     <i class="fa fa-file-excel"></i>
                                     Descargar Excel
-                                </x-button-a>
+                                </x-button-a>-->
                             @endif
                         </div>
                     </x-flex>
+                    <div class="my-4">
+                        <ul>
+                            <li>
+                                <b>Total Compras: </b>{{$totalCompras}}
+                            </li>
+                            <li>
+                                <b>Total Salida a Producción: </b>{{$totalSalidas}}
+                            </li>
+                        </ul>
+                    </div>
                     <x-table>
                         <x-slot name="thead">
                             <x-tr>
@@ -199,7 +209,22 @@
                             @endif
                         </x-slot>
                     </x-table>
-
+                    @if ($kardexProducto)
+                    <div class="my-4">
+                        <x-flex class="justify-end">
+                            <div>
+                                <x-danger-button wire:click="eliminarComprasySalidas({{$kardexProducto->id}})">
+                                    <i class="fa fa-trash"></i> Eliminar Compras y Salidas de este Kardex
+                                </x-danger-button>
+                                <p>
+                                    <small>
+                                        Usar esta opción cuando se planea importar un Kardex Oficial Final.
+                                    </small>
+                                </p>
+                            </div>
+                        </x-flex>
+                    </div>
+                    @endif
                 </x-spacing>
             </x-card>
         @endif

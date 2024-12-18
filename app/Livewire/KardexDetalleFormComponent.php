@@ -82,7 +82,7 @@ class KardexDetalleFormComponent extends Component
                 'costo_unitario' => $this->costoUnitario,
                 'costo_total' => $this->costoTotal,
                 'metodo_valuacion' => $this->metodoValuacion,
-                'codigo_existencia'=>$this->codigo_existencia,
+                'codigo_existencia'=>mb_strtoupper($this->codigo_existencia),
             ];
 
             if ($this->kardexProductoId) {

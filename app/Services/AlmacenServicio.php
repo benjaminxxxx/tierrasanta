@@ -13,13 +13,11 @@ use Exception;
 class AlmacenServicio
 {
 
-    public function __construct()
-    {
+    public function __construct() {}
 
-    }
-  
     public static function resetearStocks(KardexProducto $kardexProducto)
     {
+        AlmacenProductoSalida::where('cantidad_kardex_producto_id', $kardexProducto->id)->delete();
         $comprasProcesadas = CompraSalidaStock::where('kardex_producto_id', $kardexProducto->id)->get();
         foreach ($comprasProcesadas as $compra) {
             $compraProducto = CompraProducto::find($compra->compra_producto_id);
@@ -53,11 +51,11 @@ class AlmacenServicio
         $salidaRegistro = AlmacenProductoSalida::where('producto_id', $data['producto_id'])
             ->where('fecha_reporte', $data['fecha_reporte'])
             ->where('campo_nombre', $data['campo_nombre'])
-            ->where('maquinaria_id', $data['maquinaria_id'])            
+            ->where('maquinaria_id', $data['maquinaria_id'])
             ->where('cantidad', $data['cantidad'])->first();
 
         if ($salidaRegistro) {
-            if($salidaRegistro->PerteneceAUnaCompra && $salidaRegistro->precio_por_kg){
+            if ($salidaRegistro->PerteneceAUnaCompra && $salidaRegistro->precio_por_kg) {
                 return;
             }
             $salidaRegistro->delete();
@@ -89,13 +87,15 @@ class AlmacenServicio
             ->get();
 
         if ($compras->isEmpty()) {
-            throw new Exception("No hay stock disponible para la salida en la fecha: {$data['fecha_reporte']}" . $data);
+            $dataString = self::formatArrayToKeyValueString($data);
+            throw new Exception("No hay stock disponible para la salida en la fecha: {$data['fecha_reporte']}\n{$dataString}");
         }
 
 
         // Registrar las salidas en las compras
         $stockPorRegistrar = $cantidadSolicitada;
         $stockExcedente = $stockDisponible;
+        /////////////////////////////////////////
 
         $stockTodasCompras = 0;
         $detalleStock = "Stock inicial: {$stockExcedente}\n";
@@ -106,10 +106,9 @@ class AlmacenServicio
 
         $stockDisponible = $stockTodasCompras + $stockExcedente;
 
-        if ($stockPorRegistrar > $stockDisponible) {
-            throw new Exception("No hay stock suficiente. Detalles:\n" . $detalleStock);
+        if (round($stockPorRegistrar,3) > round($stockDisponible,3)) {
+            throw new Exception("No hay stock suficiente:" .$stockPorRegistrar. " es mayor a ".$stockDisponible.". Detalles:\n" . $detalleStock);
         }
-
         $almacenSalida = AlmacenProductoSalida::create($data);
         if ($stockExcedente > 0) {
             $almacenSalida->cantidad_kardex_producto_id = $kardexProducto->id;
@@ -117,6 +116,7 @@ class AlmacenServicio
             $almacenSalida->save();
             $stockPorRegistrar -= $stockExcedente;
         }
+        
         foreach ($compras as $compra) {
             if ($stockPorRegistrar > 0) {
                 $stockEnCompra = round($compra->cantidadDisponible, 3);
@@ -131,13 +131,12 @@ class AlmacenServicio
                         'kardex_producto_id' => $kardexProducto->id
                     ]);
 
-                    if (round($stockEnCompra,3) == round($stockPorRegistrar,3)) {
+                    if (round($stockEnCompra, 3) == round($stockPorRegistrar, 3)) {
                         $compra->update([
                             'fecha_termino' => $data['fecha_reporte'],
                         ]);
                     }
                     $stockPorRegistrar = 0;
-
                 } else {
                     $usoStock = $stockEnCompra;
 
@@ -155,10 +154,15 @@ class AlmacenServicio
                     $stockPorRegistrar -= $usoStock;
                 }
             }
-
-
         }
-        
+    }
+    public static function formatArrayToKeyValueString(array $data): string
+    {
+        $formatted = '';
+        foreach ($data as $key => $value) {
+            $formatted .= "{$key}: {$value}\n";
+        }
+        return $formatted;
     }
     public static function eliminarRegistroSalida($registroId = null)
     {
@@ -173,39 +177,34 @@ class AlmacenServicio
             throw new Exception('No existe el Registro');
         }
 
-        if($registro->PerteneceAUnaCompra){
+        if ($registro->PerteneceAUnaCompra) {
             $compras = $registro->compraStock()->get();
             foreach ($compras as $regstroCompaStock) {
                 $compra = CompraProducto::find($regstroCompaStock->compra_producto_id);
-                if($compra){
+                if ($compra) {
                     self::resetearFechaTermino($compra);
                 }
             }
         }
-        
-        $registro->delete();
 
+        $registro->delete();
     }
-    public static function eliminarRegistrosStocksPosteriores(AlmacenProductoSalida $productoSalidaDesde)
+    public static function eliminarRegistrosStocksPosteriores($fecha1,$fecha2)
     {
-        if (!$productoSalidaDesde) {
-            throw new Exception('No se ha brindado la salida');
-        }
-        
-        $salidasPosteriores = AlmacenProductoSalida::whereDate('fecha_reporte', '>=', $productoSalidaDesde->fecha_reporte)
-        ->whereDate('created_at','>=',$productoSalidaDesde->created_at)
-        ->get();
+        $salidasPosteriores = AlmacenProductoSalida::whereDate('fecha_reporte', '>=', $fecha1)
+            ->whereDate('created_at', '>=', $fecha2)
+            ->get();
 
         foreach ($salidasPosteriores as $salida) {
             $salida->costo_por_kg = null;
             $salida->total_costo = null;
-            $salida->save();;
+            $salida->save();
 
             $compras = $salida->compraStock()->get();
             foreach ($compras as $regstroCompaStock) {
                 $compra = CompraProducto::find($regstroCompaStock->compra_producto_id);
                 $regstroCompaStock->delete();
-                if($compra){
+                if ($compra) {
                     self::resetearFechaTermino($compra);
                 }
             }
@@ -214,7 +213,7 @@ class AlmacenServicio
     public static function resetearFechaTermino(CompraProducto $compra)
     {
         if ($compra) {
-            if ($compra->CantidadDisponible<=0) {
+            if ($compra->CantidadDisponible <= 0) {
                 $compra->fecha_termino = null;
                 $compra->save();
             }

@@ -126,6 +126,18 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
+                    <x-nav-link-parent name="sectorReporte" href="#" :active="request()->routeIs(['reporte.pago_cuadrilla'])">
+                      
+                        <div class="w-6 text-center">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        Reporte
+                        <x-slot name="children">
+                            <x-nav-link-child href="{{ route('reporte.pago_cuadrilla') }}" :active="request()->routeIs('reporte.pago_cuadrilla')">
+                                Pago de cuadrilla
+                            </x-nav-link-child>
+                        </x-slot>
+                    </x-nav-link-parent>
                     <x-nav-link-parent name="sectorKardex" href="#" :active="request()->routeIs(['kardex.lista'])">
                       
                         <div class="w-6 text-center">
@@ -147,6 +159,18 @@
                         <x-slot name="children">
                             <x-nav-link-child href="{{ route('consolidado.riego') }}" :active="request()->routeIs('consolidado.riego')">
                                 Riego
+                            </x-nav-link-child>
+                        </x-slot>
+                    </x-nav-link-parent>
+                    <x-nav-link-parent name="sectorGastos" :active="request()->routeIs('gastos.general')">
+                        
+                        <div class="w-6 text-center">
+                            <i class="fa fa-calculator"></i>
+                        </div>
+                        Gastos
+                        <x-slot name="children">
+                            <x-nav-link-child href="{{ route('gastos.general') }}" :active="request()->routeIs('gastos.general')">
+                                Gasto General
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>

@@ -119,7 +119,7 @@
                                     @foreach ($maquinariasAgregadas as $campoAgregadoTable)
                                         <x-tr>
                                             <x-th>
-                                                {{ $campoAgregadoTable }}
+                                                {{ $maquinariasNombres[$campoAgregadoTable] }}
                                             </x-th>
                                             <x-th>
                                                 <x-input type="number" class="text-right" wire:model.live="cantidades.{{$campoAgregadoTable}}" />

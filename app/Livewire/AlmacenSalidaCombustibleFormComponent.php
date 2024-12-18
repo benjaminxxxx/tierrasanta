@@ -19,6 +19,7 @@ class AlmacenSalidaCombustibleFormComponent extends Component
     public $nombre_comercial;
     public $informacion = [];
     public $maquinariasAgregadas = [];
+    public $maquinariasNombres = [];
     public $maquinarias;
     public $step = 1;
     public $fecha_salida;
@@ -35,6 +36,7 @@ class AlmacenSalidaCombustibleFormComponent extends Component
     {
         $this->obtenerFechaSalida();
         $this->maquinarias = Maquinaria::all();
+        $this->maquinariasNombres = $this->maquinarias->pluck('nombre','id')->toArray(); 
     }
     public function obtenerFechaSalida()
     {

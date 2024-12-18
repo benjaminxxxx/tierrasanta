@@ -9,13 +9,15 @@ class ProductosStockComponent extends Component
 {
     public $mostrarVista = false;
     public $productos = [];
+    public $tipo;
     protected $listeners = ['verStock','actualizarAlmacen'=>'$refresh'];
-    public function verStock(){
+    public function verStock($tipo='normal'){
+        $this->tipo = $tipo;
         $this->mostrarVista = true;
     }
     public function render()
     {
-        $this->productos = Producto::with('compras')->get();
+        $this->productos = Producto::deTipo($this->tipo);
         return view('livewire.productos-stock-component');
     }
 }

@@ -5,9 +5,14 @@
             Asistencias Cuadrilla
         </x-h3>
         @if ($currentSemana)
-            <x-secondary-button type="button" @click="$wire.dispatch('editarSemana',{semanaId:{{$currentSemana}}})">Editar semana actual <i class="fa fa-edit"></i></x-secondary-button>
+            <x-secondary-button type="button" @click="$wire.dispatch('editarSemana',{semanaId:{{$currentSemana}}})">
+                <i class="fa fa-edit"></i> Editar semana actual
+            </x-secondary-button>
         @endif
         <livewire:cuadrilla-asistencia-form-component />
+        <x-button-a href="{{route('reporte.pago_cuadrilla')}}">
+            <i class="fa fa-cash-register"></i> Ver pagos cuadrilleros
+        </x-button-a>
     </div>
     <x-card>
         <x-spacing>

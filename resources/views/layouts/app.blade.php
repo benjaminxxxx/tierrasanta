@@ -5,12 +5,12 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="shortcut icon" href="{{asset('images/icon/favicon.png')}}" type="image/png">
+    <link rel="shortcut icon" href="{{ asset('images/icon/favicon.png') }}" type="image/png">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Tierra Santa Holding S.A.C.') }}</title>
-    <link rel="stylesheet" href="{{asset('css/style.css')}}">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
     <!-- Scripts -->
-    <link rel="stylesheet" href="{{asset('css/fontawesome.min.css')}}" />
+    <link rel="stylesheet" href="{{ asset('css/fontawesome.min.css') }}" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
@@ -50,10 +50,18 @@ $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(valu
     @stack('modals')
 
     @livewireScripts
-    <script src="{{asset('js/sweetalert2@11.js')}}"></script>
-  
+    <script src="{{ asset('js/sweetalert2@11.js') }}"></script>
+
     <x-livewire-alert::scripts />
-    
+
+    <script>
+        document.addEventListener('livewire:init', () => {
+            Livewire.on('log', (event) => {
+                console.log(event[0]);
+            });
+        });
+    </script>
+
 </body>
 
 </html>

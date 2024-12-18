@@ -182,7 +182,7 @@ class KardexProductoSheetExport implements FromArray, WithHeadings, WithStyles, 
             ->getNumberFormat()
             ->setFormatCode('dd/mm/yyyy');
 
-        $columnasIzquierda = ['F17:F', 'H17:H', 'I17:I', 'K17:K', 'L17:L', 'M17:M', 'N17:N', 'O17:O'];
+        $columnasIzquierda = ['H17:H', 'K17:K', 'L17:L','N17:N', 'O17:O'];
         foreach ($columnasIzquierda as $cordenada) {
             $range = $cordenada . (16 + count($this->kardexLista)); // Rango dinámico para cada columna
             $sheet->getStyle($range)
@@ -194,6 +194,20 @@ class KardexProductoSheetExport implements FromArray, WithHeadings, WithStyles, 
                 ])
                 ->getNumberFormat()
                 ->setFormatCode('#,##0.00;-#,##0.00;"-"'); // Formato para precios
+        }
+
+        $columnasIzquierda = ['F17:F','I17:I', 'M17:M'];
+        foreach ($columnasIzquierda as $cordenada) {
+            $range = $cordenada . (16 + count($this->kardexLista)); // Rango dinámico para cada columna
+            $sheet->getStyle($range)
+                ->applyFromArray([
+                    'alignment' => [
+                        'horizontal' => 'right',
+                        'vertical' => 'center',
+                    ],
+                ])
+                ->getNumberFormat()
+                ->setFormatCode('#,##0.000;-#,##0.000;"-"'); // Formato para precios
         }
 
         $sheet->setSelectedCell('A1');
@@ -319,8 +333,8 @@ class KardexProductoSheetExport implements FromArray, WithHeadings, WithStyles, 
                 $item['tipo_operacion'] ?? '',
 
                 $item['entrada_cantidad'] ?? 0,
-                $item['entrada_costo_unitario'] ?? 0,
-                "=+G{$rowIndex}*F{$rowIndex}",
+                "=IFERROR(H{$rowIndex}/F{$rowIndex}, \"\")",
+                $item['entrada_costo_total'] ?? 0,
 
                 $item['salida_cantidad'] ?? 0,
                 $this->esCombustible?$item['salida_maquinaria']:$item['salida_lote'],

@@ -24,7 +24,14 @@ class AlmacenProductoSalida extends Model
         'maquinaria_id'
     ];
     
-
+    public function kardexProducto()
+    {
+        return $this->belongsTo(KardexProducto::class, 'kardex_producto_id');
+    }
+    public function compraStock()
+    {
+        return $this->hasMany(CompraSalidaStock::class, 'salida_almacen_id');
+    }
     // Relación con Producto
     public function producto()
     {
@@ -36,14 +43,7 @@ class AlmacenProductoSalida extends Model
     {
         return $this->belongsTo(CompraProducto::class, 'compra_producto_id');
     }
-    public function kardexProducto()
-    {
-        return $this->belongsTo(KardexProducto::class, 'kardex_producto_id');
-    }
-    public function compraStock()
-    {
-        return $this->hasMany(CompraSalidaStock::class, 'salida_almacen_id');
-    }
+    
     public function maquinaria()
     {
         return $this->belongsTo(Maquinaria::class, 'maquinaria_id');

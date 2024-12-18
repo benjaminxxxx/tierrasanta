@@ -25,7 +25,7 @@ class CuadrillaAsistenciaDetalleComponent extends Component
     public $gruposTotales;
     public $precios = [];
     public $observaciones = [];
-    protected $listeners = ['eliminarCuadrilleros', 'cuadrillerosAgregadosAsistencia', 'storeTableDataCuadrilla', 'actualizarTabla', 'actualizarTablaCompleta'];
+    protected $listeners = ['eliminarCuadrilleros', 'cuadrillerosAgregadosAsistencia', 'storeTableDataCuadrilla', 'actualizarTabla', 'actualizarTablaCompleta','gastosAdicionalesActualizados'];
 
     public function mount()
     {
@@ -287,23 +287,7 @@ class CuadrillaAsistenciaDetalleComponent extends Component
                 ->flatten(1)
                 ->sortBy(['codigo_grupo', 'created_at'])
                 ->values();
-/*
-            $totalesData = [
-                'cua_id' => '',
-                'cua_asi_sem_cua_id' => '',
-                'cua_asi_sem_gru_id' => '',
-                'dni' => '',
-                'color' => '',
-                'codigo_grupo' => 'TOTALES',
-                'nombres' => '',
-                'monto' => array_sum(array_column($totalesDiarios, 'monto'))
-            ];
 
-            // Agregar totales diarios por cada día
-            foreach ($totalesDiarios as $diaKey => $totales) {
-                $totalesData[$diaKey] = $totales['horas'];
-                $totalesData[$diaKey . '_monto'] = round($totales['monto'], 2);
-            }*/
             $totalesData = [
                 'cua_id' => '',
                 'cua_asi_sem_cua_id' => '',

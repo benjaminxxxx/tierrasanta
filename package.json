@@ -17,6 +17,7 @@
     },
     "dependencies": {
         "alpinejs": "^3.14.1",
+        "flatpickr": "^4.6.13",
         "flowbite": "^2.5.1"
     }
 }

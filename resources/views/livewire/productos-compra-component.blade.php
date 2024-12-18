@@ -26,7 +26,7 @@
             @if ($producto)
                 <div class="mb-4">
                     <p class="font-bold">
-                        PRODUCTO: {{ $producto->nombre_comercial }} - {{ $producto->ingrediente_activo }}
+                        PRODUCTO: {{ $producto->nombre_completo }}
                     </p>
                 </div>
             @endif
@@ -46,13 +46,14 @@
                                 FECHA DE COMPRA <i class="fa fa-sort"></i>
                             </button>
                         </x-th>
+                        
+                        <x-th class="text-center">
+                            STOCK
+                        </x-th>
                         <x-th class="text-center">
                             <button wire:click="sortBy('costo_por_kg')" class="focus:outline-none">
                                 COSTO POR UNIDAD <i class="fa fa-sort"></i>
                             </button>
-                        </x-th>
-                        <x-th class="text-center">
-                            STOCK
                         </x-th>
                         <x-th class="text-center">
                             TOTAL
@@ -71,10 +72,10 @@
                                 <x-th value="{{ $indice + 1 }}" class="text-center" />
                                 <x-td value="{{ $producto->tiendaComercial ? $producto->tiendaComercial->nombre:'Sin tienda' }}" />
                                 <x-td value="{{ $producto->fecha_compra }}" class="text-center" />
-                                <x-td value="{{ $producto->costo_por_kg }}" class="text-center" />
                                 <x-td value="{{ $producto->stock }}" class="text-center" />
+                                    <x-td value="{{ $producto->costo_por_unidad }}" class="text-center" />
                                 <x-td value="{{ $producto->total }}" class="text-center" />
-                                <x-td value="{{ $producto->factura }}" class="text-center" />
+                                <x-td value="{{ $producto->codigo_comprobante }}" class="text-center" />
 
                                 <x-td class="text-center">
                                     <div class="flex items-center justify-center gap-2">

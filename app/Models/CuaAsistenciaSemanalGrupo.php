@@ -25,17 +25,25 @@ class CuaAsistenciaSemanalGrupo extends Model
         'saldo',
         'total_pagado',
     ];
-
-    public function getCostoHoraAttribute()
-    {
-        return $this->costo_dia/8;
-    }
-
-    // Relación con CuaAsistenciaSemanal
     public function asistenciaSemanal()
     {
         return $this->belongsTo(CuaAsistenciaSemanal::class, 'cua_asi_sem_id');
     }
+    public function getCostoHoraAttribute()
+    {
+        return $this->costo_dia/8;
+    }
+    public function getTotalAttribute()
+    {
+        return $this->total_costo + $this->gastosAdicionales->sum('monto');
+    }
+    public function gastosAdicionales()
+    {
+        return $this->hasMany(GastoAdicionalPorGrupoCuadrilla::class, 'cua_asistencia_semanal_grupo_id');
+    }
+    // Relación con CuaAsistenciaSemanal
+    
+    
     public function cuadrillerosEnAsistencia()
     {
         return $this->hasMany(CuaAsistenciaSemanalCuadrillero::class, 'cua_asi_sem_gru_id');

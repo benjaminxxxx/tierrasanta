@@ -6,6 +6,7 @@ use App\Exports\KardexAlmacenExport;
 use App\Exports\KardexProductoExport;
 use App\Models\AlmacenProductoSalida;
 use App\Models\CompraProducto;
+use App\Models\CompraSalidaStock;
 use App\Models\Empresa;
 use App\Models\Kardex;
 use App\Models\Producto;
@@ -15,7 +16,7 @@ use Livewire\Component;
 use App\Models\KardexProducto;
 use Livewire\WithFileUploads;
 use Maatwebsite\Excel\Facades\Excel;
-use Str;
+use Illuminate\Support\Str;
 
 class KardexDetalleComponent extends Component
 {
@@ -31,66 +32,17 @@ class KardexDetalleComponent extends Component
     public $kardexCalculado = false;
     public $empresa;
     public $esCombustible = false;
-    protected $listeners = ['kardexProductoRegistrado' => 'listarKardex', 'importacionRealizada' => 'listarKardex'];
+    public $totalCompras = 0;
+    public $totalSalidas = 0;
+    public $registroIdEliminar;
+    protected $listeners = ['kardexProductoRegistrado' => 'listarKardex', 'importacionRealizada' => 'listarKardex', 'eliminacionConfirmar'];
     public function mount()
     {
         $this->kardex = Kardex::find($this->kardexId);
         $this->empresa = Empresa::first();
     }
-    public function recalcularCostos()
+    /*public function recalcularCostos()
     {
-        /*
-        foreach ($this->kardexLista as $key => $fila) {
-
-            if ($key == 0) {
-                $this->kardexLista[$key]['saldofinal_cantidad'] = $this->kardexLista[$key]['entrada_cantidad'];
-                $this->kardexLista[$key]['saldofinal_costo_unitario'] = $this->kardexLista[$key]['entrada_costo_unitario'];
-                $this->kardexLista[$key]['saldofinal_costo_total'] = $this->kardexLista[$key]['entrada_costo_total'];
-            } else {
-                $filaAnterior = $this->kardexLista[$key - 1];
-
-                // Operaciones con bc math
-                $entradaCantidad = (float) $this->kardexLista[$key]['entrada_cantidad'];
-                $salidaCantidad = (float) $this->kardexLista[$key]['salida_cantidad'];
-                $saldoFinalCantidad = bcsub(
-                    bcadd($entradaCantidad, (float) $filaAnterior['saldofinal_cantidad'], 10),
-                    $salidaCantidad,
-                    10
-                );
-
-                $entradaCostoTotal = (float) $this->kardexLista[$key]['entrada_costo_total'];
-                $salidaCostoTotal = (float) $this->kardexLista[$key]['salida_costo_total'];
-                $saldoFinalTotal = bcsub(
-                    bcadd((float) $filaAnterior['saldofinal_costo_total'], $entradaCostoTotal, 10),
-                    $salidaCostoTotal,
-                    10
-                );
-
-                // Prevenir valores negativos acumulados menores a 0.05
-                if ($saldoFinalTotal < 0.05) {
-                    $saldoFinalTotal = 0;
-                }
-
-                // Calcular el costo unitario
-                $costoUnitario = ($saldoFinalCantidad > 0)
-                    ? bcdiv($saldoFinalTotal, $saldoFinalCantidad, 10)
-                    : 0;
-
-                $this->kardexLista[$key]['saldofinal_cantidad'] = round($saldoFinalCantidad, 2);
-                $this->kardexLista[$key]['saldofinal_costo_unitario'] = round($costoUnitario, 10);
-                $this->kardexLista[$key]['saldofinal_costo_total'] = round($saldoFinalTotal, 10);
-
-                // Ajustar costos de salida
-                if ($this->kardexLista[$key]['tipo'] == 'salida') {
-                    $this->kardexLista[$key]['salida_costo_unitario'] = $filaAnterior['saldofinal_costo_unitario'];
-                    $this->kardexLista[$key]['salida_costo_total'] = round(
-                        $this->kardexLista[$key]['salida_cantidad'] * $this->kardexLista[$key]['salida_costo_unitario'],
-                        10
-                    );
-                }
-            }
-        }
-        $this->kardexCalculado = true;*/
         if (!$this->kardex) {
             return;
         }
@@ -103,6 +55,7 @@ class KardexDetalleComponent extends Component
         $data = [
             'kardexId' => $this->kardexId,
             'productoId' => $this->productoKardexSeleccionado,
+            'esCombustible'=>$this->esCombustible,
             'kardexLista' => $this->kardexLista,
             'informacionHeader' => [
                 'periodo' => $periodo,
@@ -154,6 +107,73 @@ class KardexDetalleComponent extends Component
 
         return Excel::download(new KardexProductoExport($data), 'kardex_almacen.xlsx');
 
+    }*/
+    protected function obtenerDatosKardex()
+    {
+        if (!$this->kardex) {
+            return null;
+        }
+        if (!$this->empresa) {
+            $this->alert('error', 'No hay datos de empresa registrada.');
+            return null;
+        }
+
+        $tieneTipo = $this->kardexProducto->producto->tabla5;
+        if(!$tieneTipo){
+            return $this->alert('error', 'El producto no tiene un tipo, editar el producto.');
+        }
+
+        $periodo = Carbon::parse($this->kardex->fecha_inicial)->format('Y');
+
+        return [
+            'kardexId' => $this->kardexId,
+            'productoId' => $this->productoKardexSeleccionado,
+            'esCombustible' => $this->esCombustible,
+            'kardexLista' => $this->kardexLista,
+            'informacionHeader' => [
+                'periodo' => $periodo,
+                'ruc' => $this->empresa->ruc,
+                'razon_social' => $this->empresa->razon_social,
+                'establecimiento' => $this->empresa->establecimiento,
+                'codigo_existencia' => $this->kardexProducto->codigo_existencia,
+                'tipo' => $this->kardexProducto->producto->tabla5->codigo . ' - ' . $this->kardexProducto->producto->tabla5->descripcion,
+                'descripcion' => $this->kardexProducto->producto->nombre_comercial,
+                'codigo_unidad_medida' => $this->kardexProducto->producto->tabla6->codigo . ' - ' . $this->kardexProducto->producto->tabla6->descripcion,
+                'metodo_valuacion' => 'PROMEDIO',
+            ],
+        ];
+    }
+
+    public function recalcularCostos()
+    {
+        $this->listarKardex();
+        $data = $this->obtenerDatosKardex();
+
+        if (is_null($data)) {
+            return;
+        }
+
+        $filePath = 'kadex/' . date('Y-m') . '/' .
+            $this->kardexProducto->codigo_existencia . '_' .
+            Str::slug($this->kardexProducto->producto->nombre_completo) .
+            '.xlsx';
+
+        $file = Excel::store(new KardexProductoExport($data), $filePath, 'public');
+        $this->kardexProducto->file = $filePath;
+        $this->kardexProducto->save();
+
+        $this->dispatch('procesarFile', $filePath);
+    }
+
+    public function descargarKardex()
+    {
+        $data = $this->obtenerDatosKardex();
+
+        if (is_null($data)) {
+            return;
+        }
+
+        return Excel::download(new KardexProductoExport($data), 'kardex_almacen.xlsx');
     }
 
 
@@ -167,6 +187,9 @@ class KardexDetalleComponent extends Component
         if (!$this->kardexProducto) {
             return;
         }
+
+        $this->totalCompras = 0;
+        $this->totalSalidas = 0;
 
         $this->esCombustible = Producto::esCombustible($this->productoKardexSeleccionado);
 
@@ -198,7 +221,7 @@ class KardexDetalleComponent extends Component
             ->get();
 
         $salidas = AlmacenProductoSalida::where('producto_id', $this->productoKardexSeleccionado)
-            ->where('kardex_producto_id',$this->kardexProducto->id)
+            ->where('kardex_producto_id', $this->kardexProducto->id)
             ->whereBetween('fecha_reporte', [$this->kardex->fecha_inicial, $this->kardex->fecha_final])
             ->get();
 
@@ -213,7 +236,7 @@ class KardexDetalleComponent extends Component
                     'numero' => $compra->numero,
                     'tipo_operacion' => $compra->tabla12_tipo_operacion,
                     'entrada_cantidad' => $compra->stock,
-                    'entrada_costo_unitario' => $compra->costo_por_kg,
+                    'entrada_costo_unitario' => $compra->costo_por_unidad,
                     'entrada_costo_total' => $compra->total,
                     'salida_cantidad' => '',
                     'salida_lote' => '',
@@ -224,7 +247,7 @@ class KardexDetalleComponent extends Component
                     'saldofinal_costo_unitario' => '',
                     'saldofinal_costo_total' => '',
                 ];
-
+                $this->totalCompras++;
             }
         }
         if ($salidas) {
@@ -249,7 +272,7 @@ class KardexDetalleComponent extends Component
                     'saldofinal_costo_unitario' => '',
                     'saldofinal_costo_total' => '',
                 ];
-
+                $this->totalSalidas++;
             }
         }
 
@@ -261,6 +284,42 @@ class KardexDetalleComponent extends Component
     public function updatedProductoKardexSeleccionado()
     {
         $this->listarKardex();
+    }
+    public function eliminarComprasySalidas($kardexProductoId)
+    {
+        $this->registroIdEliminar = $kardexProductoId;
+
+        $this->alert('question', '¿Está seguro que desea eliminar el registro?', [
+            'showConfirmButton' => true,
+            'confirmButtonText' => 'Si, Eliminar',
+            'onConfirmed' => 'eliminacionConfirmar',
+            'showCancelButton' => true,
+            'position' => 'center',
+            'toast' => false,
+            'timer' => null,
+            'confirmButtonColor' => '#056A70', // Esto sobrescribiría la configuración global
+            'cancelButtonColor' => '#2C2C2C',
+        ]);
+    }
+    public function eliminacionConfirmar()
+    {
+        if (!$this->registroIdEliminar) {
+            return;
+        }
+
+        
+        $salidas = CompraSalidaStock::where('kardex_producto_id', $this->registroIdEliminar)->get();
+        foreach ($salidas as $salida) {
+            $compra = CompraProducto::find($salida->compra_producto_id);
+            if ($compra) {
+                $compra->delete();
+            }
+        }
+        AlmacenProductoSalida::where('kardex_producto_id', $this->registroIdEliminar)->delete();
+        AlmacenProductoSalida::where('cantidad_kardex_producto_id', $this->registroIdEliminar)->delete();
+        $this->listarKardex();
+        $this->alert("success", "Registros eliminados correctamente.");
+        $this->registroIdEliminar = null;
     }
     public function render()
     {

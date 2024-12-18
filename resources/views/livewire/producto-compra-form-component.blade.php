@@ -32,36 +32,56 @@
                     <x-input-error for="fecha_compra" />
                 </div>
                 <div class="col-span=1 md:col-span-2">
-                    <div x-data="calculoTotal" class="flex items-center w-full gap-3">
-                        <div>
-                            <x-label for="costo_por_kg">Costo x
-                                @if ($producto)
-                                    <span>({{ $producto->unidad_medida }})</span>
-                                @endif
-                            </x-label>
-                            <x-input type="number" x-model.number="costoPorKg" @change="actualizarTotal"
-                                wire:model.live="costo_por_kg" />
-                            <x-input-error for="costo_por_kg" />
-                        </div>
-                        <i class="fa fa-times text-orange-600"></i>
+                    <div x-data="calculoTotal(@entangle('stock'), @entangle('costo_por_kg'), @entangle('total'))" class="flex items-center w-full gap-3">
                         <div>
                             <x-label for="stock">Stock en
                                 @if ($producto)
                                     <span>({{ $producto->unidad_medida }})</span>
                                 @endif
                             </x-label>
-                            <x-input type="number" x-model.number="cantidad" @change="actualizarTotal"
-                                wire:model.live="stock" />
+                            <x-input type="number" step="0.001" x-model="stock" />
                             <x-input-error for="stock" />
+                        </div>
+                        <i class="fa fa-times text-orange-600"></i>
+                        <div>
+                            <x-label for="costo_por_kg">Costo x
+                                @if ($producto)
+                                    <span>({{ $producto->unidad_medida }})</span>
+                                @endif
+                            </x-label>
+                            <x-input type="number" readonly class="!bg-gray-100 disabled" x-model="costo_por_kg" />
+                            <x-input-error for="costo_por_kg" />
                         </div>
                         <i class="fa fa-equals text-orange-600"></i>
                         <div>
-                            <x-label for="total">Total</x-label>
-                            <x-input type="number" x-model.number="total" @change="actualizarSubtotal"
-                                wire:model.live="total" />
+                            <x-label for="total">Costo Total</x-label>
+                            <x-input type="number" step="0.01" x-model="total" />
                             <x-input-error for="total" />
                         </div>
                     </div>
+                    
+                    <script>
+                        function calculoTotal(stockRef, costoPorKgRef, totalRef) {
+                            return {
+                                stock: stockRef,
+                                costo_por_kg: costoPorKgRef,
+                                total: totalRef,
+                                init() {
+                                    // Observa cambios en el stock o el total
+                                    this.$watch('stock', value => this.calcularCostoPorUnidad());
+                                    this.$watch('total', value => this.calcularCostoPorUnidad());
+                                },
+                                calcularCostoPorUnidad() {
+                                    if (this.stock > 0 && this.total >= 0) {
+                                        this.costo_por_kg = this.total / this.stock;
+                                    } else {
+                                        this.costo_por_kg = 0;
+                                    }
+                                },
+                            };
+                        }
+                    </script>
+                    
 
 
 
@@ -111,33 +131,4 @@
         </x-slot>
     </x-dialog-modal>
 </div>
-@script
-    <script>
-        Alpine.data('calculoTotal', () => ({
-            costoPorKg: @entangle('costo_por_kg').defer,
-            cantidad: @entangle('stock').defer,
-            total: @entangle('total').defer,
 
-            actualizarTotal() {
-                if (this.costoPorKg == undefined) {
-                    this.costoPorKg = $wire.get('costo_por_kg');
-                }
-                if (this.cantidad == undefined) {
-                    this.cantidad = $wire.get('stock');
-                }
-                if (this.costoPorKg && this.cantidad) {
-                    this.total = this.costoPorKg * this.cantidad;
-                    $wire.set('total', this.total);
-                }
-            },
-
-            actualizarSubtotal() {
-                if (this.cantidad == undefined) {
-                    this.cantidad = $wire.get('stock');
-                }
-                this.costoPorKg = this.total / this.cantidad;
-                $wire.set('costo_por_kg', this.costoPorKg);
-            }
-        }));
-    </script>
-@endscript

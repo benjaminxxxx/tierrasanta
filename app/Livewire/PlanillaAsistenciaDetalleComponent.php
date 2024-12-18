@@ -122,8 +122,9 @@ esta parte esta en otro codigo, pero lo quite porque a lo mejor el usuario ya no
                 ], $diasAsistencia);
             })
             ->toArray();
-
+            
         $this->informacionAsistenciaAdicional = $informacionAsistenciaAdicional;
+        
         //die(var_dump($informacionAsistenciaAdicional));
     }
     public function obtenerDiasDelMes($anio, $mes)

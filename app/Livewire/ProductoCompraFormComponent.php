@@ -9,6 +9,7 @@ use App\Models\SunatTabla10TipoComprobantePago;
 use App\Models\SunatTabla6CodigoUnidadMedida;
 use App\Models\TiendaComercial;
 use App\Services\AlmacenServicio;
+use App\Services\ProductoServicio;
 use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -42,8 +43,8 @@ class ProductoCompraFormComponent extends Component
             'tienda_comercial_id' => 'required',
             'fecha_compra' => 'required',
             'total' => 'required',
-            'costo_por_kg' => 'required|numeric|regex:/^\d+(\.\d{1,2})?$/',  // Permite valores decimales con hasta 2 dígitos
-           'tipoCompraSeleccionada'=>'required'
+            'costo_por_kg' => 'required|numeric',  // Permite valores decimales con hasta 2 dígitos
+            'tipoCompraSeleccionada'=>'required'
         ];
     }
 
@@ -54,7 +55,6 @@ class ProductoCompraFormComponent extends Component
         'total.required'=>'El total de la compra es obligatoria.',
         'costo_por_kg.required' => 'El costo por unidad debe ser un número válido.',
         'costo_por_kg.numeric' => 'El costo por kilogramo debe ser un número válido.',
-        'costo_por_kg.regex' => 'El costo por kilogramo debe ser un valor decimal con hasta 2 dígitos después del punto.',
     ];
     public function mount()
     {
@@ -121,7 +121,7 @@ class ProductoCompraFormComponent extends Component
                 'producto_id' => $this->productoId,
                 'tienda_comercial_id' => $this->tienda_comercial_id,
                 'fecha_compra' => $this->fecha_compra,
-                'sere' => mb_strtoupper($this->serie),
+                'serie' => mb_strtoupper($this->serie),
                 'numero' => $this->numero,
                 'costo_por_kg' => $this->costo_por_kg,
                 'stock'=>$this->stock,
@@ -132,15 +132,16 @@ class ProductoCompraFormComponent extends Component
             ];
 
             if ($this->compraId) {
+                
                 $compra = CompraProducto::find($this->compraId);
                 if ($compra) {
                     $compra->update($data);
-                    AlmacenServicio::eliminarRegistrosPosteriores($compra,$this->fecha_compra);
+                   
+                    AlmacenServicio::eliminarRegistrosStocksPosteriores($compra->fecha_compra,$compra->created_at);
                     $this->alert('success', 'Registro actualizado exitosamente.');
                 }
             } else {
-                $data['estado'] = '1';
-                CompraProducto::create($data);
+                ProductoServicio::registrarCompra($data);
                 $this->alert('success', 'Registro creado exitosamente.');
             }
 
@@ -169,7 +170,8 @@ class ProductoCompraFormComponent extends Component
             'costo_por_kg',
             'stock',
             'total',
-            'tipoCompraSeleccionada'
+            'tipoCompraSeleccionada',
+            'compraId'
         ]);
 
         $this->resetErrorBag();

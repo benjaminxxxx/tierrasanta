@@ -8,7 +8,7 @@
             @click="$wire.dispatch('nuevoRegistro',{mes:{{ $mes }},anio:{{ $anio }}})"
             class="w-full md:w-auto ">Nuevo Registro de Salida</x-button>
 
-        <x-button type="button" @click="$wire.dispatch('verStock')" class="w-full md:w-auto ">
+        <x-button type="button" @click="$wire.dispatch('verStock',{tipo:'combustible'})" class="w-full md:w-auto ">
             Ver Stock de Combustible
         </x-button>
     </div>

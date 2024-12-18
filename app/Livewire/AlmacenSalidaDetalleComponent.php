@@ -57,7 +57,7 @@ class AlmacenSalidaDetalleComponent extends Component
             $registro = AlmacenProductoSalida::find($registroId);
 
             if ($registro) {
-                AlmacenServicio::eliminarRegistrosStocksPosteriores($registro);
+                AlmacenServicio::eliminarRegistrosStocksPosteriores($registro->fecha_reporte,$registro->created_at);
                 $this->alert("success", "Compra vinculada removida");
             }
         } catch (\Throwable $th) {
