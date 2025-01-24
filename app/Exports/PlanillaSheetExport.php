@@ -19,13 +19,18 @@ class PlanillaSheetExport implements FromArray, WithHeadings, WithStyles, WithTi
     private $diasLaborables;
     private $dias;
     private $factorRemuneracionBasica;
+    private $filaInicial;
+    private $ctsPorcentaje;
+    private $data;
 
     public function __construct(array $data)
     {
         $this->planillaLista = $data['empleados'];
         $this->diasLaborables = $data['diasLaborables'];
         $this->factorRemuneracionBasica = $data['factorRemuneracionBasica'];
-
+        $this->filaInicial = 7;
+        $this->ctsPorcentaje = $data['ctsPorcentaje'];
+        $this->data = $data;
 
         $meses = [
             1 => 'ENERO',
@@ -46,12 +51,13 @@ class PlanillaSheetExport implements FromArray, WithHeadings, WithStyles, WithTi
         $this->anio = $data['anio'];
 
         $this->dias = Carbon::create($this->anio, $this->mes)->daysInMonth;
-        $this->mesCadena = $meses[$this->mes] ?? 'MES INVÁLIDO';
+     
+        $this->mesCadena = $meses[(int)$this->mes] ?? 'MES INVÁLIDO';
     }
 
     public function title(): string
     {
-        return $this->mesCadena;
+        return "PLANILLA";
     }
 
     /**
@@ -63,114 +69,212 @@ class PlanillaSheetExport implements FromArray, WithHeadings, WithStyles, WithTi
 
     public function styles(Worksheet $sheet)
     {
-        /*
         function calculateColumnWidthFromPixels($pixels)
         {
             return ($pixels) / 7;
         }
         // Ajustar anchos de columnas
         $columnWidthsInPixels = [
-            'A' => 30,
-            'B' => 95, // 158 px
-            'C' => 240, // 112 px
-            'D' => 80, // 118 px
-            'E' => 75, // 138 px
-            'F' => 75, // 135 px
-            'G' => 80, // 134 px
-            'H' => 80, // 124 px
-            'I' => 75,
-            'J' => 75, // 110 px
-            'K' => 70, // 134 px
-            'L' => 70, // 115 px
-            'M' => 70, // 134 px
-            'N' => 70, // 134 px
-            'O' => 70,
-            'P' => 70,
-            'Q' => 70,
-            'R' => 75,
-            'S' => 75,
-            'T' => 75,
-            'U' => 75,
-            'V' => 75,
+            'A' => 20,
+            'B' => 70,
+            'C' => 230,
+            'D' => 43,
+            'E' => 54, // 118 px
+            'F' => 65, // 138 px
+            'G' => 54, // 135 px
+            'H' => 59, // 134 px
+            'I' => 59, // 124 px
+            'J' => 65,
+            'K' => 65, // 110 px
+            'L' => 65, // 134 px
+            'M' => 65, // 115 px
+            'N' => 65, // 134 px
+            'O' => 65, // 134 px
+            'P' => 65,
+            'Q' => 65,
+            'R' => 65,
+            'T' => 65,
+            'U' => 65,
+            'V' => 65,
+            'W' => 65,
+            'X' => 65,
+
+            'Y' => 10,
+            'Z' => 10,
+            'AA' => 30,
+            'AB' => 230,
+            'AC' => 78,
+            'AD' => 78,
+            'AE' => 78,
+            'AF' => 78,
+            'AG' => 78,
+            'AH' => 78,
+            'AI' => 78,
+            'AJ' => 78,
+            'AK' => 78,
+
+            'AL' => 25,
+
+            'AM' => 73,
+            'AN' => 73,
+            'AO' => 40,
         ];
+
 
         foreach ($columnWidthsInPixels as $column => $pixels) {
             $sheet->getColumnDimension($column)->setWidth(calculateColumnWidthFromPixels($pixels));
         }
 
-        // Título principal
-        $sheet->getStyle('A1')->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 14,
-                'name' => 'Arial',
-            ],
-            'alignment' => [
-                'horizontal' => 'center',
-                'vertical' => 'center',
-            ],
-        ]);
-
-        // Encabezados del bloque de información
-        $sheet->getStyle('A3:A11')->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'name' => 'Arial',
-            ],
-        ]);
+        $sheet->getRowDimension(4)->setRowHeight(40 / 1.325);
 
         $centerStyle = [
             'horizontal' => 'center',
             'vertical' => 'center',
+            'wrapText' => true,
         ];
 
-        $mergeCells = ["A6:A7", "B6:B7", "C6:C7", "D6:D7", "E6:E7", "F6:F7", "J6:J7", "K6:K7", "L6:L7", "M6:M7", "N6:N7", "O6:O7", "U6:U7", "V6:V7", "A4:R4"];
-        $centerCells = ["A8:A", "B8:B", "D8:D", "J8:J", "K8:K", "L8:L", "M8:M", "O8:O", "P8:P", "Q8:Q"];
-        $rightCells = [
-            'E8:E',
-            'F8:F',
-            'G8:G',
-            'H8:H',
-            'I8:I',
-            'R8:R',
-            'S8:S',
-            'T8:T',
-            'U8:U',
-            'V8:V',
+        $mergeCells = [
+            "V1:X1",
+            "V2:X2",
+            "V3:X3",
+
+            "A4:X4",
+
+            "A5:A6",
+            "B5:B6",
+            "C5:C6",
+            "D5:D6",
+            "E5:E6",
+
+            "F5:I5",
+
+            "J5:J6",
+            "K5:K6",
+            "L5:L6",
+            "M5:M6",
+            "N5:N6",
+            "O5:O6",
+            "P5:P6",
+            "Q5:Q6",
+            "R5:R6",
+            "S5:S6",
+            "T5:T6",
+            "U5:U6",
+            "V5:V6",
+            "W5:W6",
+            "X5:X6",
+
+            "AA5:AA6",
+            "AB5:AB6",
+            "AC5:AC6",
+            "AD5:AD6",
+            "AE5:AE6",
+            "AF5:AF6",
+            "AG5:AG6",
+            "AH5:AH6",
+            "AI5:AI6",
+            "AJ5:AJ6",
+            "AK5:AK6",
+
+            "AM5:AM6",
+            "AN5:AN6",
+            "AO5:AO6",
         ];
+
+
 
         foreach ($mergeCells as $mergeCell) {
             $sheet->mergeCells($mergeCell);
         }
+
+        $centerCells = ["A", "B", "D", "E", "F", "L", "M", "N", "O", "P", "Q", "R", "S", "AA", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AM", "AN", "AO"];
         foreach ($centerCells as $centerCell) {
-            $sheet->getStyle($centerCell . (8 + count($this->planillaLista)))
+            $sheet->getStyle("{$centerCell}{$this->filaInicial}:{$centerCell}" . ($this->filaInicial + count($this->planillaLista)))
                 ->applyFromArray([
                     'alignment' => $centerStyle,
                 ]);
         }
+
+        $rightCells = [
+            'G',
+            'H',
+            'I',
+            'J',
+            'K',
+            'H',
+            'V',
+            'W',
+            'X'
+        ];
+
         foreach ($rightCells as $rightCell) {
-            $range = $rightCell . (16 + count($this->planillaLista)); // Rango dinámico para cada columna
-            $sheet->getStyle($range)
+            $sheet->getStyle("{$rightCell}{$this->filaInicial}:{$rightCell}" . ($this->filaInicial + count($this->planillaLista)))
                 ->applyFromArray([
                     'alignment' => [
                         'horizontal' => 'right',
                         'vertical' => 'center',
                     ],
-                ])
-                ->getNumberFormat()
-                ->setFormatCode('#,##0.00;-#,##0.00;"-"'); // Formato para precios
+                ]);
         }
 
-        $sheet->getStyle('A4:AN7')->applyFromArray([
+        $sheet->getStyle("F{$this->filaInicial}:X" . ($this->filaInicial + count($this->planillaLista)))
+            ->getNumberFormat()
+            ->setFormatCode('#,##0.00;-#,##0.00;"-"');
+
+        $sheet->getStyle("AC{$this->filaInicial}:AG" . ($this->filaInicial + count($this->planillaLista)))
+            ->getNumberFormat()
+            ->setFormatCode('#,##0.00;-#,##0.00;"-"');
+
+        $sheet->getStyle("AH{$this->filaInicial}:AI" . ($this->filaInicial + count($this->planillaLista)))
+            ->getNumberFormat()
+            ->setFormatCode('#,##0.00000;-#,##0.00000;"-"');
+
+        $sheet->getStyle("AJ{$this->filaInicial}:AN" . ($this->filaInicial + count($this->planillaLista)))
+            ->getNumberFormat()
+            ->setFormatCode('#,##0.00;-#,##0.00;"-"');
+
+        $sheet->getStyle('A4:AO6')->applyFromArray([
             'font' => [
                 'bold' => true,
             ],
             'alignment' => $centerStyle,
         ]);
 
+
         // Bordes en toda la tabla
-        $sheet->getStyle('A4:V' . (4 + count($this->planillaLista) + 2))
+        $sheet->getStyle('U1:U3')
+            ->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                ],
+                'alignment' => $centerStyle,
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                        'color' => ['argb' => '000000'],
+                    ],
+                ]
+            ]);
+
+        $sheet->getStyle('A5:X' . (4 + count($this->planillaLista) + 2))
+            ->applyFromArray([
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                        'color' => ['argb' => '000000'],
+                    ],
+                ]
+            ]);
+        $sheet->getStyle('AA5:AK' . (4 + count($this->planillaLista) + 2))
+            ->applyFromArray([
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                        'color' => ['argb' => '000000'],
+                    ],
+                ]
+            ]);
+        $sheet->getStyle('AM5:AO' . (4 + count($this->planillaLista) + 2))
             ->applyFromArray([
                 'borders' => [
                     'allBorders' => [
@@ -180,7 +284,7 @@ class PlanillaSheetExport implements FromArray, WithHeadings, WithStyles, WithTi
                 ]
             ]);
 
-        $sheet->getStyle('A8:V' . (4 + count($this->planillaLista)))
+        $sheet->getStyle("A{$this->filaInicial}:AO" . (4 + count($this->planillaLista) + 2))
             ->applyFromArray([
                 'font' => [
                     'size' => 9,
@@ -188,9 +292,50 @@ class PlanillaSheetExport implements FromArray, WithHeadings, WithStyles, WithTi
                 ],
             ]);
 
+        $sheet->getStyle("P{$this->filaInicial}:Q" . (4 + count($this->planillaLista) + 2))
+            ->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                ],
+            ]);
 
+        $sheet->getStyle("U{$this->filaInicial}:U" . (4 + count($this->planillaLista) + 2))
+            ->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FF0000'],
+                ],
+            ]);
+        $sheet->getStyle("AD{$this->filaInicial}:AD" . (4 + count($this->planillaLista) + 2))
+            ->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => '00B050'],
+                ],
+            ]);
+            $sheet->getStyle("AK{$this->filaInicial}:AK" . (4 + count($this->planillaLista) + 2))
+            ->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => '00B050'],
+                ],
+            ]);
+        $sheet->getStyle("AF{$this->filaInicial}:AG" . (4 + count($this->planillaLista) + 2))
+            ->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => '0070C0'],
+                ],
+            ]);
+        $sheet->getStyle("W{$this->filaInicial}:W" . (4 + count($this->planillaLista) + 2))
+            ->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => '0070C0'],
+                ],
+            ]);
 
-        $sheet->getStyle('A4:R4')->applyFromArray([
+        $sheet->getStyle('A4:S4')->applyFromArray([
             'font' => [
                 'bold' => true,
                 'name' => 'Arial',
@@ -203,15 +348,34 @@ class PlanillaSheetExport implements FromArray, WithHeadings, WithStyles, WithTi
             ]
         ]);
 
-        $sheet->getStyle('D5:G7')->applyFromArray([
+        $sheet->getStyle('F5:I6')->applyFromArray([
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
                 'startColor' => [
                     'rgb' => 'FFFF00', // Color amarillo
                 ],
             ],
-        ]);*/
+        ]);
 
+        /*****************************COLORES POR EMPELADO ***/
+        $contadorp = $this->filaInicial - 1;
+        foreach ($this->planillaLista as $planilla) {
+            $color = ltrim($planilla['color'], '#'); // Eliminar "#" si existe
+            $contadorp++;
+            $sheet->getStyle("E{$contadorp}")->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => $color], // Solo RGB sin "#"
+                ],
+            ]);
+            $sheet->getStyle("K{$contadorp}")->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => $color], // Solo RGB sin "#"
+                ],
+            ]);
+        }
+        /*************************************************** */
         return [];
     }
 
@@ -222,9 +386,10 @@ class PlanillaSheetExport implements FromArray, WithHeadings, WithStyles, WithTi
      */
     public function headings(): array
     {
-
         return [
+
             [
+                " ",
                 "",
                 "",
                 "",
@@ -244,31 +409,12 @@ class PlanillaSheetExport implements FromArray, WithHeadings, WithStyles, WithTi
                 "",
                 "",
                 "",
-                ""
-            ],
-            [
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "=S3*8",
+                "=U2*8",
                 "HORAS"
             ],
             [
+                "",
+                "",
                 "",
                 "",
                 "",
@@ -291,7 +437,9 @@ class PlanillaSheetExport implements FromArray, WithHeadings, WithStyles, WithTi
                 "DÍAS LABORABLES"
             ],
             [
-                "MES DE {$this->mesCadena} {$this->anio}",
+                "",
+                "",
+                "",
                 "",
                 "",
                 "",
@@ -313,10 +461,12 @@ class PlanillaSheetExport implements FromArray, WithHeadings, WithStyles, WithTi
                 "DÍAS"
             ],
             [
+                "MES DE {$this->mesCadena} {$this->anio}",
                 "",
                 "",
                 "",
-                "SUELDO BRUTO",
+                "",
+                "",
                 "",
                 "",
                 "",
@@ -336,27 +486,46 @@ class PlanillaSheetExport implements FromArray, WithHeadings, WithStyles, WithTi
             ],
             [
                 "Nº",
+                "DNI",
                 "NOMBRES",
+                "EDAD",
                 "SPP o SNP",
-                "REMUNERACIÓN BÁSICA",
-                "BONIF.",
-                "ASIGNACION FAMILIAR",
-                "COMPEN.",
-                "SUELDO",
-                "DSCTO.",
+                "SUELDO BRUTO",
+                "",
+                "",
+                "",
+                "SUELDO BRUTO",
+                "DSCTO. A.F.P.(Prima de Seguro",
                 "CTS",
                 "GRATIFICACIONES",
                 "ESSALUD GRATIFICACIONES",
                 "BETA 30 %",
                 "ESSALUD",
                 "VIDA LEY",
-                "PENSION",
-                "ESSALUD",
-                "SUELDO",
+                "PENSION SCTR",
+                "ESSALUD EPS",
+                "SUELDO NETO",
                 "REM. BASICA+ESSALUD",
                 "(REM. BASICA+ASG.FAM. X(6%) ESSALUD)+CTS+GRATIF.+BETA",
                 "JORNAL DIARIO",
-                "COSTO HORA"
+                "COSTO HORA",
+                "",
+                "",
+                "Nº",
+                "NOMBRES",
+                "DIFERENCIA O BONIFICACION",
+                "SUELDO NETO TOTAL",
+                "SUELDO BRUTO NEGRO",
+                "SUELDO POR DIA A PAGAR",
+                "SUELDO POR DIA COSTO TOTAL",
+                "SUELDO POR HORA A PAGAR",
+                "SUELDO POR HORA COSTO TOTAL",
+                "OTROS BONOS ACUMULADOS",
+                "SUELDO FINAL A EMPLEADO",
+                "",
+                "DIFERENCIA POR HORA",
+                "DIFERENCIA REAL",
+                "ESTÁ JUBILADO",
             ],
             [
                 "",
@@ -364,22 +533,13 @@ class PlanillaSheetExport implements FromArray, WithHeadings, WithStyles, WithTi
                 "",
                 "",
                 "",
-                "",
-                "VACACIONAL",
-                "BRUTO",
-                "A.F.P.(Prima de Seguro",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "SCTR",
-                "EPS",
-                "NETO",
-                "",
-                ""
-            ]
+                "REMUNERACIÓN BÁSICA",
+                "BONIF.",
+                "ASIGNACION FAMILIAR",
+                "COMPEN. VACACIONAL",
+
+            ],
+
         ];
     }
 
@@ -390,19 +550,54 @@ class PlanillaSheetExport implements FromArray, WithHeadings, WithStyles, WithTi
      */
     public function array(): array
     {
-        $f = 6;
-        return array_map(function ($item, $index) use ($f) {
+        $indiceInicio = $this->filaInicial;
+        return array_map(function ($item, $index) use ($indiceInicio) {
+
+            $f = $index + $indiceInicio;
+            $indiceHoras = $f-2;
             return [
                 $index + 1, // Número secuencial, inicia en 1
                 $item['dni'] ?? '',
                 $item['nombres'] ?? '',
+                $item['edad'] ?? '',
                 $item['sppSnp'] ?? '',
-                "={$this->factorRemuneracionBasica}*\$S\$4",
+                "={$this->factorRemuneracionBasica}*\$U\$3",
                 $item['bonificacion'] ?? '',
                 $item['asignacionFamiliar'] ?? '',
                 $item['compensacionVacacional'] ?? '',
-                "=D{$f}+E{$f}+F{$f}+G{$f}",
-                "=H{$f}*{$item['descuentoSeguro']['descuento']}",
+                "=F{$f}+G{$f}+H{$f}+I{$f}",
+                "=J{$f}*(IF(Ak{$f}=\"SI\",0,IF(D{$f}>65,VLOOKUP(E{$f},DESCUENTOS_AFP!\$A\$2:\$C\$10,3,FALSE),VLOOKUP(E{$f},DESCUENTOS_AFP!\$A\$2:\$C\$10,2,FALSE))))",
+                "=((F{$f}+G{$f}+H{$f})*({$this->ctsPorcentaje}%))", //CTS
+                "=(F{$f}+G{$f}+H{$f})*({$this->data['gratificacionesPorcentaje']}%)", //GRATIFICACIONES
+                "=M{$f}*{$this->data['essaludGratificacionesPorcentaje']}%", //ESSALUD
+                "={$this->data['rmv']}*{$this->data['beta30Porcentaje']}%", //BETA 30 
+                "=J{$f}*{$this->data['essaludPorcentaje']}%", // ESSALUD
+                "=((J{$f}*({$this->data['vidaLeyPorcentaje']}%))*{$this->data['vidaLey']})", // VIDA LEY
+                "=(J{$f}*({$this->data['pensionSctrPorcentaje']}%))*{$this->data['pensionSctr']}", // PENSION SCTR
+                "=(J{$f}*({$this->data['essaludEpsPorcentaje']}%))*{$this->data['porcentajeConstante']}", // ESSALUD EPS
+                "=(J{$f}-K{$f})+L{$f}+M{$f}+N{$f}+O{$f}", // SUELDO NETO
+                "",
+                "=J{$f}+L{$f}+M{$f}+N{$f}+O{$f}+P{$f}+Q{$f}+R{$f}+S{$f}", // (REM. BASICA+ASG.FAM. X(6%) ESSALUD)+CTS+GRATIF.+BETA
+                "=V{$f}/\$U\$2", // JORNAL DIARIO
+                "=+W{$f}/8", // COSTO HORA
+                "",
+                "",
+                $index + 1,
+                $item['nombres'] ?? '',
+                "=AD{$f}-T{$f}",
+                $item['sueldoPersonal'] ?? '',
+                "=V{$f}+AC{$f}",
+                "=AD{$f}/\$U\$2",
+                "=AE{$f}/\$U\$2",
+                "=AF{$f}/8",
+                "=AG{$f}/8",
+                "",
+                "=AD{$f}+AJ{$f}+BONOS!AI{$indiceHoras}",
+                "",
+                "=AC{$f}/\$U\$1",
+                "=AM{$f}*HORAS!AI{$indiceHoras}",
+                $item['estaJubilado'] ?? '',
+
             ];
         }, $this->planillaLista, array_keys($this->planillaLista));
     }

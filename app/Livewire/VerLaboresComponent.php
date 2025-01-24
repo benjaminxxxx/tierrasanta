@@ -10,7 +10,7 @@ class VerLaboresComponent extends Component
     public $isFormOpen = false;
     public $labores;
     public function mount(){
-        $this->labores = Labores::all();
+        $this->labores = Labores::where('estado',true)->get();
     }
     public function render()
     {

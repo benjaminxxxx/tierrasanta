@@ -1,4 +1,4 @@
-<div>
+<div class="w-full overflow-auto">
     <x-loading wire:loading />
 
     <div>
@@ -9,15 +9,24 @@
     <div x-data="tableAsistencia" wire:ignore class="my-4">
         <div x-ref="tableContainer" class="mt-5 overflow-auto"></div>
 
+        <div class="my-3 block md:flex justify-evenly w-full">
+            @if ($periodo)
+                @foreach ($periodo as $indice => $diaLabor)
+                    <x-secondary-button
+                        @click="$wire.dispatch('verLaboresComponent',{semanaId:{{ $semana->id }},indice:{{ $indice }}})">
+                        <i class="fa fa-list"></i> {{ $diaLabor['nombre'] }} {{ $diaLabor['dia'] }}
+                    </x-secondary-button>
+                @endforeach
+            @endif
+        </div>
+
         <div class="flex items-center gap-4">
             <x-button
                 @click="$wire.dispatch('agregarCuadrilleros',{cuadrilla_asistencia_id:{{ $cuaAsistenciaSemanalId }}})"
                 class="mt-5">
                 <i class="fa fa-plus"></i> Agregar Cuadrilleros
             </x-button>
-            <x-button @click="sendData" class="mt-5">
-                <i class="fa fa-save"></i> Guardar Cambios
-            </x-button>
+
         </div>
     </div>
     <div class="my-5 md:flex justify-end">
@@ -59,6 +68,9 @@
             </x-slot>
             <x-slot name="tbody">
                 @if ($gruposTotales)
+                    @php
+                        $sumaTotalesGrupo = 0;
+                    @endphp
                     @foreach ($gruposTotales as $grupoTotal)
                         <x-tr>
                             <x-th style="background-color:{{ $grupoTotal->grupo->color }}" class="!text-gray-900">
@@ -79,24 +91,30 @@
                                     </x-th>
                                 @endforeach
                             @endif
+                            @php
+                                $sumaTotalesGrupo += $grupoTotal->total;
+                            @endphp
                             <x-th class="text-right">
-                                {{ $grupoTotal->total_costo }}
+                                {{ number_format($grupoTotal->total_costo,2) }}
                             </x-th>
                             <x-th class="text-right">
-                                <x-button @click="$wire.dispatch('verDetalleGastosAdicionalesPorGrupo',{grupoId:{{$grupoTotal->id}}})">
+                                <x-button
+                                    @click="$wire.dispatch('verDetalleGastosAdicionalesPorGrupo',{grupoId:{{ $grupoTotal->id }}})">
                                     <i class="fa fa-plus"></i> Agregar gasto
                                 </x-button>
                             </x-th>
                             <x-th class="text-right">
-                                {{$grupoTotal->total}}
+                                {{ number_format($grupoTotal->total,2) }}
                             </x-th>
                             <x-th class="text-center">
                                 <x-select
                                     wire:change="actualizarEstadoGrupoEnSemana({{ $grupoTotal->id }},$event.target.value)"
                                     class="px-1 py-2 !text-sm">
                                     <option value="pendiente"
-                                        {{ $grupoTotal->estado_pago == 'pendiente' ? 'selected' : '' }}>Pendiente</option>
-                                    <option value="pagado" {{ $grupoTotal->estado_pago == 'pagado' ? 'selected' : '' }}>
+                                        {{ $grupoTotal->estado_pago == 'pendiente' ? 'selected' : '' }}>Pendiente
+                                    </option>
+                                    <option value="pagado"
+                                        {{ $grupoTotal->estado_pago == 'pagado' ? 'selected' : '' }}>
                                         Pagado</option>
                                 </x-select>
                             </x-th>
@@ -118,15 +136,15 @@
                                 TOTAL
                             </x-th>
                             <x-th class="text-right">
-                                {{ $this->semana->total }}
+                                {{ number_format($this->semana->total,2) }}
                             </x-th>
                             <x-th></x-th>
-                            <x-th></x-th>
+                            <x-th>{{ number_format($sumaTotalesGrupo,2) }}</x-th>
                         </x-tr>
                     @endif
                 @endif
 
-                
+
             </x-slot>
         </x-table>
     </div>
@@ -136,7 +154,7 @@
         <ul style="list-style: disc" class="dark:text-white">
             @foreach ($observaciones as $observacionDetalle)
                 <li>
-                    <p class="dark:text-white">{{$observacionDetalle}}</p>
+                    <p class="dark:text-white">{{ $observacionDetalle }}</p>
                 </li>
             @endforeach
         </ul>
@@ -154,15 +172,14 @@
                 this.listeners.push(
                     Livewire.on('obtenerCuadrilleros', (data) => {
 
-                        console.log(data[1]);
                         this.tableData = data[0];
                         this.hot.loadData(this.tableData);
-                     
-                        const completo = data[1];
-                        if(completo){
-                            location.href = location.href;
-                        }
-                        
+
+                    }),
+                    Livewire.on('reiniciarTablaCuadrillero', () => {
+
+                        location.href = location.href;
+
                     })
                 );
             },
@@ -197,6 +214,7 @@
                         type: 'numeric', // tipo número, acepta decimales
                         title: `HORA <br/> ${dia.dia} <br/> ${dia.nombre}`,
                         width: 50,
+                        readOnly: true,
                         className: '!text-center'
                     });
                 });
@@ -218,6 +236,7 @@
                         type: 'numeric', // tipo número, acepta decimales
                         title: `BONO <br/> ${dia.dia} <br/> ${dia.nombre}`,
                         width: 50,
+                        readOnly: true,
                         className: '!text-center'
                     });
                 });
@@ -227,6 +246,7 @@
                     data: 'monto',
                     type: 'numeric',
                     title: 'MONTO',
+                    readOnly: true,
                     className: '!text-center',
                     numericFormat: {
                         pattern: '0.00',
@@ -261,8 +281,10 @@
                         const cellProperties = {};
 
                         if (row === this.tableData.length - 1) {
+
                             // Asigna una clase particular a todas las celdas de la última fila
                             cellProperties.className = '!bg-gray-200 font-bold !text-center';
+
                         }
 
                         return cellProperties;
@@ -311,26 +333,7 @@
                     $wire.dispatch('eliminarCuadrilleros', data);
                 }
             },
-            sendData() {
-                let allData = [];
 
-                // Recorre todas las filas de la tabla y obtiene los datos completos
-                for (let row = 0; row < this.hot.countRows(); row++) {
-                    const rowData = this.hot.getSourceDataAtRow(row);
-                    allData.push(rowData);
-                }
-
-                // Filtra las filas vacías
-                const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
-                    null && cell !== ''));
-
-                const data = {
-                    data: filteredData
-                };
-
-                console.log('Datos a enviar:', data);
-                $wire.dispatchSelf('storeTableDataCuadrilla', data);
-            }
         }));
     </script>
 @endscript

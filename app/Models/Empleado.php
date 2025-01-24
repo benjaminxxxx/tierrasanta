@@ -30,36 +30,62 @@ class Empleado extends Model
         'compensacion_vacacional',
         'esta_jubilado',
         'orden',
-        'asistencia'
+        'asistencia',
+        'tipo_planilla'
     ];
-    public function descuento(){
-        return $this->belongsTo(DescuentoSP::class,'descuento_sp_id');
+    public function descuento()
+    {
+        return $this->belongsTo(DescuentoSP::class, 'descuento_sp_id');
     }
-    public function asignacionFamiliar(){
-        return $this->hasMany(AsignacionFamiliar::class,'empleado_id');
+    public function asignacionFamiliar()
+    {
+        return $this->hasMany(AsignacionFamiliar::class, 'empleado_id');
     }
-    public function cargo(){
-        return $this->belongsTo(Cargo::class,'cargo_id');
+    public function cargo()
+    {
+        return $this->belongsTo(Cargo::class, 'cargo_id');
     }
-    public function grupo(){
-        return $this->belongsTo(Grupo::class,'grupo_codigo');
+    public function grupo()
+    {
+        return $this->belongsTo(Grupo::class, 'grupo_codigo');
     }
     public function getNombreCompletoAttribute()
     {
         return "{$this->apellido_paterno} {$this->apellido_materno}, {$this->nombres}";
     }
+    public static function planillaAgraria()
+    {
+        return self::where('status', 'activo')->where('tipo_planilla', '1');
+    }
+    public function getTipoPlanillaDescripcionAttribute()
+    {
+        $descripcion = '-';
+        switch ($this->tipo_planilla) {
+            case 1:
+                $descripcion  =  'P. AGRARIA';
+                break;
+            case 2:
+                $descripcion  =  'P. OFICINA';
+                break;
+            default:
+                $descripcion  =  'P. DESCONOCIDA';
+                break;
+        }
+        return $descripcion;
+    }
+
     public function getTieneAsignacionFamiliarAttribute()
     {
         // Obtener todas las asignaciones familiares del empleado
         $asignaciones = AsignacionFamiliar::where('empleado_id', $this->id)->get();
 
         $cantidadHijos = 0;
-        
+
 
         foreach ($asignaciones as $asignacion) {
             // Calcular la edad del hijo
             $edad = Carbon::parse($asignacion->fecha_nacimiento)->age;
-            
+
             // Verificar las condiciones
             if ($edad < 18 || ($edad >= 18 && $asignacion->esta_estudiando)) {
                 $cantidadHijos++;

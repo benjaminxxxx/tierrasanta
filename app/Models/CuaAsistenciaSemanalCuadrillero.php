@@ -18,7 +18,10 @@ class CuaAsistenciaSemanalCuadrillero extends Model
         'cua_asi_sem_gru_id',
         'monto_recaudado'
     ];
-
+    public function cuadrillaHoras()
+    {
+        return $this->hasMany(CuadrillaHora::class, 'cua_asi_sem_cua_id');
+    }
     // Relación con Cuadrillero
     public function cuadrillero()
     {

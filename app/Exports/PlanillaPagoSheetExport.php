@@ -52,7 +52,7 @@ class PlanillaPagoSheetExport implements FromArray, WithHeadings, WithStyles, Wi
 
         $this->dias = $this->generarDiasDelMes($this->mes, $this->anio);
 
-        $this->mesCadena = $meses[$this->mes] ?? 'MES INVÁLIDO';
+        $this->mesCadena = $meses[(int)$this->mes] ?? 'MES INVÁLIDO';
     }
     public function generarDiasDelMes($mes, $anio)
     {
@@ -73,7 +73,7 @@ class PlanillaPagoSheetExport implements FromArray, WithHeadings, WithStyles, Wi
     }
     public function title(): string
     {
-        return "PAGO";
+        return "JORNAL";
     }
 
     public function styles(Worksheet $sheet)
@@ -307,7 +307,7 @@ class PlanillaPagoSheetExport implements FromArray, WithHeadings, WithStyles, Wi
 
                     $columnaIndice = $dia[0]+3;
                     $columnaLetra = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnaIndice);
-                    $resultado[] = "=IF(HORAS!{$columnaLetra}{$f}=\"F\",0,PLANILLA!\$AG{$indiceReferencia}*HORAS!{$columnaLetra}{$f})";
+                    $resultado[] = "=IF(HORAS!{$columnaLetra}{$f}=\"F\",0,PLANILLA!\$AH{$indiceReferencia}*HORAS!{$columnaLetra}{$f}+BONOS!{$columnaLetra}{$f})";
 
                 }
                 $diasActuales = count($this->dias);
@@ -315,7 +315,7 @@ class PlanillaPagoSheetExport implements FromArray, WithHeadings, WithStyles, Wi
                 for ($i = 0; $i < $diasFaltantes; $i++) {
                     $resultado[] = ""; // Agregar celdas vacías
                 }
-                $resultado[] = "=SUM(D{$f}:AH{$f})";
+                $resultado[] = "=SUM(D{$f}:AH{$f})+PLANILLA!AJ{$indiceReferencia}";
                 
                 return $resultado;
             } else {

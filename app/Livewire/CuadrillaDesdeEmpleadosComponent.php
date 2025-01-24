@@ -15,7 +15,8 @@ class CuadrillaDesdeEmpleadosComponent extends Component
     public $empleadosSeleccionados = [];
     protected $listeners = ["registrarCuadrilleroDePlanilla"];
     public function registrarCuadrilleroDePlanilla(){
-        $this->empleados = Empleado::orderBy('apellido_paterno')
+        $this->empleados = Empleado::planillaAgraria()
+        ->orderBy('apellido_paterno')
         ->orderBy('apellido_materno')
         ->orderBy('nombres')
         ->get();

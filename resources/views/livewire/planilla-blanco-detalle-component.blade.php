@@ -1,48 +1,68 @@
 <div x-data="planilla_blanco">
+    <x-loading wire:loading />
     @if ($informacionBlanco)
         <x-card class="mt-5">
             <x-spacing>
                 <x-h3>MES DE {{ mb_strtoupper($mesTitulo) }} - {{ $anio }}</x-h3>
                 <div class="mt-5 md:flex items-end gap-4">
-                    <div class="w-full md:flex-1">
+                    <div class="mt-2 md:mt-0">
                         <p class="w-auto">Días Laborables</p>
                         <x-input class="!w-auto" wire:model.live="diasLaborables" />
                     </div>
-                    <div class="w-full md:flex-1">
+                    <div class="mt-2 md:mt-0">
                         <p class="w-auto">Total Horas</p>
                         <x-input class="!w-auto" wire:model="totalHoras" />
                     </div>
-                    <div class="w-full md:flex-1">
+                    <div class="mt-2 md:mt-0">
                         <p class="w-auto">Factor Rem. Básica</p>
                         <x-input class="!w-auto" wire:model="factorRemuneracionBasica" />
                     </div>
-                    <div class="mt-3 w-full md:flex-1">
+                    <div class="mt-2 md:mt-0">
                         <x-button wire:click="guardarPlanillaDatos">
-                            Guardar
+                            <i class="fa fa-refresh"></i> Actualizar Parámetros
                         </x-button>
                     </div>
-                    <div class="mt-3 w-full md:flex-1">
-                        <x-button-a href="{{route('planilla.asistencia',['mes'=>$mes,'anio'=>$anio])}}" class="whitespace-nowrap">
-                            Revisar Asistencia
+                </div>
+            </x-spacing>
+        </x-card>
+        <x-card class="mt-5">
+            <x-spacing>
+                <div class="mt-5 md:flex items-end gap-4">
+
+                   
+                    @if ($informacionBlanco)
+                        <div class="mt-3">
+                            <x-secondary-button wire:click="generarPlanilla">
+                                <i class="fa fa-list"></i>
+                                @if ($informacionBlancoDetalle && $informacionBlancoDetalle->count() > 0)
+                                    Regenerar Planilla
+                                @else
+                                    Generar Planilla
+                                @endif
+                            </x-secondary-button>
+                        </div>
+                        @if ($informacionBlanco->excel)
+                            <div class="mt-3">
+                                <x-button-a href="{{ Storage::disk('public')->url($informacionBlanco->excel) }}">
+                                    <i class="fa fa-file-excel"></i> Descargar Planilla Generada
+                                </x-button-a>
+                            </div>
+                        @endif
+                    @endif
+                    <div class="mt-3">
+                        <x-button-a href="{{ route('planilla.asistencia', ['mes' => $mes, 'anio' => $anio]) }}"
+                            class="whitespace-nowrap">
+                            <i class="fa fa-link"></i> Revisar Asistencia
                         </x-button-a>
                     </div>
-                    @if($informacionBlanco)
-                    <div class="mt-3 w-full">
-                        <x-button wire:click="generarPlanilla">
-                            @if ($informacionBlancoDetalle && $informacionBlancoDetalle->count() > 0)
-                                Regenerar Planilla
-                            @else
-                                Generar Planilla
-                            @endif
-                        </x-button>
-                    </div>
-                    @endif
                 </div>
                 <div class="mt-5" wire:ignore>
                     <div x-ref="tableContainer" class="overflow-auto"></div>
                 </div>
                 <div class="mt-5 flex justify-end">
-                    <x-button @click="sendData">Guardar Bonificaciones</x-button>
+                    <x-button @click="sendData">
+                        <i class="fa fa-save"></i> Guardar Bonificaciones
+                    </x-button>
                 </div>
             </x-spacing>
         </x-card>
@@ -102,7 +122,7 @@
                     fixedColumnsLeft: 2,
                     licenseKey: 'non-commercial-and-evaluation',
                     afterRender: function() {
-                        
+
                         const htCoreTable = document.querySelector('.htCore');
                         let tableHeight = htCoreTable.offsetHeight;
                         if (tableHeight > 0) {
@@ -135,7 +155,7 @@
                         type: 'text',
                         title: 'APELLIDOS Y NOMBRES',
                         renderer: function(instance, td, row, col, prop, value, cellProperties) {
-                          
+
                             const color = instance.getDataAtRowProp(row, 'empleado_grupo_color');
 
                             td.style.background = color;
@@ -144,7 +164,7 @@
                             return td;
                         },
                         readOnly: true
-                    },//empleado_grupo_color
+                    }, //empleado_grupo_color
                     {
                         data: 'spp_snp',
                         type: 'text',
@@ -175,7 +195,7 @@
                         data: 'bonificacion',
                         type: 'text',
                         title: 'BONIF.',
-                        className: '!text-right',                        
+                        className: '!text-right',
                         correctFormat: true,
                     },
                     {
@@ -228,7 +248,7 @@
 
                             return td;
                         },
-                        
+
                         readOnly: true
                     },
                     {

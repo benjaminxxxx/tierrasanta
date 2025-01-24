@@ -3,11 +3,11 @@
 namespace App\Livewire;
 
 use App\Models\CuaAsistenciaSemanal;
-use App\Models\CuaAsistenciaSemanalCuadrillero;
+use App\Services\CuadrillaAsistenciaSemanalServicio;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Session;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
-use Session;
 
 class CuadrillaAsistenciaComponent extends Component
 {
@@ -95,7 +95,7 @@ class CuadrillaAsistenciaComponent extends Component
         if (!$this->currentSemana)
             return;
 
-        $this->alert('question', '¿Está seguro(a) que desea eliminar el registro?', [
+        $this->alert('question', '¿Está seguro(a) que desea eliminar el registro?, se van a eliminar las actividades realizadas en este rango de fechas', [
             'showConfirmButton' => true,
             'confirmButtonText' => 'Si, Eliminar',
             'cancelButtonText' => 'Cancelar',
@@ -113,13 +113,22 @@ class CuadrillaAsistenciaComponent extends Component
     }
     public function confirmarEliminar($data)
     {
-        $semanaId = $data['semanaId'];
-        CuaAsistenciaSemanal::find($semanaId)->delete();        
-        $this->currentSemana = null;
-        Session::forget('currentSemana');
-        $this->CuaAsistenciaSemanal = null;
-        $this->revisarSemana();
-        $this->alert('success', 'Registro Eliminado Correctamente.');
+        $cuadrillaAsistenciaSemanalId = $data['semanaId'];
+        /****************************20250123_CORRECCION_AL_ELIMINAR_SEMANA_COMPLETA */
+        try {
+            
+            CuadrillaAsistenciaSemanalServicio::eliminarSemana($cuadrillaAsistenciaSemanalId);
+            $this->currentSemana = null;
+            Session::forget('currentSemana');
+            $this->CuaAsistenciaSemanal = null;
+            $this->revisarSemana();
+            $this->alert('success', 'Registro Eliminado Correctamente.');
+
+        } catch (\Throwable $th) {
+            $this->dispatch('log', $th->getMessage());
+            $this->alert('error', 'Ocurrió un error interno al eliminar el registro semanal de cuadrilleros.');
+        }
+        /****************************20250123_CORRECCION_AL_ELIMINAR_SEMANA_COMPLETA */
     }
     public function fechaAnterior()
     {
@@ -156,16 +165,12 @@ class CuadrillaAsistenciaComponent extends Component
     {
         if ($this->busquedaAnio) {
             $query = CuaAsistenciaSemanal::query();
-
-            // Filtrar por año
             $query->whereYear('fecha_inicio', $this->busquedaAnio);
 
-            // Filtrar por mes si se seleccionó
             if ($this->busquedaMes) {
                 $query->whereMonth('fecha_inicio', $this->busquedaMes);
             }
-
-            // Obtener semanas filtradas
+            
             $this->semanas = $query->orderBy('fecha_inicio', 'desc')->get();
         } else {
             $this->semanas = [];
@@ -177,33 +182,6 @@ class CuadrillaAsistenciaComponent extends Component
     }
     public function render()
     {
-        /*
-        $this->cuadrilla = CuaAsistenciaSemanal::orderBy('fecha_fin', 'desc')->first();
-
-        if ($this->cuadrilla) {
-            $inicio = Carbon::parse($this->cuadrilla->fecha_inicio);
-            $fin = Carbon::parse($this->cuadrilla->fecha_fin);
-            $this->fechas = [];
-            for ($date = $inicio->copy(); $date->lte($fin); $date->addDay()) {
-                $nombreDiaIngles = $date->format('l'); // Nombre del día en inglés
-                $nombreDiaEspañol = $this->diasSemana[$nombreDiaIngles]; // Convertir al español
-
-                $this->fechas[] = [
-                    'dia_numero' => $date->format('d'),
-                    'dia_nombre' => $nombreDiaEspañol
-                ];
-            }
-
-            // Obtener grupos ordenados por modalidad de pago
-            $this->grupos = $this->cuadrilla->grupos()->orderBy('modalidad_pago')->get();
-
-            // Obtener todos los cuadrilleros relacionados con la cuadrilla
-            $this->cuadrilleros = $this->cuadrilla->cuadrilleros()->orderBy('codigo_grupo')->get();
-
-            // Agrupar cuadrilleros por código de grupo
-            $this->cuadrillerosPorGrupo = $this->cuadrilleros->groupBy('codigo_grupo')->all();
-        }*/
-
         return view('livewire.cuadrilla-asistencia-component');
     }
 }

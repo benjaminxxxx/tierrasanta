@@ -21,9 +21,22 @@ class CampoController extends Controller
             'campos' => $campos
         ]);
     }
-    public function campania()
+    public function campos()
     {
-        return view('campo.campania');
+        return view('campo.campos');
+    }
+    public function campania($campo = null)
+    {
+        if($campo){
+            $campoExiste = Campo::find($campo);
+            if(!$campoExiste){
+                return redirect()->back();
+            }
+        }
+        
+        return view('campo.campania',[
+            'campo'=>$campo
+        ]);
     }
     public function guardarPosicion(Request $request, $nombre)
     {

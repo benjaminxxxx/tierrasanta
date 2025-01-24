@@ -82,7 +82,7 @@ class GastoAdicionalPorGrupoComponent extends Component
             throw new Exception("No se ha proporcionado un Id válido");
         }
         $this->gastos = GastoAdicionalPorGrupoCuadrilla::where('cua_asistencia_semanal_grupo_id', $this->grupoId)->get();
-        $this->dispatch('gastosAdicionalesActualizados');
+        $this->dispatch('cuadrillerosAgregadosAsistencia');
     }
     public function resetForm()
     {

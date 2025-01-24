@@ -41,6 +41,9 @@ class CuadrillaCuadrillerosComponent extends Component
         Cuadrillero::find($cuadrilleroId)->update(['estado'=>true]);
         $this->alert('success', 'Registro restaurado correctamente.');
     }
+    public function updatedVerEliminados(){
+        $this->resetPage();
+    }
     public function render()
     {
         $this->cuadrilleros = Cuadrillero::orderBy('nombres')->where('estado',!$this->verEliminados)->get();

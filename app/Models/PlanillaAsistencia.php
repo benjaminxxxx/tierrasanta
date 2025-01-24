@@ -23,9 +23,11 @@ class PlanillaAsistencia extends Model
     {
         return $this->hasMany(PlanillaAsistenciaDetalle::class);
     }
+    
     public static function horas($anio,$mes)
     {
         $grupoColores = Grupo::get()->pluck("color", "codigo")->toArray();
+        
         $tipoAsistenciaArray = TipoAsistencia::get()->mapWithKeys(function ($item) {
             return [
                 $item->codigo => [
@@ -34,11 +36,10 @@ class PlanillaAsistencia extends Model
                 ]
             ];
         })->toArray();
-
+        
         $ultimoDiaMes = Carbon::createFromDate($anio, $mes, 1)->endOfMonth()->day;
         $informacionAsistenciaAdicional = [];
-
-        $empleadosDatas = Empleado::get()->keyBy('documento')->toArray();
+        $empleadosDatas = Empleado::planillaAgraria()->get()->keyBy('documento')->toArray();
 
 
         $empleados = self::where('mes', $mes)

@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Campo;
 use App\Models\ConsolidadoRiego;
 use App\Models\Empleado;
+use App\Models\RegistroProductividad;
 use App\Models\ReporteDiario;
 use App\Models\ReporteDiarioCampos;
 use App\Models\ReporteDiarioCuadrilla;
@@ -13,6 +14,7 @@ use App\Models\TipoAsistencia;
 use App\Models\ReporteDiarioDetalle;
 use App\Models\ReporteDiarioRiego;
 use App\Services\CuadrillaServicio;
+use App\Services\ProductividadServicio;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -34,7 +36,7 @@ class ReporteDiarioDetalleComponent extends Component
     public $reporteDiarioCampos;
     public $totalesAsistenciasCuadrilleros = 0;
     public $totalCuadrilleroSegunHora = 0;
-    protected $listeners = ["importarPlanilla", "GuardarInformacion"];
+    protected $listeners = ["importarPlanilla", "GuardarInformacion","eliminarPlanilla"];
     public function mount()
     {
         $this->reporteDiarioCampos = ReporteDiarioCampos::whereDate('fecha',$this->fecha)->first();
@@ -51,9 +53,22 @@ class ReporteDiarioDetalleComponent extends Component
         $this->obtenerTotales();
         $this->ImportarEmpleados();
         $this->ObtenerTareas();
+        
+    }
+    public function eliminarPlanilla($planillas)
+    {
+        foreach ($planillas as $planilla) {
+            ReporteDiario::where('documento',$planilla['documento'])
+            ->where('fecha',$this->fecha)
+            ->delete();
+        }
+        $this->ImportarEmpleados();
+        $this->dispatch("setEmpleados", $this->empleados);
+        $this->alert('success','Empleados eliminados correctamente.');
     }
     public function GuardarInformacion($datos)
     {
+        
         if (!$this->fecha) {
             return;
         }
@@ -61,11 +76,6 @@ class ReporteDiarioDetalleComponent extends Component
         if (!is_array($datos)) {
             return;
         }
-        
-        /*
-        if (!is_array($totales)) {
-            return;
-        }*/
 
         $fecha = $this->fecha;
 
@@ -187,7 +197,6 @@ class ReporteDiarioDetalleComponent extends Component
 
                     // Eliminar los detalles existentes asociados al reporte
                     ReporteDiarioDetalle::where('reporte_diario_id', $reporteDiario->id)->delete();
-                    $totalHoras = new \DateTime('00:00:00');
 
                     // Procesar los detalles en grupos de 4 columnas
                     for ($i = 4; $i < count($fila); $i += 4) {
@@ -267,7 +276,18 @@ class ReporteDiarioDetalleComponent extends Component
                 $this->obtenerTotales();
             }
             
-
+            /**************************************************************REGISTRO DE PRODUCTIVIDAD CODIGO QUE ACTUALIZA LOS BONOS */
+            /*$registrosProductividad = RegistroProductividad::where('fecha',$fecha)->get();
+            if($registrosProductividad){
+                foreach ($registrosProductividad as $registroProductividad) {
+                    $productividadServicio = new ProductividadServicio($registroProductividad->id);
+                    $productividadServicio->registrarBonos();
+                }
+            }
+            obsoleto, no funciona porque al modificarse se debe modificar en el origen    
+            */
+        
+            /************************************************************** */
             // Confirmar la transacción
             DB::commit();
 
@@ -315,7 +335,7 @@ class ReporteDiarioDetalleComponent extends Component
     
     public function importarPlanilla()
     {
-        $empleados = Empleado::where('status', 'activo')->get();
+        $empleados = Empleado::planillaAgraria()->get();
 
         if ($empleados->count() == 0) {
             return;
@@ -372,12 +392,7 @@ class ReporteDiarioDetalleComponent extends Component
             ->toArray();
 
         foreach ($informacionAdicionalRiego as $documento => $infoRiego) {
-            /*
-innecesario si abajo se hace una busqueda
-            $empleadosPlanilla = ReporteDiario::where('documento',$documento)->where('tipo_trabajador','planilla')->exists();
-            if(!$empleadosPlanilla){
-                continue;
-            }*/
+           
 
             if ($infoRiego['hora_inicio'] && $infoRiego['hora_fin'] && $infoRiego['total_horas_jornal'] !== '00:00:00') {
 
@@ -446,7 +461,7 @@ innecesario si abajo se hace una busqueda
 
                 return $empleadoData;
             })->toArray();
-
+            
         $cuadrillas = ReporteDiarioCuadrilla::with('detalles')
             ->where('fecha', $this->fecha)
             ->get()

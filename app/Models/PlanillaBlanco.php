@@ -16,7 +16,8 @@ class PlanillaBlanco extends Model
         'dias_laborables',
         'total_horas',
         'factor_remuneracion_basica',
-        'total_empleados'
+        'total_empleados',
+        'excel'
     ];
    
     public function detalle()

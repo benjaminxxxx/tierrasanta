@@ -112,7 +112,7 @@ class CuadrilleroPrecioPorDiaComponent extends Component
 
                 if (trim($costoDia) == "") {
                     $this->customizarMontosPorDia($this->cuadrilleros);
-                    $this->dispatch('actualizarTabla');
+                    $this->dispatch('cuadrillerosAgregadosAsistencia');
                     $this->alert('success', 'Registro eliminado correctamente.');
                     return;
                 }
@@ -127,7 +127,7 @@ class CuadrilleroPrecioPorDiaComponent extends Component
                     'cua_asi_sem_cua_id' => $cuadrillero,
                 ]);
                 $this->customizarMontosPorDia($this->cuadrilleros);
-                $this->dispatch('actualizarTabla');
+                $this->dispatch('cuadrillerosAgregadosAsistencia');
                 return $this->alert('success', 'Registro actualizado correctamente.');
             }
 

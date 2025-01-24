@@ -55,7 +55,7 @@ return new class extends Migration
             $table->decimal('negro_sueldo_neto_total', 10, 2)->nullable();
             $table->decimal('negro_sueldo_bruto', 10, 2)->nullable();
             $table->decimal('negro_sueldo_por_dia', 10, 2)->nullable();
-            $table->decimal('negro_sueldo_por_hora', 10, 2)->nullable();
+            $table->decimal('negro_sueldo_por_hora', 12, 5)->nullable();
             $table->decimal('negro_diferencia_por_hora', 10, 2)->nullable();
             $table->decimal('negro_diferencia_real', 10, 2)->nullable();
 

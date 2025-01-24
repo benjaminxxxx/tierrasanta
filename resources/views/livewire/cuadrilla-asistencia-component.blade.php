@@ -5,12 +5,14 @@
             Asistencias Cuadrilla
         </x-h3>
         @if ($currentSemana)
-            <x-secondary-button type="button" @click="$wire.dispatch('editarSemana',{semanaId:{{$currentSemana}}})">
+            <x-secondary-button type="button" class="w-full md:w-auto" @click="$wire.dispatch('editarSemana',{semanaId:{{ $currentSemana }}})">
                 <i class="fa fa-edit"></i> Editar semana actual
             </x-secondary-button>
         @endif
-        <livewire:cuadrilla-asistencia-form-component />
-        <x-button-a href="{{route('reporte.pago_cuadrilla')}}">
+        <div class="my-2 md:my-0">
+            <livewire:cuadrilla-asistencia-form-component />
+        </div>
+        <x-button-a href="{{ route('reporte.pago_cuadrilla') }}" class="w-full md:w-auto text-center">
             <i class="fa fa-cash-register"></i> Ver pagos cuadrilleros
         </x-button-a>
     </div>
@@ -38,14 +40,14 @@
     </x-card>
 
     <x-card class="mt-5">
-        <x-spacing class="flex items-center justify-center">
+        <x-spacing>
             @if ($currentSemana)
                 @if ($grupos && count($grupos) > 0)
-              
-                    <livewire:cuadrilla-asistencia-detalle-component :cuaAsistenciaSemanalId="$currentSemana"
-                        wire:key="cuadrillaAsistencia-{{ $currentSemana }}" />
+                    <div class="flex items-center justify-center">
+                        <livewire:cuadrilla-asistencia-detalle-component :cuaAsistenciaSemanalId="$currentSemana"
+                            wire:key="cuadrillaAsistencia-{{ $currentSemana }}" />
+                    </div>
                 @endif
-
                 <div class="flex items-center justify-end">
                     <x-danger-button type="button" wire:click="confirmarEliminarRegistroSemanal">
                         <i class="fa fa-trash"></i> Eliminar Registro Semanal

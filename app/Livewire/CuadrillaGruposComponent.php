@@ -43,6 +43,9 @@ class CuadrillaGruposComponent extends Component
         CuaGrupo::where('codigo', $codigo)->update(['estado'=>true]);
         $this->alert('success', 'Registro restaurado correctamente.');
     }
+    public function updatedVerEliminados(){
+        $this->resetPage();
+    }
     public function confirmarEliminar($data)
     {
         try {

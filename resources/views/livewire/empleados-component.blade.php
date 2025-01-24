@@ -75,21 +75,30 @@
                         <option value="inactivo">Inactivo</option>
                     </x-select>
                 </div>
+                <div>
+                    <x-label for="tipo_planilla">Tipo de planilla</x-label>
+                    <x-select class="uppercase" wire:model.live="tipo_planilla" id="tipo_planilla">
+                        <option value="">TODOS</option>
+                        <option value="1">Planilla Agraria</option>
+                        <option value="2">Planilla Oficina</option>
+                    </x-select>
+                </div>
             </form>
             <x-table class="mt-5">
                 <x-slot name="thead">
                     <tr>
-                        <x-th value="N°" />
-                        <x-th value="Documento" />
+                        <x-th value="N°" class="text-center" />
+                        <x-th value="Documento" class="text-center" />
                         <x-th value="Nombre Completo" />
-                        <x-th value="Orden" />
-                        <x-th value="Asignación Familiar" />
-                        <x-th value="SNP/SPP" />
-                        <x-th value="Cargo" />
-                        <x-th value="Fech. Nac." />
-                        <x-th value="Fech. Ingreso." />
-                        <x-th value="Género" />
-                        <x-th value="Acciones" />
+                        <x-th value="Orden"  class="text-center"/>
+                        <x-th value="Asignación Familiar" class="text-center" />
+                        <x-th value="SNP/SPP" class="text-center" />
+                        <x-th value="Cargo" class="text-center" />
+                        <x-th value="Fech. Nac." class="text-center" />
+                        <x-th value="Fech. Ingreso."  class="text-center"/>
+                        <x-th value="Género" class="text-center" />
+                        <x-th value="Tpo Planilla" class="text-center" />
+                        <x-th value="Acciones" class="text-center" />
                     </tr>
                 </x-slot>
                 <x-slot name="tbody">
@@ -98,16 +107,15 @@
                             <x-tr style="background-color:{{ $empleado->grupo ? $empleado->grupo->color : '#ffffff' }}">
                                 <x-th value="{{ $indice + 1 }}" />
                                 <x-td value="{{ $empleado->documento }}" />
-                                <x-td value="{{ $empleado->nombreCompleto }}"  class="!text-left" />
+                                <x-td value="{{ $empleado->nombreCompleto }}" class="!text-left" />
                                 <x-td>
                                     <div class="flex items-center gap-2">
-                                        <x-success-button wire:click="moveUp({{ $empleado->id }})"
-                                            class="">
+                                        <x-success-button wire:click="moveUp({{ $empleado->id }})" class="">
                                             <i class="fa fa-arrow-up"></i>
                                         </x-success-button>
-                                        <x-input class="!w-12 !p-2 !mt-0 text-center" value="{{ $empleado->orden }}" wire:keyup.debounce.500ms="moveAt({{ $empleado->id }}, $event.target.value)" />
-                                        <x-button wire:click="moveDown({{ $empleado->id }})"
-                                            class="">
+                                        <x-input class="!w-12 !p-2 !mt-0 text-center" value="{{ $empleado->orden }}"
+                                            wire:keyup.debounce.500ms="moveAt({{ $empleado->id }}, $event.target.value)" />
+                                        <x-button wire:click="moveDown({{ $empleado->id }})" class="">
                                             <i class="fa fa-arrow-down"></i>
                                         </x-button>
                                     </div>
@@ -118,11 +126,12 @@
                                     </x-secondary-button>
                                 </x-td>
                                 <x-td value="{{ $empleado->descuento_sp_id }}" />
-                                <x-td value="{{ isset($empleado->cargo) ? $empleado->cargo->nombre : '-' }}"
-                                    />
+                                <x-td value="{{ isset($empleado->cargo) ? $empleado->cargo->nombre : '-' }}" />
                                 <x-td value="{{ $empleado->fecha_nacimiento }}" />
                                 <x-td value="{{ $empleado->fecha_ingreso }}" />
                                 <x-td value="{{ $empleado->genero }}" />
+                                <x-td value="{{ $empleado->tipo_planilla_descripcion }}" />
+
                                 <x-td>
                                     <div class="flex items-center justify-center gap-2">
                                         @if ($empleado->status != 'activo')

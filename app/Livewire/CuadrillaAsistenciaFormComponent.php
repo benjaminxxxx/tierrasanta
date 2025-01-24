@@ -137,8 +137,7 @@ class CuadrillaAsistenciaFormComponent extends Component
         ->exists();
 
         if ($conflicto) {
-            $this->alert('error', 'El rango de fechas seleccionado entra en conflicto con otro registro existente.');
-            return;
+            return $this->alert('error', 'El rango de fechas seleccionado entra en conflicto con otro registro existente.');
         }
 
         DB::beginTransaction();
@@ -148,12 +147,30 @@ class CuadrillaAsistenciaFormComponent extends Component
             // Insertar en CuaAsistenciaSemanal
             if($this->semanaId){
                 $CuaAsistenciaSemanal  = CuaAsistenciaSemanal::find($this->semanaId);
+
+                //codigo de modificacion 20250122CORRECCION_AL_EDITAR_SEMANA_CUADRILLA
+                $actividades =  $CuaAsistenciaSemanal->actividades
+                ->where('fecha','<',$this->fecha_inicio)
+                ->orWhere('fecha','>',$this->fecha_fin)
+                ->get();
+
+                if($actividades->count()>0){
+                    foreach ($actividades as $actividad) {
+                        $actividad->recogidas()->delete();
+                        $actividad->cuadrillero_actividades()->delete();
+                    }
+                }
+                /************************20250122CORRECCION_AL_EDITAR_SEMANA_CUADRILLA */
+
                 if($CuaAsistenciaSemanal){
                     $CuaAsistenciaSemanal->update([
                         'titulo' => $this->titulo,
                         'fecha_inicio' => $this->fecha_inicio,
                         'fecha_fin' => $this->fecha_fin
                     ]);
+                    /************************20250122CORRECCION_AL_EDITAR_SEMANA_CUADRILLA */
+                    $CuaAsistenciaSemanal->actualizarTotales();
+                    /************************20250122CORRECCION_AL_EDITAR_SEMANA_CUADRILLA */
                 }
                 
             }else{
@@ -250,15 +267,12 @@ class CuadrillaAsistenciaFormComponent extends Component
             $this->closeForm(); // Si quieres cerrar el formulario
             $this->dispatch('NuevaCuadrilla');
             if($this->semanaId){
-                $this->semanaId = null;
-                $this->dispatch('actualizarTablaCompleta');
+                $this->dispatch('reiniciarTablaCuadrillero');
             }
             
         } catch (QueryException $e) {
             // Rollback de la transacción en caso de error
             DB::rollBack();
-
-            // Manejar el error y mostrar un mensaje
             $this->alert('error', 'Hubo un problema al guardar la cuadrilla. Error: ' . $e->getMessage());
         }
     }

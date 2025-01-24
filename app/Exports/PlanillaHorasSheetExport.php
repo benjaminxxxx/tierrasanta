@@ -52,7 +52,7 @@ class PlanillaHorasSheetExport implements FromArray, WithHeadings, WithStyles, W
 
         $this->dias = $this->generarDiasDelMes($this->mes, $this->anio);
 
-        $this->mesCadena = $meses[$this->mes] ?? 'MES INVÁLIDO';
+        $this->mesCadena = $meses[(int)$this->mes] ?? 'MES INVÁLIDO';
     }
     public function generarDiasDelMes($mes, $anio)
     {

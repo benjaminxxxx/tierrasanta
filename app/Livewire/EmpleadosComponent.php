@@ -25,6 +25,7 @@ class EmpleadosComponent extends Component
     public $grupos;
     public $estado;
     public $genero;
+    public $tipo_planilla;
     protected $listeners = ['EmpleadoRegistrado' => '$refresh', 'eliminacionConfirmada', 'HijoRegistrado' => '$refresh'];
     public function mount()
     {
@@ -72,6 +73,11 @@ class EmpleadosComponent extends Component
         // Filtro por estado
         if (!empty($this->estado)) {
             $query->where('status', $this->estado);
+        }
+
+        // Filtro por tipo de planilla
+        if (!empty($this->tipo_planilla)) {
+            $query->where('tipo_planilla', $this->tipo_planilla);
         }
 
         $empleados = $query->orderBy('orden')->paginate(20);

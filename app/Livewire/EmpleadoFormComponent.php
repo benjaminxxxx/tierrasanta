@@ -33,11 +33,13 @@ class EmpleadoFormComponent extends Component
     public $grupo_codigo;
     public $compensacion_vacacional;
     public $esta_jubilado;
+    public $tipo_planilla;
     protected $listeners = ['EditarEmpleado'];
     protected function rules()
     {
         return [
             'nombres' => 'required|string',
+            'tipo_planilla'=>'required',
             'documento' => [
                 'required',
                 'string',
@@ -50,6 +52,7 @@ class EmpleadoFormComponent extends Component
 
     protected $messages = [
         'nombres.required' => 'El Nombre es obligatorio.',
+        'tipo_planilla.required' => 'El Tipo de planilla es obligatorio.',
         'documento.required' => 'El Documento es obligatorio.',
         'documento.unique' => 'El Documento ya está en uso.',
         'fecha_ingreso.date_format' => 'La Fecha de Ingreso debe tener un formato válido (YYYY-MM-DD).',
@@ -81,6 +84,7 @@ class EmpleadoFormComponent extends Component
             $this->grupo_codigo = $empleado->grupo_codigo;
             $this->compensacion_vacacional = $empleado->compensacion_vacacional;
             $this->esta_jubilado = $empleado->esta_jubilado?true:false;
+            $this->tipo_planilla = $empleado->tipo_planilla;
             $this->CrearEmpleado();
         }
     }
@@ -109,6 +113,7 @@ class EmpleadoFormComponent extends Component
                 'grupo_codigo' => $this->grupo_codigo,
                 'compensacion_vacacional' => $this->compensacion_vacacional,
                 'esta_jubilado' => $this->esta_jubilado?1:0,
+                'tipo_planilla'=>$this->tipo_planilla,
             ];
             
             if ($this->empleadoId) {
@@ -136,7 +141,8 @@ class EmpleadoFormComponent extends Component
                 'salario',
                 'grupo_codigo',
                 'compensacion_vacacional',
-                'esta_jubilado'
+                'esta_jubilado',
+                'tipo_planilla'
             ]);
             $this->dispatch('EmpleadoRegistrado');
             $this->closeForm();

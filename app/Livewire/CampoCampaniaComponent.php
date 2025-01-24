@@ -2,8 +2,13 @@
 
 namespace App\Livewire;
 
+use App\Models\AlmacenProductoSalida;
 use App\Models\Campo;
 use App\Models\CampoCampania;
+use App\Models\CamposCampaniasConsumo;
+use App\Models\CategoriaProducto;
+use App\Models\ResumenConsumoProductos;
+use App\Services\CampaniaServicio;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\QueryException;
@@ -15,106 +20,45 @@ class CampoCampaniaComponent extends Component
 {
     use LivewireAlert;
     public $campanias;
-    public $fecha;
-    public $fechasRegistradas;
-    public $mostrarNuevoForm = false;
-    public $existeAnterior = false;
-    public $lotes = [];
-    public $fechaAEliminar;
-    public $usarInformacionAnterior = true;
-    protected $listeners = ['GuardarInformacion', 'confirmarEliminar'];
+    public $campos;
+    public $campoSeleccionado;
+    protected $listeners = ['GuardarInformacion', 'confirmarEliminar', 'campaniaInsertada' => 'obtenerRegistros'];
 
-    public function mount()
+    public function mount($campo = null)
     {
-        $ultimaFecha = CampoCampania::orderBy('fecha_vigencia', 'desc')->first();
-        if ($ultimaFecha) {
-            $this->fecha = $ultimaFecha->fecha_vigencia;
-        } else {
-            $this->fecha = Carbon::now()->format('Y-m-d');
+        $this->campos = Campo::orderBy('orden')->get();
+        if ($campo) {
+            $this->campoSeleccionado = $campo;
+            $this->obtenerRegistros();
         }
+    }
+    public function updatedCampoSeleccionado()
+    {
 
         $this->obtenerRegistros();
     }
     public function obtenerRegistros()
     {
-        if ($this->fecha) {
-            $this->campanias = CampoCampania::whereDate('fecha_vigencia', $this->fecha)->get();
-            $this->existeAnterior = $this->campanias->count() > 0;
-            $this->lotes = [];
-
-            if ($this->campanias->count() == 0) {
-                //por primera vez, agregar informacion al grid
-                $this->lotes = Campo::orderBy('orden')->get()
-                    ->map(function ($lote) {
-                        return [
-                            'lote' => $lote->nombre,
-                            'area' => 0,
-                            'campania' => ''
-                        ];
-                    })->toArray();
-            } else {
-                $this->lotes = $this->campanias->map(function ($compania) {
-                    return [
-                        'lote' => $compania->lote,
-                        'area' => $compania->area,
-                        'campania' => $compania->campania
-                    ];
-                });
-            }
-            $this->dispatch('renderTable', $this->lotes);
+        if (!$this->campoSeleccionado) {
+            $this->campanias = null;
+            return;
         }
-    }
-    
-    public function agregarVigencia(){
-        $this->fecha = Carbon::now()->format('Y-m-d');
-        $this->mostrarNuevoForm = true;
-    }
-    public function crearVigencia()
-    {
-        try {
-            $existeRegistroSegunFecha = CampoCampania::whereDate('fecha_vigencia', $this->fecha)->exists();
-            if ($existeRegistroSegunFecha) {
-                throw new Exception("La fecha ya tiene registros elija otra fecha");
-            }
 
-            $ultimosRegistros = [];
+        $campo = Campo::find($this->campoSeleccionado);
 
-            if ($this->usarInformacionAnterior) {
-                $ultimaFechaRegistro = CampoCampania::orderBy('fecha_vigencia', 'desc')->first();
-                if (!$ultimaFechaRegistro) {
-                    throw new Exception("No existen datos en fechas anteriores para replicar, debe desactivar esta opción.");
-                }
-                $ultimaFecha = $ultimaFechaRegistro->fecha_vigencia;
-                $ultimosRegistros = CampoCampania::whereDate('fecha_vigencia', $ultimaFecha)->get()->keyBy('lote')->toArray();
-            }
-
-            $datos = Campo::orderBy('orden')->get()
-                ->map(function ($lote) use ($ultimosRegistros) {
-
-                    $area = array_key_exists($lote->nombre, $ultimosRegistros) ? $ultimosRegistros[$lote->nombre]['area'] : null;
-                    $campania = array_key_exists($lote->nombre, $ultimosRegistros) ? $ultimosRegistros[$lote->nombre]['campania'] : null;
-
-                    return [$lote->nombre, $area, $campania];
-                })->toArray();
-
-            $this->mostrarNuevoForm = false;
-            $this->GuardarInformacion($datos);
-            $this->obtenerRegistros();
-        } catch (\Throwable $ex) {
-            return $this->alert('error', $ex->getMessage());
+        if (!$campo) {
+            return $this->alert('error', 'El campo no existe.');
         }
-    }
-    public function cambiarFechaA($fecha)
-    {
-        $this->fecha = $fecha;
-        $this->obtenerRegistros();
-    }
-    public function eliminarFecha($fecha)
-    {
 
-        $this->alert('question', '¿Está seguro(a) que desea eliminar el registro?', [
+        $this->campanias = $campo->campanias()->orderBy('fecha_inicio', 'desc')->get();
+    }
+
+    public function eliminarCampania($campaniaId)
+    {
+        $this->alert('question', '¿Está seguro(a) que desea eliminar la campaña?', [
             'showConfirmButton' => true,
             'confirmButtonText' => 'Si, Eliminar',
+            'cancelButtonText' => 'Cancelar',
             'onConfirmed' => 'confirmarEliminar',
             'showCancelButton' => true,
             'position' => 'center',
@@ -123,81 +67,98 @@ class CampoCampaniaComponent extends Component
             'confirmButtonColor' => '#056A70',
             'cancelButtonColor' => '#2C2C2C',
             'data' => [
-                'fecha' => $fecha,
+                'campaniaId' => $campaniaId,
             ],
         ]);
     }
     public function confirmarEliminar($data)
     {
-        $fecha = $data['fecha'];
-        CampoCampania::whereDate('fecha_vigencia', $fecha)->delete();
+        $campaniaId = $data['campaniaId'];
+        $campania = CampoCampania::find($campaniaId);
+        if ($campania) {
+            $campaniaAnterior = CampoCampania::whereDate('fecha_inicio', '<', $campania->fecha_inicio)->orderBy('fecha_inicio')->first();
+            if ($campaniaAnterior) {
+                //si hay un registro anterior, debemos actualizar su fecha de fin, pero actualizaremos solo en caso haya una campaña posterior
+                $campaniaPosterior = CampoCampania::whereDate('fecha_inicio', '>', $campania->fecha_inicio)->orderBy('fecha_inicio')->first();
+                if ($campaniaPosterior) {
+                    $fecha = Carbon::parse($campaniaPosterior->fecha_inicio)->addDay(-1);
+                    $campaniaAnterior->update([
+                        'fecha_fin' => $fecha
+                    ]);
+                } else {
+                    //cuando no hay fecha siguiente o posterior, quiere decir que aun no debe haber fecha_fin
+                    $campaniaAnterior->update([
+                        'fecha_fin' => null
+                    ]);
+                }
+            }
+        }
+        $campania->delete();
+        $this->obtenerRegistros();
         $this->alert('success', 'Registros Eliminados Correctamente.');
     }
-    public function render()
+    public function actualizarGastosConsumo($campaniaId)
     {
-        $this->fechasRegistradas = CampoCampania::select('fecha_vigencia')
-            ->distinct()
-            ->orderBy('fecha_vigencia', 'desc')
-            ->pluck('fecha_vigencia')
-            ->map(function ($fecha) {
-                return Carbon::parse($fecha)->format('Y-m-d'); // Cambia el formato a Y-m
-            })
-            ->toArray();
 
-
-
-        return view('livewire.campo-campania-component');
-    }
-    public function GuardarInformacion($datos)
-    {
-        /*
-        if (is_array($this->fechasRegistradas) && count($this->fechasRegistradas) > 0) {
-            $ultimaFecha = $this->fechasRegistradas[0]; //ultima fecha
-        } else {
-            //No hay ninguna fecha registrada, entrar como null
-        }*/
         try {
 
-            $nombresCampos = Campo::pluck('nombre')->toArray();
-            $validatedData = [];
+            $campaniaServicio = new CampaniaServicio($campaniaId);
+            $campaniaServicio->actualizarGastosyConsumos();
 
-            foreach ($datos as $indice => $entry) {
-                // Validar si el campo (nombre) existe en el array de nombres de campos
-                if (!in_array($entry[0], $nombresCampos)) {
-                    throw new Exception("el campo de la fila " . $indice . " no es un campo registrado");
-                }
-
-                // Validar que el área sea un número (puede ser decimal o entero)
-                if (!is_numeric($entry[1])) {
-                    $entry[1] = null;
-                }
-
-                // Validar que la campaña sea un string no vacío
-                if (empty($entry[2]) || !is_string($entry[2])) {
-                    $entry[2] = null;
-                }
-
-                // 4. Si pasa todas las validaciones, agregarlo al array de datos validados
-                $validatedData[] = [
-                    'lote' => $entry[0],
-                    'area' => $entry[1],
-                    'campania' => $entry[2],
-                    'fecha_vigencia' => $this->fecha, // Usamos la fecha de la clase o de donde venga
-                ];
+            $campania = CampoCampania::find($campaniaId);
+            if (!$campania) {
+                return $this->alert('error', 'La campaña no existe.');
             }
-            DB::transaction(function () use ($validatedData) {
-                CampoCampania::where('fecha_vigencia', $this->fecha)->delete(); // Eliminar registros previos
+            
+            $campania->consumos()->delete();
+            $campania->consumo()->delete();
+            $fecha_inicio = $campania->fecha_inicio;
+            $fecha_fin = $campania->fecha_fin;
+            $campo = $campania->campo;
 
-                // 6. Insertar los nuevos registros
-                if (!empty($validatedData)) {
-                    CampoCampania::insert($validatedData); // Inserción masiva
-                    $this->alert('success', 'Registros Creados Correctamente.');
+            $query = AlmacenProductoSalida::whereDate('fecha_reporte', '>=', $fecha_inicio);
+            if ($fecha_fin) {
+                $query->whereDate('fecha_reporte', '<=', $fecha_fin);
+            }
+            $registros = $query->where('campo_nombre', $campo)->get();
+            if ($registros) {
+                foreach ($registros as $registro) {
+
+                    ResumenConsumoProductos::create([
+                        'fecha' => $registro->fecha_reporte,
+                        'campo' => $registro->campo_nombre,
+                        'producto' => $registro->producto->nombre_completo,
+                        'categoria' => $registro->producto->categoria->nombre,
+                        'categoria_id' => $registro->producto->categoria_id,
+                        'cantidad' => $registro->cantidad,
+                        'total_costo' => $registro->total_costo,
+                        'campos_campanias_id' => $campania->id
+                    ]);
                 }
-            });
-        } catch (Exception $ex) {
-            return $this->alert('error', $ex->getMessage());
-        } catch (QueryException $ex) {
-            return $this->alert('error', $ex->getMessage());
+
+                $categoriaProductos = CategoriaProducto::all();
+                if ($categoriaProductos) {
+                    foreach ($categoriaProductos as $categoriaProducto) {
+                        $totalConsumido = ResumenConsumoProductos::where('campos_campanias_id', $campania->id)
+                            ->where('categoria_id', $categoriaProducto->id)
+                            ->sum('total_costo');
+                        CamposCampaniasConsumo::create([
+                            'campos_campanias_id' => $campania->id,
+                            'categoria_id' => $categoriaProducto->id,
+                            'monto' => $totalConsumido,
+                        ]);
+                    }
+                }
+                $this->alert('success', 'Gastos y Consumos actualizados correctamente.');
+            }
+        } catch (\Throwable $th) {
+            $this->dispatch('log', $th->getMessage());
+            $this->alert('error', 'Ocurrió un error al Actualizar los Gastos y Consumos.');
         }
+    }
+
+    public function render()
+    {
+        return view('livewire.campo-campania-component');
     }
 }

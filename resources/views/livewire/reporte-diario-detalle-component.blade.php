@@ -211,6 +211,14 @@
                     autoRowSize: true,
                     fixedColumnsLeft: 4,
                     licenseKey: 'non-commercial-and-evaluation',
+                    contextMenu: {
+                        items: {
+                            "remove_quadrillero": {
+                                name: 'Eliminar planillero(s)',
+                                callback: () => this.eliminarPlanilleroSeleccionado()
+                            }
+                        }
+                    },
                     afterChange: (changes, source) => {
 
                         if (source === 'loadData') {
@@ -478,6 +486,24 @@
                 });
 
                 return columns;
+            },
+            eliminarPlanilleroSeleccionado() {
+                const selected = this.hot.getSelected();
+                let planillerosAEliminar = [];
+
+                if (selected) {
+                    selected.forEach(range => {
+                        const [startRow, , endRow] = range;
+                        for (let row = startRow; row <= endRow; row++) {
+                            const cuadrillero = this.hot.getSourceDataAtRow(row);
+                            planillerosAEliminar.push(cuadrillero);
+                        }
+                    });
+                    const data = {
+                        planillas: planillerosAEliminar
+                    };
+                    $wire.dispatch('eliminarPlanilla', data);
+                }
             },
             sendData() {
                 const rawData = this.hot.getData();

@@ -42,10 +42,14 @@ class PlanillaBlancoDetalle extends Model
         'negro_sueldo_neto_total',
         'negro_sueldo_bruto',
         'negro_sueldo_por_dia',
+        'negro_sueldo_por_dia_total',
         'negro_sueldo_por_hora',
+        'negro_sueldo_por_hora_total',
         'negro_diferencia_por_hora',
+        'negro_otros_bonos_acumulados',
+        'negro_sueldo_final_empleado',
         'negro_diferencia_real',
-
+        'esta_jubilado',
         'planilla_blanco_id',
     ];
 

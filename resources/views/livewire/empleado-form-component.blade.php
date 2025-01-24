@@ -89,6 +89,15 @@
                         <x-input-error for="sistema_pension" />
                     </div>
                     <div class="col-span-2 md:col-span-1 mt-3">
+                        <x-label for="tipo_planilla">Tipo de planilla</x-label>
+                        <x-select class="uppercase" wire:model="tipo_planilla" id="tipo_planilla_id">
+                            <option value="">Seleccione el tipo de planilla</option>
+                            <option value="1">Planilla Agraria</option>
+                            <option value="2">Planilla Oficina</option>
+                        </x-select>
+                        <x-input-error for="tipo_planilla" />
+                    </div>
+                    <div class="col-span-2 md:col-span-1 mt-3">
                         <x-label for="fecha_nacimiento">Fecha de Nacimiento</x-label>
                         <x-input type="date" autocomplete="off" wire:model="fecha_nacimiento" class="uppercase"
                             id="fecha_nacimiento" />
