@@ -25,11 +25,12 @@ class CampoCampania extends Model
     {
         return $this->hasMany(ReporteCostoPlanilla::class, 'campos_campanias_id');
     }
-    public function consumo()
+    public function camposCampaniasConsumo()
     {
         return $this->hasMany(CamposCampaniasConsumo::class, 'campos_campanias_id');
     }
-    public function consumos()
+    //consumos()
+    public function resumenConsumoProductos()
     {
         return $this->hasMany(ResumenConsumoProductos::class, 'campos_campanias_id');
     }
@@ -39,11 +40,12 @@ class CampoCampania extends Model
         $categorias = CategoriaProducto::all();
         if($categorias){
             foreach ($categorias as $categoria) {
-                $consumo = self::consumo()->where('categoria_id',$categoria->id)->first();
+                $consumo = self::camposCampaniasConsumo()->where('categoria_id',$categoria->id)->first();
             
                 $lista[$categoria->id]=[
                     'categoria'=>$categoria->nombre,
-                    'monto'=>$consumo?$consumo->monto:0
+                    'monto'=>$consumo?$consumo->monto:0,
+                    'reporte_file'=>$consumo?$consumo->reporte_file:null,
                 ];
             }
         }

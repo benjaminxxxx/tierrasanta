@@ -104,56 +104,13 @@ class CampoCampaniaComponent extends Component
 
             $campaniaServicio = new CampaniaServicio($campaniaId);
             $campaniaServicio->actualizarGastosyConsumos();
+            $this->alert('success', 'Gastos y Consumos actualizados correctamente.');
 
-            $campania = CampoCampania::find($campaniaId);
-            if (!$campania) {
-                return $this->alert('error', 'La campaña no existe.');
-            }
-            
-            $campania->consumos()->delete();
-            $campania->consumo()->delete();
-            $fecha_inicio = $campania->fecha_inicio;
-            $fecha_fin = $campania->fecha_fin;
-            $campo = $campania->campo;
-
-            $query = AlmacenProductoSalida::whereDate('fecha_reporte', '>=', $fecha_inicio);
-            if ($fecha_fin) {
-                $query->whereDate('fecha_reporte', '<=', $fecha_fin);
-            }
-            $registros = $query->where('campo_nombre', $campo)->get();
-            if ($registros) {
-                foreach ($registros as $registro) {
-
-                    ResumenConsumoProductos::create([
-                        'fecha' => $registro->fecha_reporte,
-                        'campo' => $registro->campo_nombre,
-                        'producto' => $registro->producto->nombre_completo,
-                        'categoria' => $registro->producto->categoria->nombre,
-                        'categoria_id' => $registro->producto->categoria_id,
-                        'cantidad' => $registro->cantidad,
-                        'total_costo' => $registro->total_costo,
-                        'campos_campanias_id' => $campania->id
-                    ]);
-                }
-
-                $categoriaProductos = CategoriaProducto::all();
-                if ($categoriaProductos) {
-                    foreach ($categoriaProductos as $categoriaProducto) {
-                        $totalConsumido = ResumenConsumoProductos::where('campos_campanias_id', $campania->id)
-                            ->where('categoria_id', $categoriaProducto->id)
-                            ->sum('total_costo');
-                        CamposCampaniasConsumo::create([
-                            'campos_campanias_id' => $campania->id,
-                            'categoria_id' => $categoriaProducto->id,
-                            'monto' => $totalConsumido,
-                        ]);
-                    }
-                }
-                $this->alert('success', 'Gastos y Consumos actualizados correctamente.');
-            }
         } catch (\Throwable $th) {
+
             $this->dispatch('log', $th->getMessage());
             $this->alert('error', 'Ocurrió un error al Actualizar los Gastos y Consumos.');
+            
         }
     }
 

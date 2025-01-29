@@ -13,5 +13,6 @@ class CamposCampaniasConsumo extends Model
         'campos_campanias_id',
         'categoria_id',
         'monto',
+        'reporte_file'
     ];
 }

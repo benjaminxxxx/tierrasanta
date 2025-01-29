@@ -20,4 +20,7 @@ class ResumenConsumoProductos extends Model
         'total_costo',
         'campos_campanias_id'
     ];
+    public function campania(){
+        return $this->belongsTo(CampoCampania::class,'campos_campanias_id');
+    }
 }

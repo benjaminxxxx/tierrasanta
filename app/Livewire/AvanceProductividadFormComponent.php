@@ -32,12 +32,13 @@ class AvanceProductividadFormComponent extends Component
     {
         $this->inicializarValores();
     }
-    public function inicializarValores(){
+    public function inicializarValores()
+    {
         $this->labores = Labores::orderBy('nombre_labor')->where('bono', true)->get();
         $this->campos = Campo::orderBy('nombre')->get();
 
         if ($this->labores->count() > 0) {
-            $this->laborSeleccionada = $this->labores->first()->id;    
+            $this->laborSeleccionada = $this->labores->first()->id;
         }
         if ($this->campos->count() > 0) {
             $this->campoSeleccionado = $this->campos->first()->nombre;
@@ -45,17 +46,17 @@ class AvanceProductividadFormComponent extends Component
     }
     public function revisarValoraciones()
     {
-        if(!$this->fecha){
-           return; 
+        if (!$this->fecha) {
+            return;
         }
         $labor = Labores::find($this->laborSeleccionada);
-        if(!$labor){
-            return $this->alert('error','La labor seleccionada ya no existe.');
+        if (!$labor) {
+            return $this->alert('error', 'La labor seleccionada ya no existe.');
         }
-        $this->valoracion = $labor->valoraciones()->orderBy('vigencia_desde','desc')->whereDate('vigencia_desde', "<=", $this->fecha)
-        ->first();
-        
-        if(!$this->valoracion){
+        $this->valoracion = $labor->valoraciones()->orderBy('vigencia_desde', 'desc')->whereDate('vigencia_desde', "<=", $this->fecha)
+            ->first();
+
+        if (!$this->valoracion) {
             return;
         }
         $this->actividades = [];
@@ -86,7 +87,6 @@ class AvanceProductividadFormComponent extends Component
     public function updatedLaborSeleccionada()
     {
         $this->revisarValoraciones();
-        
     }
 
     private function recalcularKg($indice, $horas)
@@ -101,7 +101,7 @@ class AvanceProductividadFormComponent extends Component
         }
     }
     public function nuevoRegistro($fecha)
-    {        
+    {
         $this->inicializarValores();
         $this->fecha = null;
         $this->mostrarFormulario = true;
@@ -116,8 +116,7 @@ class AvanceProductividadFormComponent extends Component
         if (!$registro) {
             return $this->alert('error', 'Registro no encontrado.');
         }
-       
-       
+
         $this->registroId = $registroId;
         $this->laborSeleccionada = $registro->labor_id;
         $this->fecha = $registro->fecha;
@@ -130,10 +129,11 @@ class AvanceProductividadFormComponent extends Component
                 $this->actividades[] = [
                     'horas' => $detalle->horas_trabajadas,
                     'kg' => $detalle->kg,
+                    'id' => $detalle->id,
                 ];
             }
         }
-        
+
         $this->mostrarFormulario = true;
     }
     public function agregarActividad()
@@ -164,7 +164,7 @@ class AvanceProductividadFormComponent extends Component
             ]
         );
 
-        
+
 
         try {
 
@@ -176,7 +176,7 @@ class AvanceProductividadFormComponent extends Component
 
                 if ($registro) {
                     $registro->update([
-                        'labor_valoracion_id'=>$this->valoracion->id,
+                        'labor_valoracion_id' => $this->valoracion->id,
                         'labor_id' => $this->laborSeleccionada,
                         'fecha' => $this->fecha,
                         'campo' => $this->campoSeleccionado,
@@ -184,23 +184,50 @@ class AvanceProductividadFormComponent extends Component
 
                     // Registrar los nuevos detalles
                     if (count($this->actividades) > 0) {
+                        $idDetallesExistentes = [];
                         foreach ($this->actividades as $indice => $actividad) {
                             $horas = $actividad['horas'] ?? 0;
                             $kg = $actividad['kg'] ?? 0;
-                            $detalleRegistrado = RegistroProductividadDetalle::where('indice',$indice + 1)
-                            ->where('registro_productividad_id',$registro->id)
-                            ->first();
-                            if($detalleRegistrado){
-                                $detalleRegistrado->update([
-                                    'horas_trabajadas' => $horas,
-                                    'kg' => $kg,
-                                ]);
-                            }else{
-                                RegistroProductividadDetalle::create([
+                            $idDetalle = $actividad['id'] ?? null;
+                            if($idDetalle){
+                                $detalleRegistrado = RegistroProductividadDetalle::find($idDetalle);
+
+                                if ($detalleRegistrado) {
+                                    $idDetallesExistentes[] = $detalleRegistrado->id;
+                                    $detalleRegistrado->update([
+                                        'indice' => $indice + 1,
+                                        'horas_trabajadas' => $horas,
+                                        'kg' => $kg,
+                                    ]);
+                                }
+                            }
+                            
+                             else {
+                                $detalleRegistrado = RegistroProductividadDetalle::create([
                                     'indice' => $indice + 1,
                                     'registro_productividad_id' => $registro->id,
                                     'horas_trabajadas' => $horas,
                                     'kg' => $kg,
+                                ]);
+                                $idDetallesExistentes[] = $detalleRegistrado->id;
+                            }
+                        }
+                        $seHanEliminado = false;
+                        $detallesActuales = RegistroProductividad::find($this->registroId)->detalles->pluck('id')->toArray();
+                        foreach ($detallesActuales as $detallesActuales) {
+                            if(!in_array($detallesActuales,$idDetallesExistentes)){
+                               $seHanEliminado = true;
+                                RegistroProductividadDetalle::find($detallesActuales)->delete();
+                            }
+                        }
+                        
+                        if($seHanEliminado){
+                            //lo hago con nueva instancia para que me traiga los valores actualizados de detalle
+                            $detalleActual2 = RegistroProductividad::find($this->registroId)->detalles;
+                           
+                            foreach ($detalleActual2 as $indice1 => $detalleActual) {
+                                $detalleActual->update([
+                                    'indice'=>$indice1+1
                                 ]);
                             }
                         }
@@ -209,7 +236,7 @@ class AvanceProductividadFormComponent extends Component
             } else {
                 //se procede a registrar del array de datos
                 $registro = RegistroProductividad::create([
-                    'labor_valoracion_id'=>$this->valoracion->id,
+                    'labor_valoracion_id' => $this->valoracion->id,
                     'labor_id' => $this->laborSeleccionada,
                     'fecha' => $this->fecha,
                     'campo' => $this->campoSeleccionado,

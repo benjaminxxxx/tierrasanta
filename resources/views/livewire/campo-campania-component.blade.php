@@ -46,18 +46,56 @@
                                         </h3>
                                         <time
                                             class="block mb-2 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">Vigencia
-                                            desde
-                                            {{ $campania->fecha_vigencia }}</time>
-                                        <ul class="text-base font-normal text-gray-500 dark:text-gray-400">
+                                            desde {{ $campania->fecha_vigencia }}</time>
+                                        <ul class="text-base font-normal text-gray-500 dark:text-gray-400 my-3">
                                             <li>FECHA DE INICIO: {{ $campania->fecha_inicio }}</li>
                                             <li>FECHA DE FINALIZACIÓN: {{ $campania->fecha_fin }}</li>
-                                            <li>GASTO PLANILLA: {{ $campania->gasto_planilla }}</li>
-                                            <li>GASTO CUADRILLA: {{ $campania->gasto_cuadrilla }}</li>
-                                            @foreach ($campania->listaConsumo as $consumo)
-                                            <li>CONSUMOS {{$consumo['categoria']}}: {{$consumo['monto']}}</li>
-                                            @endforeach
                                         </ul>
-                                        <x-button type="button" wire:click="actualizarGastosConsumo({{$campania->id}})" class="mt-4">
+                                        <div>
+                                            <x-table>
+                                                <x-slot name="thead">
+                                                    <x-tr>
+                                                        <x-th class="text-center">N°</x-th>
+                                                        <x-th>Descripción</x-th>
+                                                        <x-th class="text-center">Monto total</x-th>
+                                                        <x-th class="text-center">Reporte Generado</x-th>
+                                                    </x-tr>
+                                                </x-slot>
+                                                <x-slot name="tbody">
+                                                    <x-tr>
+                                                        <x-td class="text-center">1</x-td>
+                                                        <x-td>GASTO PLANILLA</x-td>
+                                                        <x-td class="text-right">{{ $campania->fecha_inicio }}</x-td>
+                                                        <x-td class="text-center">-</x-td>
+                                                    </x-tr>
+                                                    <x-tr>
+                                                        <x-td class="text-center">2</x-td>
+                                                        <x-td>GASTO CUADRILLA</x-td>
+                                                        <x-td class="text-right">{{ $campania->gasto_cuadrilla }}</x-td>
+                                                        <x-td class="text-center">-</x-td>
+                                                    </x-tr>
+                                                    @foreach ($campania->listaConsumo as $indice => $consumo)
+                                                        <x-tr>
+                                                            <x-td class="text-center">{{ $indice + 3 }}</x-td>
+                                                            <x-td>CONSUMOS {{ $consumo['categoria'] }}</x-td>
+                                                            <x-td class="text-right">{{ $consumo['monto'] }}</x-td>
+                                                            <x-td class="text-center">
+                                                                @if ($consumo['reporte_file'])
+                                                                    <x-button-a href="{{Storage::disk('public')->url($consumo['reporte_file'])}}">
+                                                                        <i class="fa fa-file-excel"></i> Ver informe
+                                                                    </x-button-a>
+                                                                @else
+                                                                    <p>-</p>
+                                                                @endif
+                                                            </x-td>
+                                                        </x-tr>
+                                                    @endforeach
+                                                </x-slot>
+                                            </x-table>
+                                        </div>
+
+                                        <x-button type="button"
+                                            wire:click="actualizarGastosConsumo({{ $campania->id }})" class="mt-4">
                                             <i class="fa fa-refresh"></i> Actualizar Gastos y Consumos
                                         </x-button>
                                     </div>
