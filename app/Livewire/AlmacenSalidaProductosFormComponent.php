@@ -12,6 +12,10 @@ use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
+/**
+ * Summary of AlmacenSalidaProductosFormComponent
+ * URL Referencia: almacen/salida_de_productos
+ */
 class AlmacenSalidaProductosFormComponent extends Component
 {
     use LivewireAlert;
@@ -70,7 +74,7 @@ class AlmacenSalidaProductosFormComponent extends Component
     {
         $this->mes = $mes;
         $this->anio = $anio;
-        $this->resetCampos();
+        $this->resetForm();
         $this->obtenerFechaSalida();
         $this->mostrarFormulario = true;
     }
@@ -139,19 +143,16 @@ class AlmacenSalidaProductosFormComponent extends Component
                 $cantidad = round($this->cantidades[$campo],3);
                 if($cantidad>0){
                     $data = [
-                        //'item',
                         'producto_id' => $this->productoSeleccionado->id,
                         'campo_nombre'=>$campo,
                         'cantidad'=>$this->cantidades[$campo],
                         'fecha_reporte'=>$this->fecha_salida,
-                        //'compra_producto_id',
                         'costo_por_kg'=>null,
                         'total_costo'=>null
                     ];
     
                     AlmacenServicio::registrarSalida($data,$this->kardexProducto);
-                }
-                
+                }              
                
             }
             $this->alert('success', 'Registro Actualizado correctamente');
@@ -159,9 +160,11 @@ class AlmacenSalidaProductosFormComponent extends Component
             $this->closeForm();
 
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->dispatch('log', $th->getMessage());
+            $this->alert('error', 'Ocurrió un error interno al registrar la salida.');
         }
     }
+    
     public function render()
     {
         $this->step = 1;
@@ -172,15 +175,15 @@ class AlmacenSalidaProductosFormComponent extends Component
         }
         return view('livewire.almacen-salida-productos-form-component');
     }
-    public function resetCampos()
+    public function resetForm()
     {
-        $this->productoSeleccionado = null;
-        $this->kardexProducto = null;
+        $this->cantidades = [];
+        $this->reset(['nombre_comercial','productoSeleccionado','kardexProducto','productos','camposAgregados']);
     }
     public function closeForm()
     {
 
         $this->mostrarFormulario = false;
-        $this->resetCampos();
+        $this->resetForm();
     }
 }

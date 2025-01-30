@@ -58,6 +58,10 @@ class CampaniaServicio
             $resumenConsumoProductosData = [];
             foreach ($registros as $registro) {
 
+                //solo se aceptan valores blanco, negro y -
+                $tipoKardex = $registro->kardexProducto?$registro->kardexProducto->kardex->tipo_kardex:'-';
+              
+
                 $resumenConsumoProductosData[] = [
                     'fecha' => $registro->fecha_reporte,
                     'campo' => $registro->campo_nombre,
@@ -66,7 +70,8 @@ class CampaniaServicio
                     'categoria_id' => $registro->producto->categoria_id,
                     'cantidad' => $registro->cantidad,
                     'total_costo' => $registro->total_costo,
-                    'campos_campanias_id' => $this->campoCampania->id
+                    'campos_campanias_id' => $this->campoCampania->id,
+                    'tipo_kardex'=>$tipoKardex
                 ];
             }
 

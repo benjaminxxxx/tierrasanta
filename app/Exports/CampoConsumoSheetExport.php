@@ -40,34 +40,40 @@ class CampoConsumoSheetExport implements FromCollection, WithHeadings, WithMappi
     {
         return [
             'N° Orden',
+            'Kardex',
             'Campaña',
             'Fecha',
             'Campo',
             'Producto',
             'Categoria',
             'Cantidad',
+            'Costo Unitario',
             'Total Costo',
         ];
     }
 
     public function map($consumo): array
     {
-
+        $this->index++; // Incrementar índice
+        $fila = $this->index + 1; // La fila de Excel donde se encuentra la fórmula
+    
         return [
-            ++$this->index,
+            $this->index,
+            mb_strtoupper($consumo->tipo_kardex),
+            $consumo->campania->nombre_campania,            
             $consumo->fecha,
-            $consumo->campania->nombre_campania,
             $consumo->campo,
             $consumo->producto,
             $consumo->categoria,
             $consumo->cantidad,
+            ($consumo->cantidad != 0) ? "=J{$fila}/H{$fila}" : "0", // Fórmula en Excel
             $consumo->total_costo,
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getStyle('A1:H1')->applyFromArray([
+        $sheet->getStyle('A1:J1')->applyFromArray([
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
                 'startColor' => [
@@ -83,7 +89,7 @@ class CampoConsumoSheetExport implements FromCollection, WithHeadings, WithMappi
             ],
         ]);
 
-        $sheet->getStyle('A1:H' . ($sheet->getHighestRow()))->applyFromArray([
+        $sheet->getStyle('A1:J' . ($sheet->getHighestRow()))->applyFromArray([
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
@@ -104,9 +110,10 @@ class CampoConsumoSheetExport implements FromCollection, WithHeadings, WithMappi
         // Ajustar las dimensiones de las filas y columnas
         $sheet->getRowDimension(1)->setRowHeight(27);
         
-        $sheet->getStyle('A1:D'.$sheet->getHighestRow())->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-        $sheet->getStyle('G')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-        $sheet->getStyle('H')->getNumberFormat()->setFormatCode('"S/" #,##0.00;[Red]"S/" -#,##0.00;"S/" "-"');
+        $sheet->getStyle('A1:E'.$sheet->getHighestRow())->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('H1:J1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('H')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('I1:J'.$sheet->getHighestRow()+1)->getNumberFormat()->setFormatCode('"S/" #,##0.00;[Red]"S/" -#,##0.00;"S/" "-"');
 
         return [];
     }
@@ -119,8 +126,10 @@ class CampoConsumoSheetExport implements FromCollection, WithHeadings, WithMappi
                 $lastRow = $this->index+1;
                 $sheet->setCellValue('G' . ($lastRow+1),'TOTAL');
                 $sheet->setCellValue('H' . ($lastRow+1),"=SUM(H2:H{$lastRow})");
+                $sheet->setCellValue('I' . ($lastRow+1),"=SUM(I2:I{$lastRow})");
+                $sheet->setCellValue('J' . ($lastRow+1),"=SUM(J2:J{$lastRow})");
                 $lastRow++;
-                $sheet->getStyle("A{$lastRow}:H{$lastRow}")->getFont()->setBold(true);
+                $sheet->getStyle("A{$lastRow}:J{$lastRow}")->getFont()->setBold(true);
             }
         ];
     }

@@ -36,26 +36,10 @@ class ProductoCompraFormComponent extends Component
     public $tabla10TipoComprobantePago;
     public $tabla12TipoOperacion = 2;
     public $tipoCompraSeleccionada;
+    public $mensajeAlCambiarTipoKardex;
+    public $compra;
     protected $listeners = ['agregarCompra','editarCompra'];
-    protected function rules()
-    {
-        return [
-            'tienda_comercial_id' => 'required',
-            'fecha_compra' => 'required',
-            'total' => 'required',
-            'costo_por_kg' => 'required|numeric',  // Permite valores decimales con hasta 2 dígitos
-            'tipoCompraSeleccionada'=>'required'
-        ];
-    }
-
-    protected $messages = [
-        'tienda_comercial_id.required' => 'La tienda comercial es obligatoria.',
-        'tipoCompraSeleccionada.required' => 'El tipo de compra es obligatorio.',
-        'fecha_compra.required' => 'La fecha de compra es obligatoria.',
-        'total.required'=>'El total de la compra es obligatoria.',
-        'costo_por_kg.required' => 'El costo por unidad debe ser un número válido.',
-        'costo_por_kg.numeric' => 'El costo por kilogramo debe ser un número válido.',
-    ];
+  
     public function mount()
     {
         $this->tabla10TipoComprobantePago = SunatTabla10TipoComprobantePago::all();
@@ -64,18 +48,23 @@ class ProductoCompraFormComponent extends Component
     }
     public function editarCompra($productoId,$compraId)
     {
+        $this->resetearValoresDefecto();
+
         $this->productoId = $productoId;
 
         $this->producto = Producto::find($productoId);
         if (!$this->producto) {
             return $this->alert('error', 'El producto ya no existe.');
         }
+        
+        
 
         $this->compraId = $compraId;
         $compra = CompraProducto::find($this->compraId);
         
-        $this->resetearValoresDefecto();
+        
         if ($compra) {
+            $this->compra = $compra;
             $this->tienda_comercial_id = $compra->tienda_comercial_id;
             $this->fecha_compra = $compra->fecha_compra;
             $this->serie = $compra->serie;
@@ -87,7 +76,6 @@ class ProductoCompraFormComponent extends Component
             $this->tipoKardex = $compra->tipo_kardex;
             $this->tabla12TipoOperacion = $compra->tabla12_tipo_operacion;
             $this->tipoCompraSeleccionada = $compra->tipo_compra_codigo;
-
         }
     }
     public function agregarCompra($productoId)
@@ -104,7 +92,20 @@ class ProductoCompraFormComponent extends Component
     }
     public function store()
     {
-        $this->validate();
+        $this->validate([
+            'tienda_comercial_id' => 'required',
+            'fecha_compra' => 'required',
+            'total' => 'required',
+            'costo_por_kg' => 'required|numeric',  // Permite valores decimales con hasta 2 dígitos
+            'tipoCompraSeleccionada'=>'required'
+        ],[
+            'tienda_comercial_id.required' => 'La tienda comercial es obligatoria.',
+            'tipoCompraSeleccionada.required' => 'El tipo de compra es obligatorio.',
+            'fecha_compra.required' => 'La fecha de compra es obligatoria.',
+            'total.required'=>'El total de la compra es obligatoria.',
+            'costo_por_kg.required' => 'El costo por unidad debe ser un número válido.',
+            'costo_por_kg.numeric' => 'El costo por kilogramo debe ser un número válido.',
+        ]);
 
         try {
 
@@ -135,9 +136,7 @@ class ProductoCompraFormComponent extends Component
                 
                 $compra = CompraProducto::find($this->compraId);
                 if ($compra) {
-                    $compra->update($data);
-                   
-                    AlmacenServicio::eliminarRegistrosStocksPosteriores($compra->fecha_compra,$compra->created_at);
+                    ProductoServicio::actualizarCompra($compra, $data);                    
                     $this->alert('success', 'Registro actualizado exitosamente.');
                 }
             } else {
@@ -157,7 +156,16 @@ class ProductoCompraFormComponent extends Component
             $this->alert('error', 'Ocurrió un error inesperado: ' . $e->getMessage());
         }
     }
-
+    public function updatedTipoKardex($valor){
+        
+        if($this->compraId && $this->compra){
+            if($valor!=$this->compra->tipo_kardex){
+                $this->mensajeAlCambiarTipoKardex = 'Ud está modificando el Kardex de esta compra, las salidas vinculadas a este Kardex se migrarán también a dicho kardex';
+            }else{
+                $this->mensajeAlCambiarTipoKardex = '';
+            }
+        }
+    }
 
     public function resetearValoresDefecto()
     {
@@ -171,7 +179,9 @@ class ProductoCompraFormComponent extends Component
             'stock',
             'total',
             'tipoCompraSeleccionada',
-            'compraId'
+            'compraId',
+            'compra',
+            'mensajeAlCambiarTipoKardex'
         ]);
 
         $this->resetErrorBag();

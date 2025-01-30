@@ -2,17 +2,10 @@
 
 namespace App\Livewire;
 
-use App\Models\AlmacenProductoSalida;
 use App\Models\Campo;
 use App\Models\CampoCampania;
-use App\Models\CamposCampaniasConsumo;
-use App\Models\CategoriaProducto;
-use App\Models\ResumenConsumoProductos;
 use App\Services\CampaniaServicio;
 use Carbon\Carbon;
-use Exception;
-use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 

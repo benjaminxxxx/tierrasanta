@@ -112,10 +112,13 @@
                 </div>
                 <div>
                     <x-label for="tipoKardex">Tipo de Kardex</x-label>
-                    <x-select wire:model="tipoKardex">
+                    <x-select wire:model.live="tipoKardex">
                         <option value="blanco">Blanco</option>
                         <option value="negro">Negro</option>
                     </x-select>
+                    <p>
+                        {{$mensajeAlCambiarTipoKardex}}
+                    </p>
                 </div>
             </div>
         </x-slot>

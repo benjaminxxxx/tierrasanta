@@ -17,7 +17,6 @@ class AlmacenSalidaCombustibleFormComponent extends Component
     public $mostrarFormulario = false;
     public $productos;
     public $nombre_comercial;
-    public $informacion = [];
     public $maquinariasAgregadas = [];
     public $maquinariasNombres = [];
     public $maquinarias;
@@ -68,7 +67,7 @@ class AlmacenSalidaCombustibleFormComponent extends Component
     {
         $this->mes = $mes;
         $this->anio = $anio;
-        $this->resetCampos();
+        $this->resetForm();
         $this->obtenerFechaSalida();
         $this->mostrarFormulario = true;
     }
@@ -160,16 +159,17 @@ class AlmacenSalidaCombustibleFormComponent extends Component
             $this->alert('error', $th->getMessage());
         }
     }
-    public function resetCampos()
+   
+    public function resetForm()
     {
-        $this->productoSeleccionado = null;
-        $this->kardexProducto = null;
+        $this->cantidades = [];
+        $this->reset(['nombre_comercial','productoSeleccionado','kardexProducto','productos','maquinariasAgregadas']);
     }
     public function closeForm()
     {
 
         $this->mostrarFormulario = false;
-        $this->resetCampos();
+        $this->resetForm();
     }
     public function render()
     {

@@ -79,7 +79,7 @@
 
                                 <x-td class="text-center">
                                     <div class="flex items-center justify-center gap-2">
-                                        @if (!$producto->fecha_termino)
+                                       
                                             <x-secondary-button
                                                 @click="$wire.dispatch('editarCompra',{productoId:{{ $productoId }},compraId:{{ $producto->id }}})">
                                                 <i class="fa fa-edit"></i>
@@ -87,7 +87,7 @@
                                             <x-danger-button wire:click="confirmarEliminacion({{ $producto->id }})">
                                                 <i class="fa fa-trash"></i>
                                             </x-danger-button>
-                                        @endif
+                                        
                                     </div>
 
                                 </x-td>

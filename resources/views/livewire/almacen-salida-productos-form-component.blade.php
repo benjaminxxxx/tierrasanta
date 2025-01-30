@@ -49,8 +49,11 @@
                         @if ($almacenes && $almacenes->count() > 0)
                             @foreach ($almacenes as $almacen)
                                 @php
-                                
-                                    $kardexProducto = $almacen->productos()->where('producto_id',$productoSeleccionado->id)->first();                                 
+
+                                    $kardexProducto = $almacen
+                                        ->productos()
+                                        ->where('producto_id', $productoSeleccionado->id)
+                                        ->first();
                                     $stockDisponible = $kardexProducto->StockDiponible($fecha_salida);
                                 @endphp
                                 @if ($stockDisponible > 0)
@@ -102,7 +105,7 @@
                         @endif
                     </div>
 
-                    <div class="my-4">
+                    <div class="my-4" x-data="{ cantidades: {}, total: 0 }">
                         @if (is_array($camposAgregados) && count($camposAgregados) > 0)
                             <x-table>
                                 <x-slot name="thead">
@@ -117,22 +120,25 @@
                                 </x-slot>
                                 <x-slot name="tbody">
                                     @foreach ($camposAgregados as $campoAgregadoTable)
-                                        <x-tr>
+                                        <tr>
                                             <x-th>
                                                 {{ $campoAgregadoTable }}
                                             </x-th>
                                             <x-th>
-                                                <x-input type="number" class="text-right" wire:model.live="cantidades.{{$campoAgregadoTable}}" />
+                                                <x-input wire:model="cantidades.{{ $campoAgregadoTable }}"
+                                                    type="number" class="text-right"
+                                                    x-model.number="cantidades['{{ $campoAgregadoTable }}']"
+                                                    @input="total = Object.values(cantidades).reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0)" />
                                             </x-th>
-                                        </x-tr>
+                                        </tr>
                                     @endforeach
                                     <x-tr class="bg-gray-50">
                                         <x-th>
                                             Stock Sumado
                                         </x-th>
                                         <x-th>
-                                            
-                                            <x-input type="number" readonly class="!bg-gray-100 text-right" value="{{array_sum($cantidades)}}"/>
+                                            <x-input type="number" readonly class="!bg-gray-100 text-right"
+                                                x-model="total" />
                                         </x-th>
                                     </x-tr>
                                     <x-tr class="bg-gray-50">
@@ -140,7 +146,8 @@
                                             Stock Disponible
                                         </x-th>
                                         <x-th>
-                                            <x-input type="number" readonly class="!bg-gray-100 text-right" wire:model="stockDisponibleSeleccionado"/>
+                                            <x-input type="number" readonly class="!bg-gray-100 text-right"
+                                                wire:model="stockDisponibleSeleccionado" />
                                         </x-th>
                                     </x-tr>
                                 </x-slot>

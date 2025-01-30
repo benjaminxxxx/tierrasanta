@@ -18,7 +18,8 @@ class ResumenConsumoProductos extends Model
         'categoria_id',
         'cantidad',
         'total_costo',
-        'campos_campanias_id'
+        'campos_campanias_id',
+        'tipo_kardex'
     ];
     public function campania(){
         return $this->belongsTo(CampoCampania::class,'campos_campanias_id');

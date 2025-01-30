@@ -102,7 +102,7 @@
                         @endif
                     </div>
 
-                    <div class="my-4">
+                    <div class="my-4" x-data="{ cantidades: {}, total: 0 }">
                         @if (is_array($maquinariasAgregadas) && count($maquinariasAgregadas) > 0)
                             <x-table>
                                 <x-slot name="thead">
@@ -122,7 +122,10 @@
                                                 {{ $maquinariasNombres[$campoAgregadoTable] }}
                                             </x-th>
                                             <x-th>
-                                                <x-input type="number" class="text-right" wire:model.live="cantidades.{{$campoAgregadoTable}}" />
+                                                <x-input wire:model="cantidades.{{ $campoAgregadoTable }}"
+                                                    type="number" class="text-right"
+                                                    x-model.number="cantidades['{{ $campoAgregadoTable }}']"
+                                                    @input="total = Object.values(cantidades).reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0)" />
                                             </x-th>
                                         </x-tr>
                                     @endforeach
@@ -132,7 +135,7 @@
                                         </x-th>
                                         <x-th>
                                             
-                                            <x-input type="number" readonly class="!bg-gray-100 text-right" value="{{array_sum($cantidades)}}"/>
+                                            <x-input type="number" readonly class="!bg-gray-100 text-right" x-model="total"/>
                                         </x-th>
                                     </x-tr>
                                     <x-tr class="bg-gray-50">

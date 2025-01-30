@@ -6,10 +6,12 @@
         </x-h3>
         <x-button type="button"
             @click="$wire.dispatch('nuevoRegistro',{mes:{{ $mes }},anio:{{ $anio }}})"
-            class="w-full md:w-auto ">Nuevo Registro de Salida</x-button>
+            class="w-full md:w-auto ">
+            <i class="fa fa-plus"></i> Nuevo Registro de Salida
+        </x-button>
 
         <x-button type="button" @click="$wire.dispatch('verStock',{tipo:'combustible'})" class="w-full md:w-auto ">
-            Ver Stock de Combustible
+            <i class="fa fa-eye"></i> Ver Stock de Combustible
         </x-button>
     </div>
     <x-card>
