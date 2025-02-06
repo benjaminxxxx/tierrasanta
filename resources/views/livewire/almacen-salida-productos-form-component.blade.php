@@ -43,47 +43,42 @@
                 @endif
             @endif
             @if ($step == 2)
-                <div>
-                    <x-label for="seleccionar_almacen">Seleccionar Almacen</x-label>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                        @if ($almacenes && $almacenes->count() > 0)
-                            @foreach ($almacenes as $almacen)
-                                @php
-
-                                    $kardexProducto = $almacen
-                                        ->productos()
-                                        ->where('producto_id', $productoSeleccionado->id)
-                                        ->first();
-                                    $stockDisponible = $kardexProducto->StockDiponible($fecha_salida);
-                                @endphp
-                                @if ($stockDisponible > 0)
-                                    <x-card
-                                        wire:click="seleccionarKardexProducto({{ $kardexProducto->id }},{{ $stockDisponible }})"
-                                        class="{{ $almacen->tipo_kardex == 'blanco' ? 'bg-white hover:bg-gray-200 text-gray-900' : '!bg-gray-800 text-white' }} hover:opacity-90 hover:cursor-pointer">
-                                        <x-spacing>
-                                            <p>{{ $almacen->nombre }} (Tipo Kardex: {{ $almacen->tipo_kardex }})</p>
-                                            <p>Stock disponible:
-                                                <b>{{ $stockDisponible }}</b>
-                                            </p>
-                                        </x-spacing>
-                                    </x-card>
-                                @else
-                                    <x-card
-                                        class="{{ $almacen->tipo_kardex == 'blanco' ? 'bg-white hover:bg-gray-200 text-gray-900' : '!bg-gray-800 text-white' }} hover:opacity-90 hover:cursor-pointer">
-                                        <x-spacing>
-                                            <p>{{ $almacen->nombre }} (Tipo Kardex: {{ $almacen->tipo_kardex }})</p>
-                                            <p>Stock disponible:
-                                                <b>{{ $stockDisponible }}</b>
-                                            </p>
-                                        </x-spacing>
-                                    </x-card>
-                                @endif
-                            @endforeach
-                        @else
-                            <p>No se ha registrado un stock para este producto, por favor dirigirse a Kardex</p>
-                        @endif
-                    </div>
+            <div>
+                <x-label for="seleccionar_almacen">Seleccionar Almacén</x-label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    @if ($almacenes && $almacenes->count() > 0)
+                        @foreach ($almacenes as $kardexProducto)
+                            @php
+                                $stockDisponible = $kardexProducto->stock_disponible['stock_disponible'];
+                            @endphp
+                            @if ($stockDisponible > 0)
+                                <x-card
+                                    wire:click="seleccionarKardexProducto({{ $kardexProducto->id }},{{ $stockDisponible }})"
+                                    class="{{ $kardexProducto->tipo_kardex == 'blanco' ? 'bg-white hover:bg-gray-200 text-gray-900' : '!bg-gray-800 text-white' }} hover:opacity-90 hover:cursor-pointer">
+                                    <x-spacing>
+                                        <p>{{ $kardexProducto->kardex->nombre }} (Tipo Kardex: {{ $kardexProducto->tipo_kardex }})</p>
+                                        <p>Stock disponible:
+                                            <b>{{ $stockDisponible }}</b>
+                                        </p>
+                                    </x-spacing>
+                                </x-card>
+                            @else
+                                <x-card
+                                    class="{{ $kardexProducto->tipo_kardex == 'blanco' ? 'bg-white hover:bg-gray-200 text-gray-900' : '!bg-gray-800 text-white' }} hover:opacity-90 hover:cursor-pointer">
+                                    <x-spacing>
+                                        <p>{{ $kardexProducto->kardex->nombre }} (Tipo Kardex: {{ $kardexProducto->tipo_kardex }})</p>
+                                        <p>Stock disponible:
+                                            <b>{{ $stockDisponible }}</b>
+                                        </p>
+                                    </x-spacing>
+                                </x-card>
+                            @endif
+                        @endforeach
+                    @else
+                        <p>No se ha registrado un stock para este producto, por favor dirigirse a Kardex</p>
+                    @endif
                 </div>
+            </div>
             @endif
             @if ($step == 3)
                 <div class="col-span-2 md:col-span-1 mt-3 relative">

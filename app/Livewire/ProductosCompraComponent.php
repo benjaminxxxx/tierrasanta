@@ -22,8 +22,9 @@ class ProductosCompraComponent extends Component
     public $compraIdEliminar;
     public $producto;
     public $modo;
+    public $filtroTipoKardex;
 
-    protected $listeners = ['VerComprasProducto', 'eliminacionConfirmadaCompra', 'actualizarAlmacen' => '$refresh'];
+    protected $listeners = ['VerComprasProducto', 'eliminacionConfirmadaCompra', 'actualizarAlmacen' => '$refresh','actualizarCompraProductos' => '$refresh'];
 
     public function VerComprasProducto($id)
     {
@@ -58,9 +59,6 @@ class ProductosCompraComponent extends Component
             $compra->save();
         }
     }
-
-
-
     public function closeForm()
     {
         $this->mostrarFormulario = false;
@@ -110,7 +108,16 @@ class ProductosCompraComponent extends Component
     {
         $compras = null;
         if ($this->productoId) {
-            $compras = CompraProducto::where('producto_id', $this->productoId)->orderBy($this->sortField, $this->sortDirection)->paginate(5);
+            $query = CompraProducto::query();
+
+            $query->where('producto_id', $this->productoId)
+            ->orderBy($this->sortField, $this->sortDirection);
+
+            if($this->filtroTipoKardex){
+                $query->where('tipo_kardex',$this->filtroTipoKardex);
+            }
+
+            $compras = $query->paginate(10);
         }
         return view('livewire.productos-compra-component', [
             'compras' => $compras

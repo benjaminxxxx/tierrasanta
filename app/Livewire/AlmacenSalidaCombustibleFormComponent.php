@@ -93,7 +93,7 @@ class AlmacenSalidaCombustibleFormComponent extends Component
             return;
         }
 
-        $this->almacenes = $this->productoSeleccionado->kardexesDisponibles($this->fecha_salida); //retorna items [] en caso no haya nada, error manejado
+        $this->almacenes = $this->productoSeleccionado->kardexesDisponibles($this->fecha_salida); 
     }
     public function seleccionarKardexProducto($kardexProductoId, $stockDisponible)
     {

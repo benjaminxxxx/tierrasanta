@@ -13,6 +13,7 @@
         <x-button type="button" @click="$wire.dispatch('verStock')" class="w-full md:w-auto ">
             <i class="fa fa-eye"></i> Ver Stock de Productos
         </x-button>
+        
     </div>
     <x-card>
         <x-spacing>

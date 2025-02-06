@@ -12,5 +12,6 @@
     <livewire:actividades-form-component/>
     <livewire:cuadrilla-asistencia-labores-cuadrilleros-component/>
     <livewire:gasto-adicional-por-grupo-component/>
+    <livewire:cuadrillero-detalle-horas-actividades-component/>
     
 </x-app-layout>

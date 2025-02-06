@@ -170,6 +170,7 @@ class CuadrillaAsistenciaFormComponent extends Component
                     ]);
                     /************************20250122CORRECCION_AL_EDITAR_SEMANA_CUADRILLA */
                     $CuaAsistenciaSemanal->actualizarTotales();
+                    $CuaAsistenciaSemanal->contabilizarHoras();
                     /************************20250122CORRECCION_AL_EDITAR_SEMANA_CUADRILLA */
                 }
                 

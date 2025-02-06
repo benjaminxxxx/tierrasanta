@@ -93,13 +93,11 @@ class ProductoCompraFormComponent extends Component
     public function store()
     {
         $this->validate([
-            'tienda_comercial_id' => 'required',
             'fecha_compra' => 'required',
             'total' => 'required',
             'costo_por_kg' => 'required|numeric',  // Permite valores decimales con hasta 2 dígitos
             'tipoCompraSeleccionada'=>'required'
         ],[
-            'tienda_comercial_id.required' => 'La tienda comercial es obligatoria.',
             'tipoCompraSeleccionada.required' => 'El tipo de compra es obligatorio.',
             'fecha_compra.required' => 'La fecha de compra es obligatoria.',
             'total.required'=>'El total de la compra es obligatoria.',
@@ -112,19 +110,17 @@ class ProductoCompraFormComponent extends Component
             if (!$this->productoId) {
                 throw new Exception("Debe Seleccionar un Producto");
             }
-
-            if (round($this->total,2) != round($this->stock * $this->costo_por_kg,2)) {
-                throw new Exception("El total debe ser igual al resultado de stock multiplicado por el costo por unidad: " . $this->total . " != " . ($this->stock * $this->costo_por_kg));
+            if ((int)$this->stock==0) {
+                throw new Exception("El stock debe ser mayor a 0");
             }
-
             
             $data = [
                 'producto_id' => $this->productoId,
-                'tienda_comercial_id' => $this->tienda_comercial_id,
                 'fecha_compra' => $this->fecha_compra,
+                'tienda_comercial_id' => (int)$this->tienda_comercial_id==0?null:$this->tienda_comercial_id,
                 'serie' => mb_strtoupper($this->serie),
                 'numero' => $this->numero,
-                'costo_por_kg' => $this->costo_por_kg,
+                'costo_por_kg' => $this->total/$this->stock,
                 'stock'=>$this->stock,
                 'total'=>$this->total,
                 'tipo_kardex'=>$this->tipoKardex,
@@ -140,7 +136,8 @@ class ProductoCompraFormComponent extends Component
                     $this->alert('success', 'Registro actualizado exitosamente.');
                 }
             } else {
-                ProductoServicio::registrarCompra($data);
+                
+                ProductoServicio::registrarCompraProducto([$data],false);
                 $this->alert('success', 'Registro creado exitosamente.');
             }
 
@@ -160,7 +157,7 @@ class ProductoCompraFormComponent extends Component
         
         if($this->compraId && $this->compra){
             if($valor!=$this->compra->tipo_kardex){
-                $this->mensajeAlCambiarTipoKardex = 'Ud está modificando el Kardex de esta compra, las salidas vinculadas a este Kardex se migrarán también a dicho kardex';
+                $this->mensajeAlCambiarTipoKardex = 'Ud está modificando el Kardex de esta compra, las salidas vinculadas a esta compra se van a desvincular';
             }else{
                 $this->mensajeAlCambiarTipoKardex = '';
             }

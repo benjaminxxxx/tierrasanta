@@ -14,69 +14,129 @@ class ProductoServicio
     public static function actualizarCompra(CompraProducto $compra, $data)
     {
         /***
-         * Se agrego una nueva logica al modificar una compra, el problema es el siguiente
-         * Una compra puede ser registrada como blanco y luego ser considerada como negro 
-         * por falta de tiempo para el registro contable, entonces:
-         * - si ya habia salidas vinculadas al kardex blanco, deben desvincularse, pero
-         * - si habia una compra anterior con stock disponible, debe utilizarse ese stock en primer lugar
-         * - cuando el stock no sea suficiente, las demas salias deben pasar al nuevo kardex negro
-         * - esto solo pasa si 
-         * 
-         * de compra_salida_stock eliminar segun compra_producto_id=$compra->id
-         * en esta tabla se guardan los detalles de cada salida, esto no va a kardex
+         * Se agrego una nueva logica al modificar una compra:
+         * Cuando se genera el kardex la salida se relaciona a la compra mediante CompraSalidaStock
+         * todas estas salidas cambiaran de kardex y luego se procedera a borrar su relacion con la compra
+         * pero por que se borra la relacion si la compra tambien esta cambiando de kardex?
+         * porque al pasarse al kardex diferente puede que haya una compra anterior a esta compra con stock aun disponible, entonces se
+         * va a formar una nueva relacion
          */
-        dd($compra->id);
+
+        $salidaStocks = $compra->almacenSalida;
+        if($salidaStocks){
+            foreach ($salidaStocks as $salidaStock) {
+                $salidaAlmacen = $salidaStock->salida;
+                if($salidaAlmacen){
+                    $salidaAlmacen->update([
+                        'tipo_kardex'=>$data['tipo_kardex'],
+                        'costo_por_kg'=>null,
+                        'total_costo'=>null,
+                    ]);
+                    $salidaAlmacen->compraStock()->delete();
+                }
+            }
+        }
+        
         $compra->update($data);
-
-        AlmacenServicio::eliminarRegistrosStocksPosteriores($compra->fecha_compra, $compra->created_at);
     }
-    public static function registrarCompra($data)
+    /**
+     * Registra cada compra evitando duplicaciones, pasar false en caso no se requiera este filtro
+     * @param mixed $comprasArray Array de datos
+     * @param mixed $conFiltracionDeDuplicados Para permitir duplicados enviar false, se recomienda dejar vacio para cargas masivas
+     * @throws \Exception
+     * @return int
+     */
+    public static function registrarCompraProducto($comprasArray,$conFiltracionDeDuplicados = true)
     {
+        if (!is_array($comprasArray) || empty($comprasArray)) {
+            throw new Exception("No hay información por guardar");
+        }
 
-        try {
-            if (!isset($data['producto_id']))
-                throw new Exception("El campo producto_id es obligatorio.");
+        // Limpiar y estructurar los datos antes de la inserción
+        $registros = self::sanearArray($comprasArray);
+        
+        // Filtrar registros duplicados antes de insertar
+        if($conFiltracionDeDuplicados){
+            $registros = self::filtrarDuplicados($registros);
+        }
+        
+        if (!empty($registros)) {
+            CompraProducto::insert($registros);
+            return count($registros);
+        }else{
+            return 0;
+        }
+    }
+    public static function sanearArray($data)
+    {
+        $columnasPermitidas = [
+            'producto_id',
+            'tienda_comercial_id',
+            'fecha_compra',
+            'orden_compra',
+            'factura',
+            'costo_por_kg',
+            'total',
+            'stock',
+            'fecha_termino',
+            'tipo_compra_codigo',
+            'serie',
+            'numero',
+            'tabla12_tipo_operacion',
+            'tipo_kardex'
+        ];
 
-            if (!isset($data['fecha_compra']))
-                throw new Exception("El campo fecha_compra es obligatorio.");
+        $registros = [];
+        foreach ($data as $registro) {
+            $limpio = [];
 
-            $data['tipo_compra_codigo'] = isset($data['tipo_compra_codigo']) ? str_pad($data['tipo_compra_codigo'], 2, '0', STR_PAD_LEFT) : null;
-            $data['serie'] = isset($data['serie']) ? $data['serie'] : null;
-            $data['numero'] = isset($data['numero']) ? $data['numero'] : null;
-
-            $compraExiste = CompraProducto::where('serie', $data['serie'])
-                ->where('numero', $data['numero'])
-                ->where('producto_id', $data['producto_id'])
-                ->where('tipo_kardex', $data['tipo_kardex'])
-                ->whereDate('fecha_compra', $data['fecha_compra'])
-                ->exists();
-
-            if (!$compraExiste) {
-                return CompraProducto::create($data);
-            } else {
-                self::corregirDuplicados($data);
-                return $compraExiste;
+            foreach ($columnasPermitidas as $columna) {
+                $limpio[$columna] = $registro[$columna] ?? null;
             }
 
-        } catch (\Throwable $th) {
-            throw $th;
+            $registros[] = $limpio;
         }
-    }
-    public static function corregirDuplicados($data)
-    {
-        // Buscar duplicados con los mismos criterios
-        $duplicados = CompraProducto::where('serie', $data['serie'])
-            ->where('numero', $data['numero'])
-            ->where('producto_id', $data['producto_id'])
-            ->where('tipo_kardex', $data['tipo_kardex'])
-            ->whereDate('fecha_compra', $data['fecha_compra'])
-            ->get();
 
-        // Si hay más de un registro, eliminar los duplicados y mantener solo uno
-        if ($duplicados->count() > 1) {
-            $duplicados->skip(1)->each(function ($registro) {
-                $registro->delete();
-            });
+        return $registros;
+    }    
+    public static function filtrarDuplicados($registros)
+    {
+        if (empty($registros)) {
+            return [];
         }
+
+        // Obtener fecha mínima y máxima del lote
+        $fechas = array_column($registros, 'fecha_compra');
+        $fechaMin = min($fechas);
+        $fechaMax = max($fechas);
+
+        // Consultar solo los registros en ese rango de fechas
+        $existentes = CompraProducto::whereBetween('fecha_compra', [$fechaMin, $fechaMax])->get()->toArray();
+
+        // Crear un mapa de registros existentes con clave única
+        $existentesMap = [];
+        foreach ($existentes as $existente) {
+            $clave = self::generarClaveUnica($existente);
+            $existentesMap[$clave] = true;
+        }
+        // Filtrar los registros que NO existen en la base de datos
+        return array_filter($registros, function ($registro) use ($existentesMap) {
+            return !isset($existentesMap[self::generarClaveUnica($registro)]);
+        });
+
+    }
+    private static function generarClaveUnica($registro)
+    {
+        return $registro['serie'] . '-' .
+            $registro['numero'] . '-' .
+            $registro['producto_id'] . '-' .
+            $registro['tipo_kardex'] . '-' .
+            self::formatearNumero($registro['stock']) . '-' .
+            self::formatearNumero($registro['total']) . '-' .
+            ($registro['fecha_compra'] ?? 'null');
+    }
+    private static function formatearNumero($valor)
+    {
+        return number_format((float) $valor, 3, '.', '');
     }
 }

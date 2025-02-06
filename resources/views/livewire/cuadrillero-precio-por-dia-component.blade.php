@@ -6,7 +6,7 @@
 
         <x-slot name="content">
 
-            <x-flex>
+            <x-flex class="w-full">
                 <div class="flex-1">
                     <x-table>
                         <x-slot name="thead">

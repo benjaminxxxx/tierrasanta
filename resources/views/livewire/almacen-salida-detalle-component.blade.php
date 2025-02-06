@@ -4,6 +4,7 @@
             <x-table class="mt-5">
                 <x-slot name="thead">
                     <tr>
+                        <x-th value="N°" class="text-center" />
                         <x-th class="text-center">
                             <x-warning-button type="text" wire:click="generarItemCodigoForm">
                                 ITEM
@@ -28,8 +29,10 @@
                 </x-slot>
                 <x-slot name="tbody">
                     @if ($registros && $registros->count() > 0)
+                 
                         @foreach ($registros as $indice => $registro)
                             <x-tr>
+                                <x-th value="{{ $indice+1 }}" class="text-center" />
                                 <x-th value="{{ $registro->item }}" class="text-center" />
                                 <x-td value="{{ $registro->fecha_reporte }}" class="text-center" />
                                 @if ($tipo == 'combustible')
@@ -58,16 +61,12 @@
                                 <x-td value="{{ $registro->total_costo }}" class="text-center" />
                                 <x-td class="text-center">
 
-                                    <x-flex class="justify-end">
+                                    <x-flex class="justify-end w-full">
                                         @if ($registro->perteneceAUnaCompra)
-                                            <x-secondary-button type="button"
-                                                title="Quitar costos para este tipo de producto de aqui en adelante."
-                                                wire:click="quitarCompraVinculada({{ $registro->id }})">
-                                                <i class="fa fa-remove"></i> <i class="fa fa-money-bill"></i>
-                                            </x-secondary-button>
+                                         
                                             <x-secondary-button type="button" title="Ver historial de compra."
                                                 @click="$wire.dispatch('verHistorialSalidaPorCompra',{salidaId:{{ $registro->id }}})">
-                                                <i class="fa fa-eye"></i> <i class="fa fa-money-bill"></i>
+                                                <i class="fa fa-money-bill"></i> Ver en Compra
                                             </x-secondary-button>
                                         @endif
 

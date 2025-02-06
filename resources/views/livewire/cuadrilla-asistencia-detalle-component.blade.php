@@ -26,7 +26,9 @@
                 class="mt-5">
                 <i class="fa fa-plus"></i> Agregar Cuadrilleros
             </x-button>
-
+            <x-success-button type="button" @click="sendDataCuadrillaHoras" class="mt-5">
+                <i class="fa fa-save"></i> Registrar Horas
+            </x-success-button>
         </div>
     </div>
     <div class="my-5 md:flex justify-end">
@@ -95,7 +97,7 @@
                                 $sumaTotalesGrupo += $grupoTotal->total;
                             @endphp
                             <x-th class="text-right">
-                                {{ number_format($grupoTotal->total_costo,2) }}
+                                {{ number_format($grupoTotal->total_costo, 2) }}
                             </x-th>
                             <x-th class="text-right">
                                 <x-button
@@ -104,7 +106,7 @@
                                 </x-button>
                             </x-th>
                             <x-th class="text-right">
-                                {{ number_format($grupoTotal->total,2) }}
+                                {{ number_format($grupoTotal->total, 2) }}
                             </x-th>
                             <x-th class="text-center">
                                 <x-select
@@ -136,10 +138,10 @@
                                 TOTAL
                             </x-th>
                             <x-th class="text-right">
-                                {{ number_format($this->semana->total,2) }}
+                                {{ number_format($this->semana->total, 2) }}
                             </x-th>
                             <x-th></x-th>
-                            <x-th>{{ number_format($sumaTotalesGrupo,2) }}</x-th>
+                            <x-th>{{ number_format($sumaTotalesGrupo, 2) }}</x-th>
                         </x-tr>
                     @endif
                 @endif
@@ -209,13 +211,35 @@
                 });
 
                 this.periodo.forEach(dia => {
+                    const propContabilizado = `dia_${dia.dia}_contabilizado`;
+                    const propHoras = `dia_${dia.dia}`;
+
                     columns.push({
-                        data: `dia_${dia.dia}`, // data como "dia_29" por ejemplo
+                        data: propHoras, // data como "dia_29" por ejemplo
                         type: 'numeric', // tipo número, acepta decimales
                         title: `HORA <br/> ${dia.dia} <br/> ${dia.nombre}`,
                         width: 50,
-                        readOnly: true,
-                        className: '!text-center'
+                        className: '!text-center',
+                        renderer: function(instance, td, row, col, prop, value,
+                        cellProperties) {
+                            // Obtener el valor de contabilizado para la fila actual
+                            const contabilizado = instance.getDataAtRowProp(row,
+                                propContabilizado);
+
+                            // Si está contabilizado, se aplica el estilo deseado
+                            if (contabilizado) {
+                                td.style.color = 'green';
+                                td.style.fontWeight = 'bold';
+                            } else {
+                                // Si no, se puede limpiar el estilo (opcional)
+                                td.style.color = '';
+                                td.style.fontWeight = '';
+                            }
+
+                            // Llama al renderer numérico por defecto para mantener el formateo
+                            Handsontable.renderers.NumericRenderer.apply(this, arguments);
+                            return td;
+                        }
                     });
                 });
 
@@ -271,6 +295,10 @@
                                 name: 'Personalizar costo por día',
                                 callback: () => this.customizeCuadrillero()
                             },
+                            "see_detalle_horas": {
+                                name: 'Ver detalle de horas',
+                                callback: () => this.verDetalleHoras()
+                            },
                             "remove_quadrillero": {
                                 name: 'Eliminar cuadrilleros',
                                 callback: () => this.eliminarCuadrillerosSeleccionados()
@@ -313,6 +341,25 @@
                     $wire.dispatch('customizarMontosPorDia', data);
                 }
             },
+            verDetalleHoras(){
+                const selected = this.hot.getSelected();
+                let lista = [];
+
+                if (selected) {
+                    selected.forEach(range => {
+
+                        const [startRow, , endRow] = range;
+                        for (let row = startRow; row <= endRow; row++) {
+                            const cuadrillero = this.hot.getSourceDataAtRow(row);
+                            lista.push(cuadrillero);
+                        }
+                    });
+                    const data = {
+                        cuadrilleros: lista
+                    };
+                    $wire.dispatch('verDetalleHoras', data);
+                }
+            },
             eliminarCuadrillerosSeleccionados() {
                 // Obtener las filas seleccionadas
                 const selected = this.hot.getSelected();
@@ -333,7 +380,26 @@
                     $wire.dispatch('eliminarCuadrilleros', data);
                 }
             },
+            sendDataCuadrillaHoras() {
+                let allData = [];
 
+                // Recorre todas las filas de la tabla y obtiene los datos completos
+                for (let row = 0; row < this.hot.countRows(); row++) {
+                    const rowData = this.hot.getSourceDataAtRow(row);
+                    allData.push(rowData);
+                }
+
+                // Filtra las filas vacías
+                const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
+                    null && cell !== ''));
+
+                const data = {
+                    datos: filteredData
+                };
+
+                $wire.dispatchSelf('guardarInformacionPlanillaHoras', data);
+                this.hasUnsavedChanges = false;
+            }
         }));
     </script>
 @endscript

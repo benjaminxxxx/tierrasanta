@@ -13,8 +13,7 @@ return new class extends Migration
     {
         Schema::create('kardex', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('nombre', 255); // Identificador del kardex
-            $table->enum('tipo_kardex', ['blanco', 'negro']); // Blanco: Facturas, Negro: Boletas
+            $table->string('nombre', 255);
             $table->date('fecha_inicial'); // Fecha de apertura
             $table->date('fecha_final')->nullable(); // Fecha de cierre
             $table->enum('estado', ['activo', 'cerrado'])->default('activo'); // Estado general del kardex

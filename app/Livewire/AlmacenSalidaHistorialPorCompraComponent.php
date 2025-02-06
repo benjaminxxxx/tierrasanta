@@ -27,6 +27,7 @@ class AlmacenSalidaHistorialPorCompraComponent extends Component
             $compras = $salida->compraStock;
             foreach ($compras as $compra) {
                 $historial = CompraSalidaStock::where('compra_producto_id',$compra->compra_producto_id)->get();
+               
                 $this->historiales[] = [
                     'entrada'=>CompraProducto::find($compra->compra_producto_id),
                     'historial'=>$historial,

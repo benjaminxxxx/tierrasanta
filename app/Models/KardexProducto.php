@@ -17,27 +17,38 @@ class KardexProducto extends Model
         'estado',            // Estado del kardex del producto (activo o cerrado)
         'metodo_valuacion',  // Método de valuación (promedio o peps)
         'file',
-        'codigo_existencia'
+        'codigo_existencia',
+        'tipo_kardex'
     ];
-    public function StockDiponible($fecha_salida)
+    /**
+     * Obtiene el Stock en Base al rango de fecha del Kardex sumando el stock inicial mas el stock comprado menos las salidas
+     * @return array{stock_disponible: float, stock_disponible_porcentaje: int}
+     * Fecha uso 20250203
+     */
+    public function getStockDisponibleAttribute()
     {
-        $stockPorUsar = $this->stock_inicial;
-        $cantidadUsada = (float) $this->salidasStockUsado()->sum("cantidad_stock_inicial");
-        $stockInicialDisponible = round($stockPorUsar - $cantidadUsada, 3);
-        $stockTodasCompras = 0;
+        $stockInicial = $this->stock_inicial;
+        
+        /*$compraStock = (float) $this->kardex->compras($this->producto_id)->where('tipo_kardex',$this->tipo_kardex)->sum('stock');
+        $salidaCantidadUsada = (float) $this->kardex->salidas($this->producto_id)->where('tipo_kardex',$this->tipo_kardex)->sum('cantidad');
+*/
+        $compraStock = (float) $this->compras()->sum('stock');
+        $salidaCantidadUsada = (float) $this->salidas()->sum('cantidad');
 
-        $compras = CompraProducto::whereBetween('fecha_compra', [$this->kardex->fecha_inicial, $fecha_salida])
-            ->whereNull('fecha_termino')
-            ->where('producto_id', $this->producto_id)
-            ->where('tipo_kardex', $this->kardex->tipo_kardex)
-            ->orderBy('fecha_compra', 'asc')
-            ->get();
+        $totalStock = $stockInicial + $compraStock;
 
-        foreach ($compras as $compra) {
-            $stockTodasCompras += round($compra->cantidadDisponible, 3);
-        }
+        // Stock total = stock inicial + compras - salidas
+        $stockDisponible = $totalStock - $salidaCantidadUsada;
 
-        return $stockInicialDisponible + $stockTodasCompras;
+        // Evitar división por cero
+        $porcentaje = $totalStock > 0 ? ($stockDisponible / $totalStock) * 100 : 0;
+
+        return [
+            'stock_disponible_porcentaje' => (int) round($porcentaje), // Redondeado y convertido a entero
+            'stock_disponible' => round($stockDisponible, 3), // Redondeado a 2 decimales
+            'total_stock'=>$totalStock,
+            'cantidad_usada'=>$salidaCantidadUsada,
+        ];
     }
     public function compraSalidaStock()
     {
@@ -51,7 +62,32 @@ class KardexProducto extends Model
     {
         return $this->hasMany(AlmacenProductoSalida::class, 'cantidad_kardex_producto_id');
     }
+    public function compras()
+    {
+        $query = CompraProducto::where('producto_id', $this->producto_id)
+            ->where('tipo_kardex',$this->tipo_kardex)
+            ->whereDate('fecha_compra', '>=', $this->kardex->fecha_inicial)
+            ->orderBy('fecha_compra');
 
+        if ($this->kardex->fecha_final) {
+            $query->whereDate('fecha_compra', '<=', $this->kardex->fecha_final);
+        }
+        return $query;
+    }
+    public function salidas()
+    {
+        $query = AlmacenProductoSalida::where('producto_id', $this->producto_id)
+        ->where('tipo_kardex',$this->tipo_kardex)
+            ->whereDate('fecha_reporte', '>=', $this->kardex->fecha_inicial)
+            ->orderBy('fecha_reporte')
+            ->orderBy('created_at', 'asc')
+            ->orderByRaw('COALESCE(indice, 0) ASC');
+
+        if ($this->kardex->fecha_final) {
+            $query->whereDate('fecha_reporte', '<=', $this->kardex->fecha_final);
+        }
+        return $query;
+    }
     public function producto()
     {
         return $this->belongsTo(Producto::class, 'producto_id');

@@ -40,8 +40,6 @@ class CuadrillaAsistenciaLaboresComponent extends Component
     {
         $this->actividades = Actividad::whereDate('fecha', $this->fecha)->get();
         if($this->semana){
-            //funcion agregada que se ejecuta despues de actualizar algun registro
-            $this->semana->actualizarTotales();
             //comando para una vez actualizado los totales actualizar el formulario de detalle principal
             $this->dispatch('cuadrillerosAgregadosAsistencia');
         }

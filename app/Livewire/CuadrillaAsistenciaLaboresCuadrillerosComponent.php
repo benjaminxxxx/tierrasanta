@@ -134,7 +134,7 @@ class CuadrillaAsistenciaLaboresCuadrillerosComponent extends Component
 
             $cuaAsistenciaSemanal = CuaAsistenciaSemanal::buscarSemana($this->actividad->fecha);
             if($cuaAsistenciaSemanal){
-                $cuaAsistenciaSemanal->actualizarTotales();
+                $cuaAsistenciaSemanal->contabilizarHoras();
             }
 
             $this->listarCuadrilleros();

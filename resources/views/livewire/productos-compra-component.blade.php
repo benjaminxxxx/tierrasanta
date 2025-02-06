@@ -30,6 +30,18 @@
                     </p>
                 </div>
             @endif
+            <x-flex class="filtros">
+                <div>
+                    <x-label for="filtroTipoKardex">
+                        Kardex
+                    </x-label>
+                    <x-select wire:model.live="filtroTipoKardex">
+                        <option value="">Todos</option>
+                        <option value="blanco">Blanco</option>
+                        <option value="negro">Negro</option>
+                    </x-select>
+                </div>
+            </x-flex>
             <x-table class="mt-5">
                 <x-slot name="thead">
                     <tr>
@@ -46,7 +58,7 @@
                                 FECHA DE COMPRA <i class="fa fa-sort"></i>
                             </button>
                         </x-th>
-                        
+
                         <x-th class="text-center">
                             STOCK
                         </x-th>
@@ -59,7 +71,10 @@
                             TOTAL
                         </x-th>
                         <x-th class="text-center">
-                            FACTURA
+                            NÚMERO
+                        </x-th>
+                        <x-th class="text-center">
+                            KARDEX
                         </x-th>
                         <x-th value="ACCIONES" class="text-center" />
                     </tr>
@@ -70,24 +85,26 @@
                         @foreach ($compras as $indice => $producto)
                             <x-tr>
                                 <x-th value="{{ $indice + 1 }}" class="text-center" />
-                                <x-td value="{{ $producto->tiendaComercial ? $producto->tiendaComercial->nombre:'Sin tienda' }}" />
+                                <x-td
+                                    value="{{ $producto->tiendaComercial ? $producto->tiendaComercial->nombre : 'Sin tienda' }}" />
                                 <x-td value="{{ $producto->fecha_compra }}" class="text-center" />
                                 <x-td value="{{ $producto->stock }}" class="text-center" />
-                                    <x-td value="{{ $producto->costo_por_unidad }}" class="text-center" />
+                                <x-td value="{{ $producto->costo_por_unidad }}" class="text-center" />
                                 <x-td value="{{ $producto->total }}" class="text-center" />
                                 <x-td value="{{ $producto->codigo_comprobante }}" class="text-center" />
+                                    <x-td value="{{ ucfirst($producto->tipo_kardex) }}" class="text-center" />
 
                                 <x-td class="text-center">
                                     <div class="flex items-center justify-center gap-2">
-                                       
-                                            <x-secondary-button
-                                                @click="$wire.dispatch('editarCompra',{productoId:{{ $productoId }},compraId:{{ $producto->id }}})">
-                                                <i class="fa fa-edit"></i>
-                                            </x-secondary-button>
-                                            <x-danger-button wire:click="confirmarEliminacion({{ $producto->id }})">
-                                                <i class="fa fa-trash"></i>
-                                            </x-danger-button>
-                                        
+
+                                        <x-secondary-button
+                                            @click="$wire.dispatch('editarCompra',{productoId:{{ $productoId }},compraId:{{ $producto->id }}})">
+                                            <i class="fa fa-edit"></i>
+                                        </x-secondary-button>
+                                        <x-danger-button wire:click="confirmarEliminacion({{ $producto->id }})">
+                                            <i class="fa fa-trash"></i>
+                                        </x-danger-button>
+
                                     </div>
 
                                 </x-td>
@@ -107,8 +124,17 @@
             @endif
         </x-slot>
         <x-slot name="footer">
-            <div class="flex items-center justify-end gap-4">
-                <x-secondary-button type="button" wire:click="closeForm" class="mr-2">Cerrar</x-secondary-button>
+            <div class="flex w-full items-center justify-end gap-4">
+
+                
+                <x-secondary-button type="button" wire:click="closeForm">Cerrar</x-secondary-button>
+                @if ($producto)
+                <livewire:compra-producto-import-export-component :productoid="$producto->producto_id"
+                wire:key="registroCompraForCompra{{ $producto->id }}-{{ $producto->producto_id }}" />
+                @endif
+                @php
+                    //De este codigo debajo no encuentro referencias, se debe quitar a posterior
+                @endphp
                 @if ($modo == 'step')
                     <x-button type="button" wire:click="continuar" class="mr-2">Siguiente</x-button>
                 @endif

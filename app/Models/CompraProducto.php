@@ -20,7 +20,6 @@ class CompraProducto extends Model
         'stock',
         'fecha_termino',
         'estado',
-
         'tipo_compra_codigo',
         'serie',
         'numero',

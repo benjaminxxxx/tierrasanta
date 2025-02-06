@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Kardex;
+use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
@@ -10,7 +11,6 @@ class KardexFormComponent extends Component
 {
     use LivewireAlert;
     public $mostrarFormulario = false;
-    public $tipo_kardex;
     public $fecha_inicial;
     public $fecha_final;
     public $nombre;
@@ -19,20 +19,14 @@ class KardexFormComponent extends Component
         "nombre"=>"required|string",
         "fecha_inicial"=>"required|date",
         "fecha_final"=>"required|date",
-        "tipo_kardex"=>"required",
     ];
     protected $messages = [
         "nombre.required"=>"El nombre es requerido",
-        "tipo_kardex.required"=>"El tipo de Kardex es requerido",
         "fecha_inicial.required"=>"La fecha inicial es requerido",
         "fecha_inicial.date"=>"La fecha inicial no tiene un formato válido",
         "fecha_final.required"=>"La fecha final es requerido",
         "fecha_final.date"=>"La fecha final no tiene un formato válido",
     ];
-    public function mount()
-    {
-        $this->tipo_kardex = 'blanco';
-    }
     public function crearKardex()
     {
         $this->resetForm();
@@ -42,6 +36,15 @@ class KardexFormComponent extends Component
 
         $data = $this->validate();
         
+        $fechaInicial = Carbon::parse($data["fecha_inicial"]);
+        if($this->fecha_final){
+            $fechaFinal = Carbon::parse($data["fecha_final"]);
+            if ($fechaFinal->lte($fechaInicial)) {
+                return $this->alert("error", "La fecha final debe ser mayor que la fecha inicial");
+            }
+        }
+    
+
         try {            
             
             Kardex::create($data);
@@ -55,7 +58,7 @@ class KardexFormComponent extends Component
     }
     public function resetForm(){
         $this->resetErrorBag();
-        $this->reset(['nombre','fecha_inicial']);
+        $this->reset(['nombre','fecha_inicial','fecha_final']);
     }
     public function render()
     {

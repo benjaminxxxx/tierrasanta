@@ -13,14 +13,6 @@
                     <x-input-error for="nombre" />
                 </div>
                 <div class="mb-3">
-                    <x-label for="tipo_kardex" value="Tipo del Kardex"/>
-                    <x-select wire:model="tipo_kardex">
-                        <option value="blanco">Blanco</option>
-                        <option value="negro">Negro</option>
-                    </x-select>
-                    <x-input-error for="tipo_kardex" />
-                </div>
-                <div class="mb-3">
                     <x-label for="fecha_inicial" value="Fecha de Inicio"/>
                     <x-input type="date" wire:model="fecha_inicial" />
                     <x-input-error for="fecha_inicial" />

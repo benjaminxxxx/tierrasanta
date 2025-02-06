@@ -42,6 +42,7 @@ class Producto extends Model
             ? "{$nombreComercial} - {$ingredienteActivo}"
             : $nombreComercial;
     }
+    /*
     public function totalStockInicialUsado()
     {
         $stock = 0;
@@ -50,11 +51,12 @@ class Producto extends Model
         foreach ($kardexes as $kardex) {
             $kardexProducto = $kardex->productos()->where('producto_id', $this->id)->first();
             if ($kardexProducto) {
-                $stock += (float) $kardexProducto->stock_inicial - (float)$kardexProducto->salidasStockUsado()->sum("cantidad_stock_inicial");
+                $stock += (float) $kardexProducto->stock_inicial - (float) $kardexProducto->salidasStockUsado()->sum("cantidad_stock_inicial");
             }
         }
         return $stock;
-    }
+    }*/
+    /*
     public function getDatosUsoAttribute()
     {
         $totalStockInicialUsado = $this->totalStockInicialUsado();
@@ -66,7 +68,7 @@ class Producto extends Model
         foreach ($comprasActivas as $compraActiva) {
             $stockUsado += $compraActiva->almacenSalida()->sum('stock');
         }
-        $capacidad =  $totalStockInicialUsado + $comprasActivas->sum('stock');
+        $capacidad = $totalStockInicialUsado + $comprasActivas->sum('stock');
 
         if ($comprasActivas->count() == 0) {
             $response['agotado'] = true;
@@ -77,18 +79,68 @@ class Producto extends Model
         $response['stockUsado'] = $stockUsado;
         $response['restante'] = $restante;
         return $response;
+    }*/
+    public function getStockDisponibleAttribute()
+    {
+        //Verificar si hay kardex con el producto
+        $fecha = Carbon::now();
+        $productoId = $this->id;
+        $kardex = Kardex::whereHas('productos', function ($query) use ($productoId) {
+            $query->where('producto_id', $productoId);
+        })
+            ->where('fecha_inicial', '<=', $fecha)
+            ->where('fecha_final', '>=', $fecha)
+            ->where('estado', 'activo')
+            ->where('eliminado', false)
+            ->first();
+
+        if (!$kardex) {
+            return [
+                'stock_disponible_porcentaje' => 0, // Redondeado y convertido a entero
+                'stock_disponible' => 0
+            ];
+        }
+
+        $totalStock = 0;
+        $cantidadUsada = 0;
+        $kardexProductos = $kardex->productos()->where('producto_id',$productoId)->get();
+        foreach ($kardexProductos as $kardexProducto) {
+            $totalStock+=$kardexProducto->stockDisponible['total_stock'];
+            $cantidadUsada+=$kardexProducto->stockDisponible['cantidad_usada'];
+        }
+
+        $stockDisponible = $totalStock - $cantidadUsada;
+        $porcentaje = $totalStock > 0 ? ($stockDisponible / $totalStock) * 100 : 0;
+
+        return [
+            'stock_disponible_porcentaje' => (int) round($porcentaje), // Redondeado y convertido a entero
+            'stock_disponible' => round($stockDisponible, 3) // Redondeado a 2 decimales
+        ];
     }
+    /**
+     * Kardex Disponible se basa en la existencia de un kardex cuyo rango pertenece a la fecha de salida, para saberel stock disponible
+     * @param mixed $fechaSalida
+     * @throws \Exception
+     */
     public function kardexesDisponibles($fechaSalida)
     {
+        $productoId = $this->id;
+
         //este productos whereHas es porque en Kardex en vez de KardexProducto puse solo productos
-        return Kardex::whereHas('productos', function ($query) {
-            $query->where('producto_id', $this->id);
+        $kardex = Kardex::whereHas('productos', function ($query) use ($productoId) {
+            $query->where('producto_id', $productoId);
         })
             ->where('fecha_inicial', '<=', $fechaSalida)
             ->where('fecha_final', '>=', $fechaSalida)
             ->where('estado', 'activo')
             ->where('eliminado', false)
-            ->get();
+            ->first();
+
+        if ($kardex) {
+            return $kardex->productos()->where('producto_id', $productoId)->get();
+        } else {
+            throw new Exception("No hay Kardex disponible.");
+        }
     }
     public function kardexProductos()
     {
@@ -165,9 +217,9 @@ class Producto extends Model
             throw new Exception('No existe la categoria para combustible');
         }
         if ($tipo == 'combustible') {
-            return self::where('categoria_id', $categoria->id)->with('compras')->get();
+            return self::where('categoria_id', $categoria->id)->with('compras');
         } else {
-            return self::whereNot('categoria_id', $categoria->id)->with('compras')->get();
+            return self::whereNot('categoria_id', $categoria->id)->with('compras');
         }
     }
 }

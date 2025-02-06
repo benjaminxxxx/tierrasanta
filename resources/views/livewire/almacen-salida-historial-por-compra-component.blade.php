@@ -18,7 +18,7 @@
                     @endif
                 </div>
 
-                <x-flex>
+                <x-flex class="w-full">
                     <div class="flex-1">
                         <x-table>
                             <x-slot name="thead">
@@ -64,7 +64,7 @@
                                         $historiaCostoPorUnidad += $historia->salida->costo_por_kg;
                                         $historiaTotalCosto += $historia->salida->total_costo;
                                     @endphp
-                                    <x-tr class="{{ $historia->id == $salidaId ? '!bg-lime-600' : '' }}">
+                                    <x-tr class="{{ $historia->salida_almacen_id == $salidaId ? '!bg-green-600 text-white' : '' }}">
                                         <x-td class="text-center">{{ $historia->salida->campo_nombre }}</x-td>
                                         <x-td class="text-center">{{ $historia->stock }}</x-td>
                                         <x-td class="text-center">{{ $historia->salida->fecha_reporte }}</x-td>

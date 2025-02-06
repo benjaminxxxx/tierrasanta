@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\AlmacenProductoSalida;
 use App\Models\CompraProducto;
+use App\Models\CompraSalidaStock;
 use App\Services\AlmacenServicio;
 use Carbon\Carbon;
 use Exception;
@@ -36,7 +37,11 @@ class AlmacenSalidaDetalleComponent extends Component
             $registro = AlmacenProductoSalida::find($id);
             if ($registro) {
                 $registro->cantidad = $cantidad;
+                $registro->costo_por_kg = null;
+                $registro->total_costo = null;
                 $registro->save();
+
+                $registro->compraStock()->delete();
             }
 
             $this->alert("success", "Cantidad modificada correctamente");
@@ -50,21 +55,7 @@ class AlmacenSalidaDetalleComponent extends Component
             ]);
         }
     }
-    public function quitarCompraVinculada($registroId)
-    {
-
-        try {
-            $registro = AlmacenProductoSalida::find($registroId);
-
-            if ($registro) {
-                AlmacenServicio::eliminarRegistrosStocksPosteriores($registro->fecha_reporte,$registro->created_at);
-                $this->alert("success", "Compra vinculada removida");
-            }
-        } catch (\Throwable $th) {
-
-            $this->alert("error", $th->getMessage());
-        }
-    }
+   
 
     public function confirmarEliminacion($id)
     {
@@ -213,27 +204,8 @@ class AlmacenSalidaDetalleComponent extends Component
     public function obtenerRegistros()
     {
         if ($this->mes && $this->anio) {
-
-            if($this->tipo=='combustible'){
-                $this->registros = AlmacenProductoSalida::whereMonth('fecha_reporte', $this->mes)
-                ->whereYear('fecha_reporte', $this->anio)
-                ->whereNotNull('maquinaria_id')
-                ->orderBy('fecha_reporte')
-                ->orderBy('created_at')
-                ->orderBy('campo_nombre')
-                ->get();
-            }else{
-                $this->registros = AlmacenProductoSalida::whereMonth('fecha_reporte', $this->mes)
-                ->whereYear('fecha_reporte', $this->anio)
-                ->whereNull('maquinaria_id')
-                ->orderBy('fecha_reporte')
-                ->orderBy('created_at')
-                ->orderBy('campo_nombre')
-                ->get();
-            }
-            
+            $this->registros = AlmacenServicio::obtenerRegistrosPorFecha($this->mes, $this->anio, $this->tipo);
             $this->cantidad = $this->registros->pluck('cantidad', 'id')->toArray();
-
         }
     }
 

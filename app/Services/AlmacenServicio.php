@@ -13,7 +13,24 @@ use Exception;
 class AlmacenServicio
 {
 
-    public function __construct() {}
+    public static function obtenerRegistrosPorFecha($mes, $anio, $tipo)
+    {
+        $query = AlmacenProductoSalida::whereMonth('fecha_reporte', $mes)
+            ->whereYear('fecha_reporte', $anio);
+
+        // Filtrar por maquinaria_id según el tipo
+        if ($tipo === 'combustible') {
+            $query->whereNotNull('maquinaria_id');
+        } else {
+            $query->whereNull('maquinaria_id');
+        }
+
+        return $query->orderBy('fecha_reporte')         // 1. Ordenar por fecha
+            ->orderBy('created_at', 'asc')             // 2. Mantener orden de llegada real
+            ->orderByRaw('COALESCE(indice, 0) ASC')    // 3. Manejar null en 'indice'
+            ->get();
+    }
+
 
     public static function resetearStocks(KardexProducto $kardexProducto)
     {
@@ -34,6 +51,103 @@ class AlmacenServicio
             'cantidad_stock_inicial' => null
         ]);
     }
+    public static function registrarSalida($data)
+    {
+        if (!is_array($data) || empty($data)) {
+            throw new Exception("No hay información por guardar");
+        }
+
+        // Limpiar y estructurar los datos antes de la inserción
+        $registros = self::sanearArray($data);
+
+        // Filtrar registros duplicados antes de insertar
+        $registrosUnicos = self::filtrarDuplicados($registros);
+
+        if (!empty($registrosUnicos)) {
+            AlmacenProductoSalida::insert($registrosUnicos);
+            return count($registrosUnicos);
+        }else{
+            return 0;
+        }
+    }
+
+    public static function sanearArray($data)
+    {
+        $columnasPermitidas = [
+            'item',
+            'producto_id',
+            'campo_nombre',
+            'cantidad',
+            'fecha_reporte',
+            'compra_producto_id',
+            'costo_por_kg',
+            'total_costo',
+            'cantidad_kardex_producto_id',
+            'cantidad_stock_inicial',
+            'kardex_producto_id',
+            'maquinaria_id',
+            'indice',
+            'tipo_kardex'
+        ];
+
+        $registros = [];
+        $codigoCarga = Carbon::now()->format('YmdHis');
+
+        foreach ($data as $registro) {
+            $limpio = [];
+
+            foreach ($columnasPermitidas as $columna) {
+                $limpio[$columna] = $registro[$columna] ?? null;
+            }
+            $limpio['registro_carga'] = $codigoCarga;
+
+            $registros[] = $limpio;
+        }
+
+        return $registros;
+    }
+
+    public static function filtrarDuplicados($registros)
+    {
+        if (empty($registros)) {
+            return [];
+        }
+
+        // Obtener fecha mínima y máxima del lote
+        $fechas = array_column($registros, 'fecha_reporte');
+        $fechaMin = min($fechas);
+        $fechaMax = max($fechas);
+
+        // Consultar solo los registros en ese rango de fechas
+        $existentes = AlmacenProductoSalida::whereBetween('fecha_reporte', [$fechaMin, $fechaMax])->get()->toArray();
+
+        // Crear un mapa de registros existentes con clave única
+        $existentesMap = [];
+        foreach ($existentes as $existente) {
+            $clave = self::generarClaveUnica($existente);
+            $existentesMap[$clave] = true;
+        }
+
+        // Filtrar los registros que NO existen en la base de datos
+        return array_filter($registros, function ($registro) use ($existentesMap) {
+            return !isset($existentesMap[self::generarClaveUnica($registro)]);
+        });
+
+    }
+    private static function generarClaveUnica($registro)
+    {
+        return $registro['producto_id'] . '-' .
+            $registro['campo_nombre'] . '-' .
+            self::formatearNumero($registro['cantidad']) . '-' .
+            $registro['fecha_reporte'] . '-' .
+            ($registro['maquinaria_id'] ?? 'null');
+    }
+
+    private static function formatearNumero($valor)
+    {
+        return number_format((float) $valor, 3, '.', '');
+    }
+    /*
     public static function registrarSalida($data, KardexProducto $kardexProducto)
     {
 
@@ -155,7 +269,7 @@ class AlmacenServicio
                 }
             }
         }
-    }
+    }*/
     public static function formatArrayToKeyValueString(array $data): string
     {
         $formatted = '';
@@ -189,10 +303,11 @@ class AlmacenServicio
 
         $registro->delete();
     }
-    public static function eliminarRegistrosStocksPosteriores($fecha1,$fecha2)
+    public static function eliminarRegistrosStocksPosteriores($fecha1, $fecha2, $productoId)
     {
         $salidasPosteriores = AlmacenProductoSalida::whereDate('fecha_reporte', '>=', $fecha1)
             ->whereDate('created_at', '>=', $fecha2)
+            ->where('producto_id', $productoId)
             ->get();
 
         foreach ($salidasPosteriores as $salida) {
@@ -213,7 +328,16 @@ class AlmacenServicio
     public static function resetearFechaTermino(CompraProducto $compra)
     {
         if ($compra) {
+            /**
+             * Original
+             */
+            /*
             if ($compra->CantidadDisponible <= 0) {
+                $compra->fecha_termino = null;
+                $compra->save();
+            }*/
+            //Nuevo
+            if ($compra->CantidadDisponible > 0) {
                 $compra->fecha_termino = null;
                 $compra->save();
             }

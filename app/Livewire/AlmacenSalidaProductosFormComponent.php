@@ -2,9 +2,7 @@
 
 namespace App\Livewire;
 
-use App\Models\AlmacenProductoSalida;
 use App\Models\Campo;
-use App\Models\CompraProducto;
 use App\Models\KardexProducto;
 use App\Models\Producto;
 use App\Services\AlmacenServicio;
@@ -22,7 +20,6 @@ class AlmacenSalidaProductosFormComponent extends Component
     public $mostrarFormulario = false;
     public $productos;
     public $nombre_comercial;
-    public $informacion = [];
     public $camposAgregados = [];
     public $campos;
     public $step = 1;
@@ -31,15 +28,26 @@ class AlmacenSalidaProductosFormComponent extends Component
     public $anio;
 
     public $productoSeleccionado;
-    public $kardexProducto;
     public $almacenes;
-    public $stockDisponibleSeleccionado = 0;
     public $cantidades = [];
+    public $stockDisponibleSeleccionado = 0;
+    public $kardexProducto;
     protected $listeners = ['nuevoRegistro'];
     public function mount()
     {
         $this->obtenerFechaSalida();
         $this->campos = Campo::orderBy('orden')->get();
+    }
+    /**
+     * 20250203
+     * @param mixed $kardexProductoId
+     * @param mixed $stockDisponible
+     * @return void
+     */
+    public function seleccionarKardexProducto($kardexProductoId, $stockDisponible)
+    {
+        $this->kardexProducto = KardexProducto::find($kardexProductoId);
+        $this->stockDisponibleSeleccionado = $stockDisponible;
     }
     public function obtenerFechaSalida()
     {
@@ -92,21 +100,21 @@ class AlmacenSalidaProductosFormComponent extends Component
     }
     public function seleccionarProducto($productoId)
     {
-        $this->productoSeleccionado = Producto::find($productoId);
+        try {
+            $this->productoSeleccionado = Producto::find($productoId);
+            if (!$this->productoSeleccionado) {
+                return;
+            }
 
-        if (!$this->productoSeleccionado) {
-            return;
+            $this->almacenes = $this->productoSeleccionado->kardexesDisponibles($this->fecha_salida);
+          
+          
+            if (!$this->almacenes) {
+                $this->alert("error", "No hay Kardex disponible para este producto, debe ir a Kardex a registrar el producto primero.");
+            }
+        } catch (\Throwable $th) {
+            $this->alert("error", $th->getMessage());
         }
-
-        $this->almacenes = $this->productoSeleccionado->kardexesDisponibles($this->fecha_salida);
-        if (!$this->almacenes) {
-            $this->alert("error", "No hay Kardex disponible para este producto, debe ir a Kardex a registrar el producto primero.");
-        }
-    }
-    public function seleccionarKardexProducto($kardexProductoId, $stockDisponible)
-    {
-        $this->kardexProducto = KardexProducto::find($kardexProductoId);
-        $this->stockDisponibleSeleccionado = $stockDisponible;
     }
 
     public function retroceder()
@@ -138,23 +146,31 @@ class AlmacenSalidaProductosFormComponent extends Component
             if (array_sum($this->cantidades) > $this->stockDisponibleSeleccionado) {
                 return $this->alert('error', 'No hay suficiente stock para esa cantidad de salida.');
             }
-            
-            foreach ($this->camposAgregados as $campo) {
-                $cantidad = round($this->cantidades[$campo],3);
-                if($cantidad>0){
-                    $data = [
+
+            $data = [];
+
+            foreach ($this->camposAgregados as $indice => $campo) {
+                $cantidad = round($this->cantidades[$campo], 3);
+                if ($cantidad > 0) {
+                    $data[] = [
                         'producto_id' => $this->productoSeleccionado->id,
-                        'campo_nombre'=>$campo,
-                        'cantidad'=>$this->cantidades[$campo],
-                        'fecha_reporte'=>$this->fecha_salida,
-                        'costo_por_kg'=>null,
-                        'total_costo'=>null
+                        'campo_nombre' => $campo,
+                        'cantidad' => $this->cantidades[$campo],
+                        'fecha_reporte' => $this->fecha_salida,
+                        'costo_por_kg' => null,
+                        'total_costo' => null,
+                        'indice' => $indice,
+                        'tipo_kardex'=>$this->kardexProducto->tipo_kardex
                     ];
-    
-                    AlmacenServicio::registrarSalida($data,$this->kardexProducto);
-                }              
-               
+                }
             }
+
+            if (count($data) > 0) {
+                AlmacenServicio::registrarSalida($data);
+            } else {
+                return $this->alert('error', 'Ningún registro tiene la cantidad para ser registrado');
+            }
+
             $this->alert('success', 'Registro Actualizado correctamente');
             $this->dispatch('actualizarAlmacen');
             $this->closeForm();
@@ -164,7 +180,17 @@ class AlmacenSalidaProductosFormComponent extends Component
             $this->alert('error', 'Ocurrió un error interno al registrar la salida.');
         }
     }
-    
+    public function resetForm()
+    {
+        $this->cantidades = [];
+        $this->reset(['nombre_comercial', 'productoSeleccionado', 'productos', 'camposAgregados','kardexProducto']);
+    }
+    public function closeForm()
+    {
+
+        $this->mostrarFormulario = false;
+        $this->resetForm();
+    }
     public function render()
     {
         $this->step = 1;
@@ -175,15 +201,5 @@ class AlmacenSalidaProductosFormComponent extends Component
         }
         return view('livewire.almacen-salida-productos-form-component');
     }
-    public function resetForm()
-    {
-        $this->cantidades = [];
-        $this->reset(['nombre_comercial','productoSeleccionado','kardexProducto','productos','camposAgregados']);
-    }
-    public function closeForm()
-    {
-
-        $this->mostrarFormulario = false;
-        $this->resetForm();
-    }
+    
 }

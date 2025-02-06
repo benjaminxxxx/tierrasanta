@@ -1,233 +1,65 @@
 <div>
-    <x-loading wire:loading />
+
+    <x-loading wire:loading wire:target="seleccionarProducto" />
     <x-flex>
         <x-h3>
             <a href="{{ route('kardex.lista') }}" class="underline text-blue-600">Kardex</a> / {{ $kardex->nombre }}
-            ({{ $kardex->tipo_kardex }})
         </x-h3>
-        <x-button type="button" @click="$wire.dispatch('crearKardexProducto')">
-            <i class="fa fa-plus"></i> Registrar Producto
-        </x-button>
     </x-flex>
     <x-card class="my-4">
         <x-spacing>
-            <x-flex>
-                <x-select wire:model.live="productoKardexSeleccionado" class="!w-auto">
-                    <option value="">SELECCIONE UN PRODUCTO</option>
-                    @foreach ($kardexDetalleProductos as $kardexDetalleProducto)
-                        <option value="{{ $kardexDetalleProducto->producto_id }}">
-                            {{ $kardexDetalleProducto->codigo_existencia . ' - ' . $kardexDetalleProducto->producto->nombre_completo }}
-                        </option>
-                    @endforeach
-                </x-select>
-                @if ($productoKardexSeleccionado)
-                    <livewire:kardex-detalle-import-export-component :productoId="$productoKardexSeleccionado" :kardexId="$kardexId"
-                        wire:key="import{{ $productoKardexSeleccionado }}" />
+            <x-flex class="!items-end">
+                @if ($producto)
+                    <div>
+                        {{ $producto->nombre_completo }} <x-danger-button wire:click="quitarProducto"><i
+                                class="fa fa-remove"></i></x-danger-button>
+                    </div>
+                    <div>
+                        <livewire:compra-producto-import-export-component :productoid="$producto->id"
+                            wire:key="registroCompraForCompra{{ $producto->id }}" />
+                    </div>
+                    <div>
+                        <x-button type="button" @click="$wire.dispatch('EditarProducto',{id:{{ $producto->id }}})"
+                            class="mt-4 md:mt-0 w-full md:w-auto">
+                            <i class="fa fa-remove"></i>
+                            Editar Producto
+                        </x-button>
+                    </div>
+                @else
+                    <div class="">
+                        <x-label>Busca tu producto por nombre o agente activo</x-label>
+                        <div class="relative w-full">
+                            <div
+                                class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none text-primary">
+                                <i class="fa fa-search"></i>
+                            </div>
+                            <x-input type="search" wire:model.live="search" id="default-search" class="!w-auto !pl-10"
+                                autocomplete="off" required />
+                            <div wire:loading wire:target="search">
+                                Cargando <i class="fa fa-spin fa-rotate"></i>
+                            </div>
+                        </div>
+                        @if (!empty($resultado))
+                            <div
+                                class="absolute z-10 bg-white border border-gray-300 mt-1 max-w-[20rem] rounded-lg shadow-lg">
+                                <ul>
+                                    @foreach ($resultado as $producto)
+                                        <li class="p-2 hover:bg-gray-100 cursor-pointer"
+                                            wire:click="seleccionarProducto({{ $producto->id }})">
+                                            {{ $producto->nombre_completo }}
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+                    </div>
                 @endif
             </x-flex>
 
         </x-spacing>
     </x-card>
-    @if ($productoKardexSeleccionado)
-        @if ($kardexDetalleProductos)
-            <x-card class="my-4">
-                <x-spacing>
-                    <x-flex class="my-4 !items-end">
-                        <div>
-                            <x-label value="MÉTODO DE VALUACIÓN" />
-                            <x-select wire:model="metodoValuacion">
-                                <option value="promedio">PROMEDIO</option>
-                            </x-select>
-                        </div>
-                        <div>
-                            <x-button type="button" type="button" wire:click="recalcularCostos">
-                                <i class="fa fa-sync"></i> Recalcular Costos
-                            </x-button>
-                        </div>
-                        @if (count($kardexLista)>0)
-                            <div>
-                                <x-button type="button" type="button" wire:click="descargarKardex">
-                                    <i class="fa fa-file-excel"></i> Descargar Kardex
-                                </x-button>
-                            </div>
-                        @endif
-
-                        <div>
-                            <x-button type="button" type="button"
-                                @click="$wire.dispatch('editarKardexProducto',{kardexProductoId:{{ $kardexProducto->id }}})">
-                                <i class="fa fa-edit"></i> Editar Kardex
-                                {{ $kardexProducto->codigo_existencia }}
-                            </x-button>
-
-                            @if ($kardexProducto->file)
-                                <!--<x-button-a href="{{ Storage::disk('public')->url($kardexProducto->file) }}">
-                                    <i class="fa fa-file-excel"></i>
-                                    Descargar Excel
-                                </x-button-a>-->
-                            @endif
-                        </div>
-                    </x-flex>
-                    <div class="my-4">
-                        <ul>
-                            <li>
-                                <b>Total Compras: </b>{{$totalCompras}}
-                            </li>
-                            <li>
-                                <b>Total Salida a Producción: </b>{{$totalSalidas}}
-                            </li>
-                        </ul>
-                    </div>
-                    <x-table>
-                        <x-slot name="thead">
-                            <x-tr>
-                                <x-th class="text-center" colspan="4">
-                                    DOCUMENTO DE TRASLADO, COMPROBANTE DE PAGO,<br />DOCUMENTO INTERNO O SIMILAR
-                                </x-th>
-                                <x-th class="text-center" rowspan="2">
-                                    TIPO DE<br />OPERACIÓN<br />(TABLA 12)
-                                </x-th>
-                                <x-th class="text-center bg-amber-100" colspan="3">
-                                    ENTRADAS
-                                </x-th>
-                                <x-th class="text-center" colspan="4">
-                                    SALIDAS
-                                </x-th>
-                                <x-th class="text-center" colspan="3">
-                                    SALDO FINAL
-                                </x-th>
-                            </x-tr>
-                            <x-tr>
-                                <x-th class="text-center">
-                                    FECHA
-                                </x-th>
-                                <x-th class="text-center">
-                                    TIPO (TABLA 10)
-                                </x-th>
-                                <x-th class="text-center">
-                                    SERIE
-                                </x-th>
-                                <x-th class="text-center">
-                                    NÚMERO
-                                </x-th>
-                                <x-th class="text-center bg-amber-100">
-                                    CANTIDAD
-                                </x-th>
-                                <x-th class="text-center bg-amber-100">
-                                    COSTO UNITARIO
-                                </x-th>
-                                <x-th class="text-center bg-amber-100">
-                                    COSTO TOTAL
-                                </x-th>
-                                <x-th class="text-center">
-                                    CANTIDAD
-                                </x-th>
-                                @if ($esCombustible)
-                                    <x-th class="text-center">
-                                        MAQUINARIA
-                                    </x-th>
-                                @else
-                                    <x-th class="text-center">
-                                        LOTE
-                                    </x-th>
-                                @endif
-
-                                <x-th class="text-center">
-                                    COSTO UNITARIO
-                                </x-th>
-                                <x-th class="text-center">
-                                    COSTO TOTAL
-                                </x-th>
-                                <x-th class="text-center">
-                                    CANTIDAD
-                                </x-th>
-                                <x-th class="text-center">
-                                    COSTO UNITARIO
-                                </x-th>
-                                <x-th class="text-center">
-                                    COSTO TOTAL
-                                </x-th>
-                            </x-tr>
-                        </x-slot>
-                        <x-slot name="tbody">
-                            @if (is_array($kardexLista) && count($kardexLista) > 0)
-                                @foreach ($kardexLista as $kardexRegistro)
-                                    <x-tr>
-                                        <x-td class="text-center">
-                                            {{ $kardexRegistro['fecha'] }}
-                                        </x-td>
-                                        <x-td class="text-center">
-                                            {{ $kardexRegistro['tabla10'] }}
-                                        </x-td>
-                                        <x-td class="text-center">
-                                            {{ $kardexRegistro['serie'] }}
-                                        </x-td>
-                                        <x-td class="text-center">
-                                            {{ $kardexRegistro['numero'] }}
-                                        </x-td>
-                                        <x-td class="text-center">
-                                            {{ $kardexRegistro['tipo_operacion'] }}
-                                        </x-td>
-                                        <x-td class="bg-amber-50 text-center">
-                                            {{ is_numeric($kardexRegistro['entrada_cantidad']) ? number_format($kardexRegistro['entrada_cantidad'], 3) : $kardexRegistro['entrada_cantidad'] }}
-                                        </x-td>
-                                        <x-td class="bg-amber-50 text-center">
-                                            {{ is_numeric($kardexRegistro['entrada_costo_unitario']) ? number_format($kardexRegistro['entrada_costo_unitario'], 6) : $kardexRegistro['entrada_costo_unitario'] }}
-                                        </x-td>
-                                        <x-td class="bg-amber-50 text-center">
-                                            {{ is_numeric($kardexRegistro['entrada_costo_total']) ? number_format($kardexRegistro['entrada_costo_total'], 2) : $kardexRegistro['entrada_costo_total'] }}
-                                        </x-td>
-                                        <x-td class="text-center">
-                                            {{ $kardexRegistro['salida_cantidad'] }}
-                                        </x-td>
-
-                                        @if ($esCombustible)
-                                            <x-td class="text-center">
-                                                {{ $kardexRegistro['salida_maquinaria'] }}
-                                            </x-td>
-                                        @else
-                                            <x-td class="text-center">
-                                                {{ $kardexRegistro['salida_lote'] }}
-                                            </x-td>
-                                        @endif
-                                        <x-td class="text-center">
-                                            {{ is_numeric($kardexRegistro['salida_costo_unitario']) ? number_format($kardexRegistro['salida_costo_unitario'], 2) : $kardexRegistro['salida_costo_unitario'] }}
-                                        </x-td>
-                                        <x-td class="text-center">
-                                            {{ is_numeric($kardexRegistro['salida_costo_total']) ? number_format($kardexRegistro['salida_costo_total'], 2) : $kardexRegistro['salida_costo_total'] }}
-                                        </x-td>
-                                        <x-td class="text-center">
-                                            {{ is_numeric($kardexRegistro['saldofinal_cantidad']) ? number_format($kardexRegistro['saldofinal_cantidad'], 2) : $kardexRegistro['saldofinal_cantidad'] }}
-                                        </x-td>
-                                        <x-td class="text-center">
-                                            {{ is_numeric($kardexRegistro['saldofinal_costo_unitario']) ? number_format($kardexRegistro['saldofinal_costo_unitario'], 2) : $kardexRegistro['saldofinal_costo_unitario'] }}
-                                        </x-td>
-                                        <x-td class="text-center">
-                                            {{ is_numeric($kardexRegistro['saldofinal_costo_total']) ? number_format($kardexRegistro['saldofinal_costo_total'], 2) : $kardexRegistro['saldofinal_costo_total'] }}
-                                        </x-td>
-                                    </x-tr>
-                                @endforeach
-                            @endif
-                        </x-slot>
-                    </x-table>
-                    @if ($kardexProducto)
-                    <div class="my-4">
-                        <x-flex class="justify-end">
-                            <div>
-                                <x-danger-button wire:click="eliminarComprasySalidas({{$kardexProducto->id}})">
-                                    <i class="fa fa-trash"></i> Eliminar Compras y Salidas de este Kardex
-                                </x-danger-button>
-                                <p>
-                                    <small>
-                                        Usar esta opción cuando se planea importar un Kardex Oficial Final.
-                                    </small>
-                                </p>
-                            </div>
-                        </x-flex>
-                    </div>
-                    @endif
-                </x-spacing>
-            </x-card>
-        @endif
+    @if ($productoSeleccionadoId)
+        <livewire:kardex-distribucion-component :kardexId="$kardexId" :kardexProductoId="$producto->id" wire:key="kardexProductoId{{ $productoSeleccionadoId }}" />
     @else
         <livewire:kardex-indice-component :kardexId="$kardexId" wire:key="kardexGeneral{{ $kardexId }}" />
     @endif

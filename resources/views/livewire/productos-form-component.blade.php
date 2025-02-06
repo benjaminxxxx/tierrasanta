@@ -16,7 +16,7 @@
             <form wire:submit.prevent="store">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-                   
+
                     <div class="mt-3">
                         <x-label for="nombre_comercial">Nombre del Producto</x-label>
                         <x-input type="text" wire:keydown.enter="store" wire:model="nombre_comercial"
@@ -49,7 +49,9 @@
                             <option value="">SELECCIONAR TIPO</option>
                             @if ($sunatTipoExistencias)
                                 @foreach ($sunatTipoExistencias as $sunatTipoExistencia)
-                                    <option value="{{ $sunatTipoExistencia->codigo }}">{{ $sunatTipoExistencia->codigo }} - {{ $sunatTipoExistencia->descripcion }}</option>
+                                    <option value="{{ $sunatTipoExistencia->codigo }}">
+                                        {{ $sunatTipoExistencia->codigo }} - {{ $sunatTipoExistencia->descripcion }}
+                                    </option>
                                 @endforeach
                             @endif
                         </x-select>
@@ -61,7 +63,9 @@
                             <option value="">SELECCIONAR UNIDAD</option>
                             @if ($sunatCodigoUnidadMedidas)
                                 @foreach ($sunatCodigoUnidadMedidas as $sunatCodigoUnidadMedida)
-                                    <option value="{{ $sunatCodigoUnidadMedida->codigo }}">{{ $sunatCodigoUnidadMedida->alias }} - {{ $sunatCodigoUnidadMedida->descripcion }}</option>
+                                    <option value="{{ $sunatCodigoUnidadMedida->codigo }}">
+                                        {{ $sunatCodigoUnidadMedida->alias }} -
+                                        {{ $sunatCodigoUnidadMedida->descripcion }}</option>
                                 @endforeach
                             @endif
                         </x-select>
@@ -73,12 +77,18 @@
         <x-slot name="footer">
             <x-secondary-button type="button" wire:click="closeForm" class="mr-2">Cerrar</x-secondary-button>
             @if ($productoId)
-            <x-secondary-button  class="mr-2" @click="$wire.dispatch('VerComprasProducto',{'id':{{ $productoId }}})">
-                <i class="fa fa-money-bill"></i> Compras
-            </x-secondary-button> 
+                <x-secondary-button class="mr-2"
+                    @click="$wire.dispatch('VerComprasProducto',{'id':{{ $productoId }}})">
+                    <i class="fa fa-money-bill"></i> Compras
+                </x-secondary-button>
+
+                <livewire:compra-producto-import-export-component :productoid="$productoId"
+                    wire:key="registroCompra{{ $productoId }}" />
             @endif
-            
-            <x-button type="submit" wire:click="store" class="ml-3">Guardar</x-button>
+
+            <x-button type="submit" wire:click="store" class="ml-3">
+                <i class="fa fa-save"></i> Guardar
+            </x-button>
         </x-slot>
     </x-dialog-modal>
 </div>

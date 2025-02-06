@@ -19,9 +19,29 @@ class Kardex extends Model
     {
         return $this->hasMany(KardexProducto::class);
     }
-    /*  
-    public function kardexProductos()
+
+    public function compras($productoId)
     {
-        return $this->hasMany(KardexProducto::class, 'kardex_id');
-    }*/
+        $query = CompraProducto::where('producto_id', $productoId)
+            ->whereDate('fecha_compra', '>=', $this->fecha_inicial)
+            ->orderBy('fecha_compra');
+
+        if ($this->fecha_final) {
+            $query->whereDate('fecha_compra', '<=', $this->fecha_final);
+        }
+        return $query;
+    }
+    public function salidas($productoId)
+    {
+        $query = AlmacenProductoSalida::where('producto_id', $productoId)
+            ->whereDate('fecha_reporte', '>=', $this->fecha_inicial)
+            ->orderBy('fecha_reporte')
+            ->orderBy('created_at', 'asc')
+            ->orderByRaw('COALESCE(indice, 0) ASC');
+
+        if ($this->fecha_final) {
+            $query->whereDate('fecha_reporte', '<=', $this->fecha_final);
+        }
+        return $query;
+    }
 }

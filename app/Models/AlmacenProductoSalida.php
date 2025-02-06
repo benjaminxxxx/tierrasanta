@@ -21,7 +21,10 @@ class AlmacenProductoSalida extends Model
         'cantidad_kardex_producto_id',
         'cantidad_stock_inicial',
         'kardex_producto_id',
-        'maquinaria_id'
+        'maquinaria_id',
+        'indice', //cuando se agregan mas de un registro a la vez, es importante saber el orden para que el kardex lo haga igual
+        'tipo_kardex',
+        'registro_carga'
     ];
     
     public function kardexProducto()
@@ -50,7 +53,7 @@ class AlmacenProductoSalida extends Model
     }
     public function getMaquinaNombreAttribute()
     {
-        $tipoKardex = $this->kardexProducto->kardex->tipo_kardex;
+        $tipoKardex = $this->tipo_kardex;
         if($tipoKardex=='blanco'){
             return $this->maquinaria?$this->maquinaria->alias_blanco:'-';
         }else{
@@ -65,10 +68,6 @@ class AlmacenProductoSalida extends Model
     
     public function getObservacionAttribute()
     {
-        $kardexProducto = $this->kardexProducto()->first();
-        if($kardexProducto){
-            return $kardexProducto->kardex()->first()->tipo_kardex=='negro'?'No registra contabilidad':'';
-        }
-        return '';
+        return $this->tipo_kardex=='negro'?'No registra contabilidad':'';
     }
 }
