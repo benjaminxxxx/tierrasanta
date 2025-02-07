@@ -11,10 +11,12 @@ class AlmacenSalidaProductosComponent extends Component
     use LivewireAlert;
     public $anio;
     public $mes;
-    public function mount($mes = null, $anio = null)
+    public $destino;
+    public function mount($mes = null, $anio = null,$destino = 'productos')
     {
         $this->mes = $mes ? $mes : Carbon::now()->format('m');
         $this->anio = $anio ? $anio : Carbon::now()->format('Y');
+        $this->destino = $destino;
     }
     
     public function mesAnterior()

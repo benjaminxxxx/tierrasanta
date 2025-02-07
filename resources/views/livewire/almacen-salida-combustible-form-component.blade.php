@@ -47,11 +47,9 @@
                     <x-label for="seleccionar_almacen">Seleccionar Almacen</x-label>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                         @if ($almacenes && $almacenes->count() > 0)
-                            @foreach ($almacenes as $almacen)
+                            @foreach ($almacenes as $kardexProducto)
                                 @php
-                                
-                                    $kardexProducto = $almacen->productos()->where('producto_id',$productoSeleccionado->id)->first();                                 
-                                    $stockDisponible = $kardexProducto->StockDiponible($fecha_salida);
+                                    $stockDisponible = $kardexProducto->stock_disponible['stock_disponible'];
                                 @endphp
                                 @if ($stockDisponible > 0)
                                     <x-card

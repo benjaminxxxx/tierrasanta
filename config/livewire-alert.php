@@ -11,7 +11,9 @@ return [
         'toast' => true,
         'text' => null,
         'showCancelButton' => false,
-        'showConfirmButton' => false
+        'showConfirmButton' => false,
+        'zIndex' => 500,
+        'cancelButtonText' => 'Cancelar',
     ],
     'confirm' => [
         'icon' => 'warning',

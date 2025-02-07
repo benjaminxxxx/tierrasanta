@@ -37,13 +37,19 @@ class AlmacenSalidaCombustibleFormComponent extends Component
         $this->maquinarias = Maquinaria::all();
         $this->maquinariasNombres = $this->maquinarias->pluck('nombre','id')->toArray(); 
     }
+    public function seleccionarKardexProducto($kardexProductoId, $stockDisponible)
+    {
+        $this->kardexProducto = KardexProducto::find($kardexProductoId);
+        $this->stockDisponibleSeleccionado = $stockDisponible;
+    }
     public function obtenerFechaSalida()
     {
+        // Obtener el mes y año actuales
         $mesActual = Carbon::now()->month;
         $anioActual = Carbon::now()->year;
 
         if ($this->mes && $this->anio) {
-            
+            // Si el mes y el año son iguales al presente, usar la fecha actual            
             if ($this->mes == $mesActual && $this->anio == $anioActual) {
                 $this->fecha_salida = Carbon::now()->format('Y-m-d');
             } else {
@@ -95,11 +101,7 @@ class AlmacenSalidaCombustibleFormComponent extends Component
 
         $this->almacenes = $this->productoSeleccionado->kardexesDisponibles($this->fecha_salida); 
     }
-    public function seleccionarKardexProducto($kardexProductoId, $stockDisponible)
-    {
-        $this->kardexProducto = KardexProducto::find($kardexProductoId);
-        $this->stockDisponibleSeleccionado = $stockDisponible;
-    }
+    
 
     public function retroceder()
     {
@@ -135,12 +137,10 @@ class AlmacenSalidaCombustibleFormComponent extends Component
                 $cantidad = round($this->cantidades[$maquinariaId],3);
                 if($cantidad>0){
                     $data = [
-                        //'item',
                         'producto_id' => $this->productoSeleccionado->id,
                         'campo_nombre'=>'',
                         'cantidad'=>$this->cantidades[$maquinariaId],
                         'fecha_reporte'=>$this->fecha_salida,
-                        //'compra_producto_id',
                         'costo_por_kg'=>null,
                         'maquinaria_id'=>$maquinariaId,
                         'total_costo'=>null

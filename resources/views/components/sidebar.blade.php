@@ -105,7 +105,7 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorReportes" href="#" :active="request()->routeIs(['reporte.reporte_diario','reporte.reporte_diario_riego','cuadrilla.asistencia','almacen.salida_productos','productividad.avance'])">
+                    <x-nav-link-parent name="sectorReportes" href="#" :active="request()->routeIs(['reporte.reporte_diario','reporte.reporte_diario_riego','cuadrilla.asistencia','productividad.avance'])">
                       
                         <div class="w-6 text-center">
                             <i class="fa fa-database"></i>
@@ -121,12 +121,7 @@
                             <x-nav-link-child href="{{ route('cuadrilla.asistencia') }}" :active="request()->routeIs('cuadrilla.asistencia')">
                                 Cuadrilleros
                             </x-nav-link-child>
-                            <x-nav-link-child href="{{ route('almacen.salida_productos') }}" :active="request()->routeIs('almacen.salida_productos')">
-                                Salida de Almacén Pesticidas y Fertilizantes
-                            </x-nav-link-child>
-                            <x-nav-link-child href="{{ route('almacen.salida_combustible') }}" :active="request()->routeIs('almacen.salida_combustible')">
-                                Salida de Combustible
-                            </x-nav-link-child>
+                            
                             <x-nav-link-child href="{{ route('productividad.avance') }}" :active="request()->routeIs('productividad.avance')">
                                 Avance de Productividad
                             </x-nav-link-child>
@@ -147,15 +142,24 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorKardex" href="#" :active="request()->routeIs(['kardex.lista'])">
+                    <x-nav-link-parent name="sectorKardex" href="#" :active="request()->routeIs(['kardex.lista','productos.index','almacen.salida_productos','almacen.salida_combustible'])">
                       
                         <div class="w-6 text-center">
                             <i class="fa fa-clipboard-list"></i>
                         </div>
-                        Kardex
+                        Kardex y Almacén
                         <x-slot name="children">
+                            <x-nav-link-child href="{{ route('almacen.salida_productos') }}" :active="request()->routeIs('almacen.salida_productos')">
+                                Salida de Almacén Pesticidas y Fertilizantes
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('almacen.salida_combustible') }}" :active="request()->routeIs('almacen.salida_combustible')">
+                                Salida de Combustible
+                            </x-nav-link-child>
                             <x-nav-link-child href="{{ route('kardex.lista') }}" :active="request()->routeIs('kardex.lista')">
                                 Ver Kardex
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('productos.index') }}" :active="request()->routeIs('productos.index')">
+                                Productos
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
@@ -183,7 +187,7 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorProveedores" :active="request()->routeIs(['proveedores.index','productos.index','maquinarias.index'])">
+                    <x-nav-link-parent name="sectorProveedores" :active="request()->routeIs(['proveedores.index','maquinarias.index'])">
                         
                         <div class="w-6 text-center">
                             <i class="fa fa-users"></i>
@@ -193,9 +197,7 @@
                             <x-nav-link-child href="{{ route('proveedores.index') }}" :active="request()->routeIs('proveedores.index')">
                                 Proveedores
                             </x-nav-link-child>
-                            <x-nav-link-child href="{{ route('productos.index') }}" :active="request()->routeIs('productos.index')">
-                                Productos
-                            </x-nav-link-child>
+                            
                             <x-nav-link-child href="{{ route('maquinarias.index') }}" :active="request()->routeIs('maquinarias.index')">
                                 Maquinarias
                             </x-nav-link-child>

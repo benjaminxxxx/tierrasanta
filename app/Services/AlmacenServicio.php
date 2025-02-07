@@ -99,6 +99,10 @@ class AlmacenServicio
             foreach ($columnasPermitidas as $columna) {
                 $limpio[$columna] = $registro[$columna] ?? null;
             }
+
+            if($limpio['campo_nombre']==null){
+                $limpio['campo_nombre'] = '';
+            }
             $limpio['registro_carga'] = $codigoCarga;
 
             $registros[] = $limpio;
