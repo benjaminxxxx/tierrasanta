@@ -19,7 +19,11 @@ class CampoCampania extends Model
         'gasto_cuadrilla',
         'fecha_inicio',
         'fecha_fin',
-        'usuario_modificador'
+        'usuario_modificador',
+
+        'gasto_planilla_file',
+        'gasto_cuadrilla_file',
+        'gasto_resumen_bdd_file'
     ];
     public function reporteCostoPlanilla()
     {

@@ -15,6 +15,8 @@ class RegistroProductividad extends Model
         'labor_id',
         'fecha',
         'campo',
+        'kg_8',
+        'valor_kg_adicional'
     ];
 
     public function valoracion()

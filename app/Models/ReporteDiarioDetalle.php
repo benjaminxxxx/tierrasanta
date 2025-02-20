@@ -15,4 +15,8 @@ class ReporteDiarioDetalle extends Model
         'hora_inicio',
         'hora_salida',
     ];
+    public function laborObjecto()
+    {
+        return $this->belongsTo(Labores::class,'labor');
+    }
 }

@@ -14,4 +14,12 @@ class RegistroProductividadBono extends Model
         'bono',
         'registro_productividad_id'
     ];
+    public function empleado()
+    {
+        return $this->belongsTo(Empleado::class, 'empleado_id');
+    }
+    public function registroProductividad()
+    {
+        return $this->belongsTo(RegistroProductividad::class, 'registro_productividad_id');
+    }
 }

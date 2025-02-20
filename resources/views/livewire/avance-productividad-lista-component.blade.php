@@ -10,7 +10,7 @@
                 <div x-ref="tableContainer" class="mt-5 overflow-auto"></div>
 
                 <div class="text-right mt-5">
-                    <x-button @click="sendData">
+                    <x-button @click="sendDataAvanceProductividadLista">
                         <i class="fa fa-save"></i> Guardar Información
                     </x-button>
                 </div>
@@ -174,7 +174,8 @@
 
                 return columns;
             },
-            sendData() {
+            sendDataAvanceProductividadLista() {
+                
                 let allData = [];
 
                 // Recorre todas las filas de la tabla y obtiene los datos completos
@@ -191,7 +192,7 @@
                     datos: filteredData
                 };
 
-                $wire.dispatchSelf('guardarInformacion', data);
+                $wire.dispatchSelf('guardarInformacionAvanceProductividadLista', data);
                 this.hasUnsavedChanges = false;
             }
         }));

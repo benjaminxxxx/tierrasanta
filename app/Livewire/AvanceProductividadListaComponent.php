@@ -17,12 +17,12 @@ class AvanceProductividadListaComponent extends Component
     public $registroId;
     public $mostrarFormulario = false;
     public $cantidadDetalles;
-    protected $listeners = ['listarRegistro', 'guardarInformacion'];
+    protected $listeners = ['listarRegistro', 'guardarInformacionAvanceProductividadLista'];
     public function mount()
     {
         $this->idTable = "table" . Str::random(15);
     }
-    public function guardarInformacion($datos)
+    public function guardarInformacionAvanceProductividadLista($datos)
     {
         try {
             $productividadId = $this->registroId;

@@ -16,14 +16,15 @@ return [
         'cancelButtonText' => 'Cancelar',
     ],
     'confirm' => [
-        'icon' => 'warning',
+        'icon' => 'question', // Cambia el ícono por defecto a "question"
         'position' => 'center',
         'toast' => false,
         'timer' => null,
         'showConfirmButton' => true,
         'showCancelButton' => true,
-        'cancelButtonText' => 'No',
+        'cancelButtonText' => 'Cancelar',
+        'confirmButtonText' => 'Sí, eliminar',
         'confirmButtonColor' => '#056A70',
-        'cancelButtonColor' => '#F1F5F9'
+        'cancelButtonColor' => '#999999',
     ]
 ];

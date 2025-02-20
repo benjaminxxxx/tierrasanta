@@ -1,4 +1,5 @@
 <div>
+    <x-loading wire:loading />
     <x-card class="mt-5">
         <x-spacing>
             <x-table class="mt-5">
@@ -29,10 +30,10 @@
                 </x-slot>
                 <x-slot name="tbody">
                     @if ($registros && $registros->count() > 0)
-                 
+
                         @foreach ($registros as $indice => $registro)
                             <x-tr>
-                                <x-th value="{{ $indice+1 }}" class="text-center" />
+                                <x-th value="{{ $indice + 1 }}" class="text-center" />
                                 <x-th value="{{ $registro->item }}" class="text-center" />
                                 <x-td value="{{ $registro->fecha_reporte }}" class="text-center" />
                                 @if ($tipo == 'combustible')
@@ -63,13 +64,15 @@
 
                                     <x-flex class="justify-end w-full">
                                         @if ($registro->perteneceAUnaCompra)
-                                         
-                                            <x-secondary-button type="button" title="Ver historial de compra."
+                                            <x-secondary-button type="button" class="whitespace-nowrap" title="Ver historial de compra."
                                                 @click="$wire.dispatch('verHistorialSalidaPorCompra',{salidaId:{{ $registro->id }}})">
-                                                <i class="fa fa-money-bill"></i> Ver en Compra
+                                                <i class="fa fa-money-bill"></i> Ver Compra
                                             </x-secondary-button>
                                         @endif
-
+                                        <x-secondary-button type="button" @click="$wire.dispatch('verDistribucionCombustublble',{salidaId:{{ $registro->id }}})" class="whitespace-nowrap" 
+                                            >
+                                            <i class="fa fa-list"></i> Distribución
+                                        </x-secondary-button>
                                         <x-danger-button type="button"
                                             wire:click="confirmarEliminacion({{ $registro->id }})">
                                             <i class="fa fa-trash"></i>

@@ -8,6 +8,7 @@ use App\Services\CampaniaServicio;
 use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
+use Illuminate\Support\Facades\Storage;
 
 class CampoCampaniaComponent extends Component
 {
@@ -86,6 +87,17 @@ class CampoCampaniaComponent extends Component
                 }
             }
         }
+        $archivos = array_filter([
+            $campania->gasto_planilla_file,
+            $campania->gasto_cuadrilla_file,
+            $campania->gasto_resumen_bdd_file
+        ]);
+    
+        // Eliminar archivos si hay rutas válidas
+        if (!empty($archivos)) {
+            Storage::disk('public')->delete($archivos);
+        }
+        
         $campania->delete();
         $this->obtenerRegistros();
         $this->alert('success', 'Registros Eliminados Correctamente.');
@@ -97,6 +109,7 @@ class CampoCampaniaComponent extends Component
 
             $campaniaServicio = new CampaniaServicio($campaniaId);
             $campaniaServicio->actualizarGastosyConsumos();
+            $this->obtenerRegistros();
             $this->alert('success', 'Gastos y Consumos actualizados correctamente.');
 
         } catch (\Throwable $th) {

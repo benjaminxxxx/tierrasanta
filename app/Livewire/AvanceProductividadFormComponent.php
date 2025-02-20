@@ -3,14 +3,10 @@
 namespace App\Livewire;
 
 use App\Models\Campo;
-use App\Models\CuaAsistenciaSemanal;
 use App\Models\Labores;
-use App\Models\LaborValoracion;
 use App\Models\RegistroProductividad;
 use App\Models\RegistroProductividadDetalle;
-use App\Models\RegistrosProductividadFactor;
 use App\Services\ProductividadServicio;
-use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
@@ -27,6 +23,8 @@ class AvanceProductividadFormComponent extends Component
     public $actividades = [];
     public $registroId;
     public $valoracion;
+    public $kg8;
+    public $valorKgAdicional;
     protected $listeners = ['nuevoRegistro', 'editarRegistro', 'factorRegistrado'];
     public function mount()
     {
@@ -43,6 +41,9 @@ class AvanceProductividadFormComponent extends Component
         if ($this->campos->count() > 0) {
             $this->campoSeleccionado = $this->campos->first()->nombre;
         }
+
+        $this->kg8 = null;
+        $this->valorKgAdicional = null;
     }
     public function revisarValoraciones()
     {
@@ -53,32 +54,26 @@ class AvanceProductividadFormComponent extends Component
         if (!$labor) {
             return $this->alert('error', 'La labor seleccionada ya no existe.');
         }
+
+        
         $this->valoracion = $labor->valoraciones()->orderBy('vigencia_desde', 'desc')->whereDate('vigencia_desde', "<=", $this->fecha)
             ->first();
 
         if (!$this->valoracion) {
+            $this->kg8 = null;
+            $this->valorKgAdicional = null;
             return;
         }
+
+        $this->kg8 = $this->valoracion->kg_8;
+        $this->valorKgAdicional = $this->valoracion->valor_kg_adicional;
         $this->actividades = [];
         $this->agregarActividad();
         $this->agregarActividad();
 
-        // Recalcular para todas las actividades cuando cambia la labor seleccionada
-        foreach ($this->actividades as $indice => $actividad) {
-            $horas = $actividad['horas'] ?? 0;
-            $this->recalcularKg($indice, (float)$horas);
-        }
     }
 
-    public function updatedActividades($valor, $clave)
-    {
-        $indice = explode('.', $clave)[0];
-        $campo = explode('.', $clave)[1];
-
-        if ($campo === 'horas') {
-            $this->recalcularKg($indice, (float)$valor);
-        }
-    }
+    
     public function updatedFecha()
     {
         $this->revisarValoraciones();
@@ -88,20 +83,12 @@ class AvanceProductividadFormComponent extends Component
     {
         $this->revisarValoraciones();
     }
-
-    private function recalcularKg($indice, $horas)
-    {
-        if (!$this->valoracion || !$this->laborSeleccionada) {
-            return; // Salir si no hay datos válidos
-        }
-
-        if (isset($this->actividades[$indice])) {
-            $kgPorHora = $this->valoracion->kg_8 / 8;
-            $this->actividades[$indice]['kg'] = max(0, $horas) * $kgPorHora;
-        }
-    }
+ 
+   
     public function nuevoRegistro($fecha)
     {
+        $this->resetErrorBag();
+        
         $this->inicializarValores();
         $this->fecha = null;
         $this->mostrarFormulario = true;
@@ -121,8 +108,18 @@ class AvanceProductividadFormComponent extends Component
         $this->laborSeleccionada = $registro->labor_id;
         $this->fecha = $registro->fecha;
         $this->campoSeleccionado = $registro->campo;
-        $this->revisarValoraciones();
+        $this->kg8 = $registro->kg_8;
+        $this->valorKgAdicional = $registro->valor_kg_adicional;
         $this->actividades = [];
+
+        $labor = Labores::find($this->laborSeleccionada);
+        if (!$labor) {
+            return $this->alert('error', 'La labor seleccionada ya no existe.');
+        }
+
+        
+        $this->valoracion = $labor->valoraciones()->orderBy('vigencia_desde', 'desc')->whereDate('vigencia_desde', "<=", $this->fecha)
+            ->first();
 
         if ($registro->detalles && $registro->detalles->count() > 0) {
             foreach ($registro->detalles as $detalle) {
@@ -150,10 +147,15 @@ class AvanceProductividadFormComponent extends Component
                 'fecha' => 'required|date',
                 'campoSeleccionado' => 'required|string',
                 'laborSeleccionada' => 'required|integer|exists:labores,id',
+                'kg8' => 'required',
+                'valorKgAdicional' => 'required',
             ],
             [
                 'fecha.required' => 'El campo "Fecha" es obligatorio.',
                 'fecha.date' => 'El campo "Fecha" debe ser una fecha válida.',
+
+                'kg8.required' => 'El campo es obligatorio.',
+                'valorKgAdicional.required' => 'El campo es obligatorio.',
 
                 'campoSeleccionado.required' => 'El campo "Campo" es obligatorio.',
                 'campoSeleccionado.string' => 'El campo "Campo" debe ser un texto válido.',
@@ -163,8 +165,6 @@ class AvanceProductividadFormComponent extends Component
                 'laborSeleccionada.exists' => 'La labor seleccionada no existe en la base de datos.',
             ]
         );
-
-
 
         try {
 
@@ -180,6 +180,8 @@ class AvanceProductividadFormComponent extends Component
                         'labor_id' => $this->laborSeleccionada,
                         'fecha' => $this->fecha,
                         'campo' => $this->campoSeleccionado,
+                        'kg_8'=> $this->kg8,
+                        'valor_kg_adicional'=> $this->valorKgAdicional,
                     ]);
 
                     // Registrar los nuevos detalles
@@ -187,7 +189,10 @@ class AvanceProductividadFormComponent extends Component
                         $idDetallesExistentes = [];
                         foreach ($this->actividades as $indice => $actividad) {
                             $horas = $actividad['horas'] ?? 0;
-                            $kg = $actividad['kg'] ?? 0;
+
+                            $kgPorHora = $this->kg8 / 8;
+                            $kg = max(0, $horas) * $kgPorHora;
+                            
                             $idDetalle = $actividad['id'] ?? null;
                             if($idDetalle){
                                 $detalleRegistrado = RegistroProductividadDetalle::find($idDetalle);
@@ -240,13 +245,16 @@ class AvanceProductividadFormComponent extends Component
                     'labor_id' => $this->laborSeleccionada,
                     'fecha' => $this->fecha,
                     'campo' => $this->campoSeleccionado,
+                    'kg_8'=> $this->kg8,
+                    'valor_kg_adicional'=> $this->valorKgAdicional,
                 ]);
                 $productividadId = $registro->id;
 
                 if ($registro && count($this->actividades) > 0) {
                     foreach ($this->actividades as $indice => $actividad) {
                         $horas = $actividad['horas'] ?? 0;
-                        $kg = $actividad['kg'] ?? 0;
+                        $kgPorHora = $this->kg8 / 8;
+                        $kg = max(0, $horas) * $kgPorHora;
                         RegistroProductividadDetalle::create([
                             'indice' => $indice + 1,
                             'registro_productividad_id' => $registro->id,

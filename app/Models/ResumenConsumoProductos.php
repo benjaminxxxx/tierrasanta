@@ -19,9 +19,13 @@ class ResumenConsumoProductos extends Model
         'cantidad',
         'total_costo',
         'campos_campanias_id',
-        'tipo_kardex'
+        'tipo_kardex',
+        'orden_compra',
+        'tienda_comercial',
+        'factura',
     ];
-    public function campania(){
-        return $this->belongsTo(CampoCampania::class,'campos_campanias_id');
+    public function campania()
+    {
+        return $this->belongsTo(CampoCampania::class, 'campos_campanias_id');
     }
 }

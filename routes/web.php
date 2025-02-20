@@ -58,6 +58,10 @@ Route::middleware([
         return view('configuracion.tipo_asistencia');
     })->name('configuracion.tipo_asistencia');
 
+    Route::get('/configuracion/tipo-costo', function () {
+        return view('configuracion.tipo_costos');
+    })->name('configuracion.tipo_costos');
+
     //CUADRILLA
     Route::get('/cuadrilla/cuadrilleros', function () {
         return view('cuadrilla.cuadrilleros');
@@ -118,7 +122,8 @@ Route::middleware([
     Route::get('/kardex/ver/{id}', [KardexController::class,'ver'])->name('kardex.ver');
 
     //GASTOS
-    Route::get('/gasto/general', [GastoController::class,'general'])->name('gastos.general');
+    Route::get('/contabilidad/gasto/general', [GastoController::class,'general'])->name('gastos.general');
+    Route::get('/contabilidad/costos_fijos_y_operativos', [GastoController::class,'costos'])->name('contabilidad.costos');
 
     Route::get('/productividad/avance', [ProductividadController::class,'avance'])->name('productividad.avance');
     

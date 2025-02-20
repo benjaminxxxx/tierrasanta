@@ -25,6 +25,10 @@ class Campo extends Model
         'pos_x',   // Posición X en un canvas o div
         'pos_y',   // Posición Y en un canvas o div
     ];
+    public static function listar()
+    {
+        return self::orderBy('orden')->get();
+    }
     public function hijos()
     {
         return $this->hasMany(Campo::class, 'campo_parent_nombre');

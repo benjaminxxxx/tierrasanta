@@ -100,9 +100,6 @@ class ProductividadServicio
             if ($dato['tipo'] == 'planilla') {
                 $data['empleado_id'] = $dato['id'];
                 $data['cuadrillero_id'] = null;
-            } else {
-                $data['cuadrillero_id'] = $dato['id'];
-                $data['empleado_id'] = null;
             }
 
             for ($i = 1; $i <= $cantidadDetalles; $i++) {
@@ -128,7 +125,7 @@ class ProductividadServicio
     {
         $empleadosYCuadrilleros = $this->leerEmpleadosYCuadrilleros();
         $cantidadDetalles = $this->registroProductividad->detalles->count();
-        $valoracion = (float)$this->registroProductividad->valoracion->valor_kg_adicional;
+        $valoracion = (float)$this->registroProductividad->valor_kg_adicional;
         $algunCuadrillero = null; //si existe al menos un cuadrillero se debe actualizar los totales grupales
 
         if (!$valoracion) {
@@ -193,6 +190,7 @@ class ProductividadServicio
 
                         $bonoAcumulado = RegistroProductividadBono::where('empleado_id', $empleado_id)->whereIn('registro_productividad_id', $actividadesMismoDia)->sum('bono');
                     } else {
+                        //borrar en el futuro
                         $bonoAcumulado = RegistroProductividadBono::where('cuadrillero_id', $cuadrillero_id)->whereIn('registro_productividad_id', $actividadesMismoDia)->sum('bono');                 
                     }
                 }
@@ -209,6 +207,7 @@ class ProductividadServicio
                     $bonoAcumuladoRestante = RegistroProductividadBono::where('empleado_id', $empleado_id)->whereIn('registro_productividad_id', $actividadesMismoDia)->sum('bono');
                    
                 } else {
+                    //borrar en el futuro
                     $bonoAcumuladoRestante = RegistroProductividadBono::where('cuadrillero_id', $cuadrillero_id)->whereIn('registro_productividad_id', $actividadesMismoDia)->sum('bono');
                 }
 

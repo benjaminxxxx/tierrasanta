@@ -20,5 +20,8 @@ class CompraSalidaStock extends Model
     public function salida(){
         return $this->belongsTo(AlmacenProductoSalida::class,"salida_almacen_id");
     }
+    public function compra(){
+        return $this->belongsTo(CompraProducto::class,"compra_producto_id");
+    }
   
 }

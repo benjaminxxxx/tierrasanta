@@ -15,4 +15,10 @@ class CamposCampaniasConsumo extends Model
         'monto',
         'reporte_file'
     ];
+    public function categoriaProducto(){
+        return $this->belongsTo(CategoriaProducto::class,'categoria_id');
+    }
+    public function campania(){
+        return $this->belongsTo(CampoCampania::class,'campos_campanias_id');
+    }
 }

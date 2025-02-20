@@ -35,6 +35,18 @@ class AlmacenProductoSalida extends Model
     {
         return $this->hasMany(CompraSalidaStock::class, 'salida_almacen_id');
     }
+ 
+    public function compraSalida()
+    {
+        return $this->hasManyThrough(
+            CompraProducto::class,         // Modelo destino
+            CompraSalidaStock::class,      // Modelo intermedio
+            'salida_almacen_id',           // Clave foránea en CompraSalidaStock (relación con AlmacenProductoSalida)
+            'id',                           // Clave primaria en CompraProducto
+            'id',                           // Clave primaria en AlmacenProductoSalida
+            'compra_producto_id'            // Clave foránea en CompraSalidaStock (relación con CompraProducto)
+        );
+    }
     // Relación con Producto
     public function producto()
     {
@@ -42,6 +54,9 @@ class AlmacenProductoSalida extends Model
     }
 
     // Relación con Compra
+    /**
+     * Esta funcion debe quedar obsoleta, la compra ya no se relaciona a compra_proucto_id, sino a salidacomprastock que aun falta verificar, para su correcto uso cambia por compraSalida
+     */
     public function compra()
     {
         return $this->belongsTo(CompraProducto::class, 'compra_producto_id');

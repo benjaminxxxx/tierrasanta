@@ -2,18 +2,21 @@
 
 namespace App\Services;
 
+use App\Exports\CampoGastoPlanillaExport;
 use App\Models\CampoCampania;
 use App\Models\PlanillaBlanco;
 use App\Models\PlanillaBlancoDetalle;
 use App\Models\ReporteCostoPlanilla;
 use App\Models\ReporteDiario;
 use App\Models\ReporteDiarioCampos;
-use App\Models\ReporteDiarioDetalle;
+use App\Models\RegistroProductividad;
+use App\Models\RegistroProductividadBono;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Exception;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class PlanillaServicio
 {
@@ -166,8 +169,7 @@ class PlanillaServicio
 
         $reporteDiario = $query->get()->keyBy('id');
 
-
-        $detalles =  $reporteDiario->flatMap(function ($reporte) use ($campo) {
+        $detalles = $reporteDiario->flatMap(function ($reporte) use ($campo) {
             return $reporte->detalles()->where('campo', $campo)->get();
         });
 
@@ -192,6 +194,45 @@ class PlanillaServicio
          */
         $planillas = self::obtenerPlanillas($fechaInicio, $fechaFin);
 
+        /**
+         * Para obtener los bonos debemos considerar el registro de productiviad, guardado en registro_productividads
+         * como se van a recorrer los detalles de reporte diario, pueda que algunos registros en registro de productividad tengan valores, y no sean procesados
+         * entonces se hare una lista de productividad, luego, se ira quitando esa lista, luego si al final del foreach aun hay valores se mostrara un throw indicando el error
+         * 
+         * id
+               * labor_valoracion_id
+                *labor_id
+                *fecha
+                *campo
+                *created_at
+                *updated_at
+                *kg_8
+                *valor_kg_adicional
+
+                *6
+                *3
+                *67
+                *2024-11-14
+                *1
+                *2025-02-14 04:22:58
+                *2025-02-14 04:22:58
+                *35.00
+                *2.50
+         */
+        $registroBonos = RegistroProductividadBono::whereHas('registroProductividad', function ($query) use ($fechaInicio, $fechaFin, $campo) {
+            $query->whereDate('fecha', '>=', $fechaInicio)
+                  ->where('campo', $campo);
+            if ($fechaFin) {
+                $query->whereDate('fecha', '<=', $fechaFin);
+            }
+        })
+        ->with('registroProductividad')
+        ->get()
+        ->keyBy(fn($bono) => "{$bono->registroProductividad->fecha}_{$bono->empleado->documento}_{$bono->registroProductividad->labor_id}_{$bono->registroProductividad->campo}")
+        ->toArray();
+
+        
+        $lista = [];
         foreach ($detalles as $detalle) {
 
             $reporte = $reporteDiario[$detalle->reporte_diario_id];
@@ -203,35 +244,124 @@ class PlanillaServicio
             $horaSalida = Carbon::createFromFormat('H:i:s', $detalle->hora_salida);
 
             $diferenciaEnMinutos = $horaInicio->diffInMinutes($horaSalida);
-            
-            $diferenciaEnHoras = sprintf('%02d:%02d', intdiv($diferenciaEnMinutos, 60), $diferenciaEnMinutos % 60);
-            $costoHora = $planillas[$reporte->documento][$reporte->fecha]??0;
 
-            $lista = [
+            $diferenciaEnHoras = sprintf('%02d:%02d', intdiv($diferenciaEnMinutos, 60), $diferenciaEnMinutos % 60);
+            $costoHora = $planillas[$reporte->documento][$reporte->fecha] ?? 0;
+
+            $indiceBono = $reporte->fecha . '_' . $reporte->documento. '_' . $detalle->labor. '_' . $detalle->campo;
+            $gastoBono = 0;
+            if(array_key_exists($indiceBono,$registroBonos)){
+                $gastoBono = (float)$registroBonos[$indiceBono]['bono'];
+                unset($registroBonos[$indiceBono]);
+            }
+
+            $lista[] = [
                 'campos_campanias_id' => $campoCampania->id,
                 'fecha' => $reporte->fecha,
                 'documento' => $reporte->documento,
                 'empleado_nombre' => $reporte->empleado_nombre,
                 'campo' => $detalle->campo,
+                'labor' => $detalle->laborObjecto->nombre_labor . ' (' . $detalle->laborObjecto->id . ')',
                 'horas_totales' => $horasTotales->format('H:i'),
                 'hora_inicio' => $horaInicio->format('H:i'),
                 'hora_salida' => $horaSalida->format('H:i'),
                 'factor' => $factor,
                 'hora_diferencia' => $diferenciaEnHoras,
-                'hora_diferencia_entero' => $diferenciaEnMinutos/60,
+                'hora_diferencia_entero' => $diferenciaEnMinutos / 60,
                 'costo_hora' => $costoHora,
-                'gasto' => (($diferenciaEnMinutos/60)*$factor)*$costoHora,
-                'gasto_bono'=>0,
+                'gasto' => (($diferenciaEnMinutos / 60) * $factor) * $costoHora,
+                'gasto_bono' => $gastoBono,
             ];
 
-            ReporteCostoPlanilla::create($lista);
+
         }
 
+        if(count($registroBonos)>0){
+            throw new Exception('Hay bonos que no estan registrados en el reporte diario pero si en registro de productividad');
+        }
+
+        ReporteCostoPlanilla::insert($lista);
+
+        $filePath = self::procesarExcelGastoPlanilla($campoCampania->id);
+
+        $campoCampania->update([
+            'gasto_planilla_file' => $filePath
+        ]);
+
         $campoCampania2 = CampoCampania::find($campoCampaniaId);
-        return $campoCampania2->reporteCostoPlanilla->sum(function ($reporte){
+        return $campoCampania2->reporteCostoPlanilla->sum(function ($reporte) {
             return $reporte->gasto + $reporte->gasto_bono;
         });
     }
+
+    public static function procesarExcelGastoPlanilla($campaniaId)
+    {
+        $campania = CampoCampania::find($campaniaId);
+        if (!$campania) {
+            throw new Exception("La Campaña no Existe");
+        }
+
+        $spreadsheet = IOFactory::load(public_path('templates/reporte_gasto_planilla.xlsx'));
+        $sheet = $spreadsheet->getSheetByName('GASTO PLANILLA');
+
+        if (!$sheet) {
+            throw new Exception("No se ha configurado un formato para generar el gasto de planilla");
+        }
+
+        $informacion = ReporteCostoPlanilla::where('campos_campanias_id', $campania->id)
+            ->with('campania')
+            ->orderBy('fecha')
+            ->get();
+
+        // Determinar la última fila con datos en la tabla existente
+        $highestRow = $sheet->getHighestDataRow(); // Última fila con datos
+        $fila = $highestRow; // Insertar después de la última fila con datos
+        $index = $fila - 1; // Ajustar el índice de la orden
+
+        foreach ($informacion as $reporte) {
+            $sheet->setCellValue("A{$fila}", $index);
+            $sheet->setCellValue("B{$fila}", $reporte->campania->nombre_campania);
+            $sheet->setCellValue("C{$fila}", $reporte->fecha);
+            $sheet->setCellValue("D{$fila}", $reporte->documento);
+            $sheet->setCellValue("E{$fila}", $reporte->empleado_nombre);
+            $sheet->setCellValue("F{$fila}", $reporte->labor);
+            $sheet->setCellValue("G{$fila}", $reporte->campo);
+            $sheet->setCellValue("H{$fila}", $reporte->horas_totales);
+            $sheet->setCellValue("I{$fila}", $reporte->hora_inicio);
+            $sheet->setCellValue("J{$fila}", $reporte->hora_salida);
+            $sheet->setCellValue("K{$fila}", $reporte->hora_diferencia_entero);
+            $sheet->setCellValue("L{$fila}", $reporte->costo_hora);
+            $sheet->setCellValue("M{$fila}", $reporte->gasto);
+            $sheet->setCellValue("N{$fila}", $reporte->gasto_bono);
+            $sheet->setCellValue("O{$fila}", "=M{$fila}+N{$fila}");
+
+            $fila++;
+            $index++;
+        }
+
+        $sheet->setCellValue("A{$fila}", 'TOTALES');
+        $sheet->setCellValue("M{$fila}", "=SUM(GASTO_PLANILLA[Gasto])");
+        $sheet->setCellValue("N{$fila}", "=SUM(GASTO_PLANILLA[Gasto bono])");
+        $sheet->setCellValue("O{$fila}", "=SUM(GASTO_PLANILLA[Gasto total])");
+
+        // Ajustar la tabla para incluir las nuevas filas (si la tabla ya está creada en Excel)
+        $tableRange = "A1:O" . ($fila - 1); // Nueva área de la tabla
+        $sheet->getTableByName('GASTO_PLANILLA')->setRange($tableRange);
+
+        $folderPath = 'gastos_planilla/' . date('Y-m');
+        $fileName = 'REPORTE_GASTO_PLANILLA_' . mb_strtoupper($campania->id) . '_' . $campania->campo . '.xlsx';
+        $filePath = $folderPath . '/' . $fileName;
+
+        Storage::disk('public')->makeDirectory($folderPath);
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save(Storage::disk('public')->path($filePath));
+
+
+
+        return $filePath;
+    }
+
     public static function obtenerPlanillas($fechaDesde, $fechaHasta = null)
     {
         $fechaDesde = Carbon::parse($fechaDesde);
@@ -267,10 +397,10 @@ class PlanillaServicio
                 });
             }
         })
-        ->whereHas('detalle',function ($q){
-            $q->whereNotNull('negro_sueldo_por_hora_total');
-        })
-        ->get();
+            ->whereHas('detalle', function ($q) {
+                $q->whereNotNull('negro_sueldo_por_hora_total');
+            })
+            ->get();
 
         if (!$planillas) {
             return [];
@@ -280,16 +410,16 @@ class PlanillaServicio
         foreach ($planillas as $planilla) {
             $detalles = $planilla->detalle;
             foreach ($detalles as $detalle) {
-                $fechaInicio = Carbon::createFromDate($planilla->anio, $planilla->mes, 1);                
-                $fechaFin = Carbon::createFromDate($fechaInicio)->endOfMonth();                
+                $fechaInicio = Carbon::createFromDate($planilla->anio, $planilla->mes, 1);
+                $fechaFin = Carbon::createFromDate($fechaInicio)->endOfMonth();
                 $periodo = CarbonPeriod::create($fechaInicio, $fechaFin);
 
                 foreach ($periodo as $fecha) {
-                  
-                    if($detalle->negro_sueldo_por_hora_total){
+
+                    if ($detalle->negro_sueldo_por_hora_total) {
                         $resultado[$detalle->documento][$fecha->format('Y-m-d')] = $detalle->negro_sueldo_por_hora_total;
                     }
-                    
+
                 }
             }
 
@@ -305,8 +435,8 @@ class PlanillaServicio
 
         $horasTotalesSinDescuento = explode(':', $totales->format('H:i'));
         $horasTotalesConDescuento = explode(':', $horasTotales->format('H:i'));
-        $minutosSinDescuento = (int)$horasTotalesSinDescuento[0] * 60 + (int)$horasTotalesSinDescuento[1];
-        $minutosConDescuento = (int)$horasTotalesConDescuento[0] * 60 + (int)$horasTotalesConDescuento[1];
+        $minutosSinDescuento = (int) $horasTotalesSinDescuento[0] * 60 + (int) $horasTotalesSinDescuento[1];
+        $minutosConDescuento = (int) $horasTotalesConDescuento[0] * 60 + (int) $horasTotalesConDescuento[1];
         return $minutosConDescuento / $minutosSinDescuento;
     }
 

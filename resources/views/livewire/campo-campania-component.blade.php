@@ -65,23 +65,44 @@
                                                     <x-tr>
                                                         <x-td class="text-center">1</x-td>
                                                         <x-td>GASTO PLANILLA</x-td>
-                                                        <x-td class="text-right">{{ $campania->fecha_inicio }}</x-td>
-                                                        <x-td class="text-center">-</x-td>
+                                                        <x-td class="text-right">{{ $campania->gasto_planilla }}</x-td>
+
+                                                        <x-td class="text-center">
+                                                            @if ($campania->gasto_planilla_file)
+                                                                <x-button-a
+                                                                    href="{{ Storage::disk('public')->url($campania->gasto_planilla_file) }}">
+                                                                    <i class="fa fa-file-excel"></i> Ver informe
+                                                                </x-button-a>
+                                                            @else
+                                                                <p>-</p>
+                                                            @endif
+                                                        </x-td>
                                                     </x-tr>
                                                     <x-tr>
                                                         <x-td class="text-center">2</x-td>
                                                         <x-td>GASTO CUADRILLA</x-td>
                                                         <x-td class="text-right">{{ $campania->gasto_cuadrilla }}</x-td>
-                                                        <x-td class="text-center">-</x-td>
+                                                        <x-td class="text-center">
+                                                            @if ($campania->gasto_cuadrilla_file)
+                                                                <x-button-a
+                                                                    href="{{ Storage::disk('public')->url($campania->gasto_cuadrilla_file) }}">
+                                                                    <i class="fa fa-file-excel"></i> Ver informe
+                                                                </x-button-a>
+                                                            @else
+                                                                <p>-</p>
+                                                            @endif
+                                                        </x-td>
                                                     </x-tr>
                                                     @foreach ($campania->listaConsumo as $indice => $consumo)
                                                         <x-tr>
                                                             <x-td class="text-center">{{ $indice + 3 }}</x-td>
-                                                            <x-td>CONSUMOS {{ $consumo['categoria'] }}</x-td>
+                                                            <x-td>CONSUMO DE
+                                                                {{ mb_strtoupper($consumo['categoria']) }}</x-td>
                                                             <x-td class="text-right">{{ $consumo['monto'] }}</x-td>
                                                             <x-td class="text-center">
                                                                 @if ($consumo['reporte_file'])
-                                                                    <x-button-a href="{{Storage::disk('public')->url($consumo['reporte_file'])}}">
+                                                                    <x-button-a
+                                                                        href="{{ Storage::disk('public')->url($consumo['reporte_file']) }}">
                                                                         <i class="fa fa-file-excel"></i> Ver informe
                                                                     </x-button-a>
                                                                 @else
@@ -94,14 +115,23 @@
                                             </x-table>
                                         </div>
 
-                                        <x-button type="button"
-                                            wire:click="actualizarGastosConsumo({{ $campania->id }})" class="mt-4">
-                                            <i class="fa fa-refresh"></i> Actualizar Gastos y Consumos
-                                        </x-button>
+                                        <x-flex class="mt-4">
+                                            <x-button type="button"
+                                                wire:click="actualizarGastosConsumo({{ $campania->id }})">
+                                                <i class="fa fa-refresh"></i> Actualizar Gastos y Consumos
+                                            </x-button>
+                                            @if ($campania->gasto_resumen_bdd_file)
+                                                <x-button-a
+                                                    href="{{ Storage::disk('public')->url($campania->gasto_resumen_bdd_file) }}">
+                                                    <i class="fa fa-file-excel"></i> Descargar Resumen de Camapaña
+                                                </x-button-a>
+                                            @endif
+                                        </x-flex>
+
                                     </div>
                                     <div class="mt-3 md:mt-0">
                                         <x-danger-button wire:click="eliminarCampania({{ $campania->id }})">
-                                            Eliminar Campaña
+                                            <i class="fa fa-remove"></i> Eliminar Campaña
                                         </x-danger-button>
                                     </div>
                                 </div>

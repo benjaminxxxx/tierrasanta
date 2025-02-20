@@ -6,6 +6,7 @@ use App\Models\PlanillaBlanco;
 use App\Models\PlanillaBlancoDetalle;
 use Carbon\Carbon;
 use Livewire\Component;
+use Illuminate\Support\Facades\Session;
 
 class PlanillaBlancoComponent extends Component
 {
@@ -19,8 +20,8 @@ class PlanillaBlancoComponent extends Component
     
     public function mount()
     {
-        $this->mes = Carbon::now()->format('m');
-        $this->anio = Carbon::now()->format('Y');
+        $this->mes = Session::get('fecha_reporte_mes', Carbon::now()->format('m'));
+        $this->anio = Session::get('fecha_reporte_anio', Carbon::now()->format('Y'));
         
     }
 
@@ -29,6 +30,8 @@ class PlanillaBlancoComponent extends Component
         $fecha = Carbon::createFromDate($this->anio, $this->mes, 1)->subMonth();
         $this->mes = $fecha->format('m');
         $this->anio = $fecha->format('Y');
+        Session::put('fecha_reporte_mes', $this->mes);
+        Session::put('fecha_reporte_anio', $this->anio);
     }
 
     public function mesSiguiente()
@@ -36,6 +39,8 @@ class PlanillaBlancoComponent extends Component
         $fecha = Carbon::createFromDate($this->anio, $this->mes, 1)->addMonth();
         $this->mes = $fecha->format('m');
         $this->anio = $fecha->format('Y');
+        Session::put('fecha_reporte_mes', $this->mes);
+        Session::put('fecha_reporte_anio', $this->anio);
     }
     
     public function ver($componente){
