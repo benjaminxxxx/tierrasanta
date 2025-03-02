@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\AlmacenProductoSalida;
 use App\Models\CompraProducto;
 use App\Models\CompraSalidaStock;
-use App\Models\Kardex;
 use App\Models\KardexProducto;
 use Carbon\Carbon;
 use Exception;
@@ -13,16 +12,27 @@ use Exception;
 class AlmacenServicio
 {
 
-    public static function obtenerRegistrosPorFecha($mes, $anio, $tipo)
+
+    public static function obtenerRegistrosPorFecha($mes, $anio, $tipo, $tipoKardex = null)
     {
-        $query = AlmacenProductoSalida::whereMonth('fecha_reporte', $mes)
+        $query = AlmacenProductoSalida::with(['distribuciones', 'maquinaria', 'producto']) // Incluir 'producto'
+            ->whereMonth('fecha_reporte', $mes)
             ->whereYear('fecha_reporte', $anio);
 
-        // Filtrar por maquinaria_id según el tipo
+        // Filtrar por tipo
         if ($tipo === 'combustible') {
-            $query->whereNotNull('maquinaria_id');
+            $query->whereHas('producto', function ($q) {
+                $q->where('categoria', 'combustible');
+            });
         } else {
-            $query->whereNull('maquinaria_id');
+            $query->whereHas('producto', function ($q) {
+                $q->where('categoria', '!=', 'combustible');
+            });
+        }
+
+        // Filtrar por tipo_kardex si se proporciona
+        if (!is_null($tipoKardex)) {
+            $query->where('tipo_kardex', $tipoKardex);
         }
 
         return $query->orderBy('fecha_reporte')         // 1. Ordenar por fecha
@@ -30,6 +40,7 @@ class AlmacenServicio
             ->orderByRaw('COALESCE(indice, 0) ASC')    // 3. Manejar null en 'indice'
             ->get();
     }
+
 
 
     public static function resetearStocks(KardexProducto $kardexProducto)
@@ -66,7 +77,7 @@ class AlmacenServicio
         if (!empty($registrosUnicos)) {
             AlmacenProductoSalida::insert($registrosUnicos);
             return count($registrosUnicos);
-        }else{
+        } else {
             return 0;
         }
     }
@@ -79,7 +90,6 @@ class AlmacenServicio
             'campo_nombre',
             'cantidad',
             'fecha_reporte',
-            'compra_producto_id',
             'costo_por_kg',
             'total_costo',
             'cantidad_kardex_producto_id',
@@ -87,7 +97,7 @@ class AlmacenServicio
             'kardex_producto_id',
             'maquinaria_id',
             'indice',
-            'tipo_kardex'
+            'tipo_kardex',
         ];
 
         $registros = [];
@@ -100,9 +110,10 @@ class AlmacenServicio
                 $limpio[$columna] = $registro[$columna] ?? null;
             }
 
-            if($limpio['campo_nombre']==null){
+            if ($limpio['campo_nombre'] == null) {
                 $limpio['campo_nombre'] = '';
             }
+           
             $limpio['registro_carga'] = $codigoCarga;
 
             $registros[] = $limpio;
@@ -151,129 +162,7 @@ class AlmacenServicio
     {
         return number_format((float) $valor, 3, '.', '');
     }
-    /*
-    public static function registrarSalida($data, KardexProducto $kardexProducto)
-    {
 
-        if (!isset($data['producto_id']))
-            throw new Exception("El campo producto_id es obligatorio.");
-
-        if (!isset($data['fecha_reporte']))
-            throw new Exception("El campo fecha_reporte es obligatorio.");
-
-        $data['campo_nombre'] = isset($data['campo_nombre']) ? $data['campo_nombre'] : null;
-        $data['cantidad'] = isset($data['cantidad']) ? $data['cantidad'] : 0;
-        $data['kardex_producto_id'] = $kardexProducto->id;
-        $data['maquinaria_id'] = isset($data['maquinaria_id']) ? $data['maquinaria_id'] : null;
-
-        $salidaRegistro = AlmacenProductoSalida::where('producto_id', $data['producto_id'])
-            ->where('fecha_reporte', $data['fecha_reporte'])
-            ->where('campo_nombre', $data['campo_nombre'])
-            ->where('maquinaria_id', $data['maquinaria_id'])
-            ->where('cantidad', $data['cantidad'])->first();
-
-        if ($salidaRegistro) {
-            if ($salidaRegistro->PerteneceAUnaCompra && $salidaRegistro->precio_por_kg) {
-                return;
-            }
-            $salidaRegistro->delete();
-        }
-
-        $cantidadSolicitada = round($data['cantidad'], 3);
-        $stockDisponible = 0;
-
-        //verificar si hay stock
-        $stockPorUsar = $kardexProducto->stock_inicial;
-        if ($stockPorUsar > 0) {
-
-            $cantidadUsada = (float) $kardexProducto->salidasStockUsado()->sum("cantidad_stock_inicial");
-            $stockDisponible = round($stockPorUsar - $cantidadUsada, 3);
-
-            if ($cantidadSolicitada <= $stockDisponible) {
-                $data['cantidad_kardex_producto_id'] = $kardexProducto->id;
-                $data['cantidad_stock_inicial'] = $cantidadSolicitada;
-                return AlmacenProductoSalida::create($data);
-            }
-        }
-
-        //reemplazar en mantenimiento por KardexProducto::stockDisponible(FECHA)
-        $compras = CompraProducto::whereBetween('fecha_compra', [$kardexProducto->kardex->fecha_inicial, $data['fecha_reporte']])
-            ->whereNull('fecha_termino')
-            ->where('producto_id', $kardexProducto->producto_id)
-            ->where('tipo_kardex', $kardexProducto->kardex->tipo_kardex)
-            ->orderBy('fecha_compra', 'asc')
-            ->get();
-
-        if ($compras->isEmpty()) {
-            $dataString = self::formatArrayToKeyValueString($data);
-            throw new Exception("No hay stock disponible para la salida en la fecha: {$data['fecha_reporte']}\n{$dataString}");
-        }
-
-
-        // Registrar las salidas en las compras
-        $stockPorRegistrar = $cantidadSolicitada;
-        $stockExcedente = $stockDisponible;
-        /////////////////////////////////////////
-
-        $stockTodasCompras = 0;
-        $detalleStock = "Stock inicial: {$stockExcedente}\n";
-        foreach ($compras as $compra) {
-            $stockTodasCompras += round($compra->cantidadDisponible, 3);
-            $detalleStock .= "Compra ID: {$compra->id}, Fecha: {$compra->fecha_compra}, Stock disponible: {$compra->cantidadDisponible}\n";
-        }
-
-        $stockDisponible = $stockTodasCompras + $stockExcedente;
-
-        if (round($stockPorRegistrar,3) > round($stockDisponible,3)) {
-            throw new Exception("No hay stock suficiente:" .$stockPorRegistrar. " es mayor a ".$stockDisponible.". Detalles:\n" . $detalleStock);
-        }
-        $almacenSalida = AlmacenProductoSalida::create($data);
-        if ($stockExcedente > 0) {
-            $almacenSalida->cantidad_kardex_producto_id = $kardexProducto->id;
-            $almacenSalida->cantidad_stock_inicial = $stockExcedente;
-            $almacenSalida->save();
-            $stockPorRegistrar -= $stockExcedente;
-        }
-        
-        foreach ($compras as $compra) {
-            if ($stockPorRegistrar > 0) {
-                $stockEnCompra = round($compra->cantidadDisponible, 3);
-                $usoStock = 0;
-                if ($stockEnCompra >= $stockPorRegistrar) {
-                    $usoStock = $stockPorRegistrar;
-
-                    CompraSalidaStock::create([
-                        'compra_producto_id' => $compra->id,
-                        'salida_almacen_id' => $almacenSalida->id,
-                        'stock' => $usoStock,
-                        'kardex_producto_id' => $kardexProducto->id
-                    ]);
-
-                    if (round($stockEnCompra, 3) == round($stockPorRegistrar, 3)) {
-                        $compra->update([
-                            'fecha_termino' => $data['fecha_reporte'],
-                        ]);
-                    }
-                    $stockPorRegistrar = 0;
-                } else {
-                    $usoStock = $stockEnCompra;
-
-                    CompraSalidaStock::create([
-                        'compra_producto_id' => $compra->id,
-                        'salida_almacen_id' => $almacenSalida->id,
-                        'stock' => $usoStock,
-                        'kardex_producto_id' => $kardexProducto->id
-                    ]);
-
-                    $compra->update([
-                        'fecha_termino' => $data['fecha_reporte'],
-                    ]);
-
-                    $stockPorRegistrar -= $usoStock;
-                }
-            }
-        }
-    }*/
     public static function formatArrayToKeyValueString(array $data): string
     {
         $formatted = '';

@@ -11,7 +11,7 @@ class Producto extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nombre_comercial', 'ingrediente_activo', 'categoria_id', 'codigo_tipo_existencia', 'codigo_unidad_medida'];
+    protected $fillable = ['nombre_comercial', 'ingrediente_activo', 'categoria', 'codigo_tipo_existencia', 'codigo_unidad_medida'];
 
     public function getCompraActivaAttribute()
     {
@@ -42,44 +42,7 @@ class Producto extends Model
             ? "{$nombreComercial} - {$ingredienteActivo}"
             : $nombreComercial;
     }
-    /*
-    public function totalStockInicialUsado()
-    {
-        $stock = 0;
-        $fecha = Carbon::now();
-        $kardexes = $this->kardexesDisponibles($fecha);
-        foreach ($kardexes as $kardex) {
-            $kardexProducto = $kardex->productos()->where('producto_id', $this->id)->first();
-            if ($kardexProducto) {
-                $stock += (float) $kardexProducto->stock_inicial - (float) $kardexProducto->salidasStockUsado()->sum("cantidad_stock_inicial");
-            }
-        }
-        return $stock;
-    }*/
-    /*
-    public function getDatosUsoAttribute()
-    {
-        $totalStockInicialUsado = $this->totalStockInicialUsado();
-        $comprasActivas = $this->compras()->whereNull('fecha_termino')->get();
-        $stockUsado = 0;
-        $response = [];
-        $response['fecha'] = '';
-        $response['agotado'] = false;
-        foreach ($comprasActivas as $compraActiva) {
-            $stockUsado += $compraActiva->almacenSalida()->sum('stock');
-        }
-        $capacidad = $totalStockInicialUsado + $comprasActivas->sum('stock');
 
-        if ($comprasActivas->count() == 0) {
-            $response['agotado'] = true;
-            $response['fecha'] = $this->compras()->orderBy('fecha_termino', 'desc')->first()->fecha_termino;
-        }
-        $restante = $capacidad - $stockUsado;
-        $response['capacidad'] = $capacidad;
-        $response['stockUsado'] = $stockUsado;
-        $response['restante'] = $restante;
-        return $response;
-    }*/
     public function getStockDisponibleAttribute()
     {
         //Verificar si hay kardex con el producto
@@ -103,10 +66,10 @@ class Producto extends Model
 
         $totalStock = 0;
         $cantidadUsada = 0;
-        $kardexProductos = $kardex->productos()->where('producto_id',$productoId)->get();
+        $kardexProductos = $kardex->productos()->where('producto_id', $productoId)->get();
         foreach ($kardexProductos as $kardexProducto) {
-            $totalStock+=$kardexProducto->stockDisponible['total_stock'];
-            $cantidadUsada+=$kardexProducto->stockDisponible['cantidad_usada'];
+            $totalStock += $kardexProducto->stockDisponible['total_stock'];
+            $cantidadUsada += $kardexProducto->stockDisponible['cantidad_usada'];
         }
 
         $stockDisponible = $totalStock - $cantidadUsada;
@@ -146,16 +109,8 @@ class Producto extends Model
     {
         return $this->hasMany(KardexProducto::class, 'producto_id');
     }
-    public function categoria()
-    {
-        return $this->belongsTo(CategoriaProducto::class, 'categoria_id');
-    }
-    public function esCombustibleProducto()
-    {
-        $descripcionCombustible = env('DESCRIPCION_COMBUSTIBLE', 'Combustible');
-        $categoria = $this->categoria;
-        return $categoria && mb_strtolower($categoria->nombre) === mb_strtolower($descripcionCombustible);
-    }
+
+
     public function tabla5()
     {
         return $this->belongsTo(SunatTabla5TipoExistencia::class, 'codigo_tipo_existencia');
@@ -171,17 +126,8 @@ class Producto extends Model
 
     public static function buscarCombustible(string $nombre)
     {
-        // Verificar si la categoría "Combustible" existe
-        $descripcionCombustible = strtolower(env('DESCRIPCION_COMBUSTIBLE', 'Combustible'));
-        $categoriaCombustible = CategoriaProducto::where('nombre', $descripcionCombustible)->first();
-
-        if (!$categoriaCombustible) {
-            throw new Exception('La categoría "Combustible" no existe.');
-        }
-
-        // Buscar productos de la categoría "Combustible" que coincidan con el nombre proporcionado
-        return self::where('categoria_id', $categoriaCombustible->id)
-            ->where('nombre_comercial', 'like', '%' . $nombre . '%')
+        return self::where('categoria', 'combustible')
+            ->where('nombre_comercial', 'like', "%$nombre%")
             ->get();
     }
     /**
@@ -191,35 +137,21 @@ class Producto extends Model
      * @return bool
      */
 
+ 
     public static function esCombustible(int $productoId): bool
     {
-        // Obtener el producto
-        $producto = self::find($productoId);
-
-        // Retornar false si no existe el producto o no tiene categoría asignada
-        if (!$producto || !$producto->categoria_id) {
-            return false;
-        }
-
-        // Obtener la descripción de la categoría "Combustible" desde el archivo .env
-        $descripcionCombustible = env('DESCRIPCION_COMBUSTIBLE', 'Combustible');
-
-        // Verificar si la categoría del producto coincide con "Combustible"
-        $categoria = CategoriaProducto::find($producto->categoria_id);
-
-        return $categoria && mb_strtolower($categoria->nombre) == mb_strtolower($descripcionCombustible);
+        // Obtener el producto y verificar si su categoría es "Combustible"
+        return self::where('id', $productoId)
+            ->where('categoria', 'combustible')
+            ->exists();
     }
     public static function deTipo($tipo)
     {
-        $descripcionCombustible = env('DESCRIPCION_COMBUSTIBLE', 'Combustible');
-        $categoria = CategoriaProducto::where('nombre', $descripcionCombustible)->first();
-        if (!$categoria) {
-            throw new Exception('No existe la categoria para combustible');
-        }
-        if ($tipo == 'combustible') {
-            return self::where('categoria_id', $categoria->id)->with('compras');
+        if ($tipo === 'combustible') {
+            return self::where('categoria', 'combustible')->with('compras');
         } else {
-            return self::whereNot('categoria_id', $categoria->id)->with('compras');
+            return self::where('categoria', '!=', 'combustible')->with('compras');
         }
     }
+
 }

@@ -24,7 +24,14 @@ class ProductosCompraComponent extends Component
     public $modo;
     public $filtroTipoKardex;
 
-    protected $listeners = ['VerComprasProducto', 'eliminacionConfirmadaCompra', 'actualizarAlmacen' => '$refresh','actualizarCompraProductos' => '$refresh'];
+    protected $listeners = ['VerComprasProducto', 'eliminacionConfirmadaCompra', 'actualizarAlmacen' => '$refresh','actualizarCompraProductos'];
+    public function actualizarCompraProductos($data)
+    {
+        $compras = $data['compras'] ?? 0;
+        $almacen = $data['almacen'] ?? 0;
+    
+        $this->alert("success", "Registros Importados Correctamente, ({$compras}) compras y {$almacen} registros de salida.");
+    }
 
     public function VerComprasProducto($id)
     {

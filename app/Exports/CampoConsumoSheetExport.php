@@ -30,7 +30,7 @@ class CampoConsumoSheetExport implements FromCollection, WithHeadings, WithMappi
     public function collection()
     {
         return ResumenConsumoProductos::where('campos_campanias_id', $this->data['campos_campanias_id'])
-            ->where('categoria_id',  $this->data['categoria_id'])
+            ->where('categoria',  $this->data['categoria'])
             ->with('campania')
             ->orderBy('fecha')
             ->get();

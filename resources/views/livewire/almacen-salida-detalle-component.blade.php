@@ -13,7 +13,8 @@
                         </x-th>
                         <x-th value="FECHA SALIDA" class="text-center" />
                         @if ($tipo == 'combustible')
-                            <x-th value="MAQUINARIA" class="text-center" />
+                            <x-th value="CENTRO DE COSTO" class="text-center" />
+                            <x-th value="CAMPO" class="text-center" />
                         @else
                             <x-th value="CAMPO" class="text-center" />
                         @endif
@@ -38,6 +39,7 @@
                                 <x-td value="{{ $registro->fecha_reporte }}" class="text-center" />
                                 @if ($tipo == 'combustible')
                                     <x-td value="{{ $registro->maquina_nombre }}" class="text-center" />
+                                    <x-td value="{{ $registro->campo_nombre }}" class="text-center" />
                                 @else
                                     <x-td value="{{ $registro->campo_nombre }}" class="text-center" />
                                 @endif
@@ -54,7 +56,7 @@
                                         wire:model.live.debounce.1000ms="cantidad.{{ $registro->id }}"
                                         wire:key="cantidad{{ $registro->id }}" />
                                 </x-td>
-                                <x-td value="{{ $registro->producto->categoria->nombre }}" class="text-center" />
+                                <x-td value="{{ mb_strtoupper($registro->producto->categoria) }}" class="text-center" />
                                 <x-td value="{{ $registro->observacion }}" class="text-center" />
                                 <x-td class="text-center">
                                     {{ $registro->costo_por_kg }}
@@ -64,15 +66,20 @@
 
                                     <x-flex class="justify-end w-full">
                                         @if ($registro->perteneceAUnaCompra)
-                                            <x-secondary-button type="button" class="whitespace-nowrap" title="Ver historial de compra."
+                                            <x-secondary-button type="button" class="whitespace-nowrap"
+                                                title="Ver historial de compra."
                                                 @click="$wire.dispatch('verHistorialSalidaPorCompra',{salidaId:{{ $registro->id }}})">
                                                 <i class="fa fa-money-bill"></i> Ver Compra
                                             </x-secondary-button>
                                         @endif
-                                        <x-secondary-button type="button" @click="$wire.dispatch('verDistribucionCombustublble',{salidaId:{{ $registro->id }}})" class="whitespace-nowrap" 
-                                            >
-                                            <i class="fa fa-list"></i> Distribución
-                                        </x-secondary-button>
+                                        @if ($registro->campo_nombre == '' || $registro->campo_nombre == null)
+                                            <x-secondary-button type="button"
+                                                @click="$wire.dispatch('verDistribucionCombustublble',{salidaId:{{ $registro->id }},mes:{{ $mes }},anio:{{ $anio }}})"
+                                                class="whitespace-nowrap">
+                                                <i class="fa fa-list"></i> Distribución
+                                            </x-secondary-button>
+                                        @endif
+
                                         <x-danger-button type="button"
                                             wire:click="confirmarEliminacion({{ $registro->id }})">
                                             <i class="fa fa-trash"></i>

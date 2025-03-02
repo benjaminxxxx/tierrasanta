@@ -25,11 +25,9 @@
                     <x-label>Categoría</x-label>
                     <x-select class="uppercase" wire:model.live="categoria_id_filtro">
                         <option value="">SELECCIONAR CATEGORÍA</option>
-                        @if ($categorias)
-                            @foreach ($categorias as $categoria)
-                                <option value="{{ $categoria->id }}">{{ $categoria->nombre }}</option>
-                            @endforeach
-                        @endif
+                        <option value="fertilizante">FERTILIZANTE</option>
+                        <option value="pesticida">PESTICIDA</option>
+                        <option value="combustible">COMBUSTIBLE</option>
                     </x-select>
                 </div>
             </form>
@@ -50,7 +48,7 @@
                             </button>
                         </x-th>
                         <x-th class="text-center">
-                            <button wire:click="sortBy('categoria_id')" class="focus:outline-none">
+                            <button wire:click="sortBy('categoria')" class="focus:outline-none">
                                 CATEGORÍA <i class="fa fa-sort"></i>
                             </button>
                         </x-th>
@@ -66,11 +64,9 @@
                                 <x-th value="{{ $indice + 1 }}" class="text-center" />
                                 <x-td value="{{ $producto->nombre_comercial }}" />
                                 <x-td value="{{ $producto->ingrediente_activo }}" />
-                                <x-td value="{{ $producto->categoria->nombre }}" class="text-center" />
-                                <x-td value="{{ $producto->tipo_existencia }}"
-                                    class="text-center" />
-                                <x-td value="{{ $producto->unidad_medida }}"
-                                    class="text-center" />
+                                <x-td value="{{ mb_strtoupper($producto->categoria) }}" class="text-center" />
+                                <x-td value="{{ $producto->tipo_existencia }}" class="text-center" />
+                                <x-td value="{{ $producto->unidad_medida }}" class="text-center" />
 
                                 <x-td class="text-center">
                                     <div class="flex items-center justify-center gap-2">

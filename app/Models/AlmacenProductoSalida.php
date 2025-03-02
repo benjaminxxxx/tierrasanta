@@ -15,7 +15,6 @@ class AlmacenProductoSalida extends Model
         'campo_nombre',
         'cantidad',
         'fecha_reporte',
-        'compra_producto_id',
         'costo_por_kg',
         'total_costo',
         'cantidad_kardex_producto_id',
@@ -24,9 +23,13 @@ class AlmacenProductoSalida extends Model
         'maquinaria_id',
         'indice', //cuando se agregan mas de un registro a la vez, es importante saber el orden para que el kardex lo haga igual
         'tipo_kardex',
-        'registro_carga'
+        'registro_carga',
     ];
-    
+    public function distribuciones()
+    {
+        return $this->hasMany(DistribucionCombustible::class, 'almacen_producto_salida_id');
+    }
+
     public function kardexProducto()
     {
         return $this->belongsTo(KardexProducto::class, 'kardex_producto_id');
@@ -35,7 +38,7 @@ class AlmacenProductoSalida extends Model
     {
         return $this->hasMany(CompraSalidaStock::class, 'salida_almacen_id');
     }
- 
+
     public function compraSalida()
     {
         return $this->hasManyThrough(
@@ -61,7 +64,7 @@ class AlmacenProductoSalida extends Model
     {
         return $this->belongsTo(CompraProducto::class, 'compra_producto_id');
     }
-    
+
     public function maquinaria()
     {
         return $this->belongsTo(Maquinaria::class, 'maquinaria_id');
@@ -69,20 +72,32 @@ class AlmacenProductoSalida extends Model
     public function getMaquinaNombreAttribute()
     {
         $tipoKardex = $this->tipo_kardex;
-        if($tipoKardex=='blanco'){
-            return $this->maquinaria?$this->maquinaria->alias_blanco:'-';
-        }else{
-            return $this->maquinaria?$this->maquinaria->nombre:'-';
+
+        if ($tipoKardex == 'blanco') {
+            return (!empty($this->maquinaria?->alias_blanco))
+                ? $this->maquinaria->alias_blanco
+                : ($this->maquinaria?->nombre ?? '-');
         }
-        
+
+        return $this->maquinaria?->nombre ?? '-';
     }
+
     public function getPerteneceAUnaCompraAttribute()
     {
-        return $this->compraStock()->count()>0;
+        return $this->compraStock()->count() > 0;
     }
-    
+
     public function getObservacionAttribute()
     {
-        return $this->tipo_kardex=='negro'?'No registra contabilidad':'';
+        return $this->tipo_kardex == 'negro' ? 'No registra contabilidad' : '';
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($registro) {
+            $registro->distribuciones()->delete();
+        });
     }
 }

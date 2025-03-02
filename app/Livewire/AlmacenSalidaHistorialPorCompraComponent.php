@@ -35,12 +35,8 @@ class AlmacenSalidaHistorialPorCompraComponent extends Component
             }
             
         }
-        /*
-        $this->entrada = CompraProducto::find($compraId);
-        $this->historial = AlmacenProductoSalida::where('compra_producto_id',$compraId)->get();
-        */
+     
         $this->mostrarHistorial = true;
-        //$this->dispatch('mostrarHistorial2');
 
     }
     public function render()

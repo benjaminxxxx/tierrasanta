@@ -472,8 +472,7 @@ class CampaniaServicio
                     'fecha' => $registro->fecha_reporte,
                     'campo' => $registro->campo_nombre,
                     'producto' => $registro->producto->nombre_completo,
-                    'categoria' => $registro->producto->categoria->nombre,
-                    'categoria_id' => $registro->producto->categoria_id,
+                    'categoria' => $registro->producto->categoria,
                     'cantidad' => $registro->cantidad,
                     'total_costo' => $registro->total_costo,
                     'campos_campanias_id' => $this->campoCampania->id,
@@ -497,10 +496,7 @@ class CampaniaServicio
                     });
 
                     $totalConsumido = array_sum(array_column($datosFiltrados, 'total_costo'));
-                    /*
-                                        $totalConsumido = ResumenConsumoProductos::where('campos_campanias_id', $this->campoCampania->id)
-                                            ->where('categoria_id', $categoriaProducto->id)
-                                            ->sum('total_costo');*/
+         
 
                     $spreadsheet = ExcelHelper::cargarPlantilla('reporte_comsumo_productos.xlsx');
                     $hoja = $spreadsheet->getSheetByName('CONSUMOS');

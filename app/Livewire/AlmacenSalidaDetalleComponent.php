@@ -125,64 +125,7 @@ class AlmacenSalidaDetalleComponent extends Component
                     $correlativo++;
                     $registro->save();
 
-                    /*if (!$registro->compra_producto_id) {
-                        $compraActiva = CompraProducto::where('producto_id', $registro->producto_id)
-                            ->whereNull('fecha_termino')
-                            ->orderBy('fecha_compra')
-                            ->first();
-
-                        if ($compraActiva) {
-                            $cantidadUsada = AlmacenProductoSalida::where('compra_producto_id', $compraActiva->id)->sum('cantidad');
-                            $stockDisponible = (float) $compraActiva->stock - (float) $cantidadUsada;
-
-                            if ($stockDisponible >= $registro->cantidad) {
-                                $registro->compra_producto_id = $compraActiva->id;
-                                $registro->costo_por_kg = $compraActiva->costo_por_kg;
-                                $registro->total_costo = (float) $compraActiva->costo_por_kg * (float) $registro->cantidad;
-                                $registro->item = $correlativo;
-                                $correlativo++;
-                                $registro->save();
-
-                                if ($stockDisponible - $registro->cantidad == 0.00) {
-                                    $compraActiva->fecha_termino = $registro->fecha_reporte;
-                                    $compraActiva->save();
-                                }
-                            } else {
-                                if ($stockDisponible > 0) {
-                                    $nuevaCantidad = $registro->cantidad - $stockDisponible;
-                                    $registro->cantidad = $stockDisponible;
-                                    $registro->compra_producto_id = $compraActiva->id;
-                                    $registro->costo_por_kg = $compraActiva->costo_por_kg;
-                                    $registro->total_costo = (float) $compraActiva->costo_por_kg * (float) $stockDisponible;
-                                    $registro->save();
-
-                                    $compraActiva->fecha_termino = $registro->fecha_reporte;
-                                    $compraActiva->save();
-
-                                    // Replicación y adición del nuevo registro
-                                    $nuevoRegistro = $registro->replicate();
-                                    $nuevoRegistro->cantidad = $nuevaCantidad;
-                                    $nuevoRegistro->item = null;
-                                    $nuevoRegistro->compra_producto_id = null;
-                                    $nuevoRegistro->costo_por_kg = null;
-                                    $nuevoRegistro->total_costo = null;
-                                    $nuevoRegistro->save();
-
-                                    // Agrega el nuevo registro a la lista de registros
-                                    $this->registros->push($nuevoRegistro);
-                                    $this->registros->sortBy('fecha_reporte')->sortBy('campo_nombre');
-
-                                    // Marca que ocurrió una replicación y termina el bucle
-                                    $replicated = true;
-                                    break;
-                                }
-                            }
-                        }
-                    } else {
-                        $registro->item = $correlativo;
-                        $correlativo++;
-                        $registro->save();
-                    }*/
+                   
                 } else {
                     $registro->item = null;
                     $registro->save();

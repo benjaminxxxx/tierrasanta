@@ -337,7 +337,7 @@ class KardexProductoSheetExport implements FromArray, WithHeadings, WithStyles, 
                 $item['entrada_costo_total'] ?? 0,
 
                 $item['salida_cantidad'] ?? 0,
-                $this->esCombustible?$item['salida_maquinaria']:$item['salida_lote'],
+                $item['salida_lote'],
                 "=N{$rowIndexAnterior}",
                 "=I{$rowIndex}*K{$rowIndex}",
 

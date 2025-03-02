@@ -57,7 +57,7 @@
     
                                     </div>
                                 </div>
-                                <small>{{$kardexProductoNegro->stockDisponible['stock_disponible']}}kg disponibles</small>
+                                <small>{{$kardexProductoNegro->stockDisponible['stock_disponible']}}{{$kardexProductoNegro->producto->unidad_medida}} disponibles</small>
                             </div>
                         </div>
                     </div>
@@ -111,7 +111,7 @@
     
                                     </div>
                                 </div>
-                                <small>{{$kardexProductoBlanco->stockDisponible['stock_disponible']}}kg disponibles</small>
+                                <small>{{$kardexProductoBlanco->stockDisponible['stock_disponible']}}{{$kardexProductoBlanco->producto->unidad_medida}} disponibles</small>
                             </div>
                         </div>
                     </div>

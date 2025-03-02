@@ -26,17 +26,6 @@ class DistribucionCombustible extends Model
         'maquinaria_id',
         'almacen_producto_salida_id',
     ];
-
-    protected $casts = [
-        'fecha' => 'date',
-        'hora_inicio' => 'time',
-        'hora_salida' => 'time',
-        'cantidad_combustible' => 'decimal:2',
-        'costo_combustible' => 'decimal:4',
-        'ratio' => 'decimal:4',
-        'valor_costo' => 'decimal:4',
-    ];
-
     public function maquinaria()
     {
         return $this->belongsTo(Maquinaria::class);

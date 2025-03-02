@@ -35,9 +35,9 @@ class ProductosComponent extends Component
                   // Filtrar también por ingrediente_activo
                   ->orWhere('ingrediente_activo', 'like', '%' . $this->search . '%');
         })
-        // Filtrar por categoria_id si existe el filtro
+        
         ->when($this->categoria_id_filtro, function ($query) {
-            return $query->where('categoria_id', $this->categoria_id_filtro);
+            return $query->where('categoria', $this->categoria_id_filtro);
         })
         // Ordenar por el campo especificado y dirección
         ->orderBy($this->sortField, $this->sortDirection)

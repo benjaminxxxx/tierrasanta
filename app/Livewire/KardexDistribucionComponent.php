@@ -43,13 +43,19 @@ class KardexDistribucionComponent extends Component
     public $totalSalidas = 0;
     public $kardexLista = [];
     public $empresa;
-    protected $listeners = ['eliminacionConfirmar'];
+    protected $listeners = ['eliminacionConfirmar','actualizarCompraProductos'];
     public function mount()
     {
         if ($this->kardexId) {
             $this->kardex = Kardex::find($this->kardexId);
         }
         $this->empresa = Empresa::first();
+        $this->reevaluar();
+        $this->listarInformacionBlanco();
+        $this->listarInformacionNegro();
+    }
+    public function actualizarCompraProductos($data)
+    {
         $this->reevaluar();
         $this->listarInformacionBlanco();
         $this->listarInformacionNegro();
@@ -131,6 +137,7 @@ class KardexDistribucionComponent extends Component
                     'saldofinal_costo_unitario' => '',
                     'saldofinal_costo_total' => '',
                 ];
+                
                 $this->totalSalidas++;
             }
         }
@@ -140,6 +147,7 @@ class KardexDistribucionComponent extends Component
         $tipo = array_column($this->kardexLista, 'tipo');
 
         array_multisort($fecha, SORT_ASC, $tipo, SORT_ASC, $this->kardexLista);
+      
     }
     protected function obtenerDatosKardex($tipoKardex, $kardexProducto)
     {
@@ -192,7 +200,6 @@ class KardexDistribucionComponent extends Component
                 $kardexProducto->codigo_existencia . '_' . $tipoKardex . '_' .
                 Str::slug($kardexProducto->producto->nombre_completo) .
                 '.xlsx';
-
             Excel::store(new KardexProductoExport($data), $filePath, 'public');
 
             $kardexProducto->file = $filePath;
@@ -470,7 +477,7 @@ class KardexDistribucionComponent extends Component
                         'data' => json_encode([
                             'salida_id' => $salida->id,
                             'producto_id' => $salida->producto_id,
-                            'campo_nombre' => $salida->campo_nombre,
+                            'campo_nombre' => $salida->es_combustible? $salida->maquina_nombre : $salida->campo_nombre,
                             'costo_por_kg' => $salida->costo_por_kg,
                             'total_costo' => $salida->total_costo,
                             'cantidad' => $salida->cantidad,

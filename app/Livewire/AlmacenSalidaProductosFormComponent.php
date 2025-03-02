@@ -34,6 +34,8 @@ class AlmacenSalidaProductosFormComponent extends Component
     public $cantidades = [];
     public $maquinariasNombres = [];
     public $destino;
+    public $modoFdm = false;
+    public $maquinariaCentroDeCosto;
     protected $listeners = ['nuevoRegistro'];
     public function mount($destino = 'productos')
     {
@@ -48,6 +50,7 @@ class AlmacenSalidaProductosFormComponent extends Component
             $this->maquinariasNombres = $this->maquinarias->pluck('nombre', 'id')->toArray();
         }
     }
+
     public function seleccionarKardexProducto($kardexProductoId, $stockDisponible)
     {
         $this->kardexProducto = KardexProducto::find($kardexProductoId);
@@ -164,7 +167,7 @@ class AlmacenSalidaProductosFormComponent extends Component
            
             if($this->destino=='combustible'){
                 if ($this->step == 3 && count($this->maquinariasAgregadas) == 0) {
-                    return $this->alert('error', 'Debe seleccionar los maquinarias.');
+                    return $this->alert('error', 'Debe seleccionar las maquinarias o centro de costos.');
                 }
             }else{
                 if ($this->step == 3 && count($this->camposAgregados) == 0) {
@@ -179,20 +182,25 @@ class AlmacenSalidaProductosFormComponent extends Component
             $data = [];
 
             if($this->destino=='combustible'){
-                foreach ($this->maquinariasAgregadas as $maquinariaId) {
-                    $cantidad = round($this->cantidades[$maquinariaId],3);
-                    if($cantidad>0){
-                        $data[] = [
-                            'producto_id' => $this->productoSeleccionado->id,
-                            'campo_nombre'=>'',
-                            'cantidad'=>$this->cantidades[$maquinariaId],
-                            'fecha_reporte'=>$this->fecha_salida,
-                            'costo_por_kg'=>null,
-                            'maquinaria_id'=>$maquinariaId,
-                            'total_costo'=>null
-                        ];
+                if(is_array($this->maquinariasAgregadas) && count($this->maquinariasAgregadas)>0){
+                    foreach ($this->maquinariasAgregadas as $indice => $maquinariaId) {
+                        $cantidad = round($this->cantidades[$maquinariaId],3);
+                        if($cantidad>0){
+                            $data[] = [
+                                'producto_id' => $this->productoSeleccionado->id,
+                                'campo_nombre'=>$this->modoFdm?'fdm':'',
+                                'cantidad'=>$this->cantidades[$maquinariaId],
+                                'fecha_reporte'=>$this->fecha_salida,
+                                'costo_por_kg'=>null,
+                                'maquinaria_id'=>$maquinariaId,
+                                'total_costo'=>null,
+                                'indice' => $indice,
+                                'tipo_kardex' => $this->kardexProducto->tipo_kardex,
+                            ];
+                        }
                     }
                 }
+               
                 
             }else{
                 foreach ($this->camposAgregados as $indice => $campo) {

@@ -2,7 +2,6 @@
 
 namespace App\Livewire;
 
-use App\Models\CategoriaProducto;
 use App\Models\Producto;
 use App\Models\SunatTabla5TipoExistencia;
 use App\Models\SunatTabla6CodigoUnidadMedida;
@@ -16,11 +15,9 @@ class ProductosFormComponent extends Component
     use LivewireAlert;
     public $mostrarFormulario = false;
     public $productoId;
-
     public $nombre_comercial;
     public $ingrediente_activo;
-    public $categoria_id;
-    public $categorias;
+    public $categoria;
     public $codigo_tipo_existencia;
     public $codigo_unidad_medida;
     public $sunatTipoExistencias;
@@ -28,17 +25,12 @@ class ProductosFormComponent extends Component
 
     protected $listeners = ['EditarProducto','CrearProducto'];
     public function mount(){
-        $this->categorias = CategoriaProducto::all();
         $this->sunatTipoExistencias = SunatTabla5TipoExistencia::all();
         $this->sunatCodigoUnidadMedidas = SunatTabla6CodigoUnidadMedida::all();
         $this->resetearValoresDefecto();
     }
     public function resetearValoresDefecto(){
         
-        if($this->categorias->count()>0){
-            $categoria = CategoriaProducto::first();
-            $this->categoria_id = $categoria->id;
-        }
         if($this->sunatTipoExistencias->count()>0){
             $sunatTipoExistencia = $this->sunatTipoExistencias->first();
             $this->codigo_tipo_existencia = $sunatTipoExistencia->codigo;
@@ -52,7 +44,7 @@ class ProductosFormComponent extends Component
     {
         return [
             'ingrediente_activo' => 'nullable',
-            'categoria_id'=>'required|integer',
+            'categoria'=>'required',
             'codigo_tipo_existencia'=>'required',
             'codigo_unidad_medida'=>'required',
             'nombre_comercial' => [
@@ -66,7 +58,7 @@ class ProductosFormComponent extends Component
     protected $messages = [
         'ingrediente_activo.required' => 'El nombre del producto es obligatorio.',
         'ingrediente_activo.unique' => 'El nombre del producto ya está en uso.',
-        'categoria_id.required' => 'La categoría es obligatoria.',
+        'categoria.required' => 'La categoría es obligatoria.',
         'codigo_tipo_existencia.required' => 'El tipo de asistencia es obligatorio.',
         'codigo_unidad_medida.required' => 'El código de unidad es obligatorio.',
     ];
@@ -88,7 +80,7 @@ class ProductosFormComponent extends Component
             $this->productoId = $producto->id;
             $this->nombre_comercial = $producto->nombre_comercial;
             $this->ingrediente_activo = $producto->ingrediente_activo;
-            $this->categoria_id = $producto->categoria_id;
+            $this->categoria = $producto->categoria;
             $this->codigo_tipo_existencia = $producto->codigo_tipo_existencia;
             $this->codigo_unidad_medida = $producto->codigo_unidad_medida;
             $this->mostrarFormulario = true;
@@ -102,7 +94,7 @@ class ProductosFormComponent extends Component
             $data = [
                 'nombre_comercial' => mb_strtoupper(trim($this->nombre_comercial)),
                 'ingrediente_activo' => mb_strtoupper(trim($this->ingrediente_activo)),
-                'categoria_id' => mb_strtoupper($this->categoria_id),
+                'categoria' => $this->categoria,
                 'codigo_tipo_existencia'=>$this->codigo_tipo_existencia,
                 'codigo_unidad_medida'=>$this->codigo_unidad_medida
             ];

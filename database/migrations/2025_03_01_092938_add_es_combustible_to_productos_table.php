@@ -11,11 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('productos', function (Blueprint $table) {
-            $table->id();
-            $table->string('nombre_comercial');
-            $table->string('ingrediente_activo')->nullable();
-            $table->timestamps();
+        Schema::table('productos', function (Blueprint $table) {
+            $table->enum('categoria', ['fertilizante', 'pesticida', 'combustible'])->default('fertilizante');
         });
     }
 
@@ -24,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('productos');
+        Schema::table('productos', function (Blueprint $table) {
+            $table->dropColumn('categoria');
+        });
     }
 };

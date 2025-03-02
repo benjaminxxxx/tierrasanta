@@ -87,8 +87,20 @@
                 <div class="col-span-2 md:col-span-1 mt-3 relative">
                     <x-label for="nombre_comercial">Seleccionar
                         {{ $destino == 'combustible' ? 'Combustible' : 'Campos' }}</x-label>
+                    @if ($destino == 'combustible')
+                        <div class="flex items-center space-x-3 my-6 w-full justify-between">
+                            <div>
+                                <label class="font-semibold text-gray-900">Modo FDM</label>
+                                <p class="text-gray-500 text-sm">Activar para indicar que esta salida va directo a FDM</p>
+                            </div>
+                            <x-toggle-switch :checked="$modoFdm" label="" wire:model.live="modoFdm" />
+                            
+                        </div>
+                        <hr class="border mt-2 border-gray-300 border-1"/>
+                    @endif
                     <div class="flex flex-wrap gap-2 mt-2">
                         @if ($destino == 'combustible')
+
                             @if ($maquinarias && $maquinarias->count() > 0)
                                 @foreach ($maquinarias as $maquinaria)
                                     <button wire:click="toggleMaquinaria('{{ $maquinaria->id }}')"
@@ -183,9 +195,13 @@
                                         <x-th>
                                             Cantidad
                                         </x-th>
+                                        <x-th>
+                                            -
+                                        </x-th>
                                     </x-tr>
                                 </x-slot>
                                 <x-slot name="tbody">
+                                    @if (is_array($maquinariasAgregadas) && count($maquinariasAgregadas) > 0)
                                     @foreach ($maquinariasAgregadas as $campoAgregadoTable)
                                         <x-tr>
                                             <x-th>
@@ -197,8 +213,13 @@
                                                     x-model.number="cantidades['{{ $campoAgregadoTable }}']"
                                                     @input="total = Object.values(cantidades).reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0)" />
                                             </x-th>
+                                            <x-th>
+                                                -
+                                            </x-th>
                                         </x-tr>
                                     @endforeach
+                                    @endif
+                                   
                                     <x-tr class="bg-gray-50">
                                         <x-th>
                                             Stock Sumado

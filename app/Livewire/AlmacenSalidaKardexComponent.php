@@ -17,7 +17,7 @@ class AlmacenSalidaKardexComponent extends Component
         // Ordenar los productos primero por categoría y luego por nombre comercial
         $productosOrdenados = $productos->map(function ($producto) {
             // Obtener la primera letra de la categoría en mayúscula
-            $producto->tipo = strtoupper(substr($producto->categoria->nombre, 0, 1));
+            $producto->tipo = strtoupper(substr($producto->categoria, 0, 1));
             return $producto;
         })->sortBy(['tipo', 'nombre_comercial'])->values();
 

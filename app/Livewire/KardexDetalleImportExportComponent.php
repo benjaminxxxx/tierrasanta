@@ -329,22 +329,7 @@ class KardexDetalleImportExportComponent extends Component
             throw $th;
         }
     }
-    /*
-    private function registrarSalida($fecha, $salidaCantidad, $salidaLote, $salidaCostoUnitario, $salidaCostoTotal)
-    {
-        $data = [
-            //'item',
-            'producto_id' => $this->productoId,
-            'campo_nombre' => $salidaLote,
-            'cantidad' => $salidaCantidad,
-            'fecha_reporte' => $fecha->format('Y-m-d'),
-            //'compra_producto_id',
-            'costo_por_kg' => $salidaCostoUnitario,
-            'total_costo' => $salidaCostoTotal
-        ];
-        AlmacenServicio::registrarSalida($data);
-        return true;
-    }*/
+  
     private function validarCostoUnitario($cantidad, $precioUnitario, $costoTotal)
     {
         if ($cantidad > 0) {

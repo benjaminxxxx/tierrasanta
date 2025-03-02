@@ -47,10 +47,6 @@ class CompraProducto extends Model
     {
         return "{$this->serie} - {$this->numero}";
     }
-    public function almacen()
-    {
-        return $this->hasMany(AlmacenProductoSalida::class, 'compra_producto_id');
-    }
 
 
     // Relación con TiendaComercial

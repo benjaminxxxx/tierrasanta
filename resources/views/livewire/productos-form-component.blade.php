@@ -32,16 +32,15 @@
                     </div>
 
                     <div class="mt-3">
-                        <x-label for="categoria_id">Categoría</x-label>
-                        <x-select class="uppercase" wire:model="categoria_id" id="categoria_id">
+                        <x-label for="categoria">Categoría</x-label>
+                        <x-select class="uppercase" wire:model="categoria">
                             <option value="">SELECCIONAR CATEGORÍA</option>
-                            @if ($categorias)
-                                @foreach ($categorias as $categoria)
-                                    <option value="{{ $categoria->id }}">{{ $categoria->nombre }}</option>
-                                @endforeach
-                            @endif
+                            <option value="fertilizante">FERTILIZANTE</option>
+                            <option value="pesticida">PESTICIDA</option>
+                            <option value="combustible">COMBUSTIBLE</option>
+                          
                         </x-select>
-                        <x-input-error for="categoria_id" />
+                        <x-input-error for="categoria" />
                     </div>
                     <div class="mt-3">
                         <x-label for="codigo_tipo_existencia">Tipo Existencias (Tabla 5)</x-label>

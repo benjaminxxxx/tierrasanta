@@ -24,14 +24,6 @@ class KardexDetalleComponent extends Component
     
     public $kardexId;
     public $kardex;
-    /*public $kardexDetalleProductos = [];
-    public $kardexLista = [];
-    public $productoKardexSeleccionado;
-    public $file;
-    public $kardexProducto;
-    public $metodoValuacion = "promedio";
-    public $kardexCalculado = false;
-    public $empresa;*/
     public $search;
     public $resultado;
     public $producto;
@@ -45,6 +37,7 @@ class KardexDetalleComponent extends Component
             $this->seleccionarProducto($productoCargado);
         }
     }
+   
     public function quitarProducto(){
         $this->producto = null;
         $this->search = null;
@@ -70,35 +63,10 @@ class KardexDetalleComponent extends Component
         ->take(10)
         ->get();
     }
-/*
-    */
-    
-    /*
-    public function descargarKardex()
-    {
-        $data = $this->obtenerDatosKardex();
 
-        if (is_null($data)) {
-            return;
-        }
-
-        return Excel::download(new KardexProductoExport($data), 'kardex_almacen.xlsx');
-    }
-    
-    public function updatedProductoKardexSeleccionado()
-    {
-        $this->listarKardex();
-    }
-    
-    */
     
     public function render()
     {
-        /*
-        if ($this->kardex) {
-            $this->kardexDetalleProductos = KardexProducto::where('kardex_id', $this->kardexId)->get();
-        }
-*/
         return view('livewire.kardex-detalle-component');
     }
 }

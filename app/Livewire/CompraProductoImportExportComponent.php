@@ -48,8 +48,12 @@ class CompraProductoImportExportComponent extends Component
                 $this->fileDesdeKardex = null;
                 $filasAfectadasCompras = $response['filasAfectadasCompras'] ?? 0;
                 $filasAfectadasAlmacen = $response['filasAfectadasAlmacen'] ?? 0;
-                $this->dispatch('actualizarCompraProductos');
-                $this->alert("success", "Registros Importados Correctamente, ($filasAfectadasCompras) compras y {$filasAfectadasAlmacen} registros de salida.");
+
+                $this->dispatch('actualizarCompraProductos', [
+                    'compras' => $filasAfectadasCompras,
+                    'almacen' => $filasAfectadasAlmacen
+                ]);
+                //$this->alert("success", "Registros Importados Correctamente, ($filasAfectadasCompras) compras y {$filasAfectadasAlmacen} registros de salida.");
 
             } catch (Exception $th) {
 
@@ -97,9 +101,10 @@ class CompraProductoImportExportComponent extends Component
             try {
                 $fila = $rows[$i];
 
-                $entradaCantidad = (float) str_replace(',', '', $fila[5]);
-                $entradaCostoUnitario = (float) str_replace(',', '', $fila[6]);
-                $entradaCostoTotal = (float) str_replace(',', '', $fila[7]);
+                //$entradaCantidad = (float) str_replace(',', '', $fila[5]);
+                $entradaCantidad = (float) $sheet->getCell('F' . ($i + 1))->getCalculatedValue(); //Esta tecnica permite obtener el valor total calculado sin importar el formato de la celda obtenida en excel
+                $entradaCostoTotal = (float) $sheet->getCell('H' . ($i + 1))->getCalculatedValue();              
+                
 
                 $tipoOperacion = trim($fila[$indiceColumnaTabla12]);
 
@@ -154,10 +159,12 @@ class CompraProductoImportExportComponent extends Component
                 /**
                  * SALIDAS
                  */
-                $salidaCantidad = (float) str_replace(',', '', $fila[8]);
+                $salidaCantidad = (float) $sheet->getCell('I' . ($i + 1))->getCalculatedValue();
+                $salidaCostoUnitario = (float)$sheet->getCell('K' . ($i + 1))->getCalculatedValue();
+                $salidaCostoTotal = (float) $sheet->getCell('L' . ($i + 1))->getCalculatedValue();
                 $salidaLote = $fila[9];
-                $salidaCostoUnitario = (float) str_replace(',', '', $fila[10]);
-                $salidaCostoTotal = (float) str_replace(',', '', $fila[11]);
+                
+                
 
                 if ($salidaCantidad > 0 && $salidaLote != '') {
                     if ((int) $tipoOperacion != 10) {
@@ -178,7 +185,8 @@ class CompraProductoImportExportComponent extends Component
                         } else {
                             throw new Exception("No existe una Maquinaria con el nombre o alias: " . $salidaLote);
                         }
-                        $salidaLote = '';
+                        
+                        $salidaLote ='';
                     }
 
                     $dataAlmacen[] = [

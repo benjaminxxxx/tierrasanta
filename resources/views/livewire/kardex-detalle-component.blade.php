@@ -59,7 +59,10 @@
         </x-spacing>
     </x-card>
     @if ($productoSeleccionadoId)
-        <livewire:kardex-distribucion-component :kardexId="$kardexId" :kardexProductoId="$producto->id" wire:key="kardexProductoId{{ $productoSeleccionadoId }}" />
+        @if ($producto)
+            <livewire:kardex-distribucion-component :kardexId="$kardexId" :kardexProductoId="$producto->id"
+                wire:key="kardexProductoId{{ $productoSeleccionadoId }}" />
+        @endif
     @else
         <livewire:kardex-indice-component :kardexId="$kardexId" wire:key="kardexGeneral{{ $kardexId }}" />
     @endif
