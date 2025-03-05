@@ -91,6 +91,10 @@ class Campo extends Model
     {
         return $this->hasMany(ReporteDiarioRiego::class, 'campo', 'nombre');
     }
+    public function camposActivos()
+    {
+        return $this->hasMany(CamposActivos::class, 'campo_nombre', 'nombre');
+    }
 
     public function campanias()
     {
