@@ -123,7 +123,8 @@ Route::middleware([
 
     //GASTOS
     Route::get('/contabilidad/gasto/general', [GastoController::class,'general'])->name('gastos.general');
-    Route::get('/contabilidad/costos_fijos_y_operativos', [GastoController::class,'costos'])->name('contabilidad.costos');
+    Route::get('/contabilidad/costos_mensuales', [GastoController::class,'costos_mensuales'])->name('contabilidad.costos_mensuales');
+    Route::get('/contabilidad/costos_generales', [GastoController::class,'costos_generales'])->name('contabilidad.costos_generales');
 
     Route::get('/productividad/avance', [ProductividadController::class,'avance'])->name('productividad.avance');
     

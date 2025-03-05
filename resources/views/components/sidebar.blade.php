@@ -175,7 +175,7 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorGastos" :active="request()->routeIs('gastos.general','contabilidad.costos')">
+                    <x-nav-link-parent name="sectorGastos" :active="request()->routeIs('gastos.general','contabilidad.costos_mensuales','contabilidad.costos_generales')">
                         
                         <div class="w-6 text-center">
                             <i class="fa fa-calculator"></i>
@@ -185,8 +185,11 @@
                             <x-nav-link-child href="{{ route('gastos.general') }}" :active="request()->routeIs('gastos.general')">
                                 Gasto General
                             </x-nav-link-child>
-                            <x-nav-link-child href="{{ route('contabilidad.costos') }}" :active="request()->routeIs('contabilidad.costos')">
-                                Costos Fijos y Operativos
+                            <x-nav-link-child href="{{ route('contabilidad.costos_mensuales') }}" :active="request()->routeIs('contabilidad.costos_mensuales')">
+                                Costos Mensuales
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('contabilidad.costos_generales') }}" :active="request()->routeIs('contabilidad.costos_generales')">
+                                Costos Generales
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
