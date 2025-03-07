@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Campo;
+use App\Models\CampoCampania;
 use App\Models\CamposActivos;
 use App\Models\CostoMensual;
 use Illuminate\Support\Carbon;
@@ -31,10 +32,13 @@ class ContabilidadCostosMensualesDetalleComponent extends Component
     public $operativo_mano_obra_indirecta_costo_blanco;
     public $operativo_mano_obra_indirecta_costo_negro;
     public $mes, $anio;
+    public $areaProduccion,$fechaDistribucion;
     public function mount()
     {
         $this->listarCostos();
         $this->listarCampos();
+        $this->fechaDistribucion = Carbon::createFromDate($this->anio, $this->mes, 1)->lastOfMonth()->format('Y-m-d');
+
     }
     public function importarMesAnterior()
     {
@@ -133,21 +137,27 @@ class ContabilidadCostosMensualesDetalleComponent extends Component
          * campaña aperturada fecha de inicio febrero 23 del 2025 fecha de fin no disponible aun
          * ya que estamos en el mes de febrero se debe considerar la ultima o sea campaña 2
          * las campañas no se cruzan entre fechas siempre es una despues de la otra
+         * a continuacion se va a explicar la tecnica
          */
+
+        $anio = (int) $this->anio;
+        $mes = (int) $this->mes;
+
         $this->campos = Campo::with([
             'camposActivos' => function ($query) {
                 $query->where('anio', $this->anio)
-                      ->where('mes', $this->mes);
+                    ->where('mes', $this->mes);
             },
-            'campanias' => function ($query) {
-                $query->whereYear('fecha_inicio', $this->anio)
-                      ->whereMonth('fecha_inicio', $this->mes)
-                      ->where(function ($q) {
-                          $q->whereDate('fecha_fin', '>=', now()->toDateString()) // Considerar si aún está activa
-                            ->orWhereNull('fecha_fin'); // Campañas abiertas
-                      })
-                      ->orderBy('fecha_inicio', 'desc') // Tomar la más reciente dentro del mes
-                      ->limit(1); // Solo la última
+            'campanias' => function ($query) use ($anio, $mes) {
+                $query->whereRaw("
+                     (YEAR(fecha_inicio) < ? OR (YEAR(fecha_inicio) = ? AND MONTH(fecha_inicio) <= ?))
+                     AND (
+                         fecha_fin IS NULL 
+                         OR (YEAR(fecha_fin) > ? OR (YEAR(fecha_fin) = ? AND MONTH(fecha_fin) >= ?))
+                     )
+                 ", [$anio, $anio, $mes, $anio, $anio, $mes])
+                    ->orderBy('fecha_inicio', 'desc') // Obtener la más reciente
+                    ->limit(1); // Solo una campaña
             }
         ])->orderBy('orden')->get()->map(function ($campo) {
             return [
@@ -157,11 +167,17 @@ class ContabilidadCostosMensualesDetalleComponent extends Component
                 'area' => $campo->area
             ];
         });
-        
 
-        // Inicializar la variable campoSeleccionado
+        $this->calcularAreaProduccion();
         $this->campoSeleccionado = $this->campos->pluck('activo', 'nombre')->toArray();
     }
+    public function calcularAreaProduccion()
+    {
+        $this->areaProduccion = $this->campos
+            ->where('activo', true) // Filtra solo los campos activos
+            ->sum('area');
+    }
+
     public function updatedCampoSeleccionado($activado, $campo)
     {
 
@@ -178,6 +194,7 @@ class ContabilidadCostosMensualesDetalleComponent extends Component
             CamposActivos::where($data)->delete();
             $this->alert('success', 'Campo quitado de la lista.');
         }
+        $this->listarCampos();
     }
 
     public function listarCostos()
@@ -273,6 +290,43 @@ class ContabilidadCostosMensualesDetalleComponent extends Component
         }
 
         $this->modoEdicion = true;
+    }
+    public function distribuirCostoOperativo()
+    {
+
+        if (!$this->campos instanceof \Illuminate\Support\Collection) {
+            return $this->alert('warning', 'No hay campos a trabajar');
+        }
+
+        if ($this->campos->isEmpty()) {
+            return $this->alert('warning', 'No hay campos a trabajar');
+        }
+
+        if (!$this->campos->contains('activo', true)) {
+            return $this->alert('warning', 'No hay ningún campo activo.');
+        }
+
+        $costos_operativos = [
+            ['codigo' => 'operativo_servicios_fundo', 'nombre' => 'Servicios Fundo'],
+            ['codigo' => 'operativo_mano_obra_indirecta', 'nombre' => 'Mano de Obra Indirecta'],
+        ];
+
+        $diaFinalDelMes = Carbon::parse($this->fechaDistribucion)->format('d');
+        $mes = Carbon::parse($this->fechaDistribucion)->format('m');
+        $anio = Carbon::parse($this->fechaDistribucion)->format('y');
+
+        foreach ($this->campos as $indice => $campo) {
+            $estaActivo = $campo['activo'];
+            $areaLote = $campo['area'];
+            $areaProduccion = $this->areaProduccion;
+            if(!$estaActivo){
+                continue;
+            }
+            foreach ($costos_operativos as $costos_operativo) {
+                # code...
+            }
+           
+        }
     }
 
     public function cancelarEdicion()

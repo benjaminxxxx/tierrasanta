@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AlmacenController;
 use App\Http\Controllers\CampoController;
+use App\Http\Controllers\FdmController;
 use App\Http\Controllers\KardexController;
 use App\Http\Controllers\MaquinariaController;
 use App\Http\Controllers\ReporteDiarioController;
@@ -127,5 +128,7 @@ Route::middleware([
     Route::get('/contabilidad/costos_generales', [GastoController::class,'costos_generales'])->name('contabilidad.costos_generales');
 
     Route::get('/productividad/avance', [ProductividadController::class,'avance'])->name('productividad.avance');
+
+    Route::get('/fdm/costos', [FdmController::class,'costos'])->name('fdm.costos');
     
 });
