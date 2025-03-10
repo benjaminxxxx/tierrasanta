@@ -80,6 +80,7 @@ Route::middleware([
     Route::get('/campo/mapa', [CampoController::class,'mapa'])->name('campo.mapa');
     Route::get('/campo/riego', [CampoController::class,'riego'])->name('campo.riego');
     Route::get('/campo/campos', [CampoController::class,'campos'])->name('campo.campos');
+    Route::get('/campo/siembras', [CampoController::class,'siembra'])->name('campo.siembra');
     Route::post('/campo/mapa/guardar-posicion/{nombre}', [CampoController::class,'guardarPosicion'])->name('campo.mapa.guardar-posicion');
 
     //Consolidados

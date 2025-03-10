@@ -25,6 +25,10 @@ class CampoController extends Controller
     {
         return view('campo.campos');
     }
+    public function siembra()
+    {
+        return view('campo.siembra');
+    }
     public function campania($campo = null)
     {
         if($campo){
