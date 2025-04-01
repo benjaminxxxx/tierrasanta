@@ -21,4 +21,5 @@ class CalculoHelper
 
         return $totalDeHoras != 0 ? (float) (8 / $totalDeHoras) : 0;
     }
+   
 }

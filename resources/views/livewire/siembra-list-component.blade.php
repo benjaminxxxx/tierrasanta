@@ -36,9 +36,6 @@
                             <x-th class="text-center">Campo</x-th>
                             <x-th class="text-center">Fecha de Siembra</x-th>
                             <x-th class="text-center">Fecha de Renovación</x-th>
-                            <x-th>Variedad</x-th>
-                            <x-th>Sistema de Cultivo</x-th>
-                            <x-th class="text-center">Tipo de Cambio</x-th>
                             <x-th class="text-center">Acciones</x-th>
                         </x-tr>
                     </x-slot>
@@ -49,9 +46,7 @@
                                 <x-td class="text-center">{{ $siembra->campo_nombre }}</x-td>
                                 <x-td class="text-center">{{ $siembra->fecha_siembra }}</x-td>
                                 <x-td class="text-center">{{ $siembra->fecha_renovacion ?? '-' }}</x-td>
-                                <x-td>{{ $siembra->variedad_tuna ?? '-' }}</x-td>
-                                <x-td>{{ $siembra->sistema_cultivo ?? '-' }}</x-td>
-                                <x-td class="text-center">{{ number_format($siembra->tipo_cambio, 2) }}</x-td>
+                                
                                 <x-td class="text-center">
                                     <x-flex>
                                         <x-button @click="$wire.dispatch('editarSiembra',{id:{{ $siembra->id }}})">

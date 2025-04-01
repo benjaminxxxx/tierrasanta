@@ -15,7 +15,6 @@ class ResumenConsumoProductos extends Model
         'campo',
         'producto',
         'categoria',
-        'categoria_id',
         'cantidad',
         'total_costo',
         'campos_campanias_id',

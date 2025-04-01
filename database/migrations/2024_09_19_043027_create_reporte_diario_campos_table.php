@@ -26,6 +26,7 @@ return new class extends Migration
             $table->integer('total_atencion_medica')->default(0);
             $table->integer('total_cuadrillas')->default(0);
             $table->integer('total_planilla')->default(0);
+            $table->integer('descuento_minutos')->nullable();
 
             $table->timestamps();
         });

@@ -18,6 +18,8 @@ return new class extends Migration
             $table->date('fecha');
             $table->string('documento');
             $table->enum('tipo_empleado', ['planilla', 'cuadrilla']);
+            $table->time('hora_inicio')->nullable();
+            $table->time('hora_fin')->nullable();
             $table->timestamps();
         });
     }

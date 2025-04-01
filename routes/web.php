@@ -12,6 +12,7 @@ use App\Http\Controllers\GastoController;
 use App\Http\Controllers\ProductividadController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProveedorController;
+use App\Http\Controllers\ReporteCampoController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Middleware\CheckUserStatus;
@@ -59,9 +60,6 @@ Route::middleware([
         return view('configuracion.tipo_asistencia');
     })->name('configuracion.tipo_asistencia');
 
-    Route::get('/configuracion/tipo-costo', function () {
-        return view('configuracion.tipo_costos');
-    })->name('configuracion.tipo_costos');
 
     //CUADRILLA
     Route::get('/cuadrilla/cuadrilleros', function () {
@@ -131,5 +129,8 @@ Route::middleware([
     Route::get('/productividad/avance', [ProductividadController::class,'avance'])->name('productividad.avance');
 
     Route::get('/fdm/costos', [FdmController::class,'costos'])->name('fdm.costos');
+
+    //REPORTE CAMPO
+    Route::get('/reporte_campo/poblacion_planta', [ReporteCampoController::class,'poblacion_plantas'])->name('reporte_campo.poblacion_plantas');
     
 });

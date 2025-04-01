@@ -11,11 +11,12 @@ class SiembraFormComponent extends Component
     use LivewireAlert;
     public $mostrarFormulario = false;
     public $siembra_id;
-    public $fecha_siembra, $fecha_renovacion, $campo_nombre, $variedad_tuna, $sistema_cultivo, $tipo_cambio;
+    public $fecha_siembra, $fecha_renovacion, $campo_nombre;
     protected $listeners = ['agregarSiembra','editarSiembra'];
+   
     public function agregarSiembra(){
         $this->siembra_id = null;
-        $this->reset(['siembra_id', 'fecha_siembra', 'fecha_renovacion', 'campo_nombre', 'variedad_tuna', 'sistema_cultivo', 'tipo_cambio']);
+        $this->reset(['siembra_id', 'fecha_siembra', 'fecha_renovacion', 'campo_nombre']);
         $this->mostrarFormulario = true;
     }
     public function storeSiembra()
@@ -24,9 +25,7 @@ class SiembraFormComponent extends Component
             'fecha_siembra' => 'required|date',
             'fecha_renovacion' => 'nullable|date|after_or_equal:fecha_siembra',
             'campo_nombre' => 'required|string|max:50|exists:campos,nombre',
-            'variedad_tuna' => 'nullable|string|max:50',
-            'sistema_cultivo' => 'nullable|string|max:255',
-            'tipo_cambio' => 'nullable|numeric|between:0,99999999.99',
+            
         ], [
             'fecha_siembra.required' => 'La fecha de siembra es obligatoria.',
             'fecha_siembra.date' => 'Ingrese una fecha válida.',
@@ -35,13 +34,13 @@ class SiembraFormComponent extends Component
             'campo_nombre.required' => 'El campo es obligatorio.',
             'campo_nombre.max' => 'El nombre del campo no puede superar los 50 caracteres.',
             'campo_nombre.exists' => 'El campo seleccionado no existe.',
-            'variedad_tuna.max' => 'La variedad de tuna no puede superar los 50 caracteres.',
-            'sistema_cultivo.max' => 'El sistema de cultivo no puede superar los 255 caracteres.',
-            'tipo_cambio.numeric' => 'El tipo de cambio debe ser un número.',
-            'tipo_cambio.between' => 'El tipo de cambio debe estar entre 0 y 99,999,999.99.',
+            
         ]);
 
         try {
+            if(trim($validatedData['fecha_renovacion'])==''){
+                $validatedData['fecha_renovacion'] = null;
+            }
             if ($this->siembra_id) {
                 // Editar siembra
                 $siembra = Siembra::findOrFail($this->siembra_id);
@@ -53,7 +52,7 @@ class SiembraFormComponent extends Component
                 $this->alert('success', 'Siembra registrada exitosamente');
             }
             $this->mostrarFormulario = false;
-            $this->reset(['siembra_id', 'fecha_siembra', 'fecha_renovacion', 'campo_nombre', 'variedad_tuna', 'sistema_cultivo', 'tipo_cambio']);
+            $this->reset(['siembra_id', 'fecha_siembra', 'fecha_renovacion', 'campo_nombre']);
             $this->dispatch('siembraGuardada'); // Para refrescar la tabla si es necesario
         } catch (\Exception $th) {
             $this->dispatch('log', $th->getMessage());
@@ -64,16 +63,13 @@ class SiembraFormComponent extends Component
     {
         try {
             
-            $this->reset(['siembra_id', 'fecha_siembra', 'fecha_renovacion', 'campo_nombre', 'variedad_tuna', 'sistema_cultivo', 'tipo_cambio']);
+            $this->reset(['siembra_id', 'fecha_siembra', 'fecha_renovacion', 'campo_nombre']);
 
             $siembra = Siembra::findOrFail($id);
             $this->siembra_id = $siembra->id;
             $this->fecha_siembra = $siembra->fecha_siembra;
             $this->fecha_renovacion = $siembra->fecha_renovacion;
             $this->campo_nombre = $siembra->campo_nombre;
-            $this->variedad_tuna = $siembra->variedad_tuna;
-            $this->sistema_cultivo = $siembra->sistema_cultivo;
-            $this->tipo_cambio = $siembra->tipo_cambio;
             $this->mostrarFormulario = true;
         } catch (\Throwable $th) {
             $this->dispatch('log', $th->getMessage());

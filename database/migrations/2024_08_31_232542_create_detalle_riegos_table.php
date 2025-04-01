@@ -19,6 +19,7 @@ return new class extends Migration
             $table->time('hora_inicio');
             $table->time('hora_fin');
             $table->time('total_horas');
+            $table->boolean('sh')->default(false);
             $table->timestamps();
 
             // Índice para optimizar búsquedas por campo y fecha

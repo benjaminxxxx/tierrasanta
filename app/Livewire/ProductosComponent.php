@@ -2,7 +2,6 @@
 
 namespace App\Livewire;
 
-use App\Models\CategoriaProducto;
 use App\Models\Producto;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -17,12 +16,9 @@ class ProductosComponent extends Component
     public $categoria_id_filtro;
     public $sortField = 'nombre_comercial'; 
     public $sortDirection = 'asc';
-    public $categorias;
 
     protected $listeners = ['ActualizarProductos' => '$refresh', 'eliminacionConfirmada'];
-    public function mount(){
-        $this->categorias = CategoriaProducto::all();
-    }
+  
     public function updatingSearch()
     {
         $this->resetPage();

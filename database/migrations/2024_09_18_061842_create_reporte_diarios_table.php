@@ -21,6 +21,7 @@ return new class extends Migration
             $table->date('fecha'); // fecha
             $table->integer('orden')->nullable(); 
             $table->timestamps(); // timestamps para created_at y updated_at
+            $table->decimal('bono_productividad', 10, 2)->nullable();
         });
     }
 

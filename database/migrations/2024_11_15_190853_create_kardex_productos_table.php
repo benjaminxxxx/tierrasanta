@@ -23,7 +23,7 @@ return new class extends Migration
             $table->enum('estado', ['activo', 'cerrado'])->default('activo'); // Estado del kardex del producto
             $table->enum('metodo_valuacion', ['promedio', 'peps'])->default('promedio');
             $table->string('file',255)->nullable();
-            $table->string('tipo_kardex', 20)->nullable();
+            $table->enum('tipo_kardex', ['blanco','negro'])->nullable();
             $table->timestamps(); // created_at y updated_at
 
             // Claves foráneas

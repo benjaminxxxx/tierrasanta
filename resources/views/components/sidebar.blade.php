@@ -106,8 +106,22 @@
                             <x-nav-link-child href="{{ route('campo.siembra') }}" :active="request()->routeIs('campo.siembra')">
                                 Siembras
                             </x-nav-link-child>
+                            
                         </x-slot>
                     </x-nav-link-parent>
+                    <x-nav-link-parent name="sectorReporteCampo" href="#" :active="request()->routeIs(['reporte_campo.poblacion_plantas'])">
+                        
+                        <div class="w-6 text-center">
+                            <i class="fa fa-bug"></i>
+                        </div>
+                        Reporte de Campo
+                        <x-slot name="children">
+                            <x-nav-link-child href="{{ route('reporte_campo.poblacion_plantas') }}" :active="request()->routeIs('reporte_campo.poblacion_plantas')">
+                                Población Plantas
+                            </x-nav-link-child>
+                        </x-slot>
+                    </x-nav-link-parent>
+                    
                     <x-nav-link-parent name="sectorFdm" href="#" :active="request()->routeIs(['fdm.costos'])">
                         
                         <div class="w-6 text-center">
@@ -224,7 +238,7 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorConfiguracion" :active="request()->routeIs(['configuracion','descuentos_afp','configuracion.labores','configuracion.labores_riego','configuracion.tipo_asistencia','configuracion.tipo_costos'])">
+                    <x-nav-link-parent name="sectorConfiguracion" :active="request()->routeIs(['configuracion','descuentos_afp','configuracion.labores','configuracion.labores_riego','configuracion.tipo_asistencia'])">
                         <div class="w-6 text-center">
                             <i class="fa fa-cogs"></i>
                         </div>
@@ -246,9 +260,6 @@
                             </x-nav-link-child>
                             <x-nav-link-child href="{{ route('configuracion.tipo_asistencia') }}" :active="request()->routeIs('configuracion.tipo_asistencia')">
                                 Tipo de Asistencia
-                            </x-nav-link-child>
-                            <x-nav-link-child href="{{ route('configuracion.tipo_costos') }}" :active="request()->routeIs('configuracion.tipo_costos')">
-                                Tipo de Costos
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>

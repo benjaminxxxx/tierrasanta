@@ -34,6 +34,8 @@ return new class extends Migration {
             $table->foreign('grupo_codigo')->references('codigo')->on('grupos')->onDelete('set null');
             $table->decimal('compensacion_vacacional', 10, 2)->nullable();
             $table->boolean('esta_jubilado')->default(false);
+            $table->integer('orden')->nullable();
+            $table->string('asistencia')->nullable();
             $table->timestamps();
         });
     }

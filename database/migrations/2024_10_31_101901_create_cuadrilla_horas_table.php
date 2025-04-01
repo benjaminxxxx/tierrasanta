@@ -17,6 +17,7 @@ return new class extends Migration
             $table->date('fecha');
             $table->decimal('horas', 4, 2);
             $table->decimal('costo_dia', 10, 2);
+            $table->decimal('bono', 10, 2)->nullable();
             $table->timestamps();
 
             // Relación con la tabla cua_asistencia_semanal_cuadrilleros

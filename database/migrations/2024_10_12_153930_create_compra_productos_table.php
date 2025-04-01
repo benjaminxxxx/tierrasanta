@@ -20,6 +20,9 @@ return new class extends Migration
             $table->string('factura')->nullable(); // Factura, nullable
             $table->decimal('costo_por_kg', 10, 2); // Costo por unidad de medida
             $table->boolean('estado')->default(true); // Estado de la compra
+            $table->decimal('total', 10, 2)->default(0); // Reemplaza 'existing_column' por el nombre de una columna existente si quieres un orden específico
+            $table->decimal('stock', 10, 3)->default(0);
+            $table->date('fecha_termino')->nullable();
             $table->timestamps();
 
             // Claves foráneas

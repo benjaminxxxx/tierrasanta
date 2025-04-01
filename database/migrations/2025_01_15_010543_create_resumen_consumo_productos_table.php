@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('campo');
             $table->string('producto');
             $table->string('categoria');
-            $table->unsignedBigInteger('categoria_id');
             $table->decimal('cantidad', 10, 3)->nullable();
             $table->decimal('total_costo', 10, 2)->nullable();
             $table->unsignedBigInteger('campos_campanias_id')->nullable();

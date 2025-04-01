@@ -15,13 +15,13 @@
                                 class="fa fa-remove"></i></x-danger-button>
                     </div>
                     <div>
-                        <livewire:compra-producto-import-export-component :productoid="$producto->id"
+                        <livewire:compra-producto-import-export-component  productoid="{{$producto->id}}" kardexId="{{$this->kardexId}}"
                             wire:key="registroCompraForCompra{{ $producto->id }}" />
                     </div>
                     <div>
                         <x-button type="button" @click="$wire.dispatch('EditarProducto',{id:{{ $producto->id }}})"
                             class="mt-4 md:mt-0 w-full md:w-auto">
-                            <i class="fa fa-remove"></i>
+                            <i class="fa fa-edit"></i>
                             Editar Producto
                         </x-button>
                     </div>

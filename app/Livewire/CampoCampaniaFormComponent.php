@@ -13,12 +13,12 @@ class CampoCampaniaFormComponent extends Component
 {
     use LivewireAlert;
     public $mostrarFormulario = false;
-    public $fechaInicio;
-    public $nombreCampania;
-    public $camposSeleccionados = [];
+    public $campaniaId;
+    public $fecha_inicio, $nombre_campania, $variedad_tuna, $sistema_cultivo, $tipo_cambio, $pencas_x_hectarea, $fecha_fin;
+    public $campoSeleccionado;
     public $errorMensaje = [];
     public $ultimaCampania;
-    protected $listeners = ['registroCampania'];
+    protected $listeners = ['registroCampania', 'editarCampania'];
     public function registroCampania($campoNombre)
     {
         $this->resetForm();
@@ -28,74 +28,125 @@ class CampoCampaniaFormComponent extends Component
         }
 
         $this->mostrarFormulario = true;
-        $this->camposSeleccionados[] = $campoNombre;
+        $this->campoSeleccionado = $campoNombre;
+    }
+    public function editarCampania($campaniaId)
+    {
+        $this->resetForm();
+        $campania = CampoCampania::find($campaniaId);
+        if ($campania) {
+            $this->campaniaId = $campania->id;
+            $this->fecha_inicio = $campania->fecha_inicio;
+            $this->fecha_fin = $campania->fecha_fin;
+            $this->nombre_campania = $campania->nombre_campania;
+            $this->variedad_tuna = $campania->variedad_tuna;
+            $this->sistema_cultivo = $campania->sistema_cultivo;
+            $this->tipo_cambio = $campania->tipo_cambio;
+            $this->pencas_x_hectarea = $campania->pencas_x_hectarea;
+        }
+
+        $this->mostrarFormulario = true;
     }
     public function resetForm()
     {
-        $this->reset(['camposSeleccionados', 'errorMensaje', 'nombreCampania', 'ultimaCampania']);
-        $this->fechaInicio = Carbon::now()->format('Y-m-d');
+        $this->resetErrorBag();
+        $this->reset(['campaniaId', 'fecha_inicio', 'fecha_fin', 'campoSeleccionado', 'errorMensaje', 'nombre_campania', 'ultimaCampania', 'variedad_tuna', 'sistema_cultivo', 'tipo_cambio', 'pencas_x_hectarea']);
+        //$this->fecha_inicio = Carbon::now()->format('Y-m-d');
     }
     public function store()
     {
         $this->validate([
-            'nombreCampania' => 'required|string',
-            'fechaInicio' => 'required|date',
+            'nombre_campania' => 'required|string',
+            'fecha_inicio' => 'required|date',
+            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+            'variedad_tuna' => 'nullable|string|max:50',
+            'sistema_cultivo' => 'nullable|string|max:255',
+            'tipo_cambio' => 'nullable|numeric|between:0,99999999.99',
         ], [
-            'nombreCampania.required' => 'El nombre de la campaña es obligatorio.',
-            'fechaInicio.required' => 'La fecha de inicio es obligatorio.',
-            'fechaInicio.date' => 'La fecha no tiene un formato válido.'
+            'nombre_campania.required' => 'El nombre de la campaña es obligatorio.',
+            'fecha_inicio.required' => 'La fecha de inicio es obligatoria.',
+            'fecha_inicio.date' => 'La fecha de inicio no tiene un formato válido.',
+            'fecha_fin.date' => 'La fecha de fin no tiene un formato válido.',
+            'fecha_fin.after_or_equal' => 'La fecha de fin debe ser igual o posterior a la fecha de inicio.',
+            'variedad_tuna.max' => 'La variedad de tuna no puede superar los 50 caracteres.',
+            'sistema_cultivo.max' => 'El sistema de cultivo no puede superar los 255 caracteres.',
+            'tipo_cambio.numeric' => 'El tipo de cambio debe ser un número.',
+            'tipo_cambio.between' => 'El tipo de cambio debe estar entre 0 y 99,999,999.99.',
         ]);
+    
         try {
-            $this->errorMensaje = [];
-            $registrosInsertados = 0;
-
-            foreach ($this->camposSeleccionados as $campo) {
-                # Revisar si hay una campaña anterior
-                # Si hay, se debe obtener la ultima anteior para actualizar la fecha final a un dia antes de la fecha seleccionada
-                $campaniaAnterior = CampoCampania::whereDate('fecha_inicio', '<', $this->fechaInicio)->orderBy('fecha_inicio')->first();
-                $campaniaPosterior = CampoCampania::whereDate('fecha_inicio', '>', $this->fechaInicio)->orderBy('fecha_inicio')->first();
-                $fecha = Carbon::parse($this->fechaInicio)->addDay(-1);
-                if ($campaniaAnterior) {
-                    $campaniaAnterior->update([
-                        'fecha_fin' => $fecha
-                    ]);
-                }
-
-                $data = [
-                    'nombre_campania' => mb_strtoupper($this->nombreCampania),
-                    'campo' => $campo,
-                    'fecha_inicio' => $this->fechaInicio,
-                    'usuario_modificador' => Auth::id()
-                ];
-
-                if ($campaniaPosterior) {
-                    $fechaFin = Carbon::parse($campaniaPosterior->fecha_inicio)->addDay(-1);
-                    $data['fecha_fin'] = $fechaFin;
-                }
-                $campoCampania = CampoCampania::whereDate('fecha_inicio', $this->fechaInicio)->where('campo', $campo)->first();
-                if (!$campoCampania) {
-                    CampoCampania::create($data);
-                    $registrosInsertados++;
-                } else {
-                    $this->errorMensaje[] = "Ya existe una Campaña para el campo {$campo} en la fecha {$campoCampania->fecha_inicio} llamada {$campoCampania->nombre_campania}";
-                    continue;
-                }
+            // Buscar campañas anteriores y posteriores
+            $campaniaAnterior = CampoCampania::where('campo', $this->campoSeleccionado)
+                ->whereDate('fecha_inicio', '<', $this->fecha_inicio)
+                ->orderByDesc('fecha_inicio')
+                ->first();
+    
+            $campaniaPosterior = CampoCampania::where('campo', $this->campoSeleccionado)
+                ->whereDate('fecha_inicio', '>', $this->fecha_inicio)
+                ->orderBy('fecha_inicio')
+                ->first();
+    
+            // Si hay una campaña anterior, actualizar su fecha_fin
+            if ($campaniaAnterior) {
+                $campaniaAnterior->update([
+                    'fecha_fin' => Carbon::parse($this->fecha_inicio)->subDay(),
+                ]);
             }
-            if ($registrosInsertados > 0) {
-                if (count($this->errorMensaje) > 0) {
-                    $this->alert('success', 'Algunas campañas se registraron correctamente.');
-                } else {
-                    $this->alert('success', 'Todas las campañas se registraron correctamente.');
-                }
-                $this->resetForm();
-                $this->mostrarFormulario = false;
-                $this->dispatch('campaniaInsertada');
+    
+            // Preparar datos
+            $data = [
+                'nombre_campania' => mb_strtoupper($this->nombre_campania),
+                'fecha_inicio' => $this->fecha_inicio,
+                'usuario_modificador' => Auth::id(),
+                'variedad_tuna' => $this->variedad_tuna,
+                'sistema_cultivo' => $this->sistema_cultivo,
+                'tipo_cambio' => $this->tipo_cambio,
+                'pencas_x_hectarea' => $this->pencas_x_hectarea,
+            ];
+
+            if($this->campoSeleccionado){
+                $data['campo'] = $this->campoSeleccionado;
             }
+    
+            // Si hay una campaña posterior, definir fecha_fin para la actual
+            if ($campaniaPosterior) {
+                $data['fecha_fin'] = Carbon::parse($campaniaPosterior->fecha_inicio)->subDay();
+            } else {
+                $data['fecha_fin'] = $this->fecha_fin; // Usa la fecha ingresada si no hay otra posterior
+            }
+    
+            // Si existe una campaña con la misma fecha, actualizarla en lugar de crearla
+            if ($this->campaniaId) {
+                $campoCampania = CampoCampania::findOrFail($this->campaniaId);
+                $campoCampania->update($data);
+                $mensaje = 'La campaña fue actualizada correctamente.';
+            } else {
+                // Verificar si ya existe una campaña con la misma fecha en ese campo
+                $existeCampania = CampoCampania::where('campo', $this->campoSeleccionado)
+                    ->whereDate('fecha_inicio', $this->fecha_inicio)
+                    ->first();
+    
+                if ($existeCampania) {
+                    return $this->alert('error', "Ya existe una campaña para el campo {$this->campoSeleccionado} en la fecha {$existeCampania->fecha_inicio} llamada {$existeCampania->nombre_campania}.");
+                }
+    
+                CampoCampania::create($data);
+                $mensaje = 'La campaña fue registrada correctamente.';
+            }
+    
+            // Mostrar mensaje de éxito
+            $this->alert('success', $mensaje);
+            $this->resetForm();
+            $this->mostrarFormulario = false;
+            $this->dispatch('campaniaInsertada');
+    
         } catch (\Throwable $th) {
+            // Captura errores y muestra mensaje
             $this->alert('error', 'Ocurrió un error inesperado #ccfc1.');
             $this->dispatch('log', $th->getMessage());
         }
     }
+    
     public function render()
     {
         return view('livewire.campo-campania-form-component');

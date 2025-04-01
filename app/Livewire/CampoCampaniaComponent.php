@@ -9,32 +9,44 @@ use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Session;
 
 class CampoCampaniaComponent extends Component
 {
     use LivewireAlert;
-    public $campanias;
+    public $campania;
     public $campos;
     public $campoSeleccionado;
-    protected $listeners = ['GuardarInformacion', 'confirmarEliminar', 'campaniaInsertada' => 'obtenerRegistros'];
+    public $hayCampaniaAnterior = false;
+    public $hayCampaniaPosterior = false;
+    
+    protected $listeners = ['GuardarInformacion', 'confirmarEliminar', 'campaniaInsertada' => 'cargarUltimaCampania'];
 
     public function mount($campo = null)
     {
         $this->campos = Campo::orderBy('orden')->get();
         if ($campo) {
             $this->campoSeleccionado = $campo;
-            $this->obtenerRegistros();
+            Session::put('campoSeleccionado', $campo);
+            $this->cargarUltimaCampania();
+        } else {
+            $this->campoSeleccionado = Session::get('campoSeleccionado', null);
+            $this->cargarUltimaCampania();
         }
+
+        $this->actualizarEstadoBotones();
     }
     public function updatedCampoSeleccionado()
     {
-
-        $this->obtenerRegistros();
+        Session::put('campoSeleccionado', $this->campoSeleccionado);
+        $this->cargarUltimaCampania();
+        $this->actualizarEstadoBotones();
     }
-    public function obtenerRegistros()
+    public function cargarUltimaCampania()
     {
         if (!$this->campoSeleccionado) {
-            $this->campanias = null;
+            $this->campania = null;
+            Session::forget('campoSeleccionado');
             return;
         }
 
@@ -44,7 +56,7 @@ class CampoCampaniaComponent extends Component
             return $this->alert('error', 'El campo no existe.');
         }
 
-        $this->campanias = $campo->campanias()->orderBy('fecha_inicio', 'desc')->get();
+        $this->campania = $campo->campanias()->orderBy('fecha_inicio', 'desc')->first();
     }
 
     public function eliminarCampania($campaniaId)
@@ -92,34 +104,61 @@ class CampoCampaniaComponent extends Component
             $campania->gasto_cuadrilla_file,
             $campania->gasto_resumen_bdd_file
         ]);
-    
+
         // Eliminar archivos si hay rutas válidas
         if (!empty($archivos)) {
             Storage::disk('public')->delete($archivos);
         }
-        
+
         $campania->delete();
-        $this->obtenerRegistros();
+        $this->cargarUltimaCampania();
         $this->alert('success', 'Registros Eliminados Correctamente.');
     }
-    public function actualizarGastosConsumo($campaniaId)
+  
+    public function anteriorCampania()
     {
+        $campaniaAnterior = CampoCampania::where('campo', $this->campoSeleccionado)
+            ->where('fecha_inicio', '<', $this->campania->fecha_inicio)
+            ->orderByDesc('fecha_inicio')
+            ->first();
 
-        try {
-
-            $campaniaServicio = new CampaniaServicio($campaniaId);
-            $campaniaServicio->actualizarGastosyConsumos();
-            $this->obtenerRegistros();
-            $this->alert('success', 'Gastos y Consumos actualizados correctamente.');
-
-        } catch (\Throwable $th) {
-
-            $this->dispatch('log', $th->getMessage());
-            $this->alert('error', 'Ocurrió un error al Actualizar los Gastos y Consumos.');
-            
+        if ($campaniaAnterior) {
+            $this->campania = $campaniaAnterior;
+            $this->actualizarEstadoBotones();
         }
     }
 
+    public function siguienteCampania()
+    {
+        $campaniaPosterior = CampoCampania::where('campo', $this->campoSeleccionado)
+            ->where('fecha_inicio', '>', $this->campania->fecha_inicio)
+            ->orderBy('fecha_inicio')
+            ->first();
+
+        if ($campaniaPosterior) {
+            $this->campania = $campaniaPosterior;
+            $this->actualizarEstadoBotones();
+        }
+    }
+   
+
+    private function actualizarEstadoBotones()
+    {
+        if (!$this->campania || !$this->campania->fecha_inicio) {
+            $this->hayCampaniaAnterior = false;
+            $this->hayCampaniaPosterior = false;
+            return;
+        }
+    
+        $this->hayCampaniaAnterior = CampoCampania::where('campo', $this->campoSeleccionado)
+            ->where('fecha_inicio', '<', $this->campania->fecha_inicio)
+            ->exists();
+    
+        $this->hayCampaniaPosterior = CampoCampania::where('campo', $this->campoSeleccionado)
+            ->where('fecha_inicio', '>', $this->campania->fecha_inicio)
+            ->exists();
+    }
+    
     public function render()
     {
         return view('livewire.campo-campania-component');

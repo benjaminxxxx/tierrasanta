@@ -2,18 +2,13 @@
 
 namespace App\Services;
 
-use App\Exports\CampoConsumoExport;
-use App\Models\Actividad;
 use App\Models\AlmacenProductoSalida;
 use App\Models\CampoCampania;
 use App\Models\CamposCampaniasConsumo;
-use App\Models\CategoriaProducto;
 use App\Models\ContabilidadCostoDetalle;
 use App\Models\ResumenConsumoProductos;
 use Exception;
-use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Str;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Illuminate\Support\Facades\Storage;
 use App\Support\ExcelHelper;
@@ -70,9 +65,9 @@ class CampaniaServicio
         $informacionPlanilla = $this->generarInformacionPlanilla();
         $informacionCuadrilla = $this->generarInformacionCuadrilla();
         $informacionConsumo = $this->generarInformacionConsumo();
-        $informacionCostosFijosOperativos = $this->generarCostosFijosOperativos();
+        //$informacionCostosFijosOperativos = $this->generarCostosFijosOperativos();
 
-        $informacionCombinada = array_merge($informacionPlanilla, $informacionCuadrilla, $informacionConsumo,$informacionCostosFijosOperativos);
+        $informacionCombinada = array_merge($informacionPlanilla, $informacionCuadrilla, $informacionConsumo);
 
         // Ordenar por fecha
         usort($informacionCombinada, function ($a, $b) {
@@ -125,7 +120,7 @@ class CampaniaServicio
 
         // Definir ruta de almacenamiento en "storage/app/public/reporte/..."
         $folderPath = 'reporte/' . date('Y-m');
-        $fileName = 'BDD_CAMPAÑA_' . mb_strtoupper(Str::slug($this->campoCampania->nombre_campania)) .'_CAMPO_' . mb_strtoupper(Str::slug($this->campoCampania->campo)). '.xlsx';
+        $fileName = 'BDD_CAMPAÑA_' . mb_strtoupper(Str::slug($this->campoCampania->nombre_campania)) . '_CAMPO_' . mb_strtoupper(Str::slug($this->campoCampania->campo)) . '.xlsx';
         $filePath = $folderPath . '/' . $fileName;
 
         // Crear carpeta si no existe
@@ -163,7 +158,7 @@ class CampaniaServicio
             $data = $hoja->rangeToArray($tableRange, null, true, false, true);
 
             if (!$data || count($data) < 2) {
-                throw new Exception("No hay datos suficientes en la tabla.");
+               // throw new Exception("No hay datos suficientes en la tabla.");
             }
             $headers = array_map(fn($header) => Str::slug($header, '_'), array_shift($data));
 
@@ -194,6 +189,7 @@ class CampaniaServicio
 
         return $informacion;
     }
+    /*
     public function generarCostosFijosOperativos()
     {
         $informacion = [];
@@ -247,7 +243,7 @@ class CampaniaServicio
         }
 
         return $informacion;
-    }
+    }*/
     public function generarInformacionConsumo()
     {
         $informacion = [];
@@ -257,7 +253,7 @@ class CampaniaServicio
         if ($registros) {
             foreach ($registros as $registro) {
                 if ($registro->reporte_file) {
-                    $tipo = mb_strtolower(Str::slug($registro->categoriaProducto->nombre));
+                    $tipo = mb_strtolower(Str::slug($registro->categoria));
 
                     $hoja = ExcelHelper::cargarHoja('public', $registro->reporte_file, 'CONSUMOS');
                     $table = $hoja->getTableByName('ConsumosTable');
@@ -486,81 +482,84 @@ class CampaniaServicio
 
             ResumenConsumoProductos::insert($resumenConsumoProductosData);
 
-            $categoriaProductos = CategoriaProducto::all();
-            if ($categoriaProductos) {
-                $camposCampaniasConsumo = [];
-                foreach ($categoriaProductos as $categoriaProducto) {
+            $categoriaProductos = [
+                'combustible',
+                'fertilizante',
+                'pesticida'
+            ];
 
-                    $datosFiltrados = array_filter($resumenConsumoProductosData, function ($dato) use ($categoriaProducto) {
-                        return $dato['categoria_id'] === $categoriaProducto->id;
-                    });
+            $camposCampaniasConsumo = [];
+            foreach ($categoriaProductos as $categoriaProducto) {
+              
+                $datosFiltrados = array_filter($resumenConsumoProductosData, function ($dato) use ($categoriaProducto) {
+                    return $dato['categoria'] === $categoriaProducto;
+                });
 
-                    $totalConsumido = array_sum(array_column($datosFiltrados, 'total_costo'));
-         
+                $totalConsumido = array_sum(array_column($datosFiltrados, 'total_costo'));
 
-                    $spreadsheet = ExcelHelper::cargarPlantilla('reporte_comsumo_productos.xlsx');
-                    $hoja = $spreadsheet->getSheetByName('CONSUMOS');
 
-                    if (!$hoja) {
-                        throw new Exception("No se ha configurado un formato para el documento a exportar.");
-                    }
+                $spreadsheet = ExcelHelper::cargarPlantilla('reporte_comsumo_productos.xlsx');
+                $hoja = $spreadsheet->getSheetByName('CONSUMOS');
 
-                    $table = $hoja->getTableByName('ConsumosTable');
-
-                    if (!$table) {
-                        throw new Exception("La plantilla no tiene una tabla llamada ConsumosTable.");
-                    }
-
-                    $fila = ExcelHelper::primeraFila($table) + 1;
-
-                    foreach ($datosFiltrados as $index => $dato) {
-
-                        $hoja->setCellValue("A{$fila}", $index + 1); // Índice (empieza en 1)
-                        $hoja->setCellValue("B{$fila}", mb_strtoupper($dato['tipo_kardex']));
-                        $hoja->setCellValue("C{$fila}", $this->campoCampania->nombre_campania);
-                        $hoja->setCellValue("D{$fila}", $dato['fecha']);
-                        $hoja->setCellValue("E{$fila}", $dato['campo']);
-                        $hoja->setCellValue("F{$fila}", mb_strtoupper($dato['producto']));
-                        $hoja->setCellValue("G{$fila}", mb_strtoupper($dato['categoria']));
-
-                        $hoja->setCellValue("H{$fila}", $dato['orden_compra']);
-                        $hoja->setCellValue("I{$fila}", $dato['tienda_comercial']);
-                        $hoja->setCellValue("J{$fila}", $dato['factura']);
-
-                        $hoja->setCellValue("K{$fila}", $dato['cantidad']);
-                        $hoja->setCellValue("L{$fila}", ($dato['cantidad'] != 0) ? "=M{$fila}/K{$fila}" : "0");
-                        $hoja->setCellValue("M{$fila}", $dato['total_costo']);
-
-                        $fila++; // Mover a la siguiente fila
-                    }
-
-                    $hoja->setCellValue("A{$fila}", 'TOTALES');
-                    $hoja->setCellValue("K{$fila}", "=SUM(ConsumosTable[Cantidad])");
-                    $hoja->setCellValue("L{$fila}", "=SUM(ConsumosTable[Costo Unitario])");
-                    $hoja->setCellValue("M{$fila}", "=SUM(ConsumosTable[Total Costo])");
-
-                    ExcelHelper::actualizarRangoTabla($table, $fila - 1);
-
-                    $folderPath = 'consumo_reportes/' . date('Y-m');
-                    $fileName = 'REPORTE_CONSUMO_' . Str::slug('REPORTE_CONSUMO_' . mb_strtoupper($this->campoCampania->nombre_campania) . '_' . mb_strtoupper($categoriaProducto->nombre) . '_' . $this->campoCampania->campo) . '.xlsx';
-                    $filePath = $folderPath . '/' . $fileName;
-
-                    // Crear carpeta si no existe
-                    Storage::disk('public')->makeDirectory($folderPath);
-
-                    // Guardar el archivo en storage/app/public/reporte/YYYY-MM/
-                    $writer = new Xlsx($spreadsheet);
-                    $writer->save(Storage::disk('public')->path($filePath));
-                    //Excel::store(new CampoConsumoExport($data), $filePath, 'public');
-                    $camposCampaniasConsumo[] = [
-                        'campos_campanias_id' => $this->campoCampania->id,
-                        'categoria_id' => $categoriaProducto->id,
-                        'monto' => $totalConsumido,
-                        'reporte_file' => $filePath
-                    ];
+                if (!$hoja) {
+                    throw new Exception("No se ha configurado un formato para el documento a exportar.");
                 }
-                CamposCampaniasConsumo::insert($camposCampaniasConsumo);
+
+                $table = $hoja->getTableByName('ConsumosTable');
+
+                if (!$table) {
+                    throw new Exception("La plantilla no tiene una tabla llamada ConsumosTable.");
+                }
+
+                $fila = ExcelHelper::primeraFila($table) + 1;
+
+                foreach ($datosFiltrados as $index => $dato) {
+
+                    $hoja->setCellValue("A{$fila}", $index + 1); // Índice (empieza en 1)
+                    $hoja->setCellValue("B{$fila}", mb_strtoupper($dato['tipo_kardex']));
+                    $hoja->setCellValue("C{$fila}", $this->campoCampania->nombre_campania);
+                    $hoja->setCellValue("D{$fila}", $dato['fecha']);
+                    $hoja->setCellValue("E{$fila}", $dato['campo']);
+                    $hoja->setCellValue("F{$fila}", mb_strtoupper($dato['producto']));
+                    $hoja->setCellValue("G{$fila}", mb_strtoupper($dato['categoria']));
+
+                    $hoja->setCellValue("H{$fila}", $dato['orden_compra']);
+                    $hoja->setCellValue("I{$fila}", $dato['tienda_comercial']);
+                    $hoja->setCellValue("J{$fila}", $dato['factura']);
+
+                    $hoja->setCellValue("K{$fila}", $dato['cantidad']);
+                    $hoja->setCellValue("L{$fila}", ($dato['cantidad'] != 0) ? "=M{$fila}/K{$fila}" : "0");
+                    $hoja->setCellValue("M{$fila}", $dato['total_costo']);
+
+                    $fila++; // Mover a la siguiente fila
+                }
+
+                $hoja->setCellValue("A{$fila}", 'TOTALES');
+                $hoja->setCellValue("K{$fila}", "=SUM(ConsumosTable[Cantidad])");
+                $hoja->setCellValue("L{$fila}", "=SUM(ConsumosTable[Costo Unitario])");
+                $hoja->setCellValue("M{$fila}", "=SUM(ConsumosTable[Total Costo])");
+
+                ExcelHelper::actualizarRangoTabla($table, $fila - 1);
+
+                $folderPath = 'consumo_reportes/' . date('Y-m');
+                $fileName = 'REPORTE_CONSUMO_' . Str::slug('REPORTE_CONSUMO_' . mb_strtoupper($this->campoCampania->nombre_campania) . '_' . mb_strtoupper($categoriaProducto) . '_' . $this->campoCampania->campo) . '.xlsx';
+                $filePath = $folderPath . '/' . $fileName;
+
+                // Crear carpeta si no existe
+                Storage::disk('public')->makeDirectory($folderPath);
+
+                // Guardar el archivo en storage/app/public/reporte/YYYY-MM/
+                $writer = new Xlsx($spreadsheet);
+                $writer->save(Storage::disk('public')->path($filePath));
+                //Excel::store(new CampoConsumoExport($data), $filePath, 'public');
+                $camposCampaniasConsumo[] = [
+                    'campos_campanias_id' => $this->campoCampania->id,
+                    'categoria' => $categoriaProducto,
+                    'monto' => $totalConsumido,
+                    'reporte_file' => $filePath
+                ];
             }
+            CamposCampaniasConsumo::insert($camposCampaniasConsumo);
         }
     }
     public function gastoPlanilla()

@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\Kardex;
 use App\Models\Maquinaria;
 use App\Models\Producto;
 use App\Services\AlmacenServicio;
@@ -22,28 +23,33 @@ class CompraProductoImportExportComponent extends Component
     public $productoId;
     public $fileNegroDesdeKardex;
     public $fileBlancoDesdeKardex;
-    public function mount($productoid)
+    public $kardexId;
+    public function mount($productoid,$kardexId=null)
     {
         $this->productoId = $productoid;
+        if($kardexId){
+            $this->$kardexId = $kardexId;
+        }
     }
+
     public function updatedFileNegroDesdeKardex()
     {
-        $this->procesarArchivo($this->fileNegroDesdeKardex, 'negro');
+        $this->procesarArchivo($this->fileNegroDesdeKardex, 'negro',$this->kardexId);
     }
 
     public function updatedFileBlancoDesdeKardex()
     {
-        $this->procesarArchivo($this->fileBlancoDesdeKardex, 'blanco');
+        $this->procesarArchivo($this->fileBlancoDesdeKardex, 'blanco',$this->kardexId);
     }
 
-    private function procesarArchivo($file, $tipo)
+    private function procesarArchivo($file, $tipo,$kardexId = null)
     {
         if ($file) {
 
             try {
 
                 $spreadsheet = IOFactory::load($file->getRealPath());
-                $response = $this->procesarKardexSheet($spreadsheet, $tipo);
+                $response = $this->procesarKardexSheet($spreadsheet, $tipo,$kardexId);
 
                 $this->fileDesdeKardex = null;
                 $filasAfectadasCompras = $response['filasAfectadasCompras'] ?? 0;
@@ -52,6 +58,7 @@ class CompraProductoImportExportComponent extends Component
                 $this->dispatch('actualizarCompraProductos', [
                     'compras' => $filasAfectadasCompras,
                     'almacen' => $filasAfectadasAlmacen
+                    
                 ]);
                 //$this->alert("success", "Registros Importados Correctamente, ($filasAfectadasCompras) compras y {$filasAfectadasAlmacen} registros de salida.");
 
@@ -66,7 +73,7 @@ class CompraProductoImportExportComponent extends Component
             }
         }
     }
-    protected function procesarKardexSheet($spreadsheet, $tipoKardex)
+    protected function procesarKardexSheet($spreadsheet, $tipoKardex,$kardexId = null)
     {
         $sheet = $spreadsheet->getSheet(0) ?? $spreadsheet->getActiveSheet();
 
@@ -78,6 +85,8 @@ class CompraProductoImportExportComponent extends Component
         $indiceInicio = 16;
         $indiceColumnaFecha = 0;
         $indiceColumnaTabla12 = 4;
+
+       
 
         if (!isset($rows[$indiceInicio])) {
             throw new Exception("El archivo no tiene el formato correcto, la información debe iniciar en la fila: " . ($indiceInicio + 1));
@@ -93,6 +102,36 @@ class CompraProductoImportExportComponent extends Component
             throw new Exception("El archivo no tiene el formato correcto, la celda E17 debe tener el codigo 16: SALDO INICIAL");
         }
 
+        if($kardexId){
+            $kardex = Kardex::find($kardexId);
+            if($kardex){
+                $fechaMinima = Carbon::parse($kardex->fecha_inicial);
+                $fechaMaxima = $kardex->fecha_final ? Carbon::parse($kardex->fecha_final) : null;
+
+                for ($x = $indiceInicio; $x < count($rows); $x++) {
+                    if ($x == $indiceInicio) {
+                        continue; // Saltar la primera fila si es cabecera
+                    }
+                
+                    $valorCeldaFecha = $sheet->getCell('A' . ($x + 1))->getValue();
+                    
+                    if (is_numeric($valorCeldaFecha)) {
+                        $fechaCurrent = Carbon::parse(Date::excelToDateTimeObject($valorCeldaFecha));
+                    } else {
+                        $fechaCurrent = Carbon::parse($valorCeldaFecha);
+                    }
+                
+                    if (!$fechaCurrent) {
+                        continue;
+                    }
+                
+                    // ⚠️ **Si alguna fecha está fuera del rango, lanzamos un error antes de procesar datos**
+                    if ($fechaCurrent->lessThan($fechaMinima) || ($fechaMaxima && $fechaCurrent->greaterThan($fechaMaxima))) {
+                        throw new Exception("Error: La fecha {$fechaCurrent->toDateString()} está fuera del rango permitido por este kardex: ({$fechaMinima->toDateString()} - " . ($fechaMaxima ? $fechaMaxima->toDateString() : "Sin límite") . ").");
+                    }
+                }
+            }
+        }
 
         $data = [];
         $dataAlmacen = [];

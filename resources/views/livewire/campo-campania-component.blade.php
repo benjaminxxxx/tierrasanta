@@ -20,130 +20,102 @@
                 </div>
                 @if ($campoSeleccionado)
                     <x-button @click="$wire.dispatch('registroCampania',{campoNombre:'{{ $campoSeleccionado }}'})">
-                        <i class="fa fa-plus"></i> Crear campaña
+                        <i class="fa fa-plus"></i> Registrar Nueva campaña
                     </x-button>
                 @endif
 
             </x-flex>
+            @if ($campania)
+                <x-flex class="w-full justify-between mt-5">
+                    <div class="flex items-center gap-4">
+                        <x-secondary-button type="button" wire:click="anteriorCampania"
+                            class="{{ $hayCampaniaAnterior ? '' : 'opacity-0 invisible' }}">
+                            <i class="fa fa-chevron-left"></i>
+                        </x-secondary-button>
+
+                        <x-h3>
+                            Campaña {{ $campania->nombre_campania }}
+                        </x-h3>
+
+                        <x-secondary-button type="button" wire:click="siguienteCampania"
+                            class="{{ $hayCampaniaPosterior ? '' : 'opacity-0 invisible' }}">
+                            <i class="fa fa-chevron-right"></i>
+                        </x-secondary-button>
+                    </div>
+                    <x-button type="button" @click="$wire.dispatch('editarCampania',{campaniaId:{{ $campania->id }}})">
+                        <i class="fa fa-edit"></i> Actualizar información
+                    </x-button>
+                </x-flex>
+            @endif
         </x-spacing>
     </x-card>
-    @if ($campanias)
-        <x-card class="mt-4">
+    @if ($campania)
+        <x-flex class="w-full justify-between my-5">
+            <x-h3>Información General</x-h3>
+            <x-secondary-button type="button" @click="$wire.dispatch('abrirCampaniaDetalle',{campaniaId:{{$campania->id}}})">
+                <i class="fa fa-list mr-2"></i> Ver Detalle Completo
+            </x-secondary-button>
+        </x-flex>
+        <x-card>
+
             <x-spacing>
-                @if ($campanias->count() > 0)
-                    <ol class="relative border-s border-gray-200 dark:border-gray-700">
-                        @foreach ($campanias as $campania)
-                            <li class="mb-10 ms-6">
-                                <span
-                                    class="absolute flex items-center justify-center w-6 h-6 bg-blue-100 rounded-full -start-3 ring-8 ring-white dark:ring-gray-900 dark:bg-blue-900">
-                                    <i class="fas fa-calendar-minus"></i>
-                                </span>
-                                <div class="md:flex justify-between">
-                                    <div>
-                                        <h3
-                                            class="flex items-center mb-1 text-lg font-semibold text-gray-900 dark:text-white">
-                                            Campaña {{ $campania->nombre_campania }}
-                                        </h3>
-                                        <time
-                                            class="block mb-2 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">Vigencia
-                                            desde {{ $campania->fecha_vigencia }}</time>
-                                        <ul class="text-base font-normal text-gray-500 dark:text-gray-400 my-3">
-                                            <li>FECHA DE INICIO: {{ $campania->fecha_inicio }}</li>
-                                            <li>FECHA DE FINALIZACIÓN: {{ $campania->fecha_fin }}</li>
-                                        </ul>
-                                        <div>
-                                            <x-table>
-                                                <x-slot name="thead">
-                                                    <x-tr>
-                                                        <x-th class="text-center">N°</x-th>
-                                                        <x-th>Descripción</x-th>
-                                                        <x-th class="text-center">Monto total</x-th>
-                                                        <x-th class="text-center">Reporte Generado</x-th>
-                                                    </x-tr>
-                                                </x-slot>
-                                                <x-slot name="tbody">
-                                                    <x-tr>
-                                                        <x-td class="text-center">1</x-td>
-                                                        <x-td>GASTO PLANILLA</x-td>
-                                                        <x-td class="text-right">{{ $campania->gasto_planilla }}</x-td>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-2 items-center">
+                            <div class="font-medium text-gray-700">Lote:</div>
+                            <div>{{ $campania->campo }}</div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 items-center">
+                            <div class="font-medium text-gray-700">Variedad de tuna:</div>
+                            <div>{{ $campania->variedad_tuna }}</div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 items-center">
+                            <div class="font-medium text-gray-700">Campaña:</div>
+                            <div>{{ $campania->nombre_campania }}</div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 items-center">
+                            <div class="font-medium text-gray-700">Área:</div>
+                            <div>{{ $campania->campo_model->area }}</div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 items-center">
+                            <div class="font-medium text-gray-700">Sistema de cultivo:</div>
+                            <div>{{ $campania->sistema_cultivo }}</div>
+                        </div>
+                    </div>
 
-                                                        <x-td class="text-center">
-                                                            @if ($campania->gasto_planilla_file)
-                                                                <x-button-a
-                                                                    href="{{ Storage::disk('public')->url($campania->gasto_planilla_file) }}">
-                                                                    <i class="fa fa-file-excel"></i> Ver informe
-                                                                </x-button-a>
-                                                            @else
-                                                                <p>-</p>
-                                                            @endif
-                                                        </x-td>
-                                                    </x-tr>
-                                                    <x-tr>
-                                                        <x-td class="text-center">2</x-td>
-                                                        <x-td>GASTO CUADRILLA</x-td>
-                                                        <x-td class="text-right">{{ $campania->gasto_cuadrilla }}</x-td>
-                                                        <x-td class="text-center">
-                                                            @if ($campania->gasto_cuadrilla_file)
-                                                                <x-button-a
-                                                                    href="{{ Storage::disk('public')->url($campania->gasto_cuadrilla_file) }}">
-                                                                    <i class="fa fa-file-excel"></i> Ver informe
-                                                                </x-button-a>
-                                                            @else
-                                                                <p>-</p>
-                                                            @endif
-                                                        </x-td>
-                                                    </x-tr>
-                                                    @foreach ($campania->listaConsumo as $indice => $consumo)
-                                                        <x-tr>
-                                                            <x-td class="text-center">{{ $indice + 3 }}</x-td>
-                                                            <x-td>CONSUMO DE
-                                                                {{ mb_strtoupper($consumo['categoria']) }}</x-td>
-                                                            <x-td class="text-right">{{ $consumo['monto'] }}</x-td>
-                                                            <x-td class="text-center">
-                                                                @if ($consumo['reporte_file'])
-                                                                    <x-button-a
-                                                                        href="{{ Storage::disk('public')->url($consumo['reporte_file']) }}">
-                                                                        <i class="fa fa-file-excel"></i> Ver informe
-                                                                    </x-button-a>
-                                                                @else
-                                                                    <p>-</p>
-                                                                @endif
-                                                            </x-td>
-                                                        </x-tr>
-                                                    @endforeach
-                                                </x-slot>
-                                            </x-table>
-                                        </div>
-
-                                        <x-flex class="mt-4">
-                                            <x-button type="button"
-                                                wire:click="actualizarGastosConsumo({{ $campania->id }})">
-                                                <i class="fa fa-refresh"></i> Actualizar Gastos y Consumos
-                                            </x-button>
-                                            @if ($campania->gasto_resumen_bdd_file)
-                                                <x-button-a
-                                                    href="{{ Storage::disk('public')->url($campania->gasto_resumen_bdd_file) }}">
-                                                    <i class="fa fa-file-excel"></i> Descargar Resumen de Camapaña
-                                                </x-button-a>
-                                            @endif
-                                        </x-flex>
-
-                                    </div>
-                                    <div class="mt-3 md:mt-0">
-                                        <x-danger-button wire:click="eliminarCampania({{ $campania->id }})">
-                                            <i class="fa fa-remove"></i> Eliminar Campaña
-                                        </x-danger-button>
-                                    </div>
-                                </div>
-                            </li>
-                        @endforeach
-                    </ol>
-                @else
-                    <x-warning>
-                        <p>No hay ninguna campaña registrada para este campo.</p>
-                    </x-warning>
-                @endif
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-2 items-center">
+                            <div class="font-medium text-gray-700">Pencas x Hectárea:</div>
+                            <div>{{ $campania->pencas_x_hectarea }}</div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 items-center">
+                            <div class="font-medium text-gray-700">T.C.:</div>
+                            <div>{{ $campania->tipo_cambio }}</div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 items-center">
+                            <div class="font-medium text-gray-700">Fecha de siembra:</div>
+                            <div>{{ $campania->fecha_siembra }}</div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 items-center">
+                            <div class="font-medium text-gray-700">Fecha de inicio de Campaña:</div>
+                            <div>{{ $campania->fecha_inicio }}</div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 items-center">
+                            <div class="font-medium text-gray-700">Fin de Campaña:</div>
+                            <div>{{ $campania->fecha_fin }}</div>
+                        </div>
+                    </div>
+                </div>
             </x-spacing>
         </x-card>
+
+        <!--
+        Se Necesita agregar el camponente reporte-campo-poblacion-planta-form-component para poder agregar, editar campaña
+        -->
+        @livewire('poblacion-plantas-por-campania-component', ['campaniaId' => $campania->id], key($campania->id))
+
+        
+        @livewire('evaluacion-brotes-x-piso-por-campania-component', ['campaniaId' => $campania->id],key($campania->id))
+        
     @endif
 </div>

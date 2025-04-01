@@ -18,6 +18,7 @@ return new class extends Migration
             $table->integer('dias_laborables')->nullable();
             $table->integer('total_horas')->nullable();
             $table->integer('total_empleados')->nullable();
+            $table->decimal('factor_remuneracion_basica', 15, 12)->nullable();
 
             $table->timestamps();
         });

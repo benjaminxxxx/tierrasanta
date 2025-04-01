@@ -12,12 +12,10 @@ class Siembra extends Model
     protected $table = 'siembras';
 
     protected $fillable = [
-        'campo_nombre',     // Relación con el campo
+        'campo_nombre',
         'fecha_siembra',    
-        'fecha_renovacion', // Fecha en la que se limpia el campo para resembrar
-        'variedad_tuna',
-        'sistema_cultivo',
-        'tipo_cambio',
+        'fecha_renovacion',
+        
     ];
 
     public function campo()
