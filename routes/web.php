@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\AlmacenController;
+use App\Http\Controllers\CampaniaController;
 use App\Http\Controllers\CampoController;
+use App\Http\Controllers\CochinillaController;
 use App\Http\Controllers\FdmController;
 use App\Http\Controllers\KardexController;
 use App\Http\Controllers\MaquinariaController;
@@ -74,7 +76,10 @@ Route::middleware([
         return view('cuadrilla.asistencia');
     })->name('cuadrilla.asistencia');
 
+    //CAMPAÑAS
+    Route::get('/campanias', [CampaniaController::class,'campanias'])->name('campanias');
     Route::get('/campo/camapania/{campo?}', [CampoController::class,'campania'])->name('campo.campania');
+
     Route::get('/campo/mapa', [CampoController::class,'mapa'])->name('campo.mapa');
     Route::get('/campo/riego', [CampoController::class,'riego'])->name('campo.riego');
     Route::get('/campo/campos', [CampoController::class,'campos'])->name('campo.campos');
@@ -132,5 +137,10 @@ Route::middleware([
 
     //REPORTE CAMPO
     Route::get('/reporte_campo/poblacion_planta', [ReporteCampoController::class,'poblacion_plantas'])->name('reporte_campo.poblacion_plantas');
+
+    //COCHINILLA
+    Route::get('/cohinilla/ingreso', [CochinillaController::class,'ingreso'])->name('cochinilla.ingreso');
+    Route::get('/cohinilla/venteado', [CochinillaController::class,'venteado'])->name('cochinilla.venteado');
+    Route::get('/cohinilla/filtrado', [CochinillaController::class,'filtrado'])->name('cochinilla.filtrado');
     
 });

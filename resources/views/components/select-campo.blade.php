@@ -9,18 +9,11 @@
 
 <x-group-field>
     
-    <x-label>
-        {{ $label }}
-    </x-label>
-    <x-select {{ $attributes->merge(['class' => 'form-select']) }}>
+    <x-select label="{{$label}}" error="{{$model}}" {{ $attributes->merge(['class' => 'form-select']) }}>
         <option value="">{{ $placeholder }}</option>
         @foreach ($campos as $campo)
             <option value="{{ $campo->nombre }}">{{ $campo->nombre }}</option>
         @endforeach
     </x-select>
-
-    @if ($error && $model)
-        <x-input-error for="{{ $model }}" />
-    @endif
     
 </x-group-field>

@@ -8,10 +8,7 @@
         <x-spacing>
             <x-flex class="!items-end">
                 <div>
-                    <x-label class="mb-2">
-                        Seleccionar el Campo
-                    </x-label>
-                    <x-select wire:model.live="campoSeleccionado">
+                    <x-select wire:model.live="campoSeleccionado" label="Seleccionar el Campo">
                         <option value="">Seleccione un Campo</option>
                         @foreach ($campos as $campo)
                             <option value="{{ $campo->nombre }}">{{ $campo->nombre }}</option>
@@ -19,9 +16,11 @@
                     </x-select>
                 </div>
                 @if ($campoSeleccionado)
-                    <x-button @click="$wire.dispatch('registroCampania',{campoNombre:'{{ $campoSeleccionado }}'})">
-                        <i class="fa fa-plus"></i> Registrar Nueva campaña
-                    </x-button>
+                    <div class="mb-2">
+                        <x-button @click="$wire.dispatch('registroCampania',{campoNombre:'{{ $campoSeleccionado }}'})">
+                            <i class="fa fa-plus"></i> Registrar nueva campaña
+                        </x-button>
+                    </div>
                 @endif
 
             </x-flex>

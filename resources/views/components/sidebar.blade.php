@@ -84,7 +84,7 @@
                             
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorCampo" href="#" :active="request()->routeIs(['campo.mapa','campo.riego','campo.campos','campo.campania','campo.siembra'])">
+                    <x-nav-link-parent name="sectorCampo" href="#" :active="request()->routeIs(['campo.mapa','campo.riego','campo.campos','campo.siembra'])">
                         
                         <div class="w-6 text-center">
                             <i class="fa fa-leaf"></i>
@@ -100,19 +100,49 @@
                             <x-nav-link-child href="{{ route('campo.campos') }}" :active="request()->routeIs('campo.campos')">
                                 Campos
                             </x-nav-link-child>
-                            <x-nav-link-child href="{{ route('campo.campania') }}" :active="request()->routeIs('campo.campania')">
-                                Campañas
-                            </x-nav-link-child>
                             <x-nav-link-child href="{{ route('campo.siembra') }}" :active="request()->routeIs('campo.siembra')">
                                 Siembras
                             </x-nav-link-child>
                             
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorReporteCampo" href="#" :active="request()->routeIs(['reporte_campo.poblacion_plantas'])">
+                    <x-nav-link-parent name="sectorCampanias" href="#" :active="request()->routeIs(['campo.campania','campanias'])">
+                        
+                        <div class="w-6 text-center">
+                            <i class="fa fa-flag"></i>
+                        </div>
+                        Campañas
+                        <x-slot name="children">
+                            <x-nav-link-child href="{{ route('campanias') }}" :active="request()->routeIs('campanias')">
+                                Todas las campañas
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('campo.campania') }}" :active="request()->routeIs('campo.campania')">
+                                Campañas por campo
+                            </x-nav-link-child>                            
+                        </x-slot>
+                    </x-nav-link-parent>
+                    <x-nav-link-parent name="sectorCochinilla" href="#" :active="request()->routeIs(['cochinilla.ingreso','cochinilla.venteado','cochinilla.filtrado'])">
                         
                         <div class="w-6 text-center">
                             <i class="fa fa-bug"></i>
+                        </div>
+                        Cochinilla
+                        <x-slot name="children">
+                            <x-nav-link-child href="{{ route('cochinilla.ingreso') }}" :active="request()->routeIs('cochinilla.ingreso')">
+                                Ingreso
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('cochinilla.venteado') }}" :active="request()->routeIs('cochinilla.venteado')">
+                                Venteado
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('cochinilla.filtrado') }}" :active="request()->routeIs('cochinilla.filtrado')">
+                                Filtrado
+                            </x-nav-link-child>
+                        </x-slot>
+                    </x-nav-link-parent>
+                    <x-nav-link-parent name="sectorReporteCampo" href="#" :active="request()->routeIs(['reporte_campo.poblacion_plantas'])">
+                        
+                        <div class="w-6 text-center">
+                            <i class="fa fa-file"></i>
                         </div>
                         Reporte de Campo
                         <x-slot name="children">

@@ -17,8 +17,7 @@
                     placeholder="Todos los campos" class="w-full" />
 
                 <x-group-field>
-                    <x-label value="Filtrar por año" />
-                    <x-select wire:model.live="filtroAnio">
+                    <x-select label="Filtrar por año" wire:model.live="filtroAnio">
                         <option value="">Todos los años</option>
                         @foreach ($aniosDisponibles as $anio)
                             <option value="{{ $anio }}">{{ $anio }}</option>

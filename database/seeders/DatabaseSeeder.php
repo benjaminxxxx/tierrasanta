@@ -21,6 +21,6 @@ class DatabaseSeeder extends Seeder
         $this->call(CargosSeeder::class);
         $this->call(GrupoSeeder::class);
         $this->call(GruposCuadrillaSeeder::class);
-        
+        $this->call(CochinillaObservacionSeeder::class);
     }
 }

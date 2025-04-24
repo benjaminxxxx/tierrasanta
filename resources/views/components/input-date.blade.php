@@ -18,7 +18,7 @@
             </x-label>
         @endif
 
-        <x-input type="text" x-ref="myDatepicker" x-model="value" />
+        <x-input type="date" x-ref="myDatepicker" x-model="value" />
 
         @if ($descripcion)
             <small>{{ $descripcion }}</small>

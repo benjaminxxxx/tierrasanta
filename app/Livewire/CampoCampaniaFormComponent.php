@@ -19,16 +19,20 @@ class CampoCampaniaFormComponent extends Component
     public $errorMensaje = [];
     public $ultimaCampania;
     protected $listeners = ['registroCampania', 'editarCampania'];
-    public function registroCampania($campoNombre)
+    public function registroCampania($campoNombre = null)
     {
         $this->resetForm();
-        $campo = Campo::find($campoNombre);
-        if ($campo) {
-            $this->ultimaCampania = $campo->CampaniaActual;
+        if ($campoNombre) {
+            $campo = Campo::find($campoNombre);
+            if ($campo) {
+                $this->ultimaCampania = $campo->CampaniaActual;
+
+                $this->campoSeleccionado = $campoNombre;
+            }
         }
 
+
         $this->mostrarFormulario = true;
-        $this->campoSeleccionado = $campoNombre;
     }
     public function editarCampania($campaniaId)
     {
@@ -56,6 +60,7 @@ class CampoCampaniaFormComponent extends Component
     public function store()
     {
         $this->validate([
+            'campoSeleccionado' => 'required',
             'nombre_campania' => 'required|string',
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
@@ -63,6 +68,7 @@ class CampoCampaniaFormComponent extends Component
             'sistema_cultivo' => 'nullable|string|max:255',
             'tipo_cambio' => 'nullable|numeric|between:0,99999999.99',
         ], [
+            'campoSeleccionado.required' => 'El campo es obligatorio.',
             'nombre_campania.required' => 'El nombre de la campaña es obligatorio.',
             'fecha_inicio.required' => 'La fecha de inicio es obligatoria.',
             'fecha_inicio.date' => 'La fecha de inicio no tiene un formato válido.',
@@ -73,26 +79,26 @@ class CampoCampaniaFormComponent extends Component
             'tipo_cambio.numeric' => 'El tipo de cambio debe ser un número.',
             'tipo_cambio.between' => 'El tipo de cambio debe estar entre 0 y 99,999,999.99.',
         ]);
-    
+
         try {
             // Buscar campañas anteriores y posteriores
             $campaniaAnterior = CampoCampania::where('campo', $this->campoSeleccionado)
                 ->whereDate('fecha_inicio', '<', $this->fecha_inicio)
                 ->orderByDesc('fecha_inicio')
                 ->first();
-    
+
             $campaniaPosterior = CampoCampania::where('campo', $this->campoSeleccionado)
                 ->whereDate('fecha_inicio', '>', $this->fecha_inicio)
                 ->orderBy('fecha_inicio')
                 ->first();
-    
+
             // Si hay una campaña anterior, actualizar su fecha_fin
             if ($campaniaAnterior) {
                 $campaniaAnterior->update([
                     'fecha_fin' => Carbon::parse($this->fecha_inicio)->subDay(),
                 ]);
             }
-    
+
             // Preparar datos
             $data = [
                 'nombre_campania' => mb_strtoupper($this->nombre_campania),
@@ -104,17 +110,17 @@ class CampoCampaniaFormComponent extends Component
                 'pencas_x_hectarea' => $this->pencas_x_hectarea,
             ];
 
-            if($this->campoSeleccionado){
+            if ($this->campoSeleccionado) {
                 $data['campo'] = $this->campoSeleccionado;
             }
-    
+
             // Si hay una campaña posterior, definir fecha_fin para la actual
             if ($campaniaPosterior) {
                 $data['fecha_fin'] = Carbon::parse($campaniaPosterior->fecha_inicio)->subDay();
             } else {
                 $data['fecha_fin'] = $this->fecha_fin; // Usa la fecha ingresada si no hay otra posterior
             }
-    
+
             // Si existe una campaña con la misma fecha, actualizarla en lugar de crearla
             if ($this->campaniaId) {
                 $campoCampania = CampoCampania::findOrFail($this->campaniaId);
@@ -125,28 +131,28 @@ class CampoCampaniaFormComponent extends Component
                 $existeCampania = CampoCampania::where('campo', $this->campoSeleccionado)
                     ->whereDate('fecha_inicio', $this->fecha_inicio)
                     ->first();
-    
+
                 if ($existeCampania) {
                     return $this->alert('error', "Ya existe una campaña para el campo {$this->campoSeleccionado} en la fecha {$existeCampania->fecha_inicio} llamada {$existeCampania->nombre_campania}.");
                 }
-    
+
                 CampoCampania::create($data);
                 $mensaje = 'La campaña fue registrada correctamente.';
             }
-    
+
             // Mostrar mensaje de éxito
             $this->alert('success', $mensaje);
             $this->resetForm();
             $this->mostrarFormulario = false;
             $this->dispatch('campaniaInsertada');
-    
+
         } catch (\Throwable $th) {
             // Captura errores y muestra mensaje
             $this->alert('error', 'Ocurrió un error inesperado #ccfc1.');
             $this->dispatch('log', $th->getMessage());
         }
     }
-    
+
     public function render()
     {
         return view('livewire.campo-campania-form-component');

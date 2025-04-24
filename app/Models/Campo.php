@@ -8,9 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Campo extends Model
 {
-    use HasFactory;
     protected $table = 'campos';
-
     protected $primaryKey = 'nombre';  // Define 'nombre' como la clave primaria
     public $incrementing = false;       // Desactiva el auto-incremento ya que 'nombre' es un string
     protected $keyType = 'string';      // Define el tipo de clave primaria como string

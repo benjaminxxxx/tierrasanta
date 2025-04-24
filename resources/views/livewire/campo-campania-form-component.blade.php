@@ -22,14 +22,15 @@
                 @endif
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-             
-                <x-input-date wire:model="fecha_inicio" label="Fecha de Inicio" />
-                <x-input-string wire:model="nombre_campania" label="Nombre de la Campaña" />
-                <x-input-string wire:model="variedad_tuna" label="Variedad de Tuna" />
-                <x-input-string wire:model="sistema_cultivo" label="Sistema de Cultivo" />
-                <x-input-number wire:model="pencas_x_hectarea" label="Pencas por Hectárea" />
-                <x-input-number wire:model="tipo_cambio" label="Tipo de Cambio" />
-                <x-input-date wire:model="fecha_fin" label="Fecha de cierre" descripcion="Este campo se calcula de forma automática al crear la siguiente campaña." />
+                
+                <x-select-campo wire:model="campoSeleccionado" error="campoSeleccionado" label="Campo" />
+                <x-input-date wire:model="fecha_inicio" error="fecha_inicio" label="Fecha de Inicio" />
+                <x-input-string wire:model="nombre_campania" error="nombre_campania" label="Nombre de la Campaña" />
+                <x-input-string wire:model="variedad_tuna" error="variedad_tuna" label="Variedad de Tuna" />
+                <x-input-string wire:model="sistema_cultivo" error="sistema_cultivo" label="Sistema de Cultivo" />
+                <x-input-number wire:model="pencas_x_hectarea" error="pencas_x_hectarea" label="Pencas por Hectárea" />
+                <x-input-number wire:model="tipo_cambio" error="tipo_cambio" label="Tipo de Cambio" />
+                <x-input-date wire:model="fecha_fin" error="fecha_fin" label="Fecha de cierre" descripcion="Este campo se calcula de forma automática al crear la siguiente campaña." />
 
             </div>
             <div>

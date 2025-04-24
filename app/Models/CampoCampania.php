@@ -94,4 +94,11 @@ class CampoCampania extends Model
             ->latest('fecha_siembra') // Obtiene la siembra más reciente antes de fecha_inicio
             ->value('fecha_siembra') ?? null; // Devuelve solo la fecha o una cadena vacía si no hay resultados
     }
+    public static function masProximaAntesDe($fecha,$campo)
+    {
+        return self::where('fecha_inicio', '<=', $fecha)
+            ->where('campo', $campo)
+            ->orderByDesc('fecha_inicio')
+            ->first();
+    }
 }
