@@ -25,9 +25,7 @@ class CochinillaIngresoFormComponent extends Component
     public $area;
     public $observaciones;
     public $kg_total;
-
     public $detalleModal = false;
-
     public $campania;
     public $campos = [];
     public $fechaSiembra;

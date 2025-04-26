@@ -107,18 +107,21 @@
                             data: 'sublote_codigo',
                             className: '!text-center !bg-gray-100',
                             readOnly: true,
+                            title: 'Sublote'
                         },
                         {
                             data: 'fecha',
                             type: 'date',
                             className: '!text-center',
-                            width: '50'
+                            width: '50',
+                            title: 'Fecha'
                         },
                         {
                             data: 'total_kilos',
                             type: 'numeric',
                             className: '!text-center',
-                            width: '40'
+                            width: '40',
+                            title: 'Kilos recogidos',
                         },
                         {
                             data: 'observacion',
@@ -128,6 +131,7 @@
                             source: this.observacionesOptions,
                             strict: true,
                             allowInvalid: false,
+                            title: 'Observación'
                         }
                     ],
 

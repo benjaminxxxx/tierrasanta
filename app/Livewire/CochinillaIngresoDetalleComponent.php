@@ -39,6 +39,7 @@ class CochinillaIngresoDetalleComponent extends Component
 
             $indice = 0;
             $data = [];
+            $ultimaFecha = null;
 
             foreach ($datos as $value) {
                 // Validar campos requeridos
@@ -53,7 +54,7 @@ class CochinillaIngresoDetalleComponent extends Component
 
                 $indice++;
                 $subloteCodigo = $this->cochinillaIngreso->lote . '.' . $indice;
-
+                $ultimaFecha = $fecha;
                 $data[] = [
                     "cochinilla_ingreso_id" => $this->cochinillaIngreso->id,
                     "sublote_codigo" => $subloteCodigo,
@@ -63,15 +64,14 @@ class CochinillaIngresoDetalleComponent extends Component
                 ];
             }
 
-            // Insertar nuevos detalles
             CochinillaIngresoDetalle::insert($data);
 
-            // Actualizar total_kilos del ingreso (reconsultando los detalles)
             $total = CochinillaIngresoDetalle::where('cochinilla_ingreso_id', $this->cochinillaIngreso->id)
                 ->sum('total_kilos');
 
             $this->cochinillaIngreso->update([
-                'total_kilos' => $total
+                'total_kilos' => $total,
+                'fecha'=> $ultimaFecha,
             ]);
 
             $this->alert('success','Registro exitoso');
