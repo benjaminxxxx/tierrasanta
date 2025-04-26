@@ -215,8 +215,14 @@ class CochinillaIngreso extends Model
     }
     public function getPorcentajeDiferenciaFiltradoAttribute()
     {
-        return $this->diferencia_filtrado / $this->total_kilos * 100;
+        if ($this->total_kilos == 0) {
+            return 0; // o null, o cualquier valor que tenga sentido en tu caso
+        }
+
+        return ($this->diferencia_filtrado / $this->total_kilos) * 100;
     }
+
+
     #endregion
 
 }

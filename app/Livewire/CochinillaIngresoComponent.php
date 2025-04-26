@@ -28,16 +28,17 @@ class CochinillaIngresoComponent extends Component
     public $observaciones = [];
     protected $listeners = [
         'cochinillaIngresado',
-        'detalleIngresoAgregado'=>'$refresh',
-        "venteadoAgregado"=> '$refresh',
-        "filtradoAgregado"=> '$refresh'
+        'detalleIngresoAgregado' => '$refresh',
+        "venteadoAgregado" => '$refresh',
+        "filtradoAgregado" => '$refresh'
     ];
     public function mount()
     {
         $this->observaciones = CochinillaObservacion::all();
     }
-   
-    public function cochinillaIngresado(){
+
+    public function cochinillaIngresado()
+    {
         $this->resetPage();
     }
     public function updatedCampoSeleccionado()
@@ -90,18 +91,30 @@ class CochinillaIngresoComponent extends Component
         $this->seleccionarTodo = false;
         $this->alert('success', 'Datos sincronizados correctamente.');
     }
+    public function eliminarIngreso($ingresoId)
+    {
+        $ingreso = CochinillaIngreso::find($ingresoId);
+        if ($ingreso) {
+            $ingreso->venteados()->delete();
+            $ingreso->filtrados()->delete();
+            $ingreso->delete();
+            $this->alert('success', 'Ingreso eliminado correctamente.');
+        } else {
+            $this->alert('error', 'Ingreso no encontrado.');
+        }
 
+    }
     public function render()
     {
-        $query = CochinillaIngreso::with(['detalles', 'campoCampania', 'detalles.observacionRelacionada', 'venteados','filtrados']);
+        $query = CochinillaIngreso::with(['detalles', 'campoCampania', 'detalles.observacionRelacionada', 'venteados', 'filtrados']);
         if ($this->lote) {
             $query->where('lote', $this->lote);
         }
-        if($this->filtroVenteado){
+        if ($this->filtroVenteado) {
             if ($this->filtroVenteado == 'conventeado') {
                 $query->whereHas('venteados');
             }
-    
+
             if ($this->filtroVenteado == 'sinventeado') {
                 $query->whereDoesntHave('venteados');
             }

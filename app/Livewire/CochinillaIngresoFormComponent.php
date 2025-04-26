@@ -137,7 +137,7 @@ class CochinillaIngresoFormComponent extends Component
                 'area' => $this->area,
                 'campo_campania_id' => $this->campania->id,
                 'observacion' => $this->observacionSeleccionada,
-                'total_kilos' => $this->kg_total
+                'total_kilos' => (float) $this->kg_total
             ];
 
             $ingreso = CochinillaIngreso::updateOrCreate(
