@@ -21,7 +21,7 @@ class CochinillaIngresoDetalleComponent extends Component
     protected $listeners = ["agregarDetalle", "storeTableDataCochinillaIngreso"];
     public function mount()
     {
-        $this->idTable = Str::random(10);
+        $this->idTable = 'table_' . Str::random(10);
         $this->observaciones = CochinillaObservacion::get()->pluck('codigo')->toArray();
 
     }

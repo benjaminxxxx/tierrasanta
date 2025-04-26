@@ -19,7 +19,8 @@ class CochinillaFiltradoFormComponent extends Component
     protected $listeners = ["agregarFiltrado", "storeTableDataCochinillaIngresoFiltrado"];
     public function mount()
     {
-        $this->idTable = Str::random(10);
+        $this->idTable = 'table_' . Str::random(10);
+
     }
     public function storeTableDataCochinillaIngresoFiltrado($datos){
         

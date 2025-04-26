@@ -19,7 +19,7 @@ class CochinillaVenteadoFormComponent extends Component
     protected $listeners = ["agregarVenteado", "storeTableDataCochinillaIngresoVenteado"];
     public function mount()
     {
-        $this->idTable = Str::random(10);
+        $this->idTable = 'table_' . Str::random(10);
     }
     public function storeTableDataCochinillaIngresoVenteado($datos){
       
