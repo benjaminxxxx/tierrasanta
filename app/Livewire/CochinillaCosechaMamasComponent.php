@@ -81,28 +81,37 @@ class CochinillaCosechaMamasComponent extends Component
         foreach ($ingresosPaginados as $ingreso) {
             if ($ingreso->detallesMama->isNotEmpty()) {
                 foreach ($ingreso->detallesMama as $detalle) {
+                    $kg_ha = ($ingreso->area && $ingreso->area != 0) 
+                        ? $detalle->total_kilos / $ingreso->area 
+                        : null;
+        
                     $cosechasMama->push((object) [
                         'fecha' => $detalle->fecha,
                         'campo' => $ingreso->campo,
                         'area' => $ingreso->area,
                         'campania' => $ingreso->campoCampania?->nombre_campania,
                         'kg' => $detalle->total_kilos,
-                        'kg_ha' => $detalle->total_kilos / $ingreso->area,
+                        'kg_ha' => $kg_ha,
                         'observacion' => $detalle->observacionRelacionada?->descripcion,
                     ]);
                 }
             } elseif ($ingreso->observacionRelacionada?->es_cosecha_mama) {
+                $kg_ha = ($ingreso->area && $ingreso->area != 0) 
+                    ? $ingreso->total_kilos / $ingreso->area 
+                    : null;
+        
                 $cosechasMama->push((object) [
                     'fecha' => $ingreso->fecha,
                     'campo' => $ingreso->campo,
                     'area' => $ingreso->area,
                     'campania' => $ingreso->campoCampania?->nombre_campania,
                     'kg' => $ingreso->total_kilos,
-                    'kg_ha' => $ingreso->total_kilos / $ingreso->area,
+                    'kg_ha' => $kg_ha,
                     'observacion' => $ingreso->observacionRelacionada?->descripcion,
                 ]);
             }
         }
+        
 
         return view('livewire.cochinilla-cosecha-mamas-component', [
             'cosechasMama' => $cosechasMama->sortByDesc('fecha')->values(),
