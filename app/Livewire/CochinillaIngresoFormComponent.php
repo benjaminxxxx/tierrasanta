@@ -95,11 +95,12 @@ class CochinillaIngresoFormComponent extends Component
     }
     public function updatedCampoSeleccionado($valorNuevoCampo)
     {
-
         $campo = Campo::where('nombre', $valorNuevoCampo)->first();
 
         if ($campo) {
             $this->area = $campo->area;
+        }else{
+            $this->area = null;
         }
         $this->buscarSiembra();
         $this->loadCampanias();

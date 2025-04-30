@@ -2,8 +2,10 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Carbon;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Chart\Chart;
 use PhpOffice\PhpSpreadsheet\Chart\DataSeries;
@@ -118,6 +120,20 @@ class ExcelHelper
             throw new Exception("Error al actualizar el rango de la tabla: " . $e->getMessage());
         }
     }
+    public static function parseFecha($valor, $fila)
+    {
+        if (empty($valor))
+            return null;
 
+        try {
+            if (is_numeric($valor)) {
+                return Carbon::instance(ExcelDate::excelToDateTimeObject($valor))->format('Y-m-d');
+            }
+
+            return Carbon::parse(str_replace(['.', '/', '\\'], '-', $valor))->format('Y-m-d');
+        } catch (Exception $e) {
+            throw new Exception("Error al interpretar la fecha '{$valor}' en la fila #{$fila}: " . $e->getMessage());
+        }
+    }
 
 }

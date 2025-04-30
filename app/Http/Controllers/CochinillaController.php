@@ -15,4 +15,10 @@ class CochinillaController extends Controller
     public function filtrado(){
         return view("cochinilla.filtrado");
     }
+    public function cosecha_mamas(){
+        return view("cochinilla.cosecha_mamas");
+    }
+    public function infestacion(){
+        return view("cochinilla.infestacion");
+    }
 }

@@ -26,4 +26,10 @@ class CochinillaObservacion extends Model
     {
         return $this->hasMany(CochinillaIngresoDetalle::class, 'observacion', 'codigo');
     }
+    // Dentro de la clase CochinillaObservacion
+    public function scopeCosechasMama($query)
+    {
+        return $query->where('es_cosecha_mama', true);
+    }
+
 }

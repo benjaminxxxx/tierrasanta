@@ -74,6 +74,13 @@ class CochinillaIngreso extends Model
     {
         return $this->belongsTo(CampoCampania::class);
     }
+    public function detallesMama()
+    {
+        return $this->hasMany(CochinillaIngresoDetalle::class)
+            ->whereHas('observacionRelacionada', function ($q) {
+                $q->where('es_cosecha_mama', true);
+            });
+    }
     #endregion
 
     #region SCOPES

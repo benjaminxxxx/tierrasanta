@@ -71,7 +71,7 @@ class CochinillaIngresoComponent extends Component
 
                 //ACTUALIZAR LA CAMPAÑA
                 $campania = CampoCampania::where("campo", $campo)
-                    ->whereDate('fecha_inicio', '<', $fecha)
+                    ->whereDate('fecha_inicio', '<=', $fecha)
                     ->orderBy('fecha_inicio', 'desc')
                     ->first();
 

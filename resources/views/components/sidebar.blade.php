@@ -121,7 +121,7 @@
                             </x-nav-link-child>                            
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorCochinilla" href="#" :active="request()->routeIs(['cochinilla.ingreso','cochinilla.venteado','cochinilla.filtrado'])">
+                    <x-nav-link-parent name="sectorCochinilla" href="#" :active="request()->routeIs(['cochinilla.ingreso','cochinilla.venteado','cochinilla.filtrado','cochinilla.cosecha_mamas','cochinilla.infestacion'])">
                         
                         <div class="w-6 text-center">
                             <i class="fa fa-bug"></i>
@@ -136,6 +136,12 @@
                             </x-nav-link-child>
                             <x-nav-link-child href="{{ route('cochinilla.filtrado') }}" :active="request()->routeIs('cochinilla.filtrado')">
                                 Filtrado
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('cochinilla.cosecha_mamas') }}" :active="request()->routeIs('cochinilla.cosecha_mamas')">
+                                Cosecha Mamas
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('cochinilla.infestacion') }}" :active="request()->routeIs('cochinilla.infestacion')">
+                                Infestación
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>

@@ -49,6 +49,11 @@ class CochinillaFiltradoSeeder extends Seeder
             foreach ($data as $index => $fila) {
                 $fila_numero = $index + 2; // fila real en Excel
 
+                if ($fila_numero<1573) {
+                    //los valores en adelante recien seran registrados
+                    continue;
+                }
+                //dd($fila_numero,$fila);
                 $lote = (int) $fila['lote'];
                 $es_ultima_fila_lote = false;
                 $es_unica_fila_lote = false;
@@ -122,7 +127,7 @@ class CochinillaFiltradoSeeder extends Seeder
                     throw new Exception("Error en fila $fila_numero: primera + segunda + tercera + piedra = $suma, pero kilos_ingresados = $esperado");
                 }
 
-                $fecha_de_proceso = $this->parseFecha($fila['fecha_de_proceso'], $fila_numero);
+                $fecha_de_proceso = ExcelHelper::parseFecha($fila['fecha_de_proceso'], $fila_numero);
 
                 $upserts[] = [
                     'lote' => $lote,
@@ -148,19 +153,4 @@ class CochinillaFiltradoSeeder extends Seeder
 
     }
 
-    private function parseFecha($valor, $fila)
-    {
-        if (empty($valor))
-            return null;
-
-        try {
-            if (is_numeric($valor)) {
-                return Carbon::instance(ExcelDate::excelToDateTimeObject($valor))->format('Y-m-d');
-            }
-
-            return Carbon::parse(str_replace(['.', '/', '\\'], '-', $valor))->format('Y-m-d');
-        } catch (Exception $e) {
-            throw new Exception("Error al interpretar la fecha '{$valor}' en la fila #{$fila}: " . $e->getMessage());
-        }
-    }
 }
