@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AlmacenProductoSalida;
 use App\Models\CampoCampania;
 use App\Models\CamposCampaniasConsumo;
+use App\Models\CochinillaInfestacion;
 use App\Models\ContabilidadCostoDetalle;
 use App\Models\ResumenConsumoProductos;
 use Exception;
@@ -27,6 +28,80 @@ class CampaniaServicio
                 throw new Exception("La campaña no existe.");
             }
         }
+    }
+    public function registrarHistorialDeInfestaciones()
+    {
+        $data = [];
+        $infestaciones = CochinillaInfestacion::where('campo_campania_id', $this->campoCampaniaId)
+            ->where('tipo_infestacion', 'infestacion')
+            ->orderBy('fecha')
+            ->get();
+        if ($infestaciones->count() > 0) {
+            $ultimaInfestacion = $infestaciones->last();
+            if ($ultimaInfestacion) {
+                if ($ultimaInfestacion->fecha && $this->campoCampania->fecha_inicio) {
+                    $inicio = new \DateTime($this->campoCampania->fecha_inicio);
+                    $infestacion = new \DateTime($ultimaInfestacion->fecha);
+                    $diferencia = $inicio->diff($infestacion);
+
+                    $duracion = $diferencia->y . ' año' . ($diferencia->y !== 1 ? 's' : '') . ', '
+                        . $diferencia->m . ' mes' . ($diferencia->m !== 1 ? 'es' : '') . ', '
+                        . $diferencia->d . ' día' . ($diferencia->d !== 1 ? 's' : '');
+                } else {
+                    $duracion = null;
+                }
+
+                $data['infestacion_fecha'] = $ultimaInfestacion->fecha;
+                $data['infestacion_duracion_desde_campania'] = $duracion;
+            }
+            $data['infestacion_kg_totales_madre'] = $infestaciones->sum('kg_madres');
+            $data['infestacion_kg_madre_infestador_carton'] = $infestaciones
+                ->where('metodo', 'carton')
+                ->sum('kg_madres');
+            $data['infestacion_kg_madre_infestador_tubos'] = $infestaciones
+                ->where('metodo', 'tubo')
+                ->sum('kg_madres');
+            $data['infestacion_kg_madre_infestador_mallita'] = $infestaciones
+                ->where('metodo', 'malla')
+                ->sum('kg_madres');
+
+            $infestadores_carton = $infestaciones
+                ->where('metodo', 'carton')
+                ->sum('infestadores');
+            $infestadores_tubo = $infestaciones
+                ->where('metodo', 'tubo')
+                ->sum('infestadores');
+            $infestadores_malla = $infestaciones
+                ->where('metodo', 'malla')
+                ->sum('infestadores');
+                
+            $data['infestacion_cantidad_infestadores_carton'] = $infestadores_carton;
+            $data['infestacion_cantidad_infestadores_tubos'] = $infestadores_tubo;
+            $data['infestacion_cantidad_infestadores_mallita'] = $infestadores_malla;
+
+            $lista = [];
+            foreach ($infestaciones as $infestacion) {
+                $lista[] = [
+                    'campo_origen_nombre' => $infestacion->campo_origen_nombre,
+                    'kg_madres' => $infestacion->kg_madres,
+                ];
+            }
+
+            $data['infestacion_procedencia_madres'] = json_encode($lista);
+            $data['infestacion_cantidad_madres_por_infestador_carton'] =
+                $infestadores_carton > 0 ? $data['infestacion_kg_madre_infestador_carton'] / $infestadores_carton : 0;
+
+            $data['infestacion_cantidad_madres_por_infestador_tubos'] =
+                $infestadores_tubo > 0 ? $data['infestacion_kg_madre_infestador_tubos'] / $infestadores_tubo : 0;
+
+            $data['infestacion_cantidad_madres_por_infestador_mallita'] =
+                $infestadores_malla > 0 ? $data['infestacion_kg_madre_infestador_mallita'] / $infestadores_malla : 0;
+        }
+
+        $data['infestacion_numero_pencas'] = $this->campoCampania->brotexpiso_actual_total_brotes_2y3piso;
+
+
+        $this->campoCampania->update($data);
     }
     /**
      * Actualiza los Gastos y Consumos de una determinada campaña
@@ -158,7 +233,7 @@ class CampaniaServicio
             $data = $hoja->rangeToArray($tableRange, null, true, false, true);
 
             if (!$data || count($data) < 2) {
-               // throw new Exception("No hay datos suficientes en la tabla.");
+                // throw new Exception("No hay datos suficientes en la tabla.");
             }
             $headers = array_map(fn($header) => Str::slug($header, '_'), array_shift($data));
 
@@ -189,61 +264,7 @@ class CampaniaServicio
 
         return $informacion;
     }
-    /*
-    public function generarCostosFijosOperativos()
-    {
-        $informacion = [];
-        $fecha_inicio = $this->campoCampania->fecha_inicio;
-        $fecha_fin = $this->campoCampania->fecha_fin;
-        $campo = $this->campoCampania->campo;
 
-        $registros = ContabilidadCostoDetalle::where('campo', $campo)
-            ->whereHas('registroCosto', function ($query) use ($fecha_inicio, $fecha_fin) {
-                $query->whereDate('fecha', '>=', $fecha_inicio);
-                if ($fecha_fin) {
-                    $query->whereDate('fecha', '<=', $fecha_fin);
-                }
-            })
-            ->with(['registroCosto', 'registroCosto.tipoCosto']) // Evita el N+1
-            ->get();
-
-        if ($registros->isEmpty()) { // Mejor que !$registros, ya que $registros siempre será una colección
-            return $informacion;
-        }
-
-        foreach ($registros as $registro) {
-            $registroCosto = $registro->registroCosto;
-            $tipo = $registroCosto->tipoCosto->tipo_costo ?? 'Sin tipo de costo';
-            $nombreCosto = $registroCosto->tipoCosto->nombre_costo;
-            $fecha = $registroCosto->fecha;
-            $campania = $this->campoCampania->nombre_campania;
-            $valor = $registroCosto->valor;
-
-            switch ($tipo) {
-                case 'fijo':
-                    $informacion[] = [
-                        'fecha' => $fecha,
-                        'tipo_cambio' => 1,
-                        'campania' => $campania,
-                        'costo_fijo' => $nombreCosto,
-                        'costo_fijo_costo' => $valor
-                    ];
-                    break;
-                case 'operativo':
-                default:
-                    $informacion[] = [
-                        'fecha' => $fecha,
-                        'tipo_cambio' => 1,
-                        'campania' => $campania,
-                        'costo_operativo' => $nombreCosto,
-                        'costo_operativo_costo' => $valor
-                    ];
-                    break;
-            }
-        }
-
-        return $informacion;
-    }*/
     public function generarInformacionConsumo()
     {
         $informacion = [];
@@ -490,7 +511,7 @@ class CampaniaServicio
 
             $camposCampaniasConsumo = [];
             foreach ($categoriaProductos as $categoriaProducto) {
-              
+
                 $datosFiltrados = array_filter($resumenConsumoProductosData, function ($dato) use ($categoriaProducto) {
                     return $dato['categoria'] === $categoriaProducto;
                 });

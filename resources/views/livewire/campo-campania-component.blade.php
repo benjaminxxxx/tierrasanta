@@ -115,6 +115,8 @@
 
         
         @livewire('evaluacion-brotes-x-piso-por-campania-component', ['campaniaId' => $campania->id],key($campania->id))
+
+        @livewire('infestacion-por-campania-component', ['campaniaId' => $campania->id],key($campania->id))
         
     @endif
 </div>

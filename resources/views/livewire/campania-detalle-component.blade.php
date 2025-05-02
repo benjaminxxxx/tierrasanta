@@ -249,6 +249,223 @@
                                         {{ $campania->brotexpiso_total_brotes_2y3piso_n_dias }}
                                     </x-td>
                                 </x-tr>
+                                <x-tr>
+                                    <x-th class="!text-primary bg-gray-100" colspan="2">
+                                        INFESTACIÓN
+                                    </x-th>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Fecha infestación
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $campania->infestacion_fecha }}
+                                    </x-td>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Tiempo de siembra o inicio de campaña a infestación
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $campania->infestacion_duracion_desde_campania }}
+                                    </x-td>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Número de pencas a la infestación
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $campania->infestacion_numero_pencas }}
+                                    </x-td>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Kg totales de madres
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center bg-purple-100">
+                                        {{ $campania->infestacion_kg_totales_madre }}
+                                    </x-td>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Kg de madres para infestador cartón
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center bg-orange-100">
+                                        {{ $campania->infestacion_kg_madre_infestador_carton }}
+                                    </x-td>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Kg de madres para infestador tubos
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center bg-indigo-100">
+                                        {{ $campania->infestacion_kg_madre_infestador_tubos }}
+                                    </x-td>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Kg de madres para infestador mallita
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center bg-stone-100">
+                                        {{ $campania->infestacion_kg_madre_infestador_mallita }}
+                                    </x-td>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Procedencia de las madres
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        @php
+                                            $procedencias = [];
+                                            if ($campania->infestacion_procedencia_madres) {
+                                                if (is_string($campania->infestacion_procedencia_madres)) {
+                                                    try {
+                                                        $procedencias = json_decode($campania->infestacion_procedencia_madres, true) ?: [];
+                                                    } catch (\Exception $e) {
+                                                        $procedencias = [];
+                                                    }
+                                                } elseif (is_array($campania->infestacion_procedencia_madres)) {
+                                                    $procedencias = $campania->infestacion_procedencia_madres;
+                                                }
+                                            }
+                                        @endphp
+                                
+                                        @if (count($procedencias) > 0)
+                                            @foreach ($procedencias as $procedencia)
+                                                <p>{{ $procedencia['campo_origen_nombre'] ?? 'No especificado' }}: {{ $procedencia['kg_madres'] ?? 0 }}</p>
+                                            @endforeach
+                                        @else
+                                            <p>No hay procedencia especificada</p>
+                                        @endif
+                                    </x-td>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Cantidad de madres por infestador cartón
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $campania->infestacion_cantidad_madres_por_infestador_carton }}
+                                    </x-td>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Cantidad de madres por infestador tubo
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $campania->infestacion_cantidad_madres_por_infestador_tubos }}
+                                    </x-td>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Cantidad de madres por infestador mallita
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $campania->infestacion_cantidad_madres_por_infestador_mallita }}
+                                    </x-td>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Cantidad de infestadores cartón
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $campania->infestacion_cantidad_infestadores_carton }}
+                                    </x-td>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Cantidad de infestadores tubos
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $campania->infestacion_cantidad_infestadores_tubos }}
+                                    </x-td>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Cantidad de infestadores mallita
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $campania->infestacion_cantidad_infestadores_mallita }}
+                                    </x-td>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Fecha recojo y vaciado de infestadores
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $campania->infestacion_fecha_recojo_vaciado_infestadores }}
+                                    </x-td>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Permanencia infestadores (días)
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $campania->infestacion_permanencia_infestadores }}
+                                    </x-td>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Fecha colocación de malla
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $campania->infestacion_fecha_colocacion_malla }}
+                                    </x-td>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Fecha retiro de malla
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $campania->infestacion_fecha_retiro_malla }}
+                                    </x-td>
+                                </x-tr>
+                                <x-tr>
+                                    <x-td class="bg-gray-100">
+                                        <p class="font-bold">
+                                            Permanencia de malla (días)
+                                        </p>
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $campania->infestacion_permanencia_malla }}
+                                    </x-td>
+                                </x-tr>
+                                
                             </x-slot>
                         </x-table>
                     </div>

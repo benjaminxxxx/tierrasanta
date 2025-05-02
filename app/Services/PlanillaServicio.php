@@ -261,7 +261,7 @@ class PlanillaServicio
                 'documento' => $reporte->documento,
                 'empleado_nombre' => $reporte->empleado_nombre,
                 'campo' => $detalle->campo,
-                'labor' => $detalle->laborObjecto->nombre_labor . ' (' . $detalle->laborObjecto->id . ')',
+                'labor' => $detalle->labores->nombre_labor . ' (' . $detalle->labores->id . ')',
                 'horas_totales' => $horasTotales->format('H:i'),
                 'hora_inicio' => $horaInicio->format('H:i'),
                 'hora_salida' => $horaSalida->format('H:i'),

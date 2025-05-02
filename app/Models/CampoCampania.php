@@ -48,7 +48,27 @@ class CampoCampania extends Model
         'brotexpiso_actual_brotes_3piso',
         'brotexpiso_brotes_3piso_n_dias',
         'brotexpiso_actual_total_brotes_2y3piso',
-        'brotexpiso_total_brotes_2y3piso_n_dias'
+        'brotexpiso_total_brotes_2y3piso_n_dias',
+
+        'infestacion_fecha',
+        'infestacion_duracion_desde_campania',
+        'infestacion_numero_pencas',
+        'infestacion_kg_totales_madre',
+        'infestacion_kg_madre_infestador_carton',
+        'infestacion_kg_madre_infestador_tubos',
+        'infestacion_kg_madre_infestador_mallita',
+        'infestacion_procedencia_madres',
+        'infestacion_cantidad_madres_por_infestador_carton',
+        'infestacion_cantidad_madres_por_infestador_tubos',
+        'infestacion_cantidad_madres_por_infestador_mallita',
+        'infestacion_cantidad_infestadores_carton',
+        'infestacion_cantidad_infestadores_tubos',
+        'infestacion_cantidad_infestadores_mallita',
+        'infestacion_fecha_recojo_vaciado_infestadores',
+        'infestacion_permanencia_infestadores',//dias
+        'infestacion_fecha_colocacion_malla',   
+        'infestacion_fecha_retiro_malla',
+        'infestacion_permanencia_malla',//dias
     ];
     public function camposCampaniasConsumo()
     {

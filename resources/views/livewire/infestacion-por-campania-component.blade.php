@@ -1,0 +1,335 @@
+<div>
+
+    <x-flex class="w-full justify-between my-5">
+        <x-h3>Infestación</x-h3>
+        <x-flex>
+
+
+            <x-button type="button" wire:click="sincronizarInformacion">
+                <i class="fa fa-sync"></i> Sincronizar datos
+            </x-button>
+        </x-flex>
+    </x-flex>
+
+
+    <x-flex class="!items-start w-full">
+        @if ($campania)
+            <x-card class="md:w-[35rem]">
+                <x-spacing>
+                    <x-h3>
+                        Resumen de las infestaciones
+                    </x-h3>
+                    <x-label>
+                        Presione el boton <b>Sincronizar</b> datos para obtener la información de infestación de la
+                        campaña seleccionada.
+                    </x-label>
+                    <x-table class="mt-3">
+                        <x-slot name="thead">
+                        </x-slot>
+                        <x-slot name="tbody">
+                            <x-tr>
+                                <x-th>Fecha infestación</x-th>
+                                <x-td class="bg-cyan-100">{{ $campania->infestacion_fecha }}</x-td>
+                            </x-tr>
+                            <x-tr>
+                                <x-th>Tiempo de siembra o inicio de campaña a infestación</x-th>
+                                <x-td>{{ $campania->infestacion_duracion_desde_campania }}</x-td>
+                            </x-tr>
+                            <x-tr>
+                                <x-th>Número de pencas a la infestación</x-th>
+                                <x-td>{{ $campania->infestacion_numero_pencas }}</x-td>
+                            </x-tr>
+                            <x-tr>
+                                <x-th>Kg totales de madres</x-th>
+                                <x-td class="bg-purple-100">{{ $campania->infestacion_kg_totales_madre }}</x-td>
+                            </x-tr>
+                            <x-tr>
+                                <x-th>Kg de madres para infestador cartón</x-th>
+                                <x-td
+                                    class="bg-orange-100">{{ $campania->infestacion_kg_madre_infestador_carton }}</x-td>
+                            </x-tr>
+                            <x-tr>
+                                <x-th>Kg de madres para infestador tubos</x-th>
+                                <x-td
+                                    class="bg-indigo-100">{{ $campania->infestacion_kg_madre_infestador_tubos }}</x-td>
+                            </x-tr>
+                            <x-tr>
+                                <x-th>Kg de madres para infestador mallita</x-th>
+                                <x-td
+                                    class="bg-stone-100">{{ $campania->infestacion_kg_madre_infestador_mallita }}</x-td>
+                            </x-tr>
+                            <x-tr>
+                                <x-th>Procedencia de las madres</x-th>
+                                <x-td></x-td>
+                            </x-tr>
+                            @php
+                                $procedencias = [];
+                                if ($campania->infestacion_procedencia_madres) {
+                                    // Asegurar que sea un array, deserializando si es necesario
+                                    if (is_string($campania->infestacion_procedencia_madres)) {
+                                        try {
+                                            $procedencias =
+                                                json_decode($campania->infestacion_procedencia_madres, true) ?: [];
+                                        } catch (\Exception $e) {
+                                            $procedencias = [];
+                                        }
+                                    } elseif (is_array($campania->infestacion_procedencia_madres)) {
+                                        $procedencias = $campania->infestacion_procedencia_madres;
+                                    }
+                                }
+                            @endphp
+
+                            @if (count($procedencias) > 0)
+                                @foreach ($procedencias as $procedencia)
+                                    <x-tr>
+                                        <x-td>{{ $procedencia['campo_origen_nombre'] ?? 'No especificado' }}</x-td>
+                                        <x-td>{{ $procedencia['kg_madres'] ?? 0 }}</x-td>
+                                    </x-tr>
+                                @endforeach
+                            @endif
+                            <x-tr>
+                                <x-th>Cantidad de madres por infestador cartón</x-th>
+                                <x-td>{{ $campania->infestacion_cantidad_madres_por_infestador_carton }}</x-td>
+                            </x-tr>
+                            <x-tr>
+                                <x-th>Cantidad de madres por infestador tubo</x-th>
+                                <x-td>{{ $campania->infestacion_cantidad_madres_por_infestador_tubos }}</x-td>
+                            </x-tr>
+                            <x-tr>
+                                <x-th>Cantidad de madres por infestador mallita</x-th>
+                                <x-td>{{ $campania->infestacion_cantidad_madres_por_infestador_mallita }}</x-td>
+                            </x-tr>
+                            <x-tr>
+                                <x-th>Cantidad de infestadores cartón</x-th>
+                                <x-td>{{ $campania->infestacion_cantidad_infestadores_carton }}</x-td>
+                            </x-tr>
+                            <x-tr>
+                                <x-th>Cantidad de infestadores tubos</x-th>
+                                <x-td>{{ $campania->infestacion_cantidad_infestadores_tubos }}</x-td>
+                            </x-tr>
+                            <x-tr>
+                                <x-th>Cantidad de infestadores mallita</x-th>
+                                <x-td>{{ $campania->infestacion_cantidad_infestadores_mallita }}</x-td>
+                            </x-tr>
+                            <x-tr>
+                                <x-th>Fecha recojo y vaciado de infestadores</x-th>
+                                <x-td x-data="{ editando: false }">
+                                    <template x-if="editando">
+                                        <x-flex class="space-x-2 items-center">
+                                            <x-input-date wire:model="infestacion_fecha_recojo_vaciado_infestadores" label="" />
+                                            <x-button type="button" wire:click="registrarCambiosFechaRecojoVaciadoInfestadores" @click="editando = false">
+                                                <i class="fa fa-save"></i>
+                                            </x-button>
+                                            <x-danger-button type="button" @click="editando = false" color="secondary">
+                                                <i class="fa fa-times"></i>
+                                            </x-danger-button>
+                                        </x-flex>
+                                    </template>
+                                
+                                    <template x-if="!editando">
+                                        <x-flex class="space-x-2 items-center">
+                                            <span>{{ $campania->infestacion_fecha_recojo_vaciado_infestadores }}</span>
+                                            <x-button type="button" @click="editando = true">
+                                                <i class="fa fa-edit"></i>
+                                            </x-button>
+                                        </x-flex>
+                                    </template>
+                                </x-td>
+                                
+                            </x-tr>
+                            <x-tr>
+                                <x-th>Permanencia infestadores (días)</x-th>
+                                <x-td>{{ $campania->infestacion_permanencia_infestadores }}</x-td>
+                            </x-tr>
+                            <x-tr>
+                                <x-th>Fecha colocación de malla</x-th>
+                                <x-td x-data="{ editando: false }">
+                                    <!-- Formulario de edición (cuando editando es true) -->
+                                    <template x-if="editando">
+                                        <x-flex class="space-x-2 items-center">
+                                            <x-input-date wire:model="infestacion_fecha_colocacion_malla" label="" />
+                                            <!-- Botón de guardar -->
+                                            <x-button type="button"
+                                                wire:click="registrarFechaColocacionMalla"
+                                                @click="editando = false">
+                                                <i class="fa fa-save"></i>
+                                            </x-button>
+                                            <!-- Botón de cancelar -->
+                                            <x-danger-button type="button" @click="editando = false" color="secondary">
+                                                <i class="fa fa-times"></i>
+                                            </x-danger-button>
+                                        </x-flex>
+                                    </template>
+                            
+                                    <!-- Vista de solo lectura (cuando editando es false) -->
+                                    <template x-if="!editando">
+                                        <x-flex class="space-x-2 items-center">
+                                            <span>{{ $campania->infestacion_fecha_colocacion_malla }}</span>
+                                            <!-- Botón para habilitar la edición -->
+                                            <x-button type="button" @click="editando = true">
+                                                <i class="fa fa-edit"></i>
+                                            </x-button>
+                                        </x-flex>
+                                    </template>
+                                </x-td>
+                            </x-tr>
+                            
+                            <x-tr>
+                                <x-th>Fecha retiro de malla</x-th>
+                                <x-td x-data="{ editando: false }">
+                                    <!-- Formulario de edición (cuando editando es true) -->
+                                    <template x-if="editando">
+                                        <x-flex class="space-x-2 items-center">
+                                            <x-input-date wire:model="infestacion_fecha_retiro_malla" label="" />
+                                            <!-- Botón de guardar -->
+                                            <x-button type="button"
+                                                wire:click="registrarFechaRetiroMalla"
+                                                @click="editando = false">
+                                                <i class="fa fa-save"></i>
+                                            </x-button>
+                                            <!-- Botón de cancelar -->
+                                            <x-danger-button type="button" @click="editando = false" color="secondary">
+                                                <i class="fa fa-times"></i>
+                                            </x-danger-button>
+                                        </x-flex>
+                                    </template>
+                            
+                                    <!-- Vista de solo lectura (cuando editando es false) -->
+                                    <template x-if="!editando">
+                                        <x-flex class="space-x-2 items-center">
+                                            <span>{{ $campania->infestacion_fecha_retiro_malla }}</span>
+                                            <!-- Botón para habilitar la edición -->
+                                            <x-button type="button" @click="editando = true">
+                                                <i class="fa fa-edit"></i>
+                                            </x-button>
+                                        </x-flex>
+                                    </template>
+                                </x-td>
+                            </x-tr>
+                            
+                            <x-tr>
+                                <x-th>Permanencia de malla (días)</x-th>
+                                <x-td>{{ $campania->infestacion_permanencia_malla }}</x-td>
+                            </x-tr>
+                            
+                        </x-slot>
+
+                    </x-table>
+                </x-spacing>
+            </x-card>
+        @endif
+        
+        <div class="flex-1 overflow-auto">
+            <x-card>
+                <x-spacing>
+                    <x-h3>
+                        Lista de infestaciones
+                    </x-h3>
+                    <x-table>
+                        <x-slot name="thead">
+                            <x-tr>
+                                <x-th class="text-center">
+                                    N°
+                                </x-th>
+                                <x-th class="text-center">
+                                    Fecha de<br />Infestación
+                                </x-th>
+                                <x-th class="text-center">
+                                    Campo
+                                </x-th>
+                                <x-th class="text-center">
+                                    Área
+                                </x-th>
+                                <x-th class="text-center">
+                                    Kg Madres
+                                </x-th>
+                                <x-th class="text-center">
+                                    Campo Origen
+                                </x-th>
+                                <x-th class="text-center">
+                                    Método
+                                </x-th>
+                                <x-th class="text-center">
+                                    N° Envases
+                                </x-th>
+                                <x-th class="text-center">
+                                    Capacidad Envase
+                                </x-th>
+                                <x-th class="text-center">
+                                    Infestadores
+                                </x-th>
+                                <x-th class="text-center">
+                                    Madres por Infestador
+                                </x-th>
+                                <x-th class="text-center">
+                                    Infestadores por Ha
+                                </x-th>
+                            </x-tr>
+                        </x-slot>
+                        <x-slot name="tbody">
+                            @foreach ($infestaciones as $indiceInfestacion => $infestacion)
+                                <x-tr>
+                                    <x-td class="text-center">
+                                        {{ $indiceInfestacion + 1 }}
+                                    </x-td>
+                                    <x-td
+                                        class="text-center {{ $indiceInfestacion + 1 == $infestaciones->count() ? 'bg-cyan-100' : '' }}">
+                                        {{ $infestacion->fecha }}
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $infestacion->campo_nombre }}
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $infestacion->area }}
+                                    </x-td>
+                                    <x-td class="text-center bg-purple-100">
+                                        {{ $infestacion->kg_madres }}
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $infestacion->campo_origen_nombre }}
+                                    </x-td>
+                                    <x-td
+                                        class="text-center {{ $infestacion->metodo == 'carton'
+                                            ? 'bg-orange-100'
+                                            : ($infestacion->metodo == 'tubos'
+                                                ? 'bg-indigo-100'
+                                                : ($infestacion->metodo == 'mallita'
+                                                    ? 'bg-stone-100'
+                                                    : '')) }}">
+                                        {{ $infestacion->metodo }}
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $infestacion->numero_envases }}
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $infestacion->capacidad_envase }}
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $infestacion->infestadores }}
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $infestacion->madres_por_infestador }}
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        {{ $infestacion->infestadores_por_ha }}
+                                    </x-td>
+                                </x-tr>
+                            @endforeach
+                        </x-slot>
+                    </x-table>
+                </x-spacing>
+            </x-card>
+            @if ($campania)
+            <div class="mt-4">
+                @livewire('consulta-actividad-diaria-component', [
+                    'campaniaId' => $campania->id,
+                ])
+            </div>
+            @endif
+            
+        </div>
+        
+    </x-flex>
+
+    <x-loading wire:loading />
+</div>
