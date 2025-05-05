@@ -37,7 +37,7 @@
                             </x-tr>
                             <x-tr>
                                 <x-th>Número de pencas a la infestación</x-th>
-                                <x-td>{{ $campania->infestacion_numero_pencas }}</x-td>
+                                <x-td class="bg-lime-100">{{ $campania->infestacion_numero_pencas }}</x-td>
                             </x-tr>
                             <x-tr>
                                 <x-th>Kg totales de madres</x-th>
@@ -116,8 +116,11 @@
                                 <x-td x-data="{ editando: false }">
                                     <template x-if="editando">
                                         <x-flex class="space-x-2 items-center">
-                                            <x-input-date wire:model="infestacion_fecha_recojo_vaciado_infestadores" label="" />
-                                            <x-button type="button" wire:click="registrarCambiosFechaRecojoVaciadoInfestadores" @click="editando = false">
+                                            <x-input-date wire:model="infestacion_fecha_recojo_vaciado_infestadores"
+                                                label="" />
+                                            <x-button type="button"
+                                                wire:click="registrarCambiosFechaRecojoVaciadoInfestadores"
+                                                @click="editando = false">
                                                 <i class="fa fa-save"></i>
                                             </x-button>
                                             <x-danger-button type="button" @click="editando = false" color="secondary">
@@ -125,7 +128,7 @@
                                             </x-danger-button>
                                         </x-flex>
                                     </template>
-                                
+
                                     <template x-if="!editando">
                                         <x-flex class="space-x-2 items-center">
                                             <span>{{ $campania->infestacion_fecha_recojo_vaciado_infestadores }}</span>
@@ -135,7 +138,7 @@
                                         </x-flex>
                                     </template>
                                 </x-td>
-                                
+
                             </x-tr>
                             <x-tr>
                                 <x-th>Permanencia infestadores (días)</x-th>
@@ -147,10 +150,10 @@
                                     <!-- Formulario de edición (cuando editando es true) -->
                                     <template x-if="editando">
                                         <x-flex class="space-x-2 items-center">
-                                            <x-input-date wire:model="infestacion_fecha_colocacion_malla" label="" />
+                                            <x-input-date wire:model="infestacion_fecha_colocacion_malla"
+                                                label="" />
                                             <!-- Botón de guardar -->
-                                            <x-button type="button"
-                                                wire:click="registrarFechaColocacionMalla"
+                                            <x-button type="button" wire:click="registrarFechaColocacionMalla"
                                                 @click="editando = false">
                                                 <i class="fa fa-save"></i>
                                             </x-button>
@@ -160,7 +163,7 @@
                                             </x-danger-button>
                                         </x-flex>
                                     </template>
-                            
+
                                     <!-- Vista de solo lectura (cuando editando es false) -->
                                     <template x-if="!editando">
                                         <x-flex class="space-x-2 items-center">
@@ -173,7 +176,7 @@
                                     </template>
                                 </x-td>
                             </x-tr>
-                            
+
                             <x-tr>
                                 <x-th>Fecha retiro de malla</x-th>
                                 <x-td x-data="{ editando: false }">
@@ -182,8 +185,7 @@
                                         <x-flex class="space-x-2 items-center">
                                             <x-input-date wire:model="infestacion_fecha_retiro_malla" label="" />
                                             <!-- Botón de guardar -->
-                                            <x-button type="button"
-                                                wire:click="registrarFechaRetiroMalla"
+                                            <x-button type="button" wire:click="registrarFechaRetiroMalla"
                                                 @click="editando = false">
                                                 <i class="fa fa-save"></i>
                                             </x-button>
@@ -193,7 +195,7 @@
                                             </x-danger-button>
                                         </x-flex>
                                     </template>
-                            
+
                                     <!-- Vista de solo lectura (cuando editando es false) -->
                                     <template x-if="!editando">
                                         <x-flex class="space-x-2 items-center">
@@ -206,26 +208,26 @@
                                     </template>
                                 </x-td>
                             </x-tr>
-                            
+
                             <x-tr>
                                 <x-th>Permanencia de malla (días)</x-th>
                                 <x-td>{{ $campania->infestacion_permanencia_malla }}</x-td>
                             </x-tr>
-                            
+
                         </x-slot>
 
                     </x-table>
                 </x-spacing>
             </x-card>
         @endif
-        
+
         <div class="flex-1 overflow-auto">
             <x-card>
                 <x-spacing>
                     <x-h3>
                         Lista de infestaciones
                     </x-h3>
-                    <x-table>
+                    <x-table class="mt-3">
                         <x-slot name="thead">
                             <x-tr>
                                 <x-th class="text-center">
@@ -320,15 +322,15 @@
                 </x-spacing>
             </x-card>
             @if ($campania)
-            <div class="mt-4">
-                @livewire('consulta-actividad-diaria-component', [
-                    'campaniaId' => $campania->id,
-                ])
-            </div>
+                <div class="mt-4">
+                    @livewire('consulta-actividad-diaria-component', [
+                        'campaniaId' => $campania->id,
+                    ])
+                </div>
             @endif
-            
+
         </div>
-        
+
     </x-flex>
 
     <x-loading wire:loading />

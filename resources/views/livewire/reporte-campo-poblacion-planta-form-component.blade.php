@@ -20,13 +20,11 @@
 
 
                 <x-group-field>
-                    <x-label value="Evaluador" for="tipo_evaluacion" />
-                    <x-select wire:model="tipo_evaluacion">
+                    <x-select wire:model="tipo_evaluacion" label="Tipo de Evaluación" error="tipo_evaluacion">
                         <option value="">Seleccione el tipo de evaluación</option>
                         <option value="dia_cero">Evaluación Cero</option>
                         <option value="resiembra">Evaluación Resiembra</option>
                     </x-select>
-                    <x-input-error for="tipo_evaluacion" />
                 </x-group-field>
                 <x-input-number wire:model="area_lote" label="Área" />
 

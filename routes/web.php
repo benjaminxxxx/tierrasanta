@@ -137,6 +137,7 @@ Route::middleware([
 
     //REPORTE CAMPO
     Route::get('/reporte_campo/poblacion_planta', [ReporteCampoController::class,'poblacion_plantas'])->name('reporte_campo.poblacion_plantas');
+    Route::get('/reporte_campo/evaluacion_brotes', [ReporteCampoController::class,'evaluacion_brotes'])->name('reporte_campo.evaluacion_brotes');
 
     //COCHINILLA
     Route::get('/cohinilla/ingreso', [CochinillaController::class,'ingreso'])->name('cochinilla.ingreso');

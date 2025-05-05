@@ -4,9 +4,9 @@
         <x-h3>
             Población de Plantas
         </x-h3>
-        <x-button type="button" @click="$wire.dispatch('agregarEvaluacion')">
+        <!--<x-button type="button" @click="$wire.dispatch('agregarEvaluacion')">
             <i class="fa fa-plus"></i> Agregar Evaluación
-        </x-button>
+        </x-button>-->
     </x-flex>
     <x-card class="my-4">
         <x-spacing>

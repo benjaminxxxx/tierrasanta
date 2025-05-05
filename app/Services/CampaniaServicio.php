@@ -29,6 +29,36 @@ class CampaniaServicio
             }
         }
     }
+    public function registrarHistorialBrotes(){
+
+        if(!$this->campoCampania){
+            return;
+        }
+        $evaluacionesBrotesXPiso = $this->campoCampania->evaluacionBrotesXPiso()->orderBy('fecha','desc')->first();
+        $data = [];
+
+        if(!$evaluacionesBrotesXPiso){
+            $data['brotexpiso_fecha_evaluacion'] = null;
+            $data['brotexpiso_actual_brotes_2piso'] = null;
+            $data['brotexpiso_brotes_2piso_n_dias'] = null;
+            $data['brotexpiso_actual_brotes_3piso'] = null;
+            $data['brotexpiso_brotes_3piso_n_dias'] = null;
+            $data['brotexpiso_actual_total_brotes_2y3piso'] = null;
+            $data['brotexpiso_total_brotes_2y3piso_n_dias'] = null;
+            $this->campoCampania->update($data);
+            return;
+        }   
+
+        $data['brotexpiso_fecha_evaluacion'] = $evaluacionesBrotesXPiso->fecha;
+        $data['brotexpiso_actual_brotes_2piso'] = $evaluacionesBrotesXPiso->promedio_actual_brotes_2piso;
+        $data['brotexpiso_brotes_2piso_n_dias'] = $evaluacionesBrotesXPiso->promedio_brotes_2piso_n_dias;
+        $data['brotexpiso_actual_brotes_3piso'] = $evaluacionesBrotesXPiso->promedio_actual_brotes_3piso;
+        $data['brotexpiso_brotes_3piso_n_dias'] = $evaluacionesBrotesXPiso->promedio_brotes_3piso_n_dias;
+        $data['brotexpiso_actual_total_brotes_2y3piso'] = $evaluacionesBrotesXPiso->promedio_actual_total_brotes_2y3piso;
+        $data['brotexpiso_total_brotes_2y3piso_n_dias'] = $evaluacionesBrotesXPiso->promedio_total_brotes_2y3piso_n_dias;
+
+        $this->campoCampania->update($data);
+    }
     public function registrarHistorialDeInfestaciones()
     {
         $data = [];

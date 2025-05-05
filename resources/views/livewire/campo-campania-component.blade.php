@@ -116,6 +116,8 @@
         
         @livewire('evaluacion-brotes-x-piso-por-campania-component', ['campaniaId' => $campania->id],key($campania->id))
 
+        @livewire('reporte-campo-evaluacion-brotes-form-component',['campaniaUnica' => true],key($campania->id))
+
         @livewire('infestacion-por-campania-component', ['campaniaId' => $campania->id],key($campania->id))
         
     @endif

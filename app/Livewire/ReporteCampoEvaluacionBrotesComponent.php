@@ -2,58 +2,36 @@
 
 namespace App\Livewire;
 
-use App\Models\CampoCampania;
 use App\Models\EvaluacionBrotesXPiso;
 use App\Services\CampaniaServicio;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
+use Livewire\WithPagination;
 
-class EvaluacionBrotesXPisoPorCampaniaComponent extends Component
+class ReporteCampoEvaluacionBrotesComponent extends Component
 {
-    #region TRAITS
+    use WithPagination;
     use LivewireAlert;
-    #endregion
-
-    #region VARIABLES
+    public $campoFiltrado;
     public $campaniaId;
-    public $campania;
-    public $evaluacionesBrotesXPiso = [];
-    protected $listeners = ['confirmareliminarBrotesXPiso','poblacionPlantasRegistrado'];
-    #endregion
+    public $campaniaUnica;
+    protected $listeners = ['poblacionPlantasRegistrado','confirmareliminarBrotesXPiso'];
 
-    #region MOUNT
-    public function mount($campaniaId)
-    {
-        $this->campania = CampoCampania::find($campaniaId);
-        if ($this->campania) {
-            $this->campaniaId = $campaniaId;
-        }
+    public function mount($campaniaId = null,$campaniaUnica=false){
+        $this->campaniaId = $campaniaId;
+        $this->campaniaUnica = $campaniaUnica;
     }
     public function poblacionPlantasRegistrado(){
-        $this->campania->refresh();
+        $this->resetPage();
     }
-    #endregion
-
-    #region PANEL PRINCIPAL
-    
-    /*
-    public function enviarHistorialBrotes(){
+    public function enviarHistorialBrotes($campaniaId){
         try {
-            $campaniaServicio = new CampaniaServicio($this->campaniaId);
+            $campaniaServicio = new CampaniaServicio($campaniaId);
             $campaniaServicio->registrarHistorialBrotes();
-            $this->campania->refresh();
+            $this->dispatch('poblacionPlantasRegistrado');
         } catch (\Throwable $th) {
             throw $th;
         }
-    }
-    public function obtenerEvaluacionesBroteXPiso()
-    {
-        if (!$this->campaniaId) {
-            $this->evaluacionesBrotesXPiso = [];
-            return;
-        }
-        $this->evaluacionesBrotesXPiso = EvaluacionBrotesXPiso::where('campania_id', $this->campaniaId)
-            ->orderBy('fecha', 'asc')->get();
     }
     public function duplicar($evaluacionBrotesXPisoId)
     {
@@ -76,11 +54,11 @@ class EvaluacionBrotesXPisoPorCampaniaComponent extends Component
                 $nuevoDetalle->brotes_x_piso_id = $nuevaEvaluacion->id; // Asignar la nueva evaluación
                 $nuevoDetalle->save();
             }
-
+            
             $this->alert('success', 'Evaluación duplicada con éxito');
-            $this->enviarHistorialBrotes();
-            $this->obtenerEvaluacionesBroteXPiso();
+            $this->enviarHistorialBrotes($nuevaEvaluacion->campania->id);
         } catch (\Throwable $th) {
+            $this->dispatch('log',$th->getMessage());
             $this->alert('error', 'Ocurrió un error al intentar duplicar el registro');
         }
     }
@@ -99,22 +77,34 @@ class EvaluacionBrotesXPisoPorCampaniaComponent extends Component
         try {
             $evaluacionBrotesXPisoId = $data['evaluacionBrotesXPisoId'];
             $evaluacionBrotesXPiso = EvaluacionBrotesXPiso::findOrFail($evaluacionBrotesXPisoId);
+            $campaniaId = $evaluacionBrotesXPiso->campania->id;
             $evaluacionBrotesXPiso->delete();
             $this->alert('success', 'Registro Eliminado Correctamente.');
-            $this->enviarHistorialBrotes();
-            $this->obtenerEvaluacionesBroteXPiso();
+            $this->enviarHistorialBrotes($campaniaId);
 
         } catch (\Throwable $th) {
             $this->dispatch('log', $th->getMessage());
             return $this->alert('error', $th->getMessage());
         }
-    }*/
-    #endregion
-
-    #region RENDER
+    }
     public function render()
     {
-        return view('livewire.evaluacion-brotes-x-piso-por-campania-component');
+        
+        $query = EvaluacionBrotesXPiso::when($this->campoFiltrado,function($query)  {
+
+            $campo = $this->campoFiltrado;
+            return $query->whereHas('campania',function ($q) use($campo) {
+                return $q->where('campo',$campo);
+            });
+        });
+
+        if($this->campaniaUnica){
+            $query->where('campania_id',$this->campaniaId);
+        }
+
+        $evaluacionesBrotes = $query->paginate(20);
+        return view('livewire.reporte-campo-evaluacion-brotes-component',[
+            'evaluacionesBrotes'=>$evaluacionesBrotes
+        ]);
     }
-    #endregion
 }

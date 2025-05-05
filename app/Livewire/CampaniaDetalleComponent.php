@@ -39,25 +39,11 @@ class CampaniaDetalleComponent extends Component
                 $data['pp_resiembra_numero_pencas_madre'] = $evaluacionUltimaResiembra->promedio_plantas_ha;
             }
         }
-
-        //BROTES POR PISO
-        $evaluacionesBrotesXPiso = $this->campania->evaluacionBrotesXPiso()->orderBy('fecha','desc')->first();
-        if ($evaluacionesBrotesXPiso) {
-            $data['brotexpiso_fecha_evaluacion'] = $evaluacionesBrotesXPiso->fecha;
-            $data['brotexpiso_actual_brotes_2piso'] = $evaluacionesBrotesXPiso->promedio_actual_brotes_2piso;
-            $data['brotexpiso_brotes_2piso_n_dias'] = $evaluacionesBrotesXPiso->promedio_brotes_2piso_n_dias;
-            $data['brotexpiso_actual_brotes_3piso'] = $evaluacionesBrotesXPiso->promedio_actual_brotes_3piso;
-            $data['brotexpiso_brotes_3piso_n_dias'] = $evaluacionesBrotesXPiso->promedio_brotes_3piso_n_dias;
-            $data['brotexpiso_actual_total_brotes_2y3piso'] = $evaluacionesBrotesXPiso->promedio_actual_total_brotes_2y3piso;
-            $data['brotexpiso_total_brotes_2y3piso_n_dias'] = $evaluacionesBrotesXPiso->promedio_total_brotes_2y3piso_n_dias;
-        }
         
-        $this->campania->update($data);
-        
-
         //PoblacionPlantas::where()
 
         $campaniaServicio = new CampaniaServicio($this->campania->id);
+        $campaniaServicio->registrarHistorialBrotes();
         $campaniaServicio->actualizarGastosyConsumos();
     }
     public function abrirCampaniaDetalle($campaniaId)
