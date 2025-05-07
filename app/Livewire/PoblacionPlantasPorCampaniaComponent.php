@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\CampoCampania;
 use App\Models\PoblacionPlantas;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -9,44 +10,18 @@ use Livewire\Component;
 class PoblacionPlantasPorCampaniaComponent extends Component
 {
     use LivewireAlert;
-    public $campaniaId;
+    public $campania;
     public $poblacionPlantas = [];
-    protected $listeners = ['poblacionPlantasRegistrado' => 'obtenerPoblacionPlantas','confirmarEliminarPoblacionPlanta'];
+    protected $listeners = ['poblacionPlantasRegistrado' => 'refrescarCampania','poblacionPlantasEliminado' => 'refrescarCampania'];
     public function mount($campaniaId)
     {
-        $this->campaniaId = $campaniaId;
-        $this->obtenerPoblacionPlantas();
+        $this->campania = CampoCampania::find($campaniaId);
     }
-    public function obtenerPoblacionPlantas()
+    public function refrescarCampania()
     {
-        if (!$this->campaniaId) {
-            return;
-        }
-        $this->poblacionPlantas = PoblacionPlantas::where('campania_id', $this->campaniaId)->get();
+        $this->campania->refresh();
     }
-    public function eliminarPoblacionPlanta($poblacionId)
-    {
-        $this->confirm('¿Está seguro(a) que desea eliminar el registro?', [
-            'onConfirmed' => 'confirmarEliminarPoblacionPlanta',
-            'data' => [
-                'poblacionId' => $poblacionId,
-            ],
-        ]);
-    }
-    public function confirmarEliminarPoblacionPlanta($data)
-    {
-        try {
-            $poblacionId = $data['poblacionId'];
-
-            $poblacion = PoblacionPlantas::findOrFail($poblacionId);
-            $poblacion->delete();
-            $this->alert('success', 'Registro Eliminado Correctamente.');
-            $this->obtenerPoblacionPlantas();
-
-        } catch (\Throwable $th) {
-            return $this->alert('success', 'El registro ya no existe.');
-        }
-    }
+   
     public function render()
     {
         return view('livewire.poblacion-plantas-por-campania-component');

@@ -128,6 +128,14 @@
                             width: 70,
                             title: 'Limpia'
                         },
+                        
+                        {
+                            data: 'polvillo',
+                            type: 'numeric',
+                            className: '!text-center',
+                            width: 70,
+                            title: 'Polvillo'
+                        },
                         {
                             data: 'basura',
                             type: 'numeric',
@@ -135,13 +143,6 @@
                             readOnly: true,
                             width: 70,
                             title: 'Basura'
-                        },
-                        {
-                            data: 'polvillo',
-                            type: 'numeric',
-                            className: '!text-center',
-                            width: 70,
-                            title: 'Polvillo'
                         }
                     ],
 

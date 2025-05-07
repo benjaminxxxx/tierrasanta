@@ -108,12 +108,8 @@
             </x-spacing>
         </x-card>
 
-        <!--
-        Se Necesita agregar el camponente reporte-campo-poblacion-planta-form-component para poder agregar, editar campaña
-        -->
         @livewire('poblacion-plantas-por-campania-component', ['campaniaId' => $campania->id], key($campania->id))
 
-        
         @livewire('evaluacion-brotes-x-piso-por-campania-component', ['campaniaId' => $campania->id],key($campania->id))
 
         @livewire('reporte-campo-evaluacion-brotes-form-component',['campaniaUnica' => true],key($campania->id))

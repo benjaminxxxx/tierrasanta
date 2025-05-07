@@ -60,6 +60,34 @@ class ReporteCampoEvaluacionBrotesFormComponent extends Component
             $this->campania = null;
         }
     }
+    public function enviarAtabla($datos)
+    {
+        $datos = array_map(function ($fila) {
+            $campos = [
+                'brotes_aptos_2p_actual_calculado',
+                'brotes_aptos_2p_despues_n_dias_calculado',
+                'brotes_aptos_3p_actual_calculado',
+                'brotes_aptos_3p_despues_n_dias_calculado',
+                'total_actual_de_brotes_aptos_23_piso_calculado',
+                'total_de_brotes_aptos_23_pisos_despues_n_dias_calculado',
+            ];
+    
+            foreach ($campos as $campo) {
+                if (isset($fila[$campo])) {
+                    $fila[$campo] = (int) round($fila[$campo]); // redondea y convierte a entero
+                }
+            }
+    
+            return $fila;
+        }, $datos);
+    
+        // if(count($datos) > 0){
+        //     dd($datos);
+        // }
+        
+
+        $this->dispatch('cargarDataBrotesXPiso', $datos);
+    }
     public function editarEvaluacionBrotesPorPiso($evaluacionBrotesXPisoId)
     {
         try {
@@ -80,8 +108,7 @@ class ReporteCampoEvaluacionBrotesFormComponent extends Component
 
             $this->evaluacionBrotesXPiso = $evaluacionBrotesXPiso;
 
-            $this->listaBroteXPlantaDetalle = $evaluacionBrotesXPiso->detalles->toArray();
-            $this->dispatch('cargarDataBrotesXPiso', $this->listaBroteXPlantaDetalle);
+            $this->enviarAtabla($evaluacionBrotesXPiso->detalles->toArray());
 
             $this->mostrarFormulario = true;
 
@@ -151,10 +178,9 @@ class ReporteCampoEvaluacionBrotesFormComponent extends Component
                     $this->actualizarDetalle($data['reporte_file']);
 
                     $evaluacionBrotesXPiso = $evaluacionBrotesXPiso->fresh('detalles');
-
-                    $this->listaBroteXPlantaDetalle = $evaluacionBrotesXPiso->detalles->toArray();
+                    
                     $this->evaluacionBrotesXPiso = $evaluacionBrotesXPiso;
-                    $this->dispatch('cargarDataBrotesXPiso', $this->listaBroteXPlantaDetalle);
+                    $this->enviarAtabla($evaluacionBrotesXPiso->detalles->toArray());
                 }
             }
 
@@ -328,7 +354,7 @@ class ReporteCampoEvaluacionBrotesFormComponent extends Component
         $this->listaBroteXPlantaDetalle = [];
         $this->evaluadores = [];
         $this->fecha = Carbon::now()->format('Y-m-d');
-        $this->dispatch('cargarDataBrotesXPiso', []);
+        $this->enviarAtabla([]);
     }
     public function quitarEvaluador()
     {

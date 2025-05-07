@@ -128,23 +128,27 @@
 
             <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mt-3 {{ $fondo }}">
                 <x-group-field>
-                    <x-input-number :label="$unidad" wire:model="capacidad_envase" @input="recalcularDesdeCapacidad()" />
+                    <x-input-number :label="$unidad" wire:model="capacidad_envase"
+                        @input="recalcularDesdeCapacidad()" />
                     <x-input-error for="capacidad_envase" />
                 </x-group-field>
                 <x-group-field>
-                    <x-input-number :label="$cantidad" wire:model="numero_envases" @input="recalcularDesdeNumeroEnvases()"/>
+                    <x-input-number :label="$cantidad" wire:model="numero_envases"
+                        @input="recalcularDesdeNumeroEnvases()" />
                     <x-input-error for="numero_envases" />
                 </x-group-field>
                 <x-group-field>
-                    <x-input-number :label="$nombre" wire:model="infestadores" @input="recalcularDesdeInfestadores()"/>
+                    <x-input-number :label="$nombre" wire:model="infestadores"
+                        @input="recalcularDesdeInfestadores()" />
                     <x-input-error for="infestadores" />
                 </x-group-field>
                 <x-group-field>
-                    <x-input-number :label="$porUnidad" wire:model="madres_por_infestador" x-bind:value="madres_por_infestador" readonly
-                        class="!bg-gray-100" />
+                    <x-input-string :label="$porUnidad" wire:model="madres_por_infestador"
+                        x-bind:value="madres_por_infestador" readonly class="!bg-gray-100" />
                 </x-group-field>
                 <x-group-field>
-                    <x-input-number :label="$porHa" wire:model="infestadores_por_ha" x-bind:value="infestadores_por_ha" readonly class="!bg-gray-100" />
+                    <x-input-string :label="$porHa" wire:model="infestadores_por_ha"
+                        x-bind:value="infestadores_por_ha" readonly class="!bg-gray-100" />
                 </x-group-field>
             </div>
 
@@ -166,13 +170,18 @@
             area: @entangle('area'),
 
             get madres_por_infestador() {
-                if (!this.infestadores || this.infestadores == 0) return 0;
-                return (this.kg_madres / this.infestadores).toFixed(6);
+                if (!this.infestadores || this.infestadores == 0) return '0gr.';
+
+                const valor = ((this.kg_madres / this.infestadores) * 100000);
+                const formateado = new Intl.NumberFormat('en-US').format(Math.round(valor));
+
+                return `${formateado}gr.`;
             },
 
             get infestadores_por_ha() {
-                if (!this.area || this.area == 0) return 0;
-                return (this.infestadores / this.area).toFixed(2);
+                if (!this.area || this.area === 0) return '0';
+                const valor = Math.round(this.infestadores / this.area);
+                return new Intl.NumberFormat('en-US').format(valor); // → 1,000
             },
             recalcularKgMadresHa() {
                 if (!this.area || this.area == 0) return 0;

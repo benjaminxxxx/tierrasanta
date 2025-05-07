@@ -8,17 +8,53 @@
         </x-slot>
 
         <x-slot name="content">
-            @if ($campania)
-                <div class="my-4">
-                    <p><b>Lote: </b>{{ $campania->campo }}</p>
-                    <p><b>Área base: </b>{{ $campania->campo_model->area }}</p>
-                    <p><b>Inicio de Campaña: </b>{{ $campania->fecha_inicio }}</p>
-                </div>
+            @if ($campoSeleccionado && $fecha)
+                @if ($campania)
+                    <x-success class="my-3">
+                        <p>
+                            Campo
+                            {{ $campania->campo ?? '' }}
+                        </p>
+                        <p>
+                            Campaña
+                            {{ $campania->nombre_campania ?? '' }}
+                        </p>
+                        <p>
+                            Variedad
+                            {{ $campania->variedad_tuna ?? '' }}
+                        </p>
+                        <p>
+                            Fecha de Inicio
+                            {{ $campania->fecha_inicio ?? '' }}
+                        </p>
+                        <p>
+                            Fecha Siembra
+                            {{ $campania->fecha_siembra ?? '' }}
+                        </p>
+                    </x-success>
+                @else
+                    <x-warning class="my-3">
+                        No hay campañas registradas en este campo y esta fecha
+                    </x-warning>
+                @endif
+            @else
+                <x-warning class="my-3">
+                    Seleccione el campo y una fecha para buscar la campaña
+                </x-warning>
             @endif
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-
+                <x-group-field>
+                    @if ($campaniaUnica)
+                        <x-input-string label="Campo" readonly value="{{ $campoSeleccionado }}" class="!bg-gray-100" />
+                    @else
+                        <x-select-campo wire:model.live="campoSeleccionado" />
+                    @endif
+                </x-group-field>
+                <x-group-field>
+                    <x-input-date wire:model.live="fecha" error="fecha" label="Fecha de Evaluación" />
+                </x-group-field>
                 <x-group-field>
                     <x-select wire:model="tipo_evaluacion" label="Tipo de Evaluación" error="tipo_evaluacion">
                         <option value="">Seleccione el tipo de evaluación</option>
@@ -62,17 +98,15 @@
                                     </ul>
                                 </div>
                             @endif
-                            
+
                         </div>
                     @endif
-                    <x-input-error for="evaluadorSeleccionado.nombre"/>
+                    <x-input-error for="evaluadorSeleccionado.nombre" />
                 </x-group-field>
                 <x-input-number wire:model="metros_cama" label="Metros de Cama/Ha" />
-                @if ($campania)
-                    <x-input-date wire:model="fecha" error="fecha" label="Fecha de Evaluación"
-                        descripcion="La fecha de evaluación debe ser posterior al inicio de campaña"
-                        fechaMin="{{ $campania->fecha_inicio }}" />
-                @endif
+
+
+
             </div>
 
             <div x-data="{{ $idTable }}" wire:ignore class="my-4">
@@ -106,23 +140,23 @@
                         <x-th>
                             PROMEDIO
                         </x-th>
-                        <x-td class="text-center">
-                            {{ $promedioPlantasXCama }}
-                        </x-td>
-                        <x-td class="text-center">
-                            {{ $promedioPlantasXMetro }}
-                        </x-td>
+                        <x-th class="text-center">
+                            {{ number_format($promedioPlantasXCama,0) }}
+                        </x-th>
+                        <x-th class="text-center">
+                            {{ number_format($promedioPlantasXMetro,0) }}
+                        </x-th>
                     </x-tr>
                     <x-tr>
                         <x-th>
                             PROMEDIO PLANTAS Há
                         </x-th>
-                        <x-td class="text-center">
-                            {{ $promedioPlantasHA }}
-                        </x-td>
-                        <x-td>
+                        <x-th class="text-center">
+                            {{ number_format($promedioPlantasHA,0) }}
+                        </x-th>
+                        <x-th>
 
-                        </x-td>
+                        </x-th>
                     </x-tr>
                 </x-slot>
             </x-table>
@@ -134,7 +168,7 @@
                 <x-secondary-button wire:click="$set('mostrarFormulario', false)" wire:loading.attr="disabled">
                     Cerrar
                 </x-secondary-button>
-                <x-button  type="button" @click="$wire.dispatch('guardadoConfirmado')">
+                <x-button type="button" @click="$wire.dispatch('guardadoConfirmado')">
                     @if ($poblacionPlantaId)
                         <i class="fa fa-pencil"></i> Actualizar
                     @else
@@ -182,22 +216,39 @@
                     columns: [{
                             data: 'cama_muestreada',
                             type: 'numeric',
-                            className: '!text-center'
+                            className: '!text-center',
+                            numericFormat: {
+                                pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                                culture: 'en-US'
+                            }
                         },
                         {
                             data: 'longitud_cama',
                             type: 'numeric',
-                            className: '!text-center'
+                            className: '!text-center',
+                            numericFormat: {
+                                pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                                culture: 'en-US'
+                            }
                         },
                         {
                             data: 'plantas_x_cama',
                             type: 'numeric',
-                            className: '!text-center'
+                            className: '!text-center',
+                            numericFormat: {
+                                pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                                culture: 'en-US'
+                            }
                         },
                         {
                             data: 'plantas_x_metro',
                             type: 'numeric',
-                            className: '!text-center'
+                            className: '!text-center !bg-[#D8E4BC]',
+                            numericFormat: {
+                                pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                                culture: 'en-US'
+                            },
+                            readOnly: true
                         }
                     ],
                     nestedHeaders: [
@@ -210,8 +261,7 @@
                                 colspan: 2
                             }
                         ],
-                        ['N° Cama', 'Longitud Cama', 'Plantas por Cama', 'Plantas por Metro'
-                        ]
+                        ['N° Cama', 'Longitud Cama', 'Plantas por Cama', 'Plantas por Metro']
                     ],
                     width: '100%',
                     height: 'auto',
@@ -221,7 +271,21 @@
                     stretchH: 'all',
                     autoColumnSize: true,
                     licenseKey: 'non-commercial-and-evaluation',
+                    afterChange: (changes, source) => {
+                        if (source === 'loadData' || !changes) return;
 
+                        changes.forEach(([row, prop, oldValue, newValue]) => {
+                            if (['plantas_x_cama', 'longitud_cama'].includes(prop)) {
+                                const rowData = hot.getDataAtRow(row);
+                                const plantasCama = parseFloat(rowData[2]) || 0;
+                                const longitud = parseFloat(rowData[1]) || 0;
+
+                                const calculado = (longitud > 0) ? (plantasCama /
+                                    longitud) : 0;
+                                hot.setDataAtCell(row, 3, parseFloat(calculado.toFixed(0)));
+                            }
+                        });
+                    }
                 });
 
                 this.hot = hot;

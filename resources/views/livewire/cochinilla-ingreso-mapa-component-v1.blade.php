@@ -1,22 +1,10 @@
 <div>
     @php
-        function barra_porcentaje($porcentaje, $color = 'bg-green-500')
+        function icono($tamano, $color)
         {
-            if ($porcentaje == 0) {
-                return '';
-            }
-
-            $width = min($porcentaje, 100); // máximo 100%
-            return "<div class='w-full bg-gray-200 rounded h-3 overflow-hidden'>
-                    <div class='$color h-full' style='width: {$width}%'></div>
-                </div>
-                <small class='text-gray-600'>" .
-                number_format($porcentaje, 1) .
-                '%' .
-                '</small>';
+            return $tamano == 0 ? '' : "style=\"font-size: {$tamano}px;\" class=\"fa-solid fa-mountain $color\"";
         }
     @endphp
-
     <x-dialog-modal wire:model="mostrarFormulario" maxWidth="full">
         <x-slot name="title">
             Detalle gráfico de lotes de cochinilla
@@ -123,7 +111,7 @@
                         <tbody>
                             <x-tr2>
                                 <x-td2 rowspan="3" class="align-center">
-                                    {!! barra_porcentaje($resumen['px_total_kilos'], 'bg-green-500') !!}
+                                    <i {!! icono($resumen['px_total_kilos'], 'text-green-500') !!}></i>
                                     <p>
                                         <b class="text-lg">
                                             {{ number_format($resumen['total_kilos'], 2) }}Kl
@@ -131,7 +119,7 @@
                                     </p>
                                 </x-td2>
                                 <x-td2 colspan="3" class="align-bottom">
-                                    {!! barra_porcentaje($resumen['px_total_venteado'], 'bg-green-500') !!}
+                                    <i {!! icono($resumen['px_total_venteado'], 'text-green-500') !!}></i>
                                     <p>
                                         <b class="text-lg">
                                             {{ number_format($resumen['venteado_total_kilos'], 2) }}Kl
@@ -139,7 +127,7 @@
                                     </p>
                                 </x-td2>
                                 <x-td2 colspan="5" class="align-bottom">
-                                    {!! barra_porcentaje($resumen['px_total_filtrado'], 'bg-green-500') !!}
+                                    <i {!! icono($resumen['px_total_filtrado'], 'text-green-500') !!}></i>
                                     <p>
                                         <b class="text-lg">
                                             {{ number_format($resumen['filtrado_total_kilos'], 2) }}Kl
@@ -159,7 +147,7 @@
                             </x-tr2>
                             <x-tr2 class="align-bottom">
                                 <x-td2>
-                                    {!! barra_porcentaje($resumen['px_limpia'], 'bg-green-500') !!}
+                                    <i {!! icono($resumen['px_limpia'], 'text-green-500') !!}></i>
                                     <p>
                                         <b class="text-lg">
                                             {{ number_format($resumen['total_venteado_limpia'], 2) }}Kl
@@ -167,7 +155,7 @@
                                     </p>
                                 </x-td2>
                                 <x-td2>
-                                    {!! barra_porcentaje($resumen['px_basura'], 'bg-red-400') !!}
+                                    <i {!! icono($resumen['px_basura'], 'text-red-400') !!}></i>
                                     <p>
                                         <b class="text-lg">
                                             {{ number_format($resumen['total_venteado_basura'], 2) }}Kl
@@ -175,7 +163,7 @@
                                     </p>
                                 </x-td2>
                                 <x-td2>
-                                    {!! barra_porcentaje($resumen['px_polvillo'], 'bg-yellow-400') !!}
+                                    <i {!! icono($resumen['px_polvillo'], 'text-yellow-400') !!}></i>
                                     <p>
                                         <b class="text-lg">
                                             {{ number_format($resumen['total_venteado_polvillo'], 2) }}Kl
@@ -183,7 +171,7 @@
                                     </p>
                                 </x-td2>
                                 <x-td2>
-                                    {!! barra_porcentaje($resumen['px_1ra'], 'bg-green-500') !!}
+                                    <i {!! icono($resumen['px_1ra'], 'text-green-500') !!}></i>
                                     <p>
                                         <b class="text-lg">
                                             {{ number_format($resumen['total_filtrado_primera'], 2) }}Kl
@@ -191,7 +179,7 @@
                                     </p>
                                 </x-td2>
                                 <x-td2>
-                                    {!! barra_porcentaje($resumen['px_2da'], 'bg-red-400') !!}
+                                    <i {!! icono($resumen['px_2da'], 'text-red-400') !!}></i>
                                     <p>
                                         <b class="text-lg">
                                             {{ number_format($resumen['total_filtrado_segunda'], 2) }}Kl
@@ -199,7 +187,7 @@
                                     </p>
                                 </x-td2>
                                 <x-td2>
-                                    {!! barra_porcentaje($resumen['px_3ra'], 'bg-yellow-400') !!}
+                                    <i {!! icono($resumen['px_3ra'], 'text-yellow-400') !!}></i>
                                     <p>
                                         <b class="text-lg">
                                             {{ number_format($resumen['total_filtrado_tercera'], 2) }}Kl
@@ -207,7 +195,7 @@
                                     </p>
                                 </x-td2>
                                 <x-td2>
-                                    {!! barra_porcentaje($resumen['px_filtrado_piedra'], 'bg-stone-400') !!}
+                                    <i {!! icono($resumen['px_filtrado_piedra'], 'text-stone-400') !!}></i>
                                     <p>
                                         <b class="text-lg">
                                             {{ number_format($resumen['total_filtrado_piedra'], 2) }}Kl
@@ -215,7 +203,7 @@
                                     </p>
                                 </x-td2>
                                 <x-td2>
-                                    {!! barra_porcentaje($resumen['px_filtrado_basura'], 'bg-yellow-400') !!}
+                                    <i {!! icono($resumen['px_filtrado_basura'], 'text-yellow-400') !!}></i>
                                     <p>
                                         <b class="text-lg">
                                             {{ number_format($resumen['total_filtrado_basura'], 2) }}Kl

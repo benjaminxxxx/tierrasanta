@@ -29,6 +29,34 @@ class CampaniaServicio
             }
         }
     }
+    public function registrarHistorialPoblacionPlantas(){
+
+        if(!$this->campoCampania){
+            return;
+        }
+
+        $data = [];
+        $evaluacionesPoblacionPlanta = $this->campoCampania->poblacionPlantas;
+        if($evaluacionesPoblacionPlanta->count()>0){
+            $evaluacionDiaCero = $evaluacionesPoblacionPlanta->where('tipo_evaluacion','dia_cero')->sortBy('fecha')->first();
+            $evaluacionUltimaResiembra = $evaluacionesPoblacionPlanta->where('tipo_evaluacion','resiembra')->sortByDesc('fecha')->first();
+            if($evaluacionDiaCero){
+                $data['pp_dia_cero_fecha_evaluacion'] = $evaluacionDiaCero->fecha;
+                $data['pp_dia_cero_numero_pencas_madre'] = $evaluacionDiaCero->promedio_plantas_ha;
+            }
+            if($evaluacionUltimaResiembra){
+                $data['pp_resiembra_fecha_evaluacion'] = $evaluacionUltimaResiembra->fecha;
+                $data['pp_resiembra_numero_pencas_madre'] = $evaluacionUltimaResiembra->promedio_plantas_ha;
+            }
+        }else{
+            $data['pp_dia_cero_fecha_evaluacion'] = null;
+            $data['pp_dia_cero_numero_pencas_madre'] = null;
+            $data['pp_resiembra_fecha_evaluacion'] = null;
+            $data['pp_resiembra_numero_pencas_madre'] = null;
+        }
+        
+        $this->campoCampania->update($data);
+    }
     public function registrarHistorialBrotes(){
 
         if(!$this->campoCampania){

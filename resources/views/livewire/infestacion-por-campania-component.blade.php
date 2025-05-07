@@ -240,7 +240,7 @@
                                     Campo
                                 </x-th>
                                 <x-th class="text-center">
-                                    Área
+                                    Campaña
                                 </x-th>
                                 <x-th class="text-center">
                                     Kg Madres
@@ -282,7 +282,7 @@
                                         {{ $infestacion->campo_nombre }}
                                     </x-td>
                                     <x-td class="text-center">
-                                        {{ $infestacion->area }}
+                                        {{ $infestacion->campoCampania->nombre_campania }}
                                     </x-td>
                                     <x-td class="text-center bg-purple-100">
                                         {{ $infestacion->kg_madres }}

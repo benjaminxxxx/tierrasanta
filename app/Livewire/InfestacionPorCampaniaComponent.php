@@ -36,6 +36,7 @@ class InfestacionPorCampaniaComponent extends Component
     {
         if ($this->campaniaId) {
             $this->infestaciones = CochinillaInfestacion::where('campo_campania_id', $this->campaniaId)
+                ->with(['campoCampania'])
                 ->where('tipo_infestacion', 'infestacion')
                 ->orderBy('fecha')
                 ->get();

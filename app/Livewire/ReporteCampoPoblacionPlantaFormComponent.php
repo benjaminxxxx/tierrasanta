@@ -7,7 +7,9 @@ use App\Models\CampoCampania;
 use App\Models\Empleado;
 use App\Models\PoblacionPlantas;
 use App\Models\PoblacionPlantasDetalle;
+use App\Services\CampaniaServicio;
 use Exception;
+use Illuminate\Support\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use Illuminate\Support\Str;
@@ -25,10 +27,39 @@ class ReporteCampoPoblacionPlantaFormComponent extends Component
     public $idTable;
     public $listaCamasMuestreadas = [];
     public $promedioPlantasXCama, $promedioPlantasXMetro, $promedioPlantasHA;
+    public $campoSeleccionado;
+    public $campaniaUnica;
     protected $listeners = ['agregarEvaluacion', 'editarPoblacionPlanta', 'storeTableDataPoblacionPlanta'];
-    public function mount()
+    public function mount($campaniaUnica = false)
     {
+        $this->campaniaUnica = $campaniaUnica;
         $this->idTable = "table" . Str::random(15);
+    }
+    public function updatedCampoSeleccionado(){
+        $this->buscarCampania();
+        $this->buscarArea();
+    }
+    public function buscarArea(){
+        if ($this->campoSeleccionado) {
+            $campo = Campo::find($this->campoSeleccionado);
+            if ($campo) {
+                $this->area_lote = $campo->area;
+            } else {
+                $this->area_lote = null;
+            }
+        } else {
+            $this->area_lote = null;
+        }
+    }
+    public function updatedFecha(){
+        $this->buscarCampania();
+    }
+    public function buscarCampania(){
+        if ($this->campoSeleccionado && $this->fecha) {
+            $this->campania = CampoCampania::masProximaAntesDe($this->fecha, $this->campoSeleccionado);
+        } else {
+            $this->campania = null;
+        }
     }
     public function storeTableDataPoblacionPlanta($datos)
     {
@@ -41,6 +72,7 @@ class ReporteCampoPoblacionPlantaFormComponent extends Component
             'evaluadorSeleccionado.id' => 'required|integer|exists:empleados,id',
             'fecha' => 'required|date',
             'tipo_evaluacion' => 'required',
+            'campoSeleccionado'=>'required'
         ], [
 
             'area_lote.required' => 'El área del lote es obligatoria.',
@@ -54,6 +86,7 @@ class ReporteCampoPoblacionPlantaFormComponent extends Component
             'fecha.required' => 'La fecha es obligatoria.',
             'fecha.date' => 'La fecha debe ser una fecha válida.',
             'tipo_evaluacion.required' => 'El tipo de evaluación es obligatorio.',
+            'campoSeleccionado.required' => 'Debe seleccionar un campo.',
         ]);
 
         try {
@@ -83,10 +116,10 @@ class ReporteCampoPoblacionPlantaFormComponent extends Component
 
             if ($this->poblacionPlantaId) {
                 $datosValidados = collect($datos)->filter(function ($fila) {
-                    return !empty($fila['cama_muestreada']) && !empty($fila['longitud_cama']) && !empty($fila['plantas_x_cama']) && !empty($fila['plantas_x_metro']);
+                    return !empty($fila['cama_muestreada']) && !empty($fila['longitud_cama']) && !empty($fila['plantas_x_cama']);
                 });
                 if ($datosValidados->count() !== count($datos)) {
-                    throw new Exception("En el detalle algunas filas tienen campos obligatorios vacíos.");
+                    return $this->alert('error', 'En el detalle algunas filas tienen campos obligatorios vacíos.');
                 }
 
                 if (count($datos) != 0) {
@@ -110,15 +143,22 @@ class ReporteCampoPoblacionPlantaFormComponent extends Component
             }
 
             $this->alert('success', $message);
+            $this->enviarHistorialPoblacionPlantas($this->campania->id);
             $this->dispatch('poblacionPlantasRegistrado');
         } catch (\Throwable $th) {
             $this->dispatch('log', $th->getMessage());
             $this->alert('error', 'Ocurrió un error interno al procesar la solicitud.');
         }
-
-
     }
-
+    public function enviarHistorialPoblacionPlantas($campaniaId)
+    {
+        try {
+            $campaniaServicio = new CampaniaServicio($campaniaId);
+            $campaniaServicio->registrarHistorialPoblacionPlantas();
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
     public function asignarPromedios()
     {
         $this->reset(['promedioPlantasXCama', 'promedioPlantasXMetro', 'promedioPlantasHA']);
@@ -132,12 +172,15 @@ class ReporteCampoPoblacionPlantaFormComponent extends Component
         $this->promedioPlantasXMetro = $poblacionPlanta->promedio_plantas_x_metro;
         $this->promedioPlantasHA = $poblacionPlanta->promedio_plantas_ha;
     }
+    
     public function editarPoblacionPlanta($poblacionId)
     {
         try {
+            $this->resetearCampos();
             $poblacionPlantas = PoblacionPlantas::findOrFail($poblacionId);
             $this->campania = CampoCampania::findOrFail($poblacionPlantas->campania_id);
 
+            $this->campoSeleccionado = $poblacionPlantas->campania->campo;
             $this->poblacionPlantaId = $poblacionPlantas->id;
             $this->area_lote = $poblacionPlantas->area_lote;
             $this->metros_cama = $poblacionPlantas->metros_cama;
@@ -200,18 +243,26 @@ class ReporteCampoPoblacionPlantaFormComponent extends Component
 
     public function resetearCampos()
     {
-        $this->reset(['poblacionPlantaId', 'area_lote', 'metros_cama', 'evaluadorSeleccionado', 'fecha', 'tipo_evaluacion', 'campania']);
+        $this->reset(['poblacionPlantaId', 'area_lote', 'metros_cama', 'evaluadorSeleccionado', 'fecha', 'tipo_evaluacion', 'campania','campoSeleccionado']);
         $this->resetErrorBag();
         $this->listaCamasMuestreadas = [];
         $this->asignarPromedios();
+        $this->fecha = Carbon::now()->format('Y-m-d');
         $this->dispatch('cargarData', $this->listaCamasMuestreadas);
     }
-    public function agregarEvaluacion($campaniaId)
+    public function agregarEvaluacion($campaniaId = null)
     {
         try {
             $this->resetearCampos();
-            $this->campania = CampoCampania::findOrFail($campaniaId);
-            $this->area_lote = $this->campania->campo_model->area;
+
+            if($campaniaId){
+                $campania = CampoCampania::find($campaniaId);
+                if($campania){
+                    $this->campoSeleccionado = $campania->campo;
+                    $this->campania = $campania;
+                    $this->buscarArea();
+                }
+            }
             $this->mostrarFormulario = true;
         } catch (\Throwable $th) {
             return $this->alert('error', 'Ocurrió un error, tal vez la campaña no exista.');

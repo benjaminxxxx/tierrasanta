@@ -63,12 +63,24 @@ class CochinillaIngresoMapaComponent extends Component
             'total_venteado_polvillo' => $registroIngreso->total_venteado_polvillo,
 
             'filtrado_total_kilos' => $registroIngreso->total_filtrado_total,
+
             'total_filtrado_primera' => $registroIngreso->total_filtrado_primera,
+            'porcentaje_filtrado_primera' => $registroIngreso->porcentaje_filtrado_primera,
+
             'total_filtrado_segunda' => $registroIngreso->total_filtrado_segunda,
+            'porcentaje_filtrado_segunda' => $registroIngreso->porcentaje_filtrado_segunda,
+
             'total_filtrado_tercera' => $registroIngreso->total_filtrado_tercera,
+            'porcentaje_filtrado_tercera' => $registroIngreso->porcentaje_filtrado_tercera,
+
             'total_filtrado_piedra' => $registroIngreso->total_filtrado_piedra,
+            'porcentaje_filtrado_piedra' => $registroIngreso->porcentaje_filtrado_piedra,
+
             'total_filtrado_basura' => $registroIngreso->total_filtrado_basura,
+            'porcentaje_filtrado_basura' => $registroIngreso->porcentaje_filtrado_basura,
         ];
+
+        
 
         $valores = [
             $registroIngreso->total_kilos,
@@ -98,7 +110,7 @@ class CochinillaIngresoMapaComponent extends Component
         $this->resumen['px_3ra'] = $this->calcularTamanioPx($registroIngreso->total_filtrado_tercera, $maximo);
         $this->resumen['px_filtrado_piedra'] = $this->calcularTamanioPx($registroIngreso->total_filtrado_piedra, $maximo);
         $this->resumen['px_filtrado_basura'] = $this->calcularTamanioPx($registroIngreso->total_filtrado_basura, $maximo);
-
+        
         $this->datosPorFecha = $datosPorFecha;
         $this->mostrarFormulario = true;
     }

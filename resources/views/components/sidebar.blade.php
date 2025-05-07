@@ -152,9 +152,9 @@
                         </div>
                         Reporte de Campo
                         <x-slot name="children">
-                            <!--<x-nav-link-child href="{{ route('reporte_campo.poblacion_plantas') }}" :active="request()->routeIs('reporte_campo.poblacion_plantas')">
+                            <x-nav-link-child href="{{ route('reporte_campo.poblacion_plantas') }}" :active="request()->routeIs('reporte_campo.poblacion_plantas')">
                                 Población Plantas
-                            </x-nav-link-child>-->
+                            </x-nav-link-child>
                             <x-nav-link-child href="{{ route('reporte_campo.evaluacion_brotes') }}" :active="request()->routeIs('reporte_campo.evaluacion_brotes')">
                                 Evaluación de Brotes
                             </x-nav-link-child>

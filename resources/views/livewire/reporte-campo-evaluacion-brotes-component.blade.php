@@ -88,22 +88,22 @@
                                 {{ $evaluacionBroteXPiso->metros_cama }}
                             </x-td>
                             <x-td class="text-center">
-                                {{ $evaluacionBroteXPiso->promedio_actual_brotes_2piso }}
+                                {{ number_format($evaluacionBroteXPiso->promedio_actual_brotes_2piso,0) }}
                             </x-td>
                             <x-td class="text-center">
-                                {{ $evaluacionBroteXPiso->promedio_brotes_2piso_n_dias }}
+                                {{ number_format($evaluacionBroteXPiso->promedio_brotes_2piso_n_dias,0) }}
                             </x-td>
                             <x-td class="text-center">
-                                {{ $evaluacionBroteXPiso->promedio_actual_brotes_3piso }}
+                                {{ number_format($evaluacionBroteXPiso->promedio_actual_brotes_3piso,0) }}
                             </x-td>
                             <x-td class="text-center">
-                                {{ $evaluacionBroteXPiso->promedio_brotes_3piso_n_dias }}
+                                {{ number_format($evaluacionBroteXPiso->promedio_brotes_3piso_n_dias,0) }}
                             </x-td>
                             <x-td class="text-center">
-                                {{ $evaluacionBroteXPiso->promedio_actual_total_brotes_2y3piso }}
+                                {{ number_format($evaluacionBroteXPiso->promedio_actual_total_brotes_2y3piso,0) }}
                             </x-td>
                             <x-td class="text-center">
-                                {{ $evaluacionBroteXPiso->promedio_total_brotes_2y3piso_n_dias }}
+                                {{ number_format($evaluacionBroteXPiso->promedio_total_brotes_2y3piso_n_dias,0) }}
                             </x-td>
                             <x-td class="text-center">
                                 <x-flex class="justify-center">

@@ -46,11 +46,10 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <x-group-field>
                     @if ($campaniaUnica)
-                        <x-input-string label="Campo" readonly value="{{$campoSeleccionado}}" class="!bg-gray-100" />
+                        <x-input-string label="Campo" readonly value="{{ $campoSeleccionado }}" class="!bg-gray-100" />
                     @else
                         <x-select-campo wire:model.live="campoSeleccionado" />
                     @endif
-
                 </x-group-field>
                 <x-group-field>
                     <x-input-date wire:model="fecha" error="fecha" label="Fecha de Evaluación" />
@@ -154,26 +153,26 @@
                             </x-th>
 
                             <x-td class="text-center bg-gray-100">
-                                {{ $evaluacionBrotesXPiso->promedio_actual_brotes_2piso ?? 0 }}
+                                {{ number_format($evaluacionBrotesXPiso->promedio_actual_brotes_2piso,0) ?? 0 }}
                             </x-td>
 
                             <x-td class="text-center bg-gray-100">
-                                {{ $evaluacionBrotesXPiso->promedio_brotes_2piso_n_dias }}
+                                {{ number_format($evaluacionBrotesXPiso->promedio_brotes_2piso_n_dias,0) }}
                             </x-td>
 
                             <x-td class="text-center bg-gray-100">
-                                {{ $evaluacionBrotesXPiso->promedio_actual_brotes_3piso }}
+                                {{ number_format($evaluacionBrotesXPiso->promedio_actual_brotes_3piso,0) }}
                             </x-td>
 
                             <x-td class="text-center !bg-gray-100">
-                                {{ $evaluacionBrotesXPiso->promedio_brotes_3piso_n_dias }}
+                                {{ number_format($evaluacionBrotesXPiso->promedio_brotes_3piso_n_dias,0) }}
                             </x-td>
 
-                            <x-td class="text-center !bg-orange-100">
-                                {{ $evaluacionBrotesXPiso->promedio_actual_total_brotes_2y3piso }}
+                            <x-td class="text-center !bg-[#FABF8F] font-bold !text-black">
+                                {{ number_format($evaluacionBrotesXPiso->promedio_actual_total_brotes_2y3piso,0) }}
                             </x-td>
-                            <x-td class="text-center !bg-orange-100">
-                                {{ $evaluacionBrotesXPiso->promedio_total_brotes_2y3piso_n_dias }}
+                            <x-td class="text-center !bg-[#FABF8F] font-bold !text-black">
+                                {{ number_format($evaluacionBrotesXPiso->promedio_total_brotes_2y3piso_n_dias,0) }}
                             </x-td>
                         </x-tr>
                     @endif
@@ -241,22 +240,38 @@
                         {
                             data: 'longitud_cama',
                             type: 'numeric',
-                            className: '!text-center'
+                            className: '!text-center',
+                            numericFormat: {
+                                pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                                culture: 'en-US'
+                            }
                         },
                         {
                             data: 'brotes_aptos_2p_actual',
                             type: 'numeric',
-                            className: '!text-center'
+                            className: '!text-center',
+                            numericFormat: {
+                                pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                                culture: 'en-US'
+                            }
                         },
                         {
                             data: 'brotes_aptos_2p_actual_calculado',
                             type: 'numeric',
                             readOnly: true,
+                            numericFormat: {
+                                pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                                culture: 'en-US'
+                            },
                             className: '!text-center !bg-gray-100 htDimmed'
                         },
                         {
                             data: 'brotes_aptos_2p_despues_n_dias',
                             type: 'numeric',
+                            numericFormat: {
+                                pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                                culture: 'en-US'
+                            },
                             className: '!text-center'
                         },
                         {
@@ -264,11 +279,19 @@
                             type: 'numeric',
                             className: '!text-center',
                             readOnly: true,
+                            numericFormat: {
+                                pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                                culture: 'en-US'
+                            },
                             className: '!text-center !bg-gray-100 htDimmed'
                         },
                         {
                             data: 'brotes_aptos_3p_actual',
                             type: 'numeric',
+                            numericFormat: {
+                                pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                                culture: 'en-US'
+                            },
                             className: '!text-center'
                         },
                         {
@@ -276,11 +299,19 @@
                             type: 'numeric',
                             className: '!text-center',
                             readOnly: true,
+                            numericFormat: {
+                                pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                                culture: 'en-US'
+                            },
                             className: '!text-center !bg-gray-100 htDimmed'
                         },
                         {
                             data: 'brotes_aptos_3p_despues_n_dias',
                             type: 'numeric',
+                            numericFormat: {
+                                pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                                culture: 'en-US'
+                            },
                             className: '!text-center'
                         },
                         {
@@ -288,21 +319,31 @@
                             type: 'numeric',
                             className: '!text-center',
                             readOnly: true,
+                            numericFormat: {
+                                pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                                culture: 'en-US'
+                            },
                             className: '!text-center !bg-gray-100 htDimmed'
                         },
                         {
                             data: 'total_actual_de_brotes_aptos_23_piso_calculado',
                             type: 'numeric',
-                            className: '!text-center',
                             readOnly: true,
-                            className: '!text-center !bg-orange-100 htDimmed'
+                            numericFormat: {
+                                pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                                culture: 'en-US'
+                            },
+                            className: '!text-center !bg-[#FABF8F] htDimmed font-bold !text-black'
                         },
                         {
                             data: 'total_de_brotes_aptos_23_pisos_despues_n_dias_calculado',
                             type: 'numeric',
-                            className: '!text-center',
                             readOnly: true,
-                            className: '!text-center !bg-orange-100 htDimmed'
+                            numericFormat: {
+                                pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                                culture: 'en-US'
+                            },
+                            className: '!text-center !bg-[#FABF8F] htDimmed font-bold !text-black'
                         }
                     ],
                     nestedHeaders: [

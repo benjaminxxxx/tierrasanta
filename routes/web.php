@@ -140,10 +140,10 @@ Route::middleware([
     Route::get('/reporte_campo/evaluacion_brotes', [ReporteCampoController::class,'evaluacion_brotes'])->name('reporte_campo.evaluacion_brotes');
 
     //COCHINILLA
-    Route::get('/cohinilla/ingreso', [CochinillaController::class,'ingreso'])->name('cochinilla.ingreso');
-    Route::get('/cohinilla/venteado', [CochinillaController::class,'venteado'])->name('cochinilla.venteado');
-    Route::get('/cohinilla/filtrado', [CochinillaController::class,'filtrado'])->name('cochinilla.filtrado');
-    Route::get('/cohinilla/cosechamamas', [CochinillaController::class,'cosecha_mamas'])->name('cochinilla.cosecha_mamas');
-    Route::get('/cohinilla/infestacion', [CochinillaController::class,'infestacion'])->name('cochinilla.infestacion');
+    Route::get('/cochinilla/ingreso', [CochinillaController::class,'ingreso'])->name('cochinilla.ingreso');
+    Route::get('/cochinilla/venteado', [CochinillaController::class,'venteado'])->name('cochinilla.venteado');
+    Route::get('/cochinilla/filtrado', [CochinillaController::class,'filtrado'])->name('cochinilla.filtrado');
+    Route::get('/cochinilla/cosechamamas', [CochinillaController::class,'cosecha_mamas'])->name('cochinilla.cosecha_mamas');
+    Route::get('/cochinilla/infestacion', [CochinillaController::class,'infestacion'])->name('cochinilla.infestacion');
     
 });
