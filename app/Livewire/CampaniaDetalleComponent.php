@@ -3,8 +3,6 @@
 namespace App\Livewire;
 
 use App\Models\CampoCampania as Campania;
-use App\Models\PoblacionPlantas;
-use App\Models\Siembra;
 use App\Services\CampaniaServicio;
 use Livewire\Component;
 
@@ -22,6 +20,8 @@ class CampaniaDetalleComponent extends Component
         $campaniaServicio->registrarHistorialPoblacionPlantas();
         $campaniaServicio->registrarHistorialBrotes();
         $campaniaServicio->actualizarGastosyConsumos();
+        $campaniaServicio->registrarHistorialDeInfestaciones();
+        $campaniaServicio->registrarHistorialDeInfestaciones('reinfestacion');
     }
     public function abrirCampaniaDetalle($campaniaId)
     {

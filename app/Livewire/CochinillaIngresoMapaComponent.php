@@ -57,12 +57,21 @@ class CochinillaIngresoMapaComponent extends Component
 
         $this->resumen = [
             'total_kilos' => $registroIngreso->total_kilos,
+
             'venteado_total_kilos' => $registroIngreso->total_venteado_total,
+            'porcentaje_diferencia' => $registroIngreso->porcentaje_diferencia,
+
             'total_venteado_limpia' => $registroIngreso->total_venteado_limpia,
+            'porcentaje_venteado_limpia' => $registroIngreso->porcentaje_venteado_limpia,
+
             'total_venteado_basura' => $registroIngreso->total_venteado_basura,
+            'porcentaje_venteado_basura' => $registroIngreso->porcentaje_venteado_basura,
+
             'total_venteado_polvillo' => $registroIngreso->total_venteado_polvillo,
+            'porcentaje_venteado_polvillo' => $registroIngreso->porcentaje_venteado_polvillo,
 
             'filtrado_total_kilos' => $registroIngreso->total_filtrado_total,
+            'porcentaje_diferencia_filtrado' => $registroIngreso->porcentaje_diferencia_filtrado,
 
             'total_filtrado_primera' => $registroIngreso->total_filtrado_primera,
             'porcentaje_filtrado_primera' => $registroIngreso->porcentaje_filtrado_primera,
@@ -95,8 +104,9 @@ class CochinillaIngresoMapaComponent extends Component
             $registroIngreso->total_filtrado_piedra,
             $registroIngreso->total_filtrado_basura,
         ];
-
+/*
         $maximo = max($valores);
+        
         $this->resumen['px_total_kilos'] = $this->calcularTamanioPx($registroIngreso->total_kilos, $maximo);
 
         $this->resumen['px_total_venteado'] = $this->calcularTamanioPx($registroIngreso->total_venteado_total, $maximo);
@@ -110,7 +120,7 @@ class CochinillaIngresoMapaComponent extends Component
         $this->resumen['px_3ra'] = $this->calcularTamanioPx($registroIngreso->total_filtrado_tercera, $maximo);
         $this->resumen['px_filtrado_piedra'] = $this->calcularTamanioPx($registroIngreso->total_filtrado_piedra, $maximo);
         $this->resumen['px_filtrado_basura'] = $this->calcularTamanioPx($registroIngreso->total_filtrado_basura, $maximo);
-        
+        */
         $this->datosPorFecha = $datosPorFecha;
         $this->mostrarFormulario = true;
     }

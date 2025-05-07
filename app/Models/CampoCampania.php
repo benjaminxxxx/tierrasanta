@@ -69,6 +69,26 @@ class CampoCampania extends Model
         'infestacion_fecha_colocacion_malla',   
         'infestacion_fecha_retiro_malla',
         'infestacion_permanencia_malla',//dias
+
+        'reinfestacion_fecha',
+        'reinfestacion_duracion_desde_infestacion',
+        'reinfestacion_numero_pencas',
+        'reinfestacion_kg_totales_madre',
+        'reinfestacion_kg_madre_infestador_carton',
+        'reinfestacion_kg_madre_infestador_tubos',
+        'reinfestacion_kg_madre_infestador_mallita',
+        'reinfestacion_procedencia_madres',
+        'reinfestacion_cantidad_madres_por_infestador_carton',
+        'reinfestacion_cantidad_madres_por_infestador_tubos',
+        'reinfestacion_cantidad_madres_por_infestador_mallita',
+        'reinfestacion_cantidad_infestadores_carton',
+        'reinfestacion_cantidad_infestadores_tubos',
+        'reinfestacion_cantidad_infestadores_mallita',
+        'reinfestacion_fecha_recojo_vaciado_infestadores',
+        'reinfestacion_permanencia_infestadores',//dias
+        'reinfestacion_fecha_colocacion_malla',
+        'reinfestacion_fecha_retiro_malla',
+        'reinfestacion_permanencia_malla',//dias
     ];
     public function camposCampaniasConsumo()
     {

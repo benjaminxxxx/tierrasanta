@@ -130,19 +130,29 @@ class CochinillaIngreso extends Model
     }
     public function getPorcentajeVenteadoLimpiaAttribute()
     {
-        return $this->total_venteado_limpia / $this->total_venteado_total * 100;
+        return $this->total_venteado_total > 0 ? ($this->total_venteado_limpia / $this->total_venteado_total) * 100 : 0;
     }
+
     public function getPorcentajeVenteadoBasuraAttribute()
     {
-        return $this->total_venteado_basura / $this->total_venteado_total * 100;
+        return $this->total_venteado_total > 0 ? ($this->total_venteado_basura / $this->total_venteado_total) * 100 : 0;
     }
+
     public function getPorcentajeVenteadoPolvilloAttribute()
     {
-        return $this->total_venteado_polvillo / $this->total_venteado_total * 100;
+        return $this->total_venteado_total > 0 ? ($this->total_venteado_polvillo / $this->total_venteado_total) * 100 : 0;
     }
     public function getDiferenciaAttribute()
     {
         return $this->total_kilos - $this->total_venteado_kilos_ingresados;
+    }
+    public function getPorcentajeDiferenciaAttribute()
+    {
+        if ($this->total_kilos == 0) {
+            return 0; // o null, o cualquier valor que tenga sentido en tu caso
+        }
+
+        return ($this->diferencia / $this->total_kilos) * 100;
     }
     #endregion
 
@@ -196,25 +206,34 @@ class CochinillaIngreso extends Model
             + $this->total_filtrado_piedra
             + $this->total_filtrado_basura;
     }
+    private function calcularPorcentaje($totalCategoria)
+    {
+        return $this->total_filtrado_total > 0 ? ($totalCategoria / $this->total_filtrado_total) * 100 : 0;
+    }
+
     public function getPorcentajeFiltradoPrimeraAttribute()
     {
-        return $this->total_filtrado_primera / $this->total_filtrado_total * 100;
+        return $this->calcularPorcentaje($this->total_filtrado_primera);
     }
+
     public function getPorcentajeFiltradoSegundaAttribute()
     {
-        return $this->total_filtrado_segunda / $this->total_filtrado_total * 100;
+        return $this->calcularPorcentaje($this->total_filtrado_segunda);
     }
+
     public function getPorcentajeFiltradoTerceraAttribute()
     {
-        return $this->total_filtrado_tercera / $this->total_filtrado_total * 100;
+        return $this->calcularPorcentaje($this->total_filtrado_tercera);
     }
+
     public function getPorcentajeFiltradoPiedraAttribute()
     {
-        return $this->total_filtrado_piedra / $this->total_filtrado_total * 100;
+        return $this->calcularPorcentaje($this->total_filtrado_piedra);
     }
+
     public function getPorcentajeFiltradoBasuraAttribute()
     {
-        return $this->total_filtrado_basura / $this->total_filtrado_total * 100;
+        return $this->calcularPorcentaje($this->total_filtrado_basura);
     }
     public function getDiferenciaFiltradoAttribute()
     {

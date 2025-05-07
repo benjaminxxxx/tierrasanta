@@ -12,17 +12,24 @@ use Livewire\Component;
 class InfestacionPorCampaniaComponent extends Component
 {
     use LivewireAlert;
+    public $campaniaId;
+    public $tipo;
     public $evaluacionesBrotesXPiso = [];
     public $infestaciones = [];
-    public $campaniaId;
     public $ultimaInfestacion;
     public $campania;
     public $infestacion_fecha_recojo_vaciado_infestadores;
+    public $reinfestacion_fecha_recojo_vaciado_infestadores;
     public $infestacion_fecha_colocacion_malla;
+    public $reinfestacion_fecha_colocacion_malla;
     public $infestacion_fecha_retiro_malla;
-    public function mount($campaniaId)
+    public $reinfestacion_fecha_retiro_malla;
+    public $infestacionTexto;
+    public function mount($campaniaId,$tipo = 'infestacion')
     {
         $this->campaniaId = $campaniaId;
+        $this->tipo = $tipo;
+        $this->infestacionTexto = $tipo == 'infestacion' ? 'infestación' : 're-infestación';
         $this->obtenerCampania();
         $this->obtenerInfestaciones();
     }
@@ -37,7 +44,7 @@ class InfestacionPorCampaniaComponent extends Component
         if ($this->campaniaId) {
             $this->infestaciones = CochinillaInfestacion::where('campo_campania_id', $this->campaniaId)
                 ->with(['campoCampania'])
-                ->where('tipo_infestacion', 'infestacion')
+                ->where('tipo_infestacion', $this->tipo)
                 ->orderBy('fecha')
                 ->get();
         }
@@ -46,7 +53,7 @@ class InfestacionPorCampaniaComponent extends Component
     {
         try {
             $campaniaServicio = new CampaniaServicio($this->campaniaId);
-            $campaniaServicio->registrarHistorialDeInfestaciones();
+            $campaniaServicio->registrarHistorialDeInfestaciones($this->tipo);
             $this->obtenerCampania();
             $this->alert('success', 'Datos sincronizados correctamente');
         } catch (\Throwable $th) {
@@ -67,6 +74,27 @@ class InfestacionPorCampaniaComponent extends Component
             $this->campania->update([
                 'infestacion_fecha_recojo_vaciado_infestadores' => $fechaRecojo->format('Y-m-d'),
                 'infestacion_permanencia_infestadores' => $diferenciaDias,
+            ]);
+
+            $this->alert('success', 'Fecha de recojo y vaciado de infestadores actualizada correctamente');
+        } else {
+            $this->alert('error', 'No se ha podido actualizar la fecha de recojo y vaciado de infestadores');
+        }
+    }
+    public function registrarCambiosFechaRecojoVaciadoReInfestadores()
+    {
+        if ($this->campania) {
+            // Asegúrate de que ambas fechas estén como instancias de Carbon
+            $fechaRecojo = Carbon::parse($this->reinfestacion_fecha_recojo_vaciado_infestadores);
+            $fechaInfestacion = Carbon::parse($this->campania->reinfestacion_fecha);
+
+            // Calcular la diferencia en días
+            $diferenciaDias = $fechaInfestacion->diffInDays($fechaRecojo);
+
+            // Actualizar la campaña
+            $this->campania->update([
+                'reinfestacion_fecha_recojo_vaciado_infestadores' => $fechaRecojo->format('Y-m-d'),
+                'reinfestacion_permanencia_infestadores' => $diferenciaDias,
             ]);
 
             $this->alert('success', 'Fecha de recojo y vaciado de infestadores actualizada correctamente');
@@ -95,7 +123,27 @@ class InfestacionPorCampaniaComponent extends Component
             $this->alert('error', 'No se ha podido actualizar la fecha de colocación de malla');
         }
     }
+    public function registrarFechaColocacionMallaReinfestacion()
+    {
+        if ($this->campania) {
+            // Asegúrate de que la fecha esté en formato Carbon
+            $fechaColocacion = Carbon::parse($this->reinfestacion_fecha_colocacion_malla);
+            $fechaRetiro = Carbon::parse($this->campania->reinfestacion_fecha_retiro_malla);
 
+            // Calcular la diferencia en días
+            $diferenciaDias = $fechaColocacion->diffInDays($fechaRetiro);
+
+            // Actualizar la campaña
+            $this->campania->update([
+                'reinfestacion_fecha_colocacion_malla' => $fechaColocacion->format('Y-m-d'),
+                'reinfestacion_permanencia_malla' => $diferenciaDias,
+            ]);
+
+            $this->alert('success', 'Fecha de colocación de malla actualizada correctamente');
+        } else {
+            $this->alert('error', 'No se ha podido actualizar la fecha de colocación de malla');
+        }
+    }
     public function registrarFechaRetiroMalla()
     {
         if ($this->campania) {
@@ -110,6 +158,27 @@ class InfestacionPorCampaniaComponent extends Component
             $this->campania->update([
                 'infestacion_fecha_retiro_malla' => $fechaRetiro->format('Y-m-d'),
                 'infestacion_permanencia_malla' => $diferenciaDias,
+            ]);
+
+            $this->alert('success', 'Fecha de retiro de malla actualizada correctamente');
+        } else {
+            $this->alert('error', 'No se ha podido actualizar la fecha de retiro de malla');
+        }
+    }
+    public function registrarFechaRetiroMallaReinfestacion()
+    {
+        if ($this->campania) {
+            // Asegúrate de que la fecha esté en formato Carbon
+            $fechaRetiro = Carbon::parse($this->reinfestacion_fecha_retiro_malla);
+            $fechaColocacion = Carbon::parse($this->campania->reinfestacion_fecha_colocacion_malla);
+
+            // Calcular la diferencia en días
+            $diferenciaDias = $fechaColocacion->diffInDays($fechaRetiro);
+
+            // Actualizar la campaña
+            $this->campania->update([
+                'reinfestacion_fecha_retiro_malla' => $fechaRetiro->format('Y-m-d'),
+                'reinfestacion_permanencia_malla' => $diferenciaDias,
             ]);
 
             $this->alert('success', 'Fecha de retiro de malla actualizada correctamente');

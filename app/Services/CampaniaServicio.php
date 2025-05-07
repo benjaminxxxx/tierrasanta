@@ -29,43 +29,45 @@ class CampaniaServicio
             }
         }
     }
-    public function registrarHistorialPoblacionPlantas(){
+    public function registrarHistorialPoblacionPlantas()
+    {
 
-        if(!$this->campoCampania){
+        if (!$this->campoCampania) {
             return;
         }
 
         $data = [];
         $evaluacionesPoblacionPlanta = $this->campoCampania->poblacionPlantas;
-        if($evaluacionesPoblacionPlanta->count()>0){
-            $evaluacionDiaCero = $evaluacionesPoblacionPlanta->where('tipo_evaluacion','dia_cero')->sortBy('fecha')->first();
-            $evaluacionUltimaResiembra = $evaluacionesPoblacionPlanta->where('tipo_evaluacion','resiembra')->sortByDesc('fecha')->first();
-            if($evaluacionDiaCero){
+        if ($evaluacionesPoblacionPlanta->count() > 0) {
+            $evaluacionDiaCero = $evaluacionesPoblacionPlanta->where('tipo_evaluacion', 'dia_cero')->sortBy('fecha')->first();
+            $evaluacionUltimaResiembra = $evaluacionesPoblacionPlanta->where('tipo_evaluacion', 'resiembra')->sortByDesc('fecha')->first();
+            if ($evaluacionDiaCero) {
                 $data['pp_dia_cero_fecha_evaluacion'] = $evaluacionDiaCero->fecha;
                 $data['pp_dia_cero_numero_pencas_madre'] = $evaluacionDiaCero->promedio_plantas_ha;
             }
-            if($evaluacionUltimaResiembra){
+            if ($evaluacionUltimaResiembra) {
                 $data['pp_resiembra_fecha_evaluacion'] = $evaluacionUltimaResiembra->fecha;
                 $data['pp_resiembra_numero_pencas_madre'] = $evaluacionUltimaResiembra->promedio_plantas_ha;
             }
-        }else{
+        } else {
             $data['pp_dia_cero_fecha_evaluacion'] = null;
             $data['pp_dia_cero_numero_pencas_madre'] = null;
             $data['pp_resiembra_fecha_evaluacion'] = null;
             $data['pp_resiembra_numero_pencas_madre'] = null;
         }
-        
+
         $this->campoCampania->update($data);
     }
-    public function registrarHistorialBrotes(){
+    public function registrarHistorialBrotes()
+    {
 
-        if(!$this->campoCampania){
+        if (!$this->campoCampania) {
             return;
         }
-        $evaluacionesBrotesXPiso = $this->campoCampania->evaluacionBrotesXPiso()->orderBy('fecha','desc')->first();
+        $evaluacionesBrotesXPiso = $this->campoCampania->evaluacionBrotesXPiso()->orderBy('fecha', 'desc')->first();
         $data = [];
 
-        if(!$evaluacionesBrotesXPiso){
+        if (!$evaluacionesBrotesXPiso) {
             $data['brotexpiso_fecha_evaluacion'] = null;
             $data['brotexpiso_actual_brotes_2piso'] = null;
             $data['brotexpiso_brotes_2piso_n_dias'] = null;
@@ -75,7 +77,7 @@ class CampaniaServicio
             $data['brotexpiso_total_brotes_2y3piso_n_dias'] = null;
             $this->campoCampania->update($data);
             return;
-        }   
+        }
 
         $data['brotexpiso_fecha_evaluacion'] = $evaluacionesBrotesXPiso->fecha;
         $data['brotexpiso_actual_brotes_2piso'] = $evaluacionesBrotesXPiso->promedio_actual_brotes_2piso;
@@ -87,39 +89,65 @@ class CampaniaServicio
 
         $this->campoCampania->update($data);
     }
-    public function registrarHistorialDeInfestaciones()
+    public function registrarHistorialDeInfestaciones($tipo = 'infestacion')
     {
         $data = [];
         $infestaciones = CochinillaInfestacion::where('campo_campania_id', $this->campoCampaniaId)
-            ->where('tipo_infestacion', 'infestacion')
+            ->where('tipo_infestacion', $tipo)
             ->orderBy('fecha')
             ->get();
         if ($infestaciones->count() > 0) {
             $ultimaInfestacion = $infestaciones->last();
             if ($ultimaInfestacion) {
-                if ($ultimaInfestacion->fecha && $this->campoCampania->fecha_inicio) {
-                    $inicio = new \DateTime($this->campoCampania->fecha_inicio);
-                    $infestacion = new \DateTime($ultimaInfestacion->fecha);
-                    $diferencia = $inicio->diff($infestacion);
 
-                    $duracion = $diferencia->y . ' año' . ($diferencia->y !== 1 ? 's' : '') . ', '
-                        . $diferencia->m . ' mes' . ($diferencia->m !== 1 ? 'es' : '') . ', '
-                        . $diferencia->d . ' día' . ($diferencia->d !== 1 ? 's' : '');
-                } else {
-                    $duracion = null;
+
+                if ($tipo == 'infestacion') {
+
+                    if ($ultimaInfestacion->fecha && $this->campoCampania->fecha_inicio) {
+                        $inicio = new \DateTime($this->campoCampania->fecha_inicio);
+                        $infestacion = new \DateTime($ultimaInfestacion->fecha);
+                        $diferencia = $inicio->diff($infestacion);
+
+                        $duracion = $diferencia->y . ' año' . ($diferencia->y !== 1 ? 's' : '') . ', '
+                            . $diferencia->m . ' mes' . ($diferencia->m !== 1 ? 'es' : '') . ', '
+                            . $diferencia->d . ' día' . ($diferencia->d !== 1 ? 's' : '');
+                    } else {
+                        $duracion = null;
+                    }
+
+                    $data['infestacion_fecha'] = $ultimaInfestacion->fecha;
+                    $data['infestacion_duracion_desde_campania'] = $duracion;
                 }
+                if ($tipo == 'reinfestacion') {
+                    $ultimaInfestacionInfestacion = CochinillaInfestacion::where('campo_campania_id', $this->campoCampaniaId)
+                        ->where('tipo_infestacion', 'infestacion')
+                        ->orderBy('fecha', 'desc')
+                        ->first();
 
-                $data['infestacion_fecha'] = $ultimaInfestacion->fecha;
-                $data['infestacion_duracion_desde_campania'] = $duracion;
+                    if ($ultimaInfestacion->fecha && $ultimaInfestacionInfestacion && $ultimaInfestacionInfestacion->fecha) {
+                        $infestacion = new \DateTime($ultimaInfestacionInfestacion->fecha);
+                        $reinfestacion = new \DateTime($ultimaInfestacion->fecha);
+                        $diferencia = $infestacion->diff($reinfestacion);
+
+                        $duracion = $diferencia->y . ' año' . ($diferencia->y !== 1 ? 's' : '') . ', '
+                            . $diferencia->m . ' mes' . ($diferencia->m !== 1 ? 'es' : '') . ', '
+                            . $diferencia->d . ' día' . ($diferencia->d !== 1 ? 's' : '');
+                    } else {
+                        $duracion = null;
+                    }
+
+                    $data['reinfestacion_fecha'] = $ultimaInfestacion->fecha;
+                    $data['reinfestacion_duracion_desde_infestacion'] = $duracion;
+                }
             }
-            $data['infestacion_kg_totales_madre'] = $infestaciones->sum('kg_madres');
-            $data['infestacion_kg_madre_infestador_carton'] = $infestaciones
+            $data[$tipo . '_kg_totales_madre'] = $infestaciones->sum('kg_madres');
+            $data[$tipo . '_kg_madre_infestador_carton'] = $infestaciones
                 ->where('metodo', 'carton')
                 ->sum('kg_madres');
-            $data['infestacion_kg_madre_infestador_tubos'] = $infestaciones
+            $data[$tipo . '_kg_madre_infestador_tubos'] = $infestaciones
                 ->where('metodo', 'tubo')
                 ->sum('kg_madres');
-            $data['infestacion_kg_madre_infestador_mallita'] = $infestaciones
+            $data[$tipo . '_kg_madre_infestador_mallita'] = $infestaciones
                 ->where('metodo', 'malla')
                 ->sum('kg_madres');
 
@@ -132,10 +160,10 @@ class CampaniaServicio
             $infestadores_malla = $infestaciones
                 ->where('metodo', 'malla')
                 ->sum('infestadores');
-                
-            $data['infestacion_cantidad_infestadores_carton'] = $infestadores_carton;
-            $data['infestacion_cantidad_infestadores_tubos'] = $infestadores_tubo;
-            $data['infestacion_cantidad_infestadores_mallita'] = $infestadores_malla;
+
+            $data[$tipo . '_cantidad_infestadores_carton'] = $infestadores_carton;
+            $data[$tipo . '_cantidad_infestadores_tubos'] = $infestadores_tubo;
+            $data[$tipo . '_cantidad_infestadores_mallita'] = $infestadores_malla;
 
             $lista = [];
             foreach ($infestaciones as $infestacion) {
@@ -145,18 +173,18 @@ class CampaniaServicio
                 ];
             }
 
-            $data['infestacion_procedencia_madres'] = json_encode($lista);
-            $data['infestacion_cantidad_madres_por_infestador_carton'] =
-                $infestadores_carton > 0 ? $data['infestacion_kg_madre_infestador_carton'] / $infestadores_carton : 0;
+            $data[$tipo . '_procedencia_madres'] = json_encode($lista);
+            $data[$tipo . '_cantidad_madres_por_infestador_carton'] =
+                $infestadores_carton > 0 ? $data[$tipo . '_kg_madre_infestador_carton'] / $infestadores_carton : 0;
 
-            $data['infestacion_cantidad_madres_por_infestador_tubos'] =
-                $infestadores_tubo > 0 ? $data['infestacion_kg_madre_infestador_tubos'] / $infestadores_tubo : 0;
+            $data[$tipo . '_cantidad_madres_por_infestador_tubos'] =
+                $infestadores_tubo > 0 ? $data[$tipo . '_kg_madre_infestador_tubos'] / $infestadores_tubo : 0;
 
-            $data['infestacion_cantidad_madres_por_infestador_mallita'] =
-                $infestadores_malla > 0 ? $data['infestacion_kg_madre_infestador_mallita'] / $infestadores_malla : 0;
+            $data[$tipo . '_cantidad_madres_por_infestador_mallita'] =
+                $infestadores_malla > 0 ? $data[$tipo . '_kg_madre_infestador_mallita'] / $infestadores_malla : 0;
         }
 
-        $data['infestacion_numero_pencas'] = $this->campoCampania->brotexpiso_actual_total_brotes_2y3piso;
+        $data[$tipo . '_numero_pencas'] = $this->campoCampania->brotexpiso_actual_total_brotes_2y3piso;
 
 
         $this->campoCampania->update($data);
