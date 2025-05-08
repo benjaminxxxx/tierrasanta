@@ -66,7 +66,7 @@ class CampoCampania extends Model
         'infestacion_cantidad_infestadores_mallita',
         'infestacion_fecha_recojo_vaciado_infestadores',
         'infestacion_permanencia_infestadores',//dias
-        'infestacion_fecha_colocacion_malla',   
+        'infestacion_fecha_colocacion_malla',
         'infestacion_fecha_retiro_malla',
         'infestacion_permanencia_malla',//dias
 
@@ -134,11 +134,55 @@ class CampoCampania extends Model
             ->latest('fecha_siembra') // Obtiene la siembra más reciente antes de fecha_inicio
             ->value('fecha_siembra') ?? null; // Devuelve solo la fecha o una cadena vacía si no hay resultados
     }
-    public static function masProximaAntesDe($fecha,$campo)
+    public static function masProximaAntesDe($fecha, $campo)
     {
         return self::where('fecha_inicio', '<=', $fecha)
             ->where('campo', $campo)
             ->orderByDesc('fecha_inicio')
             ->first();
     }
+    #region Alias
+    // Aliases para infestación
+    public function getInfestacionCantidadMadresPorInfestadorCartonAliasAttribute()
+    {
+        return $this->formatearMadresPorInfestador($this->infestacion_cantidad_madres_por_infestador_carton);
+    }
+
+    public function getInfestacionCantidadMadresPorInfestadorTubosAliasAttribute()
+    {
+        return $this->formatearMadresPorInfestador($this->infestacion_cantidad_madres_por_infestador_tubos);
+    }
+
+    public function getInfestacionCantidadMadresPorInfestadorMallitaAliasAttribute()
+    {
+        return $this->formatearMadresPorInfestador($this->infestacion_cantidad_madres_por_infestador_mallita);
+    }
+
+    // Aliases para reinfestación
+    public function getReinfestacionCantidadMadresPorInfestadorCartonAliasAttribute()
+    {
+        return $this->formatearMadresPorInfestador($this->reinfestacion_cantidad_madres_por_infestador_carton);
+    }
+
+    public function getReinfestacionCantidadMadresPorInfestadorTubosAliasAttribute()
+    {
+        return $this->formatearMadresPorInfestador($this->reinfestacion_cantidad_madres_por_infestador_tubos);
+    }
+
+    public function getReinfestacionCantidadMadresPorInfestadorMallitaAliasAttribute()
+    {
+        return $this->formatearMadresPorInfestador($this->reinfestacion_cantidad_madres_por_infestador_mallita);
+    }
+
+    // Método reutilizable para el formateo seguro
+    protected function formatearMadresPorInfestador($valor)
+    {
+        if (!is_numeric($valor)) {
+            return '0gr.';
+        }
+
+        return number_format($valor * 10000, 0) . 'gr.';
+    }
+
+    #endregion
 }

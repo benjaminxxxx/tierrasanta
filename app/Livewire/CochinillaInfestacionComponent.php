@@ -105,8 +105,8 @@ class CochinillaInfestacionComponent extends Component
             $infestacion->{$prefix . '_capacidad_envase'} = $infestacion->capacidad_envase;
             $infestacion->{$prefix . '_numero_envases'} = $infestacion->numero_envases;
             $infestacion->{$prefix . '_infestadores'} = $infestacion->infestadores;
-            $infestacion->{$prefix . '_madres_por_infestador'} = $infestacion->madres_por_infestador;
-            $infestacion->{$prefix . '_infestadores_por_ha'} = $infestacion->infestadores_por_ha;
+            $infestacion->{$prefix . '_madres_por_infestador'} = $infestacion->madres_por_infestador_alias;
+            $infestacion->{$prefix . '_infestadores_por_ha'} = $infestacion->infestadores_por_ha_alias;
 
             return $infestacion;
         });

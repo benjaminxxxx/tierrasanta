@@ -44,4 +44,26 @@ class CochinillaInfestacion extends Model
     {
         return $this->belongsTo(CampoCampania::class, 'campo_campania_id');
     }
+    #region Alias
+    public function getMadresPorInfestadorAliasAttribute($value)
+    {
+        $madres = $this->madres_por_infestador;
+
+        if (!is_numeric($madres)) {
+            return '0gr.'; // o podrías devolver 'N/A' según tu lógica
+        }
+
+        return number_format($madres * 10000, 0) . 'gr.';
+    }
+    public function getInfestadoresPorHaAliasAttribute($value)
+    {
+        $infestadores_por_ha = $this->infestadores_por_ha;
+
+        if (!is_numeric($infestadores_por_ha)) {
+            return '0 infest.'; // o podrías devolver 'N/A' según tu lógica
+        }
+
+        return number_format($infestadores_por_ha, 0) . ' infest';
+    }
+    #endregion
 }

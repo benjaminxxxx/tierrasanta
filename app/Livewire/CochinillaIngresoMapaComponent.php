@@ -22,7 +22,7 @@ class CochinillaIngresoMapaComponent extends Component
             $this->datosPorFecha = [];
             return;
         }
-
+        $this->resumen = $registroIngreso;
         $this->ingresoFinal = $registroIngreso;
         $detalles = $registroIngreso->detalles->toBase();
         $venteados = $registroIngreso->venteados;
@@ -54,74 +54,19 @@ class CochinillaIngresoMapaComponent extends Component
                 'filtrados' => $filtrados->filter(fn($f) => $f->fecha_proceso === $fechaStr)->values(),
             ];
         }
-
-        $this->resumen = [
-            'total_kilos' => $registroIngreso->total_kilos,
-
-            'venteado_total_kilos' => $registroIngreso->total_venteado_total,
-            'porcentaje_diferencia' => $registroIngreso->porcentaje_diferencia,
-
-            'total_venteado_limpia' => $registroIngreso->total_venteado_limpia,
-            'porcentaje_venteado_limpia' => $registroIngreso->porcentaje_venteado_limpia,
-
-            'total_venteado_basura' => $registroIngreso->total_venteado_basura,
-            'porcentaje_venteado_basura' => $registroIngreso->porcentaje_venteado_basura,
-
-            'total_venteado_polvillo' => $registroIngreso->total_venteado_polvillo,
-            'porcentaje_venteado_polvillo' => $registroIngreso->porcentaje_venteado_polvillo,
-
-            'filtrado_total_kilos' => $registroIngreso->total_filtrado_total,
-            'porcentaje_diferencia_filtrado' => $registroIngreso->porcentaje_diferencia_filtrado,
-
-            'total_filtrado_primera' => $registroIngreso->total_filtrado_primera,
-            'porcentaje_filtrado_primera' => $registroIngreso->porcentaje_filtrado_primera,
-
-            'total_filtrado_segunda' => $registroIngreso->total_filtrado_segunda,
-            'porcentaje_filtrado_segunda' => $registroIngreso->porcentaje_filtrado_segunda,
-
-            'total_filtrado_tercera' => $registroIngreso->total_filtrado_tercera,
-            'porcentaje_filtrado_tercera' => $registroIngreso->porcentaje_filtrado_tercera,
-
-            'total_filtrado_piedra' => $registroIngreso->total_filtrado_piedra,
-            'porcentaje_filtrado_piedra' => $registroIngreso->porcentaje_filtrado_piedra,
-
-            'total_filtrado_basura' => $registroIngreso->total_filtrado_basura,
-            'porcentaje_filtrado_basura' => $registroIngreso->porcentaje_filtrado_basura,
-        ];
-
         
-
-        $valores = [
-            $registroIngreso->total_kilos,
-            $registroIngreso->total_venteado_total,
-            $registroIngreso->total_venteado_limpia,
-            $registroIngreso->total_venteado_basura,
-            $registroIngreso->total_venteado_polvillo,
-            $registroIngreso->total_filtrado_total,
-            $registroIngreso->total_filtrado_primera,
-            $registroIngreso->total_filtrado_segunda,
-            $registroIngreso->total_filtrado_tercera,
-            $registroIngreso->total_filtrado_piedra,
-            $registroIngreso->total_filtrado_basura,
-        ];
-/*
-        $maximo = max($valores);
-        
-        $this->resumen['px_total_kilos'] = $this->calcularTamanioPx($registroIngreso->total_kilos, $maximo);
-
-        $this->resumen['px_total_venteado'] = $this->calcularTamanioPx($registroIngreso->total_venteado_total, $maximo);
-        $this->resumen['px_limpia'] = $this->calcularTamanioPx($registroIngreso->total_venteado_limpia, $maximo);
-        $this->resumen['px_basura'] = $this->calcularTamanioPx($registroIngreso->total_venteado_basura, $maximo);
-        $this->resumen['px_polvillo'] = $this->calcularTamanioPx($registroIngreso->total_venteado_polvillo, $maximo);
-
-        $this->resumen['px_total_filtrado'] = $this->calcularTamanioPx($registroIngreso->total_filtrado_total, $maximo);
-        $this->resumen['px_1ra'] = $this->calcularTamanioPx($registroIngreso->total_filtrado_primera, $maximo);
-        $this->resumen['px_2da'] = $this->calcularTamanioPx($registroIngreso->total_filtrado_segunda, $maximo);
-        $this->resumen['px_3ra'] = $this->calcularTamanioPx($registroIngreso->total_filtrado_tercera, $maximo);
-        $this->resumen['px_filtrado_piedra'] = $this->calcularTamanioPx($registroIngreso->total_filtrado_piedra, $maximo);
-        $this->resumen['px_filtrado_basura'] = $this->calcularTamanioPx($registroIngreso->total_filtrado_basura, $maximo);
-        */
         $this->datosPorFecha = $datosPorFecha;
+        
+        $this->dispatch('cargarDataMapaChart', [
+            'total_kilos' => $this->resumen->total_kilos,
+            'total_venteado_kilos_ingresados' => $this->resumen->total_venteado_kilos_ingresados ?? 0,
+            'total_filtrado_kilos_ingresados' => $this->resumen->total_filtrado_kilos_ingresados ?? 0,
+            'merma_ingreso_venteado' => $this->resumen->merma_ingreso_venteado ?? 0,
+            'merma_venteado_filtrado' => $this->resumen->merma_venteado_filtrado ?? 0,
+            'merma_ingreso_filtrado' => $this->resumen->merma_ingreso_filtrado ?? 0,
+            'material_util_venteado' => $this->resumen->material_util_venteado ?? 0,
+            'material_util_filtrado' => $this->resumen->material_util_filtrado ?? 0,
+        ]);
         $this->mostrarFormulario = true;
     }
     public function calcularTamanioPx($valor, $maximo, $maxPx = 100, $minPx = 10)
@@ -142,6 +87,6 @@ class CochinillaIngresoMapaComponent extends Component
 
     public function render()
     {
-        return view('livewire.cochinilla-ingreso-mapa-component');
+        return view('livewire.cochinilla_ingreso_mapa_component.index');
     }
 }

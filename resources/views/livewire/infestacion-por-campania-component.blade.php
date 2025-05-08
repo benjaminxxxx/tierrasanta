@@ -91,15 +91,15 @@
                                 @endif
                                 <x-tr>
                                     <x-th>Cantidad de madres por infestador cartón</x-th>
-                                    <x-td>{{ $campania->infestacion_cantidad_madres_por_infestador_carton }}</x-td>
+                                    <x-td>{{ $campania->infestacion_cantidad_madres_por_infestador_carton_alias }}</x-td>
                                 </x-tr>
                                 <x-tr>
                                     <x-th>Cantidad de madres por infestador tubo</x-th>
-                                    <x-td>{{ $campania->infestacion_cantidad_madres_por_infestador_tubos }}</x-td>
+                                    <x-td>{{ $campania->infestacion_cantidad_madres_por_infestador_tubos_alias }}</x-td>
                                 </x-tr>
                                 <x-tr>
                                     <x-th>Cantidad de madres por infestador mallita</x-th>
-                                    <x-td>{{ $campania->infestacion_cantidad_madres_por_infestador_mallita }}</x-td>
+                                    <x-td>{{ $campania->infestacion_cantidad_madres_por_infestador_mallita_alias }}</x-td>
                                 </x-tr>
                                 <x-tr>
                                     <x-th>Cantidad de infestadores cartón</x-th>
@@ -284,15 +284,15 @@
                                 @endif
                                 <x-tr>
                                     <x-th>Cantidad de madres por infestador cartón</x-th>
-                                    <x-td>{{ $campania->reinfestacion_cantidad_madres_por_infestador_carton }}</x-td>
+                                    <x-td>{{ $campania->reinfestacion_cantidad_madres_por_infestador_carton_alias }}</x-td>
                                 </x-tr>
                                 <x-tr>
                                     <x-th>Cantidad de madres por infestador tubo</x-th>
-                                    <x-td>{{ $campania->reinfestacion_cantidad_madres_por_infestador_tubos }}</x-td>
+                                    <x-td>{{ $campania->reinfestacion_cantidad_madres_por_infestador_tubos_alias }}</x-td>
                                 </x-tr>
                                 <x-tr>
                                     <x-th>Cantidad de madres por infestador mallita</x-th>
-                                    <x-td>{{ $campania->reinfestacion_cantidad_madres_por_infestador_mallita }}</x-td>
+                                    <x-td>{{ $campania->reinfestacion_cantidad_madres_por_infestador_mallita_alias }}</x-td>
                                 </x-tr>
                                 <x-tr>
                                     <x-th>Cantidad de infestadores cartón</x-th>
@@ -512,10 +512,10 @@
                                         {{ $infestacion->infestadores }}
                                     </x-td>
                                     <x-td class="text-center">
-                                        {{ $infestacion->madres_por_infestador }}
+                                        {{ $infestacion->madres_por_infestador_alias }}
                                     </x-td>
                                     <x-td class="text-center">
-                                        {{ $infestacion->infestadores_por_ha }}
+                                        {{ $infestacion->infestadores_por_ha_alias }}
                                     </x-td>
                                 </x-tr>
                             @endforeach

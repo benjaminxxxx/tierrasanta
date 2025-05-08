@@ -201,10 +201,10 @@
                                     {{ $cochinillaInfestacion->carton_infestadores }}
                                 </x-td>
                                 <x-td class="text-center bg-yellow-100">
-                                    {{ number_format($cochinillaInfestacion->carton_madres_por_infestador, 2) }}
+                                    {{ $cochinillaInfestacion->carton_madres_por_infestador }}
                                 </x-td>
                                 <x-td class="text-center bg-yellow-100">
-                                    {{ number_format($cochinillaInfestacion->carton_infestadores_por_ha, 2) }}
+                                    {{ $cochinillaInfestacion->carton_infestadores_por_ha }}
                                 </x-td>
                             @endif
 
@@ -221,10 +221,10 @@
                                     {{ $cochinillaInfestacion->tubo_infestadores }}
                                 </x-td>
                                 <x-td class="text-center bg-purple-100">
-                                    {{ number_format($cochinillaInfestacion->tubo_madres_por_infestador, 2) }}
+                                    {{ $cochinillaInfestacion->tubo_madres_por_infestador }}
                                 </x-td>
                                 <x-td class="text-center bg-purple-100">
-                                    {{ number_format($cochinillaInfestacion->tubo_infestadores_por_ha, 2) }}
+                                    {{ $cochinillaInfestacion->tubo_infestadores_por_ha }}
                                 </x-td>
                             @endif
 
@@ -241,10 +241,10 @@
                                     {{ $cochinillaInfestacion->malla_infestadores }}
                                 </x-td>
                                 <x-td class="text-center bg-blue-100">
-                                    {{ number_format($cochinillaInfestacion->malla_madres_por_infestador, 2) }}
+                                    {{ $cochinillaInfestacion->malla_madres_por_infestador }}
                                 </x-td>
                                 <x-td class="text-center bg-blue-100">
-                                    {{ number_format($cochinillaInfestacion->malla_infestadores_por_ha, 2) }}
+                                    {{ $cochinillaInfestacion->malla_infestadores_por_ha }}
                                 </x-td>
                             @endif
 

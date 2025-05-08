@@ -111,6 +111,10 @@ class CochinillaIngreso extends Model
     {
         return $this->venteados->sum('kilos_ingresado');
     }
+    public function getTotalVenteadoKilosIngresadosPorcentajeAttribute()
+    {
+        return $this->total_kilos > 0 ? ($this->total_venteado_kilos_ingresados / $this->total_kilos) * 100 : 0;
+    }
 
     public function getTotalVenteadoLimpiaAttribute()
     {
@@ -165,6 +169,10 @@ class CochinillaIngreso extends Model
     public function getTotalFiltradoKilosIngresadosAttribute()
     {
         return $this->filtrados->sum('kilos_ingresados');
+    }
+    public function getTotalFiltradoKilosIngresadosPorcentajeAttribute()
+    {
+        return $this->total_kilos > 0 ? ($this->total_filtrado_kilos_ingresados / $this->total_kilos) * 100 : 0;
     }
 
     public function getTotalFiltradoPrimeraAttribute()
@@ -249,6 +257,53 @@ class CochinillaIngreso extends Model
     }
 
 
+    #endregion
+    #region CALCULOS GENERALES
+    //Material Util de venteado
+    public function getMaterialUtilVenteadoAttribute()
+    {
+        return $this->total_venteado_limpia + $this->total_venteado_polvillo;
+    }
+    public function getMaterialUtilVenteadoPorcentajeAttribute()
+    {
+        return $this->total_venteado_kilos_ingresados > 0 ? ($this->material_util_venteado / $this->total_venteado_kilos_ingresados) * 100 : 0;
+    }
+    //Material Util de filtrado
+    public function getMaterialUtilFiltradoAttribute()
+    {
+        return $this->total_filtrado_primera + $this->total_filtrado_segunda + $this->total_filtrado_tercera;
+    }
+    public function getMaterialUtilFiltradoPorcentajeAttribute()
+    {
+        return $this->total_filtrado_kilos_ingresados > 0 ? ($this->material_util_filtrado / $this->total_filtrado_kilos_ingresados) * 100 : 0;
+    }
+    //Merma de ingreso a venteado
+    public function getMermaIngresoVenteadoAttribute()
+    {
+        return $this->total_kilos - $this->total_venteado_kilos_ingresados;
+    }
+    public function getMermaIngresoVenteadoPorcentajeAttribute()
+    {
+        return $this->total_kilos > 0 ? ($this->merma_ingreso_venteado / $this->total_kilos) * 100 : 0;
+    }
+    //Merma de venteado a filtrado
+    public function getMermaVenteadoFiltradoAttribute()
+    {
+        return $this->material_util_venteado - $this->total_filtrado_kilos_ingresados;
+    }
+    public function getMermaVenteadoFiltradoPorcentajeAttribute()
+    {
+        return $this->material_util_venteado > 0 ? ($this->merma_venteado_filtrado / $this->material_util_venteado) * 100 : 0;
+    }
+    //Merma de ingreso a filtrado
+    public function getMermaIngresoFiltradoAttribute()
+    {
+        return $this->total_kilos - $this->total_filtrado_kilos_ingresados;
+    }
+    public function getMermaIngresoFiltradoPorcentajeAttribute()
+    {
+        return $this->total_kilos > 0 ? ($this->merma_ingreso_filtrado / $this->total_kilos) * 100 : 0;
+    }
     #endregion
 
 }
