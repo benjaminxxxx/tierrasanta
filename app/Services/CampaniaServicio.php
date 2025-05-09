@@ -9,6 +9,7 @@ use App\Models\CochinillaInfestacion;
 use App\Models\ContabilidadCostoDetalle;
 use App\Models\ResumenConsumoProductos;
 use Exception;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Illuminate\Support\Facades\Storage;
@@ -56,6 +57,36 @@ class CampaniaServicio
             $data['pp_resiembra_numero_pencas_madre'] = null;
         }
 
+        $this->campoCampania->update($data);
+    }
+    public function registrarHistorialCosechaMadres()
+    {
+        if (!$this->campoCampania) {
+            return;
+        }
+
+        $data = [];
+        $cochinillaMadres = $this->campoCampania->cochinillaMadres()
+            ->orderBy('fecha', 'asc')
+            ->where('campo_campania_id', $this->campoCampania->id)
+            ->get();
+
+        if ($cochinillaMadres->count() > 0) {
+            $fechaCosecha = $cochinillaMadres->last()->fecha;
+            $duracion = null;
+
+            if ($fechaCosecha && $this->campoCampania->infestacion_fecha) {
+                $inicio = Carbon::parse($this->campoCampania->infestacion_fecha);
+                $diferencia = $inicio->diff($fechaCosecha);
+
+                $duracion = $diferencia->y . ' año' . ($diferencia->y !== 1 ? 's' : '') . ', '
+                    . $diferencia->m . ' mes' . ($diferencia->m !== 1 ? 'es' : '') . ', '
+                    . $diferencia->d . ' día' . ($diferencia->d !== 1 ? 's' : '');
+            }
+
+            $data['cosechamadres_fecha_cosecha'] = $fechaCosecha;
+            $data['cosechamadres_tiempo_infestacion_a_cosecha'] = $duracion;
+        }
         $this->campoCampania->update($data);
     }
     public function registrarHistorialBrotes()

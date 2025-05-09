@@ -18,8 +18,12 @@ class CochinillaCosechaMamasComponent extends Component
     public $anioSeleccionado;
     public $aniosDisponibles = [];
     public $observaciones = [];
-    public function mount()
+    public $campaniaId;
+    public $campaniaUnica = false;
+    public function mount($campaniaId = null, $campaniaUnica = false)
     {
+        $this->campaniaId = $campaniaId;
+        $this->campaniaUnica = $campaniaUnica;
         $this->observaciones = CochinillaObservacion::cosechasMama()->get();
         $this->aniosDisponibles = CochinillaIngreso::select(DB::raw('YEAR(fecha) as anio'))
             ->groupBy('anio')
@@ -49,15 +53,20 @@ class CochinillaCosechaMamasComponent extends Component
             });
 
         // FILTROS
-        if ($this->campoSeleccionado) {
-            $query->where('campo', $this->campoSeleccionado);
+        if ($this->campaniaUnica && $this->campaniaId) {
+            $query->where('campo_campania_id', $this->campaniaId);
+        } else {
+            if ($this->campoSeleccionado) {
+                $query->where('campo', $this->campoSeleccionado);
+            }
+
+            if ($this->campaniaSeleccionado) {
+                $query->whereHas('campoCampania', function ($q) {
+                    $q->where('nombre_campania', $this->campaniaSeleccionado);
+                });
+            }
         }
 
-        if ($this->campaniaSeleccionado) {
-            $query->whereHas('campoCampania', function ($q) {
-                $q->where('nombre_campania', $this->campaniaSeleccionado);
-            });
-        }
 
         if ($this->observacionSeleccionado) {
             // Filtro observaciones tanto del ingreso como de los detalles
@@ -73,7 +82,7 @@ class CochinillaCosechaMamasComponent extends Component
             $query->whereYear('fecha', $this->anioSeleccionado);
         }
 
-        $ingresosPaginados = $query->orderBy('fecha', 'desc')->paginate(15);
+        $ingresosPaginados = $query->orderBy('fecha', $this->campaniaUnica ? 'asc' : 'desc')->paginate(15);
 
         // Armamos colección para la vista
         $cosechasMama = collect();
@@ -81,10 +90,10 @@ class CochinillaCosechaMamasComponent extends Component
         foreach ($ingresosPaginados as $ingreso) {
             if ($ingreso->detallesMama->isNotEmpty()) {
                 foreach ($ingreso->detallesMama as $detalle) {
-                    $kg_ha = ($ingreso->area && $ingreso->area != 0) 
-                        ? $detalle->total_kilos / $ingreso->area 
+                    $kg_ha = ($ingreso->area && $ingreso->area != 0)
+                        ? $detalle->total_kilos / $ingreso->area
                         : null;
-        
+
                     $cosechasMama->push((object) [
                         'fecha' => $detalle->fecha,
                         'campo' => $ingreso->campo,
@@ -96,10 +105,10 @@ class CochinillaCosechaMamasComponent extends Component
                     ]);
                 }
             } elseif ($ingreso->observacionRelacionada?->es_cosecha_mama) {
-                $kg_ha = ($ingreso->area && $ingreso->area != 0) 
-                    ? $ingreso->total_kilos / $ingreso->area 
+                $kg_ha = ($ingreso->area && $ingreso->area != 0)
+                    ? $ingreso->total_kilos / $ingreso->area
                     : null;
-        
+
                 $cosechasMama->push((object) [
                     'fecha' => $ingreso->fecha,
                     'campo' => $ingreso->campo,
@@ -111,13 +120,14 @@ class CochinillaCosechaMamasComponent extends Component
                 ]);
             }
         }
-        
+
+
+        $cosechasOrdenadas = collect($cosechasMama)->sortBy('fecha', SORT_REGULAR, !$this->campaniaUnica)->values();
 
         return view('livewire.cochinilla-cosecha-mamas-component', [
-            'cosechasMama' => $cosechasMama->sortByDesc('fecha')->values(),
-            'ingresosPaginados' => $ingresosPaginados, // paginador para links()
+            'cosechasMama' => $cosechasOrdenadas,
+            'ingresosPaginados' => $ingresosPaginados,
         ]);
+
     }
-
-
 }

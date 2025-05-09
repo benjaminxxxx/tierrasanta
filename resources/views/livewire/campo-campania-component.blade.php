@@ -51,10 +51,14 @@
     @if ($campania)
         <x-flex class="w-full justify-between my-5">
             <x-h3>Información General</x-h3>
-            <x-secondary-button type="button" @click="$wire.dispatch('abrirCampaniaDetalle',{campaniaId:{{$campania->id}}})">
+            <x-secondary-button type="button"
+                @click="$wire.dispatch('abrirCampaniaDetalle',{campaniaId:{{ $campania->id }}})">
                 <i class="fa fa-list mr-2"></i> Ver Detalle Completo
             </x-secondary-button>
         </x-flex>
+
+
+
         <x-card>
 
             <x-spacing>
@@ -108,15 +112,21 @@
             </x-spacing>
         </x-card>
 
-        @livewire('poblacion-plantas-por-campania-component', ['campaniaId' => $campania->id], key($campania->id))
+        <livewire:poblacion-plantas-por-campania-component campaniaId="{{ $campania->id }}"
+            wire:key="poblacion_plantas.{{ $campania->id }}" />
 
-        @livewire('evaluacion-brotes-x-piso-por-campania-component', ['campaniaId' => $campania->id],key($campania->id))
+        <livewire:evaluacion-brotes-x-piso-por-campania-component campaniaId="{{ $campania->id }}"
+            wire:key="brotes_x_piso.{{ $campania->id }}" />
 
-        @livewire('reporte-campo-evaluacion-brotes-form-component',['campaniaUnica' => true],key($campania->id))
+        <livewire:reporte-campo-evaluacion-brotes-form-component campaniaUnica="{{ true }}"
+            wire:key="reporte_brotes_form.{{ $campania->id }}" />
 
-        @livewire('infestacion-por-campania-component', ['campaniaId' => $campania->id],key($campania->id))
+        <livewire:infestacion-por-campania-component campaniaId="{{ $campania->id }}"
+            wire:key="infestacion.{{ $campania->id }}" />
 
-        @livewire('infestacion-por-campania-component', ['campaniaId' => $campania->id,'tipo'=>'reinfestacion'],key($campania->id))
-        
+        <livewire:infestacion-por-campania-component campaniaId="{{ $campania->id }}" tipo="reinfestacion"
+            wire:key="reinfestacion.{{ $campania->id }}" />
+
+        @include('livewire.campania-component.grupo-cosecha-madres')
     @endif
 </div>

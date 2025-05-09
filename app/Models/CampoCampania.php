@@ -89,6 +89,25 @@ class CampoCampania extends Model
         'reinfestacion_fecha_colocacion_malla',
         'reinfestacion_fecha_retiro_malla',
         'reinfestacion_permanencia_malla',//dias
+
+        'cosechamadres_fecha_cosecha',
+        'cosechamadres_tiempo_infestacion_a_cosecha',
+        'cosechamadres_destino_madres_fresco',
+        'cosechamadres_infestador_carton_campos',
+        'cosechamadres_infestador_tubo_campos',
+        'cosechamadres_infestador_mallita_campos',
+        'cosechamadres_para_secado',
+        'cosechamadres_para_venta_fresco',
+        'cosechamadres_recuperacion_madres_seco_carton',
+        'cosechamadres_recuperacion_madres_seco_tubo',
+        'cosechamadres_recuperacion_madres_seco_mallita',
+        'cosechamadres_recuperacion_madres_seco_secado',
+        'cosechamadres_recuperacion_madres_seco_fresco',
+        'cosechamadres_conversion_fresco_seco_carton',
+        'cosechamadres_conversion_fresco_seco_tubo',
+        'cosechamadres_conversion_fresco_seco_mallita',
+        'cosechamadres_conversion_fresco_seco_secado',
+        'cosechamadres_conversion_fresco_seco_fresco'
     ];
     public function camposCampaniasConsumo()
     {
@@ -112,7 +131,10 @@ class CampoCampania extends Model
     {
         return $this->hasMany(ResumenConsumoProductos::class, 'campos_campanias_id');
     }
-
+    public function cochinillaIngreso()
+    {
+        return $this->hasMany(CochinillaIngreso::class, 'campo_campania_id');
+    }
     public function campo_model()
     {
         return $this->belongsTo(Campo::class, 'campo', 'nombre');
@@ -140,6 +162,22 @@ class CampoCampania extends Model
             ->where('campo', $campo)
             ->orderByDesc('fecha_inicio')
             ->first();
+    }
+    public function cochinillaMadres()
+    {
+        return $this->cochinillaIngreso()
+            ->with('detalles.observacionRelacionada')
+            ->whereHas('observacionRelacionada', fn($q) => $q->where('es_cosecha_mama', true))
+            ->orWhereHas(
+                'detalles',
+                fn($q) =>
+                $q->whereHas(
+                    'observacionRelacionada',
+                    fn($q2) =>
+                    $q2->where('es_cosecha_mama', true)
+                )
+            );
+
     }
     #region Alias
     // Aliases para infestación
@@ -184,5 +222,95 @@ class CampoCampania extends Model
         return number_format($valor * 10000, 0) . 'gr.';
     }
 
+    #endregion
+    #region CosechaMadresCalculado
+    public function getCosechamadresDestinoMadresFrescoAttribute()
+    {
+        return
+            ($this->cosechamadres_infestador_carton_campos ?? 0) +
+            ($this->cosechamadres_infestador_tubo_campos ?? 0) +
+            ($this->cosechamadres_infestador_mallita_campos ?? 0) +
+            ($this->cosechamadres_para_secado ?? 0) +
+            ($this->cosechamadres_para_venta_fresco ?? 0);
+    }
+
+    public function getCosechamadresRecuperacionMadresAttribute()
+    {
+        return
+            ($this->cosechamadres_recuperacion_madres_seco_carton ?? 0) +
+            ($this->cosechamadres_recuperacion_madres_seco_tubo ?? 0) +
+            ($this->cosechamadres_recuperacion_madres_seco_mallita ?? 0) +
+            ($this->cosechamadres_recuperacion_madres_seco_secado ?? 0) +
+            ($this->cosechamadres_recuperacion_madres_seco_fresco ?? 0);
+    }
+
+    public function getCosechamadresConversionFrescoSecoAttribute()
+    {
+        return
+            ($this->cosechamadres_conversion_fresco_seco_carton ?? 0) +
+            ($this->cosechamadres_conversion_fresco_seco_tubo ?? 0) +
+            ($this->cosechamadres_conversion_fresco_seco_mallita ?? 0) +
+            ($this->cosechamadres_conversion_fresco_seco_secado ?? 0) +
+            ($this->cosechamadres_conversion_fresco_seco_fresco ?? 0);
+    }
+
+    public function getCosechamadresInfestadorCartonCamposHaAttribute()
+    {
+        $area = optional($this->campo_model)->area;
+        return $area > 0 ? $this->cosechamadres_infestador_carton_campos / $area : null;
+    }
+    public function getCosechamadresInfestadorTuboCamposHaAttribute()
+    {
+        $area = optional($this->campo_model)->area;
+        return $area > 0 ? $this->cosechamadres_infestador_tubo_campos / $area : null;
+    }
+
+    public function getCosechamadresInfestadorMallitaCamposHaAttribute()
+    {
+        $area = optional($this->campo_model)->area;
+        return $area > 0 ? $this->cosechamadres_infestador_mallita_campos / $area : null;
+    }
+
+    public function getCosechamadresParaSecadoHaAttribute()
+    {
+        $area = optional($this->campo_model)->area;
+        return $area > 0 ? $this->cosechamadres_para_secado / $area : null;
+    }
+
+    public function getCosechamadresParaVentaFrescoHaAttribute()
+    {
+        $area = optional($this->campo_model)->area;
+        return $area > 0 ? $this->cosechamadres_para_venta_fresco / $area : null;
+    }
+    public function getCosechamadresRecuperacionMadresSecoCartonHaAttribute()
+    {
+        $area = optional($this->campo_model)->area;
+        return $area > 0 ? $this->cosechamadres_recuperacion_madres_seco_carton / $area : null;
+    }
+
+    public function getCosechamadresRecuperacionMadresSecoTuboHaAttribute()
+    {
+        $area = optional($this->campo_model)->area;
+        return $area > 0 ? $this->cosechamadres_recuperacion_madres_seco_tubo / $area : null;
+    }
+
+    public function getCosechamadresRecuperacionMadresSecoMallitaHaAttribute()
+    {
+        $area = optional($this->campo_model)->area;
+        return $area > 0 ? $this->cosechamadres_recuperacion_madres_seco_mallita / $area : null;
+    }
+
+    public function getCosechamadresRecuperacionMadresSecoSecadoHaAttribute()
+    {
+        $area = optional($this->campo_model)->area;
+        return $area > 0 ? $this->cosechamadres_recuperacion_madres_seco_secado / $area : null;
+    }
+
+    public function getCosechamadresRecuperacionMadresSecoFrescoHaAttribute()
+    {
+        $area = optional($this->campo_model)->area;
+        return $area > 0 ? $this->cosechamadres_recuperacion_madres_seco_fresco / $area : null;
+    }
+ 
     #endregion
 }
