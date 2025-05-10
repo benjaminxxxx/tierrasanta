@@ -25,7 +25,7 @@ class InfestacionPorCampaniaComponent extends Component
     public $infestacion_fecha_retiro_malla;
     public $reinfestacion_fecha_retiro_malla;
     public $infestacionTexto;
-    public function mount($campaniaId,$tipo = 'infestacion')
+    public function mount($campaniaId, $tipo = 'infestacion')
     {
         $this->campaniaId = $campaniaId;
         $this->tipo = $tipo;
@@ -47,19 +47,32 @@ class InfestacionPorCampaniaComponent extends Component
                 ->where('tipo_infestacion', $this->tipo)
                 ->orderBy('fecha')
                 ->get();
+            if ($this->tipo == 'infestacion') {
+                //dd($this->campaniaId,$this->infestaciones);
+
+            }
         }
     }
     public function sincronizarInformacion()
     {
         try {
-            $campaniaServicio = new CampaniaServicio($this->campaniaId);
+            if (!$this->campania) {
+                $this->alert('error', 'No se ha podido encontrar una campaña');
+                return;
+            }
+                        
+            // Registrar historial
+            $campaniaServicio = new CampaniaServicio($this->campania->id);
             $campaniaServicio->registrarHistorialDeInfestaciones($this->tipo);
+            
+            $this->obtenerInfestaciones();
             $this->obtenerCampania();
             $this->alert('success', 'Datos sincronizados correctamente');
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }
     }
+
     public function registrarCambiosFechaRecojoVaciadoInfestadores()
     {
         if ($this->campania) {

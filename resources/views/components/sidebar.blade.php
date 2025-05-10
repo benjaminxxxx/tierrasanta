@@ -145,18 +145,29 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorReporteCampo" href="#" :active="request()->routeIs(['reporte_campo.poblacion_plantas','reporte_campo.evaluacion_brotes'])">
+                    <x-nav-link-parent name="sectorReporteCampo" href="#" :active="request()->routeIs([
+                        'reporte_campo.poblacion_plantas',
+                        'reporte_campo.evaluacion_brotes',
+                        'reporte_campo.evaluacion_infestacion_cosecha',
+                        'reporte_campo.evaluacion_proyeccion_rendimiento_poda'
+                        ])">
                         
                         <div class="w-6 text-center">
                             <i class="fa fa-file"></i>
                         </div>
-                        Reporte de Campo
+                        Evaluación de Campo
                         <x-slot name="children">
                             <x-nav-link-child href="{{ route('reporte_campo.poblacion_plantas') }}" :active="request()->routeIs('reporte_campo.poblacion_plantas')">
                                 Población Plantas
                             </x-nav-link-child>
                             <x-nav-link-child href="{{ route('reporte_campo.evaluacion_brotes') }}" :active="request()->routeIs('reporte_campo.evaluacion_brotes')">
-                                Evaluación de Brotes
+                                Brotes x Piso
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('reporte_campo.evaluacion_infestacion_cosecha') }}" :active="request()->routeIs('reporte_campo.evaluacion_infestacion_cosecha')">
+                                Infestación Cosecha
+                            </x-nav-link-child>
+                             <x-nav-link-child href="{{ route('reporte_campo.evaluacion_proyeccion_rendimiento_poda') }}" :active="request()->routeIs('reporte_campo.evaluacion_proyeccion_rendimiento_poda')">
+                                Proyección Rendimiento Poda
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>

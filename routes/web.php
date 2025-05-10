@@ -136,8 +136,10 @@ Route::middleware([
     Route::get('/fdm/costos', [FdmController::class,'costos'])->name('fdm.costos');
 
     //REPORTE CAMPO
-    Route::get('/reporte_campo/poblacion_planta', [ReporteCampoController::class,'poblacion_plantas'])->name('reporte_campo.poblacion_plantas');
-    Route::get('/reporte_campo/evaluacion_brotes', [ReporteCampoController::class,'evaluacion_brotes'])->name('reporte_campo.evaluacion_brotes');
+    Route::get('/evaluacion_campo/poblacion_planta', [ReporteCampoController::class,'poblacion_plantas'])->name('reporte_campo.poblacion_plantas');
+    Route::get('/evaluacion_campo/evaluacion_brotes', [ReporteCampoController::class,'evaluacion_brotes'])->name('reporte_campo.evaluacion_brotes');
+    Route::get('/evaluacion_campo/evaluacion_infestacion_cosecha', [ReporteCampoController::class,'evaluacion_infestacion_cosecha'])->name('reporte_campo.evaluacion_infestacion_cosecha');
+    Route::get('/evaluacion_campo/evaluacion_proyeccion_rendimiento_poda', [ReporteCampoController::class,'evaluacion_proyeccion_rendimiento_poda'])->name('reporte_campo.evaluacion_proyeccion_rendimiento_poda');
 
     //COCHINILLA
     Route::get('/cochinilla/ingreso', [CochinillaController::class,'ingreso'])->name('cochinilla.ingreso');
