@@ -1,6 +1,6 @@
 @props([
-    'label' => null, 
-    'error' => null, 
+    'label' => null,
+    'error' => null,
     'descripcion' => null,
     'fechaMin' => null, // Fecha mínima
     'fechaMax' => null, // Fecha máxima
@@ -28,33 +28,30 @@
         @endif
     </div>
 </div>
-
-@once
+@script
     <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('datepicker', (model, fechaMin, fechaMax) => ({
-                value: model,
-                pickr: null,
-                init() {
-                    this.$nextTick(() => {
-                        this.pickr = flatpickr(this.$refs.myDatepicker, {
-                            dateFormat: "Y-m-d",
-                            minDate: fechaMin || null, // ✅ Se pasa correctamente la fecha mínima
-                            maxDate: fechaMax || null, // ✅ Se pasa correctamente la fecha máxima
-                            defaultDate: this.value || null,
-                            onChange: (selectedDates, dateStr) => {
-                                this.value = dateStr;
-                            }
-                        });
-
-                        this.$watch('value', (newVal) => {
-                            if (this.pickr && this.pickr.input.value !== newVal) {
-                                this.pickr.setDate(newVal, false);
-                            }
-                        });
+        Alpine.data('datepicker', (model, fechaMin, fechaMax) => ({
+            value: model,
+            pickr: null,
+            init() {
+                this.$nextTick(() => {
+                    this.pickr = flatpickr(this.$refs.myDatepicker, {
+                        dateFormat: "Y-m-d",
+                        minDate: fechaMin || null, // ✅ Se pasa correctamente la fecha mínima
+                        maxDate: fechaMax || null, // ✅ Se pasa correctamente la fecha máxima
+                        defaultDate: this.value || null,
+                        onChange: (selectedDates, dateStr) => {
+                            this.value = dateStr;
+                        }
                     });
-                }
-            }));
-        });
+
+                    this.$watch('value', (newVal) => {
+                        if (this.pickr && this.pickr.input.value !== newVal) {
+                            this.pickr.setDate(newVal, false);
+                        }
+                    });
+                });
+            }
+        }));
     </script>
-@endonce
+@endscript

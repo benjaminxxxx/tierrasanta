@@ -109,6 +109,14 @@ class CampoCampania extends Model
         'cosechamadres_conversion_fresco_seco_secado',
         'cosechamadres_conversion_fresco_seco_fresco'
     ];
+    public function infestaciones()
+    {
+        return $this->hasMany(CochinillaInfestacion::class, 'campo_campania_id');
+    }
+    public function evaluacionInfestaciones()
+    {
+        return $this->hasMany(EvaluacionInfestacion::class, 'campo_campania_id');
+    }
     public function camposCampaniasConsumo()
     {
         return $this->hasMany(CamposCampaniasConsumo::class, 'campos_campanias_id');
