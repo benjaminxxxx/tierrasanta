@@ -45,4 +45,11 @@ class EvaluacionBrotesXPiso extends Model
     {
         return $this->belongsTo(Cuadrillero::class, 'cuadrillero_id');
     }
+    /**
+     * Esta propiedad se utiliza en evaluacion infestacion cosecha
+     * 
+     */
+    public function getTotalHectareaAttribute(){
+        return $this->promedio_actual_total_brotes_2y3piso + $this->promedio_total_brotes_2y3piso_n_dias;
+    }
 }

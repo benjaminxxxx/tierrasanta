@@ -14,88 +14,6 @@
             <x-card class="md:w-[35rem]">
                 <x-spacing>
                     <x-h3>Resumen de Cosecha de madres</x-h3>
-<!--
-                    <x-table class="mt-3">
-                        <x-slot name="thead"></x-slot>
-                        <x-slot name="tbody">
-                            <x-tr>
-                                <x-th>Fecha de cosecha de madres</x-th>
-                                <x-td class="bg-cyan-100">{{ $campania->cosechamadres_fecha_cosecha }}</x-td>
-                            </x-tr>
-                            <x-tr>
-                                <x-th>Tiempo de infestación a cosecha</x-th>
-                                <x-td>{{ $campania->cosechamadres_tiempo_infestacion_a_cosecha }}</x-td>
-                            </x-tr>
-                            <x-tr>
-                                <x-th>Destino de madres en fresco (kg)</x-th>
-                                <x-td>{{ number_format($campania->cosechamadres_destino_madres_fresco, 2) }}</x-td>
-                            </x-tr>
-
-                            <x-tr>
-                                <x-th>Infestador cartón - campos (kg)</x-th>
-                                <x-td>{{ number_format($campania->cosechamadres_infestador_carton_campos, 2) }}</x-td>
-                            </x-tr>
-                            <x-tr>
-                                <x-th>Infestador tubo - campos (kg)</x-th>
-                                <x-td>{{ number_format($campania->cosechamadres_infestador_tubo_campos, 2) }}</x-td>
-                            </x-tr>
-                            <x-tr>
-                                <x-th>Infestador mallita - campos (kg)</x-th>
-                                <x-td>{{ number_format($campania->cosechamadres_infestador_mallita_campos, 2) }}</x-td>
-                            </x-tr>
-
-                            <x-tr>
-                                <x-th>Para secado (kg)</x-th>
-                                <x-td>{{ number_format($campania->cosechamadres_para_secado, 2) }}</x-td>
-                            </x-tr>
-                            <x-tr>
-                                <x-th>Para venta en fresco (kg)</x-th>
-                                <x-td>{{ number_format($campania->cosechamadres_para_venta_fresco, 2) }}</x-td>
-                            </x-tr>
-
-                            <x-tr>
-                                <x-th>Recuperación madres secas - cartón (kg)</x-th>
-                                <x-td>{{ number_format($campania->cosechamadres_recuperacion_madres_seco_carton, 2) }}</x-td>
-                            </x-tr>
-                            <x-tr>
-                                <x-th>Recuperación madres secas - tubo (kg)</x-th>
-                                <x-td>{{ number_format($campania->cosechamadres_recuperacion_madres_seco_tubo, 2) }}</x-td>
-                            </x-tr>
-                            <x-tr>
-                                <x-th>Recuperación madres secas - mallita (kg)</x-th>
-                                <x-td>{{ number_format($campania->cosechamadres_recuperacion_madres_seco_mallita, 2) }}</x-td>
-                            </x-tr>
-                            <x-tr>
-                                <x-th>Recuperación madres secas - secado (kg)</x-th>
-                                <x-td>{{ number_format($campania->cosechamadres_recuperacion_madres_seco_secado, 2) }}</x-td>
-                            </x-tr>
-                            <x-tr>
-                                <x-th>Recuperación madres secas - fresco (kg)</x-th>
-                                <x-td>{{ number_format($campania->cosechamadres_recuperacion_madres_seco_fresco, 2) }}</x-td>
-                            </x-tr>
-
-                            <x-tr>
-                                <x-th>Conversión fresco a seco - cartón</x-th>
-                                <x-td>{{ number_format($campania->cosechamadres_conversion_fresco_seco_carton, 2) }}</x-td>
-                            </x-tr>
-                            <x-tr>
-                                <x-th>Conversión fresco a seco - tubo</x-th>
-                                <x-td>{{ number_format($campania->cosechamadres_conversion_fresco_seco_tubo, 2) }}</x-td>
-                            </x-tr>
-                            <x-tr>
-                                <x-th>Conversión fresco a seco - mallita</x-th>
-                                <x-td>{{ number_format($campania->cosechamadres_conversion_fresco_seco_mallita, 2) }}</x-td>
-                            </x-tr>
-                            <x-tr>
-                                <x-th>Conversión fresco a seco - secado</x-th>
-                                <x-td>{{ number_format($campania->cosechamadres_conversion_fresco_seco_secado, 2) }}</x-td>
-                            </x-tr>
-                            <x-tr>
-                                <x-th>Conversión fresco a seco - fresco</x-th>
-                                <x-td>{{ number_format($campania->cosechamadres_conversion_fresco_seco_fresco, 2) }}</x-td>
-                            </x-tr>
-                        </x-slot>
-                    </x-table>-->
                     <div x-data="table_cochinilla_cosecha_mama" wire:ignore class="my-4">
                         <div x-ref="tableContainer"></div>
 
@@ -104,7 +22,6 @@
                                 <i class="fa fa-save"></i> Registrar detalle
                             </x-button>
                         </x-flex>
-
                     </div>
                 </x-spacing>
 

@@ -107,7 +107,20 @@ class CampoCampania extends Model
         'cosechamadres_conversion_fresco_seco_tubo',
         'cosechamadres_conversion_fresco_seco_mallita',
         'cosechamadres_conversion_fresco_seco_secado',
-        'cosechamadres_conversion_fresco_seco_fresco'
+        'cosechamadres_conversion_fresco_seco_fresco',
+
+        'eval_cosch_conteo_individuos',
+        'eval_cosch_proj_1',
+        'eval_cosch_proj_2',
+        'eval_cosch_proj_coch_x_gramo',
+        'eval_cosch_proj_gramos_x_penca',
+        'eval_cosch_proj_penca_inf',
+        'eval_cosch_proj_rdto_ha',
+
+        'proj_rdto_poda_muestra',
+        'proj_rdto_metros_cama_ha',
+        'proj_rdto_prom_rdto_ha',
+        'proj_rdto_rel_fs',
     ];
     public function infestaciones()
     {
@@ -133,7 +146,10 @@ class CampoCampania extends Model
     {
         return $this->hasMany(EvaluacionBrotesXPiso::class, 'campania_id');
     }
-
+    public function proyeccionesRendimientosPoda()
+    {
+        return $this->hasMany(ProyeccionRendimientoPoda::class, 'campo_campania_id');
+    }
     //consumos()
     public function resumenConsumoProductos()
     {
@@ -147,6 +163,29 @@ class CampoCampania extends Model
     {
         return $this->belongsTo(Campo::class, 'campo', 'nombre');
     }
+    public function getTotalHectareaBrotesAttribute()
+    {
+        $ultimoRegistro = $this->evaluacionBrotesXPiso()
+            ->orderByDesc('fecha')
+            ->first();
+
+        return $ultimoRegistro?->total_hectarea ?? null;
+    }
+    public function getPromedioIndividuosMitadDiasAttribute()
+    {
+        $evaluaciones = $this->evaluacionInfestaciones()->orderByDesc('fecha')->get();
+
+        $total = $evaluaciones->count();
+
+        if ($total === 0) {
+            return null;
+        }
+
+        $index = (int) floor($total / 2); // para impar y par toma el centro superior
+
+        return $evaluaciones[$index]?->promedio ?? null;
+    }
+
     public function getFechaVigenciaAttribute()
     {
         $date = Carbon::parse($this->fecha_inicio);
@@ -319,6 +358,6 @@ class CampoCampania extends Model
         $area = optional($this->campo_model)->area;
         return $area > 0 ? $this->cosechamadres_recuperacion_madres_seco_fresco / $area : null;
     }
- 
+
     #endregion
 }

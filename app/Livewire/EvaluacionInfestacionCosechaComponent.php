@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\CampoCampania;
+use App\Models\Configuracion;
 use App\Models\EvaluacionInfestacion;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -15,13 +16,31 @@ class EvaluacionInfestacionCosechaComponent extends Component
     public $campoSeleccionado;
     public $campaniaSeleccionada;
     public $campaniasPorCampo = [];
+    public $table = [];
+    public $fechas = [];
     public $campania;
     public $fechaEvaluacion;
     public $idTable;
     public $fechaExiste = false;
+    public $campaniaUnica = false;
+    public $proyeccion_cochinilla_x_gramo;
     protected $listeners = ['storeTableDataEvaluacionInfestacion', 'confirmarEliminarEvaluacionInfestacion'];
-    public function mount()
+    public function mount($campaniaId = null, $campaniaUnica = false)
     {
+        $configuraciones = Configuracion::get()->pluck('valor', 'codigo')->toArray();
+        $this->proyeccion_cochinilla_x_gramo = $configuraciones['equivalencia_cochinillas_x_gramo'] ?? 1;
+        if ($campaniaId) {
+            $this->campania = CampoCampania::find($campaniaId);
+            if ($this->campania) {
+                $this->campoSeleccionado = $this->campania->campo;
+                $this->campaniaSeleccionada = $this->campania->id;
+                $this->renderizarTabla();
+                if($this->campania->evaluacion_cosecha_proyeccion_cochinilla_x_gramo){
+                    $this->proyeccion_cochinilla_x_gramo = $this->campania->evaluacion_cosecha_proyeccion_cochinilla_x_gramo;
+                }
+            }
+        }
+        $this->campaniaUnica = $campaniaUnica;
         $this->fechaEvaluacion = Carbon::now()->format('Y-m-d');
         $this->idTable = 'table_' . Str::random(10);
         $this->revisarFechaExiste();
@@ -45,6 +64,8 @@ class EvaluacionInfestacionCosechaComponent extends Component
                 'fecha' => $this->fechaEvaluacion,
                 'campo_campania_id' => $this->campania->id
             ]);
+
+            $this->revisarFechaExiste();
             $this->renderizarTabla();
             $this->alert('success', 'Evaluación creada con éxito');
         } catch (\Throwable $th) {
@@ -190,6 +211,9 @@ class EvaluacionInfestacionCosechaComponent extends Component
             ];
         })->toArray();
 
+        $this->table = $tabla;
+        $this->fechas = $fechasFormateadas;
+
         $this->dispatch('recargarEvaluacion', [
             'table' => $tabla,
             'fechas' => $fechasFormateadas,
@@ -205,6 +229,9 @@ class EvaluacionInfestacionCosechaComponent extends Component
     }
     public function storeTableDataEvaluacionInfestacion($datos)
     {
+        if (!$this->campania) {
+            return;
+        }
         $evaluaciones = $this->campania->evaluacionInfestaciones()->orderBy('fecha')->get();
         $fechas = $evaluaciones->pluck('fecha')->unique()->values();
 
@@ -213,7 +240,6 @@ class EvaluacionInfestacionCosechaComponent extends Component
             $key = 'fecha' . ($i + 1);
             $fechaMap[$key] = Carbon::parse($fecha)->format('Y-m-d');
         }
-
         foreach ($fechaMap as $fechaKey => $fechaReal) {
             // Obtener o crear evaluación por fecha y campaña
             $evaluacion = EvaluacionInfestacion::firstOrCreate([
@@ -237,6 +263,34 @@ class EvaluacionInfestacionCosechaComponent extends Component
                 }
             }
         }
+        $promedioIndividuosMitadDias = $this->campania->promedio_individuos_mitad_dias;
+        $proyeccionCochinillaXGramo = $this->proyeccion_cochinilla_x_gramo;
+        $numeroPencasInfestadas = $this->campania->total_hectarea_brotes;
+
+        $proyeccionGramosCochinillaXPenca = null;
+        $proyeccionRendimientoHa = null;
+
+        // Validar que ambos valores no sean null y que el divisor no sea 0
+        if (!is_null($promedioIndividuosMitadDias) && !is_null($proyeccionCochinillaXGramo) && $proyeccionCochinillaXGramo != 0) {
+            $proyeccionGramosCochinillaXPenca = $promedioIndividuosMitadDias / $proyeccionCochinillaXGramo;
+
+            // Validar que número de pencas también sea numérico y mayor que 0
+            if (!is_null($numeroPencasInfestadas) && is_numeric($numeroPencasInfestadas) && $numeroPencasInfestadas > 0) {
+                $proyeccionRendimientoHa = ($proyeccionGramosCochinillaXPenca * $numeroPencasInfestadas) / 1000;
+            }
+        }
+
+        $data = [
+            'evaluacion_cosecha_conteo_individuos' => null,
+            'evaluacion_cosecha_proyeccion_cosecha_2' => null,
+            'evaluacion_cosecha_proyeccion_cochinilla_x_gramo' => $proyeccionCochinillaXGramo,
+            'evaluacion_cosecha_proyeccion_gramos_cochinilla_x_penca' => $proyeccionGramosCochinillaXPenca,
+            'evaluacion_cosecha_proyeccion_numero_pencas_infestadas' => $numeroPencasInfestadas,
+            'evaluacion_cosecha_proyeccion_rendimiento_ha' => $proyeccionRendimientoHa,
+        ];
+
+        $this->campania->update($data);
+
 
         $this->renderizarTabla();
         $this->alert('success', 'Evaluación guardada correctamente.');

@@ -128,5 +128,7 @@
             wire:key="reinfestacion.{{ $campania->id }}" />
 
         @include('livewire.campania-component.grupo-cosecha-madres')
+
+        @include('livewire.campania-component.grupo-evaluacion-cosecha')
     @endif
 </div>
