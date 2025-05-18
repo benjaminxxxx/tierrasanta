@@ -18,6 +18,8 @@ class CampoCampaniaFormComponent extends Component
     public $campoSeleccionado;
     public $errorMensaje = [];
     public $ultimaCampania;
+    public $area;
+    public $areaOriginal;
     protected $listeners = ['registroCampania', 'editarCampania'];
     public function registroCampania($campoNombre = null)
     {
@@ -25,6 +27,7 @@ class CampoCampaniaFormComponent extends Component
         if ($campoNombre) {
             $campo = Campo::find($campoNombre);
             if ($campo) {
+                $this->area = $campo->area;
                 $this->ultimaCampania = $campo->CampaniaActual;
 
                 $this->campoSeleccionado = $campoNombre;
@@ -34,12 +37,23 @@ class CampoCampaniaFormComponent extends Component
 
         $this->mostrarFormulario = true;
     }
+    public function updatedCampoSeleccionado($campoNombre)
+    {
+        $campo = Campo::find($campoNombre);
+        if ($campo) {
+            $this->area = $campo->area;
+            $this->ultimaCampania = $campo->CampaniaActual;
+        }
+    }
     public function editarCampania($campaniaId)
     {
         $this->resetForm();
         $campania = CampoCampania::find($campaniaId);
         if ($campania) {
+            $this->areaOriginal = $campania->campo_model->area;
             $this->campaniaId = $campania->id;
+            $this->campoSeleccionado = $campania->campo;
+            $this->area = $campania->area;
             $this->fecha_inicio = $campania->fecha_inicio;
             $this->fecha_fin = $campania->fecha_fin;
             $this->nombre_campania = $campania->nombre_campania;
@@ -54,7 +68,7 @@ class CampoCampaniaFormComponent extends Component
     public function resetForm()
     {
         $this->resetErrorBag();
-        $this->reset(['campaniaId', 'fecha_inicio', 'fecha_fin', 'campoSeleccionado', 'errorMensaje', 'nombre_campania', 'ultimaCampania', 'variedad_tuna', 'sistema_cultivo', 'tipo_cambio', 'pencas_x_hectarea']);
+        $this->reset(['campaniaId','areaOriginal', 'area', 'fecha_inicio', 'fecha_fin', 'campoSeleccionado', 'errorMensaje', 'nombre_campania', 'ultimaCampania', 'variedad_tuna', 'sistema_cultivo', 'tipo_cambio', 'pencas_x_hectarea']);
         //$this->fecha_inicio = Carbon::now()->format('Y-m-d');
     }
     public function store()
@@ -62,6 +76,7 @@ class CampoCampaniaFormComponent extends Component
         $this->validate([
             'campoSeleccionado' => 'required',
             'nombre_campania' => 'required|string',
+            'area' => 'required|numeric|between:0,99999999.99',
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
             'variedad_tuna' => 'nullable|string|max:50',
@@ -70,6 +85,7 @@ class CampoCampaniaFormComponent extends Component
         ], [
             'campoSeleccionado.required' => 'El campo es obligatorio.',
             'nombre_campania.required' => 'El nombre de la campaña es obligatorio.',
+            'area.required' => 'El área es obligatorio.',
             'fecha_inicio.required' => 'La fecha de inicio es obligatoria.',
             'fecha_inicio.date' => 'La fecha de inicio no tiene un formato válido.',
             'fecha_fin.date' => 'La fecha de fin no tiene un formato válido.',
@@ -103,6 +119,7 @@ class CampoCampaniaFormComponent extends Component
             $data = [
                 'nombre_campania' => mb_strtoupper($this->nombre_campania),
                 'fecha_inicio' => $this->fecha_inicio,
+                'area' => $this->area,
                 'usuario_modificador' => Auth::id(),
                 'variedad_tuna' => $this->variedad_tuna,
                 'sistema_cultivo' => $this->sistema_cultivo,

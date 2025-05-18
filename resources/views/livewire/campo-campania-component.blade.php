@@ -42,93 +42,82 @@
                         </x-secondary-button>
                     </div>
                     <x-button type="button" @click="$wire.dispatch('editarCampania',{campaniaId:{{ $campania->id }}})">
-                        <i class="fa fa-edit"></i> Actualizar información
+                        <i class="fa fa-edit"></i> Actualizar Campaña
                     </x-button>
                 </x-flex>
             @endif
         </x-spacing>
     </x-card>
     @if ($campania)
-        <x-flex class="w-full justify-between my-5">
-            <x-h3>Información General</x-h3>
+        <x-flex class="w-full justify-end my-5">
             <x-secondary-button type="button"
                 @click="$wire.dispatch('abrirCampaniaDetalle',{campaniaId:{{ $campania->id }}})">
                 <i class="fa fa-list mr-2"></i> Ver Detalle Completo
             </x-secondary-button>
         </x-flex>
 
+        <div class="mt-5">
+            <x-tabs default-value="informacion_general">
+                <x-card2>
+                    <x-tabs-list class="mb-4">
+                        <x-tabs-trigger value="informacion_general">Información General</x-tabs-trigger>
+                        <x-tabs-trigger value="poblacion_plantas">Población Plantas</x-tabs-trigger>
+                        <x-tabs-trigger value="evaluacion_brotes">Evaluación de Brotes</x-tabs-trigger>
+                        <x-tabs-trigger value="infestacion">Infestación</x-tabs-trigger>
+                        <x-tabs-trigger value="reinfestacion">Re-Infestación</x-tabs-trigger>
+                        <x-tabs-trigger value="cosecha_madres">Cosecha de Madres</x-tabs-trigger>
+                        <x-tabs-trigger value="evaluacion_cosecha">Evaluación Cosecha</x-tabs-trigger>
+                        <x-tabs-trigger value="cosecha">Cosecha</x-tabs-trigger>
+                    </x-tabs-list>
+                    </x-card>
 
 
-        <x-card>
+                    <x-tabs-content value="informacion_general">
+                        <x-card2>
+                            <x-card-header>
+                                <x-card-title>Información General</x-card-title>
+                            </x-card-header>
+                            <x-card-content>
+                                @include('livewire.campania-component.grupo-informacion-general')
+                            </x-card-content>
+                        </x-card2>
+                    </x-tabs-content>
 
-            <x-spacing>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-2 gap-2 items-center">
-                            <div class="font-medium text-gray-700">Lote:</div>
-                            <div>{{ $campania->campo }}</div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 items-center">
-                            <div class="font-medium text-gray-700">Variedad de tuna:</div>
-                            <div>{{ $campania->variedad_tuna }}</div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 items-center">
-                            <div class="font-medium text-gray-700">Campaña:</div>
-                            <div>{{ $campania->nombre_campania }}</div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 items-center">
-                            <div class="font-medium text-gray-700">Área:</div>
-                            <div>{{ $campania->campo_model->area }}</div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 items-center">
-                            <div class="font-medium text-gray-700">Sistema de cultivo:</div>
-                            <div>{{ $campania->sistema_cultivo }}</div>
-                        </div>
-                    </div>
+                    <x-tabs-content value="poblacion_plantas">
+                        <livewire:poblacion-plantas-por-campania-component campaniaId="{{ $campania->id }}"
+                            wire:key="poblacion_plantas.{{ $campania->id }}" />
+                    </x-tabs-content>
 
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-2 gap-2 items-center">
-                            <div class="font-medium text-gray-700">Pencas x Hectárea:</div>
-                            <div>{{ $campania->pencas_x_hectarea }}</div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 items-center">
-                            <div class="font-medium text-gray-700">T.C.:</div>
-                            <div>{{ $campania->tipo_cambio }}</div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 items-center">
-                            <div class="font-medium text-gray-700">Fecha de siembra:</div>
-                            <div>{{ $campania->fecha_siembra }}</div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 items-center">
-                            <div class="font-medium text-gray-700">Fecha de inicio de Campaña:</div>
-                            <div>{{ $campania->fecha_inicio }}</div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 items-center">
-                            <div class="font-medium text-gray-700">Fin de Campaña:</div>
-                            <div>{{ $campania->fecha_fin }}</div>
-                        </div>
-                    </div>
-                </div>
-            </x-spacing>
-        </x-card>
+                    <x-tabs-content value="evaluacion_brotes">
+                        <livewire:evaluacion-brotes-x-piso-por-campania-component campaniaId="{{ $campania->id }}"
+                            wire:key="brotes_x_piso.{{ $campania->id }}" />
 
-        <livewire:poblacion-plantas-por-campania-component campaniaId="{{ $campania->id }}"
-            wire:key="poblacion_plantas.{{ $campania->id }}" />
+                        <livewire:reporte-campo-evaluacion-brotes-form-component campaniaUnica="{{ true }}"
+                            wire:key="reporte_brotes_form.{{ $campania->id }}" />
+                    </x-tabs-content>
 
-        <livewire:evaluacion-brotes-x-piso-por-campania-component campaniaId="{{ $campania->id }}"
-            wire:key="brotes_x_piso.{{ $campania->id }}" />
+                    <x-tabs-content value="infestacion">
+                        <livewire:infestacion-por-campania-component campaniaId="{{ $campania->id }}"
+                            wire:key="infestacion.{{ $campania->id }}" />
+                    </x-tabs-content>
 
-        <livewire:reporte-campo-evaluacion-brotes-form-component campaniaUnica="{{ true }}"
-            wire:key="reporte_brotes_form.{{ $campania->id }}" />
+                    <x-tabs-content value="reinfestacion">
+                        <livewire:infestacion-por-campania-component campaniaId="{{ $campania->id }}"
+                            tipo="reinfestacion" wire:key="reinfestacion.{{ $campania->id }}" />
+                    </x-tabs-content>
 
-        <livewire:infestacion-por-campania-component campaniaId="{{ $campania->id }}"
-            wire:key="infestacion.{{ $campania->id }}" />
+                    <x-tabs-content value="cosecha_madres">
+                        @include('livewire.campania-component.grupo-cosecha-madres')
+                    </x-tabs-content>
 
-        <livewire:infestacion-por-campania-component campaniaId="{{ $campania->id }}" tipo="reinfestacion"
-            wire:key="reinfestacion.{{ $campania->id }}" />
+                    <x-tabs-content value="evaluacion_cosecha">
+                        @include('livewire.campania-component.grupo-evaluacion-cosecha')
+                    </x-tabs-content>
 
-        @include('livewire.campania-component.grupo-cosecha-madres')
-
-        @include('livewire.campania-component.grupo-evaluacion-cosecha')
+                    <x-tabs-content value="cosecha">
+                        @include('livewire.campania-component.grupo-cosecha')
+                    </x-tabs-content>
+            </x-tabs>
+        </div>
     @endif
 </div>

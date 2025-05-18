@@ -236,7 +236,7 @@
                                     </p>
                                 </x-td>
                                 <x-td>
-                                    {{number_format($campania->evaluacion_cosecha_proyeccion_gramos_cochinilla_x_penca,0)}}
+                                    {{number_format($campania->eval_cosch_proj_gramos_x_penca,0)}}
                                 </x-td>
                             </x-tr>
                             <x-tr>
@@ -247,7 +247,7 @@
                                     </p>
                                 </x-td>
                                 <x-td>
-                                    {{number_format($campania->evaluacion_cosecha_proyeccion_numero_pencas_infestadas,0)}}
+                                    {{number_format($campania->eval_cosch_proj_penca_inf,0)}}
                                 </x-td>
                             </x-tr>
                             <x-tr>
@@ -258,7 +258,7 @@
                                     </p>
                                 </x-td>
                                 <x-td class="bg-pink-200">
-                                    {{number_format($campania->evaluacion_cosecha_proyeccion_rendimiento_ha,0)}}
+                                    {{number_format($campania->eval_cosch_proj_rdto_ha,0)}}
                                 </x-td>
                             </x-tr>
                         </x-slot>

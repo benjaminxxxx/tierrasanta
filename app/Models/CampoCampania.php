@@ -13,6 +13,7 @@ class CampoCampania extends Model
     protected $fillable = [
         'nombre_campania',
         'campo',
+        'area',
         'gasto_fdm',
         'gasto_agua',
         'gasto_planilla',
@@ -121,6 +122,29 @@ class CampoCampania extends Model
         'proj_rdto_metros_cama_ha',
         'proj_rdto_prom_rdto_ha',
         'proj_rdto_rel_fs',
+
+        'cosch_fecha',
+        'cosch_tiempo_inf_cosch',
+        'cosch_tiempo_reinf_cosch',
+        'cosch_tiempo_ini_cosch',
+        'cosch_destino_carton',
+        'cosch_destino_tubo',
+        'cosch_destino_malla',
+        'cosch_kg_fresca_carton',
+        'cosch_kg_fresca_tubo',
+        'cosch_kg_fresca_malla',
+        'cosch_kg_fresca_losa',
+        'cosch_kg_seca_carton',
+        'cosch_kg_seca_tubo',
+        'cosch_kg_seca_malla',
+        'cosch_kg_seca_losa',
+        'cosch_kg_seca_venta_madre',
+        'cosch_factor_fs_carton',
+        'cosch_factor_fs_tubo',
+        'cosch_factor_fs_malla',
+        'cosch_factor_fs_losa',
+        'cosch_total_cosecha',
+        'cosch_total_campania',
     ];
     public function infestaciones()
     {

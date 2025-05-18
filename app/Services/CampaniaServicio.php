@@ -73,16 +73,10 @@ class CampaniaServicio
 
         if ($cochinillaMadres->count() > 0) {
             $fechaCosecha = $cochinillaMadres->last()->fecha;
-            $duracion = null;
-
-            if ($fechaCosecha && $this->campoCampania->infestacion_fecha) {
-                $inicio = Carbon::parse($this->campoCampania->infestacion_fecha);
-                $diferencia = $inicio->diff($fechaCosecha);
-
-                $duracion = $diferencia->y . ' año' . ($diferencia->y !== 1 ? 's' : '') . ', '
-                    . $diferencia->m . ' mes' . ($diferencia->m !== 1 ? 'es' : '') . ', '
-                    . $diferencia->d . ' día' . ($diferencia->d !== 1 ? 's' : '');
-            }
+            $duracion = CalculoHelper::calcularDuracionEntreFechas(
+                $this->campoCampania->infestacion_fecha,
+                $fechaCosecha
+            );
 
             $data['cosechamadres_fecha_cosecha'] = $fechaCosecha;
             $data['cosechamadres_tiempo_infestacion_a_cosecha'] = $duracion;

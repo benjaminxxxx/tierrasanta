@@ -35,8 +35,8 @@ class EvaluacionInfestacionCosechaComponent extends Component
                 $this->campoSeleccionado = $this->campania->campo;
                 $this->campaniaSeleccionada = $this->campania->id;
                 $this->renderizarTabla();
-                if($this->campania->evaluacion_cosecha_proyeccion_cochinilla_x_gramo){
-                    $this->proyeccion_cochinilla_x_gramo = $this->campania->evaluacion_cosecha_proyeccion_cochinilla_x_gramo;
+                if($this->campania->eval_cosch_proj_coch_x_gramo){
+                    $this->proyeccion_cochinilla_x_gramo = $this->campania->eval_cosch_proj_coch_x_gramo;
                 }
             }
         }
@@ -281,12 +281,12 @@ class EvaluacionInfestacionCosechaComponent extends Component
         }
 
         $data = [
-            'evaluacion_cosecha_conteo_individuos' => null,
-            'evaluacion_cosecha_proyeccion_cosecha_2' => null,
-            'evaluacion_cosecha_proyeccion_cochinilla_x_gramo' => $proyeccionCochinillaXGramo,
-            'evaluacion_cosecha_proyeccion_gramos_cochinilla_x_penca' => $proyeccionGramosCochinillaXPenca,
-            'evaluacion_cosecha_proyeccion_numero_pencas_infestadas' => $numeroPencasInfestadas,
-            'evaluacion_cosecha_proyeccion_rendimiento_ha' => $proyeccionRendimientoHa,
+            'eval_cosch_conteo_individuos' => null,
+            'eval_cosch_proj_2' => null,
+            'eval_cosch_proj_coch_x_gramo' => $proyeccionCochinillaXGramo,
+            'eval_cosch_proj_gramos_x_penca' => $proyeccionGramosCochinillaXPenca,
+            'eval_cosch_proj_penca_inf' => $numeroPencasInfestadas,
+            'eval_cosch_proj_rdto_ha' => $proyeccionRendimientoHa,
         ];
 
         $this->campania->update($data);

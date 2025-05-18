@@ -21,7 +21,14 @@ class CampoCampaniaComponent extends Component
     public $hayCampaniaPosterior = false;
     public $resumenCosechaMadres = [];
 
-    protected $listeners = ['GuardarInformacion', 'confirmarEliminar', 'campaniaInsertada' => 'cargarUltimaCampania', 'registrarDetalleCosechaMadres','recargarEvaluacion'=>'$refresh'];
+    protected $listeners = [
+        'GuardarInformacion', 
+        'confirmarEliminar', 
+        'campaniaInsertada' => 'cargarUltimaCampania', 
+        'registrarDetalleCosechaMadres',
+        'recargarEvaluacion'=>'$refresh',
+        'cosechaXCampaniaActualizada'=>'$refresh'
+    ];
 
     public function mount($campo = null)
     {

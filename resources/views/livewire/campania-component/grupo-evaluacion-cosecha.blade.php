@@ -40,8 +40,7 @@
                                             Esta información proviene del módulo Evaluación Infestación Cosecha
                                         </p>
                                     </x-td>
-                                    <x-td
-                                        class="bg-pink-200">{{ number_format($campania->evaluacion_cosecha_proyeccion_rendimiento_ha, 0) }}</x-td>
+                                    <x-td>{{ number_format($campania->eval_cosch_proj_rdto_ha, 0) }}</x-td>
                                 </x-tr>
                                 <x-tr>
                                     <x-td>
