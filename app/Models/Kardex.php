@@ -9,7 +9,8 @@ class Kardex extends Model
     protected $table = "kardex";
     protected $fillable = [
         'nombre',
-        'tipo_kardex',
+        'anio',
+        'es_combustible',
         'fecha_inicial',
         'fecha_final',
         'estado',

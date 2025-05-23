@@ -7,6 +7,7 @@ use App\Models\EvaluacionBrotesXPiso;
 use App\Services\CampaniaServicio;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
+use Session;
 
 class EvaluacionBrotesXPisoPorCampaniaComponent extends Component
 {
@@ -18,24 +19,26 @@ class EvaluacionBrotesXPisoPorCampaniaComponent extends Component
     public $campaniaId;
     public $campania;
     public $evaluacionesBrotesXPiso = [];
-    protected $listeners = ['confirmareliminarBrotesXPiso','poblacionPlantasRegistrado'];
+    protected $listeners = ['confirmareliminarBrotesXPiso', 'poblacionPlantasRegistrado'];
     #endregion
-
+    public $mostrarVacios;
     #region MOUNT
     public function mount($campaniaId)
     {
+        $this->mostrarVacios = Session::get('mostrarVacios', false);
         $this->campania = CampoCampania::find($campaniaId);
         if ($this->campania) {
             $this->campaniaId = $campaniaId;
         }
     }
-    public function poblacionPlantasRegistrado(){
+    public function poblacionPlantasRegistrado()
+    {
         $this->campania->refresh();
     }
     #endregion
 
     #region PANEL PRINCIPAL
-    
+
     /*
     public function enviarHistorialBrotes(){
         try {

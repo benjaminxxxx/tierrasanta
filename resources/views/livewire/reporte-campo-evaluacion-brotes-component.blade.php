@@ -79,7 +79,7 @@
                                 </x-td>
                             @endif
                             <x-td class="text-center">
-                                {{ $evaluacionBroteXPiso->fecha }}
+                                {{ formatear_fecha($evaluacionBroteXPiso->fecha) }}
                             </x-td>
                             <x-td>
                                 {{ $evaluacionBroteXPiso->evaluador }}

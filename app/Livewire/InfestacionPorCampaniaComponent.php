@@ -5,9 +5,11 @@ namespace App\Livewire;
 use App\Models\CampoCampania;
 use App\Models\CochinillaInfestacion;
 use App\Services\CampaniaServicio;
+use App\Support\CalculoHelper;
 use Illuminate\Support\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
+use Session;
 
 class InfestacionPorCampaniaComponent extends Component
 {
@@ -25,8 +27,12 @@ class InfestacionPorCampaniaComponent extends Component
     public $infestacion_fecha_retiro_malla;
     public $reinfestacion_fecha_retiro_malla;
     public $infestacionTexto;
+    public $infestacion_fecha;
+    public $reinfestacion_fecha;
+    public $mostrarVacios;
     public function mount($campaniaId, $tipo = 'infestacion')
     {
+        $this->mostrarVacios = Session::get('mostrarVacios',false);
         $this->campaniaId = $campaniaId;
         $this->tipo = $tipo;
         $this->infestacionTexto = $tipo == 'infestacion' ? 'infestación' : 're-infestación';
@@ -37,6 +43,7 @@ class InfestacionPorCampaniaComponent extends Component
     {
         if ($this->campaniaId) {
             $this->campania = CampoCampania::find($this->campaniaId);
+            $this->infestacion_fecha = $this->campania->infestacion_fecha;
         }
     }
     public function obtenerInfestaciones()
@@ -60,11 +67,11 @@ class InfestacionPorCampaniaComponent extends Component
                 $this->alert('error', 'No se ha podido encontrar una campaña');
                 return;
             }
-                        
+
             // Registrar historial
             $campaniaServicio = new CampaniaServicio($this->campania->id);
             $campaniaServicio->registrarHistorialDeInfestaciones($this->tipo);
-            
+
             $this->obtenerInfestaciones();
             $this->obtenerCampania();
             $this->alert('success', 'Datos sincronizados correctamente');
@@ -92,6 +99,58 @@ class InfestacionPorCampaniaComponent extends Component
             $this->alert('success', 'Fecha de recojo y vaciado de infestadores actualizada correctamente');
         } else {
             $this->alert('error', 'No se ha podido actualizar la fecha de recojo y vaciado de infestadores');
+        }
+    }
+    public function registrarCambiosInfestacionFecha()
+    {
+        if ($this->campania) {
+
+            // Validar que la fecha no esté vacía y tenga un formato válido
+            if (empty($this->infestacion_fecha) || !strtotime($this->infestacion_fecha)) {
+                $this->campania->update([
+                    'infestacion_fecha' => null,
+                    'infestacion_duracion_desde_campania' => null
+                ]);
+                $this->alert('warning', 'La fecha de infestación se ha limpiado.');
+                return;
+            }
+
+            $duracion = CalculoHelper::calcularDuracionEntreFechas($this->campania->fecha_inicio, $this->infestacion_fecha);
+
+            $this->campania->update([
+                'infestacion_fecha' => $this->infestacion_fecha,
+                'infestacion_duracion_desde_campania' => $duracion
+            ]);
+
+            $this->alert('success', 'Fecha de infestación actualizada correctamente');
+        } else {
+            $this->alert('error', 'No se ha podido actualizar la fecha de infestación');
+        }
+    }
+    public function registrarCambiosReinfestacionFecha()
+    {
+        if ($this->campania) {
+
+            // Validar que la fecha no esté vacía y tenga un formato válido
+            if (empty($this->reinfestacion_fecha) || !strtotime($this->reinfestacion_fecha)) {
+                $this->campania->update([
+                    'reinfestacion_fecha' => null,
+                    'reinfestacion_duracion_desde_infestacion' => null
+                ]);
+                $this->alert('warning', 'La fecha de infestación se ha limpiado.');
+                return;
+            }
+
+            $duracion = CalculoHelper::calcularDuracionEntreFechas($this->campania->infestacion_fecha, $this->reinfestacion_fecha);
+
+            $this->campania->update([
+                'reinfestacion_fecha' => $this->reinfestacion_fecha,
+                'reinfestacion_duracion_desde_infestacion' => $duracion
+            ]);
+
+            $this->alert('success', 'Fecha de reinfestación actualizada correctamente');
+        } else {
+            $this->alert('error', 'No se ha podido actualizar la fecha de reinfestación');
         }
     }
     public function registrarCambiosFechaRecojoVaciadoReInfestadores()

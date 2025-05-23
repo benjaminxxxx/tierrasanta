@@ -21,7 +21,7 @@ use Livewire\WithFileUploads;
 class KardexDetalleComponent extends Component
 {
     use LivewireAlert;
-    
+
     public $kardexId;
     public $kardex;
     public $search;
@@ -31,40 +31,57 @@ class KardexDetalleComponent extends Component
     protected $listeners = ['kardexProductoRegistrado' => 'listarKardex', 'importacionRealizada' => 'listarKardex', 'eliminacionConfirmar'];
     public function mount()
     {
-        $this->kardex = Kardex::find($this->kardexId);
-        $productoCargado = Session::get('producto_seleccionado_id');
-        if($productoCargado){
-            $this->seleccionarProducto($productoCargado);
+        if ($this->kardexId) {
+            $this->kardex = Kardex::find($this->kardexId);
+            $productoCargado = Session::get("producto_seleccionado_id_{$this->kardexId}");
+            if ($productoCargado) {
+                $this->seleccionarProducto($productoCargado);
+            }
         }
+
     }
-   
-    public function quitarProducto(){
+
+    public function quitarProducto()
+    {
         $this->producto = null;
         $this->search = null;
         $this->productoSeleccionadoId = null;
-        Session::forget('producto_seleccionado_id');
+        if(!$this->kardexId){
+            return;
+        }
+        Session::forget("producto_seleccionado_id_{$this->kardexId}");
     }
-    public function seleccionarProducto($productoId){
+    public function seleccionarProducto($productoId)
+    {
+        if (!$this->kardexId) {
+            return;
+        }
+
         $producto = Producto::find($productoId);
-        if($producto){
+
+        if ($producto) {
             $this->resultado = null;
             $this->producto = $producto;
-            $this->productoSeleccionadoId = $this->producto->id;
-            Session::put('producto_seleccionado_id', $this->productoSeleccionadoId);
+            $this->productoSeleccionadoId = $producto->id;
+
+            // Guardamos en una sesión con clave única por kardexId
+            Session::put("producto_seleccionado_id_{$this->kardexId}", $producto->id);
         }
     }
-    public function updatedSearch(){
-        $this->resultado = Producto::where(function($query) {
+
+    public function updatedSearch()
+    {
+        $this->resultado = Producto::where(function ($query) {
             // Filtrar por nombre_comercial
             $query->where('nombre_comercial', 'like', '%' . $this->search . '%')
-                  // Filtrar también por ingrediente_activo
-                  ->orWhere('ingrediente_activo', 'like', '%' . $this->search . '%');
+                // Filtrar también por ingrediente_activo
+                ->orWhere('ingrediente_activo', 'like', '%' . $this->search . '%');
         })
-        ->take(10)
-        ->get();
+            ->take(10)
+            ->get();
     }
 
-    
+
     public function render()
     {
         return view('livewire.kardex-detalle-component');

@@ -25,7 +25,7 @@
                         <x-slot name="tbody">
                             <x-tr>
                                 <x-th>Fecha de evaluación día cero</x-th>
-                                <x-td>{{ $campania->pp_dia_cero_fecha_evaluacion }}</x-td>
+                                <x-td>{{ formatear_fecha($campania->pp_dia_cero_fecha_evaluacion) }}</x-td>
                             </x-tr>
                             <x-tr>
                                 <x-th>Nª de pencas madre día cero</x-th>

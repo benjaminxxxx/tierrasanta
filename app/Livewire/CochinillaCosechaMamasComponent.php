@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\CochinillaIngreso;
 use App\Models\CochinillaIngresoDetalle;
 use App\Models\CochinillaObservacion;
+use App\Services\CochinillaIngresoServicio;
 use DB;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -22,6 +23,7 @@ class CochinillaCosechaMamasComponent extends Component
     public $campaniaUnica = false;
     public function mount($campaniaId = null, $campaniaUnica = false)
     {
+        CochinillaIngresoServicio::estandarizarIngresos();
         $this->campaniaId = $campaniaId;
         $this->campaniaUnica = $campaniaUnica;
         $this->observaciones = CochinillaObservacion::cosechasMama()->get();

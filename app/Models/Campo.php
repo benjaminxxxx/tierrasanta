@@ -15,6 +15,7 @@ class Campo extends Model
 
     protected $fillable = [
         'nombre',  // Nombre único del campo, será la clave primaria
+        'alias',
         'campo_parent_nombre',
         'grupo',   // Grupo al que pertenece el campo
         'orden',   // Orden en el grupo

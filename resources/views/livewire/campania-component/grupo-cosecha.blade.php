@@ -22,7 +22,7 @@
                             <x-slot name="tbody">
                                 <x-tr>
                                     <x-td><b>Fecha cosecha o poda</b></x-td>
-                                    <x-td>{{ $campania->cosch_fecha }}</x-td>
+                                    <x-td>{{ formatear_fecha($campania->cosch_fecha) }}</x-td>
                                 </x-tr>
                                 <x-tr>
                                     <x-td><b>Tiempo de infestación a cosecha (días)</b></x-td>
@@ -36,58 +36,97 @@
                                     <x-td><b>Tiempo desde el inicio hasta la cosecha (días)</b></x-td>
                                     <x-td>{{ $campania->cosch_tiempo_ini_cosch }}</x-td>
                                 </x-tr>
-                                <x-tr>
-                                    <x-td><b>Kg fresca (cartón {{$campania->cosch_destino_carton}})</b></x-td>
-                                    <x-td>{{ number_format($campania->cosch_kg_fresca_carton, 2) }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-td><b>Kg fresca (tubo {{$campania->cosch_destino_tubo}})</b></x-td>
-                                    <x-td>{{ number_format($campania->cosch_kg_fresca_tubo, 2) }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-td><b>Kg fresca (malla {{$campania->cosch_destino_malla}})</b></x-td>
-                                    <x-td>{{ number_format($campania->cosch_kg_fresca_malla, 2) }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-td><b>Kg fresca (losa)</b></x-td>
-                                    <x-td>{{ number_format($campania->cosch_kg_fresca_losa, 2) }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-td><b>Kg seca (cartón)</b></x-td>
-                                    <x-td>{{ number_format($campania->cosch_kg_seca_carton, 2) }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-td><b>Kg seca (tubo)</b></x-td>
-                                    <x-td>{{ number_format($campania->cosch_kg_seca_tubo, 2) }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-td><b>Kg seca (malla)</b></x-td>
-                                    <x-td>{{ number_format($campania->cosch_kg_seca_malla, 2) }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-td><b>Kg seca (losa)</b></x-td>
-                                    <x-td>{{ number_format($campania->cosch_kg_seca_losa, 2) }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-td><b>Kg seca vendida como madre</b></x-td>
-                                    <x-td>{{ number_format($campania->cosch_kg_seca_venta_madre, 2) }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-td><b>Factor fresca/seca (cartón)</b></x-td>
-                                    <x-td>{{ number_format($campania->cosch_factor_fs_carton, 2) }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-td><b>Factor fresca/seca (tubo)</b></x-td>
-                                    <x-td>{{ number_format($campania->cosch_factor_fs_tubo, 2) }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-td><b>Factor fresca/seca (malla)</b></x-td>
-                                    <x-td>{{ number_format($campania->cosch_factor_fs_malla, 2) }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-td><b>Factor fresca/seca (losa)</b></x-td>
-                                    <x-td>{{ number_format($campania->cosch_factor_fs_losa, 2) }}</x-td>
-                                </x-tr>
+                                @if ($mostrarVacios || (!is_null($campania->cosch_kg_fresca_carton) && $campania->cosch_kg_fresca_carton != 0))
+                                    <x-tr>
+                                        <x-td><b>Kg fresca (cartón {{ $campania->cosch_destino_carton }})</b></x-td>
+                                        <x-td>{{ number_format($campania->cosch_kg_fresca_carton, 2) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if ($mostrarVacios || (!is_null($campania->cosch_kg_fresca_tubo) && $campania->cosch_kg_fresca_tubo != 0))
+                                    <x-tr>
+                                        <x-td><b>Kg fresca (tubo {{ $campania->cosch_destino_tubo }})</b></x-td>
+                                        <x-td>{{ number_format($campania->cosch_kg_fresca_tubo, 2) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if ($mostrarVacios || (!is_null($campania->cosch_kg_fresca_malla) && $campania->cosch_kg_fresca_malla != 0))
+                                    <x-tr>
+                                        <x-td><b>Kg fresca (malla {{ $campania->cosch_destino_malla }})</b></x-td>
+                                        <x-td>{{ number_format($campania->cosch_kg_fresca_malla, 2) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if ($mostrarVacios || (!is_null($campania->cosch_kg_fresca_losa) && $campania->cosch_kg_fresca_losa != 0))
+                                    <x-tr>
+                                        <x-td><b>Kg fresca (losa)</b></x-td>
+                                        <x-td>{{ number_format($campania->cosch_kg_fresca_losa, 2) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if ($mostrarVacios || (!is_null($campania->cosch_kg_seca_carton) && $campania->cosch_kg_seca_carton != 0))
+                                    <x-tr>
+                                        <x-td><b>Kg seca (cartón)</b></x-td>
+                                        <x-td>{{ number_format($campania->cosch_kg_seca_carton, 2) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if ($mostrarVacios || (!is_null($campania->cosch_kg_seca_tubo) && $campania->cosch_kg_seca_tubo != 0))
+                                    <x-tr>
+                                        <x-td><b>Kg seca (tubo)</b></x-td>
+                                        <x-td>{{ number_format($campania->cosch_kg_seca_tubo, 2) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if ($mostrarVacios || (!is_null($campania->cosch_kg_seca_malla) && $campania->cosch_kg_seca_malla != 0))
+                                    <x-tr>
+                                        <x-td><b>Kg seca (malla)</b></x-td>
+                                        <x-td>{{ number_format($campania->cosch_kg_seca_malla, 2) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if ($mostrarVacios || (!is_null($campania->cosch_kg_seca_losa) && $campania->cosch_kg_seca_losa != 0))
+                                    <x-tr>
+                                        <x-td><b>Kg seca (losa)</b></x-td>
+                                        <x-td>{{ number_format($campania->cosch_kg_seca_losa, 2) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if ($mostrarVacios || (!is_null($campania->cosch_kg_seca_venta_madre) && $campania->cosch_kg_seca_venta_madre != 0))
+                                    <x-tr>
+                                        <x-td><b>Kg seca vendida como madre</b></x-td>
+                                        <x-td>{{ number_format($campania->cosch_kg_seca_venta_madre, 2) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if ($mostrarVacios || (!is_null($campania->cosch_factor_fs_carton) && $campania->cosch_factor_fs_carton != 0))
+                                    <x-tr>
+                                        <x-td><b>Factor fresca/seca (cartón)</b></x-td>
+                                        <x-td>{{ number_format($campania->cosch_factor_fs_carton, 2) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if ($mostrarVacios || (!is_null($campania->cosch_factor_fs_tubo) && $campania->cosch_factor_fs_tubo != 0))
+                                    <x-tr>
+                                        <x-td><b>Factor fresca/seca (tubo)</b></x-td>
+                                        <x-td>{{ number_format($campania->cosch_factor_fs_tubo, 2) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if ($mostrarVacios || (!is_null($campania->cosch_factor_fs_malla) && $campania->cosch_factor_fs_malla != 0))
+                                    <x-tr>
+                                        <x-td><b>Factor fresca/seca (malla)</b></x-td>
+                                        <x-td>{{ number_format($campania->cosch_factor_fs_malla, 2) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if ($mostrarVacios || (!is_null($campania->cosch_factor_fs_losa) && $campania->cosch_factor_fs_losa != 0))
+                                    <x-tr>
+                                        <x-td><b>Factor fresca/seca (losa)</b></x-td>
+                                        <x-td>{{ number_format($campania->cosch_factor_fs_losa, 2) }}</x-td>
+                                    </x-tr>
+                                @endif
+
                                 <x-tr>
                                     <x-td><b>Total producción en cosecha o poda</b></x-td>
                                     <x-td>{{ number_format($campania->cosch_total_cosecha, 2) }}</x-td>

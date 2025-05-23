@@ -15,7 +15,7 @@
                     <x-tr>
                         <x-th class="text-center">N°</x-th>
                         <x-th>Nombre del Kardex</x-th>
-                        <x-th class="text-center">Tipo</x-th>
+                        <x-th>Productos anexados</x-th>
                         <x-th class="text-center">Fecha Inicial</x-th>
                         <x-th class="text-center">Fecha Final</x-th>
                         <x-th class="text-center">Estado</x-th>
@@ -24,24 +24,27 @@
                 </x-slot>
                 <x-slot name="tbody">
                     @foreach ($kardexLista as $indice => $kardex)
-                    <x-tr>
-                        <x-td class="text-center">{{$indice + 1}}</x-td>
-                        <x-td>{{$kardex->nombre}}</x-td>
-                        <x-td class="text-center">{{$kardex->tipo_kardex}}</x-td>
-                        <x-td class="text-center">{{$kardex->fecha_inicial}}</x-td>
-                        <x-td class="text-center">{{$kardex->fecha_final}}</x-td>
-                        <x-td class="text-center">{{mb_strtoupper($kardex->estado)}}</x-td>
-                        <x-td class="text-center">
-                            <x-flex class="justify-center">
-                                <x-button-a type="button" href="{{route('kardex.ver',['id'=>$kardex->id])}}">
-                                    <i class="fa fa-eye"></i> Ver Kardex
-                                </x-button-a>
-                                <x-danger-button type="button" wire:click="preguntarEliminar({{$kardex->id}})">
-                                    <i class="fa fa-trash"></i>
-                                </x-danger-button>
-                            </x-flex>
-                        </x-td>
-                    </x-tr>
+                        <x-tr>
+                            <x-td class="text-center">{{ $indice + 1 }}</x-td>
+                            <x-td>{{ $kardex->nombre }}</x-td>
+                            <x-td>{{ $kardex->productos->count() }}</x-td>
+                            <x-td class="text-center">{{ $kardex->fecha_inicial }}</x-td>
+                            <x-td class="text-center">{{ $kardex->fecha_final }}</x-td>
+                            <x-td class="text-center">{{ mb_strtoupper($kardex->estado) }}</x-td>
+                            <x-td class="text-center">
+                                <x-flex class="justify-center">
+                                    <x-button-a type="button" href="{{ route('kardex.ver', ['id' => $kardex->id]) }}">
+                                        <i class="fa fa-eye"></i> Ver Kardex
+                                    </x-button-a>
+                                    @if ($kardex->productos->count() == 0)
+                                        <x-danger-button type="button"
+                                            wire:click="preguntarEliminarKardex({{ $kardex->id }})">
+                                            <i class="fa fa-trash"></i>
+                                        </x-danger-button>
+                                    @endif
+                                </x-flex>
+                            </x-td>
+                        </x-tr>
                     @endforeach
                 </x-slot>
             </x-table>

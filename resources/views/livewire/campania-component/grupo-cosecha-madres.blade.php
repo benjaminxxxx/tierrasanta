@@ -3,17 +3,35 @@
         <x-h3>
             Cosecha de Madres
         </x-h3>
-        <x-flex>
-            <x-button type="button" wire:click="sincronizarInformacionParcial('cosecha_madres')">
-                <i class="fa fa-sync"></i> Sincronizar datos
-            </x-button>
-        </x-flex>
     </x-flex>
     <x-flex class="!items-start w-full">
         @if ($campania)
             <x-card class="md:w-[35rem]">
                 <x-spacing>
                     <x-h3>Resumen de Cosecha de madres</x-h3>
+                    <div x-data="{ editando: false }" class="my-3">
+                        <template x-if="editando">
+                            <x-flex class="space-x-2 items-center">
+                                <x-input-date wire:model="grupoCosechaMadres_cosechamadres_fecha_cosecha" label="Fecha de cosecha de madres" />
+                                <x-button type="button" wire:click="registrarCambiosCosechaFecha"
+                                    @click="editando = false">
+                                    <i class="fa fa-save"></i>
+                                </x-button>
+                                <x-danger-button type="button" @click="editando = false" color="secondary">
+                                    <i class="fa fa-times"></i>
+                                </x-danger-button>
+                            </x-flex>
+                        </template>
+
+                        <template x-if="!editando">
+                            <x-flex class="space-x-2 items-center">
+                                <span><b>Fecha de cosecha de madres</b>: {{ $campania->cosechamadres_fecha_cosecha }}</span>
+                                <x-button type="button" @click="editando = true">
+                                    <i class="fa fa-edit"></i>
+                                </x-button>
+                            </x-flex>
+                        </template>
+                    </div>
                     <div x-data="table_cochinilla_cosecha_mama" wire:ignore class="my-4">
                         <div x-ref="tableContainer"></div>
 
@@ -92,8 +110,8 @@
                     ],
                     cells(row, col) {
                         const cellProperties = {};
-                        const filasDestinoFresco = [0,1,2,8,14];
-                        const filasRecuperacionSeco = [15,16,17,18,19];
+                        const filasDestinoFresco = [0, 1, 2, 8, 14];
+                        const filasRecuperacionSeco = [15, 16, 17, 18, 19];
                         const filasConversionFrescoSeco = [];
 
                         if (col === 0) {
@@ -121,7 +139,7 @@
                         if (col === 2) {
                             cellProperties.readOnly = true;
                             cellProperties.className = (cellProperties.className || '') +
-                            ' !bg-blue-50 !text-center';
+                                ' !bg-blue-50 !text-center';
                         }
 
                         return cellProperties;

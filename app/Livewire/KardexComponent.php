@@ -10,9 +10,9 @@ class KardexComponent extends Component
 {
     use LivewireAlert;
     public $kardexLista = [];
-    protected $listeners = ['kardexRegistrado'=>'$refresh','confirmarEliminar'];
-   
-    public function preguntarEliminar($kardexId)
+    protected $listeners = ['kardexRegistrado' => '$refresh', 'confirmarEliminar'];
+
+    public function preguntarEliminarKardex($kardexId)
     {
 
         $this->alert('question', '¿Está seguro(a) que desea eliminar el Kardex?', [
@@ -33,12 +33,25 @@ class KardexComponent extends Component
     }
     public function confirmarEliminar($data)
     {
-        Kardex::find($data['kardexId'])->update(['eliminado'=>true]);
-        $this->alert('success', 'Registro Eliminado Correctamente.');
+        $kardex = Kardex::find($data['kardexId']);
+
+        if (!$kardex) {
+            $this->alert('error', 'Registro no encontrado.');
+            return;
+        }
+
+        if ($kardex->productos()->exists()) {
+            $kardex->update(['eliminado' => true]); // Solo marcamos como eliminado si tiene productos
+            $this->alert('warning', 'No se puede eliminar permanentemente porque tiene productos. Marcado como eliminado.');
+        } else {
+            $kardex->delete(); // Eliminación real si no tiene productos
+            $this->alert('success', 'Registro eliminado permanentemente.');
+        }
     }
+
     public function render()
     {
-        $this->kardexLista = Kardex::where('eliminado',false)->orderBy('fecha_inicial','desc')->get();
+        $this->kardexLista = Kardex::where('eliminado', false)->orderBy('fecha_inicial', 'desc')->get();
         return view('livewire.kardex-component');
     }
 }

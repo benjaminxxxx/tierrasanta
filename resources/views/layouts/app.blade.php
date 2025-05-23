@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
     <!-- Scripts -->
     <link rel="stylesheet" href="{{ asset('css/fontawesome.min.css') }}" />
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 

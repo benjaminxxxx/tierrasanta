@@ -46,9 +46,12 @@
                         No hay siembras disponible antes de esta fecha, revise el panel de registro de siembras
                     </x-warning>
                 @endif
+                <x-success class="mt-2">
+                    Ahora puede agregar un lote o un sublote, puede usar 123 o 123.1
+                </x-success>
             </x-group-field>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                <x-input-number label="N° de Lote" wire:model="lote" error="lote" />
+                <x-input-number label="N° de Lote o sublote" wire:model="lote" error="lote" />
                 <x-input-date label="Fecha" wire:model.live="fecha" />
                 <x-select label="Campo" wire:model.live="campoSeleccionado" error="campoSeleccionado">
                     <option value="">Seleccionar campo</option>

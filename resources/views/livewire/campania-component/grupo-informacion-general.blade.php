@@ -33,15 +33,15 @@
         </div>
         <div class="grid grid-cols-2 gap-2 items-center">
             <div class="font-medium text-gray-700">Fecha de siembra:</div>
-            <div>{{ $campania->fecha_siembra }}</div>
+            <div>{{ formatear_fecha($campania->fecha_siembra) }}</div>
         </div>
         <div class="grid grid-cols-2 gap-2 items-center">
             <div class="font-medium text-gray-700">Fecha de inicio de Campaña:</div>
-            <div>{{ $campania->fecha_inicio }}</div>
+            <div>{{ formatear_fecha($campania->fecha_inicio) }}</div>
         </div>
         <div class="grid grid-cols-2 gap-2 items-center">
             <div class="font-medium text-gray-700">Fin de Campaña:</div>
-            <div>{{ $campania->fecha_fin }}</div>
+            <div>{{ formatear_fecha($campania->fecha_fin) }}</div>
         </div>
     </div>
 </div>

@@ -8,6 +8,7 @@ use App\Models\CampoCampania;
 use App\Models\CochinillaObservacion;
 use App\Models\Observacion;
 use App\Models\Siembra;
+use App\Services\CochinillaIngresoServicio;
 use Illuminate\Support\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -58,8 +59,7 @@ class CochinillaIngresoFormComponent extends Component
     {
         $this->resetForm();
         $this->fecha = Carbon::now()->format('Y-m-d');
-        $ultimo = CochinillaIngreso::latest('lote')->first();
-        $this->lote = $ultimo ? ((int) $ultimo->lote + 1) : 1;
+        $this->lote = CochinillaIngresoServicio::generarCodigoSiguiente();
         $this->buscarSiembra();
         $this->mostrarFormulario = true;
     }
@@ -99,7 +99,7 @@ class CochinillaIngresoFormComponent extends Component
 
         if ($campo) {
             $this->area = $campo->area;
-        }else{
+        } else {
             $this->area = null;
         }
         $this->buscarSiembra();

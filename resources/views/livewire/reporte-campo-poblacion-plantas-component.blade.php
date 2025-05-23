@@ -94,7 +94,7 @@
                                 {{ $poblacion->tipo_evaluacion_legible }}
                             </x-td>
                             <x-td class="text-center">
-                                {{ $poblacion->fecha }}
+                                {{ formatear_fecha($poblacion->fecha) }}
                             </x-td>
                             <x-th class="text-center">
                                 {{ number_format($poblacion->promedio_plantas_x_cama,0) }}

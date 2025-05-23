@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Campo;
 use App\Models\CampoCampania;
 use App\Services\CampaniaServicio;
+use App\Support\CalculoHelper;
 use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -20,18 +21,39 @@ class CampoCampaniaComponent extends Component
     public $hayCampaniaAnterior = false;
     public $hayCampaniaPosterior = false;
     public $resumenCosechaMadres = [];
+    public $mostrarVacios;
+    /**
+     * Campos exclusivos para el grupo de porcentaje de acido carminico
+     */
+    public $porcentajeAcidoCarminicoPromedio;
+    public $porcentajeAcidoCarminicoInfestadores;
+    public $porcentajeAcidoCarminicoSecado;
+    public $porcentajeAcidoCarminicoPodaCosechaInfestador;
+    public $porcentajeAcidoCarminicoPodaCosechaLosa;
+    public $porcentajeAcidoCarminicoTamanioCochinilla;
+
+    /**
+     * Campo utilizados en el grupo cosecha madres
+     * 
+     */
+    public $grupoCosechaMadres_cosechamadres_fecha_cosecha;
+    /**
+     * Campo utilizado en el grupo cosecha
+     */
+    public $grupoCosecha_cosch_fecha;
 
     protected $listeners = [
-        'GuardarInformacion', 
-        'confirmarEliminar', 
-        'campaniaInsertada' => 'cargarUltimaCampania', 
+        'GuardarInformacion',
+        'confirmarEliminar',
+        'campaniaInsertada' => 'cargarUltimaCampania',
         'registrarDetalleCosechaMadres',
-        'recargarEvaluacion'=>'$refresh',
-        'cosechaXCampaniaActualizada'=>'$refresh'
+        'recargarEvaluacion' => '$refresh',
+        'cosechaXCampaniaActualizada' => '$refresh'
     ];
 
     public function mount($campo = null)
     {
+        $this->mostrarVacios = Session::get('mostrarVacios',false);
         $this->campos = Campo::orderBy('orden')->get();
         if ($campo) {
             $this->campoSeleccionado = $campo;
@@ -154,27 +176,27 @@ class CampoCampaniaComponent extends Component
         if ($seco === null || $seco == 0) {
             return null;
         }
-        return round($fresco / $seco,0);
+        return round($fresco / $seco, 0);
     }
 
+    /*
+        public function sincronizarInformacionParcial($grupo)
+        {
+            if (!$this->campania) {
+                return $this->alert('error', 'Seleccione una campaña para continuar.');
+            }
 
-    public function sincronizarInformacionParcial($grupo)
-    {
-        if (!$this->campania) {
-            return $this->alert('error', 'Seleccione una campaña para continuar.');
-        }
+            $campaniaServicio = new CampaniaServicio($this->campania->id);
 
-        $campaniaServicio = new CampaniaServicio($this->campania->id);
-
-        switch ($grupo) {
-            case 'cosecha_madres':
-                $campaniaServicio->registrarHistorialCosechaMadres();
-                break;
-        }
-        $this->campania->refresh();
-        $this->cargarResumenCosechaMadres();
-        $this->alert('success', 'Información sincronizada correctamente.');
-    }
+            switch ($grupo) {
+                case 'cosecha_madres':
+                    $campaniaServicio->registrarHistorialCosechaMadres();
+                    break;
+            }
+            $this->campania->refresh();
+            $this->cargarResumenCosechaMadres();
+            $this->alert('success', 'Información sincronizada correctamente.');
+        }*/
     public function updatedCampoSeleccionado()
     {
         Session::put('campoSeleccionado', $this->campoSeleccionado);
@@ -196,6 +218,10 @@ class CampoCampaniaComponent extends Component
         }
 
         $this->campania = $campo->campanias()->orderBy('fecha_inicio', 'desc')->first();
+        if ($this->campania) {
+            $this->grupoCosechaMadres_cosechamadres_fecha_cosecha = $this->campania->cosechamadres_fecha_cosecha;
+        }
+        $this->obtenerInformacionAcidoCarminico();
     }
 
     public function eliminarCampania($campaniaId)
@@ -297,7 +323,130 @@ class CampoCampaniaComponent extends Component
             ->where('fecha_inicio', '>', $this->campania->fecha_inicio)
             ->exists();
     }
+    public function porcentajeAcidoCarminicoGuardar()
+    {
+        if (!$this->campania) {
+            return;
+        }
 
+        $infest = $this->porcentajeAcidoCarminicoInfestadores;
+        $secado = $this->porcentajeAcidoCarminicoSecado;
+        $podaInfest = $this->porcentajeAcidoCarminicoPodaCosechaInfestador;
+        $podaLosa = $this->porcentajeAcidoCarminicoPodaCosechaLosa;
+        $tam = $this->porcentajeAcidoCarminicoTamanioCochinilla;
+
+        // Calculamos el promedio (ignorando nulos)
+        $valores = collect([$infest, $secado, $podaInfest, $podaLosa])->filter(fn($v) => $v !== null);
+        $prom = $valores->isNotEmpty() ? $valores->avg() : null;
+
+        $this->campania->update([
+            'acid_prom' => $prom,
+            'acid_infest' => $infest,
+            'acid_secado' => $secado,
+            'acid_poda_infest' => $podaInfest,
+            'acid_poda_losa' => $podaLosa,
+            'acid_tam' => $tam,
+        ]);
+        $this->obtenerInformacionAcidoCarminico();
+        $this->alert('success', 'Registro de ácido carmínico actualizado');
+    }
+    public function obtenerInformacionAcidoCarminico()
+    {
+        if (!$this->campania) {
+            return;
+        }
+
+        $this->porcentajeAcidoCarminicoPromedio = $this->campania->acid_prom;
+        $this->porcentajeAcidoCarminicoInfestadores = $this->campania->acid_infest;
+        $this->porcentajeAcidoCarminicoSecado = $this->campania->acid_secado;
+        $this->porcentajeAcidoCarminicoPodaCosechaInfestador = $this->campania->acid_poda_infest;
+        $this->porcentajeAcidoCarminicoPodaCosechaLosa = $this->campania->acid_poda_losa;
+        $this->porcentajeAcidoCarminicoTamanioCochinilla = $this->campania->acid_tam;
+    }
+    /*
+    public function registrarCambiosGrupoCosechaCosechaFecha()
+    {
+        if ($this->campania) {
+
+            // Validar que la fecha no esté vacía y tenga un formato válido
+            if (empty($this->grupoCosecha_cosch_fecha) || !strtotime($this->grupoCosecha_cosch_fecha)) {
+                $this->campania->update([
+                    'cosch_fecha' => null,
+                    'cosch_tiempo_inf_cosch' => null,
+                    'cosch_tiempo_reinf_cosch' => null,
+                    'cosch_tiempo_ini_cosch' => null,
+                ]);
+                $this->alert('warning', 'La fecha de infestación se ha limpiado.');
+                return;
+            }
+
+            $cosch_tiempo_inf_cosch = null;
+            $cosch_tiempo_reinf_cosch = null;
+            $cosch_tiempo_ini_cosch = null;
+
+
+            if ($this->campania->infestacion_fecha) {
+
+                $cosch_tiempo_inf_cosch = CalculoHelper::calcularDuracionEntreFechas(
+                    $this->campania->infestacion_fecha,
+                    $this->grupoCosecha_cosch_fecha
+                );
+            }
+            if ($this->campania->reinfestacion_fecha) {
+                $cosch_tiempo_reinf_cosch = CalculoHelper::calcularDuracionEntreFechas(
+                    $this->campania->reinfestacion_fecha,
+                    $this->grupoCosecha_cosch_fecha
+                );
+            }
+            if ($this->campania->fecha_inicio) {
+                $cosch_tiempo_ini_cosch = CalculoHelper::calcularDuracionEntreFechas(
+                    $this->campania->fecha_inicio,
+                    $this->grupoCosecha_cosch_fecha
+                );
+            }
+
+            $this->campania->update([
+                'cosch_fecha' => $this->grupoCosecha_cosch_fecha,
+                'cosch_tiempo_inf_cosch' => $cosch_tiempo_inf_cosch,
+                'cosch_tiempo_reinf_cosch' => $cosch_tiempo_reinf_cosch,
+                'cosch_tiempo_ini_cosch' => $cosch_tiempo_ini_cosch,
+            ]);
+
+            $this->alert('success', 'Fecha de cosecha actualizada correctamente');
+        } else {
+            $this->alert('error', 'No se ha podido actualizar la fecha de cosecha');
+        }
+    }*/
+    public function registrarCambiosCosechaFecha()
+    {
+
+        if ($this->campania) {
+
+            // Validar que la fecha no esté vacía y tenga un formato válido
+            if (empty($this->grupoCosechaMadres_cosechamadres_fecha_cosecha) || !strtotime($this->grupoCosechaMadres_cosechamadres_fecha_cosecha)) {
+                $this->campania->update([
+                    'cosechamadres_fecha_cosecha' => null,
+                    'cosechamadres_tiempo_infestacion_a_cosecha' => null
+                ]);
+                $this->alert('warning', 'La fecha de infestación se ha limpiado.');
+                return;
+            }
+
+            $duracion = CalculoHelper::calcularDuracionEntreFechas(
+                $this->campania->infestacion_fecha,
+                $this->grupoCosechaMadres_cosechamadres_fecha_cosecha
+            );
+            $this->campania->update([
+                'cosechamadres_fecha_cosecha' => $this->grupoCosechaMadres_cosechamadres_fecha_cosecha,
+                'cosechamadres_tiempo_infestacion_a_cosecha' => $duracion
+            ]);
+            $this->cargarResumenCosechaMadres();
+
+            $this->alert('success', 'Fecha de cosecha madres actualizada correctamente');
+        } else {
+            $this->alert('error', 'No se ha podido actualizar la fecha de cosecha madres');
+        }
+    }
     public function render()
     {
         return view('livewire.campo-campania-component');

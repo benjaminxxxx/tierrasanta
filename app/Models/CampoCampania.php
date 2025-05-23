@@ -145,6 +145,13 @@ class CampoCampania extends Model
         'cosch_factor_fs_losa',
         'cosch_total_cosecha',
         'cosch_total_campania',
+
+        'acid_prom',
+        'acid_infest',
+        'acid_secado',
+        'acid_poda_infest',
+        'acid_poda_losa',
+        'acid_tam',
     ];
     public function infestaciones()
     {

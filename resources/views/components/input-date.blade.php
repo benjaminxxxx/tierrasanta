@@ -18,7 +18,7 @@
             </x-label>
         @endif
 
-        <x-input type="date" x-ref="myDatepicker" x-model="value" />
+        <x-input type="date" x-ref="myDatepicker" x-model="value" {{ $attributes }} />
 
         @if ($descripcion)
             <small>{{ $descripcion }}</small>
@@ -37,8 +37,8 @@
                 this.$nextTick(() => {
                     this.pickr = flatpickr(this.$refs.myDatepicker, {
                         dateFormat: "Y-m-d",
-                        minDate: fechaMin || null, // ✅ Se pasa correctamente la fecha mínima
-                        maxDate: fechaMax || null, // ✅ Se pasa correctamente la fecha máxima
+                        minDate: fechaMin || null,
+                        maxDate: fechaMax || null,
                         defaultDate: this.value || null,
                         onChange: (selectedDates, dateStr) => {
                             this.value = dateStr;

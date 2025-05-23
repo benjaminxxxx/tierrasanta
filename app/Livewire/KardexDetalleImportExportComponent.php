@@ -105,7 +105,7 @@ class KardexDetalleImportExportComponent extends Component
         if (trim($this->kardexProducto->codigo_existencia) == '') {
             throw new Exception("El producto no tiene un código de existencia válido, debe actualizar la información.");
         }
-
+        
         $sheet = $spreadsheet->getSheetByName($this->kardexProducto->codigo_existencia);
 
 

@@ -59,6 +59,7 @@ class CampaniaServicio
 
         $this->campoCampania->update($data);
     }
+    /*
     public function registrarHistorialCosechaMadres()
     {
         if (!$this->campoCampania) {
@@ -82,7 +83,7 @@ class CampaniaServicio
             $data['cosechamadres_tiempo_infestacion_a_cosecha'] = $duracion;
         }
         $this->campoCampania->update($data);
-    }
+    }*/
     public function registrarHistorialBrotes()
     {
 
@@ -147,6 +148,8 @@ class CampaniaServicio
             ->get();
 
         if ($infestaciones->isNotEmpty()) {
+            /*
+            se elimino esta parte porque ahora la fecha no es automatica, sino manual
             $ultimaInfestacion = $infestaciones->last();
 
             if ($ultimaInfestacion) {
@@ -183,7 +186,7 @@ class CampaniaServicio
                     $data['reinfestacion_fecha'] = $ultimaInfestacion->fecha;
                     $data['reinfestacion_duracion_desde_infestacion'] = $duracion;
                 }
-            }
+            }*/
 
             $data[$tipo . '_kg_totales_madre'] = $infestaciones->sum('kg_madres');
             $data[$tipo . '_kg_madre_infestador_carton'] = $infestaciones->where('metodo', 'carton')->sum('kg_madres');
@@ -198,12 +201,17 @@ class CampaniaServicio
             $data[$tipo . '_cantidad_infestadores_tubos'] = $infestadores_tubo;
             $data[$tipo . '_cantidad_infestadores_mallita'] = $infestadores_malla;
 
-            $lista = $infestaciones->map(function ($infestacion) {
-                return [
-                    'campo_origen_nombre' => $infestacion->campo_origen_nombre,
-                    'kg_madres' => $infestacion->kg_madres,
-                ];
-            })->toArray();
+            $lista = $infestaciones
+                ->groupBy('campo_origen_nombre')
+                ->map(function ($grupo) {
+                    return [
+                        'campo_origen_nombre' => $grupo->first()->campo_origen_nombre,
+                        'kg_madres' => $grupo->sum('kg_madres'),
+                    ];
+                })
+                ->values() // para resetear los índices
+                ->toArray();
+
 
             $data[$tipo . '_procedencia_madres'] = json_encode($lista);
 
@@ -220,7 +228,7 @@ class CampaniaServicio
         } else {
             // Si no hay infestaciones, resetear los valores
             $data = [
-                $tipo . '_fecha' => null,
+                //$tipo . '_fecha' => null,
                 $tipo . '_kg_totales_madre' => 0,
                 $tipo . '_kg_madre_infestador_carton' => 0,
                 $tipo . '_kg_madre_infestador_tubos' => 0,

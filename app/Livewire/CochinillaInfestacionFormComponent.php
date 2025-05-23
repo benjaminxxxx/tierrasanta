@@ -30,7 +30,7 @@ class CochinillaInfestacionFormComponent extends Component
     public $infestadores_por_ha;
     public $campoSeleccionadoOrigen;
     public $kg_madres_ha;
-    protected $listeners = ['agregarInfestacion','editarInfestacion'];
+    protected $listeners = ['agregarInfestacion', 'editarInfestacion'];
     public function mount()
     {
         $this->resetForm();
@@ -60,7 +60,8 @@ class CochinillaInfestacionFormComponent extends Component
         $this->tipo_infestacion = 'infestacion';
         $this->mostrarFormulario = false;
     }
-    public function agregarInfestacion(){
+    public function agregarInfestacion()
+    {
         $this->resetForm();
         $this->mostrarFormulario = true;
     }
@@ -76,14 +77,14 @@ class CochinillaInfestacionFormComponent extends Component
             $this->campoSeleccionado = $cochinillaInfestacion->campo_nombre;
             $this->area = $cochinillaInfestacion->area;
             $this->kg_madres = $cochinillaInfestacion->kg_madres;
-            $this->kg_madres_por_ha = number_format($cochinillaInfestacion->kg_madres_por_ha,2);
+            $this->kg_madres_por_ha = number_format($cochinillaInfestacion->kg_madres_por_ha, 2);
             $this->campoSeleccionadoOrigen = $cochinillaInfestacion->campo_origen_nombre;
             $this->metodo = $cochinillaInfestacion->metodo;
             $this->numero_envases = $cochinillaInfestacion->numero_envases;
             $this->capacidad_envase = $cochinillaInfestacion->capacidad_envase;
             $this->infestadores = $cochinillaInfestacion->infestadores;
-            $this->madres_por_infestador =  number_format($cochinillaInfestacion->madres_por_infestador,6);
-            $this->infestadores_por_ha =  $cochinillaInfestacion->infestadores_por_ha;
+            $this->madres_por_infestador = number_format($cochinillaInfestacion->madres_por_infestador, 6);
+            $this->infestadores_por_ha = $cochinillaInfestacion->infestadores_por_ha;
             $this->mostrarFormulario = true;
             $this->buscarCampania();
         }
@@ -158,7 +159,7 @@ class CochinillaInfestacionFormComponent extends Component
                 $this->alert('success', 'Registro creado correctamente');
             }
             $this->mostrarFormulario = false;
-            $this->dispatch('infestacionProcesada',['metodo'=>$this->metodo,'id'=>$nuevoId]);
+            $this->dispatch('infestacionProcesada', ['metodo' => $this->metodo, 'id' => $nuevoId]);
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }

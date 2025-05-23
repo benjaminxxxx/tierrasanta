@@ -31,7 +31,31 @@
                             @if ($tipo == 'infestacion')
                                 <x-tr>
                                     <x-th>Fecha {{ $infestacionTexto }}</x-th>
-                                    <x-td class="bg-cyan-100">{{ $campania->infestacion_fecha }}</x-td>
+                                    <x-td x-data="{ editando: false }" class="bg-cyan-100">
+                                        <template x-if="editando">
+                                            <x-flex class="space-x-2 items-center">
+                                                <x-input-date wire:model="infestacion_fecha" label="" />
+                                                <x-button type="button" wire:click="registrarCambiosInfestacionFecha"
+                                                    @click="editando = false">
+                                                    <i class="fa fa-save"></i>
+                                                </x-button>
+                                                <x-danger-button type="button" @click="editando = false"
+                                                    color="secondary">
+                                                    <i class="fa fa-times"></i>
+                                                </x-danger-button>
+                                            </x-flex>
+                                        </template>
+
+                                        <template x-if="!editando">
+                                            <x-flex class="space-x-2 items-center">
+                                                <span>{{ formatear_fecha($campania->infestacion_fecha) }}</span>
+
+                                                <x-button type="button" @click="editando = true">
+                                                    <i class="fa fa-edit"></i>
+                                                </x-button>
+                                            </x-flex>
+                                        </template>
+                                    </x-td>
                                 </x-tr>
                                 <x-tr>
                                     <x-th>Tiempo de siembra o inicio de campaña a infestación</x-th>
@@ -39,27 +63,47 @@
                                 </x-tr>
                                 <x-tr>
                                     <x-th>Número de pencas a la infestación</x-th>
-                                    <x-td class="bg-lime-100">{{ $campania->infestacion_numero_pencas }}</x-td>
+                                    <x-td
+                                        class="bg-lime-100">{{ number_format($campania->infestacion_numero_pencas, 0) }}</x-td>
                                 </x-tr>
                                 <x-tr>
                                     <x-th>Kg totales de madres</x-th>
-                                    <x-td class="bg-purple-100">{{ $campania->infestacion_kg_totales_madre }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-th>Kg de madres para infestador cartón</x-th>
                                     <x-td
-                                        class="bg-orange-100">{{ $campania->infestacion_kg_madre_infestador_carton }}</x-td>
+                                        class="bg-purple-100">{{ number_format($campania->infestacion_kg_totales_madre, 0) }}</x-td>
                                 </x-tr>
-                                <x-tr>
-                                    <x-th>Kg de madres para infestador tubos</x-th>
-                                    <x-td
-                                        class="bg-indigo-100">{{ $campania->infestacion_kg_madre_infestador_tubos }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-th>Kg de madres para infestador mallita</x-th>
-                                    <x-td
-                                        class="bg-stone-100">{{ $campania->infestacion_kg_madre_infestador_mallita }}</x-td>
-                                </x-tr>
+                                @if (
+                                    $mostrarVacios ||
+                                        (!is_null($campania->infestacion_kg_madre_infestador_carton) &&
+                                            $campania->infestacion_kg_madre_infestador_carton != 0))
+                                    <x-tr>
+                                        <x-th>Kg de madres para infestador cartón</x-th>
+                                        <x-td
+                                            class="bg-orange-100">{{ number_format($campania->infestacion_kg_madre_infestador_carton, 0) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if (
+                                    $mostrarVacios ||
+                                        (!is_null($campania->infestacion_kg_madre_infestador_tubos) &&
+                                            $campania->infestacion_kg_madre_infestador_tubos != 0))
+                                    <x-tr>
+                                        <x-th>Kg de madres para infestador tubos</x-th>
+                                        <x-td
+                                            class="bg-indigo-100">{{ number_format($campania->infestacion_kg_madre_infestador_tubos, 0) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if (
+                                    $mostrarVacios ||
+                                        (!is_null($campania->infestacion_kg_madre_infestador_mallita) &&
+                                            $campania->infestacion_kg_madre_infestador_mallita != 0))
+                                    <x-tr>
+                                        <x-th>Kg de madres para infestador mallita</x-th>
+                                        <x-td
+                                            class="bg-stone-100">{{ number_format($campania->infestacion_kg_madre_infestador_mallita, 0) }}</x-td>
+                                    </x-tr>
+                                @endif
+
                                 <x-tr>
                                     <x-th>Procedencia de las madres</x-th>
                                     <x-td></x-td>
@@ -85,34 +129,70 @@
                                     @foreach ($procedencias as $procedencia)
                                         <x-tr>
                                             <x-td>{{ $procedencia['campo_origen_nombre'] ?? 'No especificado' }}</x-td>
-                                            <x-td>{{ $procedencia['kg_madres'] ?? 0 }}</x-td>
+                                            <x-td>{{ number_format($procedencia['kg_madres'], 0) ?? 0 }}</x-td>
                                         </x-tr>
                                     @endforeach
                                 @endif
-                                <x-tr>
-                                    <x-th>Cantidad de madres por infestador cartón</x-th>
-                                    <x-td>{{ $campania->infestacion_cantidad_madres_por_infestador_carton_alias }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-th>Cantidad de madres por infestador tubo</x-th>
-                                    <x-td>{{ $campania->infestacion_cantidad_madres_por_infestador_tubos_alias }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-th>Cantidad de madres por infestador mallita</x-th>
-                                    <x-td>{{ $campania->infestacion_cantidad_madres_por_infestador_mallita_alias }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-th>Cantidad de infestadores cartón</x-th>
-                                    <x-td>{{ $campania->infestacion_cantidad_infestadores_carton }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-th>Cantidad de infestadores tubos</x-th>
-                                    <x-td>{{ $campania->infestacion_cantidad_infestadores_tubos }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-th>Cantidad de infestadores mallita</x-th>
-                                    <x-td>{{ $campania->infestacion_cantidad_infestadores_mallita }}</x-td>
-                                </x-tr>
+                                @if (
+                                    $mostrarVacios ||
+                                        (!is_null($campania->infestacion_cantidad_madres_por_infestador_carton_alias) &&
+                                            $campania->infestacion_cantidad_madres_por_infestador_carton_alias != '0gr.'))
+                                    <x-tr>
+                                        <x-th>Cantidad de madres por infestador cartón</x-th>
+                                        <x-td>{{ $campania->infestacion_cantidad_madres_por_infestador_carton_alias }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if (
+                                    $mostrarVacios ||
+                                        (!is_null($campania->infestacion_cantidad_madres_por_infestador_tubos_alias) &&
+                                            $campania->infestacion_cantidad_madres_por_infestador_tubos_alias != '0gr.'))
+                                    <x-tr>
+                                        <x-th>Cantidad de madres por infestador tubo</x-th>
+                                        <x-td>{{ $campania->infestacion_cantidad_madres_por_infestador_tubos_alias }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if (
+                                    $mostrarVacios ||
+                                        (!is_null($campania->infestacion_cantidad_madres_por_infestador_mallita_alias) &&
+                                            $campania->infestacion_cantidad_madres_por_infestador_mallita_alias != '0gr.'))
+                                    <x-tr>
+                                        <x-th>Cantidad de madres por infestador mallita</x-th>
+                                        <x-td>{{ $campania->infestacion_cantidad_madres_por_infestador_mallita_alias }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if (
+                                    $mostrarVacios ||
+                                        (!is_null($campania->infestacion_cantidad_infestadores_carton) &&
+                                            $campania->infestacion_cantidad_infestadores_carton != 0))
+                                    <x-tr>
+                                        <x-th>Cantidad de infestadores cartón</x-th>
+                                        <x-td>{{ number_format($campania->infestacion_cantidad_infestadores_carton, 0) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if (
+                                    $mostrarVacios ||
+                                        (!is_null($campania->infestacion_cantidad_infestadores_tubos) &&
+                                            $campania->infestacion_cantidad_infestadores_tubos != 0))
+                                    <x-tr>
+                                        <x-th>Cantidad de infestadores tubos</x-th>
+                                        <x-td>{{ number_format($campania->infestacion_cantidad_infestadores_tubos, 0) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if (
+                                    $mostrarVacios ||
+                                        (!is_null($campania->infestacion_cantidad_infestadores_mallita) &&
+                                            $campania->infestacion_cantidad_infestadores_mallita != 0))
+                                    <x-tr>
+                                        <x-th>Cantidad de infestadores mallita</x-th>
+                                        <x-td>{{ number_format($campania->infestacion_cantidad_infestadores_mallita, 0) }}</x-td>
+                                    </x-tr>
+                                @endif
+
                                 <x-tr>
                                     <x-th>Fecha recojo y vaciado de infestadores</x-th>
                                     <x-td x-data="{ editando: false }">
@@ -134,7 +214,7 @@
 
                                         <template x-if="!editando">
                                             <x-flex class="space-x-2 items-center">
-                                                <span>{{ $campania->infestacion_fecha_recojo_vaciado_infestadores }}</span>
+                                                <span>{{ formatear_fecha($campania->infestacion_fecha_recojo_vaciado_infestadores) }}</span>
                                                 <x-button type="button" @click="editando = true">
                                                     <i class="fa fa-edit"></i>
                                                 </x-button>
@@ -171,7 +251,7 @@
                                         <!-- Vista de solo lectura (cuando editando es false) -->
                                         <template x-if="!editando">
                                             <x-flex class="space-x-2 items-center">
-                                                <span>{{ $campania->infestacion_fecha_colocacion_malla }}</span>
+                                                <span>{{ formatear_fecha($campania->infestacion_fecha_colocacion_malla) }}</span>
                                                 <!-- Botón para habilitar la edición -->
                                                 <x-button type="button" @click="editando = true">
                                                     <i class="fa fa-edit"></i>
@@ -205,7 +285,7 @@
                                         <!-- Vista de solo lectura (cuando editando es false) -->
                                         <template x-if="!editando">
                                             <x-flex class="space-x-2 items-center">
-                                                <span>{{ $campania->infestacion_fecha_retiro_malla }}</span>
+                                                <span>{{ formatear_fecha($campania->infestacion_fecha_retiro_malla) }}</span>
                                                 <!-- Botón para habilitar la edición -->
                                                 <x-button type="button" @click="editando = true">
                                                     <i class="fa fa-edit"></i>
@@ -224,7 +304,30 @@
                             @if ($tipo == 'reinfestacion')
                                 <x-tr>
                                     <x-th>Fecha {{ $infestacionTexto }}</x-th>
-                                    <x-td class="bg-cyan-100">{{ $campania->reinfestacion_fecha }}</x-td>
+                                    <x-td x-data="{ editando: false }" class="bg-cyan-100">
+                                        <template x-if="editando">
+                                            <x-flex class="space-x-2 items-center">
+                                                <x-input-date wire:model="reinfestacion_fecha" label="" />
+                                                <x-button type="button" wire:click="registrarCambiosReinfestacionFecha"
+                                                    @click="editando = false">
+                                                    <i class="fa fa-save"></i>
+                                                </x-button>
+                                                <x-danger-button type="button" @click="editando = false"
+                                                    color="secondary">
+                                                    <i class="fa fa-times"></i>
+                                                </x-danger-button>
+                                            </x-flex>
+                                        </template>
+
+                                        <template x-if="!editando">
+                                            <x-flex class="space-x-2 items-center">
+                                                <span>{{ formatear_fecha($campania->reinfestacion_fecha) }}</span>
+                                                <x-button type="button" @click="editando = true">
+                                                    <i class="fa fa-edit"></i>
+                                                </x-button>
+                                            </x-flex>
+                                        </template>
+                                    </x-td>
                                 </x-tr>
                                 <x-tr>
                                     <x-th>Tiempo de infestación a re-infestación</x-th>
@@ -232,27 +335,47 @@
                                 </x-tr>
                                 <x-tr>
                                     <x-th>Número de pencas a la re-infestación</x-th>
-                                    <x-td class="bg-lime-100">{{ $campania->reinfestacion_numero_pencas }}</x-td>
+                                    <x-td
+                                        class="bg-lime-100">{{ number_format($campania->reinfestacion_numero_pencas, 0) }}</x-td>
                                 </x-tr>
                                 <x-tr>
                                     <x-th>Kg totales de madres</x-th>
-                                    <x-td class="bg-purple-100">{{ $campania->reinfestacion_kg_totales_madre }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-th>Kg de madres para infestador cartón</x-th>
                                     <x-td
-                                        class="bg-orange-100">{{ $campania->reinfestacion_kg_madre_infestador_carton }}</x-td>
+                                        class="bg-purple-100">{{ number_format($campania->reinfestacion_kg_totales_madre, 0) }}</x-td>
                                 </x-tr>
-                                <x-tr>
-                                    <x-th>Kg de madres para infestador tubos</x-th>
-                                    <x-td
-                                        class="bg-indigo-100">{{ $campania->reinfestacion_kg_madre_infestador_tubos }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-th>Kg de madres para infestador mallita</x-th>
-                                    <x-td
-                                        class="bg-stone-100">{{ $campania->reinfestacion_kg_madre_infestador_mallita }}</x-td>
-                                </x-tr>
+                                @if (
+                                    $mostrarVacios ||
+                                        (!is_null($campania->reinfestacion_kg_madre_infestador_carton) &&
+                                            $campania->reinfestacion_kg_madre_infestador_carton != 0))
+                                    <x-tr>
+                                        <x-th>Kg de madres para infestador cartón</x-th>
+                                        <x-td
+                                            class="bg-orange-100">{{ number_format($campania->reinfestacion_kg_madre_infestador_carton, 0) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if (
+                                    $mostrarVacios ||
+                                        (!is_null($campania->reinfestacion_kg_madre_infestador_tubos) &&
+                                            $campania->reinfestacion_kg_madre_infestador_tubos != 0))
+                                    <x-tr>
+                                        <x-th>Kg de madres para infestador tubos</x-th>
+                                        <x-td
+                                            class="bg-indigo-100">{{ number_format($campania->reinfestacion_kg_madre_infestador_tubos, 0) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if (
+                                    $mostrarVacios ||
+                                        (!is_null($campania->reinfestacion_kg_madre_infestador_mallita) &&
+                                            $campania->reinfestacion_kg_madre_infestador_mallita != 0))
+                                    <x-tr>
+                                        <x-th>Kg de madres para infestador mallita</x-th>
+                                        <x-td
+                                            class="bg-stone-100">{{ number_format($campania->reinfestacion_kg_madre_infestador_mallita, 0) }}</x-td>
+                                    </x-tr>
+                                @endif
+
                                 <x-tr>
                                     <x-th>Procedencia de las madres</x-th>
                                     <x-td></x-td>
@@ -264,7 +387,8 @@
                                         if (is_string($campania->reinfestacion_procedencia_madres)) {
                                             try {
                                                 $procedencias =
-                                                    json_decode($campania->reinfestacion_procedencia_madres, true) ?: [];
+                                                    json_decode($campania->reinfestacion_procedencia_madres, true) ?:
+                                                    [];
                                             } catch (\Exception $e) {
                                                 $procedencias = [];
                                             }
@@ -278,40 +402,77 @@
                                     @foreach ($procedencias as $procedencia)
                                         <x-tr>
                                             <x-td>{{ $procedencia['campo_origen_nombre'] ?? 'No especificado' }}</x-td>
-                                            <x-td>{{ $procedencia['kg_madres'] ?? 0 }}</x-td>
+                                            <x-td>{{ number_format($procedencia['kg_madres'], 0) ?? 0 }}</x-td>
                                         </x-tr>
                                     @endforeach
                                 @endif
-                                <x-tr>
-                                    <x-th>Cantidad de madres por infestador cartón</x-th>
-                                    <x-td>{{ $campania->reinfestacion_cantidad_madres_por_infestador_carton_alias }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-th>Cantidad de madres por infestador tubo</x-th>
-                                    <x-td>{{ $campania->reinfestacion_cantidad_madres_por_infestador_tubos_alias }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-th>Cantidad de madres por infestador mallita</x-th>
-                                    <x-td>{{ $campania->reinfestacion_cantidad_madres_por_infestador_mallita_alias }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-th>Cantidad de infestadores cartón</x-th>
-                                    <x-td>{{ $campania->reinfestacion_cantidad_infestadores_carton }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-th>Cantidad de infestadores tubos</x-th>
-                                    <x-td>{{ $campania->reinfestacion_cantidad_infestadores_tubos }}</x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-th>Cantidad de infestadores mallita</x-th>
-                                    <x-td>{{ $campania->reinfestacion_cantidad_infestadores_mallita }}</x-td>
-                                </x-tr>
+                                @if (
+                                    $mostrarVacios ||
+                                        (!is_null($campania->reinfestacion_cantidad_madres_por_infestador_carton_alias) &&
+                                            $campania->reinfestacion_cantidad_madres_por_infestador_carton_alias !== '0gr.'))
+                                    <x-tr>
+                                        <x-th>Cantidad de madres por infestador cartón</x-th>
+                                        <x-td>{{ $campania->reinfestacion_cantidad_madres_por_infestador_carton_alias }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if (
+                                    $mostrarVacios ||
+                                        (!is_null($campania->reinfestacion_cantidad_madres_por_infestador_tubos_alias) &&
+                                            $campania->reinfestacion_cantidad_madres_por_infestador_tubos_alias !== '0gr.'))
+                                    <x-tr>
+                                        <x-th>Cantidad de madres por infestador tubo</x-th>
+                                        <x-td>{{ $campania->reinfestacion_cantidad_madres_por_infestador_tubos_alias }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if (
+                                    $mostrarVacios ||
+                                        (!is_null($campania->reinfestacion_cantidad_madres_por_infestador_mallita_alias) &&
+                                            $campania->reinfestacion_cantidad_madres_por_infestador_mallita_alias !== '0gr.'))
+                                    <x-tr>
+                                        <x-th>Cantidad de madres por infestador mallita</x-th>
+                                        <x-td>{{ $campania->reinfestacion_cantidad_madres_por_infestador_mallita_alias }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if (
+                                    $mostrarVacios ||
+                                        (!is_null($campania->reinfestacion_cantidad_infestadores_carton) &&
+                                            $campania->reinfestacion_cantidad_infestadores_carton != 0))
+                                    <x-tr>
+                                        <x-th>Cantidad de infestadores cartón</x-th>
+                                        <x-td>{{ number_format($campania->reinfestacion_cantidad_infestadores_carton, 0) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if (
+                                    $mostrarVacios ||
+                                        (!is_null($campania->reinfestacion_cantidad_infestadores_tubos) &&
+                                            $campania->reinfestacion_cantidad_infestadores_tubos != 0))
+                                    <x-tr>
+                                        <x-th>Cantidad de infestadores tubos</x-th>
+                                        <x-td>{{ number_format($campania->reinfestacion_cantidad_infestadores_tubos, 0) }}</x-td>
+                                    </x-tr>
+                                @endif
+
+                                @if (
+                                    $mostrarVacios ||
+                                        (!is_null($campania->reinfestacion_cantidad_infestadores_mallita) &&
+                                            $campania->reinfestacion_cantidad_infestadores_mallita != 0))
+                                    <x-tr>
+                                        <x-th>Cantidad de infestadores mallita</x-th>
+                                        <x-td>{{ number_format($campania->reinfestacion_cantidad_infestadores_mallita, 0) }}</x-td>
+                                    </x-tr>
+                                @endif
+
                                 <x-tr>
                                     <x-th>Fecha recojo y vaciado de infestadores</x-th>
                                     <x-td x-data="{ editando: false }">
                                         <template x-if="editando">
                                             <x-flex class="space-x-2 items-center">
-                                                <x-input-date wire:model="reinfestacion_fecha_recojo_vaciado_infestadores"
+                                                <x-input-date
+                                                    wire:model="reinfestacion_fecha_recojo_vaciado_infestadores"
                                                     label="" />
                                                 <x-button type="button"
                                                     wire:click="registrarCambiosFechaRecojoVaciadoReInfestadores"
@@ -327,7 +488,7 @@
 
                                         <template x-if="!editando">
                                             <x-flex class="space-x-2 items-center">
-                                                <span>{{ $campania->reinfestacion_fecha_recojo_vaciado_infestadores }}</span>
+                                                <span>{{ formatear_fecha($campania->reinfestacion_fecha_recojo_vaciado_infestadores) }}</span>
                                                 <x-button type="button" @click="editando = true">
                                                     <i class="fa fa-edit"></i>
                                                 </x-button>
@@ -349,7 +510,8 @@
                                                 <x-input-date wire:model="reinfestacion_fecha_colocacion_malla"
                                                     label="" />
                                                 <!-- Botón de guardar -->
-                                                <x-button type="button" wire:click="registrarFechaColocacionMallaReinfestacion"
+                                                <x-button type="button"
+                                                    wire:click="registrarFechaColocacionMallaReinfestacion"
                                                     @click="editando = false">
                                                     <i class="fa fa-save"></i>
                                                 </x-button>
@@ -364,7 +526,7 @@
                                         <!-- Vista de solo lectura (cuando editando es false) -->
                                         <template x-if="!editando">
                                             <x-flex class="space-x-2 items-center">
-                                                <span>{{ $campania->reinfestacion_fecha_colocacion_malla }}</span>
+                                                <span>{{ formatear_fecha($campania->reinfestacion_fecha_colocacion_malla) }}</span>
                                                 <!-- Botón para habilitar la edición -->
                                                 <x-button type="button" @click="editando = true">
                                                     <i class="fa fa-edit"></i>
@@ -383,7 +545,8 @@
                                                 <x-input-date wire:model="reinfestacion_fecha_retiro_malla"
                                                     label="" />
                                                 <!-- Botón de guardar -->
-                                                <x-button type="button" wire:click="registrarFechaRetiroMallaReinfestacion"
+                                                <x-button type="button"
+                                                    wire:click="registrarFechaRetiroMallaReinfestacion"
                                                     @click="editando = false">
                                                     <i class="fa fa-save"></i>
                                                 </x-button>
@@ -398,7 +561,7 @@
                                         <!-- Vista de solo lectura (cuando editando es false) -->
                                         <template x-if="!editando">
                                             <x-flex class="space-x-2 items-center">
-                                                <span>{{ $campania->reinfestacion_fecha_retiro_malla }}</span>
+                                                <span>{{ formatear_fecha($campania->reinfestacion_fecha_retiro_malla) }}</span>
                                                 <!-- Botón para habilitar la edición -->
                                                 <x-button type="button" @click="editando = true">
                                                     <i class="fa fa-edit"></i>
@@ -436,7 +599,7 @@
                                     N°
                                 </x-th>
                                 <x-th class="text-center">
-                                    Fecha de<br />{{$infestacionTexto}}
+                                    Fecha de<br />{{ $infestacionTexto }}
                                 </x-th>
                                 <x-th class="text-center">
                                     Campo
@@ -478,7 +641,7 @@
                                     </x-td>
                                     <x-td
                                         class="text-center {{ $indiceInfestacion + 1 == $infestaciones->count() ? 'bg-cyan-100' : '' }}">
-                                        {{ $infestacion->fecha }}
+                                        {{ formatear_fecha($infestacion->fecha) }}
                                     </x-td>
                                     <x-td class="text-center">
                                         {{ $infestacion->campo_nombre }}

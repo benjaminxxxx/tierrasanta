@@ -5,12 +5,17 @@ namespace App\Livewire;
 use App\Models\CampoCampania as Campania;
 use App\Services\CampaniaServicio;
 use Livewire\Component;
+use Session;
 
 class CampaniaDetalleComponent extends Component
 {
     public $campania;
     public $mostrarFormulario = false;
     protected $listeners = ['abrirCampaniaDetalle'];
+    public $mostrarVacios;
+    public function mount(){
+        $this->mostrarVacios = Session::get('mostrarVacios',false);
+    }
     public function actualizarInformacionCampania(){
         if(!$this->campania){
             return $this->alert('error','La campaña ya no existe.');

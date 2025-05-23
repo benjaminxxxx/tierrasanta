@@ -3,11 +3,6 @@
         <x-h3>
             Evaluación Cosecha
         </x-h3>
-        <x-flex>
-            <x-button type="button" wire:click="sincronizarInformacionParcial('evaluacion_cosecha')">
-                <i class="fa fa-sync"></i> Sincronizar datos
-            </x-button>
-        </x-flex>
     </x-flex>
     <x-flex class="!items-start w-full">
         @if ($campania)
