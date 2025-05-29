@@ -23,26 +23,7 @@ class ProductosComponent extends Component
     {
         $this->resetPage();
     }
-    public function render()
-    {
-        $productos = Producto::where(function($query) {
-            // Filtrar por nombre_comercial
-            $query->where('nombre_comercial', 'like', '%' . $this->search . '%')
-                  // Filtrar también por ingrediente_activo
-                  ->orWhere('ingrediente_activo', 'like', '%' . $this->search . '%');
-        })
-        
-        ->when($this->categoria_id_filtro, function ($query) {
-            return $query->where('categoria', $this->categoria_id_filtro);
-        })
-        // Ordenar por el campo especificado y dirección
-        ->orderBy($this->sortField, $this->sortDirection)
-        ->paginate(20);
-
-        return view('livewire.productos-component', [
-            'productos' => $productos
-        ]);
-    }
+    
     public function confirmarEliminacion($id)
     {
         $this->productoIdEliminar = $id;
@@ -78,5 +59,25 @@ class ProductosComponent extends Component
             $this->sortField = $field;
             $this->sortDirection = 'asc';
         }
+    }
+    public function render()
+    {
+        $productos = Producto::where(function($query) {
+            // Filtrar por nombre_comercial
+            $query->where('nombre_comercial', 'like', '%' . $this->search . '%')
+                  // Filtrar también por ingrediente_activo
+                  ->orWhere('ingrediente_activo', 'like', '%' . $this->search . '%');
+        })
+        
+        ->when($this->categoria_id_filtro, function ($query) {
+            return $query->where('categoria', $this->categoria_id_filtro);
+        })
+        // Ordenar por el campo especificado y dirección
+        ->orderBy($this->sortField, $this->sortDirection)
+        ->paginate(20);
+
+        return view('livewire.productos-component', [
+            'productos' => $productos
+        ]);
     }
 }

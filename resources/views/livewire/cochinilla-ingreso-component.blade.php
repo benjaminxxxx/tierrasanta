@@ -186,6 +186,15 @@
                                     </x-td>
                                     <x-td class="text-center">
 
+
+                                    </x-td>
+                                    <x-td class="text-center">
+                                        <x-flex class="w-full justify-end">
+                                            <x-button class="text-center"
+                                                @click="$wire.dispatch('editarIngresoDetalle',{ingresoDetalleId:{{ $detalle->id }}})">
+                                                <i class="fa fa-edit"></i> Editar
+                                            </x-button>
+                                        </x-flex>
                                     </x-td>
                                 </x-tr>
                             @endforeach
@@ -281,10 +290,6 @@
 
                                             <x-slot name="content">
                                                 <div class="w-60">
-                                                    <x-dropdown-link class="text-center"
-                                                        @click="$wire.dispatch('editarIngreso',{ingresoId:{{ $cochinillaIngreso->id }}})">
-                                                        <i class="fa fa-edit"></i> Editar
-                                                    </x-dropdown-link>
                                                     <x-dropdown-link class="text-center"
                                                         @click="$wire.dispatch('agregarDetalle',{ingresoId:{{ $cochinillaIngreso->id }}})">
                                                         <i class="fa fa-list"></i> Sublotes

@@ -153,6 +153,11 @@ class CampoCampania extends Model
         'acid_poda_losa',
         'acid_tam',
     ];
+
+    public function fertilizaciones()
+    {
+        return $this->hasMany(FertilizacionCampania::class, 'campo_campania_id');
+    }
     public function infestaciones()
     {
         return $this->hasMany(CochinillaInfestacion::class, 'campo_campania_id');
@@ -391,4 +396,46 @@ class CampoCampania extends Model
     }
 
     #endregion
+    #region Nutrientes x Ha
+    public function getNutrienteNitrogenoKgXHaAttribute()
+    {
+        return $this->fertilizaciones->sum('n_ha');
+    }
+
+    public function getNutrienteFosforoKgXHaAttribute()
+    {
+        return $this->fertilizaciones->sum('p_ha');
+    }
+
+    public function getNutrientePotasioKgXHaAttribute()
+    {
+        return $this->fertilizaciones->sum('k_ha');
+    }
+
+    public function getNutrienteCalcioKgXHaAttribute()
+    {
+        return $this->fertilizaciones->sum('ca_ha');
+    }
+
+    public function getNutrienteMagnesioKgXHaAttribute()
+    {
+        return $this->fertilizaciones->sum('mg_ha');
+    }
+
+    public function getNutrienteZincKgXHaAttribute()
+    {
+        return $this->fertilizaciones->sum('zn_ha');
+    }
+
+    public function getNutrienteManganesoKgXHaAttribute()
+    {
+        return $this->fertilizaciones->sum('mn_ha');
+    }
+
+    public function getNutrienteFierroKgXHaAttribute()
+    {
+        return $this->fertilizaciones->sum('fe_ha');
+    }
+    #endregion
+
 }

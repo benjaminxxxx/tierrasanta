@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\CampoCampania;
 use App\Models\CochinillaIngreso;
 use App\Models\CochinillaObservacion;
+use App\Services\CochinillaIngresoServicio;
 use DB;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -34,6 +35,7 @@ class CochinillaIngresoComponent extends Component
     ];
     public function mount()
     {
+        CochinillaIngresoServicio::estandarizarIngresos(); //quitar en produccion
         $this->observaciones = CochinillaObservacion::all();
     }
 

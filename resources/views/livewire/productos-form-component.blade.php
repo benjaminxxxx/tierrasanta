@@ -16,35 +16,27 @@
             <form wire:submit.prevent="store">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-
-                    <div class="mt-3">
-                        <x-label for="nombre_comercial">Nombre del Producto</x-label>
-                        <x-input type="text" wire:keydown.enter="store" wire:model="nombre_comercial"
-                            class="uppercase" id="nombre_comercial" />
-                        <x-input-error for="nombre_comercial" />
-                    </div>
-
-                    <div class="mt-3">
-                        <x-label for="ingrediente_activo">Ingrediente Activo</x-label>
-                        <x-input type="text" wire:keydown.enter="store" class="uppercase"
-                            wire:model="ingrediente_activo" id="ingrediente_activo" />
-                        <x-input-error for="ingrediente_activo" />
-                    </div>
-
-                    <div class="mt-3">
-                        <x-label for="categoria">Categoría</x-label>
-                        <x-select class="uppercase" wire:model="categoria">
+                    <x-group-field>
+                        <x-input-string label="Nombre del Producto" wire:keydown.enter="store"
+                            wire:model="nombre_comercial" class="uppercase" id="nombre_comercial"
+                            error="nombre_comercial" />
+                    </x-group-field>
+                    <x-group-field>
+                        <x-input-string label="Ingrediente Activo" wire:keydown.enter="store"
+                            wire:model="ingrediente_activo" class="uppercase" id="ingrediente_activo"
+                            error="ingrediente_activo" />
+                    </x-group-field>
+                    <x-group-field>
+                        <x-select class="uppercase" label="Categoría" wire:model.live="categoria" error="categoria">
                             <option value="">SELECCIONAR CATEGORÍA</option>
                             <option value="fertilizante">FERTILIZANTE</option>
                             <option value="pesticida">PESTICIDA</option>
                             <option value="combustible">COMBUSTIBLE</option>
-                          
                         </x-select>
-                        <x-input-error for="categoria" />
-                    </div>
-                    <div class="mt-3">
-                        <x-label for="codigo_tipo_existencia">Tipo Existencias (Tabla 5)</x-label>
-                        <x-select class="uppercase" wire:model="codigo_tipo_existencia">
+                    </x-group-field>
+                    <x-group-field>
+                        <x-select class="uppercase" label="Tipo Existencias (Tabla 5)"
+                            wire:model="codigo_tipo_existencia" error="codigo_tipo_existencia">
                             <option value="">SELECCIONAR TIPO</option>
                             @if ($sunatTipoExistencias)
                                 @foreach ($sunatTipoExistencias as $sunatTipoExistencia)
@@ -54,11 +46,10 @@
                                 @endforeach
                             @endif
                         </x-select>
-                        <x-input-error for="codigo_tipo_existencia" />
-                    </div>
-                    <div class="mt-3">
-                        <x-label for="codigo_unidad_medida">Unidad de Medida (Tabla 6)</x-label>
-                        <x-select class="uppercase" wire:model="codigo_unidad_medida">
+                    </x-group-field>
+                    <x-group-field>
+                        <x-select class="uppercase" label="Unidad de Medida (Tabla 6)" wire:model="codigo_unidad_medida"
+                            error="codigo_unidad_medida">
                             <option value="">SELECCIONAR UNIDAD</option>
                             @if ($sunatCodigoUnidadMedidas)
                                 @foreach ($sunatCodigoUnidadMedidas as $sunatCodigoUnidadMedida)
@@ -68,9 +59,60 @@
                                 @endforeach
                             @endif
                         </x-select>
-                        <x-input-error for="codigo_unidad_medida" />
-                    </div>
+                    </x-group-field>
+                    @if ($categoria == 'pesticida')
+                        <x-group-field>
+                            <x-select class="uppercase" label="Tipo de pesticida" wire:model="categoria_pesticida"
+                                error="categoria_pesticida">
+                                <option value="">SELECCIONAR CATEGORÍA DE PESTICIDA</option>
+                                @foreach ($listaCategoriasPesticida as $listaCategoriaPesticida)
+                                    <option value="{{ $listaCategoriaPesticida->codigo }}">
+                                        {{ $listaCategoriaPesticida->descripcion }}</option>
+                                @endforeach
+                            </x-select>
+                        </x-group-field>
+                    @endif
                 </div>
+                @if ($categoria == 'fertilizante')
+                    <div class="mt-2 grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <x-group-field>
+                            <x-input-number label="% Nitrógeno" wire:keydown.enter="store"
+                                wire:model="porcentaje_nitrogeno" wire:key="porcentaje_nitrogeno"
+                                error="porcentaje_nitrogeno" />
+                        </x-group-field>
+                        <x-group-field>
+                            <x-input-number label="% Fósforo" wire:keydown.enter="store" wire:model="porcentaje_fosforo"
+                                wire:key="porcentaje_fosforo" error="porcentaje_fosforo" />
+                        </x-group-field>
+                        <x-group-field>
+                            <x-input-number label="% Potasio" wire:keydown.enter="store" wire:model="porcentaje_potasio"
+                                wire:key="porcentaje_potasio" error="porcentaje_potasio" />
+                        </x-group-field>
+                        <x-group-field>
+                            <x-input-number label="% Calcio" wire:keydown.enter="store" wire:model="porcentaje_calcio"
+                                wire:key="porcentaje_calcio" error="porcentaje_calcio" />
+                        </x-group-field>
+                        <x-group-field>
+                            <x-input-number label="% Magnesio" wire:keydown.enter="store"
+                                wire:model="porcentaje_magnesio" wire:key="porcentaje_magnesio"
+                                error="porcentaje_magnesio" />
+                        </x-group-field>
+                        <x-group-field>
+                            <x-input-number label="% Zinc" wire:keydown.enter="store" wire:model="porcentaje_zinc"
+                                wire:key="porcentaje_zinc" error="porcentaje_zinc" />
+                        </x-group-field>
+                        <x-group-field>
+                            <x-input-number label="% Manganeso" wire:keydown.enter="store"
+                                wire:model="porcentaje_manganeso" wire:key="porcentaje_manganeso"
+                                error="porcentaje_manganeso" />
+                        </x-group-field>
+                        <x-group-field>
+                            <x-input-number label="% Hierro" wire:keydown.enter="store" wire:model="porcentaje_hierro"
+                                wire:key="porcentaje_hierro" error="porcentaje_hierro" />
+                        </x-group-field>
+                    </div>
+                @endif
+
             </form>
         </x-slot>
         <x-slot name="footer">

@@ -81,4 +81,116 @@ class CochinillaIngresoServicio
         $nuevoLote = $ultimoIngreso ? ((int) $ultimoIngreso->lote + 1) : 1;
         return (string) $nuevoLote;
     }
+    /**
+     * Registra o actualiza un sublote de ingreso de cochinilla.
+     *
+     * Este método se encarga de manejar de forma segura y estandarizada el registro de ingresos por sublote:
+     *
+     * - No se permite registrar ingresos directamente como lote principal (por ejemplo, "123"), ya que todos deben tener al menos un sublote ("123.1", "123.2", etc.).
+     * - Si el ingreso principal (parte entera del sublote) no existe, se crea automáticamente.
+     * - Si ya existe, se valida que el campo del nuevo sublote coincida con el campo del ingreso existente.
+     *   - Si no coincide, se lanza una excepción para evitar errores por ingreso en campo incorrecto.
+     * - El área del ingreso principal se actualiza cada vez que se registra un nuevo sublote, utilizando el valor más reciente del sublote registrado.
+     * - Luego se registra o actualiza el sublote (detalle).
+     * - Finalmente, el ingreso principal se actualiza con:
+     *   - la suma total de kilos de todos los sublotes registrados,
+     *   - el valor de observación del sublote más reciente (ordenado por sublote_codigo).
+     *
+     * Este proceso garantiza integridad y coherencia en la base de datos, evitando duplicidad, errores humanos y
+     * manteniendo una estructura normalizada que facilita la consulta, el análisis y la visualización de los datos.
+     *
+     * @param array $datos
+     *   - 'lote': string con formato decimal (ej. "123.1")
+     *   - 'fecha': string en formato 'Y-m-d'
+     *   - 'campo': string (nombre del campo)
+     *   - 'area': string (área correspondiente al sublote)
+     *   - 'campo_campania_id': int (relación con la campaña del campo)
+     *   - 'observacion': string (observación del sublote)
+     *   - 'total_kilos': float (cantidad de kilos en este sublote)
+     *
+     * @throws \Exception si se intenta registrar un lote principal directamente (sin sublote decimal).
+     * @throws \Exception si el campo del sublote no coincide con el del ingreso principal ya existente.
+     */
+    public static function registrarDetalle(array $datos): CochinillaIngresoDetalle
+    {
+        if (!str_contains($datos['lote'], '.')) {
+            throw new Exception('Debe registrar un sublote como 123.1, 123.2, etc. No se permite un lote principal sin sublote.');
+        }
+
+        [$lotePrincipal, $subloteDecimal] = explode('.', $datos['lote']);
+        $loteEntero = (int) $lotePrincipal;
+
+        // Buscar o crear el ingreso principal
+        $ingreso = CochinillaIngreso::where('lote', $loteEntero)->first();
+
+        if ($ingreso) {
+            // Validar campo coincidente
+            if ($ingreso->campo !== $datos['campo']) {
+                throw new Exception("El sublote {$datos['lote']} pertenece al campo '{$ingreso->campo}', no puede registrarlo como '{$datos['campo']}'.");
+            }
+        } else {
+            // Crear el ingreso principal si no existe
+            $ingreso = CochinillaIngreso::create([
+                'lote' => $loteEntero,
+                'fecha' => $datos['fecha'],
+                'campo' => $datos['campo'],
+                'area' => $datos['area'],
+                'campo_campania_id' => $datos['campo_campania_id'],
+                'observacion' => $datos['observacion'],
+                'total_kilos' => 0,
+            ]);
+        }
+
+        // Crear o actualizar el detalle
+        if (!empty($datos['cochinillaIngresoDetalleId'])) {
+            // Actualizar detalle existente
+            $detalle = CochinillaIngresoDetalle::findOrFail($datos['cochinillaIngresoDetalleId']);
+
+            if ($detalle->cochinilla_ingreso_id !== $ingreso->id) {
+                throw new Exception("El detalle no pertenece al ingreso con lote {$loteEntero}.");
+            }
+
+            $detalle->update([
+                'fecha' => $datos['fecha'],
+                'total_kilos' => $datos['total_kilos'],
+                'observacion' => $datos['observacion'],
+            ]);
+        } else {
+            // Crear nuevo detalle (si no existe)
+            $detalle = CochinillaIngresoDetalle::updateOrCreate(
+                [
+                    'cochinilla_ingreso_id' => $ingreso->id,
+                    'sublote_codigo' => $datos['lote'],
+                ],
+                [
+                    'fecha' => $datos['fecha'],
+                    'total_kilos' => $datos['total_kilos'],
+                    'observacion' => $datos['observacion'],
+                ]
+            );
+        }
+
+        // Recalcular el ingreso principal
+        $detalles = $ingreso->detalles()->orderBy('sublote_codigo')->get();
+
+        $ingreso->update([
+            'area' => $datos['area'], // Puedes cambiar esto si el área también depende del último detalle
+            'fecha' => $detalles->max('fecha'), // Fecha más reciente de los sublotes
+            'observacion' => $detalles->sortByDesc('fecha')->first()?->observacion ?? $ingreso->observacion, // Observación del detalle más reciente
+            'total_kilos' => $detalles->sum('total_kilos'),
+        ]);
+
+
+        return $detalle;
+    }
+
+
+
+
+    public static function obtenerUltimoIngreso(): ?CochinillaIngreso
+    {
+        return CochinillaIngreso::orderByDesc('lote')->first();
+    }
+
+
 }

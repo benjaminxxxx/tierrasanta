@@ -153,7 +153,8 @@ class KardexDistribucionComponent extends Component
     {
         $tieneTipo = $kardexProducto->producto->tabla5;
         if (!$tieneTipo) {
-            return $this->alert('error', 'El producto no tiene un tipo, editar el producto.');
+           throw new Exception("El producto no tiene un tipo, editar el producto.");
+           
         }
 
         $periodo = Carbon::parse($this->kardex->fecha_inicial)->format('Y');
@@ -195,6 +196,10 @@ class KardexDistribucionComponent extends Component
             $kardexProducto = ($tipoKardex == 'negro') ? $this->kardexProductoNegro : $this->kardexProductoBlanco;
             $this->listarKardex($tipoKardex, $kardexProducto);
             $data = $this->obtenerDatosKardex($tipoKardex, $kardexProducto);
+
+            if(!$data){
+                throw new Exception("Aparentemente no hay datos, recargue la página y vuelva a intentarlo porfavor");
+            }
 
             $filePath = 'kardex/' . date('Y-m') . '/' .
                 $kardexProducto->codigo_existencia . '_' . $tipoKardex . '_' .

@@ -69,6 +69,8 @@
                         <x-tabs-trigger value="evaluacion_cosecha">Evaluación Cosecha</x-tabs-trigger>
                         <x-tabs-trigger value="cosecha">Cosecha</x-tabs-trigger>
                         <x-tabs-trigger value="porcentaje_acido_carminico">% ácido carmínico</x-tabs-trigger>
+                        <x-tabs-trigger value="fertilizacion">Fertilización</x-tabs-trigger>
+                        <x-tabs-trigger value="aplicaciones_fitosanitarias">Aplicaciones Fitosanitarias</x-tabs-trigger>
                         
                     </x-tabs-list>
                     </x-card>
@@ -122,6 +124,14 @@
 
                     <x-tabs-content value="porcentaje_acido_carminico">
                         @include('livewire.campania-component.grupo-porcentaje-acido-carminico')
+                    </x-tabs-content>
+
+                    <x-tabs-content value="fertilizacion">
+                        @include('livewire.campania-component.grupo-fertilizacion')
+                    </x-tabs-content>
+
+                    <x-tabs-content value="aplicaciones_fitosanitarias">
+                        @include('livewire.campania-component.grupo-aplicaciones-fitosanitarias')
                     </x-tabs-content>
             </x-tabs>
         </div>

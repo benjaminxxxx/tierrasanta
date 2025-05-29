@@ -20,14 +20,14 @@
 
     <div class="no-scrollbar flex flex-col overflow-y-auto duration-300 ease-linear">
         <!-- Sidebar Menu -->
-        <nav class="mt-5 px-4 py-4 lg:mt-9 lg:px-6" x-data="{ selected: $persist('Dashboard') }">
+        <nav class="px-4 py-4 lg:px-2" x-data="{ selected: $persist('Dashboard') }">
             <!-- Menu Group -->
             <div>
-                <h3 class="mb-4 ml-4 text-sm font-medium text-bodydark2">MENU</h3>
+                <h3 class="mb-4 ml-4 text-sm font-medium text-gray-200">MENU</h3>
 
                 <ul class="mb-6 flex flex-col gap-1.5">
                     <x-nav-link-parent name="sectorPlanilla" href="#" :active="request()->routeIs(['planilla.asistencia'])">
-                        
+
                         <div class="w-6 text-center">
                             <i class="fa fa-table"></i>
                         </div>
@@ -41,8 +41,8 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorEmpleado" href="{{ route('empleados') }}" :active="request()->routeIs(['empleados','empleados.asignacion_familiar'])">
-                        
+                    <x-nav-link-parent name="sectorEmpleado" href="{{ route('empleados') }}" :active="request()->routeIs(['empleados', 'empleados.asignacion_familiar'])">
+
                         <div class="w-6 text-center">
                             <i class="fa fa-users"></i>
                         </div>
@@ -57,7 +57,7 @@
                         </x-slot>
                     </x-nav-link-parent>
                     <x-nav-link-parent name="sectorSistema" href="{{ route('usuarios') }}" :active="request()->routeIs(['usuarios'])">
-                        
+
                         <div class="w-6 text-center">
                             <i class="fas fa-palette"></i>
                         </div>
@@ -68,8 +68,8 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorCuadrilla" href="#" :active="request()->routeIs(['cuadrilla.grupos','cuadrilla.cuadrilleros'])">
-                        
+                    <x-nav-link-parent name="sectorCuadrilla" href="#" :active="request()->routeIs(['cuadrilla.grupos', 'cuadrilla.cuadrilleros'])">
+
                         <div class="w-6 text-center">
                             <i class="fas fa-hard-hat"></i>
                         </div>
@@ -81,11 +81,11 @@
                             <x-nav-link-child href="{{ route('cuadrilla.grupos') }}" :active="request()->routeIs('cuadrilla.grupos')">
                                 Grupos
                             </x-nav-link-child>
-                            
+
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorCampo" href="#" :active="request()->routeIs(['campo.mapa','campo.riego','campo.campos','campo.siembra'])">
-                        
+                    <x-nav-link-parent name="sectorCampo" href="#" :active="request()->routeIs(['campo.mapa', 'campo.riego', 'campo.campos', 'campo.siembra'])">
+
                         <div class="w-6 text-center">
                             <i class="fa fa-leaf"></i>
                         </div>
@@ -103,11 +103,11 @@
                             <x-nav-link-child href="{{ route('campo.siembra') }}" :active="request()->routeIs('campo.siembra')">
                                 Siembras
                             </x-nav-link-child>
-                            
+
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorCampanias" href="#" :active="request()->routeIs(['campo.campania','campanias'])">
-                        
+                    <x-nav-link-parent name="sectorCampanias" href="#" :active="request()->routeIs(['campo.campania', 'campanias'])">
+
                         <div class="w-6 text-center">
                             <i class="fa fa-flag"></i>
                         </div>
@@ -118,11 +118,17 @@
                             </x-nav-link-child>
                             <x-nav-link-child href="{{ route('campo.campania') }}" :active="request()->routeIs('campo.campania')">
                                 Campañas por campo
-                            </x-nav-link-child>                            
+                            </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorCochinilla" href="#" :active="request()->routeIs(['cochinilla.ingreso','cochinilla.venteado','cochinilla.filtrado','cochinilla.cosecha_mamas','cochinilla.infestacion'])">
-                        
+                    <x-nav-link-parent name="sectorCochinilla" href="#" :active="request()->routeIs([
+                        'cochinilla.ingreso',
+                        'cochinilla.venteado',
+                        'cochinilla.filtrado',
+                        'cochinilla.cosecha_mamas',
+                        'cochinilla.infestacion',
+                    ])">
+
                         <div class="w-6 text-center">
                             <i class="fa fa-bug"></i>
                         </div>
@@ -149,9 +155,9 @@
                         'reporte_campo.poblacion_plantas',
                         'reporte_campo.evaluacion_brotes',
                         'reporte_campo.evaluacion_infestacion_cosecha',
-                        'reporte_campo.evaluacion_proyeccion_rendimiento_poda'
-                        ])">
-                        
+                        'reporte_campo.evaluacion_proyeccion_rendimiento_poda',
+                    ])">
+
                         <div class="w-6 text-center">
                             <i class="fa fa-file"></i>
                         </div>
@@ -163,17 +169,20 @@
                             <x-nav-link-child href="{{ route('reporte_campo.evaluacion_brotes') }}" :active="request()->routeIs('reporte_campo.evaluacion_brotes')">
                                 Brotes x Piso
                             </x-nav-link-child>
-                            <x-nav-link-child href="{{ route('reporte_campo.evaluacion_infestacion_cosecha') }}" :active="request()->routeIs('reporte_campo.evaluacion_infestacion_cosecha')">
+                            <x-nav-link-child href="{{ route('reporte_campo.evaluacion_infestacion_cosecha') }}"
+                                :active="request()->routeIs('reporte_campo.evaluacion_infestacion_cosecha')">
                                 Infestación Cosecha
                             </x-nav-link-child>
-                             <x-nav-link-child href="{{ route('reporte_campo.evaluacion_proyeccion_rendimiento_poda') }}" :active="request()->routeIs('reporte_campo.evaluacion_proyeccion_rendimiento_poda')">
+                            <x-nav-link-child
+                                href="{{ route('reporte_campo.evaluacion_proyeccion_rendimiento_poda') }}"
+                                :active="request()->routeIs('reporte_campo.evaluacion_proyeccion_rendimiento_poda')">
                                 Proyección Rendimiento Poda
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    
+
                     <x-nav-link-parent name="sectorFdm" href="#" :active="request()->routeIs(['fdm.costos'])">
-                        
+
                         <div class="w-6 text-center">
                             <i class="fa fa-coins"></i>
                         </div>
@@ -184,8 +193,13 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorReportes" href="#" :active="request()->routeIs(['reporte.reporte_diario','reporte.reporte_diario_riego','cuadrilla.asistencia','productividad.avance'])">
-                      
+                    <x-nav-link-parent name="sectorReportes" href="#" :active="request()->routeIs([
+                        'reporte.reporte_diario',
+                        'reporte.reporte_diario_riego',
+                        'cuadrilla.asistencia',
+                        'productividad.avance',
+                    ])">
+
                         <div class="w-6 text-center">
                             <i class="fa fa-database"></i>
                         </div>
@@ -200,14 +214,14 @@
                             <x-nav-link-child href="{{ route('cuadrilla.asistencia') }}" :active="request()->routeIs('cuadrilla.asistencia')">
                                 Cuadrilleros
                             </x-nav-link-child>
-                            
+
                             <x-nav-link-child href="{{ route('productividad.avance') }}" :active="request()->routeIs('productividad.avance')">
                                 Avance de Productividad
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorReporte" href="#" :active="request()->routeIs(['reporte.pago_cuadrilla','reporte.resumen_planilla'])">
-                      
+                    <x-nav-link-parent name="sectorReporte" href="#" :active="request()->routeIs(['reporte.pago_cuadrilla', 'reporte.resumen_planilla'])">
+
                         <div class="w-6 text-center">
                             <i class="fas fa-file-alt"></i>
                         </div>
@@ -221,8 +235,31 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorKardex" href="#" :active="request()->routeIs(['kardex.lista','productos.index','almacen.salida_productos','almacen.salida_combustible'])">
-                      
+                    <x-nav-link-parent name="sectorProducto" href="#" :active="request()->routeIs(['productos.index', 'nutrientes.index','tabla_concentracion.index'])">
+
+                        <div class="w-6 text-center">
+                            <i class="fa fa-box"></i>
+                        </div>
+                        Producto y Nutrientes
+                        <x-slot name="children">
+
+                            <x-nav-link-child href="{{ route('productos.index') }}" :active="request()->routeIs('productos.index')">
+                                Productos
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('nutrientes.index') }}" :active="request()->routeIs('nutrientes.index')">
+                                Nutrientes
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('tabla_concentracion.index') }}" :active="request()->routeIs('tabla_concentracion.index')">
+                                Tabla de concentración
+                            </x-nav-link-child>
+                        </x-slot>
+                    </x-nav-link-parent>
+                    <x-nav-link-parent name="sectorKardex" href="#" :active="request()->routeIs([
+                        'kardex.lista',
+                        'almacen.salida_productos',
+                        'almacen.salida_combustible',
+                    ])">
+
                         <div class="w-6 text-center">
                             <i class="fa fa-clipboard-list"></i>
                         </div>
@@ -237,13 +274,10 @@
                             <x-nav-link-child href="{{ route('kardex.lista') }}" :active="request()->routeIs('kardex.lista')">
                                 Ver Kardex
                             </x-nav-link-child>
-                            <x-nav-link-child href="{{ route('productos.index') }}" :active="request()->routeIs('productos.index')">
-                                Productos
-                            </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
                     <x-nav-link-parent name="sectorConsolidados" :active="request()->routeIs('consolidado.riego')">
-                        
+
                         <div class="w-6 text-center">
                             <i class="fa fa-database"></i>
                         </div>
@@ -254,8 +288,12 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorGastos" :active="request()->routeIs('gastos.general','contabilidad.costos_mensuales','contabilidad.costos_generales')">
-                        
+                    <x-nav-link-parent name="sectorGastos" :active="request()->routeIs(
+                        'gastos.general',
+                        'contabilidad.costos_mensuales',
+                        'contabilidad.costos_generales',
+                    )">
+
                         <div class="w-6 text-center">
                             <i class="fa fa-calculator"></i>
                         </div>
@@ -272,8 +310,8 @@
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorProveedores" :active="request()->routeIs(['proveedores.index','maquinarias.index'])">
-                        
+                    <x-nav-link-parent name="sectorProveedores" :active="request()->routeIs(['proveedores.index', 'maquinarias.index'])">
+
                         <div class="w-6 text-center">
                             <i class="fa fa-users"></i>
                         </div>
@@ -282,24 +320,30 @@
                             <x-nav-link-child href="{{ route('proveedores.index') }}" :active="request()->routeIs('proveedores.index')">
                                 Proveedores
                             </x-nav-link-child>
-                            
+
                             <x-nav-link-child href="{{ route('maquinarias.index') }}" :active="request()->routeIs('maquinarias.index')">
                                 Maquinarias
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorConfiguracion" :active="request()->routeIs(['configuracion','descuentos_afp','configuracion.labores','configuracion.labores_riego','configuracion.tipo_asistencia'])">
+                    <x-nav-link-parent name="sectorConfiguracion" :active="request()->routeIs([
+                        'configuracion',
+                        'descuentos_afp',
+                        'configuracion.labores',
+                        'configuracion.labores_riego',
+                        'configuracion.tipo_asistencia',
+                    ])">
                         <div class="w-6 text-center">
                             <i class="fa fa-cogs"></i>
                         </div>
                         Configuración
                         <x-slot name="children">
                             <x-nav-link-child href="{{ route('configuracion') }}" :active="request()->routeIs('configuracion')">
-                           
+
                                 Parámetros
                             </x-nav-link-child>
                             <x-nav-link-child href="{{ route('descuentos_afp') }}" :active="request()->routeIs('descuentos_afp')">
-                             
+
                                 Descuentos de AFP
                             </x-nav-link-child>
                             <x-nav-link-child href="{{ route('configuracion.labores') }}" :active="request()->routeIs('configuracion.labores')">

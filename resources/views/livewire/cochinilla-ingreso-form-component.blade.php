@@ -47,11 +47,11 @@
                     </x-warning>
                 @endif
                 <x-success class="mt-2">
-                    Ahora puede agregar un lote o un sublote, puede usar 123 o 123.1
+                    Ahora solo debe agregar sublote, si es una unica recogida puede usar el codigo + .1
                 </x-success>
             </x-group-field>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                <x-input-number label="N° de Lote o sublote" wire:model="lote" error="lote" />
+                <x-input-number label="N° de sublote" wire:model="lote" error="lote" />
                 <x-input-date label="Fecha" wire:model.live="fecha" />
                 <x-select label="Campo" wire:model.live="campoSeleccionado" error="campoSeleccionado">
                     <option value="">Seleccionar campo</option>
@@ -62,29 +62,27 @@
 
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-
-                <x-input-number label="Área" wire:model="area" />
-                <x-select label="Observación" wire:model="observacionSeleccionada" error="observacionSeleccionada">
-                    @if ($observaciones)
-                        <option value="">Seleccionar observación</option>
-                        @foreach ($observaciones as $observacion)
-                            <option value="{{ $observacion->codigo }}">{{ $observacion->descripcion }}</option>
-                        @endforeach
-                    @endif
-                </x-select>
-
-            </div>
-            <div class="my-3">
-                <p class="font-medium">Si va a registrar uno o mas sublotes, puede dejar el total de kilos en blanco
-                </p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <x-input-number label="Total Kilos" wire:model="kg_total" />
+                <x-group-field>
+                    <x-input-number label="Área" wire:model="area" />
+                </x-group-field>
+                <x-group-field>
+                    <x-select label="Observación" wire:model="observacionSeleccionada" error="observacionSeleccionada">
+                        @if ($observaciones)
+                            <option value="">Seleccionar observación</option>
+                            @foreach ($observaciones as $observacion)
+                                <option value="{{ $observacion->codigo }}">{{ $observacion->descripcion }}</option>
+                            @endforeach
+                        @endif
+                    </x-select>
+                </x-group-field>
+                <x-group-field>
+                    <x-input-number label="Total Kilos" wire:model="kg_total" />
+                </x-group-field>
             </div>
         </x-slot>
 
         <x-slot name="footer">
-            <x-form-buttons action="registrar" :id="$cochinillaIngresoId" />
+            <x-form-buttons action="registrar" :id="$cochinillaIngresoDetalleId" />
         </x-slot>
     </x-dialog-modal>
 

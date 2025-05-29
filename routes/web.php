@@ -7,6 +7,7 @@ use App\Http\Controllers\CochinillaController;
 use App\Http\Controllers\FdmController;
 use App\Http\Controllers\KardexController;
 use App\Http\Controllers\MaquinariaController;
+use App\Http\Controllers\NutrienteController;
 use App\Http\Controllers\ReporteDiarioController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AsistenciaPlanillaController;
@@ -111,6 +112,11 @@ Route::middleware([
 
     //PRODUCTOS
     Route::get('/productos', [ProductoController::class,'index'])->name('productos.index');
+
+    //Nutrientes
+    Route::get('/nutrientes', [NutrienteController::class,'index'])->name('nutrientes.index');
+    Route::get('/nutrientes/tabla-concentracion', [NutrienteController::class,'tabla_concentracion'])->name('tabla_concentracion.index');
+    
 
     //MAQUINARIAS
     Route::get('/maquinarias', [MaquinariaController::class,'index'])->name('maquinarias.index');

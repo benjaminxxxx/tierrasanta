@@ -22,8 +22,7 @@
                     </div>
                 </div>
                 <div class="">
-                    <x-label>Categoría</x-label>
-                    <x-select class="uppercase" wire:model.live="categoria_id_filtro">
+                    <x-select class="uppercase" label="Categoría" wire:model.live="categoria_id_filtro">
                         <option value="">SELECCIONAR CATEGORÍA</option>
                         <option value="fertilizante">FERTILIZANTE</option>
                         <option value="pesticida">PESTICIDA</option>
@@ -42,11 +41,6 @@
                                 NOMBRE COMERCIAL <i class="fa fa-sort"></i>
                             </button>
                         </x-th>
-                        <x-th>
-                            <button wire:click="sortBy('ingrediente_activo')" class="focus:outline-none">
-                                INGREDIENTE ACTIVO <i class="fa fa-sort"></i>
-                            </button>
-                        </x-th>
                         <x-th class="text-center">
                             <button wire:click="sortBy('categoria')" class="focus:outline-none">
                                 CATEGORÍA <i class="fa fa-sort"></i>
@@ -54,6 +48,7 @@
                         </x-th>
                         <x-th value="TIPO DE EXISTENCIA (TABLA 5)" class="text-center" />
                         <x-th value="UNIDAD DE MEDIDA (TABLA 6)" class="text-center" />
+                        <x-th value="NUTRIENTES" class="text-center" />
                         <x-th value="ACCIONES" class="text-center" />
                     </tr>
                 </x-slot>
@@ -62,11 +57,13 @@
                         @foreach ($productos as $indice => $producto)
                             <x-tr>
                                 <x-th value="{{ $indice + 1 }}" class="text-center" />
-                                <x-td value="{{ $producto->nombre_comercial }}" />
-                                <x-td value="{{ $producto->ingrediente_activo }}" />
-                                <x-td value="{{ mb_strtoupper($producto->categoria) }}" class="text-center" />
+                                <x-td value="{{ $producto->nombre_completo }}" />
+                                <x-td value="{{ $producto->categoria_con_descripcion }}" class="text-center" />
                                 <x-td value="{{ $producto->tipo_existencia }}" class="text-center" />
                                 <x-td value="{{ $producto->unidad_medida }}" class="text-center" />
+                                <x-td class="text-left">
+                                     {!! $producto->lista_nutrientes !!}
+                                </x-td>
 
                                 <x-td class="text-center">
                                     <div class="flex items-center justify-center gap-2">

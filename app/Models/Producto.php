@@ -11,8 +11,23 @@ class Producto extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nombre_comercial', 'ingrediente_activo', 'categoria', 'codigo_tipo_existencia', 'codigo_unidad_medida'];
-
+    protected $fillable = [
+        'nombre_comercial',
+        'ingrediente_activo',
+        'categoria',
+        'codigo_tipo_existencia',
+        'codigo_unidad_medida',
+        'categoria_pesticida'
+    ];
+    public function nutrientes()
+    {
+        return $this->belongsToMany(Nutriente::class, 'producto_nutrientes', 'producto_id', 'nutriente_codigo')
+            ->withPivot('porcentaje');
+    }
+    public function categoriaPesticida()
+    {
+        return $this->belongsTo(CategoriaPesticida::class, 'categoria_pesticida');
+    }
     public function getCompraActivaAttribute()
     {
         return $this->compras()->where('estado', 1)->exists();
@@ -137,7 +152,7 @@ class Producto extends Model
      * @return bool
      */
 
- 
+
     public static function esCombustible(int $productoId): bool
     {
         // Obtener el producto y verificar si su categoría es "Combustible"
@@ -153,5 +168,26 @@ class Producto extends Model
             return self::where('categoria', '!=', 'combustible')->with('compras');
         }
     }
+    public function getCategoriaConDescripcionAttribute()
+    {
+        return mb_strtoupper($this->categoria . ($this->categoriaPesticida?->descripcion ? ' - ' . $this->categoriaPesticida->descripcion : ''));
+    }
+    public function getListaNutrientesAttribute()
+    {
+        if ($this->nutrientes->isEmpty()) {
+            return '-';
+        }
+
+        $html = '<ul class="list-disc list-inside">';
+        foreach ($this->nutrientes as $nutriente) {
+            if ($nutriente->pivot->porcentaje !== null && $nutriente->pivot->porcentaje != 0) {
+                $html .= '<li>' . e($nutriente->codigo) . ': ' . e($nutriente->pivot->porcentaje) . '%</li>';
+            }
+        }
+        $html .= '</ul>';
+
+        return $html;
+    }
+
 
 }

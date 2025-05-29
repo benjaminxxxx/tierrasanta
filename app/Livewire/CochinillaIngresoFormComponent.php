@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\CochinillaIngreso;
 use App\Models\Campo;
 use App\Models\CampoCampania;
+use App\Models\CochinillaIngresoDetalle;
 use App\Models\CochinillaObservacion;
 use App\Models\Observacion;
 use App\Models\Siembra;
@@ -17,7 +18,7 @@ class CochinillaIngresoFormComponent extends Component
 {
     use LivewireAlert;
     public $mostrarFormulario = false;
-    public $cochinillaIngresoId = null;
+    public $cochinillaIngresoDetalleId = null;
 
     public $lote;
     public $fecha;
@@ -31,25 +32,25 @@ class CochinillaIngresoFormComponent extends Component
     public $campos = [];
     public $fechaSiembra;
 
-    protected $listeners = ['agregarIngreso', 'guardarDetalle' => 'actualizarKilosTotales', 'editarIngreso'];
+    protected $listeners = ['agregarIngreso', 'editarIngresoDetalle'];
     public function mount()
     {
         $this->campos = Campo::listar();
         $this->observaciones = CochinillaObservacion::all();
     }
-    public function editarIngreso($ingresoId)
+    public function editarIngresoDetalle($ingresoDetalleId)
     {
-        $ingreso = CochinillaIngreso::find($ingresoId);
-        if ($ingreso) {
+        $ingresoDetalle = CochinillaIngresoDetalle::find($ingresoDetalleId);
+        if ($ingresoDetalle) {
             $this->resetForm();
-            $this->cochinillaIngresoId = $ingreso->id;
-            $this->campania = $ingreso->campoCampania;
-            $this->lote = $ingreso->lote;
-            $this->fecha = $ingreso->fecha;
-            $this->campoSeleccionado = $ingreso->campo;
-            $this->area = $ingreso->area;
-            $this->observacionSeleccionada = $ingreso->observacion;
-            $this->kg_total = $ingreso->total_kilos;
+            $this->cochinillaIngresoDetalleId = $ingresoDetalle->id;
+            $this->campania = $ingresoDetalle->ingreso->campoCampania;
+            $this->lote = $ingresoDetalle->sublote_codigo;
+            $this->fecha = $ingresoDetalle->fecha;
+            $this->campoSeleccionado = $ingresoDetalle->ingreso->campo;
+            $this->area = $ingresoDetalle->ingreso->area;
+            $this->observacionSeleccionada = $ingresoDetalle->observacion;
+            $this->kg_total = $ingresoDetalle->total_kilos;
 
             $this->buscarSiembra();
             $this->mostrarFormulario = true;
@@ -57,17 +58,31 @@ class CochinillaIngresoFormComponent extends Component
     }
     public function agregarIngreso()
     {
+        // Reiniciar formulario y establecer fecha actual
         $this->resetForm();
-        $this->fecha = Carbon::now()->format('Y-m-d');
+        $this->fecha = now()->format('Y-m-d');
+
+        // Generar el siguiente código de lote
         $this->lote = CochinillaIngresoServicio::generarCodigoSiguiente();
+
+        // Obtener último ingreso para usar sus datos como referencia
+        if ($ultimo = CochinillaIngresoServicio::obtenerUltimoIngreso()) {
+            [$this->campoSeleccionado, $this->area] = [$ultimo->campo, $ultimo->area];
+        }
+
+        // Buscar datos relacionados a la siembra según el campo seleccionado
         $this->buscarSiembra();
+        $this->loadCampanias();
+
+        // Mostrar el formulario
         $this->mostrarFormulario = true;
     }
+
     public function resetForm()
     {
         $this->resetErrorBag();
         $this->reset([
-            'cochinillaIngresoId',
+            'cochinillaIngresoDetalleId',
             'fecha',
             'lote',
             'fechaSiembra',
@@ -129,7 +144,8 @@ class CochinillaIngresoFormComponent extends Component
                 return $this->alert('error', 'No hay campañas disponibles para este ingreso.');
             }
 
-            $data = [
+            CochinillaIngresoServicio::registrarDetalle([
+                'cochinillaIngresoDetalleId' => $this->cochinillaIngresoDetalleId,
                 'lote' => $this->lote,
                 'fecha' => $this->fecha,
                 'campo' => $this->campoSeleccionado,
@@ -137,40 +153,17 @@ class CochinillaIngresoFormComponent extends Component
                 'campo_campania_id' => $this->campania->id,
                 'observacion' => $this->observacionSeleccionada,
                 'total_kilos' => (float) $this->kg_total
-            ];
-
-            $ingreso = CochinillaIngreso::updateOrCreate(
-                ['id' => $this->cochinillaIngresoId],
-                $data
-            );
+            ]);
 
             $this->mostrarFormulario = false;
             $this->resetForm();
-            $this->cochinillaIngresoId = $ingreso->id;
+            //$this->cochinillaIngresoDetalleId = $ingreso->id;
             $this->dispatch('cochinillaIngresado');
             $this->alert('success', "Registro exitoso.");
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }
     }
-
-    public function abrirDetalle()
-    {
-        if (!$this->cochinillaIngresoId) {
-            $this->registrar(); // Guardar si no se ha registrado aún
-        }
-
-        $this->detalleModal = true;
-    }
-
-    public function actualizarKilosTotales($kgTotal)
-    {
-        $this->kg_total = $kgTotal;
-
-        CochinillaIngreso::where('id', $this->cochinillaIngresoId)
-            ->update(['proveedor_kg_exportado' => $kgTotal]);
-    }
-
     public function render()
     {
         return view('livewire.cochinilla-ingreso-form-component', [

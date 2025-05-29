@@ -43,53 +43,58 @@
             <x-table>
                 <x-slot name="thead">
                     <x-tr>
-                        <x-th rowspan="2" class="text-center">
+                        <x-th class="text-center">
                             Fecha
                         </x-th>
-                        <x-th rowspan="2" class="text-center">
+                        <x-th class="text-center">
                             Campo
                         </x-th>
-                        <x-th rowspan="2" class="text-center">
+                        <x-th class="text-center">
                             Área
                         </x-th>
-                        <x-th rowspan="2" class="text-center">
+                        <x-th class="text-center">
                             Campaña
                         </x-th>
-                        <x-th rowspan="2" class="text-center">
+                        <x-th class="text-center">
                             KG
                         </x-th>
-                        <x-th rowspan="2" class="text-center">
+                        <x-th class="text-center">
                             KgxHa
                         </x-th>
-                        <x-th colspan="2" class="text-center">
+                        <x-th class="text-center">
                             Obs
+                        </x-th>
+                        <x-th class="text-center">
+                           
                         </x-th>
                     </x-tr>
                 </x-slot>
                 <x-slot name="tbody">
                     @foreach ($cosechasMama as $indice => $cosecha)
                         <x-tr>
-                            @php
-                                $esUltimo = $campaniaUnica && $indice == count($cosechasMama) - 1;
-                                $clase = $esUltimo ? 'text-center bg-cyan-100' : 'text-center';
-                            @endphp
 
-                            <x-td class="{{ $clase }}">{{ $cosecha->fecha }}</x-td>
-
-                            <x-td class="text-center">{{ $cosecha->campo }}</x-td>
-                            <x-td class="text-center">{{ $cosecha->area }}</x-td>
-                            <x-td class="text-center">{{ $cosecha->campania }}</x-td>
-                            <x-td class="text-center">{{ $cosecha->kg }}</x-td>
+                            <x-td class="text-center">{{ $cosecha->fecha }}</x-td>
+                            <x-td class="text-center">{{ $cosecha->ingreso->campo }}</x-td>
+                            <x-td class="text-center">{{ $cosecha->ingreso->area }}</x-td>
+                            <x-td class="text-center">{{ $cosecha->ingreso->campoCampania?->nombre_campania }}</x-td>
+                            <x-td class="text-center">{{ $cosecha->total_kilos }}</x-td>
                             <x-td class="text-center">{{ number_format($cosecha->kg_ha, 2) }}</x-td>
                             <x-td class="text-center">{{ $cosecha->observacion }}</x-td>
+                            <x-td class="text-center">
+                                <x-button @click="$wire.dispatch('verDistribucion',{cosechaId:{{$cosecha->id}}})">
+                                    <i class="fas fa-th-large"></i> Distribución
+                                </x-button>
+                            </x-td>
                         </x-tr>
                     @endforeach
                 </x-slot>
 
             </x-table>
             <div class="my-4">
-                {{ $ingresosPaginados->links() }}
+                {{ $cosechasMama->links() }}
             </div>
         </x-spacing>
     </x-card>
+
+    <livewire:cochinilla-cosecha-mamas-distribucion-component/>
 </div>

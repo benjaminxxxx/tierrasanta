@@ -149,7 +149,7 @@ class CompraProductoImportExportComponent extends Component
             if (!empty($campo->alias)) {
                 $aliasArray = array_map('trim', explode(',', $campo->alias));
                 foreach ($aliasArray as $alias) {
-                    $mapaAliasANombre[$alias] = $campo->nombre;
+                    $mapaAliasANombre[mb_strtolower($alias)] = $campo->nombre;
                 }
             }
         }
@@ -171,7 +171,7 @@ class CompraProductoImportExportComponent extends Component
                         $valoresValidos = array_merge($valoresValidos, $aliasArray);
                     }
                 }
-                
+
                 $camposFaltantes = [];
 
                 for ($x = $indiceInicio; $x < count($rows); $x++) {
@@ -181,9 +181,13 @@ class CompraProductoImportExportComponent extends Component
                     }
 
                     $valorCeldaCampo = trim($sheet->getCell('J' . ($x + 1))->getValue());
-                    if ($valorCeldaCampo !== '' && !in_array($valorCeldaCampo, $valoresValidos)) {
+                    /*if ($valorCeldaCampo !== '' && !in_array($valorCeldaCampo, $valoresValidos)) {
+                        $camposFaltantes[] = $valorCeldaCampo;
+                    }*/
+                    if ($valorCeldaCampo !== '' && !in_array(mb_strtolower($valorCeldaCampo), array_map('mb_strtolower', $valoresValidos))) {
                         $camposFaltantes[] = $valorCeldaCampo;
                     }
+
 
                     $valorCeldaFecha = $sheet->getCell('A' . ($x + 1))->getValue();
 
@@ -283,10 +287,14 @@ class CompraProductoImportExportComponent extends Component
                 $salidaCostoUnitario = (float) $sheet->getCell('K' . ($i + 1))->getCalculatedValue();
                 $salidaCostoTotal = (float) $sheet->getCell('L' . ($i + 1))->getCalculatedValue();
                 $salidaLote = trim($sheet->getCell('J' . ($i + 1))->getValue());
-                
+/*
                 if (array_key_exists($salidaLote, $mapaAliasANombre)) {
                     $salidaLote = $mapaAliasANombre[$salidaLote];
-                    
+
+                }*/
+                $claveLote = mb_strtolower($salidaLote);
+                if (array_key_exists($claveLote, $mapaAliasANombre)) {
+                    $salidaLote = $mapaAliasANombre[$claveLote];
                 }
 
 
@@ -328,7 +336,7 @@ class CompraProductoImportExportComponent extends Component
                 throw new Exception('Error en la fila: ' . ($i) . ': ' . $th->getMessage());
             }
         }
-        
+
 
         $filasAfectadasCompras = ProductoServicio::registrarCompraProducto($data);
         $filasAfectadasAlmacen = AlmacenServicio::registrarSalida($dataAlmacen);
