@@ -8,16 +8,13 @@
         <x-slot name="content">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ">
-                <div class="mb-3">
-                    <x-label for="fecha">Fecha</x-label>
-                    <x-input type="date" wire:model.live="fecha" class="uppercase !bg-gray-100 cursor-not-allowed"
-                        disabled />
-                    <x-input-error for="fecha" />
-                </div>
+                <x-group-field>
+                    <x-input-date type="date" label="Fecha" wire:model.live="fecha" class="uppercase !bg-gray-100 cursor-not-allowed"
+                        disabled error="fecha" />
+                </x-group-field>
                 @if ($fecha)
-                    <div class="mb-3">
-                        <x-label for="laborSeleccionada" value="Labor" />
-                        <x-select type="number" wire:model.live="laborSeleccionada">
+                    <x-group-field>
+                        <x-select type="number" wire:model.live="laborSeleccionada" label="Labor seleccionada" error="laborSeleccionada">
                             <option value="">Seleccionar Labor</option>
                             @if ($labores)
                                 @foreach ($labores as $labor)
@@ -27,24 +24,19 @@
                                 @endforeach
                             @endif
                         </x-select>
-                        <x-input-error for="laborSeleccionada" />
-                    </div>
+                    </x-group-field>
                 @endif
-                <div class="mb-3">
-                    <x-label for="campoSeleccionado" value="Campo" />
-                    <x-select type="number" wire:model.live="campoSeleccionado">
+                <x-group-field>
+                    <x-select type="number" wire:model.live="campoSeleccionado" label="Campo" error="campoSeleccionado">
                         @foreach ($campos as $campo)
                             <option value="{{ $campo->nombre }}">{{ mb_strtoupper($campo->nombre) }}
                             </option>
                         @endforeach
                     </x-select>
-                    <x-input-error for="campoSeleccionado" />
-                </div>
-                <div class="mb-3">
-                    <x-label for="horas_trabajadas" value="Horas de labor" />
-                    <x-input type="number" wire:model="horas_trabajadas" />
-                    <x-input-error for="horas_trabajadas" />
-                </div>
+                </x-group-field>
+                <x-group-field>
+                   <x-input-number wire:model="horas_trabajadas" label="Horas de labor" error="horas_trabajadas"/>
+                </x-group-field>
             </div>
 
             @if ($laborSeleccionada && !$valoracion)

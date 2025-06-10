@@ -82,7 +82,7 @@
                 <x-secondary-button wire:click="$set('mostrarFormulario', false)" wire:loading.attr="disabled">
                     Cerrar
                 </x-secondary-button>
-                <x-button wire:click="$set('displayingToken', false)" wire:loading.attr="disabled">
+                <x-button wire:click="$set('mostrarFormulario', false)" wire:loading.attr="disabled">
                     Guardar
                 </x-button>
             </x-flex>

@@ -2,8 +2,8 @@
 
 namespace App\Livewire;
 
-use App\Models\PoblacionPlantas;
 use App\Services\CampaniaServicio;
+use App\Services\PoblacionPlantaServicio;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -16,10 +16,11 @@ class ReporteCampoPoblacionPlantasComponent extends Component
     public $detalleComponentId;
     public $campaniaUnica;
     public $campaniaId;
-  
+
     protected $listeners = ['poblacionPlantasRegistrado' => '$refresh', 'confirmarEliminarPoblacionPlanta'];
-   
-    public function mount($campaniaId = null,$campaniaUnica=false){
+
+    public function mount($campaniaId = null, $campaniaUnica = false)
+    {
         $this->campaniaId = $campaniaId;
         $this->campaniaUnica = $campaniaUnica;
     }
@@ -27,7 +28,7 @@ class ReporteCampoPoblacionPlantasComponent extends Component
     {
         $this->detalleComponentId = $poblacionPlantaId;
     }
- 
+
     public function updatedCampoFiltrado()
     {
         $this->resetPage();
@@ -50,39 +51,26 @@ class ReporteCampoPoblacionPlantasComponent extends Component
             throw $th;
         }
     }
-    public function confirmarEliminarPoblacionPlanta($data)
+    public function confirmarEliminarPoblacionPlanta($data): void
     {
         try {
-            $poblacionId = $data['poblacionId'];
-
-            $poblacion = PoblacionPlantas::findOrFail($poblacionId);
-            $campaniaId = $poblacion->campania->id;
-            $poblacion->delete();
-            $this->alert('success', 'Registro Eliminado Correctamente.');
+            $campaniaId = PoblacionPlantaServicio::eliminar($data['poblacionId']);
             $this->enviarHistorialPoblacionPlantas($campaniaId);
+            $this->alert('success', 'Registro eliminado correctamente.');
             $this->dispatch('poblacionPlantasEliminado');
-
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            $this->alert('warning', 'El registro ya no existe.');
         } catch (\Throwable $th) {
-            return $this->alert('success', 'El registro ya no existe.');
+            $this->alert('error', 'Ocurrió un error inesperado.');
         }
     }
     public function render()
     {
+        $poblacionPlantas = PoblacionPlantaServicio::listarConFiltros([
+            'campo' => $this->campoFiltrado,
+            'campania_id' => $this->campaniaUnica ? $this->campaniaId : null,
+        ]);
 
-        $query = PoblacionPlantas::when($this->campoFiltrado,function($query)  {
-
-            $campo = $this->campoFiltrado;
-            return $query->whereHas('campania',function ($q) use($campo) {
-                return $q->where('campo',$campo);
-            });
-        })->with(['campania']);
-
-       
-        if($this->campaniaUnica){
-            $query->where('campania_id',$this->campaniaId);
-        }
-
-        $poblacionPlantas = $query->paginate(20);
         return view('livewire.reporte-campo-poblacion-plantas-component', [
             'poblacionPlantas' => $poblacionPlantas
         ]);

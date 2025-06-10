@@ -13,3 +13,10 @@ if (!function_exists('formatear_fecha')) {
         }
     }
 }
+if (!function_exists('formatear_numero')) {
+    function formatear_numero($numero) {
+        if (!is_numeric($numero)) return null;
+
+        return number_format((float) $numero, 2);
+    }
+}

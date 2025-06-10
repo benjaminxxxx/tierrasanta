@@ -33,7 +33,7 @@
                             </x-tr>
                             <x-tr>
                                 <x-th>Fecha de evaluación resiembra</x-th>
-                                <x-td>{{ $campania->pp_resiembra_fecha_evaluacion }}</x-td>
+                                <x-td>{{ formatear_fecha($campania->pp_resiembra_fecha_evaluacion) }}</x-td>
                             </x-tr>
                             <x-tr>
                                 <x-th>Nª de pencas madre después de resiembra</x-th>

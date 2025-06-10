@@ -22,6 +22,7 @@ class ReporteDiarioRiego extends Model
         'sh',
         'tipo_labor',
         'descripcion',
+        'campo_campania_id',
     ];
 
 }

@@ -71,8 +71,8 @@ class CostoFdmServicio
 
             DB::commit();
             return [
-                'costo_adicional_blanco'=>$montoTotalBlanco,
-                'costo_adicional_negro'=>$montoTotalNegro,
+                'costo_adicional_blanco' => $montoTotalBlanco,
+                'costo_adicional_negro' => $montoTotalNegro,
             ];
         } catch (Exception $e) {
             DB::rollBack();
@@ -89,13 +89,14 @@ class CostoFdmServicio
      * @param float $montoTotal
      * @return void
      */
-    public static function guardarCostoManoIndirecta(int $mes, int $anio, string $campo, float $monto)
+    public static function guardarCostoManoIndirecta(int $mes, int $anio, array $data)
     {
-        DB::transaction(function () use ($mes, $anio, $campo, $monto) {
-            // Definir los campos válidos
+        DB::transaction(function () use ($mes, $anio, $data) {
+            // Definir los campos válidos que se pueden actualizar
             $camposValidos = [
                 'blanco_cuadrillero_monto',
                 'negro_cuadrillero_monto',
+                
 
                 'blanco_planillero_monto',
                 'negro_planillero_monto',
@@ -107,21 +108,28 @@ class CostoFdmServicio
                 'negro_maquinaria_salida_monto',
 
                 'blanco_costos_adicionales_monto',
-                'negro_costos_adicionales_monto'
+                'negro_costos_adicionales_monto',
+
+                'negro_cuadrillero_file',
+                'negro_planillero_file',
+
+                // puedes agregar otros campos si los permites
             ];
 
-            // 1. Validar que el campo exista en la tabla
-            if (!in_array($campo, $camposValidos)) {
-                throw new Exception("El campo '$campo' no es válido.");
+            // Validar los campos recibidos
+            foreach ($data as $campo => $valor) {
+                if (!in_array($campo, $camposValidos)) {
+                    throw new Exception("El campo '$campo' no es válido para actualizar.");
+                }
             }
-
-            // 2. Actualizar o insertar el costo en CostoManoIndirecta
+            
+            // 1. Actualizar o insertar en CostoManoIndirecta con los campos válidos
             CostoManoIndirecta::updateOrCreate(
                 ['mes' => $mes, 'anio' => $anio],
-                [$campo => $monto]
+                $data
             );
 
-            // 3. Sumar todos los montos de mano indirecta para este mes y año (solo los blanco)
+            // 2. Calcular totales
             $totalManoIndirectaBlanco = CostoManoIndirecta::where('mes', $mes)
                 ->where('anio', $anio)
                 ->sum(DB::raw("
@@ -132,7 +140,6 @@ class CostoFdmServicio
                 COALESCE(blanco_costos_adicionales_monto, 0)
             "));
 
-            // 4. Sumar todos los montos negro (si necesitas actualizar un campo diferente)
             $totalManoIndirectaNegro = CostoManoIndirecta::where('mes', $mes)
                 ->where('anio', $anio)
                 ->sum(DB::raw("
@@ -143,7 +150,7 @@ class CostoFdmServicio
                 COALESCE(negro_costos_adicionales_monto, 0)
             "));
 
-            // 5. Actualizar en CostoMensual el total de mano de obra indirecta blanco y negro
+            // 3. Actualizar CostoMensual
             CostoMensual::updateOrCreate(
                 ['mes' => $mes, 'anio' => $anio],
                 [
@@ -153,5 +160,6 @@ class CostoFdmServicio
             );
         });
     }
+
 
 }

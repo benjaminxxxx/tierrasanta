@@ -41,10 +41,15 @@ class CampoCampaniaComponent extends Component
      * Campo utilizado en el grupo cosecha
      */
     public $grupoCosecha_cosch_fecha;
-
+    /**
+     * Campo utilizado para el grupo de riego
+     */
+    public $riego_descarga_ha_hora;
     protected $listeners = [
         'GuardarInformacion',
         'confirmarEliminar',
+        'poblacionPlantasEliminado' => '$refresh',
+        'poblacionPlantasRegistrado' => '$refresh',
         'campaniaInsertada' => 'cargarUltimaCampania',
         'registrarDetalleCosechaMadres',
         'recargarEvaluacion' => '$refresh',
@@ -53,7 +58,7 @@ class CampoCampaniaComponent extends Component
 
     public function mount($campo = null)
     {
-        $this->mostrarVacios = Session::get('mostrarVacios',false);
+        $this->mostrarVacios = Session::get('mostrarVacios', false);
         $this->campos = Campo::orderBy('orden')->get();
         if ($campo) {
             $this->campoSeleccionado = $campo;
@@ -171,6 +176,15 @@ class CampoCampaniaComponent extends Component
         $data = $this->obtenerMapCosechaMadres();
         $this->dispatch('cargarDataCosechaMadres', $data);
     }
+    public function registrarRiegoDescargaHa(){
+        if (!$this->campania) {
+            return $this->alert('error', 'Seleccione una campaña para continuar.');
+        }
+
+        $this->campania->riego_descarga_ha_hora = $this->riego_descarga_ha_hora;
+        $this->campania->save();
+        $this->alert('success', 'Registro de descarga por hectárea actualizado correctamente.');
+    }
     private function calcularConversion($fresco, $seco)
     {
         if ($seco === null || $seco == 0) {
@@ -197,6 +211,18 @@ class CampoCampaniaComponent extends Component
             $this->cargarResumenCosechaMadres();
             $this->alert('success', 'Información sincronizada correctamente.');
         }*/
+    public function sincronizarRiegos()
+    {
+        if (!$this->campania) {
+            return $this->alert('error', 'Seleccione una campaña para continuar.');
+        }
+
+        $campaniaServicio = new CampaniaServicio($this->campania->id);
+        $campaniaServicio->registrarHistorialRiegos();
+        $this->campania->refresh();
+        $this->dispatch('riegosSincronizados');
+        $this->alert('success', 'Registro sincronizado correctamente.');
+    }
     public function updatedCampoSeleccionado()
     {
         Session::put('campoSeleccionado', $this->campoSeleccionado);
@@ -449,6 +475,6 @@ class CampoCampaniaComponent extends Component
     }
     public function render()
     {
-        return view('livewire.campo-campania-component');
+        return view('livewire.campania-component.indice');
     }
 }

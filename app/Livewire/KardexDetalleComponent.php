@@ -2,20 +2,11 @@
 
 namespace App\Livewire;
 
-use App\Exports\KardexAlmacenExport;
-use App\Exports\KardexProductoExport;
-use App\Models\AlmacenProductoSalida;
-use App\Models\CompraProducto;
-use App\Models\CompraSalidaStock;
-use App\Models\Empresa;
 use App\Models\Kardex;
 use App\Models\Producto;
-use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Illuminate\Support\Facades\Session;
 use Livewire\Component;
-use App\Models\KardexProducto;
-use Livewire\WithFileUploads;
 
 
 class KardexDetalleComponent extends Component
@@ -28,7 +19,8 @@ class KardexDetalleComponent extends Component
     public $resultado;
     public $producto;
     public $productoSeleccionadoId;
-    protected $listeners = ['kardexProductoRegistrado' => 'listarKardex', 'importacionRealizada' => 'listarKardex', 'eliminacionConfirmar'];
+    public $verBlanco = false;
+    protected $listeners = ['kardexProductoRegistrado' => 'listarKardex', 'importacionRealizada' => 'listarKardex', 'eliminacionConfirmar','seleccionarProducto'];
     public function mount()
     {
         if ($this->kardexId) {
@@ -38,7 +30,6 @@ class KardexDetalleComponent extends Component
                 $this->seleccionarProducto($productoCargado);
             }
         }
-
     }
 
     public function quitarProducto()

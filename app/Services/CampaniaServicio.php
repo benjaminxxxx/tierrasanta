@@ -45,10 +45,16 @@ class CampaniaServicio
             if ($evaluacionDiaCero) {
                 $data['pp_dia_cero_fecha_evaluacion'] = $evaluacionDiaCero->fecha;
                 $data['pp_dia_cero_numero_pencas_madre'] = $evaluacionDiaCero->promedio_plantas_ha;
+            }else{
+                $data['pp_dia_cero_fecha_evaluacion'] = null;
+                $data['pp_dia_cero_numero_pencas_madre'] = null;
             }
             if ($evaluacionUltimaResiembra) {
                 $data['pp_resiembra_fecha_evaluacion'] = $evaluacionUltimaResiembra->fecha;
                 $data['pp_resiembra_numero_pencas_madre'] = $evaluacionUltimaResiembra->promedio_plantas_ha;
+            }else{
+                $data['pp_resiembra_fecha_evaluacion'] = null;
+                $data['pp_resiembra_numero_pencas_madre'] = null;
             }
         } else {
             $data['pp_dia_cero_fecha_evaluacion'] = null;
@@ -84,6 +90,15 @@ class CampaniaServicio
         }
         $this->campoCampania->update($data);
     }*/
+    public function registrarHistorialRiegos()
+    {
+        if (!$this->campoCampania) {
+            return;
+        }
+
+        RiegoServicio::procesarRiegosParaCampania($this->campoCampania);
+
+    }
     public function registrarHistorialBrotes()
     {
 

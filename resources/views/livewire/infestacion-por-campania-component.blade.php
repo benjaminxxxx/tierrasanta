@@ -108,31 +108,13 @@
                                     <x-th>Procedencia de las madres</x-th>
                                     <x-td></x-td>
                                 </x-tr>
-                                @php
-                                    $procedencias = [];
-                                    if ($campania->infestacion_procedencia_madres) {
-                                        // Asegurar que sea un array, deserializando si es necesario
-                                        if (is_string($campania->infestacion_procedencia_madres)) {
-                                            try {
-                                                $procedencias =
-                                                    json_decode($campania->infestacion_procedencia_madres, true) ?: [];
-                                            } catch (\Exception $e) {
-                                                $procedencias = [];
-                                            }
-                                        } elseif (is_array($campania->infestacion_procedencia_madres)) {
-                                            $procedencias = $campania->infestacion_procedencia_madres;
-                                        }
-                                    }
-                                @endphp
+                                @foreach ($campania->procedencias_madres as $procedencia)
+                                    <x-tr>
+                                        <x-td>{{ $procedencia['campo_origen_nombre'] ?? 'No especificado' }}</x-td>
+                                        <x-td>{{ number_format($procedencia['kg_madres'], 0) ?? 0 }}</x-td>
+                                    </x-tr>
+                                @endforeach
 
-                                @if (count($procedencias) > 0)
-                                    @foreach ($procedencias as $procedencia)
-                                        <x-tr>
-                                            <x-td>{{ $procedencia['campo_origen_nombre'] ?? 'No especificado' }}</x-td>
-                                            <x-td>{{ number_format($procedencia['kg_madres'], 0) ?? 0 }}</x-td>
-                                        </x-tr>
-                                    @endforeach
-                                @endif
                                 @if (
                                     $mostrarVacios ||
                                         (!is_null($campania->infestacion_cantidad_madres_por_infestador_carton_alias) &&

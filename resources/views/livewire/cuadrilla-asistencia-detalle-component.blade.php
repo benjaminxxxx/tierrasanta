@@ -9,7 +9,11 @@
     <div x-data="tableAsistencia" wire:ignore class="my-4">
         <div x-ref="tableContainer" class="mt-5 overflow-auto"></div>
 
-        <div class="my-3 block md:flex justify-evenly w-full">
+        <div class="bg-indigo-200 w-full shadow-lg my-4 p-5 rounded-2xl overflow-hidden text-center">
+            <x-h3 class="font-lg">
+                Administra las actividades diarias con los botones debajo, cada dia tiene diferente actividad.
+            </x-h3>
+             <div class="my-3 block md:flex justify-evenly w-full">
             @if ($periodo)
                 @foreach ($periodo as $indice => $diaLabor)
                     <x-secondary-button
@@ -18,6 +22,7 @@
                     </x-secondary-button>
                 @endforeach
             @endif
+             </div>
         </div>
 
         <div class="flex items-center gap-4">

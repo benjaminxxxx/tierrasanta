@@ -168,7 +168,7 @@
                 <x-secondary-button wire:click="$set('mostrarFormulario', false)" wire:loading.attr="disabled">
                     Cerrar
                 </x-secondary-button>
-                <x-button type="button" @click="$wire.dispatch('guardadoConfirmado')">
+                <x-button type="button" @click="$wire.dispatch('guardadoConfirmadoPoblacionPlanta')">
                     @if ($poblacionPlantaId)
                         <i class="fa fa-pencil"></i> Actualizar
                     @else
@@ -199,7 +199,7 @@
                 );
                 this.listeners.push(
 
-                    Livewire.on('guardadoConfirmado', () => {
+                    Livewire.on('guardadoConfirmadoPoblacionPlanta', () => {
                         this.sendDataPoblacionPlanta();
                     })
                 );

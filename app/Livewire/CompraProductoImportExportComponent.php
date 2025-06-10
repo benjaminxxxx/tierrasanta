@@ -67,7 +67,7 @@ class CompraProductoImportExportComponent extends Component
                 }
 
                 $spreadsheet = IOFactory::load($file->getRealPath());
-                $response = $this->procesarKardexSheet($spreadsheet, $tipo, $kardexId, $codigoExistencia);
+                $response = $this->procesarKardexSheet($spreadsheet, $tipo,$kardexProducto, $kardexId, $codigoExistencia);
 
                 $this->fileDesdeKardex = null;
                 $filasAfectadasCompras = $response['filasAfectadasCompras'] ?? 0;
@@ -92,7 +92,7 @@ class CompraProductoImportExportComponent extends Component
         }
     }
     //Formato de codigo oficial
-    protected function procesarKardexSheet($spreadsheet, $tipoKardex, $kardexId = null, $codigoExistencia = null)
+    protected function procesarKardexSheet($spreadsheet, $tipoKardex,KardexProducto $kardexProducto, $kardexId = null, $codigoExistencia = null)
     {
         $sheet = null;
 
@@ -137,6 +137,15 @@ class CompraProductoImportExportComponent extends Component
         if ((int) $rows[$indiceInicio][$indiceColumnaTabla12] != 16) {
             $tieneSaldoInicial = false;
             //throw new Exception("El archivo no tiene el formato correcto, la celda E17 debe tener el codigo 16: SALDO INICIAL");
+        }else{
+            $stock_inicial = (float) $sheet->getCell('F17')->getCalculatedValue();
+            $costo_unitario = (float) $sheet->getCell('G17')->getCalculatedValue();
+            $costo_total = (float) $sheet->getCell('H17')->getCalculatedValue();
+            $kardexProducto->update([
+                'stock_inicial' => $stock_inicial,
+                'costo_unitario' => $costo_unitario,
+                'costo_total' => $costo_total,
+            ]); 
         }
 
         $campos = Campo::all();

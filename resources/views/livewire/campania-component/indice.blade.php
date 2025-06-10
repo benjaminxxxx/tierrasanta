@@ -16,11 +16,23 @@
                     </x-select>
                 </div>
                 @if ($campoSeleccionado)
-                    <div class="mb-2">
+
+                    <x-flex class="w-full justify-end my-5">
                         <x-button @click="$wire.dispatch('registroCampania',{campoNombre:'{{ $campoSeleccionado }}'})">
                             <i class="fa fa-plus"></i> Registrar nueva campaña
                         </x-button>
-                    </div>
+                        @if ($campania)
+                            <x-button type="button"
+                                @click="$wire.dispatch('editarCampania',{campaniaId:{{ $campania->id }}})">
+                                <i class="fa fa-edit"></i> Actualizar Campaña
+                            </x-button>
+                            <x-secondary-button type="button"
+                                @click="$wire.dispatch('abrirCampaniaDetalle',{campaniaId:{{ $campania->id }}})">
+                                <i class="fa fa-list mr-2"></i> Ver Detalle Completo
+                            </x-secondary-button>
+                        @endif
+                    </x-flex>
+
                 @endif
 
             </x-flex>
@@ -41,21 +53,13 @@
                             <i class="fa fa-chevron-right"></i>
                         </x-secondary-button>
                     </div>
-                    <x-button type="button" @click="$wire.dispatch('editarCampania',{campaniaId:{{ $campania->id }}})">
-                        <i class="fa fa-edit"></i> Actualizar Campaña
-                    </x-button>
+
+
                 </x-flex>
             @endif
         </x-spacing>
     </x-card>
     @if ($campania)
-        <x-flex class="w-full justify-end my-5">
-            <x-secondary-button type="button"
-                @click="$wire.dispatch('abrirCampaniaDetalle',{campaniaId:{{ $campania->id }}})">
-                <i class="fa fa-list mr-2"></i> Ver Detalle Completo
-            </x-secondary-button>
-        </x-flex>
-
         <div class="mt-5">
             <x-tabs default-value="informacion_general">
                 <x-card2>
@@ -71,7 +75,8 @@
                         <x-tabs-trigger value="porcentaje_acido_carminico">% ácido carmínico</x-tabs-trigger>
                         <x-tabs-trigger value="fertilizacion">Fertilización</x-tabs-trigger>
                         <x-tabs-trigger value="aplicaciones_fitosanitarias">Aplicaciones Fitosanitarias</x-tabs-trigger>
-                        
+                        <x-tabs-trigger value="riego">Riego</x-tabs-trigger>
+                        <x-tabs-trigger value="etapas">Etapas</x-tabs-trigger>
                     </x-tabs-list>
                     </x-card>
 
@@ -132,6 +137,14 @@
 
                     <x-tabs-content value="aplicaciones_fitosanitarias">
                         @include('livewire.campania-component.grupo-aplicaciones-fitosanitarias')
+                    </x-tabs-content>
+
+                    <x-tabs-content value="riego">
+                        @include('livewire.campania-component.grupo-riego')
+                    </x-tabs-content>
+
+                    <x-tabs-content value="etapas">
+                        @include('livewire.campania-component.grupo-etapas')
                     </x-tabs-content>
             </x-tabs>
         </div>

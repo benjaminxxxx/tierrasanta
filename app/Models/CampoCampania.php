@@ -152,6 +152,18 @@ class CampoCampania extends Model
         'acid_poda_infest',
         'acid_poda_losa',
         'acid_tam',
+
+        'riego_inicio',
+        'riego_fin',
+        'riego_descarga_ha_hora',
+        'riego_hrs_ini_infest',
+        'riego_m3_ini_infest',
+        'riego_hrs_infest_reinf',
+        'riego_m3_infest_reinf',
+        'riego_hrs_reinf_cosecha',
+        'riego_m3_reinf_cosecha',
+        'riego_hrs_acumuladas',
+        'riego_m3_acum_ha',
     ];
 
     public function fertilizaciones()
@@ -307,6 +319,43 @@ class CampoCampania extends Model
 
     #endregion
     #region CosechaMadresCalculado
+    public function getProcedenciasMadresAttribute()
+    {
+        $valor = $this->infestacion_procedencia_madres;
+
+        if (is_string($valor)) {
+            try {
+                return json_decode($valor, true) ?: [];
+            } catch (\Exception $e) {
+                return [];
+            }
+        }
+
+        if (is_array($valor)) {
+            return $valor;
+        }
+
+        return [];
+    }
+    public function getProcedenciasMadresReinfestacionAttribute()
+    {
+        $valor = $this->reinfestacion_procedencia_madres;
+
+        if (is_string($valor)) {
+            try {
+                return json_decode($valor, true) ?: [];
+            } catch (\Exception $e) {
+                return [];
+            }
+        }
+
+        if (is_array($valor)) {
+            return $valor;
+        }
+
+        return [];
+    }
+
     public function getCosechamadresDestinoMadresFrescoAttribute()
     {
         return

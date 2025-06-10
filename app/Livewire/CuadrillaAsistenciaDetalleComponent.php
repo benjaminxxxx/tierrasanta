@@ -42,7 +42,7 @@ class CuadrillaAsistenciaDetalleComponent extends Component
             if (!$this->semana) {
                 return;
             }
-
+            //dd($datos);
             $fechaInicio = Carbon::parse($this->semana->fecha_inicio);
             $fechaFin = Carbon::parse($this->semana->fecha_fin);
             $periodo = CarbonPeriod::create($fechaInicio, $fechaFin);
@@ -50,12 +50,12 @@ class CuadrillaAsistenciaDetalleComponent extends Component
             foreach ($periodo as $fecha) {
                 $diasSemana[$fecha->day] = $fecha;
             }
-
+/*
             $preciosPersonalizados = CuaAsistenciaSemanalGrupoPrecios::whereBetween('fecha', [$fechaInicio, $fechaFin])
                 ->get()
                 ->groupBy(function ($item) {
                     return $item->cua_asistencia_semanal_grupo_id . '_' . $item->fecha . '_' . $item->cua_asi_sem_cua_id;
-                });
+                });*/
 
             foreach ($datos as $row) {
 
@@ -69,12 +69,10 @@ class CuadrillaAsistenciaDetalleComponent extends Component
                     break;
                 }
 
-                $grupo = $asistenciaSemanalCuadrillero->asistenciaSemanalGrupo;
+                //&&$grupo = $asistenciaSemanalCuadrillero->asistenciaSemanalGrupo;
 
                 // Recorrer cada clave de `row` para encontrar los días y horas
                 foreach ($row as $key => $totalHorasTrabajadas) {
-
-
 
                     if (str_ends_with($key, '_monto') || str_ends_with($key, '_contabilizado') || str_ends_with($key, '_bono')) {
                         continue;
@@ -87,15 +85,10 @@ class CuadrillaAsistenciaDetalleComponent extends Component
                         }
 
                         $fecha = $diasSemana[$diaNumero];
-                        $fechaStr = $fecha->toDateString();
+                       //&& $fechaStr = $fecha->toDateString();
                         if (!empty($totalHorasTrabajadas)) {
-
-
-
-
-
+/*&&
                             $costoHora = (float) $grupo->costo_hora;
-
                             $personalizadoKey = $grupo->id . '_' . $fechaStr . '_';
                             $personalizadoCuadrillero = $grupo->id . '_' . $fechaStr . '_' . $row['cua_asi_sem_cua_id'];
 
@@ -106,9 +99,9 @@ class CuadrillaAsistenciaDetalleComponent extends Component
                             if (isset($preciosPersonalizados[$personalizadoCuadrillero])) {
                                 $personalizado = $preciosPersonalizados[$personalizadoCuadrillero]->first();
                                 $costoHora = (float) $personalizado->costo_hora;
-                            }
+                            }*/
 
-                            $subtotal = $costoHora * (float) $totalHorasTrabajadas;
+                            //&&$subtotal = $costoHora * (float) $totalHorasTrabajadas;
 
                             CuadrillaHora::updateOrCreate(
                                 [
@@ -117,7 +110,7 @@ class CuadrillaAsistenciaDetalleComponent extends Component
                                 ],
                                 [
                                     'horas' => (float) $totalHorasTrabajadas,
-                                    'costo_dia' => $subtotal,
+                                    'costo_dia' => 0, //se calculara despues en actualizarTotales
                                 ]
                             );
 
@@ -394,6 +387,8 @@ class CuadrillaAsistenciaDetalleComponent extends Component
 
             $this->cuadrillerosAgregadosAsistencia();
             $this->obtenerObservaciones();
+            
+            
             $this->alert('success', 'Costo modificado satisfactoriamente.');
 
 

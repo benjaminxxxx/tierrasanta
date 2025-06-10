@@ -44,16 +44,20 @@
                             -
                         </x-td>
                         <x-td class="text-center">
-                            -
+                            S/ {{ formatear_numero($costoManoIndirecta?->negro_cuadrillero_monto) }}
                         </x-td>
                         <x-td class="text-center">
                             -
                         </x-td>
                         <x-td class="text-center">
-                            -
+                            @if ($costoManoIndirecta?->negro_cuadrillero_file)
+                                <x-button-a href="{{Storage::disk('public')->url($costoManoIndirecta?->negro_cuadrillero_file)}}">
+                                    <i class="fa fa-file-excel-o" aria-hidden="true"></i> Reporte
+                                </x-button-a>
+                            @endif
                         </x-td>
                         <x-td class="text-center">
-                            <x-button type="button" wire:click="recalcularCosto('cuadrilleros')">
+                            <x-button type="button" wire:click="recalcularCostoFdm('cuadrilleros')">
                                 <i class="fa fa-calculator"></i> Recalcular costos
                             </x-button>
                         </x-td>
@@ -69,7 +73,7 @@
                             -
                         </x-td>
                         <x-td class="text-center">
-                            -
+                            
                         </x-td>
                         <x-td class="text-center">
                             -

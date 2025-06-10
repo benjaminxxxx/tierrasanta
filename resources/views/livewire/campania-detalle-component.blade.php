@@ -161,7 +161,7 @@
                                         </p>
                                     </x-td>
                                     <x-td class="text-center">
-                                        {{ $campania->pp_resiembra_fecha_evaluacion }}
+                                        {{ formatear_fecha($campania->pp_resiembra_fecha_evaluacion) }}
                                     </x-td>
                                 </x-tr>
                                 <x-tr>
