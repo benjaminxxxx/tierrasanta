@@ -46,11 +46,25 @@ class PoblacionPlantas extends Model
     {
         return $this->detalles->avg('plantas_x_cama');
     }
-
+    //mejor presicion
     public function getPromedioPlantasXMetroAttribute()
     {
-        return $this->detalles->avg('plantas_x_metro');
+        if ($this->detalles->isEmpty()) {
+            return 0;
+        }
+
+        $valores = $this->detalles->map(function ($detalle) {
+            // División precisa, sin redondear
+            if ($detalle->longitud_cama > 0) {
+                return $detalle->plantas_x_cama / $detalle->longitud_cama;
+            }
+            return 0;
+        });
+
+        // Retorna el promedio de los cálculos reales
+        return $valores->avg();
     }
+
 
     public function getPromedioPlantasHaAttribute()
     {

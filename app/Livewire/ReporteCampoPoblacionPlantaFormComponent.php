@@ -8,6 +8,7 @@ use App\Models\Empleado;
 use App\Models\PoblacionPlantas;
 use App\Models\PoblacionPlantasDetalle;
 use App\Services\CampaniaServicio;
+use App\Services\PoblacionPlantaServicio;
 use Exception;
 use Illuminate\Support\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -35,11 +36,13 @@ class ReporteCampoPoblacionPlantaFormComponent extends Component
         $this->campaniaUnica = $campaniaUnica;
         $this->idTable = "table" . Str::random(15);
     }
-    public function updatedCampoSeleccionado(){
+    public function updatedCampoSeleccionado()
+    {
         $this->buscarCampania();
         $this->buscarArea();
     }
-    public function buscarArea(){
+    public function buscarArea()
+    {
         if ($this->campoSeleccionado) {
             $campo = Campo::find($this->campoSeleccionado);
             if ($campo) {
@@ -51,10 +54,12 @@ class ReporteCampoPoblacionPlantaFormComponent extends Component
             $this->area_lote = null;
         }
     }
-    public function updatedFecha(){
+    public function updatedFecha()
+    {
         $this->buscarCampania();
     }
-    public function buscarCampania(){
+    public function buscarCampania()
+    {
         if ($this->campoSeleccionado && $this->fecha) {
             $this->campania = CampoCampania::masProximaAntesDe($this->fecha, $this->campoSeleccionado);
         } else {
@@ -63,7 +68,67 @@ class ReporteCampoPoblacionPlantaFormComponent extends Component
     }
     public function storeTableDataPoblacionPlanta($datos)
     {
+        $this->validate([
+            'area_lote' => 'required|numeric|min:0',
+            'metros_cama' => 'required|numeric|min:0|max:99999.999',
+            'evaluadorSeleccionado.nombre' => 'required|string',
+            'evaluadorSeleccionado.id' => 'required|integer|exists:empleados,id',
+            'fecha' => 'required|date',
+            'tipo_evaluacion' => 'required',
+            'campoSeleccionado' => 'required'
+        ], [
 
+            'area_lote.required' => 'El área del lote es obligatoria.',
+            'area_lote.numeric' => 'El área del lote debe ser un número.',
+            'metros_cama.required' => 'Los metros de cama son obligatorios.',
+            'metros_cama.numeric' => 'Los metros de cama deben ser un número.',
+            'metros_cama.max' => 'El número es demasiado grande, maximo 5 digitos y 3 decimales.',
+            'evaluadorSeleccionado.nombre.required' => 'Debe seleccionar un evaluador.',
+            'evaluadorSeleccionado.id.required' => 'Debe proporcionar un ID de evaluador.',
+            'evaluadorSeleccionado.id.exists' => 'El evaluador seleccionado no es válido.',
+            'fecha.required' => 'La fecha es obligatoria.',
+            'fecha.date' => 'La fecha debe ser una fecha válida.',
+            'tipo_evaluacion.required' => 'El tipo de evaluación es obligatorio.',
+            'campoSeleccionado.required' => 'Debe seleccionar un campo.',
+        ]);
+
+        try {
+            $datosGenerales = [
+                'id' => $this->poblacionPlantaId, // puede ser null
+                'area_lote' => $this->area_lote,
+                'metros_cama' => $this->metros_cama,
+                'evaluador' => $this->evaluadorSeleccionado['nombre'],
+                'empleado_id' => $this->evaluadorSeleccionado['id'],
+                'fecha' => $this->fecha,
+                'campania_id' => $this->campania->id,
+                'tipo_evaluacion' => $this->tipo_evaluacion,
+            ];
+
+            $poblacion = PoblacionPlantaServicio::registrar($datosGenerales, $datos);
+
+            $this->poblacionPlantaId = $poblacion->id;
+
+            $this->asignarPromedios();
+            $this->alert('success', 'Registro exitoso de población de plantas.');
+            $this->enviarHistorialPoblacionPlantas($this->campania->id);
+            $this->dispatch('poblacionPlantasRegistrado');
+        } catch (\Throwable $th) {
+            $this->dispatch('log', $th->getMessage());
+            $this->alert('error', 'Error: ' . $th->getMessage());
+        }
+    }
+    /*
+    public function storeTableDataPoblacionPlanta($datos)
+    {
+        dd($datos);
+        /*
+        array:4 [▼ // app\Livewire\ReporteCampoPoblacionPlantaFormComponent.php:66
+  0 => array:4 [▼
+    "plantas_x_cama" => 984
+    "longitud_cama" => 124
+    "cama_muestreada" => 1
+    "plantas_x_metro" => 8
+  ]
         // Validación de los datos de entrada
         $this->validate([
             'area_lote' => 'required|numeric|min:0',
@@ -149,7 +214,7 @@ class ReporteCampoPoblacionPlantaFormComponent extends Component
             $this->dispatch('log', $th->getMessage());
             $this->alert('error', 'Ocurrió un error interno al procesar la solicitud.');
         }
-    }
+    }*/
     public function enviarHistorialPoblacionPlantas($campaniaId)
     {
         try {
@@ -172,7 +237,7 @@ class ReporteCampoPoblacionPlantaFormComponent extends Component
         $this->promedioPlantasXMetro = $poblacionPlanta->promedio_plantas_x_metro;
         $this->promedioPlantasHA = $poblacionPlanta->promedio_plantas_ha;
     }
-    
+
     public function editarPoblacionPlanta($poblacionId)
     {
         try {
@@ -198,7 +263,7 @@ class ReporteCampoPoblacionPlantaFormComponent extends Component
                     'cama_muestreada' => $detalle->cama_muestreada,
                     'longitud_cama' => $detalle->longitud_cama,
                     'plantas_x_cama' => $detalle->plantas_x_cama,
-                    'plantas_x_metro' => $detalle->plantas_x_metro
+                    'plantas_x_metro' => round($detalle->plantas_x_metro,0)
                 ];
             })->toArray();
 
@@ -243,7 +308,7 @@ class ReporteCampoPoblacionPlantaFormComponent extends Component
 
     public function resetearCampos()
     {
-        $this->reset(['poblacionPlantaId', 'area_lote', 'metros_cama', 'evaluadorSeleccionado', 'fecha', 'tipo_evaluacion', 'campania','campoSeleccionado']);
+        $this->reset(['poblacionPlantaId', 'area_lote', 'metros_cama', 'evaluadorSeleccionado', 'fecha', 'tipo_evaluacion', 'campania', 'campoSeleccionado']);
         $this->resetErrorBag();
         $this->listaCamasMuestreadas = [];
         $this->asignarPromedios();
@@ -255,9 +320,9 @@ class ReporteCampoPoblacionPlantaFormComponent extends Component
         try {
             $this->resetearCampos();
 
-            if($campaniaId){
+            if ($campaniaId) {
                 $campania = CampoCampania::find($campaniaId);
-                if($campania){
+                if ($campania) {
                     $this->campoSeleccionado = $campania->campo;
                     $this->campania = $campania;
                     $this->buscarArea();

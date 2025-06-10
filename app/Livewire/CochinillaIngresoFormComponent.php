@@ -18,7 +18,7 @@ class CochinillaIngresoFormComponent extends Component
 {
     use LivewireAlert;
     public $mostrarFormulario = false;
-    public $cochinillaIngresoDetalleId = null;
+    public $cochinillaIngresoDetalleId;
 
     public $lote;
     public $fecha;

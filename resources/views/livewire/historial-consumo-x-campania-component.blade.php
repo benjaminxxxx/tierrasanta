@@ -48,18 +48,47 @@
                                     </x-tr>
                                 </x-slot>
                                 <x-slot name="tbody">
-                                    @php $i = 1; @endphp
+                                    @php
+                                        $i = 1;
+                                        $totales = [
+                                            'kg' => 0,
+                                            'kg_ha' => 0,
+                                        ];
+                                        foreach (array_keys($camposVisibles) as $campo) {
+                                            $totales[$campo] = 0;
+                                        }
+                                    @endphp
+
                                     @foreach ($resumenPorFechas as $rango => $valores)
+                                        @php
+                                            $totales['kg'] += $valores['kg'] ?? 0;
+                                            $totales['kg_ha'] += $valores['kg_ha'] ?? 0;
+
+                                            foreach (array_keys($camposVisibles) as $campo) {
+                                                $totales[$campo] += $valores[$campo] ?? 0;
+                                            }
+                                        @endphp
+
                                         <x-tr>
                                             <x-td>{{ $i++ }}</x-td>
                                             <x-td>{{ $rango }}</x-td>
-                                            <x-td>{{ $valores['kg'] ?? '-' }}</x-td>
-                                            <x-td>{{ $valores['kg_ha'] ?? '-' }}</x-td>
+                                            <x-td class="text-right">{{ $valores['kg'] ?? '-' }}</x-td>
+                                            <x-td class="text-right">{{ $valores['kg_ha'] ?? '-' }}</x-td>
                                             @foreach (array_keys($camposVisibles) as $campo)
-                                                <x-td>{{ $valores[$campo] ?? '-' }}</x-td>
+                                                <x-td class="text-right">{{ $valores[$campo] ?? '-' }}</x-td>
                                             @endforeach
                                         </x-tr>
                                     @endforeach
+
+                                    <x-tr class="font-bold bg-gray-100">
+                                        <x-td colspan="2">Total</x-td>
+                                        <x-td class="text-right">{{ number_format($totales['kg'], 2) }}</x-td>
+                                        <x-td class="text-right">{{ number_format($totales['kg_ha'], 2) }}</x-td>
+                                        @foreach (array_keys($camposVisibles) as $campo)
+                                            <x-td class="text-right">{{ number_format($totales[$campo], 2) }}</x-td>
+                                        @endforeach
+                                    </x-tr>
+
                                 </x-slot>
                             </x-table>
                         @endforeach

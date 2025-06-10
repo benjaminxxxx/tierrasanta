@@ -147,10 +147,16 @@ class CochinillaIngresoServicio
             $detalle = CochinillaIngresoDetalle::findOrFail($datos['cochinillaIngresoDetalleId']);
 
             if ($detalle->cochinilla_ingreso_id !== $ingreso->id) {
-                throw new Exception("El detalle no pertenece al ingreso con lote {$loteEntero}.");
+                /**
+                 * Cuando querian cambiar el lote saltaba error, esto ahora se autocorrige
+                 */
+                self::recalcularIngreso($detalle->cochinilla_ingreso_id);
+                //throw new Exception("El detalle no pertenece al ingreso con lote {$loteEntero}.");
             }
 
             $detalle->update([
+                'sublote_codigo' => $datos['lote'],
+                'cochinilla_ingreso_id' => $ingreso->id,
                 'fecha' => $datos['fecha'],
                 'total_kilos' => $datos['total_kilos'],
                 'observacion' => $datos['observacion'],
@@ -183,7 +189,21 @@ class CochinillaIngresoServicio
 
         return $detalle;
     }
+    public static function recalcularIngreso($ingresoId)
+    {
+        $ingreso = CochinillaIngreso::find($ingresoId);
 
+        if (!$ingreso)
+            return;
+
+        $detalles = $ingreso->detalles()->orderBy('sublote_codigo')->get();
+
+        $ingreso->update([
+            'fecha' => $detalles->max('fecha'), // Fecha más reciente de los sublotes
+            'observacion' => $detalles->sortByDesc('fecha')->first()?->observacion ?? $ingreso->observacion, // Observación del detalle más reciente
+            'total_kilos' => $detalles->sum('total_kilos'),
+        ]);
+    }
 
 
 
