@@ -89,77 +89,7 @@ class CostoFdmServicio
      * @param float $montoTotal
      * @return void
      */
-    public static function guardarCostoManoIndirecta(int $mes, int $anio, array $data)
-    {
-        DB::transaction(function () use ($mes, $anio, $data) {
-            // Definir los campos válidos que se pueden actualizar
-            $camposValidos = [
-                'blanco_cuadrillero_monto',
-                'negro_cuadrillero_monto',
-                
-
-                'blanco_planillero_monto',
-                'negro_planillero_monto',
-
-                'blanco_maquinaria_monto',
-                'negro_maquinaria_monto',
-
-                'blanco_maquinaria_salida_monto',
-                'negro_maquinaria_salida_monto',
-
-                'blanco_costos_adicionales_monto',
-                'negro_costos_adicionales_monto',
-
-                'negro_cuadrillero_file',
-                'negro_planillero_file',
-
-                // puedes agregar otros campos si los permites
-            ];
-
-            // Validar los campos recibidos
-            foreach ($data as $campo => $valor) {
-                if (!in_array($campo, $camposValidos)) {
-                    throw new Exception("El campo '$campo' no es válido para actualizar.");
-                }
-            }
-            
-            // 1. Actualizar o insertar en CostoManoIndirecta con los campos válidos
-            CostoManoIndirecta::updateOrCreate(
-                ['mes' => $mes, 'anio' => $anio],
-                $data
-            );
-
-            // 2. Calcular totales
-            $totalManoIndirectaBlanco = CostoManoIndirecta::where('mes', $mes)
-                ->where('anio', $anio)
-                ->sum(DB::raw("
-                COALESCE(blanco_cuadrillero_monto, 0) + 
-                COALESCE(blanco_planillero_monto, 0) + 
-                COALESCE(blanco_maquinaria_monto, 0) + 
-                COALESCE(blanco_maquinaria_salida_monto, 0) + 
-                COALESCE(blanco_costos_adicionales_monto, 0)
-            "));
-
-            $totalManoIndirectaNegro = CostoManoIndirecta::where('mes', $mes)
-                ->where('anio', $anio)
-                ->sum(DB::raw("
-                COALESCE(negro_cuadrillero_monto, 0) + 
-                COALESCE(negro_planillero_monto, 0) + 
-                COALESCE(negro_maquinaria_monto, 0) + 
-                COALESCE(negro_maquinaria_salida_monto, 0) + 
-                COALESCE(negro_costos_adicionales_monto, 0)
-            "));
-
-            // 3. Actualizar CostoMensual
-            CostoMensual::updateOrCreate(
-                ['mes' => $mes, 'anio' => $anio],
-                [
-                    'operativo_mano_obra_indirecta_blanco' => $totalManoIndirectaBlanco,
-                    'operativo_mano_obra_indirecta_negro' => $totalManoIndirectaNegro
-                ]
-            );
-        });
-    }
+    
 
 
 }

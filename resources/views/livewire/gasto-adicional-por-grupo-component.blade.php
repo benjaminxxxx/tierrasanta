@@ -11,42 +11,26 @@
         <x-slot name="content">
             <form wire:submit="storeRegistrarGastoAdicional">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="mb-2">
-                        <x-label for="descripcion" value="Descripción" />
-                        <x-input type="text" wire:model="descripcion" />
-                        <x-input-error for="descripcion" />
-                    </div>
-                    <div class="mb-2">
-                        <x-label for="monto" value="Monto" />
-                        <x-input type="number" step="0.01" wire:model="monto" />
-                        <x-input-error for="monto" />
-                    </div>
-                    <!--FECHA CONTABLE-->
-                    <div class="mb-2">
-                        <x-label for="mesContable" value="Mes Contable" />
-                        <x-select wire:model="mesContable">
-                            <option value="">Seleccione un mes</option>
-                            @foreach (['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'] as $index => $mes)
-                                <option value="{{ $index + 1 }}">{{ $mes }}</option>
+                    <x-input-string type="text" label="Descripción" wire:model="descripcion" error="descripcion" />
+                    <x-input-number type="number" label="Monto" step="0.01" wire:model="monto" error="monto" />
+                    <x-input-date label="Fecha de gasto" wire:model="fechaGasto" error="fechaGasto" />
+                    <x-select wire:model="mesContable" label="Mes Contable" error="mesContable">
+                        <option value="">Seleccione un mes</option>
+                        @foreach (['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'] as $index => $mes)
+                            <option value="{{ $index + 1 }}">{{ $mes }}</option>
+                        @endforeach
+                    </x-select>
+                    <x-select wire:model="anioContable" label="Año contable" wire:key="anioContable{{ $anioContable }}"
+                        error="anioContable">
+                        <option value="">Seleccione un año</option>
+                        @if ($aniosContablesPermitidos && is_array($aniosContablesPermitidos))
+                            @foreach ($aniosContablesPermitidos as $anioSeleccionado)
+                                <option value="{{ $anioSeleccionado }}">{{ $anioSeleccionado }}</option>
                             @endforeach
-                        </x-select>
-                        <x-input-error for="mesContable" />
-                    </div>
-                    <div class="mb-2">
-                        <x-label for="anioContable" value="Año contable" />
-                        <x-select wire:model="anioContable" wire:key="anioContable{{$anioContable}}">
-                            <option value="">Seleccione un año</option>
-                            @if ($aniosContablesPermitidos && is_array($aniosContablesPermitidos))
-                                @foreach ($aniosContablesPermitidos as $anioSeleccionado)
-                                    <option value="{{ $anioSeleccionado }}">{{ $anioSeleccionado }}</option>
-                                @endforeach
-                            @endif
-                        </x-select>
-                        
-                        <x-input-error for="anioContable" />
-                    </div>
+                        @endif
+                    </x-select>
                 </div>
-                <x-flex class="justify-end">
+                <x-flex class="justify-end w-full">
                     <x-button type="submit">
                         <i class="fa fa-save"></i> Registrar
                     </x-button>
@@ -70,6 +54,9 @@
                             Monto
                         </x-th>
                         <x-th class="text-center">
+                            Fecha de Gasto
+                        </x-th>
+                        <x-th class="text-center">
                             Fecha Contable
                         </x-th>
                         <x-th class="text-center">
@@ -89,6 +76,9 @@
                                 </x-td>
                                 <x-td class="text-right">
                                     {{ $gasto->monto }}
+                                </x-td>
+                                <x-td class="text-center">
+                                    {{ formatear_fecha($gasto->fecha_gasto) }}
                                 </x-td>
                                 <x-td class="text-center">
                                     {{ $gasto->fechaContable }}

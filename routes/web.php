@@ -139,7 +139,8 @@ Route::middleware([
 
     Route::get('/productividad/avance', [ProductividadController::class,'avance'])->name('productividad.avance');
 
-    Route::get('/fdm/costos', [FdmController::class,'costos'])->name('fdm.costos');
+    //FDM
+    Route::get('/fdm/costos_generales', [FdmController::class,'costos_generales'])->name('fdm.costos_generales');
 
     //REPORTE CAMPO
     Route::get('/evaluacion_campo/poblacion_planta', [ReporteCampoController::class,'poblacion_plantas'])->name('reporte_campo.poblacion_plantas');

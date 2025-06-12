@@ -181,15 +181,15 @@
                         </x-slot>
                     </x-nav-link-parent>
 
-                    <x-nav-link-parent name="sectorFdm" href="#" :active="request()->routeIs(['fdm.costos'])">
+                    <x-nav-link-parent name="sectorFdm" href="#" :active="request()->routeIs(['fdm.costos_generales'])">
 
                         <div class="w-6 text-center">
                             <i class="fa fa-coins"></i>
                         </div>
                         FDM
                         <x-slot name="children">
-                            <x-nav-link-child href="{{ route('fdm.costos') }}" :active="request()->routeIs('fdm.costos')">
-                                Costos
+                            <x-nav-link-child href="{{ route('fdm.costos_generales') }}" :active="request()->routeIs('fdm.costos_generales')">
+                                Costos Generales FDM
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>

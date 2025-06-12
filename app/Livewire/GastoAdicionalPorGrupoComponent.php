@@ -22,6 +22,7 @@ class GastoAdicionalPorGrupoComponent extends Component
     public $aniosContablesPermitidos;
     public $mesContable;
     public $anioContable;
+    public $fechaGasto;
     public $listeners = ['verDetalleGastosAdicionalesPorGrupo'];
 
     public function verDetalleGastosAdicionalesPorGrupo($grupoId)
@@ -36,9 +37,12 @@ class GastoAdicionalPorGrupoComponent extends Component
             $asistenciaSemanal = $this->grupo->asistenciaSemanal;
             $fechaInicio = Carbon::parse($asistenciaSemanal->fecha_inicio);
 
-            $this->anioContable = (int)$fechaInicio->year;
-            $this->mesContable = (int)$fechaInicio->month;
+           
 
+            $this->anioContable = (int) $fechaInicio->year;
+            $this->mesContable = (int) $fechaInicio->month;
+            //$this->fechaGasto = Carbon::parse($this->grupo->fecha_gasto)->format('d/m/Y');
+            
             $this->mostrarFormulario = true;
         } catch (\Throwable $th) {
             $this->dispatch('log', $th->getMessage());
@@ -56,10 +60,8 @@ class GastoAdicionalPorGrupoComponent extends Component
         $fechaFin = Carbon::parse($asistenciaSemanal->fecha_fin);
 
         // Calcular los años "desde" y "hasta"
-        $anioDesde = $fechaInicio->addMonth(-1)->year;
-        $anioHasta = $fechaFin->addMonth(1)->year;
-
-
+        $anioDesde = $fechaInicio->copy()->subMonth()->year;
+        $anioHasta = $fechaFin->copy()->addMonth()->year;
 
         // Crear el array de años contables permitidos
         $aniosContables = [];
@@ -81,13 +83,15 @@ class GastoAdicionalPorGrupoComponent extends Component
         if (!$this->grupo) {
             throw new Exception("No se ha proporcionado un Id válido");
         }
-        $this->gastos = GastoAdicionalPorGrupoCuadrilla::where('cua_asistencia_semanal_grupo_id', $this->grupoId)->get();
+        $this->gastos = GastoAdicionalPorGrupoCuadrilla::where('cua_asistencia_semanal_grupo_id', $this->grupoId)
+        ->orderBy('fecha_gasto')
+        ->get();
         $this->dispatch('cuadrillerosAgregadosAsistencia');
     }
     public function resetForm()
     {
         $this->resetErrorBag();
-        $this->reset(['descripcion', 'monto', 'grupoId', 'grupo', 'gastos', 'anioContable', 'mesContable']);
+        $this->reset(['descripcion', 'monto', 'grupoId', 'grupo', 'gastos', 'anioContable', 'mesContable','fechaGasto']);
     }
 
     public function eliminarGasto($GastoAdicionalPorGrupoCuadrillaId)
@@ -109,6 +113,7 @@ class GastoAdicionalPorGrupoComponent extends Component
             'monto' => 'required|numeric|min:0.01',      // Monto obligatorio, debe ser un número, mínimo 0.01
             'mesContable' => 'required|integer|min:1|max:12', // Mes contable obligatorio, debe ser entre 1 y 12
             'anioContable' => 'required|integer|min:1900|max:2100', // Año contable obligatorio, entre 1900 y 2100
+            'fechaGasto'=>'required|date'
         ], [
             // Mensajes personalizados
             'descripcion.required' => 'La descripción es obligatoria.',
@@ -140,9 +145,13 @@ class GastoAdicionalPorGrupoComponent extends Component
                 'cua_asistencia_semanal_grupo_id' => $this->grupoId,
                 'mes_contable' => $this->mesContable,
                 'anio_contable' => $this->anioContable,
+                'fecha_gasto' => $this->fechaGasto,
             ]);
+            
             $this->listarGastosAdicionales();
             $this->alert('success', 'Registro agregado correctamente.');
+            $this->resetForm();
+            $this->mostrarFormulario = false;
         } catch (\Throwable $th) {
             $this->dispatch('log', $th->getMessage());
             $this->alert('error', 'Ocurrió un error inesperado.');

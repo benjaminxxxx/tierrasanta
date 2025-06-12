@@ -18,7 +18,8 @@ class GastoAdicionalPorGrupoCuadrilla extends Model
         'descripcion',
         'cua_asistencia_semanal_grupo_id',
         'anio_contable',
-        'mes_contable'
+        'mes_contable',
+        'fecha_gasto'
     ];
     public function getFechaContableAttribute(){
         return "{$this->mes_contable}-{$this->anio_contable}";

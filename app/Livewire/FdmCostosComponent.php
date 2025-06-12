@@ -5,8 +5,7 @@ namespace App\Livewire;
 use App\Models\CostoFdmMensual;
 use App\Models\CostoManoIndirecta;
 use App\Services\CostoFdmServicio;
-use App\Services\CuadrillaServicio;
-use Illuminate\Support\Carbon;
+use App\Services\FDM\CostoServicio;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use Illuminate\Support\Str;
@@ -15,7 +14,8 @@ class FdmCostosComponent extends Component
 {
     use LivewireAlert;
     public $idTable;
-    public $mes, $anio;
+    public $mes;
+    public $anio;
     public $costosAdicionalesMensuales;
     public $blancoCostosAdicionales;
     public $negroCostosAdicionales;
@@ -38,7 +38,7 @@ class FdmCostosComponent extends Component
         $costoManoIndirecta = CostoManoIndirecta::where('anio', $this->anio)->where('mes', $this->mes)->first();
         $this->costoManoIndirecta = $costoManoIndirecta;
         if ($costoManoIndirecta) {
-            
+
             $this->blancoCostosAdicionales = $costoManoIndirecta->blanco_costos_adicionales_monto;
             $this->negroCostosAdicionales = $costoManoIndirecta->negro_costos_adicionales_monto;
             $this->negro_planillero_monto = $costoManoIndirecta->negro_planillero_monto;
@@ -83,31 +83,45 @@ class FdmCostosComponent extends Component
 
     public function recalcularCostoFdm($tipoCosto)
     {
-
         try {
             switch ($tipoCosto) {
                 case 'cuadrilleros':
-                    $totalCosto = CuadrillaServicio::calcularCostoFdmMensual($this->mes, $this->anio);
-                    
-                    $data = [
-                        'negro_cuadrillero_monto'=>$totalCosto['total'],
-                        'negro_cuadrillero_file'=>$totalCosto['file'],
-                    ];
-                    
-                    CostoFdmServicio::guardarCostoManoIndirecta($this->mes,$this->anio,$data);
+                    CostoServicio::calcularCostoCuadrillaFDM($this->mes, $this->anio);
+                    break;
+
+                case 'planilleros':
+                    CostoServicio::calcularCostoPlanillaFDM($this->mes, $this->anio);
+                    break;
+
+                case 'maquinarias':
+                    CostoServicio::calcularCostoMaquinariaFDM($this->mes, $this->anio);
+                    break;
+
+                case 'maquinarias_salida':
+                    CostoServicio::calcularCostoMaquinariaSalidaFDM($this->mes, $this->anio);
+                    break;
+
+                case 'costos_adicionales':
+                    CostoServicio::calcularCostoAdicionalFDM($this->mes, $this->anio);
+                    break;
+
+                case 'todo':
+                    // Opcional: si implementaste `recalcularTodoFDM`
+                    CostoServicio::recalcularTodoFDM($this->mes, $this->anio);
                     break;
 
                 default:
-                    # code...
-                    break;
+                    $this->alert('error', "Tipo de costo no reconocido: $tipoCosto");
+                    return;
             }
-            $this->costoManoIndirecta?->refresh();
-            $this->alert('success','Datos procesados correctamente');
 
+            $this->costoManoIndirecta?->refresh();
+            $this->alert('success', 'Datos procesados correctamente');
         } catch (\Throwable $th) {
-            $this->alert('error',$th->getMessage());
+            $this->alert('error', $th->getMessage());
         }
     }
+
 
     public function render()
     {
