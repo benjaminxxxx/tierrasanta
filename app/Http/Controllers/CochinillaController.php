@@ -21,4 +21,7 @@ class CochinillaController extends Controller
     public function infestacion(){
         return view("cochinilla.infestacion");
     }
+    public function ventas(){
+        return view("cochinilla.ventas");
+    }
 }

@@ -127,6 +127,7 @@
                         'cochinilla.filtrado',
                         'cochinilla.cosecha_mamas',
                         'cochinilla.infestacion',
+                        'cochinilla.ventas'
                     ])">
 
                         <div class="w-6 text-center">
@@ -148,6 +149,9 @@
                             </x-nav-link-child>
                             <x-nav-link-child href="{{ route('cochinilla.infestacion') }}" :active="request()->routeIs('cochinilla.infestacion')">
                                 Infestación
+                            </x-nav-link-child>
+                            <x-nav-link-child href="{{ route('cochinilla.ventas') }}" :active="request()->routeIs('cochinilla.ventas')">
+                                Venta
                             </x-nav-link-child>
                         </x-slot>
                     </x-nav-link-parent>

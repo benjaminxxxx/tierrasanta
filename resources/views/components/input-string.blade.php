@@ -9,7 +9,7 @@
 @endphp
 
 <x-group-field>
-    @if ($label || $model)
+    @if ($label)
         <x-label for="{{ $model }}">{{ $label ?? ucfirst(str_replace('_', ' ', $model)) }}</x-label>
     @endif
 

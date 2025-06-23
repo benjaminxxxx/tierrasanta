@@ -156,11 +156,6 @@ class CochinillaIngresoComponent extends Component
         }
 
         $cochinillaIngresos = $query->paginate(15);
-        // Ordenamos cada página de menor a mayor
-        /*
-        $cochinillaIngresos->setCollection(
-            $cochinillaIngresos->getCollection()->sortBy('lote')->values()
-        );*/
 
         return view('livewire.cochinilla-ingreso-component', [
             'cochinillaIngresos' => $cochinillaIngresos
