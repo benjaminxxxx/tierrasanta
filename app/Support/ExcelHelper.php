@@ -120,17 +120,29 @@ class ExcelHelper
             throw new Exception("Error al actualizar el rango de la tabla: " . $e->getMessage());
         }
     }
+    /**
+     * Parsea una fecha desde Excel en distintos formatos (número serial o string).
+     *
+     * @param mixed $valor  El valor de la celda de fecha (puede ser numérico o string).
+     * @param int|string $fila  Número de fila (solo para el mensaje de error).
+     * @return string|null  Fecha en formato 'Y-m-d' o null si está vacía.
+     * @throws Exception si no se puede interpretar la fecha.
+     */
     public static function parseFecha($valor, $fila)
     {
-        if (empty($valor))
+        if (empty($valor)) {
             return null;
+        }
 
         try {
+            // Si es numérico, se asume número serial de Excel
             if (is_numeric($valor)) {
                 return Carbon::instance(ExcelDate::excelToDateTimeObject($valor))->format('Y-m-d');
             }
 
-            return Carbon::parse(str_replace(['.', '/', '\\'], '-', $valor))->format('Y-m-d');
+            // Si es string, limpia separadores no estándar y parsea
+            $valor = str_replace(['.', '/', '\\'], '-', trim($valor));
+            return Carbon::parse($valor)->format('Y-m-d');
         } catch (Exception $e) {
             throw new Exception("Error al interpretar la fecha '{$valor}' en la fila #{$fila}: " . $e->getMessage());
         }

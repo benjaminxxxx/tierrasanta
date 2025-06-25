@@ -20,6 +20,7 @@ class CochinillaIngreso extends Model
         'proveedor_kg_exportado',
         'kg_ha',
         'total_kilos',
+        'stock_disponible',
         'diferencia_kilos',
         'porcentaje_diferencia',
         'venteado_kilos_ingresados',
@@ -48,7 +49,12 @@ class CochinillaIngreso extends Model
     #endregion
 
     #region RELACIONES
-
+    public function infestaciones()
+    {
+        return $this->belongsToMany(CochinillaInfestacion::class, 'cochinilla_ingreso_infestacion')
+            ->withPivot('kg_asignados')
+            ->withTimestamps();
+    }
     public function campoRelacionada()
     {
         return $this->belongsTo(Campo::class, 'campo', 'nombre');
@@ -97,6 +103,10 @@ class CochinillaIngreso extends Model
             ->where('campo_nombre', $this->campo)
             ->latest('fecha_siembra') // Obtiene la siembra más reciente antes de fecha_inicio
             ->value('fecha_siembra') ?? null; // Devuelve solo la fecha o una cadena vacía si no hay resultados
+    }
+    public function getUsoInfestacionesAttribute(): bool
+    {
+        return $this->infestaciones()->exists();
     }
     #endregion
 

@@ -29,7 +29,12 @@ class CochinillaInfestacion extends Model
     ];
 
     // Relaciones
-
+    public function ingresos()
+    {
+        return $this->belongsToMany(CochinillaIngreso::class, 'cochinilla_ingreso_infestacion')
+            ->withPivot('kg_asignados')
+            ->withTimestamps();
+    }
     public function campo()
     {
         return $this->belongsTo(Campo::class, 'campo_nombre', 'nombre');

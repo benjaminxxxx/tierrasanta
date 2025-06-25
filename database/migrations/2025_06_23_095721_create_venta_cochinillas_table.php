@@ -13,40 +13,50 @@ return new class extends Migration {
         Schema::create('venta_cochinillas', function (Blueprint $table) {
             $table->id();
 
-            // Información básica inicial
-            $table->date('fecha_ingreso')->nullable(); // Ej: 5/04/2025
-            $table->date('fecha_filtrado')->nullable(); // Ej: 5/04/2025
-            $table->date('area')->nullable(); // Ej: 5/04/2025
-            $table->date('fecha_venta')->nullable(); // Ej: 5/04/2025
+            // =================== PROCESO 1 - REGISTRO RÁPIDO ===================
 
-            $table->string('nombre_comprador')->nullable(); // Ej: Diana
-            $table->string('tipo_venta')->nullable(); // "Factura" o "NG"
-            $table->string('factura_numero')->nullable(); // E001-165
+            $table->unsignedBigInteger('cochinilla_ingreso_id')->nullable();
+            $table->foreign('cochinilla_ingreso_id')
+                ->references('id')->on('cochinilla_ingresos')
+                ->onDelete('restrict');
 
-            // Información del lote / campo
-            $table->string('lote')->nullable(); // Ej: B-10
-            $table->decimal('kg', 10)->nullable(); // Peso seco vendido
-            $table->string('campo')->nullable(); // Campo de origen
+            $table->string('grupo_venta'); // Agrupador lógico para relación venta múltiple
+            $table->string('origen_especial')->nullable();
+            $table->date('fecha_filtrado')->nullable(); // Fecha en la que se filtró el producto
+            $table->decimal('cantidad_seca', 15, 2)->nullable(); // Cantidad filtrada (seco)
+            $table->string('condicion')->default('venta'); // venta, merma, uso interno, etc.
+            $table->string('cliente')->nullable(); // Cliente o destino
+            $table->string('cliente_facturacion')->nullable();
+            $table->string('item'); // Cochinilla seca, fresca, mama, venta mama
+            $table->date('fecha_venta')->nullable(); // Fecha efectiva de venta
+            $table->string('campo')->nullable(); // Campo de cosecha (puede ser null para ventas negras, internas)
             $table->string('procedencia')->nullable(); // infestador, poda mama, etc.
+            $table->enum('tipo_venta', ['blanco', 'negro'])->nullable(); // blanco: contabilidad oficial, negro: no
+            $table->text('observaciones')->nullable(); // Comentarios adicionales
+            $table->boolean('contabilizado')->default(false); // Ya fue revisado por contabilidad
 
-            // Composición / calidad
-            $table->float('precio_venta_dolar', 10, 2)->nullable();
-            $table->float('punto_acido_carminico', 10, 2)->nullable();
-            $table->float('acido_carminico', 10, 2)->nullable();
-            $table->integer('sacos')->nullable();
+            // =================== PROCESOS FUTUROS - FACTURACIÓN, CALIDAD, INGRESOS ===================
+            $table->string('factura_numero')->nullable(); // Ej: F001-01234 (puede agrupar varias ventas)
+            $table->decimal('precio_venta_dolar', 10, 2)->nullable(); // Precio por kg en USD
+            $table->decimal('ingresos_dolar', 15, 2)->nullable(); // Monto total en USD
+            $table->decimal('tipo_cambio', 6, 3)->nullable(); // Ej: 3.768
+            $table->decimal('ingresos_soles', 15, 2)->nullable(); // Monto total en PEN
 
-            // Cálculo financiero
-            $table->float('ingresos_dolar', 15, 2)->nullable();
-            $table->float('tipo_cambio', 6, 3)->nullable();
-            $table->float('ingresos_soles', 15, 2)->nullable();
+            // Información de calidad
+            $table->float('punto_acido_carminico', 10, 2)->nullable(); // % estimado
+            $table->float('acido_carminico', 10, 2)->nullable(); // valor real en laboratorio (si aplica)
+            $table->integer('sacos')->nullable(); // Número de sacos entregados
 
-            $table->string('estado')->nullable(); // blanco / negro
-            $table->string('infestador_campo')->nullable();
-            $table->string('tipo_infestador')->nullable();
-            $table->text('observaciones')->nullable();
+            // Infestador adicional
+            $table->string('infestador_campo')->nullable(); // Si procede de infestador (campo)
+            $table->string('tipo_infestador')->nullable(); // Tipo de infestador (poda, mama, etc.)
 
-            $table->float('cantidad_seca',15, 2)->nullable(); // blanco / negro
-            $table->string('condicion')->nullable();
+            $table->boolean('aprobado_admin')->default(false); // Confirmación de datos por entregador (opcional)
+            $table->boolean('aprobado_facturacion')->default(false);     // Fecha en que el admin aprobó los datos
+            $table->timestamp('fecha_aprobacion_admin')->nullable();
+            $table->timestamp('fecha_aprobacion_facturacion')->nullable();
+            $table->unsignedBigInteger('aprobador_admin')->nullable();         // User que aprobó como admin
+            $table->unsignedBigInteger('aprobador_facturacion')->nullable();    // User que registró facturación
 
             // Auditoría
             $table->timestamps();

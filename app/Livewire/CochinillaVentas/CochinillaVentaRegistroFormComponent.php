@@ -4,6 +4,7 @@ namespace App\Livewire\CochinillaVentas;
 
 use App\Models\CochinillaIngreso;
 use App\Services\Cochinilla\CochinillaServicio;
+use App\Services\Cochinilla\InfestacionServicio;
 use App\Services\Cochinilla\VentaServicio;
 use Illuminate\Support\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -14,6 +15,7 @@ class CochinillaVentaRegistroFormComponent extends Component
 {
     use LivewireAlert;
     public $cosechaSeleccionada = false;
+    public $filtroOrigen = 'ingreso';
     public $filtroVenteado;
     public $filtroFiltrado;
     public $ultimosIngresos = [];
@@ -60,13 +62,17 @@ class CochinillaVentaRegistroFormComponent extends Component
         $this->filtroFiltrado = 'confiltrado';
         $this->form['fecha_venta'] = optional(CochinillaIngreso::orderBy('fecha', 'desc')->first())->fecha ?? now();
     }
+    public function updatedFiltroOrigen()
+    {
+        $this->buscarCochinilla();
+    }
     public function updatedFiltroVenteado()
     {
-        $this->buscarCosechas();
+        $this->buscarCochinilla();
     }
     public function updatedFiltroFiltrado()
     {
-        $this->buscarCosechas();
+        $this->buscarCochinilla();
     }
     public function venderDeAqui($cochinillaIngresoId)
     {
@@ -89,21 +95,48 @@ class CochinillaVentaRegistroFormComponent extends Component
         // Mostrar formulario
         $this->mostrarBuscador = false;
     }
-    public function buscarCosechas()
+    public function buscarCochinilla()
     {
         try {
             $this->cosechaSeleccionada = false;
-            $this->ultimosIngresos = CochinillaServicio::ultimosIngresos([
-                'filtroVenteado' => $this->filtroVenteado,
-                'filtroFiltrado' => $this->filtroFiltrado,
-                'fecha' => $this->form['fecha_venta'] ?? now(), // o any fecha base
-                'tolerancia' => 7, // o permitir configurar
-            ])->get(); // Aquí ya obtienes la colección
+
+            if ($this->filtroOrigen == 'ingreso') {
+                $this->ultimosIngresos = CochinillaServicio::ultimosIngresos([
+                    'filtroVenteado' => $this->filtroVenteado,
+                    'filtroFiltrado' => $this->filtroFiltrado,
+                    'fecha' => $this->form['fecha_venta'] ?? now(), 
+                    'tolerancia' => 7,
+                ])
+                
+                ->get()->map(function ($ultimoIngreso){
+                    return [
+                        'fecha_ingreso'=> $ultimoIngreso->fecha,
+                        'procedencia' => 'INFESTADOR'
+                    ];
+                });
+            } else {
+                $this->ultimosIngresos = InfestacionServicio::ultimasInfestaciones([
+                    'fecha' => $this->form['fecha_venta'] ?? now(), 
+                    'tolerancia' => 7,
+                ])
+                
+                ->get()->map(function ($cochinillaInfestacion){
+                     $ingreso = $cochinillaInfestacion->ingresos()->first();
+
+                    return [
+                        'fecha_ingreso' => $ingreso ? $ingreso->fecha : null,
+                        'campo'=> $cochinillaInfestacion->campo,
+                        'procedencia' => 'INFESTADOR',
+                        'cantidad_fresca'=> $ingreso ? $ingreso->total_kilos : null,
+                    ];
+                });
+
+                dd($this->ultimosIngresos);
+            }
 
         } catch (\Throwable $th) {
             Log::error("Error al buscar ingresos: " . $th->getMessage(), ['file' => $th->getFile(), 'line' => $th->getLine()]);
-            //$this->alert('error', 'Ocurrió un error al obtener los últimos ingresos.');
-            $this->alert('error', $th->getMessage());
+            $this->alert('error', 'Ocurrió un error al obtener los últimos ingresos.');
         }
         $this->mostrarBuscador = true;
     }

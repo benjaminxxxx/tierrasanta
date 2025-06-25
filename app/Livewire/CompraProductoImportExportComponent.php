@@ -150,7 +150,7 @@ class CompraProductoImportExportComponent extends Component
 
         $campos = Campo::all();
         $mapaAliasANombre = [];
-
+//ya se creo un static en servicio camposervicio para esta funcion, cuando se de mantenimiento hacer el campo
         // Construir el mapa: alias => nombre_real
         foreach ($campos as $campo) {
             $mapaAliasANombre[$campo->nombre] = $campo->nombre; // Incluir el nombre directo

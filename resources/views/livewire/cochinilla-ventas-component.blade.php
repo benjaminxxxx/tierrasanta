@@ -7,10 +7,10 @@
         </x-h3>
     </x-flex>
 
-    <x-tabs default-value="vendedor">
+    <x-tabs default-value="entrega_venta">
         <x-card2>
             <x-tabs-list class="mb-4">
-                <x-tabs-trigger value="vendedor">Vendedor</x-tabs-trigger>
+                <x-tabs-trigger value="entrega_venta">Entrega de venta</x-tabs-trigger>
                 <x-tabs-trigger value="registrar_venta">Registrar venta</x-tabs-trigger>
                 <x-tabs-trigger value="evaluacion_brotes">Evaluación de Brotes</x-tabs-trigger>
                 <x-tabs-trigger value="infestacion">Infestación</x-tabs-trigger>
@@ -18,12 +18,12 @@
             </x-card>
 
 
-            <x-tabs-content value="vendedor">
-                <livewire:cochinilla_ventas.cochinilla-venta-registro-component />
+            <x-tabs-content value="entrega_venta">
+                <livewire:cochinilla_ventas.cochinilla-venta-registro-entrega-component />
             </x-tabs-content>
 
             <x-tabs-content value="registrar_venta">
-                d
+                <!--<li vewire:cochinilla_ventas.cochinilla-venta-registro-component />-->
             </x-tabs-content>
 
             <x-tabs-content value="evaluacion_brotes">

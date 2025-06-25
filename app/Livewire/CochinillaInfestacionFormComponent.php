@@ -5,9 +5,13 @@ namespace App\Livewire;
 use App\Models\Campo;
 use App\Models\CampoCampania;
 use App\Models\CochinillaInfestacion;
+use App\Services\Cochinilla\InfestacionServicio;
+use App\Services\Cochinilla\IngresoServicio;
+use App\Services\CochinillaIngresoServicio;
 use Illuminate\Support\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
+use Log;
 
 class CochinillaInfestacionFormComponent extends Component
 {
@@ -30,6 +34,9 @@ class CochinillaInfestacionFormComponent extends Component
     public $infestadores_por_ha;
     public $campoSeleccionadoOrigen;
     public $kg_madres_ha;
+    public $cochinillaIngresoRelacionados = [];
+    public $kgAsignados = [];
+    public $ingresosSeleccionados = [];
     protected $listeners = ['agregarInfestacion', 'editarInfestacion'];
     public function mount()
     {
@@ -54,7 +61,7 @@ class CochinillaInfestacionFormComponent extends Component
             'infestadores_por_ha',
             'campania'
         ]);
-
+        $this->cochinillaIngresoRelacionados = [];
         // Ahora reestableces los valores por defecto
         $this->fecha = Carbon::now()->format('Y-m-d');
         $this->tipo_infestacion = 'infestacion';
@@ -67,6 +74,7 @@ class CochinillaInfestacionFormComponent extends Component
     }
     public function editarInfestacion($cochinillaInfestacionId)
     {
+
         $cochinillaInfestacion = CochinillaInfestacion::find($cochinillaInfestacionId);
         $this->resetForm();
 
@@ -87,6 +95,7 @@ class CochinillaInfestacionFormComponent extends Component
             $this->infestadores_por_ha = $cochinillaInfestacion->infestadores_por_ha;
             $this->mostrarFormulario = true;
             $this->buscarCampania();
+            $this->obtenerIngresosSeleccionados($this->campoSeleccionadoOrigen);
         }
     }
 
@@ -129,6 +138,39 @@ class CochinillaInfestacionFormComponent extends Component
             return $this->alert('error', 'No hay una campaña seleccionada');
         }
         try {
+
+            $data = [
+                'tipo_infestacion' => $this->tipo_infestacion,
+                'fecha' => $this->fecha,
+                'campo_nombre' => $this->campoSeleccionado,
+                'area' => $this->area,
+                'campo_campania_id' => $this->campania->id,
+                'kg_madres' => $this->kg_madres,
+                'kg_madres_por_ha' => $this->area > 0 ? ($this->kg_madres / $this->area) : null,
+                'campo_origen_nombre' => $this->campoSeleccionadoOrigen,
+                'metodo' => $this->metodo,
+                'numero_envases' => $this->numero_envases,
+                'capacidad_envase' => $this->capacidad_envase,
+                'infestadores' => $this->infestadores,
+                'madres_por_infestador' => $this->infestadores > 0 ? ($this->kg_madres / $this->infestadores) : null,
+                'infestadores_por_ha' => $this->area > 0 ? ($this->infestadores / $this->area) : null,
+            ];
+
+            $id = InfestacionServicio::guardarInfestacion(
+                $data,
+                $this->kgAsignados,
+                $this->cochinillaInfestacionId
+            );
+
+            $mensaje = $this->cochinillaInfestacionId ? 'Registro actualizado correctamente' : 'Registro creado correctamente';
+            $this->alert('success', $mensaje);
+            $this->mostrarFormulario = false;
+            $this->dispatch('infestacionProcesada', ['metodo' => $this->metodo, 'id' => $id]);
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
+        }
+
+        /*try {
             $data = [
                 'tipo_infestacion' => $this->tipo_infestacion,
                 'fecha' => $this->fecha,
@@ -162,7 +204,7 @@ class CochinillaInfestacionFormComponent extends Component
             $this->dispatch('infestacionProcesada', ['metodo' => $this->metodo, 'id' => $nuevoId]);
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
-        }
+        }*/
     }
 
     public function updatedFecha()
@@ -180,6 +222,57 @@ class CochinillaInfestacionFormComponent extends Component
         }
         $this->buscarCampania();
     }
+    public function obtenerIngresosSeleccionados($campoSeleccionado)
+    {
+        try {
+            $fecha = $this->fecha ?? now();
+            $tolerancia = 30;
+
+            $this->cochinillaIngresoRelacionados = IngresoServicio::buscarStock(
+                $campoSeleccionado,
+                $this->fecha,
+                30,
+                $this->cochinillaInfestacionId
+            )->get();
+
+            // Solo ejecutar asignación automática si es NUEVO registro
+            if (!$this->cochinillaInfestacionId) {
+                if ($this->cochinillaIngresoRelacionados->count() === 1) {
+                    $ingreso = $this->cochinillaIngresoRelacionados->first();
+                    $kilos = $ingreso->stock_disponible ?? $ingreso->total_kilos;
+
+                    $this->kgAsignados[$ingreso->id] = $kilos;
+                    $this->kg_madres = $kilos;
+                    $this->ingresosSeleccionados = [$ingreso->id];
+                } else {
+                    // limpiar si hay varios resultados
+                    $this->kgAsignados = [];
+                    $this->kg_madres = null;
+                    $this->ingresosSeleccionados = [];
+                }
+            } else {
+                // Si es edición, cargar los valores existentes
+                $this->kgAsignados = [];
+                $this->ingresosSeleccionados = [];
+
+                $infestacion = CochinillaInfestacion::with('ingresos')->find($this->cochinillaInfestacionId);
+
+                foreach ($infestacion->ingresos as $ingreso) {
+                    $this->kgAsignados[$ingreso->id] = $ingreso->pivot->kg_asignados;
+                    $this->ingresosSeleccionados[] = $ingreso->id;
+                }
+            }
+
+        } catch (\Throwable $th) {
+            Log::error($th->getMessage());
+            $this->alert('error', $th->getMessage());
+        }
+    }
+    public function updatedCampoSeleccionadoOrigen($valorNuevoCampo)
+    {
+        $this->obtenerIngresosSeleccionados($valorNuevoCampo);
+    }
+
     public function buscarCampania()
     {
         if ($this->campoSeleccionado && $this->fecha) {
