@@ -7,9 +7,11 @@
 
                 {{-- Filtros --}}
                 <x-flex class="my-4">
-                    <x-group-field>
-                        <x-input-date label="Fecha de venta" class="!w-auto" wire:model="fecha_venta" />
-                    </x-group-field>
+                    <x-input-date label="Fecha de venta" class="!w-auto" wire:model="fecha_venta" />
+                    <x-select label="Tipo de ingreso" class="!w-auto" wire:model="tipo_ingreso">
+                        <option value="filtrados">Ingresos Filtrados</option>
+                        <option value="sinfiltrados">Sin Filtrados (para vender fresco)</option>
+                    </x-select>
                     <x-group-field>
                         <x-button wire:click="buscarYCargarTablaFuente">
                             <i class="fa fa-search"></i> Buscar ingresos
@@ -30,24 +32,10 @@
                     <div>
                         <x-h3>Registro de Cosechas</x-h3>
                         <div x-ref="tableContainerFuente"></div>
-                    </div>
-
-                    {{-- Botón central --}}
-                    <div class="text-center">
-                        <x-button @click="agregarADetalleVenta()">
-                            <i class="fa fa-shopping-cart mr-1"></i> Vender cosechas seleccionadas
-                        </x-button>
-                    </div>
-
-                    {{-- Tabla de Detalle --}}
-                    <div wire:ignore>
-                        <x-h3>Detalle de Venta</x-h3>
-                        <div x-ref="tableContainer"></div>
                         <div class="text-right mt-2 font-semibold text-lg">
-                            Total Venta: S/ <span x-text="totalVenta"></span>
+                            Total Venta: Kg. <span x-text="totalVenta"></span>
                         </div>
                     </div>
-
                 </div>
             </div>
         </x-slot>
@@ -56,9 +44,9 @@
             <x-secondary-button wire:click="$set('mostrarFormulario', false)">Cancelar</x-secondary-button>
             @if ($editable)
                 <x-button @click="$wire.dispatch('sendDataRegistroEntregaVenta')" class="ml-3">Guardar Registro de
-                Entrega</x-button>
+                    Entrega</x-button>
             @endif
-            
+
         </x-slot>
     </x-dialog-modal>
 
@@ -86,15 +74,6 @@
         init() {
 
             this.listeners.push(
-                Livewire.on('regenerarTabla', (data) => {
-
-                    this.$nextTick(() => {
-                        const ventas = data[0].ventas;
-                        this.initTable(ventas);
-                    });
-                })
-            );
-            this.listeners.push(
 
                 Livewire.on('cargarTablaFuente', (data) => {
 
@@ -114,97 +93,15 @@
                 })
             );
         },
-        initTable(datos) {
-
-            if (this.hot != null) {
-                this.hot.destroy();
-                this.hot = null;
-            }
-
-            const tareas = this.tareas;
-
-            const container = this.$refs.tableContainer;
-            const hot = new Handsontable(container, {
-                data: datos,
-                colHeaders: true,
-                rowHeaders: true,
-                columns: [
-                    {
-                        data: 'campo',
-                        type: 'text',
-                        className: 'text-center',
-                        title: 'Campo'
-                    },
-                    {
-                        data: 'fecha_filtrado',
-                        type: 'date',
-                        className: 'text-center',
-                        title: 'Fecha Filtrado'
-                    },
-                    {
-                        data: 'cantidad_seca',
-                        type: 'numeric',
-                        className: 'text-center',
-                        title: 'Cantidad Seca'
-                    },
-                    {
-                        data: 'condicion',
-                        type: 'dropdown',
-                        source: this.condicionSugerencia,
-                        className: 'text-center',
-                        title: 'Condición',
-                    },
-                    {
-                        data: 'cliente',
-                        type: 'dropdown',
-                        source: this.clienteSugerencia,
-                        className: 'text-center',
-                        title: 'Cliente',
-                    },
-                    {
-                        data: 'item',
-                        type: 'dropdown',
-                        source: this.itemSugerencia,
-                        className: 'text-center',
-                        title: 'Item',
-                    },
-                    {
-                        data: 'fecha_venta',
-                        type: 'date',
-                        className: 'text-center',
-                        title: 'Fecha Venta'
-                    },
-                    {
-                        data: 'observaciones',
-                        type: 'text',
-                        className: 'text-center',
-                        title: 'Observaciones'
-                    }
-                ],
-                afterChange: () => this.actualizarTotalVenta(),
-                width: '100%',
-                height: '120',
-                manualColumnResize: false,
-                manualRowResize: true,
-                minSpareRows: 1,
-                stretchH: 'all',
-                autoColumnSize: true,
-                fixedColumnsLeft: 2,
-                licenseKey: 'non-commercial-and-evaluation',
-            });
-
-            this.hot = hot;
-            this.actualizarTotalVenta();
-        },
         actualizarTotalVenta() {
-            if (!this.hot) {
+            if (!this.hotFuente) {
                 return;
             }
             let total = 0;
-            const data = this.hot.getSourceData();
+            const data = this.hotFuente.getSourceData();
 
             data.forEach(row => {
-                const valor = parseFloat(row.cantidad_seca);
+                const valor = parseFloat(row.venta_cantidad);
                 if (!isNaN(valor)) {
                     total += valor;
                 }
@@ -224,51 +121,59 @@
                 data: datos,
                 colHeaders: true,
                 rowHeaders: true,
-                columns: [{
-                    data: 'campo',
+                columns: [
+                {
+                    data: 'detalle',
                     type: 'text',
-                    title: 'Campo',
-                    className: 'text-center !bg-gray-50',
+                    title: 'Detalle Cosecha',
+                    className: 'text-left !bg-gray-50',
                     readOnly: true
                 },
+                
                 {
-                    data: 'fecha_ingreso',
+                    data: 'detalle_stock',
                     type: 'text',
-                    title: 'Fecha Ingreso',
-                    className: 'text-center !bg-gray-50',
+                    title: 'Detalle Stock',
+                    className: 'text-left !bg-gray-50',
                     readOnly: true
                 },
+                
                 {
-                    data: "fecha_filtrado",
-                    type: 'text',
-                    className: 'text-center !bg-gray-50',
-                    title: 'Fecha de filtrado',
-                    readOnly: true
+                    data: 'venta_cantidad',
+                    type: 'numeric',
+                    className: 'text-center',
+                    title: 'Cantidad a Vender'
                 },
                 {
-                    data: 'cantidad_fresca',
-                    type: 'text',
-                    title: 'Cantidad Fresca',
-                    className: 'text-center !bg-gray-50',
-                    readOnly: true
+                    data: 'venta_condicion',
+                    type: 'dropdown',
+                    source: this.condicionSugerencia,
+                    className: 'text-center',
+                    title: 'Condición',
                 },
                 {
-                    data: 'cantidad_seca',
-                    type: 'text',
-                    title: 'Cantidad Seca',
-                    className: 'text-center !bg-gray-50',
-                    readOnly: true
+                    data: 'venta_cliente',
+                    type: 'dropdown',
+                    source: this.clienteSugerencia,
+                    className: 'text-center',
+                    title: 'Cliente',
                 },
                 {
-                    data: 'uso_infestacion',
-                    type: 'text',
-                    title: 'Uso en infestación',
-                    className: 'text-center !bg-gray-50',
-                    readOnly: true
-                }
+                    data: 'venta_item',
+                    type: 'dropdown',
+                    source: this.itemSugerencia,
+                    className: 'text-center',
+                    title: 'Item',
+                },
+                {
+                    data: 'venta_fecha',
+                    type: 'date',
+                    className: 'text-center',
+                    title: 'Fecha Venta'
+                },
                 ],
                 width: '100%',
-                height: '140',
+                height: 'auto',
                 manualColumnResize: false,
                 manualRowResize: true,
                 stretchH: 'all',
@@ -293,6 +198,7 @@
                     // Resaltar selección completa (opcional)
                     // this.hotFuente.selectCell(rowStart, 0, rowEnd, this.hotFuente.countCols() - 1);*/
                 },
+                afterChange: () => this.actualizarTotalVenta(),
 
 
                 licenseKey: 'non-commercial-and-evaluation',
@@ -301,43 +207,9 @@
             });
 
             this.hotFuente = hotFuente;
+            this.actualizarTotalVenta();
         },
 
-        agregarADetalleVenta() {
-            if (!this.hotFuente || !this.hot) {
-                alert('Las tablas no están listas.');
-                return;
-            }
-
-            if (this.selectedRows.length === 0) {
-                alert('No has seleccionado ninguna fila.');
-                return;
-            }
-
-            console.log('seleccionado', this.selectedRows);
-
-            this.selectedRows.forEach(row => {
-
-                if (!this.tableData.some(r => r.ingreso_id === row.ingreso_id)) {
-                    this.tableData.push({
-                        ...row,
-                        condicion: '',
-                        cliente: '',
-                        item: row.fecha_filtrado ? 'Cochinilla Seca' : '',
-                        fecha_venta: this.fechaVenta,
-                        observaciones: '',
-                    });
-                }
-            });
-
-
-            this.tableData = this.tableData.filter(row => row && Object.keys(row).length > 0);
-            this.hot.loadData(this.tableData);
-
-            // Limpiar selección
-            this.selectedRows = [];
-            this.hotFuente.deselectCell();
-        },
 
         sendDataRegistroEntregaVenta() {
             let allData = [];

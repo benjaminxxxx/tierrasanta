@@ -1,6 +1,5 @@
 <div>
     <x-loading wire:loading />
-
     <x-flex class="my-3">
         <x-h3>
             Registro de Entrega de venta
@@ -9,9 +8,12 @@
             <i class="fa fa-plus"></i> Registrar Entrega de Venta
         </x-button>
     </x-flex>
-
     <x-card>
         <x-spacing>
+            <x-flex class="mb-4">
+                <x-select-meses wire:model.live="mes" />
+                <x-select-anios wire:model.live="anio" max="current" />
+            </x-flex>
             <x-table>
                 <x-slot name="thead">
                     <x-tr>
@@ -46,14 +48,14 @@
                             <x-td>{{ $venta->observaciones ?? '-' }}</x-td>
                             <x-td class="text-center">
                                 <x-flex>
-                                    @if($venta->total_venta && !$venta->esta_aprobado)
+                                    @if($venta->total_venta && !$venta->aprobado_facturacion)
 
                                         <x-button
                                             @click="$wire.dispatch('editarRegistroEntrega',{grupoVenta:'{{ $venta->grupo_venta }}'})"><i
                                                 class="fa fa-edit"></i> Editar</x-button>
 
                                     @endif
-                                    @if($venta->total_venta && ($venta->aprobado_admin || $venta->aprobado_facturacion))
+                                    @if($venta->total_venta && $venta->aprobado_facturacion)
 
                                         <x-secondary-button class="whitespace-nowrap" 
                                             @click="$wire.dispatch('editarRegistroEntrega',{grupoVenta:'{{ $venta->grupo_venta }}','editable':false})"><i
@@ -61,10 +63,7 @@
 
                                     @endif
                                 </x-flex>
-
                             </x-td>
-
-
                         </x-tr>
                     @empty
                         <x-tr>
@@ -75,11 +74,15 @@
                     @endforelse
                 </x-slot>
             </x-table>
+            <x-flex class="justify-end my-3 w-full">
+                <x-h3>
+                    Total Venta: {{ $totalVenta }}
+                </x-h3>
+            </x-flex>
             <div class="my-5">
                 {{ $registroEntregas->links() }}
             </div>
         </x-spacing>
-
     </x-card>
     <livewire:cochinilla_ventas.cochinilla-venta-registro-entrega-form-component />
 </div>

@@ -16,13 +16,11 @@ class CochinillaVentaRegistroEntregaFormComponent extends Component
     use LivewireAlert;
     public $cosechaSeleccionada = false;
     public $filtroOrigen = 'ingreso';
-    public $filtroVenteado;
-    public $filtroFiltrado;
     public $ultimosIngresos = [];
-    public $mostrarBuscador = false;
     public $mostrarFormulario = false;
     public $idTable;
     public $fecha_venta;
+    public $tipo_ingreso;
     public $condicionSugerencia = [];
     public $clienteSugerencia = [];
     public $itemSugerencia = [];
@@ -57,8 +55,8 @@ class CochinillaVentaRegistroEntregaFormComponent extends Component
 
 
         $this->idTable = "table" . Str::random(15);
-        $this->filtroFiltrado = null;//'confiltrado';
         $this->fecha_venta = now();
+        $this->tipo_ingreso = 'filtrados';
     }
     public function storeTableDataCochinillaEntregaVenta($datos)
     {
@@ -86,33 +84,24 @@ class CochinillaVentaRegistroEntregaFormComponent extends Component
         ];
         $this->dispatch('cargarTablaFuente', $data);
     }
-    public function editarRegistroEntrega($grupoVenta,$editable = true)
+    public function editarRegistroEntrega($grupoVenta, $editable = true)
     {
         $this->editable = $editable;
         $this->registroEntregaGrupoId = $grupoVenta;
-        $cochinillaVenta = VentaCochinilla::where('grupo_venta', $grupoVenta)->get();
-        
-        if ($cochinillaVenta->count() > 0) {
-            $this->fecha_venta = $cochinillaVenta->first()->fecha_venta;
-            $this->buscarYCargarTablaFuente();
-            $data = [
-                'ventas' => $cochinillaVenta,
-            ];
-            $this->dispatch('regenerarTabla', $data);
-            $this->mostrarFormulario = true;
-        } else {
-            $this->alert('error', 'No se encontro registro');
-        }
+        $ventasRealizadas = CochinillaServicio::obtenerInformacionDeVentaPorGrupo($this->registroEntregaGrupoId);
+        $data = [
+            'ingresos' => $ventasRealizadas,
+            'fecha_venta' => $this->fecha_venta,
+        ];
+        $this->dispatch('cargarTablaFuente', $data);
+
+        $this->mostrarFormulario = true;
     }
     public function crearRegistroVentaCochinilla()
     {
         $this->editable = true;
         $this->fecha_venta = Carbon::now()->format('Y-m-d');
         $this->buscarYCargarTablaFuente();
-        $data = [
-            'ventas' => [],
-        ];
-        $this->dispatch('regenerarTabla', $data);
         $this->mostrarFormulario = true;
     }
     public function updatedFechaVenta()
@@ -124,37 +113,12 @@ class CochinillaVentaRegistroEntregaFormComponent extends Component
     {
         try {
             $this->cosechaSeleccionada = false;
-
-            if ($this->filtroOrigen == 'ingreso') {
-                $this->ultimosIngresos = CochinillaServicio::ultimosIngresos([
-                    'filtroVenteado' => $this->filtroVenteado,
-                    'filtroFiltrado' => $this->filtroFiltrado,
-                    'fecha' => $this->fecha_venta ?? now(),
-                    'tolerancia' => 7,
-                ])
-
-                    ->get()->map(function ($ultimoIngreso) {
-                        return [
-                            'ingreso_id' => $ultimoIngreso->id,
-                            'campo' => $ultimoIngreso->campo,
-                            'fecha_ingreso' => $ultimoIngreso->fecha,
-                            'fecha_filtrado' => $ultimoIngreso->fecha_proceso_filtrado,
-                            'cantidad_fresca' => $ultimoIngreso->total_kilos,
-                            'cantidad_seca' => $ultimoIngreso->filtrado123,
-                            'uso_infestacion' => $ultimoIngreso->uso_infestaciones ? 'Si' : 'No',
-                            'procedencia' => $ultimoIngreso->uso_infestaciones ? 'infestadores' : 'cosecha',
-                        ];
-                    })->toArray();
-
-            } else {
-
-            }
-
+            $fecha = $this->fecha_venta ?? now();
+            $this->ultimosIngresos = CochinillaServicio::IngresoCochinillaParaVenta($fecha, $this->tipo_ingreso);
         } catch (\Throwable $th) {
             Log::error("Error al buscar ingresos: " . $th->getMessage(), ['file' => $th->getFile(), 'line' => $th->getLine()]);
-            $this->alert('error', 'Ocurrió un error al obtener los últimos ingresos.');
+            $this->alert('error', $th->getMessage());
         }
-        $this->mostrarBuscador = true;
     }
 
     public function render()

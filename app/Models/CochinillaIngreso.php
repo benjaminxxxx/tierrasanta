@@ -49,12 +49,47 @@ class CochinillaIngreso extends Model
     #endregion
 
     #region RELACIONES
+    public function ventas_cochinillas()
+    {
+        return $this->hasMany(VentaCochinilla::class, 'cochinilla_ingreso_id');
+    }
     public function infestaciones()
     {
         return $this->belongsToMany(CochinillaInfestacion::class, 'cochinilla_ingreso_infestacion')
             ->withPivot('kg_asignados')
             ->withTimestamps();
     }
+
+    public function getCamposInfestadosAttribute()
+    {
+        // Si ya tiene infestaciones asociadas (caso moderno)
+        if ($this->infestaciones && $this->infestaciones->isNotEmpty()) {
+           
+            $campos = $this->infestaciones
+                ->pluck('campo_origen_nombre')
+                ->unique()
+                ->implode(',');
+
+            return $campos !== '' ? $campos : null;
+        }
+
+        // Búsqueda en caliente (caso antiguo sin relaciones)
+        $campo = $this->campo;
+        $fecha = Carbon::parse($this->fecha);
+        
+        $infestaciones = CochinillaInfestacion::where('campo_origen_nombre', $campo)
+            ->whereDate('fecha', '<=', $fecha)
+            ->whereDate('fecha', '>=', $fecha->copy()->subDays(60))
+            ->get();
+
+        $campos = $infestaciones
+            ->pluck('campo_origen_nombre')
+            ->unique()
+            ->implode(',');
+
+        return $campos !== '' ? $campos : null;
+    }
+
     public function campoRelacionada()
     {
         return $this->belongsTo(Campo::class, 'campo', 'nombre');
@@ -178,8 +213,9 @@ class CochinillaIngreso extends Model
 
     public function getTotalFiltradoKilosIngresadosAttribute()
     {
-        return $this->filtrados->sum('kilos_ingresados');
+        return optional($this->filtrados)->sum('kilos_ingresados') ?? 0;
     }
+
     public function getTotalFiltradoKilosIngresadosPorcentajeAttribute()
     {
         return $this->total_kilos > 0 ? ($this->total_filtrado_kilos_ingresados / $this->total_kilos) * 100 : 0;
@@ -313,6 +349,12 @@ class CochinillaIngreso extends Model
     public function getMermaIngresoFiltradoPorcentajeAttribute()
     {
         return $this->total_kilos > 0 ? ($this->merma_ingreso_filtrado / $this->total_kilos) * 100 : 0;
+    }
+    #endregion
+    #region Ventas
+    public function getCantidadVendidaAttribute()
+    {
+        return $this->ventas_cochinillas->sum('cantidad_seca');
     }
     #endregion
 

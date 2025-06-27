@@ -1,7 +1,7 @@
 @props(['value'])
 
 <button
-    @click="selected = '{{ $value }}'"
+    @click="setSelected('{{ $value }}')"
     :class="{
         'bg-gray-100 text-black font-semibold': selected === '{{ $value }}',
         'text-gray-500 hover:text-black': selected !== '{{ $value }}'

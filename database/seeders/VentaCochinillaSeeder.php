@@ -78,6 +78,7 @@ class VentaCochinillaSeeder extends Seeder
                 $esCampoValido = in_array($campoKey, array_keys($filtroCampos));
 
                 $upserts[] = [
+                    'cochinilla_ingreso_id'=>null,
                     'grupo_venta' => $grupoActual,
                     'fecha_filtrado' => $fechaFiltrado,
                     'cantidad_seca' => $fila['cantidad_seca'] ?? null,
@@ -86,13 +87,10 @@ class VentaCochinillaSeeder extends Seeder
                     'item' => $fila['item'] ?? 'Cochinilla seca',
                     'fecha_venta' => $fechaVenta,
                     'campo' => $esCampoValido ? $campoNormalizado : null,
-                    'origen_especial' => !$esCampoValido ? $campoOriginal : null,
-                    'procedencia' => $fila['procedencia'] ?? null,
-                    'tipo_venta' => $fila['tipo_venta'] ?? null,
                     'observaciones' => $fila['observaciones'] ?? null,
-                    'contabilizado' => false,
-                    'aprobado_admin'=>true,
                     'aprobado_facturacion'=>true,
+                    'fecha_aprobacion_facturacion'=>null,
+                    'aprobador_facturacion'=>null,
                 ];
                 // Si hay total_venta, esta fila marca el fin del grupo actual
                 if (!empty($totalVenta)) {
