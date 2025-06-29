@@ -140,29 +140,7 @@ class CochinillaVentaRegistroFormComponent extends Component
         }
         $this->mostrarBuscador = true;
     }
-    public function guardarTransaccion()
-    {
-        $this->validate();
-
-        try {
-
-            $venta = VentaServicio::guardar($this->form, $this->ventaId);
-
-            $this->reset(['form', 'ventaId', 'mostrarFormulario']);
-            $this->alert('success', $this->ventaId ? 'Venta actualizada correctamente.' : 'Venta registrada con éxito.');
-
-        } catch (\Throwable $th) {
-            Log::error('Error al guardar transacción de cochinilla: ' . $th->getMessage(), [
-                'line' => $th->getLine(),
-                'file' => $th->getFile(),
-                'data' => $this->form,
-                'ventaId' => $this->ventaId,
-            ]);
-            $this->alert('error', $th->getMessage());
-            ;
-            //$this->alert('error', 'Ocurrió un error al registrar la venta.');
-        }
-    }
+  
     public function render()
     {
         return view('livewire.cochinilla_ventas.registro-form-component');

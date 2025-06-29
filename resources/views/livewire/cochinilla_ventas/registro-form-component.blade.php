@@ -5,36 +5,49 @@
         <x-slot name="content" class="space-y-6">
             <div x-data="{{ $idTable }}">
 
-                {{-- Filtros --}}
-                <x-flex class="my-4">
-                    <x-input-date label="Fecha de venta" class="!w-auto" wire:model="fecha_venta" />
-                    <x-select label="Tipo de ingreso" class="!w-auto" wire:model="tipo_ingreso">
-                        <option value="filtrados">Ingresos Filtrados</option>
-                        <option value="sinfiltrados">Sin Filtrados (para vender fresco)</option>
-                    </x-select>
-                    <x-group-field>
-                        <x-button wire:click="buscarYCargarTablaFuente">
-                            <i class="fa fa-search"></i> Buscar ingresos
-                        </x-button>
-                    </x-group-field>
-                </x-flex>
-
-                {{-- Explicación --}}
-                <p class="text-sm text-gray-600">
-                    Selecciona una o más cosechas del listado inferior y luego presiona
-                    <strong>“Vender cosechas seleccionadas”</strong> para agregarlas al detalle de la venta.
-                </p>
-
+                @if (!$registroEntregaGrupoId)
+                    {{-- Filtros --}}
+                    <x-flex class="my-4">
+                        <x-input-date label="Fecha de venta" class="!w-auto" wire:model="fecha_venta" />
+                        <x-select label="Tipo de ingreso" class="!w-auto" wire:model="tipo_ingreso">
+                            <option value="">Todos los ingresos</option>
+                            <option value="filtrados">Ingresos Filtrados</option>
+                            <option value="sinfiltrados">Sin Filtrados (para vender fresco)</option>
+                        </x-select>
+                        <x-group-field>
+                            <x-button wire:click="buscarYCargarTablaFuente">
+                                <i class="fa fa-search"></i> Buscar ingresos
+                            </x-button>
+                        </x-group-field>
+                    </x-flex>
+                @endif
                 {{-- Estilo Vertical --}}
                 <div class="flex flex-col gap-4">
 
                     {{-- Tabla Fuente (Registro de Cosechas) --}}
                     <div>
                         <x-h3>Registro de Cosechas</x-h3>
-                        <div x-ref="tableContainerFuente"></div>
-                        <div class="text-right mt-2 font-semibold text-lg">
-                            Total Venta: Kg. <span x-text="totalVenta"></span>
+
+                        @if ($registroEntregaGrupoId)
+                            <x-flex class="my-4">
+                                <x-label>Fecha de venta</x-label>
+                                <p>{{$fecha_venta}}</p>
+                            </x-flex>
+                        @endif
+
+                        {{-- Explicación --}}
+                        <x-success class="mt-2 mb-4">
+                            Estos son los ingresos que puede vender, si desea vender fresca, puede cambiar el tipo de
+                            ingreso<br />
+                            Solo llene los campos de la cochinilla que va a vender, los tres campos son obligatorios.
+                        </x-success>
+                        <div wire:ignore>
+                            <div x-ref="tableContainerFuente"></div>
+                            <div class="text-right mt-2 font-semibold text-lg">
+                                Total Venta: Kg. <span x-text="totalVenta"></span>
+                            </div>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -43,8 +56,13 @@
         <x-slot name="footer">
             <x-secondary-button wire:click="$set('mostrarFormulario', false)">Cancelar</x-secondary-button>
             @if ($editable)
-                <x-button @click="$wire.dispatch('sendDataRegistroEntregaVenta')" class="ml-3">Guardar Registro de
-                    Entrega</x-button>
+                <x-button @click="$wire.dispatch('sendDataRegistroEntregaVenta')" class="ml-3">
+                    @if ($registroEntregaGrupoId)
+                        <i class="fa fa-sync"></i> Actualizar la Entrega
+                    @else
+                        <i class="fa fa-save"></i> Registrar la Entrega
+                    @endif
+                </x-button>
             @endif
 
         </x-slot>
@@ -67,10 +85,6 @@
         clienteSugerencia: @json($clienteSugerencia),
         itemSugerencia: @json($itemSugerencia),
         hot: null,
-        hotFuente: null,
-
-
-
         init() {
 
             this.listeners.push(
@@ -94,11 +108,11 @@
             );
         },
         actualizarTotalVenta() {
-            if (!this.hotFuente) {
+            if (!this.hot) {
                 return;
             }
             let total = 0;
-            const data = this.hotFuente.getSourceData();
+            const data = this.hot.getSourceData();
 
             data.forEach(row => {
                 const valor = parseFloat(row.venta_cantidad);
@@ -111,66 +125,64 @@
         },
         initTableFuente(datos) {
 
-            if (this.hotFuente != null) {
-                this.hotFuente.destroy();
-                this.hotFuente = null;
+            if (this.hot != null) {
+                this.hot.destroy();
+                this.hot = null;
             }
 
             const container = this.$refs.tableContainerFuente;
-            const hotFuente = new Handsontable(container, {
+            const hot = new Handsontable(container, {
                 data: datos,
                 colHeaders: true,
                 rowHeaders: true,
                 columns: [
-                {
-                    data: 'detalle',
-                    type: 'text',
-                    title: 'Detalle Cosecha',
-                    className: 'text-left !bg-gray-50',
-                    readOnly: true
-                },
-                
-                {
-                    data: 'detalle_stock',
-                    type: 'text',
-                    title: 'Detalle Stock',
-                    className: 'text-left !bg-gray-50',
-                    readOnly: true
-                },
-                
-                {
-                    data: 'venta_cantidad',
-                    type: 'numeric',
-                    className: 'text-center',
-                    title: 'Cantidad a Vender'
-                },
-                {
-                    data: 'venta_condicion',
-                    type: 'dropdown',
-                    source: this.condicionSugerencia,
-                    className: 'text-center',
-                    title: 'Condición',
-                },
-                {
-                    data: 'venta_cliente',
-                    type: 'dropdown',
-                    source: this.clienteSugerencia,
-                    className: 'text-center',
-                    title: 'Cliente',
-                },
-                {
-                    data: 'venta_item',
-                    type: 'dropdown',
-                    source: this.itemSugerencia,
-                    className: 'text-center',
-                    title: 'Item',
-                },
-                {
-                    data: 'venta_fecha',
-                    type: 'date',
-                    className: 'text-center',
-                    title: 'Fecha Venta'
-                },
+                    {
+                        data: 'detalle',
+                        type: 'text',
+                        title: 'Detalle Cosecha',
+                        width: 70,
+                        className: 'text-left !bg-gray-50',
+                        readOnly: true
+                    },
+
+                    {
+                        data: 'detalle_stock',
+                        type: 'text',
+                        title: 'Detalle Stock',
+                        width: 45,
+                        className: 'text-left !bg-gray-50',
+                        readOnly: true
+                    },
+
+                    {
+                        data: 'venta_cantidad',
+                        type: 'numeric',
+                        className: 'text-center',
+                        width: 50,
+                        title: 'Cantidad <br/>a Vender'
+                    },
+                    {
+                        data: 'venta_condicion',
+                        type: 'autocomplete',
+                        source: this.condicionSugerencia,
+                        className: 'text-center',
+                        width: 30,
+                        title: 'Condición',
+                    },
+                    {
+                        data: 'venta_cliente',
+                        type: 'autocomplete',
+                        source: this.clienteSugerencia,
+                        className: 'text-center',
+                        title: 'Cliente',
+                    },
+                    {
+                        data: 'venta_item',
+                        type: 'autocomplete',
+                        source: this.itemSugerencia,
+                        className: 'text-center',
+                        title: 'Item',
+                    },
                 ],
                 width: '100%',
                 height: 'auto',
@@ -185,7 +197,7 @@
                     this.selectedRows = [];
                     for (let row = rowStart; row <= rowEnd; row++) {
                         console.log('evento principal for');
-                        const rowData = this.hotFuente.getSourceDataAtRow(row);
+                        const rowData = this.hot.getSourceDataAtRow(row);
 
                         if (rowData && Object.keys(rowData).length > 0) {
                             // Evitar duplicados
@@ -194,19 +206,12 @@
                             }
                         }
                     }
-
-                    // Resaltar selección completa (opcional)
-                    // this.hotFuente.selectCell(rowStart, 0, rowEnd, this.hotFuente.countCols() - 1);*/
                 },
                 afterChange: () => this.actualizarTotalVenta(),
-
-
                 licenseKey: 'non-commercial-and-evaluation',
-
-
             });
 
-            this.hotFuente = hotFuente;
+            this.hot = hot;
             this.actualizarTotalVenta();
         },
 

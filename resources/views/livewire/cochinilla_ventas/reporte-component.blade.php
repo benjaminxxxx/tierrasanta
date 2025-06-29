@@ -238,21 +238,41 @@
         enviarVentaAContabilidad() {
             let allData = [];
 
-            // Recorre todas las filas de la tabla y obtiene los datos completos
             for (let row = 0; row < this.hot.countRows(); row++) {
                 const rowData = this.hot.getSourceDataAtRow(row);
                 allData.push(rowData);
             }
 
-            // Filtra las filas vacías
-            const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
-                null && cell !== ''));
+            // Campos "visibles" que definen si la fila está "rellena"
+            const camposVisibles = [
+                'cosecha_fecha_ingreso',
+                'cosecha_campo',
+                'cosecha_procedencia',
+                'cosecha_cantidad_fresca',
+                'proceso_fecha_filtrado',
+                'proceso_cantidad_seca',
+                'proceso_condicion',
+                'venta_fecha_venta',
+                'venta_comprador',
+                'venta_infestadores_del_campo'
+            ];
+
+            // Filtra solo las filas que tienen al menos un valor en estos campos
+            const filteredData = allData.filter(row => {
+                if (!row) return false;
+
+                return camposVisibles.some(campo => {
+                    const valor = row[campo];
+                    return valor !== null && valor !== '';
+                });
+            });
 
             const data = {
                 datos: filteredData
             };
             $wire.dispatchSelf('storeTableDataEnviarAContabilidad', data);
         }
+
     }));
 </script>
 @endscript

@@ -107,8 +107,7 @@ class CochinillaVentaReporteComponent extends Component
     public function storeTableDataEnviarAContabilidad($datos)
     {
         try {
-            $this->datosReporte = VentaServicio::registrarReporteVenta($datos,$this->mes,$this->anio);
-            $this->dispatch('cargarTabla', ['entregas' => $this->datosReporte]);
+            VentaServicio::registrarReporteVenta($datos,$this->mes,$this->anio);
             $this->alert('success', 'Agrupación realizada exitosamente.');
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());

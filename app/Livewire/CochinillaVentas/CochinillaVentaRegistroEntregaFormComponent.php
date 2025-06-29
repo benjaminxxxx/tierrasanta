@@ -61,20 +61,22 @@ class CochinillaVentaRegistroEntregaFormComponent extends Component
     public function storeTableDataCochinillaEntregaVenta($datos)
     {
         try {
+            
             $grupo = $this->registroEntregaGrupoId;
             $fechaVenta = $this->fecha_venta;
-
             $cantidadInsertada = VentaServicio::registrarEntrega(
-                datos: $datos,
-                grupoExistente: $grupo,
-                fechaReferencia: $fechaVenta
+                $datos,
+                $grupo,
+                $fechaVenta
             );
             $this->dispatch('registroEntregaVentaExitoso');
             $this->mostrarFormulario = false;
+
         } catch (\Throwable $th) {
-            $this->alert($th->getMessage());
+            $this->alert('error', $th->getMessage());
         }
     }
+
     public function buscarYCargarTablaFuente()
     {
         $this->buscarCochinilla();
@@ -88,18 +90,27 @@ class CochinillaVentaRegistroEntregaFormComponent extends Component
     {
         $this->editable = $editable;
         $this->registroEntregaGrupoId = $grupoVenta;
-        $ventasRealizadas = CochinillaServicio::obtenerInformacionDeVentaPorGrupo($this->registroEntregaGrupoId);
-        $data = [
-            'ingresos' => $ventasRealizadas,
-            'fecha_venta' => $this->fecha_venta,
-        ];
-        $this->dispatch('cargarTablaFuente', $data);
+        $entregasRealizadasResultado = VentaServicio::obtenerInformacionDeEntregaPorGrupo($this->registroEntregaGrupoId);
+        $entregasRealizadas = $entregasRealizadasResultado['resultados'];
+        $this->fecha_venta = $entregasRealizadasResultado['fecha'];
+        if (count($entregasRealizadas) > 0) {
+           
+            $data = [
+                'ingresos' => $entregasRealizadas,
+                'fecha_venta' => $this->fecha_venta,
+            ];
+            $this->dispatch('cargarTablaFuente', $data);
 
-        $this->mostrarFormulario = true;
+            $this->mostrarFormulario = true;
+        } else {
+            return $this->alert('error', 'No hay ventas con el grupo indicado');
+        }
+
     }
     public function crearRegistroVentaCochinilla()
     {
         $this->editable = true;
+        $this->registroEntregaGrupoId = null;
         $this->fecha_venta = Carbon::now()->format('Y-m-d');
         $this->buscarYCargarTablaFuente();
         $this->mostrarFormulario = true;

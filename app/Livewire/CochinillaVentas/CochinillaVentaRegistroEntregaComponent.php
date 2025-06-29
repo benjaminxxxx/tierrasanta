@@ -31,7 +31,15 @@ class CochinillaVentaRegistroEntregaComponent extends Component
     public function mount(){
         $this->cargarFechaDesdeSession();
     }
-    
+    public function eliminarEntrega($grupoVenta){
+        try {
+            
+            VentaServicio::eliminarRegistroEntrega($grupoVenta);
+            $this->alert('success','Detalle de registro de venta eliminado correctamente.');
+        } catch (\Throwable $th) {
+            $this->alert('error',$th->getMessage());
+        }
+    }
     public function registroEntregaVentaExitoso()
     {
         $this->alert('success', 'Registro de entrega de venta exitoso');

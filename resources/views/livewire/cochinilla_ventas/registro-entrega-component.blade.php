@@ -25,7 +25,6 @@
                         <x-th class="text-center">Item</x-th>
                         <x-th class="text-center">Fecha de venta</x-th>
                         <x-th class="text-center">Total de venta</x-th>
-                        <x-th class="text-center">Observaciones</x-th>
                         <x-th class="text-center">Acciones</x-th>
                     </x-tr>
                 </x-slot>
@@ -45,7 +44,6 @@
                                     {{ $venta->total_venta ? 'S/ ' . number_format($venta->total_venta, 2) : '-' }}
                                 </b>
                             </x-td>
-                            <x-td>{{ $venta->observaciones ?? '-' }}</x-td>
                             <x-td class="text-center">
                                 <x-flex>
                                     @if($venta->total_venta && !$venta->aprobado_facturacion)
@@ -53,11 +51,14 @@
                                         <x-button
                                             @click="$wire.dispatch('editarRegistroEntrega',{grupoVenta:'{{ $venta->grupo_venta }}'})"><i
                                                 class="fa fa-edit"></i> Editar</x-button>
-
+                                        <x-danger-button  wire:confirm="Está seguro de eliminar todo este grupo de ventas?" wire:click="eliminarEntrega('{{ $venta->grupo_venta }}')"> 
+                                            <i class="fa fa-trash"></i> Eliminar
+                                        </x-danger-button>
+                                        
                                     @endif
                                     @if($venta->total_venta && $venta->aprobado_facturacion)
 
-                                        <x-secondary-button class="whitespace-nowrap" 
+                                        <x-secondary-button class="whitespace-nowrap"
                                             @click="$wire.dispatch('editarRegistroEntrega',{grupoVenta:'{{ $venta->grupo_venta }}','editable':false})"><i
                                                 class="fa fa-edit"></i> Ver detalle</x-secondary-button>
 

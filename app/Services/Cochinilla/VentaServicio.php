@@ -8,11 +8,100 @@ use App\Models\VentaCochinillaReporte;
 use App\Support\CalculoHelper;
 use App\Support\FormatoHelper;
 use DB;
+use Exception;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 
 class VentaServicio
 {
+    public static function obtenerInformacionDeEntregaPorGrupo($grupoVenta)
+    {
+
+
+        // 2. Obtener las ventas ya guardadas del grupo
+        $ventasGuardadas = VentaCochinilla::where('grupo_venta', $grupoVenta)
+            ->get()
+            ->keyBy('cochinilla_ingreso_id');
+
+        $fecha = $ventasGuardadas->first()->fecha_venta;
+
+        // 1. Obtener todos los ingresos válidos para venta
+        $ingresos = collect(CochinillaServicio::IngresoCochinillaParaVenta($fecha, null))
+            ->keyBy('ingreso_id');
+
+
+        // 3. Combinar
+        $resultados = $ingresos->map(function ($ingreso) use ($ventasGuardadas, $fecha) {
+
+            $venta = $ventasGuardadas->get($ingreso['ingreso_id']);
+
+            if ($venta) {
+                // Reemplazar con datos ya guardados de la venta
+                return [
+                    'ingreso_id' => $venta->cochinilla_ingreso_id,
+                    'campo' => $venta->campo ?? $ingreso['campo'],
+                    'fecha_ingreso' => $ingreso['fecha_ingreso'],
+                    'fecha_filtrado' => $venta->fecha_filtrado ?? $ingreso['fecha_filtrado'],
+                    'cantidad_fresca' => $ingreso['cantidad_fresca'],
+                    'cantidad_seca' => $venta->cantidad_seca,
+                    'procedencia' => $ingreso['procedencia'],
+                    'venta_cantidad' => $venta->cantidad_seca,
+                    'venta_condicion' => $venta->condicion,
+                    'venta_cliente' => $venta->cliente,
+                    'venta_item' => $venta->item,
+                    'venta_fecha' => $fecha,
+                    'detalle' => $ingreso['detalle'], // O regenerar si quieres
+                    'detalle_stock' => $ingreso['detalle_stock'],
+                ];
+            }
+
+            // Si no hay venta previa, dejar ingreso base
+            return $ingreso;
+        })->values()->toArray();
+
+        return [
+            'resultados' => $resultados,
+            'fecha' => $fecha
+        ];
+    }
+    /*
+        public static function obtenerInformacionDeEntregaPorGrupo($registroEntregaGrupoId)
+        {
+            return VentaCochinilla::where('grupo_venta', $registroEntregaGrupoId)
+                ->orderBy('fecha_venta', 'desc')
+                ->get()
+                ->map(function ($ventaCochinilla) {
+                    $ingreso = $ventaCochinilla->ingreso;
+
+                    $campo = $ingreso?->campo ?? $ventaCochinilla->campo;
+                    $fechaFiltrado = $ingreso?->fecha_proceso_filtrado ?? $ventaCochinilla->fecha_filtrado;
+
+                    // Generar el detalle de forma más completa
+                    $detalle = $ingreso
+                        ? "Campo: {$ingreso->campo}\nFecha Ingreso: {$ingreso->fecha}\nFecha Filtrado: {$ingreso->fecha_proceso_filtrado}\nCant. fresca: {$ingreso->total_kilos}"
+                        : "Sin Ingreso vinculado\nCampo: {$ventaCochinilla->campo}\nFecha Filtrado: {$fechaFiltrado}";
+
+                    return [
+                        'ingreso_id' => $ingreso?->id,
+                        'campo' => $campo,
+                        'fecha_ingreso' => $ingreso?->fecha,
+                        'fecha_filtrado' => $fechaFiltrado,
+                        'cantidad_fresca' => $ingreso?->total_kilos,
+                        'cantidad_seca' => $ventaCochinilla->cantidad_seca,
+                        'procedencia' => $ingreso?->observacion,
+                        'venta_cantidad' => $ventaCochinilla->cantidad_seca,
+                        'venta_condicion' => $ventaCochinilla->condicion,
+                        'venta_cliente' => $ventaCochinilla->cliente,
+                        'venta_item' => $ventaCochinilla->item,
+                        'venta_fecha' => $ventaCochinilla->fecha_venta,
+                        'detalle' => $detalle,
+                        'detalle_stock' => $ingreso
+                            ? "Cant. Seca: {$ingreso->total_filtrado_primera}\nCant. Vendida: {$ingreso->cantidad_vendida}"
+                            : "-",
+                    ];
+                })
+                ->toArray();
+        }*/
     public static function datosDeEntrega($mes, $anio)
     {
         return VentaCochinilla::whereYear('fecha_venta', $anio)
@@ -61,11 +150,10 @@ class VentaServicio
 
             $fechaVenta = Carbon::parse($venta['venta_fecha_venta']);
 
-
             $ingreso = CochinillaIngreso::where('campo', $venta['cosecha_campo'])
                 ->whereDate('fecha', '<=', $fechaVenta)
                 ->whereDate('fecha', '>=', $fechaVenta->copy()->subDays(60))
-                ->with('infestaciones')
+                ->with('infestaciones', 'observacionRelacionada')
                 ->orderByDesc('fecha')
                 ->first();
 
@@ -78,7 +166,7 @@ class VentaServicio
             return array_merge($venta, [
                 'cochinilla_ingreso_id' => $ingreso->id,
                 'cosecha_fecha_ingreso' => $ingreso->fecha,
-                'cosecha_procedencia' => $ingreso->camposInfestados ? 'INFESTADOR' : 'DE COSECHA',
+                'cosecha_procedencia' => $ingreso->observacionRelacionada?->descripcion,
                 'cosecha_cantidad_fresca' => $ingreso->total_kilos,
                 'proceso_fecha_filtrado' => $ingreso->fecha_proceso_filtrado,
                 'cosecha_encontrada' => true,
@@ -135,7 +223,7 @@ class VentaServicio
     #region Reporte de Venta
     public static function obtenerReporte($mes, $anio)
     {
-        
+
         if (is_null($anio)) {
             return collect();
         }
@@ -146,7 +234,7 @@ class VentaServicio
             $query->whereYear('venta_fecha_venta', $anio);
         }
 
-        if (!is_null($mes) && trim($mes)!='') {
+        if (!is_null($mes) && trim($mes) != '') {
             $query->whereMonth('venta_fecha_venta', $mes);
         }
 
@@ -178,30 +266,34 @@ class VentaServicio
 
         // Validar que TODAS las ventas correspondan al mes y año indicado
         $fueraDeRango = $datos->filter(function ($venta) use ($mes, $anio) {
-            if (empty($venta['venta_fecha_venta'])) {
-                return true; // considerar inválida si no tiene fecha
+            $fechaNormalizada = FormatoHelper::parseFecha($venta['venta_fecha_venta']);
+
+            if (!$fechaNormalizada) {
+                return true; // no se pudo parsear => inválida
             }
 
             try {
-                $fecha = Carbon::parse($venta['venta_fecha_venta']);
+                $fecha = Carbon::parse($fechaNormalizada);
                 return $fecha->month != $mes || $fecha->year != $anio;
-            } catch (\Exception $e) {
-                return true; // error al parsear fecha = inválido
+            } catch (Exception $e) {
+                return true;
             }
         });
 
         if ($fueraDeRango->isNotEmpty()) {
-            throw new \Exception('Hay ventas con fecha fuera del mes o año seleccionado. Corrige las fechas antes de enviar a contabilidad.');
+            throw new Exception('Hay ventas con fecha fuera del mes o año seleccionado. Corrige las fechas antes de enviar a contabilidad.');
         }
 
         // Validar que todas las filas tengan ingreso_id (campo obligatorio para enviar a contabilidad)
         $noVinculadas = $datos->filter(fn($item) => empty($item['cochinilla_ingreso_id']));
         if ($noVinculadas->isNotEmpty()) {
-            throw new \Exception("No todas las ventas están vinculadas a un ingreso de cochinilla. Revisa y vincula antes de enviar a contabilidad.");
+            throw new Exception("No todas las ventas están vinculadas a un ingreso de cochinilla. Revisa y vincula antes de enviar a contabilidad.");
         }
 
+        VentaCochinillaReporte::whereYear('venta_fecha_venta', $anio)->whereMonth('venta_fecha_venta', $mes)->delete();
+
         // Registrar en la tabla venta_cochinilla_reportes
-        $registros = $datos->map(function ($venta) {
+        $datos->map(function ($venta) {
             return VentaCochinillaReporte::create([
                 'cochinilla_ingreso_id' => $venta['cochinilla_ingreso_id'],
 
@@ -224,8 +316,6 @@ class VentaServicio
                 'fusionada' => $venta['fusionada'] ?? false,
             ]);
         });
-
-        return $registros;
     }
     #endregion
     public static function listar()
@@ -316,41 +406,93 @@ class VentaServicio
             'total_venta' => $ventasAgrupadas->sum(fn($v) => $v->total_venta ?? 0),
         ];
     }
-    public static function registrarEntrega(array $datos, ?string $grupoExistente = null, ?string $fechaReferencia = null): array
+    public static function prepararDatosVenta(array $datos, string $grupo, string $fechaReferencia): array
     {
-        $fechaReferencia = $fechaReferencia ?? now();
-        $grupo = $grupoExistente ?? FormatoHelper::generarCodigoGrupo($fechaReferencia);
+        $errores = [];
+        $preparados = [];
 
-        // Si se está editando, eliminar las anteriores
-        if ($grupoExistente) {
-            VentaCochinilla::where('grupo_venta', $grupoExistente)->delete();
+        foreach ($datos as $index => $registro) {
+
+            // Campos mínimos de venta
+            $venta_cantidad = $registro['venta_cantidad'] ?? null;
+            $venta_item = $registro['venta_item'] ?? null;
+            $venta_condicion = $registro['venta_condicion'] ?? null;
+            $venta_cliente = $registro['venta_cliente'] ?? null;
+
+            // Verifica si es línea vacía (no es venta)
+            if (empty($venta_cantidad) && empty($venta_item) && empty($venta_condicion) && empty($venta_cliente)) {
+                continue;
+            }
+
+            // Validación: Item es obligatorio si hay venta
+            $faltantes = [];
+            if (empty($venta_item)) {
+                $faltantes[] = 'Item';
+            }
+            if (empty($venta_cantidad)) {
+                $faltantes[] = 'Cantidad';
+            }
+            if (empty($venta_condicion)) {
+                $faltantes[] = 'Condición';
+            }
+            if (empty($venta_cliente)) {
+                $faltantes[] = 'Cliente';
+            }
+
+            if (!empty($faltantes)) {
+                $errores[] = "Registro #" . ($index + 1) . " incompleto. Faltan: " . implode(', ', $faltantes);
+                continue;
+            }
+
+            // Si pasó validación, se prepara para DB
+            $preparados[] = [
+                'cochinilla_ingreso_id' => $registro['ingreso_id'] ?? null,
+                'grupo_venta' => $grupo,
+                'fecha_filtrado' => FormatoHelper::parseFecha($registro['fecha_filtrado'] ?? null),
+                'cantidad_seca' => $venta_cantidad,
+                'condicion' => $venta_condicion,
+                'cliente' => $venta_cliente,
+                'item' => $venta_item,
+                'fecha_venta' => FormatoHelper::parseFecha($fechaReferencia),
+                'campo' => $registro['campo'] ?? null,
+                'observaciones' => $registro['observaciones'] ?? null,
+                'aprobado_facturacion' => false,
+                'fecha_aprobacion_facturacion' => null,
+                'aprobador_facturacion' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
         }
 
-        $ventas = collect($datos)
-            ->filter(fn($venta) => !empty($venta['cliente']) || !empty($venta['item']))
-            ->map(function ($venta) use ($grupo) {
-                return [
-                    'cochinilla_ingreso_id' => $venta['ingreso_id'] ?? null,
-                    'grupo_venta' => $grupo,
-                    'fecha_filtrado' => FormatoHelper::parseFecha($venta['fecha_filtrado'] ?? null),
-                    'cantidad_seca' => $venta['cantidad_seca'] ?? 0,
-                    'condicion' => $venta['condicion'] ?? '',
-                    'cliente' => $venta['cliente'] ?? '',
-                    'item' => $venta['item'] ?? '',
-                    'fecha_venta' => FormatoHelper::parseFecha($venta['fecha_venta'] ?? null),
-                    'campo' => $venta['campo'] ?? null,
-                    'observaciones' => $venta['observaciones'] ?? '',
+        if (!empty($errores)) {
+            throw new Exception(implode(' | ', $errores));
+        }
 
-                    'aprobado_facturacion' => false,
-                    'fecha_aprobacion_facturacion' => null,
-                    'aprobador_facturacion' => null,
+        if (empty($preparados)) {
+            throw new Exception("No hay datos válidos para registrar.");
+        }
 
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            });
+        return $preparados;
+    }
 
-        $insertados = self::cargar($ventas);
+    public static function registrarEntrega(array $datos, ?string $grupoExistente = null, ?string $fechaReferencia = null)
+    {
+        if (!$fechaReferencia) {
+            throw new Exception("La fecha de venta es un campo obligatorio");
+        }
+
+        $grupo = $grupoExistente ?? FormatoHelper::generarCodigoGrupo($fechaReferencia);
+
+        // Si se está editando, elimina registros previos
+        if ($grupoExistente) {
+            self::eliminarRegistroEntrega($grupoExistente);
+        }
+
+        // Preparar y validar datos
+        $datosPreparados = self::prepararDatosVenta($datos, $grupo, $fechaReferencia);
+
+        // Insertar en DB
+        $insertados = self::cargar($datosPreparados);
 
         return [
             'grupo' => $grupo,
@@ -359,28 +501,31 @@ class VentaServicio
     }
 
 
-    public static function cargar($nuevos): int
+    public static function cargar(array $nuevos): int
     {
-        $nuevos = collect($nuevos);
-        $totalInsertados = 0;
-
-        $nuevos->chunk(1000)->each(function ($chunk) use (&$totalInsertados) {
-            $insertados = DB::table('venta_cochinillas')->insert($chunk->toArray());
-            // insert() retorna true/false, así que contamos nosotros
-            $totalInsertados += count($chunk);
-        });
-
-        return $totalInsertados;
-    }
-
-    public static function guardar(array $data, ?int $ventaId = null)
-    {
-        if ($ventaId) {
-            $venta = VentaCochinilla::findOrFail($ventaId);
-            $venta->update($data);
-            return $venta;
+        if (empty($nuevos)) {
+            return 0;
         }
 
-        return VentaCochinilla::create($data);
+        DB::beginTransaction();
+
+        try {
+            foreach ($nuevos as $registro) {
+                VentaCochinilla::create($registro);
+            }
+
+            DB::commit();
+
+            return count($nuevos);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw new Exception("Error al guardar entregas de venta: " . $e->getMessage(), 0, $e);
+        }
     }
+    #region Eliminacion
+    public static function eliminarRegistroEntrega($grupoVenta)
+    {
+        VentaCochinilla::where('grupo_venta', $grupoVenta)->delete();
+    }
+    #endregion
 }
