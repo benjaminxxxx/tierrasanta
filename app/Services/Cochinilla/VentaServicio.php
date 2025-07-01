@@ -5,7 +5,10 @@ namespace App\Services\Cochinilla;
 use App\Models\CochinillaIngreso;
 use App\Models\VentaCochinilla;
 use App\Models\VentaCochinillaReporte;
+use App\Models\VentaFacturadaCochinilla;
+use App\Services\Campo\Gestion\CampoServicio;
 use App\Support\CalculoHelper;
+use App\Support\DateHelper;
 use App\Support\FormatoHelper;
 use DB;
 use Exception;
@@ -522,6 +525,211 @@ class VentaServicio
             throw new Exception("Error al guardar entregas de venta: " . $e->getMessage(), 0, $e);
         }
     }
+    #region Ventas Facturadas
+    public static function validarTotalSegunReporte($mes, $anio, $totalKilos)
+    {
+        if (empty($mes) || empty($anio)) {
+            throw new \InvalidArgumentException('El mes y el año son obligatorios para validar el total.');
+        }
+
+        // Obtener el reporte del mes y año
+        $reporte = self::obtenerReporte($mes, $anio);
+
+        // Sumar proceso_cantidad_seca del reporte
+        $totalReporte = $reporte->sum(function ($item) {
+            return (float) ($item['proceso_cantidad_seca'] ?? 0);
+        });
+
+        // Comprobar
+        if (round($totalKilos, 2) !== round($totalReporte, 2)) {
+            throw new \InvalidArgumentException(
+                "La suma de kg proporcionados ($totalKilos) no coincide con la suma del reporte ($totalReporte) para $mes/$anio."
+            );
+        }
+    }
+
+
+    public static function listarVentasPorAnioYMesMasReporte($anio, $mes)
+    {
+        if (empty($anio) || empty($mes)) {
+            throw new \InvalidArgumentException('El mes y el año son obligatorios.');
+        }
+
+        // 1️⃣ Obtener ventas facturadas
+        $ventas = self::listarVentasPorAnioYMes($anio, $mes);
+
+        // 2️⃣ Obtener reporte original
+        $reporte = self::obtenerReporte($mes, $anio);
+
+        // 3️⃣ Filtrar el reporte quitando los que ya están en ventas
+        $reporteFiltrado = $reporte->reject(function ($item) use ($ventas) {
+            return $ventas->contains(function ($venta) use ($item) {
+                return
+                    DateHelper::fechasCoinciden($venta['fecha'] ?? null, $item['venta_fecha_venta'] ?? null) &&
+                    ($venta['lote'] ?? null) === ($item['cosecha_campo'] ?? null) &&
+                    (float) ($venta['kg'] ?? 0) === (float) ($item['proceso_cantidad_seca'] ?? 0);
+            });
+        })->values();
+
+        // 4️⃣ Marcar el origen de los datos
+        $ventasMarcadas = $ventas->map(function ($item) {
+            $item['origen'] = 'facturado';
+            return $item;
+        });
+
+        $reporteMarcado = $reporteFiltrado->map(function ($item) {
+            return [
+                'fecha' => $item['venta_fecha_venta'] ?? null,
+                'factura' => null,
+                'tipo_venta' => null,
+                'comprador' => $item['venta_comprador'] ?? null,
+                'lote' => $item['cosecha_campo'] ?? null,
+                'kg' => $item['proceso_cantidad_seca'] ?? null,
+                'procedencia' => $item['cosecha_procedencia'] ?? null,
+                'precio_venta_dolares' => null,
+                'punto_acido_carminico' => null,
+                'factor_saco' => 30,
+                'tipo_cambio' => null,
+                'acido_carminico' => null,
+                'sacos' => null,
+                'ingresos' => null,
+                'ingreso_contable_soles' => null,
+                'origen' => 'reporte'
+            ];
+        });
+
+        $resultadoFinal = collect($ventasMarcadas)->merge($reporteMarcado)->values();
+
+
+        // 6️⃣ Ordenar por fecha ascendente, nulos al final
+        $resultadoFinal = $resultadoFinal->sortBy(function ($item) {
+            return $item['fecha'] ?? '9999-12-31';
+        })->values();
+
+        return $resultadoFinal->toArray();
+    }
+
+
+    public static function listarVentasPorAnioYMes($anio, $mes = null)
+    {
+        if (empty($anio)) {
+            throw new \InvalidArgumentException('El año es obligatorio para listar ventas.');
+        }
+
+        $query = VentaFacturadaCochinilla::query()
+            ->whereYear('fecha', $anio);
+
+        if (!empty($mes)) {
+            $query->whereMonth('fecha', $mes);
+        }
+
+        return $query->orderBy('fecha')->get()->map(function ($venta) {
+            return [
+                'id' => $venta->id,
+                'fecha' => Carbon::parse($venta->fecha)->format('d/m/Y'),
+                'factura' => $venta->factura,
+                'tipo_venta' => $venta->tipo_venta,
+                'comprador' => $venta->comprador,
+                'lote' => $venta->lote,
+                'kg' => $venta->kg,
+                'procedencia' => $venta->procedencia,
+                'precio_venta_dolares' => $venta->precio_venta_dolares,
+                'punto_acido_carminico' => $venta->punto_acido_carminico,
+                'factor_saco' => $venta->factor_saco,
+                'tipo_cambio' => $venta->tipo_cambio,
+
+                // Cálculos
+                'acido_carminico' => round($venta->acido_carminico, 2),
+                'sacos' => round($venta->sacos, 0),
+                'ingresos' => round($venta->ingresos, 2),
+                'ingreso_contable_soles' => round($venta->ingreso_contable_soles, 2),
+            ];
+        });
+    }
+
+    public static function registrarVentasPorMes($mes, $anio, $datos)
+    {
+        if (empty($mes) || empty($anio)) {
+            throw new \InvalidArgumentException('El mes y el año son obligatorios para registrar ventas.');
+        }
+
+        $excluir = [
+            'id',
+            'factor_saco',
+            'origen',
+            'acido_carminico',
+            'sacos',
+            'ingresos',
+            'ingreso_contable_soles',
+            'tipo_cambio'
+        ];
+
+        $datos = collect($datos)->filter(function ($item) use ($excluir) {
+            // Solo los campos editables
+            $camposEditables = collect($item)->except($excluir);
+
+            // Verifica si TODOS están vacíos o null
+            $todosVacios = $camposEditables->every(function ($valor) {
+                return is_null($valor) || trim((string) $valor) === '';
+            });
+
+            return !$todosVacios;
+        })->values()->toArray();
+
+        $camposAGuardar = collect($datos)->pluck('lote')->unique()->toArray();
+        CampoServicio::validarNombreCampos($camposAGuardar);
+
+        $totalKilos = collect($datos)->sum('kg');
+        self::validarTotalSegunReporte($mes, $anio, $totalKilos);
+
+        $mesInt = (int) $mes;
+        $anioInt = (int) $anio;
+
+        // Validar todas las fechas antes de eliminar nada
+        foreach ($datos as $index => $dato) {
+            $fecha = FormatoHelper::parseFecha($dato['fecha']) ?? null;
+
+            if (is_null($fecha)) {
+                throw new \InvalidArgumentException("El registro #{$index} tiene una fecha inválida o vacía.");
+            }
+
+            $fechaCarbon = Carbon::parse($fecha);
+            if ((int) $fechaCarbon->month !== $mesInt || (int) $fechaCarbon->year !== $anioInt) {
+                throw new \InvalidArgumentException(
+                    "El registro #{$index} tiene fecha {$fechaCarbon->format('Y-m-d')} que no pertenece al mes {$mes} y año {$anio}."
+                );
+            }
+        }
+
+        // Elimina SOLO los registros de ese mes y año
+        VentaFacturadaCochinilla::whereYear('fecha', $anio)
+            ->whereMonth('fecha', $mes)
+            ->delete();
+
+        // Insertar datos
+        foreach ($datos as $dato) {
+
+            $lote = CampoServicio::nombreRealCampo($dato['lote']);
+            VentaFacturadaCochinilla::create([
+                'fecha' => FormatoHelper::parseFecha($dato['fecha']) ?? null,
+                'factura' => $dato['factura'] ?? null,
+                'tipo_venta' => $dato['tipo_venta'] ?? null,
+                'comprador' => $dato['comprador'] ?? null,
+                'lote' => $lote,
+                'procedencia' => $dato['procedencia'] ?? null,
+                'factor_saco' => $dato['factor_saco'] ?? 30,
+
+                'kg' => FormatoHelper::parseNumeroDesdeFuenteExterna($dato['kg']) ?? null,
+                'precio_venta_dolares' => FormatoHelper::parseNumeroDesdeFuenteExterna($dato['precio_venta_dolares']) ?? null,
+                'punto_acido_carminico' => FormatoHelper::parseNumeroDesdeFuenteExterna($dato['punto_acido_carminico']) ?? null,
+                'tipo_cambio' => FormatoHelper::parseNumeroDesdeFuenteExterna($dato['tipo_cambio']) ?? null,
+            ]);
+        }
+    }
+
+
+
+    #endregion
     #region Eliminacion
     public static function eliminarRegistroEntrega($grupoVenta)
     {

@@ -20,7 +20,7 @@
         </x-tabs-content>
 
         <x-tabs-content value="costo_venta">
-            Costo de Venta
+            <livewire:cochinilla_ventas.cochinilla-venta-facturada-component />
         </x-tabs-content>
 
         <x-tabs-content value="factura_venta">

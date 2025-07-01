@@ -40,14 +40,15 @@ class FormatoHelper
 
         // Mapeo de patrones regex a formatos Carbon
         $formatosRegex = [
-            '/^\d{2}\/\d{2}\/\d{4}$/' => 'd/m/Y',
-            '/^\d{2}-\d{2}-\d{4}$/' => 'd-m-Y',
+            '/^\d{1,2}\/\d{1,2}\/\d{4}$/' => 'd/m/Y',
+            '/^\d{1,2}-\d{1,2}-\d{4}$/' => 'd-m-Y',
             '/^\d{4}-\d{2}-\d{2}$/' => 'Y-m-d',
             '/^\d{4}\/\d{2}\/\d{2}$/' => 'Y/m/d',
-            '/^\d{2}\.\d{2}\.\d{4}$/' => 'd.m.Y',
+            '/^\d{1,2}\.\d{1,2}\.\d{4}$/' => 'd.m.Y',
             '/^\d{4}\.\d{2}\.\d{2}$/' => 'Y.m.d',
-            '/^\d{2} \w{3,9} \d{4}$/' => 'd F Y',  // o d M Y
+            '/^\d{1,2} \w{3,9} \d{4}$/' => 'd F Y',
         ];
+
 
         foreach ($formatosRegex as $regex => $formato) {
             if (preg_match($regex, $fechaTexto)) {
@@ -65,45 +66,25 @@ class FormatoHelper
         // Ningún patrón coincide
         return null;
     }
-
-    /*
-    public static function parseFecha(?string $fechaTexto, bool $incluirHora = false): ?string
+    public static function parseNumeroDesdeFuenteExterna(?string $texto): ?float
     {
-        if (is_null($fechaTexto) || trim($fechaTexto) === '') {
+        if (is_null($texto)) {
             return null;
         }
 
-        $formatos = [
-            'd/m/Y',     // 16/04/2025
-            'd-m-Y',     // 16-04-2025
-            'Y-m-d',     // 2025-04-16
-            'Y/m/d',     // 2025/04/16
-            'd M Y',     // 16 Apr 2025
-            'd F Y',     // 16 April 2025
-            'd.m.Y',     // 16.04.2025
-            'Y.m.d',     // 2025.04.16
-        ];
+        // Elimina espacios
+        $texto = trim($texto);
 
-        foreach ($formatos as $formato) {
-            try {
-                $fecha = \Carbon\Carbon::createFromFormat($formato, $fechaTexto);
-                return $incluirHora
-                    ? $fecha->format('Y-m-d H:i:s')
-                    : $fecha->format('Y-m-d');
-            } catch (\Exception $e) {
-                // Continuar con el siguiente formato
-            }
-        }
-
-        // Como fallback: intentar parseo libre con Carbon (último recurso)
-        try {
-            $fecha = \Carbon\Carbon::parse($fechaTexto);
-            return $incluirHora
-                ? $fecha->format('Y-m-d H:i:s')
-                : $fecha->format('Y-m-d');
-        } catch (\Exception $e) {
+        // Si está vacío, devolver null
+        if ($texto === '') {
             return null;
         }
-    }*/
+
+        // Quitar separadores de miles (comas)
+        $texto = str_replace(',', '', $texto);
+
+        // Convertir a float
+        return is_numeric($texto) ? (float) $texto : null;
+    }
 
 }

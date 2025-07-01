@@ -75,5 +75,61 @@ class CampoServicio
             'filtro' => $filtroCampos, // para mapear directamente en el upsert
         ];
     }
+    public static function validarNombreCampos(array $campos)
+    {
+        if (empty($campos)) {
+            return;
+        }
+
+        $todosCampos = Campo::all(['nombre', 'alias']);
+
+        foreach ($campos as $campo) {
+            $campo = trim($campo);
+
+            $encontrado = $todosCampos->first(function ($item) use ($campo) {
+                if (strcasecmp($item->nombre, $campo) === 0) {
+                    return true;
+                }
+
+                if (!empty($item->alias)) {
+                    $aliases = explode(',', $item->alias);
+                    foreach ($aliases as $alias) {
+                        if (strcasecmp(trim($alias), $campo) === 0) {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            });
+
+            if (!$encontrado) {
+                throw new \InvalidArgumentException("El campo '{$campo}' no existe ni en nombre ni en alias en la tabla de campos.");
+            }
+        }
+    }
+    public static function nombreRealCampo(string $campo): string
+    {
+        $campo = trim($campo);
+
+        $todosCampos = Campo::all(['nombre', 'alias']);
+
+        foreach ($todosCampos as $item) {
+            if (strcasecmp($item->nombre, $campo) === 0) {
+                return $item->nombre;
+            }
+
+            if (!empty($item->alias)) {
+                $aliases = explode(',', $item->alias);
+                foreach ($aliases as $alias) {
+                    if (strcasecmp(trim($alias), $campo) === 0) {
+                        return $item->nombre;
+                    }
+                }
+            }
+        }
+
+        throw new \InvalidArgumentException("El campo '{$campo}' no se encontró en nombre ni en alias en la tabla de campos.");
+    }
 
 }

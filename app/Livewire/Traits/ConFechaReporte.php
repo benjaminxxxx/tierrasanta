@@ -15,8 +15,7 @@ trait ConFechaReporte
         $this->mes = Session::get($claveMes, now()->format('m'));
         $this->anio = Session::get($claveAnio, now()->format('Y'));
     }
-
-    public function updatedMes($valor)
+    public function actualizarSesionMes($valor)
     {
         if ($valor === null || $valor === '') {
             $this->mes = null;
@@ -26,8 +25,7 @@ trait ConFechaReporte
             Session::put('fecha_reporte_mes', $this->mes);
         }
     }
-
-    public function updatedAnio($valor)
+    public function actualizarSesionAnio($valor)
     {
         if ($valor === null || $valor === '') {
             $this->anio = null;
@@ -36,5 +34,14 @@ trait ConFechaReporte
             $this->anio = (int) $valor;
             Session::put('fecha_reporte_anio', $this->anio);
         }
+    }
+    public function updatedMes($valor)
+    {
+        $this->actualizarSesionMes($valor);
+    }
+
+    public function updatedAnio($valor)
+    {
+        $this->actualizarSesionAnio($valor);
     }
 }

@@ -9,34 +9,55 @@ class VentaFacturadaCochinilla extends Model
     protected $table = 'venta_facturada_cochinillas';
 
     protected $fillable = [
-        'fecha_ingreso',
-        'campania',
-        'campo',
-        'area',
-        'procedencia',
-        'cantidad_fresca',
-        'fecha_filtrado',
-        'cantidad_seca',
-        'condicion',
-        'item',
-        'conversion_fresco_seco',
-        'fecha_venta',
-        'comprador',
-        'cliente_facturacion',
-        'factura_numero',
+        'fecha',
+        'factura',
         'tipo_venta',
+        'comprador',
+        'lote',
+        'kg',
+        'procedencia',
+        'precio_venta_dolares',
         'punto_acido_carminico',
+        'factor_saco',
+        'tipo_cambio',
+    ];
+    protected $appends = [
         'acido_carminico',
         'sacos',
-        'lote',
-        'fecha_despacho',
-        'precio_venta_dolar',
-        'ingresos_dolar',
-        'tipo_cambio',
-        'ingresos_soles',
-        'grupo_proceso',
-        'venta_base_id',
-        'contabilizado',
-        'origen_datos',
+        'ingresos',
+        'ingreso_contable_soles',
     ];
+
+    public function getAcidoCarminicoAttribute()
+    {
+        if ($this->precio_venta_dolares && $this->punto_acido_carminico && $this->punto_acido_carminico != 0) {
+            return $this->precio_venta_dolares / $this->punto_acido_carminico;
+        }
+        return null;
+    }
+
+    public function getSacosAttribute()
+    {
+        if ($this->kg && $this->factor_saco && $this->factor_saco != 0) {
+            return $this->kg / $this->factor_saco;
+        }
+        return null;
+    }
+
+    public function getIngresosAttribute()
+    {
+        if ($this->kg && $this->precio_venta_dolares) {
+            return $this->kg * $this->precio_venta_dolares;
+        }
+        return null;
+    }
+
+    public function getIngresoContableSolesAttribute()
+    {
+        if ($this->ingresos && $this->tipo_cambio) {
+            return $this->ingresos * $this->tipo_cambio;
+        }
+        return null;
+    }
+
 }
