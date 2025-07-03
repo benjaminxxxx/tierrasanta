@@ -35,8 +35,8 @@ Route::middleware([
         return view('empleados');
     })->name('dashboard');
 
-    Route::get('/planilla/asistencia/{anio?}/{mes?}', [AsistenciaPlanillaController::class,'index'])->name('planilla.asistencia');
-    Route::get('/planilla/blanco', [AsistenciaPlanillaController::class,'blanco'])->name('planilla.blanco');
+    Route::get('/planilla/asistencia/{anio?}/{mes?}', [AsistenciaPlanillaController::class, 'index'])->name('planilla.asistencia');
+    Route::get('/planilla/blanco', [AsistenciaPlanillaController::class, 'blanco'])->name('planilla.blanco');
 
     Route::get('/empleados', function () {
         return view('empleados');
@@ -78,14 +78,14 @@ Route::middleware([
     })->name('cuadrilla.asistencia');
 
     //CAMPAÑAS
-    Route::get('/campanias', [CampaniaController::class,'campanias'])->name('campanias');
-    Route::get('/campo/camapania/{campo?}', [CampoController::class,'campania'])->name('campo.campania');
+    Route::get('/campanias', [CampaniaController::class, 'campanias'])->name('campanias');
+    Route::get('/campo/camapania/{campo?}', [CampoController::class, 'campania'])->name('campo.campania');
 
-    Route::get('/campo/mapa', [CampoController::class,'mapa'])->name('campo.mapa');
-    Route::get('/campo/riego', [CampoController::class,'riego'])->name('campo.riego');
-    Route::get('/campo/campos', [CampoController::class,'campos'])->name('campo.campos');
-    Route::get('/campo/siembras', [CampoController::class,'siembra'])->name('campo.siembra');
-    Route::post('/campo/mapa/guardar-posicion/{nombre}', [CampoController::class,'guardarPosicion'])->name('campo.mapa.guardar-posicion');
+    Route::get('/campo/mapa', [CampoController::class, 'mapa'])->name('campo.mapa');
+    Route::get('/campo/riego', [CampoController::class, 'riego'])->name('campo.riego');
+    Route::get('/campo/campos', [CampoController::class, 'campos'])->name('campo.campos');
+    Route::get('/campo/siembras', [CampoController::class, 'siembra'])->name('campo.siembra');
+    Route::post('/campo/mapa/guardar-posicion/{nombre}', [CampoController::class, 'guardarPosicion'])->name('campo.mapa.guardar-posicion');
 
     //Consolidados
     Route::get('/consolidado/riego', function () {
@@ -108,52 +108,54 @@ Route::middleware([
     //Route::get('/reporte/reporte-diario/obtener-campo', [ReporteDiarioController::class, 'ObtenerCampo'])->name('reporte.reporte_diario.obtener_campo');
 
     //PROVEEDORES
-    Route::get('/proveedores', [ProveedorController::class,'index'])->name('proveedores.index');
+    Route::get('/proveedores', [ProveedorController::class, 'index'])->name('proveedores.index');
 
     //PRODUCTOS
-    Route::get('/productos', [ProductoController::class,'index'])->name('productos.index');
+    Route::get('/productos', [ProductoController::class, 'index'])->name('productos.index');
 
     //Nutrientes
-    Route::get('/nutrientes', [NutrienteController::class,'index'])->name('nutrientes.index');
-    Route::get('/nutrientes/tabla-concentracion', [NutrienteController::class,'tabla_concentracion'])->name('tabla_concentracion.index');
-    
+    Route::get('/nutrientes', [NutrienteController::class, 'index'])->name('nutrientes.index');
+    Route::get('/nutrientes/tabla-concentracion', [NutrienteController::class, 'tabla_concentracion'])->name('tabla_concentracion.index');
+
 
     //MAQUINARIAS
-    Route::get('/maquinarias', [MaquinariaController::class,'index'])->name('maquinarias.index');
+    Route::get('/maquinarias', [MaquinariaController::class, 'index'])->name('maquinarias.index');
 
     //ALMACEN
-    Route::get('/almacen/salida_de_productos', [AlmacenController::class,'salidaProductos'])->name('almacen.salida_productos');
-    Route::get('/almacen/salida_de_combustible', [AlmacenController::class,'salidaCombustible'])->name('almacen.salida_combustible');
+    Route::get('/almacen/salida_de_productos', [AlmacenController::class, 'salidaProductos'])->name('almacen.salida_productos');
+    Route::get('/almacen/salida_de_combustible', [AlmacenController::class, 'salidaCombustible'])->name('almacen.salida_combustible');
 
-     //USUARIOS
-     Route::get('/usuarios', [UsuarioController::class,'index'])->name('usuarios');
+    //USUARIOS
+    Route::get('/usuarios', [UsuarioController::class, 'index'])->middleware('permission:Usuarios Administrar')->name('usuarios');
+    Route::get('/roles_y_permisos', [UsuarioController::class, 'roles_permisos'])->middleware('permission:Roles')->name('roles_permisos');
+
 
     //KARDEX
-    Route::get('/kardex/lista', [KardexController::class,'lista'])->name('kardex.lista');
-    Route::get('/kardex/ver/{id}', [KardexController::class,'ver'])->name('kardex.ver');
+    Route::get('/kardex/lista', [KardexController::class, 'lista'])->name('kardex.lista');
+    Route::get('/kardex/ver/{id}', [KardexController::class, 'ver'])->name('kardex.ver');
 
     //GASTOS
-    Route::get('/contabilidad/gasto/general', [GastoController::class,'general'])->name('gastos.general');
-    Route::get('/contabilidad/costos_mensuales', [GastoController::class,'costos_mensuales'])->name('contabilidad.costos_mensuales');
-    Route::get('/contabilidad/costos_generales', [GastoController::class,'costos_generales'])->name('contabilidad.costos_generales');
+    Route::get('/contabilidad/gasto/general', [GastoController::class, 'general'])->name('gastos.general');
+    Route::get('/contabilidad/costos_mensuales', [GastoController::class, 'costos_mensuales'])->name('contabilidad.costos_mensuales');
+    Route::get('/contabilidad/costos_generales', [GastoController::class, 'costos_generales'])->name('contabilidad.costos_generales');
 
-    Route::get('/productividad/avance', [ProductividadController::class,'avance'])->name('productividad.avance');
+    Route::get('/productividad/avance', [ProductividadController::class, 'avance'])->name('productividad.avance');
 
     //FDM
-    Route::get('/fdm/costos_generales', [FdmController::class,'costos_generales'])->name('fdm.costos_generales');
+    Route::get('/fdm/costos_generales', [FdmController::class, 'costos_generales'])->name('fdm.costos_generales');
 
     //REPORTE CAMPO
-    Route::get('/evaluacion_campo/poblacion_planta', [ReporteCampoController::class,'poblacion_plantas'])->name('reporte_campo.poblacion_plantas');
-    Route::get('/evaluacion_campo/evaluacion_brotes', [ReporteCampoController::class,'evaluacion_brotes'])->name('reporte_campo.evaluacion_brotes');
-    Route::get('/evaluacion_campo/evaluacion_infestacion_cosecha', [ReporteCampoController::class,'evaluacion_infestacion_cosecha'])->name('reporte_campo.evaluacion_infestacion_cosecha');
-    Route::get('/evaluacion_campo/evaluacion_proyeccion_rendimiento_poda', [ReporteCampoController::class,'evaluacion_proyeccion_rendimiento_poda'])->name('reporte_campo.evaluacion_proyeccion_rendimiento_poda');
+    Route::get('/evaluacion_campo/poblacion_planta', [ReporteCampoController::class, 'poblacion_plantas'])->name('reporte_campo.poblacion_plantas');
+    Route::get('/evaluacion_campo/evaluacion_brotes', [ReporteCampoController::class, 'evaluacion_brotes'])->name('reporte_campo.evaluacion_brotes');
+    Route::get('/evaluacion_campo/evaluacion_infestacion_cosecha', [ReporteCampoController::class, 'evaluacion_infestacion_cosecha'])->name('reporte_campo.evaluacion_infestacion_cosecha');
+    Route::get('/evaluacion_campo/evaluacion_proyeccion_rendimiento_poda', [ReporteCampoController::class, 'evaluacion_proyeccion_rendimiento_poda'])->name('reporte_campo.evaluacion_proyeccion_rendimiento_poda');
 
     //COCHINILLA
-    Route::get('/cochinilla/ingreso', [CochinillaController::class,'ingreso'])->name('cochinilla.ingreso');
-    Route::get('/cochinilla/venteado', [CochinillaController::class,'venteado'])->name('cochinilla.venteado');
-    Route::get('/cochinilla/filtrado', [CochinillaController::class,'filtrado'])->name('cochinilla.filtrado');
-    Route::get('/cochinilla/cosechamamas', [CochinillaController::class,'cosecha_mamas'])->name('cochinilla.cosecha_mamas');
-    Route::get('/cochinilla/infestacion', [CochinillaController::class,'infestacion'])->name('cochinilla.infestacion');
-    Route::get('/cochinilla/ventas', [CochinillaController::class,'ventas'])->name('cochinilla.ventas');
-    
+    Route::get('/cochinilla/ingreso', [CochinillaController::class, 'ingreso'])->name('cochinilla.ingreso');
+    Route::get('/cochinilla/venteado', [CochinillaController::class, 'venteado'])->name('cochinilla.venteado');
+    Route::get('/cochinilla/filtrado', [CochinillaController::class, 'filtrado'])->name('cochinilla.filtrado');
+    Route::get('/cochinilla/cosechamamas', [CochinillaController::class, 'cosecha_mamas'])->name('cochinilla.cosecha_mamas');
+    Route::get('/cochinilla/infestacion', [CochinillaController::class, 'infestacion'])->name('cochinilla.infestacion');
+    Route::get('/cochinilla/ventas', [CochinillaController::class, 'ventas'])->name('cochinilla.ventas');
+
 });

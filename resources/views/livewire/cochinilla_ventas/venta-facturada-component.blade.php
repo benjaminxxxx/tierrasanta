@@ -24,7 +24,7 @@
                 <div wire:ignore>
                     <x-h3>Detalle de Venta</x-h3>
                     <div x-ref="tableReporteContainer"></div>
-                    <div class="text-right mt-2 font-semibold text-lg">
+                    <div class="text-right mt-2 font-semibold text-lg dark:text-white">
                         Total Venta: Kg. <span x-text="totalVenta"></span>
                         Total US$: $. <span x-text="totalVentaDolares"></span>
                     </div>

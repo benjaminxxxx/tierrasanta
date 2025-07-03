@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\User;
+use App\Services\Sistema\UsuarioServicio;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
@@ -10,7 +11,7 @@ class UsuarioListComponent extends Component
 {
     use LivewireAlert;
     public $usuarios;
-    protected $listeners = ['confirmarEliminar','ActualizarUsuarios'=>'$refresh'];
+    protected $listeners = ['confirmarEliminar', 'ActualizarUsuarios' => '$refresh'];
 
     public function updateStatus($id, $status)
     {
@@ -40,22 +41,22 @@ class UsuarioListComponent extends Component
     public function confirmarEliminar($data)
     {
         try {
-            $id = isset($data['id'])?$data['id']:null;
-            if(!$id){
+            $id = isset($data['id']) ? $data['id'] : null;
+
+            if (!$id) {
                 return;
             }
-            $usuario = User::where('id', $id);
-            if ($usuario) {
-                $usuario->delete();
-                $this->alert('success',"El usuario se eliminó correctamente");
-            }
+            UsuarioServicio::eliminarUsuarioPorId($id);
+            $this->alert('success', "El usuario se eliminó correctamente");
+            $this->dispatch("ActualizarUsuarios");
         } catch (\Throwable $th) {
-            $this->alert('error',$th->getMessage());
+            $this->alert('error', $th->getMessage());
         }
     }
+
     public function render()
     {
-        $this->usuarios = User::all();
+        $this->usuarios = UsuarioServicio::obtenerUsuariosConRoles();
         return view('livewire.usuario-list-component');
     }
 }

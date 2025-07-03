@@ -1,10 +1,13 @@
 <aside id="sidebar" class="sidebar flex flex-col">
     <!-- SIDEBAR HEADER CON LOGO -->
-    <div class="flex items-center justify-between gap-2 p-2 border-b border-gray-700">
-        <div class="flex items-center">
+    <div class="buton-on-sidebar flex items-center justify-between m-auto p-2 border-b border-gray-700">
+        <div class="flex items-center w-full justify-center">
             <!-- Logo siempre visible -->
-            <div class="w-full max-w-12 flex-shrink-0">
+            <div class="hidden-on-expanded flex items-center justify-center max-w-12">
                 <img src="{{ asset('images/logo/logotipo.svg') }}" class="w-full" alt="Logo" />
+            </div>
+            <div class="px-3 menu-text">
+                <img src="{{ asset('images/logo/logo-horizontal-color.svg') }}" class="w-full" alt="Logo" />
             </div>
         </div>
 
@@ -22,6 +25,7 @@
             <div>
 
                 <ul class="mb-6 flex flex-col gap-1.5">
+                    @hasanyrole('Administrador|Super Admin')
                     <x-nav-link-parent name="sectorPlanilla" :active="request()->routeIs(['planilla.asistencia'])"
                         logo='fa fa-table' text="Planilla">
                         <x-nav-link-child href="{{ route('planilla.asistencia') }}"
@@ -44,16 +48,29 @@
                             Asignación Familiar
                         </x-nav-link-child>
                     </x-nav-link-parent>
+                    @endhasanyrole
 
+                    @canany(['Usuarios Administrar', 'Roles'])
+                        <x-nav-link-parent name="sectorSistema" :active="request()->routeIs(['usuarios', 'roles_permisos'])"
+                            logo='fas fa-palette' text="Sistema">
 
-                    <x-nav-link-parent name="sectorSistema" :active="request()->routeIs(['usuarios'])"
-                        logo='fas fa-palette' text="Sistema">
-                        <x-nav-link-child href="{{ route('usuarios') }}" :active="request()->routeIs('usuarios')">
-                            Usuarios
-                        </x-nav-link-child>
-                    </x-nav-link-parent>
+                            @can('Usuarios Administrar')
+                                <x-nav-link-child href="{{ route('usuarios') }}" :active="request()->routeIs('usuarios')">
+                                    Usuarios
+                                </x-nav-link-child>
+                            @endcan
 
+                            @can('Roles')
+                                <x-nav-link-child href="{{ route('roles_permisos') }}"
+                                    :active="request()->routeIs('roles_permisos')">
+                                    Roles y Permisos
+                                </x-nav-link-child>
+                            @endcan
 
+                        </x-nav-link-parent>
+                    @endcanany
+
+                    @hasanyrole('Administrador|Super Admin')
                     <x-nav-link-parent name="sectorCuadrilla" :active="request()->routeIs(['cuadrilla.grupos', 'cuadrilla.cuadrilleros'])" logo='fas fa-hard-hat' text="Cuadrilla">
                         <x-nav-link-child href="{{ route('cuadrilla.cuadrilleros') }}"
                             :active="request()->routeIs('cuadrilla.cuadrilleros')">
@@ -90,39 +107,44 @@
                             Campañas por campo
                         </x-nav-link-child>
                     </x-nav-link-parent>
-                    <x-nav-link-parent name="sectorCochinilla" :active="request()->routeIs([
-        'cochinilla.ingreso',
-        'cochinilla.venteado',
-        'cochinilla.filtrado',
-        'cochinilla.cosecha_mamas',
-        'cochinilla.infestacion',
-        'cochinilla.ventas'
-    ])" logo="fa fa-bug" text="Cochinilla">
-                        <x-nav-link-child href="{{ route('cochinilla.ingreso') }}"
-                            :active="request()->routeIs('cochinilla.ingreso')">
-                            Ingreso
-                        </x-nav-link-child>
-                        <x-nav-link-child href="{{ route('cochinilla.venteado') }}"
-                            :active="request()->routeIs('cochinilla.venteado')">
-                            Venteado
-                        </x-nav-link-child>
-                        <x-nav-link-child href="{{ route('cochinilla.filtrado') }}"
-                            :active="request()->routeIs('cochinilla.filtrado')">
-                            Filtrado
-                        </x-nav-link-child>
-                        <x-nav-link-child href="{{ route('cochinilla.cosecha_mamas') }}"
-                            :active="request()->routeIs('cochinilla.cosecha_mamas')">
-                            Cosecha Mamas
-                        </x-nav-link-child>
-                        <x-nav-link-child href="{{ route('cochinilla.infestacion') }}"
-                            :active="request()->routeIs('cochinilla.infestacion')">
-                            Infestación
-                        </x-nav-link-child>
-                        <x-nav-link-child href="{{ route('cochinilla.ventas') }}"
-                            :active="request()->routeIs('cochinilla.ventas')">
-                            Venta
-                        </x-nav-link-child>
-                    </x-nav-link-parent>
+                    @endhasanyrole
+                    @canany(['Cochinilla Administrar', 'Cochinilla Entregar', 'Cochinilla Facturar'])
+                                    <x-nav-link-parent name="sectorCochinilla" :active="request()->routeIs([
+                            'cochinilla.ingreso',
+                            'cochinilla.venteado',
+                            'cochinilla.filtrado',
+                            'cochinilla.cosecha_mamas',
+                            'cochinilla.infestacion',
+                            'cochinilla.ventas'
+                        ])" logo="fa fa-bug" text="Cochinilla">
+                                        <x-nav-link-child href="{{ route('cochinilla.ingreso') }}"
+                                            :active="request()->routeIs('cochinilla.ingreso')">
+                                            Ingreso
+                                        </x-nav-link-child>
+                                        <x-nav-link-child href="{{ route('cochinilla.venteado') }}"
+                                            :active="request()->routeIs('cochinilla.venteado')">
+                                            Venteado
+                                        </x-nav-link-child>
+                                        <x-nav-link-child href="{{ route('cochinilla.filtrado') }}"
+                                            :active="request()->routeIs('cochinilla.filtrado')">
+                                            Filtrado
+                                        </x-nav-link-child>
+                                        <x-nav-link-child href="{{ route('cochinilla.cosecha_mamas') }}"
+                                            :active="request()->routeIs('cochinilla.cosecha_mamas')">
+                                            Cosecha Mamas
+                                        </x-nav-link-child>
+                                        <x-nav-link-child href="{{ route('cochinilla.infestacion') }}"
+                                            :active="request()->routeIs('cochinilla.infestacion')">
+                                            Infestación
+                                        </x-nav-link-child>
+                                        <x-nav-link-child href="{{ route('cochinilla.ventas') }}"
+                                            :active="request()->routeIs('cochinilla.ventas')">
+                                            Venta
+                                        </x-nav-link-child>
+                                    </x-nav-link-parent>
+                    @endcanany
+                    @hasanyrole('Administrador|Super Admin')
+
                     <x-nav-link-parent name="sectorReporteCampo" :active="request()->routeIs([
         'reporte_campo.poblacion_plantas',
         'reporte_campo.evaluacion_brotes',
@@ -163,7 +185,7 @@
         'cuadrilla.asistencia',
         'productividad.avance',
     ])"
-            logo="fa fa-database" text="Reporte Diario">
+                        logo="fa fa-database" text="Reporte Diario">
                         <x-nav-link-child href="{{ route('reporte.reporte_diario') }}"
                             :active="request()->routeIs('reporte.reporte_diario')">
                             Planilla
@@ -297,7 +319,7 @@
                             Tipo de Asistencia
                         </x-nav-link-child>
                     </x-nav-link-parent>
-
+                    @endhasanyrole
                 </ul>
             </div>
         </nav>
@@ -306,19 +328,22 @@
         <div class="border-t border-gray-700 p-4">
             <div class="relative">
                 <button onclick="toggleUserMenu()"
-                    class="w-full flex items-center gap-3 p-2 rounded-lg text-white hover:bg-gray-800 transition-colors">
+                    class="buton-on-sidebar w-full flex items-center p-2 rounded-lg text-white hover:bg-gray-800 transition-colors">
                     <!-- Avatar siempre visible -->
                     <div
                         class="w-8 h-8 flex-shrink-0 bg-gray-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm">
                         {{ substr(Auth::user()->name, 0, 2) }}
                     </div>
                     <!-- Info del usuario solo cuando está expandido -->
-                    <div class="menu-text flex-1 text-left">
-                        <div class="font-semibold text-sm truncate">{{ Auth::user()->name }}</div>
-                        <div class="text-xs text-gray-400 truncate">Empleado</div>
+                    <div class="menu-text flex-1 flex items-center justify-between">
+                        <div class="text-left">
+                            <div class="font-semibold text-sm truncate">{{ Auth::user()->name }}</div>
+                            <div class="text-xs text-gray-400 truncate">Empleado</div>
+                        </div>
+                        <!-- Chevron solo cuando está expandido -->
+                        <i id="user-chevron" class="menu-text fa fa-chevron-up transition-transform flex-shrink-0"></i>
                     </div>
-                    <!-- Chevron solo cuando está expandido -->
-                    <i id="user-chevron" class="menu-text fa fa-chevron-up transition-transform flex-shrink-0"></i>
+
                 </button>
 
                 <!-- Dropdown Menu -->

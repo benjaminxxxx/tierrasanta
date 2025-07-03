@@ -43,7 +43,7 @@
                         </x-success>
                         <div wire:ignore>
                             <div x-ref="tableContainerFuente"></div>
-                            <div class="text-right mt-2 font-semibold text-lg">
+                            <div class="text-right mt-2 font-semibold text-lg dark:text-white">
                                 Total Venta: Kg. <span x-text="totalVenta"></span>
                             </div>
                         </div>

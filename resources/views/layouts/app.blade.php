@@ -17,7 +17,7 @@
     <style>
         /* Sidebar Styles */
         .sidebar {
-            width: 4rem;
+            width: 82px;
             transition: width 0.3s ease-in-out;
             position: fixed;
             left: 0;
@@ -35,10 +35,20 @@
         /* Menu text animations */
         .menu-text {
             opacity: 0;
+            width: 0;
         }
 
         .sidebar.expanded .menu-text {
             opacity: 1;
+            width: auto;
+        }
+        .sidebar.expanded .hidden-on-expanded {
+            opacity: 0;
+            width: 0;
+        }
+
+        .sidebar.expanded .buton-on-sidebar {
+            gap: 0.75rem;
         }
 
         /* Submenu animations */
@@ -54,9 +64,9 @@
 
         /* Content area adjustment */
         .content-area {
-            margin-left: 4rem;
+            margin-left: 82px;
             transition: margin-left 0.3s ease-in-out;
-            width: calc(100% - 4rem);
+            width: calc(100% - 82px);
         }
 
         .sidebar .ultra-thin-scroll {
