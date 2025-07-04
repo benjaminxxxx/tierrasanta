@@ -184,8 +184,13 @@
         'reporte.reporte_diario_riego',
         'cuadrilla.asistencia',
         'productividad.avance',
+        'reporte.actividades_diarias'
     ])"
                         logo="fa fa-database" text="Reporte Diario">
+                        <x-nav-link-child href="{{ route('reporte.actividades_diarias') }}"
+                            :active="request()->routeIs('reporte.actividades_diarias')">
+                            Actividades Diarias
+                        </x-nav-link-child>
                         <x-nav-link-child href="{{ route('reporte.reporte_diario') }}"
                             :active="request()->routeIs('reporte.reporte_diario')">
                             Planilla

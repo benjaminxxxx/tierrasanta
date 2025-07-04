@@ -8,6 +8,10 @@ class ReporteDiarioController extends Controller
     {
         return view('reporte.reporte_diario');
     }
+    public function actividades_diarias()
+    {
+        return view('reporte.actividades_diarias');
+    }
     public function riego(){
         return view('reporte.reporte_diario_riego');
     }

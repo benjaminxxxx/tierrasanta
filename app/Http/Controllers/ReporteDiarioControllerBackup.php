@@ -11,7 +11,7 @@ use App\Models\ReporteDiarioCuadrillaDetalle;
 use App\Models\ReporteDiarioDetalle;
 use Illuminate\Http\Request;
 
-class ReporteDiarioController extends Controller
+class ReporteDiarioControllerBackup extends Controller
 {
     public function index()
     {

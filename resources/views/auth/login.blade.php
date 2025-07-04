@@ -1,8 +1,8 @@
 <x-guest-layout>
-    <div class="h-screen flex max-w-screen-xl m-auto w-full items-center justify-center">
-        <div  class="flex max-w-screen-xl bg-white shadow-lg m-auto w-full items-center justify-center">
-            <div class="hidden w-full xl:block flex-1 h-full p-20">
-                <img src="{{asset('images/logo/logo.svg')}}" class="w-full h-full" alt="illustration" />
+    <div class="flex max-w-screen-xl m-auto w-full items-center justify-center h-full">
+        <div  class="flex max-w-screen-xl bg-white dark:bg-boxdark shadow-2xl rounded-2xl overflow-hidden m-auto w-full items-center justify-center">
+            <div class="hidden w-full xl:block flex-1 h-full p-20 justify-center items-center text-center">
+                <img src="{{asset('images/logo/logo.svg')}}" class="w-full h-full max-w-[450px] m-auto" alt="illustration" />
             </div>
             <div class="w-full border-stroke dark:border-strokedark xl:w-[32rem] xl:border-l-2">
                 <div class="w-full p-4 sm:p-12.5 xl:p-17.5">
