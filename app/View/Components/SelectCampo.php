@@ -3,15 +3,14 @@
 namespace App\View\Components;
 
 use App\Models\Campo;
-use Closure;
-use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
 class SelectCampo extends Component
 {
     public $placeholder;
     public $label;
-    public function __construct($placeholder = 'Seleccione el campo',$label = 'Campo')
+
+    public function __construct($placeholder = 'Seleccione el campo', $label = 'Campo')
     {
         $this->placeholder = $placeholder;
         $this->label = $label;
@@ -19,8 +18,15 @@ class SelectCampo extends Component
 
     public function render()
     {
+        // Transformamos los campos para el formato que espera x-searchable-select
+        $campos = Campo::all()->map(fn ($campo) => [
+            'id' => $campo->nombre,
+            'name' => $campo->nombre,
+        ])->toArray();
+
         return view('components.select-campo', [
-            'campos' => Campo::listar(), // Obtiene la lista de campos
+            'campos' => $campos,
         ]);
     }
 }
+

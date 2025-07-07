@@ -1,5 +1,5 @@
 @props([
-    'label' => null,
+    'label' => 'Seleccionar campo',
     'error' => true,
 ])
 
@@ -8,12 +8,13 @@
 @endphp
 
 <x-group-field>
-    
-    <x-select label="{{$label}}" error="{{$model}}" {{ $attributes->merge(['class' => 'form-select']) }}>
-        <option value="">{{ $placeholder }}</option>
-        @foreach ($campos as $campo)
-            <option value="{{ $campo->nombre }}">{{ $campo->nombre }}</option>
-        @endforeach
-    </x-select>
-    
+    <x-label value="{{ $label }}" />
+    <x-searchable-select
+        :options="$campos"
+        :placeholder="$placeholder"
+        {{ $attributes }}
+    />
+    @if ($error)
+        <x-input-error :for="$model" />
+    @endif
 </x-group-field>

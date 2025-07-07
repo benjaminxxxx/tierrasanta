@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Labores;
+use App\Services\RecursosHumanos\Personal\ActividadServicio;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -11,50 +12,80 @@ class LaboresComponent extends Component
 {
     use WithPagination;
     use LivewireAlert;
-    public $verEliminados = false;
+    public $verActivos;
     public $laborId;
     public $search = '';
-    public $nuevaLabor;
-    public $conBono;
-    protected $listeners = ['laborRegistrada'=>'$refresh','confirmarEliminar','valoracionTrabajada'=>'$refresh'];
-    public function editarLabor($laborId){
+    public $mostrarFormularioLabor = false;
+    public $codigo;
+    public $nombre_labor;
+    public $estandar_produccion;
+    public $unidades;
+    public $estado;
+    // App/Http/Livewire/MiComponente.php
+    public array $tramos = [
+        ['hasta' => '', 'monto' => '']
+    ];
+
+    protected $listeners = ['laborRegistrada' => '$refresh', 'confirmarEliminar', 'valoracionTrabajada' => '$refresh'];
+    public function crearNuevaLabor()
+    {
+        $this->resetearCampo();
+        $this->mostrarFormularioLabor = true;
+    }
+    public function editarLabor($laborId)
+    {
         $this->laborId = $laborId;
         $labor = Labores::find($this->laborId);
-        if($labor){
-            $this->nuevaLabor = $labor->nombre_labor;
+        if ($labor) {
+            $this->codigo = $labor->codigo;
+            $this->nombre_labor = $labor->nombre_labor;
+            $this->estandar_produccion = $labor->estandar_produccion;
+            $this->unidades = $labor->unidades;
+            $this->estado = $labor->estado;
+            $this->tramos = $labor->tramos_bonificacion!=null ? json_decode($labor->tramos_bonificacion, true) : [['hasta' => '', 'monto' => '']];
+            $this->mostrarFormularioLabor = true;
+        }else{
+            $this->alert('error', 'Labor no encontrada.');
+            return;
         }
     }
-    public function agregarLabor(){
+    public function guardarLabor()
+    {
+        $this->validate([
+            'codigo' => 'required|integer',
+            'nombre_labor' => 'required|string|max:255',
+            'tramos.*.hasta' => 'nullable|numeric|min:0',
+            'tramos.*.monto' => 'nullable|numeric|min:0',
+        ]);
         try {
-            $data = ['nombre_labor'=>$this->nuevaLabor];
-            if($this->laborId){
-                Labores::find($this->laborId)->update($data);
-                $this->alert('success', 'Registro actualizado correctamente.'); 
-            }else{
-                Labores::create($data);
-                $this->alert('success', 'Registro agregado correctamente.'); 
-            }
-            $this->reset(['laborId','nuevaLabor']);
-            
+            // Preparar datos
+            $data = [
+                'codigo' => $this->codigo,
+                'nombre_labor' => $this->nombre_labor,
+                'estandar_produccion' => $this->estandar_produccion,
+                'unidades' => $this->unidades,
+                'tramos_bonificacion' => empty($this->tramos) ? null : json_encode($this->tramos),
+                'estado' => $this->estado ?? 1
+            ];
+
+            ActividadServicio::guardarLabor($data, $this->laborId);
+
+            $this->resetearCampo();
+            $this->alert('success', 'Labor guardada correctamente.');
+
         } catch (\Throwable $th) {
-            $this->dispatch('log', $th->getMessage());
-            $this->alert('error', 'Ocurrió un error al registrar la Labor.'); 
+            $this->alert('error', $th->getMessage());
         }
+    }
+    public function resetearCampo()
+    {
+        $this->reset(['laborId', 'codigo', 'nombre_labor', 'estandar_produccion', 'unidades', 'tramos', 'estado']);
+        $this->mostrarFormularioLabor = false;
     }
     public function confirmarEliminarLabor($id)
     {
-
-        $this->alert('question', '¿Está seguro(a) que desea eliminar el registro?', [
-            'showConfirmButton' => true,
-            'confirmButtonText' => 'Si, Eliminar',
-            'cancelButtonText' => 'Cancelar',
+        $this->confirm('¿Está seguro(a) que desea eliminar el registro?.', [
             'onConfirmed' => 'confirmarEliminar',
-            'showCancelButton' => true,
-            'position' => 'center',
-            'toast' => false,
-            'timer' => null,
-            'confirmButtonColor' => '#056A70',
-            'cancelButtonColor' => '#2C2C2C',
             'data' => [
                 'laborId' => $id,
             ],
@@ -62,41 +93,43 @@ class LaboresComponent extends Component
     }
     public function confirmarEliminar($data)
     {
-        $laborId = $data['laborId'];
-        Labores::find($laborId)->update(['estado'=>false]);
-        $this->alert('success', 'Registro eliminado correctamente.');
-    }
-    public function restaurar($laborId){
-        Labores::find($laborId)->update(['estado'=>true]);
-        $this->alert('success', 'Registro restaurado correctamente.');
-    }
-    public function updatedVerEliminados(){
-        $this->resetPage();
+        try {
+            ActividadServicio::eliminarLabor($data['laborId']);
+            $this->alert('success', 'Registro eliminado correctamente.');
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
+        }
     }
     public function updatingSearch()
     {
         $this->resetPage();
     }
-    public function updatingConBono()
+    public function habilitar($laborId, $estado)
     {
-        $this->resetPage();
-    }
-    public function toggleBono($laborId,$estado){
-        Labores::find($laborId)->update(['bono'=>$estado==1]);
-        $this->alert('success', 'Registro actualizado correctamente.');
+        try {
+            ActividadServicio::habilitarLabor($laborId, $estado);
+            $this->alert('success', 'Registro actualizado correctamente.');
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
+        }
     }
     public function render()
     {
         $query = Labores::query();
-        if($this->conBono){
-            $query->where('bono',$this->conBono=='si'?'1':'0');
+        if ($this->verActivos === '0') {
+            $query->where('estado', '0');
+        } elseif ($this->verActivos === '1') {
+            $query->where('estado', '1');
         }
-        $query->where('estado',!$this->verEliminados);
-        $query->where('nombre_labor','like', '%' . $this->search . '%');
+        //buscar ahora por codigo o descripcion $query->where('nombre_labor', 'like', '%' . $this->search . '%');
+        $query->where(function ($q) {
+            $q->where('codigo', 'like', '%' . $this->search . '%')
+              ->orWhere('nombre_labor', 'like', '%' . $this->search . '%');
+        });
         $labores = $query->paginate(10);
 
-        return view('livewire.labores-component',[
-            'labores'=>$labores
+        return view('livewire.labores-component', [
+            'labores' => $labores
         ]);
     }
 }

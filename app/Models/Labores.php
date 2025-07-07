@@ -13,7 +13,11 @@ class Labores extends Model
     protected $fillable = [
         'nombre_labor',
         'bono',
-        'estado'
+        'estado',
+        'codigo',
+        'estandar_produccion',
+        'unidades',
+        'tramos_bonificacion',
     ];
     public function valoraciones(){
         return $this->hasMany(LaborValoracion::class,'labor_id');

@@ -11,7 +11,7 @@
                 <x-h3 class="my-2">
                     Lista de actividades registradas en fecha {{$fecha}}
                 </x-h3>
-                <x-button type="button" @click="$wire.dispatch('registrarActividad',{fecha:'{{$fecha}}'})">
+                <x-button type="button" @click="$wire.dispatch('crearActividadDiaria',{fecha:'{{$fecha}}'})">
                     <i class="fa fa-plus"></i> Agregar actividad
                 </x-button>
             </x-flex>
@@ -41,12 +41,12 @@
                             <x-td class="text-center">{{ $actividad->kg }}</x-td>
                             <x-td>
                                 <x-flex>
-                                    <x-secondary-button type="button"
+                                    <!--<x-secondary-button type="button"
                                         @click="$wire.dispatch('agregarCuadrillerosEnActividad',{actividadId:{{ $actividad->id }}})">
                                         <i class="fa fa-users"></i>
-                                    </x-secondary-button>
+                                    </x-secondary-button>-->
                                     <x-secondary-button type="button"
-                                        @click="$wire.dispatch('editarActividad',{actividadId:{{ $actividad->id }}})">
+                                        @click="$wire.dispatch('editarActividadDiaria',{actividadId:{{ $actividad->id }}})">
                                         <i class="fa fa-edit"></i>
                                     </x-secondary-button>
                                     <x-danger-button type="button"

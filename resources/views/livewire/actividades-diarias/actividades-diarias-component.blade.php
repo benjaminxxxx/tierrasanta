@@ -10,4 +10,5 @@
 
     
     <livewire:actividades-diarias.actividades-diarias-form-component/>
+    <livewire:cuadrilla-asistencia-agregar-component/>
 </div>

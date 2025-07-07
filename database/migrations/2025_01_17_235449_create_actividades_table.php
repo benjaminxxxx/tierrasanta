@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -13,19 +12,21 @@ return new class extends Migration
     {
         Schema::create('actividades', function (Blueprint $table) {
             $table->id();
-
             $table->date('fecha');
             $table->string('campo');
             $table->foreignId('labor_id')
+                ->nullable()
                 ->constrained('labores')
-                ->onDelete('cascade')
-                ->comment('Clave foránea hacia la tabla labores');
-
-            $table->decimal('horas_trabajadas', 8, 2)->nullable();
-            $table->unsignedBigInteger('labor_valoracion_id')->nullable();
-            $table->foreign('labor_valoracion_id','fk_labor_vi')
-            ->references('id')->on('labor_valoracions')->onDelete('set null');
+                ->nullOnDelete();
+            $table->string('nombre_labor');
+            $table->integer('codigo_labor');
+            $table->json('horarios')->nullable();
+            $table->json('tramos_bonificacion')->nullable();
+            $table->decimal('estandar_produccion')->nullable();
+            $table->decimal('total_horas', 8, 2)->nullable();
+            $table->string('unidades',20)->nullable();
             $table->timestamps();
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
         });
     }
 

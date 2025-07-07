@@ -70,7 +70,7 @@ class CuaAsistenciaSemanal extends Model
 
 
                 if ($actividadesDelCuadrillero->count() > 0) {
-
+                    //dd($cuadrillero,$listaActividades,$actividadesDelCuadrillero);
                     /**
                      * Digamos que de las 3 actividades 1 es sin opcion a bono y 2 con opciones a bonos
                      * La que no tiene bono tiene una duracion de 5 horas, 
@@ -116,16 +116,23 @@ class CuaAsistenciaSemanal extends Model
 
                     $totalBono = $actividadesDelCuadrillero->sum('total_bono');
 
-                    $cuadrillaHoras = CuadrillaHora::updateOrCreate(
+                    // 1️⃣ Buscar o crear con valores obligatorios
+                    $cuadrillaHoras = CuadrillaHora::firstOrCreate(
                         [
                             'cua_asi_sem_cua_id' => $cuadrillero['cua_asi_sem_cua_id'],
-                            'fecha' => $fecha->format('Y-m-d')
+                            'fecha' => $fecha->format('Y-m-d'),
                         ],
                         [
-                            'horas_contabilizadas' => $totalHorasTrabajadas,
-                            'bono' => $totalBono
+                            'horas' => 0,
+                            'costo_dia' => 0,
                         ]
                     );
+
+                    // 2️⃣ Actualizar solo los campos variables (sin tocar horas/costo_dia)
+                    $cuadrillaHoras->update([
+                        'horas_contabilizadas' => $totalHorasTrabajadas,
+                        'bono' => $totalBono,
+                    ]);
 
                     foreach ($actividadesDelCuadrillero as $actividadDelCuadrillero) {
 
@@ -174,7 +181,7 @@ class CuaAsistenciaSemanal extends Model
             ->groupBy(function ($item) {
                 return $item->cua_asistencia_semanal_grupo_id . '_' . $item->fecha . '_' . $item->cua_asi_sem_cua_id;
             });
-            
+
         foreach ($grupos as $grupo) {
             $costoGrupal = 0;
             $cuadrilleros = $grupo->cuadrillerosEnAsistencia;

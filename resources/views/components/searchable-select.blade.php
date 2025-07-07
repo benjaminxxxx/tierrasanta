@@ -142,6 +142,19 @@ selectedValue: config.initialValue || '',
                 }
             }
             this.filteredOptions = this.options;
+
+            this.$watch('entangle', (value) => {
+                this.selectedValue = value;
+                if (value) {
+                    this.selectedOption = this.options.find(option => option.id == value);
+                    if (this.selectedOption) {
+                        this.searchTerm = this.selectedOption.name;
+                    }
+                } else {
+                    this.selectedOption = null;
+                    this.searchTerm = '';
+                }
+            });
         },
 
         openDropdown() {

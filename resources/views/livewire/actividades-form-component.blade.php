@@ -107,7 +107,7 @@
                     </x-table>
                     <x-flex class="justify-end">
                         <x-secondary-button type="button" wire:click="agregarActividad" class="my-4">
-                            <i class="fa fa-plus"></i> Agregar actividad
+                            <i class="fa fa-plus"></i> Agregar actividad 2
                         </x-secondary-button>
                     </x-flex>
                 </div>

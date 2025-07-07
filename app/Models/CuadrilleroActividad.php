@@ -12,6 +12,8 @@ class CuadrilleroActividad extends Model
         'actividad_id',
         'total_bono',
         'total_costo',
+        'cantidades', 
+        'total_horas'
     ];
     public function cuadrilleroSemana(){
         return $this->belongsTo(CuaAsistenciaSemanalCuadrillero::class,'cua_asi_sem_cua_id');
