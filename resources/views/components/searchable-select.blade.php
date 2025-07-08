@@ -237,11 +237,6 @@ selectedValue: config.initialValue || '',
             this.searchTerm = option.name;
             this.closeDropdown();
             this.entangle = option.id;
-            /* Dispatch custom event for Livewire
-            this.$dispatch('option-selected', {
-                id: option.id,
-                name: option.name
-            });*/
         },
 
         clearSelection() {

@@ -1,5 +1,5 @@
 @props([
-    'label' => 'Seleccionar campo',
+    'label' => null,
     'error' => true,
 ])
 
@@ -8,7 +8,10 @@
 @endphp
 
 <x-group-field>
-    <x-label value="{{ $label }}" />
+    @if ($label)
+        <x-label value="{{ $label }}" />
+    @endif
+    
     <x-searchable-select
         :options="$campos"
         :placeholder="$placeholder"

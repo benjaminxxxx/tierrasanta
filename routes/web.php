@@ -4,6 +4,7 @@ use App\Http\Controllers\AlmacenController;
 use App\Http\Controllers\CampaniaController;
 use App\Http\Controllers\CampoController;
 use App\Http\Controllers\CochinillaController;
+use App\Http\Controllers\CuadrillaController;
 use App\Http\Controllers\FdmController;
 use App\Http\Controllers\KardexController;
 use App\Http\Controllers\MaquinariaController;
@@ -96,6 +97,36 @@ Route::middleware([
     Route::get('/planilla/asistencia/cargar-asistencias', [AsistenciaPlanillaController::class, 'cargarAsistencias'])->name('planilla.asistencia.cargar_asistencias');
 
     //REPORTE
+
+    Route::prefix('cuadrilla/gestion_cuadrilleros')->group(function () {
+        // Pantalla principal / dashboard
+        Route::get('/', [CuadrillaController::class, 'gestion'])
+            ->name('cuadrilleros.gestion');
+
+        // Registro Diario
+        Route::get('/registro-diario', [CuadrillaController::class, 'registro_diario'])
+            ->name('gestion_cuadrilleros.registro-diario.index');
+
+        // Gestión de Actividades
+        Route::get('/actividades', [CuadrillaController::class, 'actividades'])
+            ->name('gestion_cuadrilleros.actividades.index');
+
+        // Grupos de Pago
+        Route::get('/grupos', [CuadrillaController::class, 'grupos'])
+            ->name('gestion_cuadrilleros.grupos.index');
+
+        // Períodos Grupales
+        Route::get('/periodos', [CuadrillaController::class, 'periodos'])
+            ->name('gestion_cuadrilleros.periodos.index');
+
+        // Módulo de Pagos
+        Route::get('/pagos', [CuadrillaController::class, 'pagos'])
+            ->name('gestion_cuadrilleros.pagos.index');
+
+        // Bonificaciones
+        Route::get('/bonificaciones', [CuadrillaController::class, 'bonificaciones'])
+            ->name('gestion_cuadrilleros.bonificaciones.index');
+    });
     Route::get('/reporte/actividades-diarias', [ReporteDiarioController::class, 'actividades_diarias'])->name('reporte.actividades_diarias');
     Route::get('/reporte/reporte-diario', [ReporteDiarioController::class, 'index'])->name('reporte.reporte_diario');
     Route::get('/reporte/reporte-diario-riego', [ReporteDiarioController::class, 'riego'])->name('reporte.reporte_diario_riego');
