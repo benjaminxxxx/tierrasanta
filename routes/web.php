@@ -112,8 +112,8 @@ Route::middleware([
             ->name('gestion_cuadrilleros.actividades.index');
 
         // Grupos de Pago
-        Route::get('/grupos', [CuadrillaController::class, 'grupos'])
-            ->name('gestion_cuadrilleros.grupos.index');
+        Route::get('/reporte-semanal', [CuadrillaController::class, 'reporte_semanal'])
+            ->name('gestion_cuadrilleros.reporte-semanal.index');
 
         // Períodos Grupales
         Route::get('/periodos', [CuadrillaController::class, 'periodos'])

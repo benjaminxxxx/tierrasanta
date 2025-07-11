@@ -16,6 +16,7 @@ class CuadRegistroDiario extends Model
         'costo_personalizado_dia',
         'asistencia',
         'total_bono',
+        'total_horas',
         'costo_dia',
     ];
 

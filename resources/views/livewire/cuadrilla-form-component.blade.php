@@ -1,5 +1,5 @@
 <div>
-    <x-loading wire:loading/>
+    <x-loading wire:loading />
     <x-dialog-modal wire:model.live="mostrarFormulario">
         <x-slot name="title">
             Registrar Cuadrillero
@@ -10,15 +10,26 @@
                 <!-- Nombre Completo -->
                 <div>
                     <x-label for="nombres" value="Nombre Completo" />
-                    <x-input id="nombres" type="text" class="mt-1 uppercase" wire:model="nombres" />
-                    <x-input-error for="nombres" class="mt-2" />
+                    <x-input wire:model="nombres" />
+                    <x-input-error for="nombres" />
                 </div>
 
                 <!-- DNI -->
                 <div class="mt-2">
                     <x-label for="dni" value="DNI" />
-                    <x-input id="dni" type="text" class="mt-1 block w-full" wire:model="dni" />
-                    <x-input-error for="dni" class="mt-2" />
+                    <x-input wire:model="dni" />
+                    <x-input-error for="dni" />
+                </div>
+
+                <!-- GRUPO -->
+                <div class="mt-2">
+                    <x-select wire:model="codigo_grupo" label="Grupo Actual">
+
+                        <option value="">Seleccionar su grupo actual</option>
+                        @foreach ($grupos as $grupo)
+                            <option value="{{ $grupo->codigo }}">{{ $grupo->nombre }}</option>
+                        @endforeach
+                    </x-select>
                 </div>
             </div>
         </x-slot>

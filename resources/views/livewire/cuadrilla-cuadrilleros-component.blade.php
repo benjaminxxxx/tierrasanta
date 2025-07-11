@@ -18,6 +18,7 @@
                         <x-th value="N°" class="text-center" />
                         <x-th value="Nombres" />
                         <x-th value="Dni" class="text-center" />
+                        <x-th value="Grupo actual" class="text-center" />
                         <x-th value="Acciones" class="text-center" />
                     </x-tr>
                 </x-slot>
@@ -28,15 +29,15 @@
                                 <x-th value="{{ $indice + 1 }}" class="text-center" />
                                 <x-td value="{{ $cuadrillero->nombres }}" />
                                 <x-td value="{{ $cuadrillero->dni }}" class="text-center" />
+                                <x-td value="{{ $cuadrillero->grupo_actual }}" class="text-center" />
                                 <x-td class="text-center">
                                     <x-flex class="justify-center">
-                                        @if ($cuadrillero->estado=='1')
+                                        @if ($cuadrillero->estado == '1')
                                             <x-button
                                                 @click="$wire.dispatch('editarCuadrillero',{cuadrilleroId:{{ $cuadrillero->id }}})">
                                                 <i class="fa fa-edit"></i>
                                             </x-button>
-                                            <x-danger-button
-                                                wire:click="confirmarEliminarCuadrillero({{ $cuadrillero->id }})">
+                                            <x-danger-button wire:click="confirmarEliminarCuadrillero({{ $cuadrillero->id }})">
                                                 <i class="fa fa-trash"></i>
                                             </x-danger-button>
                                         @else

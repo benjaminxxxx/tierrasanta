@@ -35,11 +35,11 @@ class GestionCuadrillaReporteDiarioFormComponent extends Component
 
         $this->labores = LaboresServicio::selectLabores();
     }
-    public function registrarReporteDiarioCuadrilla()
+    public function registrarReporteDiarioCuadrilla($fecha = null)
     {
 
         $this->reset(['cuadrillerosAgregados', 'actividades']);
-        $this->fecha = Carbon::now()->format("Y-m-d");
+        $this->fecha = $fecha ? $fecha : Carbon::now()->format("Y-m-d");
         $this->agregarActividad();
         $this->mostrarFormularioRegistroDiarioCuadrilla = true;
     }

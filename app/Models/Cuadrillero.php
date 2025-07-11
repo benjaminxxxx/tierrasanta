@@ -12,8 +12,12 @@ class Cuadrillero extends Model
     protected $fillable = [
         'nombres',
         'dni',
+        'codigo_grupo',
         'estado'
     ];
+    public function grupo(){
+        return $this->belongsTo(CuaGrupo::class,'codigo_grupo');
+    }
     public function determinarPago($fechaInicio, $fechaFin)
     {
         // Obtener los registros de CuadrillaHora relacionados con este cuadrillero
@@ -74,4 +78,9 @@ class Cuadrillero extends Model
             'monto_pagado' => $montoPagado,
         ];
     }
+    #region Atributos
+    public function getGrupoActualAttribute(){
+        return $this->grupo?->nombre??'-';
+    }
+    #endregion
 }

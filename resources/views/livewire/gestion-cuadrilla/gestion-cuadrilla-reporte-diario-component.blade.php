@@ -1,13 +1,18 @@
 <div x-data="actividades_diarias_cuadrilleros">
     <x-loading wire:loading />
 
-    <x-flex class="my-3">
-        <x-h3>
-            Registro Diario Cuadrilla
-        </x-h3>
-        <x-button @click="$wire.dispatch('registrarReporteDiarioCuadrilla')">
-            <i class="fa fa-plus"></i> Registrar reporte
-        </x-button>
+    <x-flex class="w-full justify-between">
+        <x-flex class="my-3">
+            <x-h3>
+                Registro Diario Cuadrilla
+            </x-h3>
+            <x-button @click="$wire.dispatch('registrarReporteDiarioCuadrilla',{fecha:'{{ $fecha }}'})">
+                <i class="fa fa-plus"></i> Registrar reporte
+            </x-button>
+        </x-flex>
+        <x-button-a href="{{ route('cuadrilleros.gestion') }}">
+            <i class="fa fa-arrow-left"></i> Volver a gestión de cuadrilleros
+        </x-button-a>
     </x-flex>
 
     <div class="flex items-center justify-between mb-4">
@@ -63,7 +68,7 @@
             this.listeners.push(
 
                 Livewire.on('actualizarTablaCuadrilleros', (data) => {
-                    
+
                     this.trabajadores = data[0];
                     this.totalColumnas = data[1];
                     this.$nextTick(() => {
@@ -90,7 +95,7 @@
                 width: '100%',
                 height: 'auto',
                 manualColumnResize: false,
-                    minSpareRows: 1,
+                minSpareRows: 1,
                 manualRowResize: true,
                 stretchH: 'all',
                 autoColumnSize: true,

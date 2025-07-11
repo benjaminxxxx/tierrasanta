@@ -7,13 +7,22 @@ use App\Models\Labores;
 
 class ActividadesServicio
 {
-    public static function obtenerLabores(){
+    public static function obtenerLabores()
+    {
         return Labores::all();
     }
-    
-    public static function obtenerEstandarProduccion($codigoLabor)
+
+    public static function obtenerEstandarProduccion($actividadId)
     {
-        $labor = Labores::where('codigo', $codigoLabor)->first();
+        $actividad = Actividad::find($actividadId);
+        if ($actividad && $actividad->tramos_bonificacion != null) {
+            return [
+                'estandar_produccion' => $actividad->estandar_produccion,
+                'unidades' => $actividad->unidades,
+                'tramos_bonificacion' => json_decode($actividad->tramos_bonificacion, true) ?? [['hasta' => '', 'monto' => '']]
+            ];
+        }
+        $labor = Labores::where('codigo', $actividad->codigo_labor)->first();
         if ($labor) {
             return [
                 'estandar_produccion' => $labor->estandar_produccion,

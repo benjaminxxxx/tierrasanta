@@ -9,6 +9,12 @@ class CuadrillaController extends Controller
     public function registro_diario(){
         return view("cuadrilla.gestion.reporte_diario");
     }
+    public function reporte_semanal(){
+        return view("cuadrilla.gestion.reporte_semanal");
+    }
+    public function bonificaciones(){
+        return view("cuadrilla.gestion.bonificaciones");
+    }
     public function gestion()
     {
         $modules = [
@@ -30,14 +36,14 @@ class CuadrillaController extends Controller
                 'title' => 'Grupos de Pago',
                 'description' => 'Configurar grupos y tipos de pago',
                 'icon' => 'fa-users',
-                'route' => 'gestion_cuadrilleros.grupos.index',
+                'route' => 'gestion_cuadrilleros.pagos.index',
                 'color' => 'bg-purple-500',
             ],
             [
-                'title' => 'Períodos Grupales',
+                'title' => 'Reporte Semanal',
                 'description' => 'Crear y gestionar períodos de pago por grupo',
                 'icon' => 'fa-calendar-alt',
-                'route' => 'gestion_cuadrilleros.periodos.index',
+                'route' => 'gestion_cuadrilleros.reporte-semanal.index',
                 'color' => 'bg-orange-500',
             ],
             [

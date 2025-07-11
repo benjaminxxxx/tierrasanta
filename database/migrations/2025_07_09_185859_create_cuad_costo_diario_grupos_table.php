@@ -10,18 +10,18 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('cuadrilleros', function (Blueprint $table) {
+        Schema::create('cuad_costo_diario_grupos', function (Blueprint $table) {
             $table->id();
-            $table->string('nombres');
-            $table->string('codigo_grupo')->nullable();
-            $table->string('dni')->nullable()->unique();
-            $table->boolean('estado')->default(true);
+            $table->string('codigo_grupo');
+            $table->date('fecha');
+            $table->decimal('jornal', 8, 2)->nullable(); // puede ser null si aún no se asignó
             $table->timestamps();
 
+            $table->unique(['codigo_grupo', 'fecha']);
             $table->foreign('codigo_grupo')
                 ->references('codigo')
                 ->on('cua_grupos')
-                ->onDelete('set null');
+                ->onDelete('restrict');
         });
     }
 
@@ -30,6 +30,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('cuadrilleros');
+        Schema::dropIfExists('cuad_costo_diario_grupos');
     }
 };
