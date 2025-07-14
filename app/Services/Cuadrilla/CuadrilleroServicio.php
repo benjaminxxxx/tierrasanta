@@ -7,6 +7,7 @@ use App\Models\CuaAsistenciaSemanal;
 use App\Models\CuadCostoDiarioGrupo;
 use App\Models\CuadDetalleHora;
 use App\Models\CuadGrupoCuadrilleroFecha;
+use App\Models\CuadOrdenSemanal;
 use App\Models\CuadRegistroDiario;
 use App\Models\Cuadrillero;
 use App\Models\CuadrilleroActividad;
@@ -556,13 +557,101 @@ class CuadrilleroServicio
             $asistenciaCuadrillero->save();
         }
     }
+    public static function registrarOrdenSemanal($fechaInicio, $rows)
+    {
+        $fechaInicio = \Carbon\Carbon::parse($fechaInicio)->startOfWeek()->format('Y-m-d');
+
+        // ✅ Limpiar registros previos de esa semana
+        CuadOrdenSemanal::where('fecha_inicio', $fechaInicio)->delete();
+
+        $grupoArrays = [];
+
+        foreach ($rows as &$row) {
+
+            // ✅ 1. Filtrar vacíos (eliminados por usuario)
+            if (empty(trim($row['cuadrillero_nombres'] ?? ''))) {
+                continue;  // no lo procesamos, se borró arriba
+            }
+
+            $grupo = $row['codigo_grupo'] ?? 'SIN GRUPO';
+
+            // ✅ 2. Normalizar ID y Nombre
+            if ($row['cuadrillero_id']) {
+                // Verificar si nombre coincide
+                $cuadrillero = Cuadrillero::find($row['cuadrillero_id']);
+                if (!$cuadrillero || mb_strtoupper($cuadrillero->nombres) !== mb_strtoupper($row['cuadrillero_nombres'])) {
+                    // Buscar por nombre
+                    $nuevo = Cuadrillero::whereRaw('UPPER(nombres) = ?', [mb_strtoupper($row['cuadrillero_nombres'])])->first();
+                    if ($nuevo) {
+                        $row['cuadrillero_id'] = $nuevo->id;
+                    } else {
+                        // Crear nuevo
+                        $nuevo = Cuadrillero::create([
+                            'nombres' => $row['cuadrillero_nombres'],
+                            'codigo_grupo' => $row['codigo_grupo'] == 'SIN GRUPO' ? null : $row['codigo_grupo'],
+                        ]);
+                        $row['cuadrillero_id'] = $nuevo->id;
+                    }
+                }
+            } else {
+                // No hay id → buscar por nombre
+                $nuevo = Cuadrillero::whereRaw('UPPER(nombres) = ?', [mb_strtoupper($row['cuadrillero_nombres'])])->first();
+                if ($nuevo) {
+                    $row['cuadrillero_id'] = $nuevo->id;
+                } else {
+                    // Crear nuevo
+                    $nuevo = Cuadrillero::create([
+                        'nombres' => $row['cuadrillero_nombres'],
+                        'codigo_grupo' => $row['codigo_grupo'] == 'SIN GRUPO' ? null : $row['codigo_grupo'],
+                    ]);
+                    $row['cuadrillero_id'] = $nuevo->id;
+                }
+            }
+
+            // ✅ 3. Clasificar por grupo
+            $grupoArrays[$grupo][] = $row;
+        }
+
+        // ✅ 4. Reconstruir lista final ordenada
+        $listaFinal = [];
+        foreach ($grupoArrays as $grupo => $lista) {
+            if ($grupo === 'SIN GRUPO' || !$grupo || trim($grupo) === '')
+                continue;
+            foreach ($lista as $item) {
+                $listaFinal[] = $item;
+            }
+        }
+
+        if (isset($grupoArrays['SIN GRUPO'])) {
+            foreach ($grupoArrays['SIN GRUPO'] as $item) {
+                $listaFinal[] = $item;
+            }
+        }
+
+        // ✅ 5. Asignar orden e insertar
+        $orden = 1;
+        foreach ($listaFinal as &$item) {
+            $item['orden'] = $orden++;
+
+            CuadOrdenSemanal::create([
+                'cuadrillero_id' => $item['cuadrillero_id'],
+                'fecha_inicio' => $fechaInicio,
+                'orden' => $item['orden'],
+            ]);
+        }
+
+        return $listaFinal;
+    }
+
 
 
     public static function guardarReporteSemanal($inicio, $fin, $rows)
     {
+
         DB::beginTransaction();
         try {
-            $usuarioId = Auth::id();
+
+            $rows = self::registrarOrdenSemanal($inicio, $rows);
             $errores = [];
 
             $dias = collect();
