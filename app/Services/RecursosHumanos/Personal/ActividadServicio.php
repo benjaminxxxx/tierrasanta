@@ -3,9 +3,10 @@
 namespace App\Services\RecursosHumanos\Personal;
 
 use App\Models\Actividad;
-use App\Models\CuadrillaHora;
+use App\Models\CuadDetalleHora;
+use App\Models\CuadRegistroDiario;
 use App\Models\Labores;
-use App\Services\Cuadrilla\CuadrilleroServicio;
+use Auth;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -119,6 +120,83 @@ class ActividadServicio
     }
     #endregion
     #region Actividades
+    /**
+     * Detecta y crea actividades únicas para la fecha y devuelve su modelo
+     * Recibe los tramos (campo, labor, hora_inicio, hora_fin)
+     */
+    public static function detectarYCrearActividades(string $fecha): void
+    {
+        if (!$fecha) {
+            throw ValidationException::withMessages([
+                'fecha' => 'Debe especificar una fecha.'
+            ]);
+        }
+
+        $usuarioId = Auth::id();
+
+        // 👉 Mapeo completo de Labores por código
+        $labores = Labores::all()->keyBy('codigo');
+        
+
+        // 1️⃣ Cargar todos los detalles con la relación a actividad
+        $detalleHoras = CuadDetalleHora::with('actividad')
+            ->whereHas('registroDiario', function ($query) use ($fecha) {
+                $query->where('fecha', $fecha);
+            })
+            ->get();
+
+        // 2️⃣ Filtrar pares únicos de (campo, codigo_labor)
+        $paresUnicos = $detalleHoras
+            ->map(function ($item) {
+                return [
+                    'campo' => trim($item->campo_nombre),
+                    'codigo_labor' => trim($item->codigo_labor),
+                ];
+            })
+            ->filter(function ($item) {
+                return $item['campo'] !== '' && $item['codigo_labor'] !== '';
+            })
+            ->unique(function ($item) {
+                return $item['campo'] . '-' . $item['codigo_labor'];
+            })
+            ->values();
+            
+        if ($paresUnicos->isEmpty()) {
+            return;
+        }
+
+        // 3️⃣ Crear o asegurar existencia de cada actividad
+        foreach ($paresUnicos as $i => $par) {
+            $campo = $par['campo'];
+            $codigoLabor = $par['codigo_labor'];
+
+            // 👉 Validar que exista en el catálogo
+            if (!$labores->has($codigoLabor)) {
+                throw ValidationException::withMessages([
+                    "actividades.$i" => "El código de labor '$codigoLabor' no existe en el catálogo de labores."
+                ]);
+            }
+
+            $labor = $labores->get($codigoLabor);
+
+            // 👉 Crear o encontrar la actividad con datos del catálogo ya en memoria
+         
+            Actividad::firstOrCreate(
+                [
+                    'fecha' => $fecha,
+                    'campo' => $campo,
+                    'labor_id' => $labor->id,
+                ],
+                [
+                    'nombre_labor' => $labor->nombre_labor,
+                    'codigo_labor' => $codigoLabor,
+                    'unidades'=>$labor->unidades,
+                    'created_by' => $usuarioId,
+                ]
+            );
+        }
+    }
+
     public static function registrarActividadCuadrilla($dataActividad, $dataCuadrilleros, $actividadId = null)
     {
         DB::beginTransaction();
@@ -169,22 +247,22 @@ class ActividadServicio
                     'cantidades' => json_encode($cantidades),
                     'total_horas' => (float) ($cuadrillero['horas'] ?? 0),
                 ];
-/*
-                CuadrillaHora::updateOrCreate(
-                    [
-                        'cua_asi_sem_cua_id' => $cuadrillero['cua_asi_sem_cua_id'],
-                        'fecha' => $dataActividad['fecha']
-                    ],
-                    [
-                        'horas' => 0,
-                        'costo_dia' => 0,
-                    ]
-                );*/
+                /*
+                                CuadrillaHora::updateOrCreate(
+                                    [
+                                        'cua_asi_sem_cua_id' => $cuadrillero['cua_asi_sem_cua_id'],
+                                        'fecha' => $dataActividad['fecha']
+                                    ],
+                                    [
+                                        'horas' => 0,
+                                        'costo_dia' => 0,
+                                    ]
+                                );*/
 
                 $actividad->cuadrillero_actividades()->create($data);
             }
 
-            
+
 
             DB::commit();
             return $actividad;

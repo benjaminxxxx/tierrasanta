@@ -24,7 +24,7 @@ class Actividad extends Model
         'labor_id',
         'nombre_labor',
         'codigo_labor',
-        'horarios',
+        //'horarios',
         'tramos_bonificacion',
         'estandar_produccion',
         'total_horas',

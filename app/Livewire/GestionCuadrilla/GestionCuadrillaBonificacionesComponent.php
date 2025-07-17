@@ -16,7 +16,6 @@ class GestionCuadrillaBonificacionesComponent extends Component
     public $actividades = [];
     public $actividadSeleccionada;
     public $registros = [];
-    public $colores = [];
     public $total_horarios = 0;
     public $tramos = [
         ['hasta' => '', 'monto' => '']
@@ -36,10 +35,6 @@ class GestionCuadrillaBonificacionesComponent extends Component
             return;
         }
         $this->actividades = Actividad::where('fecha', $this->fecha)->get();
-        if ($this->actividades->count() > 0) {
-            $this->actividadSeleccionada = $this->actividades->first()->id;
-            $this->cargarDatosActividad();
-        }
     }
     public function updatedActividadSeleccionada()
     {
@@ -55,14 +50,13 @@ class GestionCuadrillaBonificacionesComponent extends Component
         try {
             $registros = CuadrilleroServicio::obtenerHandsontableRegistrosPorActividad($this->actividadSeleccionada);
             $this->registros = $registros['data'];
-            $this->colores = $registros['colores'];
             $this->total_horarios = $registros['total_horarios'];
             $labor = ActividadesServicio::obtenerEstandarProduccion($this->actividadSeleccionada);
             $this->tramos = $labor['tramos_bonificacion'];
             $this->estandarProduccion = $labor['estandar_produccion'];
             $this->unidades = $labor['unidades'];
 
-            $this->dispatch('actualizarTablaBonificacionesCuadrilla', $this->registros, $this->colores, $this->total_horarios);
+            $this->dispatch('actualizarTablaBonificacionesCuadrilla', $this->registros, $this->total_horarios);
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }
@@ -88,7 +82,6 @@ class GestionCuadrillaBonificacionesComponent extends Component
     }
     public function guardarBonificaciones($datos)
     {
-
         try {
             CuadrilleroServicio::guardarBonificacionesYConfiguracionActividad(
                 $this->actividadSeleccionada,
@@ -97,6 +90,7 @@ class GestionCuadrillaBonificacionesComponent extends Component
                 $this->unidades,
                 $this->estandarProduccion
             );
+            CuadrilleroServicio::calcularCostosCuadrilla($this->fecha);
             $this->alert('success', 'Bonificaciones actualizadas correctamente.');
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());

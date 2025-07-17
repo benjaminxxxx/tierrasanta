@@ -1,7 +1,10 @@
 <?php
 
 namespace App\Livewire\GestionCuadrilla;
+use App\Models\Campo;
+use App\Models\Labores;
 use App\Services\Cuadrilla\CuadrilleroServicio;
+use App\Services\RecursosHumanos\Personal\ActividadServicio;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -14,6 +17,8 @@ class GestionCuadrillaReporteDiarioComponent extends Component
     public $fecha;
     public $trabajadores = [];
     public $totalColumnas = 0;
+    public $labores = [];
+    public $campos = [];
     protected $listeners = ['storeTableDataGuardarActividadDiaria', 'cuadrilla_reporte_diario_registrado'];
     public function mount()
     {
@@ -22,6 +27,8 @@ class GestionCuadrillaReporteDiarioComponent extends Component
 
         $this->trabajadores = $resultado['data'];
         $this->totalColumnas = $resultado['total_columnas'];
+        $this->labores = Labores::get()->pluck('codigo')->toArray();
+        $this->campos = Campo::get()->pluck('nombre')->toArray();
     }
   
     public function cuadrilla_reporte_diario_registrado($fecha)
@@ -37,6 +44,7 @@ class GestionCuadrillaReporteDiarioComponent extends Component
     {
         try {
             CuadrilleroServicio::guardarDesdeHandsontable($this->fecha, $datos);
+            ActividadServicio::detectarYCrearActividades($this->fecha);
             $this->cuadrilla_reporte_diario_registrado($this->fecha);
             $this->alert('success', 'Registro actualizado correctamente');
         } catch (ValidationException $ex) {

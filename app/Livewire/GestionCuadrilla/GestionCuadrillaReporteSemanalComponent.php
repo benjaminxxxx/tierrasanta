@@ -2,10 +2,15 @@
 
 namespace App\Livewire\GestionCuadrilla;
 
+use App\Models\CuadRegistroDiario;
 use App\Models\Cuadrillero;
 use App\Models\CuaGrupo;
 use App\Services\Cuadrilla\CuadrilleroServicio;
+use App\Services\CuadrillaServicio;
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
+use DB;
+use Exception;
 use Illuminate\Support\Facades\Session;
 use Livewire\Component;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -16,6 +21,7 @@ class GestionCuadrillaReporteSemanalComponent extends Component
 
     public $fechaInicioSemana;
     public $anio, $mes, $semanaNumero;
+    public $ocurrioModificaciones = false;
     public $meses = [
         1 => 'Enero',
         2 => 'Febrero',
@@ -36,6 +42,9 @@ class GestionCuadrillaReporteSemanalComponent extends Component
     public $gruposDisponibles = [];
     public $colorPorGrupo;
     public $cuadrilleros = [];
+    public $diasSemana = [];
+    public $mostrarFormularioCostoHora = false;
+    public $cuadrillerosCostosPersonalizados = [];
 
     public function mount()
     {
@@ -53,6 +62,98 @@ class GestionCuadrillaReporteSemanalComponent extends Component
         $this->obtenerReporteSemanal(false);
         $this->cuadrilleros = Cuadrillero::where('estado', true)->pluck('nombres')->toArray();
     }
+    public function abrirPrecioPersonalizado($cuadrilleros)
+    {
+        try {
+            //Buscar al menos un registro con cuadrillero_id siendo null
+            $existeRegistroNuevo = collect($cuadrilleros)->some('cuadrillero_id', null);
+            if ($existeRegistroNuevo) {
+                throw new Exception("Guarde primero los registros, clic en Actualizar horas");
+            }
+
+            if ($this->ocurrioModificaciones) {
+                throw new Exception("Guarde primero los registros, clic en Actualizar horas");
+            }
+            $inicio = $this->semana->inicio;
+            $fin = $this->semana->fin;
+
+            $registros = CuadRegistroDiario::whereBetween('fecha', [$inicio, $fin])
+                ->whereNotNull('costo_personalizado_dia')
+                ->get(['cuadrillero_id', 'fecha', 'costo_personalizado_dia']);
+
+            $diasSemana = [];
+
+            // Inicializar las fechas de la semana vacías
+            $periodo = CarbonPeriod::create($inicio, $fin);
+            foreach ($periodo as $date) {
+                $fechaStr = $date->toDateString();
+                $diasSemana[] = $fechaStr;
+            }
+
+            $registroCuadrilla = [];
+
+            foreach ($cuadrilleros as $cuadrilla) {
+                $indiceCuadrilla = $cuadrilla['cuadrillero_id'];
+                $registroCuadrilla[$indiceCuadrilla] = [
+                    'cuadrillero_id' => $cuadrilla['cuadrillero_id'],
+                    'cuadrillero_nombres' => $cuadrilla['cuadrillero_nombres'],
+                ];
+                foreach ($periodo as $key => $date) {
+                    $fechaStr = $date->toDateString();
+                    $costoPersonalizado = $registros->first(function ($registro) use ($indiceCuadrilla, $fechaStr) {
+                        return $registro->cuadrillero_id === $indiceCuadrilla && $registro->fecha->toDateString() === $fechaStr;
+                    });
+
+                    $registroCuadrilla[$indiceCuadrilla]['costos'][$key] = $costoPersonalizado?->costo_personalizado_dia;
+                }
+            }
+
+            $this->diasSemana = $diasSemana;
+            $this->cuadrillerosCostosPersonalizados = $registroCuadrilla;
+            $this->mostrarFormularioCostoHora = true;
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
+        }
+    }
+    public function registrarCostoPersonalizado()
+    {
+        try {
+            DB::beginTransaction();
+
+            foreach ($this->cuadrillerosCostosPersonalizados as $cuadrilla) {
+                $cuadrilleroId = $cuadrilla['cuadrillero_id'];
+
+                foreach ($cuadrilla['costos'] as $index => $costo) {
+                    $fecha = $this->diasSemana[$index];
+
+                    if (!is_null($costo)) {
+
+                        CuadRegistroDiario::updateOrCreate(
+                            [
+                                'cuadrillero_id' => $cuadrilleroId,
+                                'fecha' => $fecha,
+                            ],
+                            [
+                                'costo_personalizado_dia' => $costo,
+                            ]
+                        );
+                    }
+                }
+            }
+
+            CuadrilleroServicio::calcularCostosCuadrilla($this->semana->inicio, $this->semana->fin);
+
+            DB::commit();
+            $this->obtenerReporteSemanal();
+            $this->alert('success', 'Costos personalizados actualizados correctamente');
+            $this->mostrarFormularioCostoHora = false;
+
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            $this->alert('error', 'Error al guardar: ' . $th->getMessage());
+        }
+    }
+
     public function obtenerReporteSemanal($dispatch = true)
     {
         $fechaInicio = $this->semana->inicio; //d/m/Y
@@ -162,6 +263,7 @@ class GestionCuadrillaReporteSemanalComponent extends Component
     public function storeTableDataGuardarHoras($datos)
     {
         try {
+
             $fechaInicio = $this->semana->inicio;
             $fechaFin = $this->semana->fin;
             CuadrilleroServicio::guardarReporteSemanal($fechaInicio, $fechaFin, $datos);

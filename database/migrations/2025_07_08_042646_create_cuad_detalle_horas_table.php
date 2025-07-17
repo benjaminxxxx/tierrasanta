@@ -18,10 +18,13 @@ return new class extends Migration {
                 ->cascadeOnDelete();
 
             $table->foreignId('actividad_id')
+                ->nullable()
                 ->constrained('actividades')
                 ->cascadeOnDelete();
 
             $table->string('campo_nombre');
+            $table->integer('codigo_labor')->nullable();
+
             $table->time('hora_inicio');
             $table->time('hora_fin');
             $table->decimal('produccion', 10, 2)->nullable();

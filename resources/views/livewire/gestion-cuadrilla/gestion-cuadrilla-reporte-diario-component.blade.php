@@ -33,6 +33,11 @@
     <x-card2>
         <div wire:ignore>
             <x-h3>Detalle de trabajadores</x-h3>
+            <x-flex class="lg:justify-end gap-3 w-full my-3">
+                <x-button @click="agregarGrupo" class="w-full lg:w-auto"><i class="fa fa-plus"></i></x-button>
+                <x-danger-button @click="quitarGrupo" class="w-full lg:w-auto"><i
+                        class="fa fa-minus"></i></x-danger-button>
+            </x-flex>
             <div x-ref="tableReporteContainer"></div>
 
         </div>
@@ -56,6 +61,8 @@
         selectedRows: [],
         trabajadores: @json($trabajadores),
         totalColumnas: @json($totalColumnas),
+        labores: @json($labores),
+        campos: @json($campos),
         hot: null,
         hotFuente: null,
         init() {
@@ -95,7 +102,6 @@
                 width: '100%',
                 height: 'auto',
                 manualColumnResize: false,
-                minSpareRows: 1,
                 manualRowResize: true,
                 stretchH: 'all',
                 autoColumnSize: true,
@@ -119,11 +125,27 @@
 
             this.hot = hot;
         },
+        agregarGrupo() {
+            this.totalColumnas++;
+            const columns = this.generarColumnasDinamicas();
+            this.hot.updateSettings({
+                columns: columns
+            });
+        },
+        quitarGrupo() {
+            this.totalColumnas--;
+            const columns = this.generarColumnasDinamicas();
+            this.hot.updateSettings({
+                columns: columns
+            });
+        },
         generarColumnasDinamicas() {
             const cols = [
                 {
                     data: 'cuadrillero_nombres',
                     type: 'text',
+                    readOnly: true,
+                    className: '!bg-gray-200',
                     title: 'Trabajador'
                 }
             ];
@@ -135,13 +157,15 @@
                 cols.push(
                     {
                         data: `campo_${i}`,
-                        type: 'text',
+                        type: 'dropdown',
+                        source: this.campos,
                         className: `text-center ${bgClass}`,
                         title: `Camp. ${i}`
                     },
                     {
                         data: `labor_${i}`,
-                        type: 'text',
+                        type: 'dropdown',
+                        source: this.labores,
                         className: `text-center ${bgClass}`,
                         title: `Lab. ${i}`
                     },
@@ -169,18 +193,38 @@
             // Recorre todas las filas de la tabla y obtiene los datos completos
             for (let row = 0; row < this.hot.countRows(); row++) {
                 const rowData = this.hot.getSourceDataAtRow(row);
-                allData.push(rowData);
+
+                // Crear una copia limpia con solo columnas activas
+                let cleanedRow = {
+                    cuadrillero_id: rowData.cuadrillero_id ?? null,
+                    cuadrillero_nombres: rowData.cuadrillero_nombres ?? '',
+                    cuadrillero_dni: rowData.cuadrillero_dni ?? null,
+                    asistencia: rowData.asistencia ?? true,
+                };
+
+                for (let i = 1; i <= this.totalColumnas; i++) {
+                    cleanedRow[`campo_${i}`] = rowData[`campo_${i}`] ?? null;
+                    cleanedRow[`labor_${i}`] = rowData[`labor_${i}`] ?? null;
+                    cleanedRow[`hora_inicio_${i}`] = rowData[`hora_inicio_${i}`] ?? null;
+                    cleanedRow[`hora_fin_${i}`] = rowData[`hora_fin_${i}`] ?? null;
+                }
+
+                allData.push(cleanedRow);
             }
 
-            // Filtra las filas vacías
-            const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
-                null && cell !== ''));
+            // Filtrar filas vacías
+            const filteredData = allData.filter(row => {
+                const tramos = Array.from({ length: this.totalColumnas }).some((_, i) => {
+                    return row[`hora_inicio_${i + 1}`] || row[`hora_fin_${i + 1}`] || row[`labor_${i + 1}`];
+                });
+                return row.cuadrillero_nombres !== '' || tramos;
+            });
 
-            const data = {
-                datos: filteredData
-            };
+            const data = { datos: filteredData };
+
             $wire.dispatchSelf('storeTableDataGuardarActividadDiaria', data);
         }
+
     }));
 </script>
 @endscript

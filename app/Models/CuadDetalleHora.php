@@ -14,6 +14,7 @@ class CuadDetalleHora extends Model
         'registro_diario_id',
         'actividad_id',
         'campo_nombre',
+        'codigo_labor',
         'hora_inicio',
         'hora_fin',
         'produccion',

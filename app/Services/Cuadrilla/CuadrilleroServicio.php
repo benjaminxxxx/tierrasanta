@@ -37,10 +37,13 @@ class CuadrilleroServicio
 
         // 2️⃣ Para cada fila de datos
         foreach ($datos as $fila) {
+
             $cuadrilleroId = $fila['cuadrillero_id'] ?? null;
+            $campo = $fila['campo'] ?? null;
+            $labor = $fila['labor'] ?? null;
             $totalBono = floatval($fila['total_bono'] ?? 0);
 
-            if (!$cuadrilleroId || $totalBono <= 0) {
+            if (!$cuadrilleroId) {
                 continue; // Nada que hacer si no hay cuadrillero o bono
             }
 
@@ -55,7 +58,8 @@ class CuadrilleroServicio
 
             // Obtener detalles de esa actividad, ordenados por horario
             $detalles = $registro->detalleHoras()
-                ->where('actividad_id', $actividadId)
+                ->where('campo_nombre', $campo)
+                ->where('codigo_labor', $labor)
                 ->orderBy('hora_inicio')
                 ->get();
 
@@ -89,25 +93,23 @@ class CuadrilleroServicio
 
     public static function obtenerHandsontableRegistrosPorActividad($actividadId)
     {
-        $coloresDisponibles = [
-            '#FF6384',
-            '#36A2EB',
-            '#FFCE56',
-            '#4BC0C0',
-            '#9966FF',
-            '#FF9F40',
-            '#E7E9ED',
-            '#8BC34A',
-            '#CDDC39',
-            '#00BCD4'
-        ];
 
+        $actividad = Actividad::find($actividadId);
+        if (!$actividad) {
+            throw new Exception('No existe la actividad');
+        }
+
+        $campo_nombre = $actividad->campo;
+        $codigo_labor = $actividad->codigo_labor;
         $registros = CuadRegistroDiario::with([
             'cuadrillero',
-            'detalleHoras' => fn($q) => $q->where('actividad_id', $actividadId)
-        ])
-            ->whereHas('detalleHoras', fn($q) => $q->where('actividad_id', $actividadId))
-            ->get();
+            'detalleHoras'
+        ])->where('fecha', $actividad->fecha)
+            ->whereHas('detalleHoras', function ($query) use ($campo_nombre, $codigo_labor) {
+
+                $query->where('campo_nombre', $campo_nombre);
+                $query->where('codigo_labor', $codigo_labor);
+            })->get();
 
         // 🟦 Generar colores por horario único
         $horariosUnicos = collect();
@@ -120,19 +122,18 @@ class CuadrilleroServicio
         }
 
         $horariosUnicos = $horariosUnicos->unique()->values()->slice(0, 10);
-        $mapaColores = [];
-        foreach ($horariosUnicos as $i => $h) {
-            $mapaColores[$h] = $coloresDisponibles[$i % count($coloresDisponibles)];
-        }
 
         // 🟩 Preparar filas para Handsontable
         $data = [];
         $maxTramos = 0;
 
         foreach ($registros as $r) {
+            
             $row = [
                 'cuadrillero_id' => $r->cuadrillero_id,
                 'cuadrillero_nombres' => optional($r->cuadrillero)->nombres ?? '-',
+                'campo'=>$campo_nombre,
+                'labor'=>$codigo_labor,
                 'total_bono' => 0,
             ];
 
@@ -158,7 +159,6 @@ class CuadrilleroServicio
 
         return [
             'data' => $data,
-            'colores' => $mapaColores,
             'total_horarios' => $maxTramos,
         ];
     }
@@ -188,7 +188,6 @@ class CuadrilleroServicio
             ->groupBy(fn($r) => $r->cuadrillero_id . '|' . $r->fecha);
 
         $resultados = [];
-        //dd($registros[15]);
 
         foreach ($registros as $cuadrilleroId => $items) {
 
@@ -209,6 +208,7 @@ class CuadrilleroServicio
                     $inicio->toDateString(),
                     $fin->toDateString()
                 );
+
                 // volver a cargar SOLO una vez para que incluya lo nuevo
                 $grupoPorFecha = CuadGrupoCuadrilleroFecha::whereBetween('fecha', [$inicio, $fin])
                     ->get()
@@ -255,6 +255,7 @@ class CuadrilleroServicio
                 $totalCostos += (float) $costo_dia;
                 $totalBonos += $bono;
             }
+
             $grupoAsignado = $grupoFijo ?? 'SIN GRUPO';
             $fila['codigo_grupo'] = $grupoAsignado;
             $fila['color'] = $coloresPorGrupo[$grupoAsignado] ?? '#FFFFFF';
@@ -268,31 +269,50 @@ class CuadrilleroServicio
         $headers = [];
 
         $diasSemana = ['D', 'L', 'M', 'M', 'J', 'V', 'S']; // empieza en domingo
-
         foreach ($dias as $d) {
             $headers[] = $diasSemana[$d->dayOfWeek] . '<br/>' . $d->day;
         }
-
         foreach ($dias as $d) {
             $headers[] = $diasSemana[$d->dayOfWeek] . '<br/>' . $d->day;
         }
-
         foreach ($dias as $d) {
             $headers[] = 'B<br/>' . $d->day;
         }
-
         $headers[] = "Total días";
         $headers[] = "Total costos";
         $headers[] = "Total bonos";
 
-        $resultados = collect($resultados)->sortBy(['codigo_grupo', 'nombres'])->values()->toArray();
+        // 🟠 ORDENAR POR ORDEN SEMANAL
+        $inicioSemana = Carbon::parse($fechaInicio)->startOfWeek()->format('Y-m-d');
+
+        $ordenSemanal = CuadOrdenSemanal::where('fecha_inicio', $inicioSemana)
+            ->orderBy('orden')
+            ->pluck('orden', 'cuadrillero_id')
+            ->toArray();
+
+        $resultadosById = collect($resultados)->keyBy('cuadrillero_id');
+
+        $ordenados = [];
+        foreach ($ordenSemanal as $cuadrilleroId => $orden) {
+            if (isset($resultadosById[$cuadrilleroId])) {
+                $ordenados[] = $resultadosById[$cuadrilleroId];
+            }
+        }
+
+        // Agregar al final los que no tengan orden guardado (nuevos)
+        foreach ($resultadosById as $id => $fila) {
+            if (!isset($ordenSemanal[$id])) {
+                $ordenados[] = $fila;
+            }
+        }
 
         return [
-            'data' => $resultados,
+            'data' => $ordenados,
             'headers' => $headers,
             'total_dias' => $totalDias,
         ];
     }
+
     public static function asignarGrupoPeriodo(int $cuadrilleroId, string $codigoGrupo, string $fechaInicio, string $fechaFin): void
     {
         $inicio = Carbon::parse($fechaInicio)->startOfDay();
@@ -490,10 +510,10 @@ class CuadrilleroServicio
     {
         return CuaGrupo::where('estado', true)->get();
     }
-    public static function calcularCostosCuadrilla($inicio, $fin)
+    public static function calcularCostosCuadrilla($inicio, $fin = null)
     {
         $inicioDate = Carbon::parse($inicio)->startOfDay();
-        $finDate = Carbon::parse($fin)->endOfDay();
+        $finDate = $fin ? Carbon::parse($fin)->endOfDay() : $inicioDate->copy()->endOfDay();
 
         $registroDiarioCuadrilla = CuadRegistroDiario::whereBetween('fecha', [$inicioDate, $finDate])->get();
         $costosDiariosDuranteFechas = CuadCostoDiarioGrupo::whereBetween('fecha', [$inicioDate, $finDate])->get();
@@ -501,6 +521,7 @@ class CuadrilleroServicio
 
         foreach ($registroDiarioCuadrilla as $asistenciaCuadrillero) {
             $totalHoras = (float) $asistenciaCuadrillero->total_horas;
+            
 
             if ($totalHoras <= 0) {
                 $asistenciaCuadrillero->costo_dia = 0;
@@ -525,7 +546,7 @@ class CuadrilleroServicio
                 $asistenciaCuadrillero->save();
                 continue;
             }
-
+            
             $costoDiario = $costosDiariosDuranteFechas
                 ->where('fecha', $fechaStr)
                 ->where('codigo_grupo', $grupoCuadrilleroEnFecha->codigo_grupo)
@@ -557,6 +578,24 @@ class CuadrilleroServicio
             $asistenciaCuadrillero->save();
         }
     }
+    /**
+     * registrarOrdenSemanal
+     *
+     * Función para registrar el orden semanal de cuadrilleros para reportes.
+     * Esta función procesa una lista de cuadrilleros, asigna su orden para la semana indicada
+     * y actualiza la tabla cuad_orden_semanal de forma limpia y consistente.
+     *
+     * - Borra los registros anteriores de esa semana antes de guardar.
+     * - Filtra los registros sin nombre (que representan eliminados por el usuario).
+     * - Verifica y normaliza los IDs de cuadrilleros: corrige cambios de nombre o crea nuevos registros.
+     * - Agrupa por grupo de trabajo, preservando el orden original dentro del grupo.
+     * - Asigna un orden incremental, dejando los "SIN GRUPO" al final.
+     * - Inserta en la tabla de orden semanal.
+     *
+     * @param  string $fechaInicio  Fecha (cualquier día de la semana), se usará su lunes como clave
+     * @param  array  $rows         Array de cuadrilleros con datos (id, nombre, grupo, etc.)
+     * @return array                Lista final normalizada y con campo 'orden' asignado
+     */
     public static function registrarOrdenSemanal($fechaInicio, $rows)
     {
         $fechaInicio = \Carbon\Carbon::parse($fechaInicio)->startOfWeek()->format('Y-m-d');
@@ -574,11 +613,12 @@ class CuadrilleroServicio
             }
 
             $grupo = $row['codigo_grupo'] ?? 'SIN GRUPO';
+            $cuadrilleroId = $row['cuadrillero_id'] ?? null;
 
             // ✅ 2. Normalizar ID y Nombre
-            if ($row['cuadrillero_id']) {
+            if ($cuadrilleroId) {
                 // Verificar si nombre coincide
-                $cuadrillero = Cuadrillero::find($row['cuadrillero_id']);
+                $cuadrillero = Cuadrillero::find($cuadrilleroId);
                 if (!$cuadrillero || mb_strtoupper($cuadrillero->nombres) !== mb_strtoupper($row['cuadrillero_nombres'])) {
                     // Buscar por nombre
                     $nuevo = Cuadrillero::whereRaw('UPPER(nombres) = ?', [mb_strtoupper($row['cuadrillero_nombres'])])->first();
@@ -633,6 +673,16 @@ class CuadrilleroServicio
         foreach ($listaFinal as &$item) {
             $item['orden'] = $orden++;
 
+            // ✅ Verificar duplicidad antes de crear
+            $yaExiste = CuadOrdenSemanal::where('cuadrillero_id', $item['cuadrillero_id'])
+                ->where('fecha_inicio', $fechaInicio)
+                ->exists();
+
+            if ($yaExiste) {
+                $nombre = $item['cuadrillero_nombres'] ?? 'ID: ' . $item['cuadrillero_id'];
+                throw new Exception("El cuadrillero '{$nombre}' ya está registrado en la semana que inicia el {$fechaInicio}.");
+            }
+
             CuadOrdenSemanal::create([
                 'cuadrillero_id' => $item['cuadrillero_id'],
                 'fecha_inicio' => $fechaInicio,
@@ -644,69 +694,89 @@ class CuadrilleroServicio
     }
 
 
+    /**
+     * guardarReporteSemanal
+     *
+     * Procesa y guarda el detalle semanal de cuadrilleros.
+     * - Usa la lista limpia y ordenada (de registrarOrdenSemanal) con IDs consistentes.
+     * - Asigna los grupos diarios para toda la semana.
+     * - Inserta registros diarios base si no existen.
+     * - Actualiza asistencias con las horas de trabajo.
+     *
+     * NOTA: Ya no necesita manejar eliminaciones por nombre vacío,
+     * porque registrarOrdenSemanal ya filtra esos casos.
+     *
+     * @param string $inicio  Fecha de inicio (lunes) de la semana
+     * @param string $fin     Fecha de fin (domingo) de la semana
+     * @param array  $rows    Lista de cuadrilleros con datos de trabajo y orden
+     * @return bool
+     * @throws \Throwable
+     */
 
     public static function guardarReporteSemanal($inicio, $fin, $rows)
     {
-
         DB::beginTransaction();
         try {
-
+            // ✅ 1. Generar lista ordenada y normalizada
             $rows = self::registrarOrdenSemanal($inicio, $rows);
-            $errores = [];
 
-            $dias = collect();
+            // ✅ 2. Calcular rango de fechas
             $inicioDate = Carbon::parse($inicio)->startOfDay();
             $finDate = Carbon::parse($fin)->endOfDay();
+
+            $dias = collect();
             for ($date = $inicioDate->copy(); $date->lte($finDate); $date->addDay()) {
                 $dias->push($date->copy());
             }
 
-            foreach ($rows as $i => $fila) {
+            // ✅ 3. Obtener los IDs actuales procesados (de orden semanal)
+            $cuadrilleroIdsActuales = collect($rows)->pluck('cuadrillero_id')->unique()->filter()->values();
 
+            // ✅ 4. Buscar los cuadrilleros que ya estaban en CuadRegistroDiario pero que han sido eliminados del nuevo orden
+            $cuadrillerosAEliminar = CuadRegistroDiario::whereBetween('fecha', [$inicioDate, $finDate])
+                ->whereNotIn('cuadrillero_id', $cuadrilleroIdsActuales)
+                ->pluck('cuadrillero_id')
+                ->unique();
+
+            foreach ($cuadrillerosAEliminar as $cuadrilleroId) {
+                // Buscar todos sus registros diarios de la semana
+                $registros = CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
+                    ->whereBetween('fecha', [$inicioDate, $finDate])
+                    ->get();
+
+                $tieneDetalle = false;
+                foreach ($registros as $registro) {
+                    $existeDetalle = CuadDetalleHora::where('registro_diario_id', $registro->id)->exists();
+                    if ($existeDetalle) {
+                        $tieneDetalle = true;
+                        break;
+                    }
+                }
+
+                if (!$tieneDetalle) {
+                    // ✅ No tiene detalle → eliminar los registros
+                    CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
+                        ->whereBetween('fecha', [$inicioDate, $finDate])
+                        ->delete();
+
+                    CuadGrupoCuadrilleroFecha::where('cuadrillero_id', $cuadrilleroId)
+                        ->whereBetween('fecha', [$inicioDate, $finDate])
+                        ->delete();
+                }
+            }
+
+            // ✅ 5. Procesar cada fila de la nueva lista
+            foreach ($rows as $i => $fila) {
                 $nombre = trim(mb_strtoupper($fila['cuadrillero_nombres']) ?? '');
                 $cuadrilleroId = $fila['cuadrillero_id'] ?? null;
                 $codigoGrupo = trim($fila['codigo_grupo'] ?? null);
                 $codigoGrupo = $codigoGrupo === 'SIN GRUPO' ? null : $codigoGrupo;
 
-                // 🔴 Caso eliminar
-                if ($cuadrilleroId && $nombre === '') {
-                    CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
-                        ->whereBetween('fecha', [$inicio, $fin])
-                        ->delete();
-
-                    CuadGrupoCuadrilleroFecha::where('cuadrillero_id', $cuadrilleroId)
-                        ->whereBetween('fecha', [$inicio, $fin])
-                        ->delete();
-
-                    continue;
-                }
-
-                // 🔵 Verificar si nombre e ID coinciden
-                if ($cuadrilleroId) {
-                    $cuad = Cuadrillero::find($cuadrilleroId);
-                    if ($cuad && $cuad->nombres !== $nombre) {
-                        // Se "cambió" de trabajador → buscar o crear por nombre
-                        $nuevo = Cuadrillero::firstOrCreate(
-                            ['nombres' => $nombre],
-                            ['estado' => true]
-                        );
-                        $cuadrilleroId = $nuevo->id;
-                    }
-                } elseif ($nombre !== '') {
-                    // No tenía ID, solo nombre
-                    $nuevo = Cuadrillero::firstOrCreate(
-                        ['nombres' => $nombre],
-                        ['estado' => true]
-                    );
-                    $cuadrilleroId = $nuevo->id;
-                }
-
                 if (!$cuadrilleroId) {
-                    // Nada que hacer
                     continue;
                 }
 
-                // 🟠 Asignar grupo por rango
+                // ✅ Asignar grupo por cada día
                 if ($codigoGrupo) {
                     foreach ($dias as $d) {
                         CuadGrupoCuadrilleroFecha::updateOrCreate(
@@ -740,7 +810,7 @@ class CuadrilleroServicio
                     }
                 }
 
-                // 🟢 Guardar asistencias diarias
+                // ✅ Guardar asistencias diarias
                 foreach ($dias as $index => $d) {
                     $fechaStr = $d->toDateString();
                     $valorBruto = $fila["dia_" . ($index + 1)] ?? 0;
@@ -760,11 +830,6 @@ class CuadrilleroServicio
                         ]
                     );
                 }
-
-            }
-
-            if (count($errores)) {
-                throw ValidationException::withMessages(['errores' => $errores]);
             }
 
             DB::commit();
@@ -774,205 +839,6 @@ class CuadrilleroServicio
             throw $e;
         }
     }
-
-
-    public static function guardarDesdeHandsontable($fecha, $rows)
-    {
-        DB::beginTransaction();
-        try {
-            if (!$fecha) {
-                throw ValidationException::withMessages([
-                    'fecha' => 'Debe especificar una fecha.'
-                ]);
-            }
-            $labores = Labores::all()->pluck('id', 'codigo')->toArray();
-
-
-            $usuarioId = Auth::id();
-            $errores = [];
-
-            // ✅ 1️⃣ Antes de todo: obtener todas las actividades de ese día
-            $actividadesEseDia = Actividad::where('fecha', $fecha)->pluck('id')->toArray();
-            $actividadesUsadasEnLoop = [];
-
-            foreach ($rows as $i => $fila) {
-                $cuadrilleroNombre = trim($fila['cuadrillero_nombres'] ?? '');
-                $cuadrilleroId = $fila['cuadrillero_id'] ?? null;
-                $tieneTramos = false;
-                $tramos = [];
-                $filaOrden = $i + 1;
-
-                // 2️⃣ Recolectar tramos válidos
-                for ($j = 1; $j <= 10; $j++) {
-                    $inicio = $fila["hora_inicio_$j"] ?? null;
-                    $fin = $fila["hora_fin_$j"] ?? null;
-                    $campo = $fila["campo_$j"] ?? null;
-                    $labor = $fila["labor_$j"] ?? null;
-
-                    if ($labor) {
-                        if (!array_key_exists($labor, $labores)) {
-
-                            throw new Exception("Error en la fila {$filaOrden}, el código {$labor} no existe.");
-                        }
-                    }
-
-                    if ($inicio || $fin || $campo || $labor) {
-                        if (!$inicio || !$fin || !$labor) {
-                            $errores[] = "Fila " . ($i + 1) . ", tramo $j: falta hora o labor.";
-                            continue;
-                        }
-
-                        $tieneTramos = true;
-                        $tramos[] = compact('inicio', 'fin', 'campo', 'labor');
-                    }
-                }
-
-                // 3️⃣ Si no hay horarios
-                if (!$tieneTramos) {
-                    if (!$cuadrilleroId && $cuadrilleroNombre === '') {
-                        continue;
-                    }
-
-                    if (!$cuadrilleroId && $cuadrilleroNombre !== '') {
-                        $cuadrillero = Cuadrillero::firstOrCreate(
-                            ['nombres' => $cuadrilleroNombre],
-                            [
-                                'dni' => $fila['cuadrillero_dni'] ?? null,
-                                'estado' => true,
-                            ]
-                        );
-                        $cuadrilleroId = $cuadrillero->id;
-                    }
-
-                    if ($cuadrilleroId) {
-                        $registro = CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
-                            ->where('fecha', $fecha)
-                            ->first();
-
-                        if ($registro) {
-                            // ✅ Eliminar SIEMPRE sus detalles
-                            $registro->detalleHoras()->delete();
-
-                            if ($cuadrilleroNombre === '') {
-                                $registro->delete();
-                            } else {
-                                $registro->update([
-                                    'asistencia' => true,
-                                    'costo_dia' => 0,
-                                    'total_bono' => 0,
-                                    'costo_personalizado_dia' => null,
-                                ]);
-                            }
-                        } else {
-                            if ($cuadrilleroNombre !== '') {
-                                CuadRegistroDiario::create([
-                                    'cuadrillero_id' => $cuadrilleroId,
-                                    'fecha' => $fecha,
-                                    'asistencia' => true,
-                                    'costo_dia' => 0,
-                                    'total_bono' => 0,
-                                    'costo_personalizado_dia' => null,
-                                ]);
-                            }
-                        }
-                    }
-
-                    continue;
-                }
-
-                // 4️⃣ Obtener o crear cuadrillero
-                if (!$cuadrilleroId && $cuadrilleroNombre !== '') {
-                    $cuadrillero = Cuadrillero::firstOrCreate(
-                        ['nombres' => $cuadrilleroNombre],
-                        [
-                            'dni' => $fila['cuadrillero_dni'] ?? null,
-                            'estado' => true,
-                        ]
-                    );
-                    $cuadrilleroId = $cuadrillero->id;
-                }
-
-                if (!$cuadrilleroId) {
-                    $errores[] = "Fila " . ($i + 1) . ": no se pudo asociar a ningún cuadrillero.";
-                    continue;
-                }
-
-                // 5️⃣ Crear o actualizar registro diario
-                $registro = CuadRegistroDiario::updateOrCreate(
-                    [
-                        'cuadrillero_id' => $cuadrilleroId,
-                        'fecha' => $fecha,
-                    ],
-                    [
-                        'asistencia' => $fila['asistencia'] ?? true,
-                        'costo_dia' => 0,
-                        'total_bono' => 0,
-                        'costo_personalizado_dia' => null,
-                    ]
-                );
-
-                $idsDetallesNuevos = [];
-
-                foreach ($tramos as $tramo) {
-                    $laborId = $labores[$tramo['labor']];
-                    $actividad = Actividad::firstOrCreate(
-                        [
-                            'fecha' => $fecha,
-                            'campo' => $tramo['campo'],
-                            'labor_id' => $laborId,
-                        ],
-                        [
-                            'nombre_labor' => self::getLaborNombre($laborId),
-                            'codigo_labor' => $tramo['labor'],
-                            'created_by' => $usuarioId,
-                        ]
-                    );
-
-                    // ✅ Marcarla como usada
-                    $actividadesUsadasEnLoop[] = $actividad->id;
-
-                    $detalle = CuadDetalleHora::firstOrCreate(
-                        [
-                            'registro_diario_id' => $registro->id,
-                            'actividad_id' => $actividad->id,
-                            'hora_inicio' => $tramo['inicio'],
-                            'hora_fin' => $tramo['fin'],
-                        ],
-                        [
-                            'campo_nombre' => $tramo['campo'],
-                            'produccion' => null,
-                            'costo_bono' => 0,
-                        ]
-                    );
-
-                    $idsDetallesNuevos[] = $detalle->id;
-                }
-
-                CuadDetalleHora::where('registro_diario_id', $registro->id)
-                    ->whereNotIn('id', $idsDetallesNuevos)
-                    ->delete();
-            }
-
-            // ✅ 6️⃣ Limpiar actividades huérfanas
-            $actividadesUsadasEnLoop = array_unique($actividadesUsadasEnLoop);
-            $actividadesParaEliminar = array_diff($actividadesEseDia, $actividadesUsadasEnLoop);
-
-            if (!empty($actividadesParaEliminar)) {
-                Actividad::whereIn('id', $actividadesParaEliminar)->delete();
-            }
-
-            if (count($errores)) {
-                throw ValidationException::withMessages(['errores' => $errores]);
-            }
-
-            DB::commit();
-            return true;
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    }
-
 
 
     public static function obtenerHandsontableReporteDiario($fecha)
@@ -999,7 +865,7 @@ class CuadrilleroServicio
         $maxActividades = 0;
 
         foreach ($registros->groupBy('cuadrillero_id') as $cuadrilleroId => $registrosCuadrillero) {
-            /** @var \App\Models\Cuadrillero $cuadrillero */
+
             $cuadrillero = optional($registrosCuadrillero->first()->cuadrillero);
             $asistencia = $registrosCuadrillero->first()->asistencia;
 
@@ -1010,7 +876,7 @@ class CuadrilleroServicio
 
                     $todasActividades->push([
                         'campo' => $detalle->campo_nombre,
-                        'labor' => optional($detalle->actividad)->codigo_labor ?? '-',
+                        'labor' => $detalle->codigo_labor,
                         'hora_inicio' => Carbon::parse($detalle->hora_inicio)->format('H:i'),
                         'hora_fin' => Carbon::parse($detalle->hora_fin)->format('H:i'),
                     ]);
@@ -1107,8 +973,6 @@ class CuadrilleroServicio
             throw ValidationException::withMessages($validator->errors()->toArray());
         }
 
-        $usuarioId = Auth::id();
-
         foreach ($cuadrilleros as $cuadrillero) {
             // 1️⃣ Buscar o crear el registro diario para ese cuadrillero y fecha
             $registroDiario = CuadRegistroDiario::firstOrCreate(
@@ -1125,23 +989,11 @@ class CuadrilleroServicio
             );
 
             foreach ($actividades as $actividad) {
-                // 2️⃣ Buscar o crear la actividad
-                $actividadModelo = Actividad::firstOrCreate(
-                    [
-                        'fecha' => $fecha,
-                        'campo' => $actividad['campo'],
-                        'labor_id' => $actividad['labor'],
-                    ],
-                    [
-                        'nombre_labor' => self::getLaborNombre($actividad['labor']),
-                        'codigo_labor' => self::getLaborCodigo($actividad['labor']),
-                        'created_by' => $usuarioId,
-                    ]
-                );
+
 
                 // 3️⃣ Evitar duplicados de detalle exacto
                 $yaExisteDetalle = CuadDetalleHora::where('registro_diario_id', $registroDiario->id)
-                    ->where('actividad_id', $actividadModelo->id)
+                    ->where('codigo_labor', $actividad['labor'])
                     ->where('hora_inicio', $actividad['inicio'])
                     ->where('hora_fin', $actividad['fin'])
                     ->exists();
@@ -1150,7 +1002,7 @@ class CuadrilleroServicio
                     // 4️⃣ Crear detalle de horas
                     CuadDetalleHora::create([
                         'registro_diario_id' => $registroDiario->id,
-                        'actividad_id' => $actividadModelo->id,
+                        'codigo_labor' => $actividad['labor'],
                         'campo_nombre' => $actividad['campo'],
                         'hora_inicio' => $actividad['inicio'],
                         'hora_fin' => $actividad['fin'],
@@ -1163,6 +1015,103 @@ class CuadrilleroServicio
 
 
         return true;
+    }
+    public static function guardarDesdeHandsontable($fecha, $rows)
+    {
+        DB::beginTransaction();
+        try {
+            if (!$fecha) {
+                throw ValidationException::withMessages([
+                    'fecha' => 'Debe especificar una fecha.'
+                ]);
+            }
+            $labores = Labores::all()->pluck('id', 'codigo')->toArray();
+            $usuarioId = Auth::id();
+            $errores = [];
+
+            foreach ($rows as $i => $fila) {
+
+                $cuadrilleroNombre = trim($fila['cuadrillero_nombres'] ?? '');
+                $cuadrilleroId = $fila['cuadrillero_id'] ?? null;
+                $tieneTramos = false;
+                $tramos = [];
+                $filaOrden = $i + 1;
+
+                // 2️⃣ Recolectar tramos válidos
+                // como maximo habran 10 labores por trabajador, mas adelante debemos detectar cuantos son
+                for ($j = 1; $j <= 10; $j++) {
+                    $inicio = $fila["hora_inicio_$j"] ?? null;
+                    $fin = $fila["hora_fin_$j"] ?? null;
+                    $campo = $fila["campo_$j"] ?? null;
+                    $labor = $fila["labor_$j"] ?? null;
+
+                    if ($labor) {
+                        if (!array_key_exists($labor, $labores)) {
+
+                            throw new Exception("Error en la fila {$filaOrden}, el código {$labor} no existe.");
+                        }
+                    }
+
+                    if ($inicio || $fin || $campo || $labor) {
+                        if (!$inicio || !$fin || !$labor) {
+                            $errores[] = "Fila " . ($i + 1) . ", tramo $j: falta hora o labor.";
+                            continue;
+                        }
+
+                        $tieneTramos = true;
+                        $tramos[] = compact('inicio', 'fin', 'campo', 'labor');
+                    }
+                }
+
+                $registro = CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
+                    ->where('fecha', $fecha)
+                    ->first();
+
+                if ($registro) {
+                    $registro->detalleHoras()->delete();
+                }
+
+                // 5️⃣ Crear o actualizar registro diario
+                $registro = CuadRegistroDiario::updateOrCreate(
+                    [
+                        'cuadrillero_id' => $cuadrilleroId,
+                        'fecha' => $fecha,
+                    ],
+                    [
+                        'asistencia' => $fila['asistencia'] ?? true,
+                        'costo_dia' => 0,
+                        'total_bono' => 0,
+                        'costo_personalizado_dia' => null,
+                    ]
+                );
+
+                foreach ($tramos as $tramo) {
+
+                    $detalle = CuadDetalleHora::firstOrCreate(
+                        [
+                            'registro_diario_id' => $registro->id,
+                            'codigo_labor' => $tramo['labor'],
+                            'campo_nombre' => $tramo['campo'],
+                            'hora_inicio' => $tramo['inicio'],
+                            'hora_fin' => $tramo['fin'],
+                        ],
+                        [
+                            'produccion' => null,
+                            'costo_bono' => 0,
+                        ]
+                    );
+                }
+            }
+            if (count($errores)) {
+                throw ValidationException::withMessages(['errores' => $errores]);
+            }
+
+            DB::commit();
+            return true;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
     protected static function getLaborNombre($laborId)
     {

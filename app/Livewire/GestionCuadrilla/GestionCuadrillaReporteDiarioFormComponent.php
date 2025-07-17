@@ -4,6 +4,7 @@ namespace App\Livewire\GestionCuadrilla;
 use App\Models\Cuadrillero;
 use App\Services\Cuadrilla\CuadrilleroServicio;
 use App\Services\InformacionGeneral\LaboresServicio;
+use App\Services\RecursosHumanos\Personal\ActividadServicio;
 use Illuminate\Support\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -65,6 +66,7 @@ class GestionCuadrillaReporteDiarioFormComponent extends Component
                 $this->cuadrillerosAgregados,
                 $this->actividades
             );
+            ActividadServicio::detectarYCrearActividades($this->fecha);
 
             $this->mostrarFormularioRegistroDiarioCuadrilla = false;
             

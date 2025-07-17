@@ -124,7 +124,6 @@
         hot: null,
         tramos: @entangle('tramos'),
         asistenciaCuadrilla: @json($registros),
-        colores: @json($colores),
         total_horarios: @json($total_horarios),
         estandarProduccion: @entangle('estandarProduccion'),
         unidades: @entangle('unidades'),
@@ -136,8 +135,7 @@
             Livewire.on('actualizarTablaBonificacionesCuadrilla', (data) => {
                 console.log(data);
                 this.asistenciaCuadrilla = data[0];
-                this.colores = data[1];
-                this.total_horarios = data[2];
+                this.total_horarios = data[1];
                 this.$nextTick(() => this.initTable());
             });
         },
@@ -174,7 +172,6 @@
                 licenseKey: 'non-commercial-and-evaluation',
             });
         },
-
         generarColumnasDinamicas() {
             const cols = [];
 
@@ -184,16 +181,22 @@
                 title: 'Trabajador',
                 readOnly: true,
                 className: 'font-bold !text-left !bg-gray-100'
-            });
-
-            // ➤ Horarios concatenados
-            cols.push({
+            }, {
+                data: 'campo',
+                title: 'Campo',
+                readOnly: true,
+                className: 'font-bold !text-center !bg-gray-100'
+            }, {
+                data: 'labor',
+                title: 'Labor',
+                readOnly: true,
+                className: 'font-bold !text-center !bg-gray-100'
+            }, {
                 data: 'horarios',
                 title: 'Horarios',
                 readOnly: true,
-                className: 'font-bold !text-left !bg-gray-100'
+                className: 'font-bold !text-center !bg-gray-100'
             });
-
             // ➤ Producciones según cantidad máxima
             for (let i = 1; i <= this.total_horarios; i++) {
                 cols.push({

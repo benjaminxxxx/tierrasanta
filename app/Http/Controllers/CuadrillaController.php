@@ -19,7 +19,14 @@ class CuadrillaController extends Controller
     {
         $modules = [
             [
-                'title' => 'Registro Diario',
+                'title' => 'Reporte Semanal',
+                'description' => 'Crear y gestionar períodos de pago por grupo',
+                'icon' => 'fa-calendar-alt',
+                'route' => 'gestion_cuadrilleros.reporte-semanal.index',
+                'color' => 'bg-orange-500',
+            ],
+            [
+                'title' => 'Detallar Registro Diario',
                 'description' => 'Buscar cuadrilleros y asignar actividades diarias',
                 'icon' => 'fa-clock',
                 'route' => 'gestion_cuadrilleros.registro-diario.index',
@@ -38,13 +45,6 @@ class CuadrillaController extends Controller
                 'icon' => 'fa-users',
                 'route' => 'gestion_cuadrilleros.pagos.index',
                 'color' => 'bg-purple-500',
-            ],
-            [
-                'title' => 'Reporte Semanal',
-                'description' => 'Crear y gestionar períodos de pago por grupo',
-                'icon' => 'fa-calendar-alt',
-                'route' => 'gestion_cuadrilleros.reporte-semanal.index',
-                'color' => 'bg-orange-500',
             ],
             [
                 'title' => 'Módulo de Pagos',
