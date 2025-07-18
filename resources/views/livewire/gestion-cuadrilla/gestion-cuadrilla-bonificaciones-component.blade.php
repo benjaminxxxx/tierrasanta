@@ -177,7 +177,12 @@
 
             // ➤ Trabajador
             cols.push({
-                data: 'cuadrillero_nombres',
+                data: 'tipo',
+                title: 'Tipo',
+                readOnly: true,
+                className: 'font-bold !text-left !bg-gray-100'
+            },{
+                data: 'nombre_trabajador',
                 title: 'Trabajador',
                 readOnly: true,
                 className: 'font-bold !text-left !bg-gray-100'

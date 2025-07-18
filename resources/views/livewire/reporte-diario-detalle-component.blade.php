@@ -36,7 +36,7 @@
                         @endif
                 </div>
                 <div class="text-right mt-5">
-                    <x-button @click="sendData">
+                    <x-button @click="sendDataReporteDiarioPlanilla">
                         <i class="fa fa-save"></i> Guardar Información
                     </x-button>
                 </div>
@@ -505,7 +505,7 @@
                     $wire.dispatch('eliminarPlanilla', data);
                 }
             },
-            sendData() {
+            sendDataReporteDiarioPlanilla() {
                 const rawData = this.hot.getData();
 
                 const filteredData = rawData.filter(row => {

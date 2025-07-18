@@ -14,6 +14,8 @@ class ReporteDiarioDetalle extends Model
         'labor',
         'hora_inicio',
         'hora_salida',
+        'produccion',
+        'costo_bono'
     ];
     public function reporteDiario()
     {

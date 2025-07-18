@@ -15,6 +15,8 @@ use App\Models\ReporteDiarioDetalle;
 use App\Models\ReporteDiarioRiego;
 use App\Services\CuadrillaServicio;
 use App\Services\ProductividadServicio;
+use App\Services\RecursosHumanos\Personal\ActividadServicio;
+use App\Services\RecursosHumanos\Personal\EmpleadoServicio;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -65,6 +67,7 @@ class ReporteDiarioDetalleComponent extends Component
         $this->dispatch("setEmpleados", $this->empleados);
         $this->alert('success', 'Empleados eliminados correctamente.');
     }
+    /*
     public function GuardarInformacion($datos)
     {
 
@@ -278,6 +281,290 @@ class ReporteDiarioDetalleComponent extends Component
 
             DB::commit();
 
+            ActividadServicio::detectarYCrearActividades($this->fecha);
+
+            $this->ImportarEmpleados();
+            $this->hasUnsavedChanges = false;
+            $this->dispatch("setEmpleados", $this->empleados);
+            $this->alert("success", 'Información guardada correctamente.');
+        } catch (\Exception $th) {
+            // Revertir la transacción en caso de error
+            DB::rollBack();
+            $this->dispatch('log', $th->getMessage());
+            $this->alert('error', 'Ocurrió un error interno al registrar la asistencia.');
+        }
+    }*/
+    public function GuardarInformacion($datos)
+    {
+
+        if (!$this->fecha) {
+            return;
+        }
+
+        if (!is_array($datos)) {
+            return;
+        }
+
+        $fecha = $this->fecha;
+
+        // Iniciar transacción para asegurar integridad de datos
+        DB::beginTransaction();
+
+        try {
+
+            ReporteDiarioCuadrilla::whereDate('fecha', $fecha)->delete();
+            $contadorAsistencias = [];
+            $errores = [];
+            // Iterar sobre cada fila de datos
+            foreach ($datos as $i => $fila) {
+
+                $documento = $fila[0];
+                $nombresEmpleado = trim(preg_replace('/[\x00-\x1F\x7F\xA0]/u', ' ', $fila[1]));
+
+                $asistencia = $fila[2];
+                $indiceTotal = count($fila) - 2;
+                $indiceBono = count($fila) - 1;
+                $tramos = [];
+
+
+                $bonoProductividad = trim(preg_replace('/[\x00-\x1F\x7F\xA0]/u', ' ', $fila[$indiceBono]));
+
+                // Validar que el valor es un número decimal o entero
+                if (preg_match('/^[-+]?[0-9]*\.?[0-9]+$/', $bonoProductividad)) {
+                    // Convertir a decimal
+                    $bonoProductividad = (float) $bonoProductividad; // O puedes usar number_format($bonoProductividad, 2)
+                } else {
+                    // Manejar el error: el valor no es un número válido
+                    $bonoProductividad = null; // O asignar un valor predeterminado
+                }
+
+                if (!$documento) {
+                    if (mb_strtolower($nombresEmpleado) == 'cuadrilla') {
+
+                        $numeroCuadrilleros = trim(preg_replace('/[\x00-\x1F\x7F\xA0]/u', ' ', $fila[3]));
+
+                        if ($numeroCuadrilleros) {
+                            $reporteDiarioCuadrilla = ReporteDiarioCuadrilla::create([
+                                'numero_cuadrilleros' => $numeroCuadrilleros,
+                                'total_horas' => '0',
+                                'fecha' => $this->fecha
+                            ]);
+
+                            //$totalHoras = new \DateTime('00:00:00');
+
+                            for ($i = 4; $i < count($fila); $i += 4) {
+                                $campo = $fila[$i] ?? null;
+                                $labor = $fila[$i + 1] ?? null;
+                                $horaEntrada = $fila[$i + 2] ?? null;
+                                $horaSalida = $fila[$i + 3] ?? null;
+
+                                // Reemplazar puntos por dos puntos en la hora, si es necesario
+                                if ($horaEntrada) {
+                                    $horaEntrada = str_replace('.', ':', $horaEntrada);
+                                }
+                                if ($horaSalida) {
+                                    $horaSalida = str_replace('.', ':', $horaSalida);
+                                }
+
+                                // Si se tienen los datos necesarios, crear el detalle
+                                if ($campo && $labor && $horaEntrada && $horaSalida) {
+
+
+
+                                    $horaInicioDT = \DateTime::createFromFormat('H:i', $horaEntrada);
+                                    $horaFinDT = \DateTime::createFromFormat('H:i', $horaSalida);
+
+                                    if (!$horaInicioDT || !$horaFinDT) {
+                                        continue;
+                                    }
+
+
+                                    ReporteDiarioCuadrillaDetalle::create([
+                                        'reporte_diario_id' => $reporteDiarioCuadrilla->id,
+                                        'campo' => $campo,
+                                        'labor' => $labor,
+                                        'hora_inicio' => $horaEntrada,
+                                        'hora_salida' => $horaSalida
+                                    ]);
+                                }
+                            }
+
+                            // Formatear el total de horas acumuladas
+
+                            $totalHorasFormateadas = isset($fila[$indiceTotal]) ? trim(preg_replace('/[\x00-\x1F\x7F\xA0]/u', ' ', $fila[$indiceTotal])) : '0';
+                            //$totalHorasFormateadas = str_replace('.', '.', $totalHorasFormateadas);
+
+                            if (!preg_match('/^([0-9]|[1-9][0-9]|[0-1][0-9]|2[0-9])(\.[0-5]?[0-9]?)?$/', $totalHorasFormateadas)) {
+                                // Si no es válido, asignar '0' por defecto
+                                $totalHorasFormateadas = '0';
+                            }
+                            // Actualizar el total de horas en el reporte de la cuadrilla
+                            $reporteDiarioCuadrilla->update([
+                                'total_horas' => $totalHorasFormateadas
+                            ]);
+                        }
+                    }
+                } else {
+                    // Insertar o actualizar el reporte diario
+                    if ($asistencia != null) {
+                        if (!array_key_exists($asistencia, $contadorAsistencias))
+                            $contadorAsistencias[$asistencia] = 0;
+
+                        $contadorAsistencias[$asistencia]++;
+                    }
+
+
+
+                    // Eliminar los detalles existentes asociados al reporte
+                    //ReporteDiarioDetalle::where('reporte_diario_id', $reporteDiario->id)->delete();
+
+                    // Procesar los detalles en grupos de 4 columnas
+                    for ($j = 4; $j < count($fila); $j += 4) {
+                        $campo = $fila[$j] ?? null;
+                        $labor = $fila[$j + 1] ?? null;
+                        $inicio = $fila[$j + 2] ?? null;
+                        $fin = $fila[$j + 3] ?? null;
+
+                        // Reemplazar puntos por dos puntos en la hora, si es necesario
+                        if ($inicio) {
+                            $inicio = str_replace('.', ':', $inicio);
+                        }
+                        if ($fin) {
+                            $fin = str_replace('.', ':', $fin);
+                        }
+                        /*
+                                                // Si se tienen los datos necesarios, crear el detalle
+                                                if ($campo && $labor && $horaEntrada && $horaSalida) {
+
+                                                    $horaInicioDT = \DateTime::createFromFormat('H:i', $horaEntrada);
+                                                    $horaFinDT = \DateTime::createFromFormat('H:i', $horaSalida);
+
+                                                    if (!$horaInicioDT || !$horaFinDT) {
+                                                        continue;
+                                                    }
+
+                                                    ReporteDiarioDetalle::create([
+                                                        'reporte_diario_id' => $reporteDiario->id,
+                                                        'campo' => $campo,
+                                                        'labor' => $labor,
+                                                        'hora_inicio' => $horaEntrada,
+                                                        'hora_salida' => $horaSalida
+                                                    ]);
+                                                }*/
+                        if ($inicio || $fin || $campo || $labor) {
+                            if (!$inicio || !$fin || !$labor) {
+                                $errores[] = "Fila " . ($i + 1) . ", tramo $j: falta hora o labor.";
+                                continue;
+                            }
+
+                            $tramos[] = [
+                                'labor' => $labor,
+                                'campo' => $campo,
+                                'hora_inicio' => $inicio,
+                                'hora_salida' => $fin,
+                            ];
+                        }
+                    }
+
+                    if (empty($tramos)) {
+                        continue;
+                    }
+
+                    $registro = ReporteDiario::updateOrCreate(
+                        ['documento' => $documento, 'fecha' => $this->fecha], // Suponiendo que el documento está en la primera columna
+                        [
+                            'empleado_nombre' => $nombresEmpleado,
+                            'fecha' => $this->fecha,
+                            'total_horas' => '00:00:00', // Puedes ajustar esto según sea necesario
+                            'tipo_trabajador' => 'planilla',
+                            'asistencia' => $asistencia ?? '',
+                            'bono_productividad' => $bonoProductividad
+                        ]
+                    );
+
+                    $existentes = $registro->detalles()->get();
+
+                    // Mapear claves para comparar
+                    $clave = fn($tramo) => implode('|', [
+                        $tramo['labor'],
+                        $tramo['campo'],
+                        Carbon::parse($tramo['hora_inicio'])->format('H:i'),
+                        Carbon::parse($tramo['hora_salida'])->format('H:i'),
+                    ]);
+
+                    $existentesMap = $existentes->keyBy($clave);
+                    $nuevosMap = collect($tramos)->keyBy($clave);
+
+                    foreach ($existentes as $existente) {
+
+                        $k = $clave($existente->toArray());
+                        if (!$nuevosMap->has($k)) {
+                            $existente->delete();
+                        }
+                    }
+
+                    foreach ($nuevosMap as $k => $nuevo) {
+                        $detalle = $existentesMap->get($k);
+
+                        if ($detalle) {
+                            // Ya existe, se mantiene. Si necesitas actualizar algún campo adicional, hazlo aquí.
+                            continue;
+                        }
+
+                        // Crear nuevo
+                        $registro->detalles()->create([
+                            'campo' => $nuevo['campo'],
+                            'labor' => $nuevo['labor'],
+                            'hora_inicio' => $nuevo['hora_inicio'],
+                            'hora_salida' => $nuevo['hora_salida']
+                        ]);
+                    }
+
+
+                    $totalHorasFormateadas = isset($fila[$indiceTotal]) ? trim(preg_replace('/[\x00-\x1F\x7F\xA0]/u', ' ', $fila[$indiceTotal])) : '00:00';
+
+                    $totalHorasFormateadas = str_replace('.', ':', $totalHorasFormateadas);
+
+                    if (preg_match('/^\d+$/', $totalHorasFormateadas)) {
+                        $totalHorasFormateadas .= ':00';
+                    } elseif (preg_match('/^\d+:\d$/', $totalHorasFormateadas)) {
+                        // Si el formato es algo como "3:5", convertirlo en "03:05"
+                        list($hours, $minutes) = explode(':', $totalHorasFormateadas);
+                        $totalHorasFormateadas = str_pad($hours, 2, '0', STR_PAD_LEFT) . ':' . str_pad($minutes, 2, '0', STR_PAD_RIGHT);
+                    }
+
+                    if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $totalHorasFormateadas)) {
+                        // Si no es válido, asignar '00:00' por defecto
+                        $totalHorasFormateadas = '00:00';
+                    } else {
+                        // Si es válido, formatea a H:i (asegura que tenga dos dígitos en horas y minutos)
+                        $totalHorasFormateadas = date('H:i', strtotime($totalHorasFormateadas));
+                    }
+
+                    $registro->update([
+                        'total_horas' => $totalHorasFormateadas
+                    ]);
+                }
+            }
+
+            $reporteDiarioCampos = ReporteDiarioCampos::whereDate('fecha', $this->fecha)->first();
+            if ($reporteDiarioCampos) {
+
+                $reporteDiarioCampos->totales()->detach();
+
+                foreach ($contadorAsistencias as $codigoAsistencia => $contadorAsistencia) {
+                    $tipoAsistencia = TipoAsistencia::where('codigo', $codigoAsistencia)->first();
+                    if ($tipoAsistencia) {
+                        $reporteDiarioCampos->totales()->attach($tipoAsistencia->id, ['total' => $contadorAsistencia]);
+                    }
+                }
+                $this->obtenerTotales();
+            }
+
+            DB::commit();
+
+            ActividadServicio::detectarYCrearActividades($this->fecha);
+
             $this->ImportarEmpleados();
             $this->hasUnsavedChanges = false;
             $this->dispatch("setEmpleados", $this->empleados);
@@ -289,6 +576,184 @@ class ReporteDiarioDetalleComponent extends Component
             $this->alert('error', 'Ocurrió un error interno al registrar la asistencia.');
         }
     }
+    /*
+        public function GuardarInformacion($datos)
+        {
+            if (!$this->fecha || !is_array($datos)) {
+                return;
+            }
+
+            DB::beginTransaction();
+
+            try {
+                ReporteDiarioCuadrilla::whereDate('fecha', $this->fecha)->delete();
+                $contadorAsistencias = [];
+
+                foreach ($datos as $fila) {
+                    $documento = $fila[0];
+                    $nombresEmpleado = trim(preg_replace('/[\x00-\x1F\x7F\xA0]/u', ' ', $fila[1]));
+                    $asistencia = $fila[2];
+                    $indiceTotal = count($fila) - 2;
+                    $indiceBono = count($fila) - 1;
+                    $bonoProductividad = trim(preg_replace('/[\x00-\x1F\x7F\xA0]/u', ' ', $fila[$indiceBono]));
+
+                    $bonoProductividad = preg_match('/^[-+]?[0-9]*\.?[0-9]+$/', $bonoProductividad) ? (float) $bonoProductividad : null;
+
+                    if (!$documento && mb_strtolower($nombresEmpleado) == 'cuadrilla') {
+                        $numeroCuadrilleros = trim(preg_replace('/[\x00-\x1F\x7F\xA0]/u', ' ', $fila[3]));
+
+                        if ($numeroCuadrilleros) {
+                            $reporteDiarioCuadrilla = ReporteDiarioCuadrilla::create([
+                                'numero_cuadrilleros' => $numeroCuadrilleros,
+                                'total_horas' => '0',
+                                'fecha' => $this->fecha
+                            ]);
+
+                            for ($i = 4; $i < count($fila); $i += 4) {
+                                $campo = $fila[$i] ?? null;
+                                $labor = $fila[$i + 1] ?? null;
+                                $horaEntrada = str_replace('.', ':', $fila[$i + 2] ?? null);
+                                $horaSalida = str_replace('.', ':', $fila[$i + 3] ?? null);
+
+                                if ($campo && $labor && $horaEntrada && $horaSalida && \DateTime::createFromFormat('H:i', $horaEntrada) && \DateTime::createFromFormat('H:i', $horaSalida)) {
+                                    ReporteDiarioCuadrillaDetalle::create([
+                                        'reporte_diario_id' => $reporteDiarioCuadrilla->id,
+                                        'campo' => $campo,
+                                        'labor' => $labor,
+                                        'hora_inicio' => $horaEntrada,
+                                        'hora_salida' => $horaSalida
+                                    ]);
+                                }
+                            }
+
+                            $totalHorasFormateadas = $fila[$indiceTotal] ?? '0';
+                            $totalHorasFormateadas = preg_match('/^([0-9]|[1-9][0-9]|[0-1][0-9]|2[0-9])(\.[0-5]?[0-9]?)?$/', $totalHorasFormateadas) ? $totalHorasFormateadas : '0';
+
+                            $reporteDiarioCuadrilla->update(['total_horas' => $totalHorasFormateadas]);
+                        }
+                    } else {
+                        if ($asistencia != null) {
+                            $contadorAsistencias[$asistencia] = ($contadorAsistencias[$asistencia] ?? 0) + 1;
+                        }
+
+                        $reporteDiario = ReporteDiario::updateOrCreate([
+                            'documento' => $documento,
+                            'fecha' => $this->fecha
+                        ], [
+                            'empleado_nombre' => $nombresEmpleado,
+                            'fecha' => $this->fecha,
+                            'total_horas' => '00:00:00',
+                            'tipo_trabajador' => 'planilla',
+                            'asistencia' => $asistencia ?? '',
+                            'bono_productividad' => $bonoProductividad
+                        ]);
+
+                        // Obtener tramos nuevos de la fila actual
+                        $nuevosTramos = [];
+                        for ($i = 4; $i < count($fila); $i += 4) {
+                            $campo = $fila[$i] ?? null;
+                            $labor = $fila[$i + 1] ?? null;
+                            $horaEntrada = str_replace('.', ':', $fila[$i + 2] ?? null);
+                            $horaSalida = str_replace('.', ':', $fila[$i + 3] ?? null);
+
+                            if ($campo && $labor && $horaEntrada && $horaSalida) {
+                                $nuevosTramos[] = [
+                                    'labor' => $labor,
+                                    'campo' => $campo,
+                                    'hora_inicio' => $horaEntrada,
+                                    'hora_salida' => $horaSalida
+                                ];
+                            }
+                        }
+
+                        // Lógica diferencial: elimina, crea si cambió algo
+                        self::sincronizarTramos($reporteDiario->id, $nuevosTramos);
+
+                        $totalHorasFormateadas = str_replace('.', ':', $fila[$indiceTotal] ?? '00:00');
+                        $totalHorasFormateadas = preg_match('/^\d+$/', $totalHorasFormateadas) ? $totalHorasFormateadas . ':00' : $totalHorasFormateadas;
+
+                        if (preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $totalHorasFormateadas)) {
+                            $totalHorasFormateadas = date('H:i', strtotime($totalHorasFormateadas));
+                        } else {
+                            $totalHorasFormateadas = '00:00';
+                        }
+
+                        $reporteDiario->update(['total_horas' => $totalHorasFormateadas]);
+                    }
+                }
+
+                if ($reporteDiarioCampos = ReporteDiarioCampos::whereDate('fecha', $this->fecha)->first()) {
+                    $reporteDiarioCampos->totales()->detach();
+
+                    foreach ($contadorAsistencias as $codigoAsistencia => $contador) {
+                        if ($tipoAsistencia = TipoAsistencia::where('codigo', $codigoAsistencia)->first()) {
+                            $reporteDiarioCampos->totales()->attach($tipoAsistencia->id, ['total' => $contador]);
+                        }
+                    }
+
+                    $this->obtenerTotales();
+                }
+
+                DB::commit();
+
+                ActividadServicio::detectarYCrearActividades($this->fecha);
+                $this->ImportarEmpleados();
+                $this->hasUnsavedChanges = false;
+                $this->dispatch("setEmpleados", $this->empleados);
+                $this->alert("success", 'Información guardada correctamente.');
+
+            } catch (\Exception $th) {
+                DB::rollBack();
+                $this->dispatch('log', $th->getMessage());
+                $this->alert('error', 'Ocurrió un error interno al registrar la asistencia.');
+            }
+        }*/
+    public static function sincronizarTramos($reporteDiarioId, array $nuevosTramos)
+    {
+        $clave = fn($item) => $item['labor'] . '|' . $item['campo'] . '|' . substr($item['hora_inicio'], 0, 5) . '|' . substr($item['hora_salida'], 0, 5);
+        $nuevosMap = collect($nuevosTramos)->keyBy($clave);
+
+        $existentes = ReporteDiarioDetalle::where('reporte_diario_id', $reporteDiarioId)->get();
+
+        // Eliminar tramos existentes que no están en los nuevos
+        foreach ($existentes as $existente) {
+            $k = $clave([
+                'labor' => $existente->labor,
+                'campo' => $existente->campo,
+                'hora_inicio' => $existente->hora_inicio,
+                'hora_salida' => $existente->hora_salida,
+            ]);
+
+            if (!$nuevosMap->has($k)) {
+                $existente->delete();
+            }
+        }
+
+        // Insertar nuevos tramos que no existen aún
+        $existentesMap = $existentes->keyBy(fn($e) => $clave([
+            'labor' => $e->labor,
+            'campo' => $e->campo,
+            'hora_inicio' => $e->hora_inicio,
+            'hora_salida' => $e->hora_salida,
+        ]));
+
+        foreach ($nuevosTramos as $tramo) {
+            $k = $clave($tramo);
+            if (!$existentesMap->has($k)) {
+                ReporteDiarioDetalle::create([
+                    'reporte_diario_id' => $reporteDiarioId,
+                    'campo' => $tramo['campo'],
+                    'labor' => $tramo['labor'],
+                    'hora_inicio' => $tramo['hora_inicio'],
+                    'hora_salida' => $tramo['hora_salida'],
+                    'produccion' => $tramo['produccion'] ?? null,
+                    'costo_bono' => $tramo['costo_bono'] ?? 0,
+                ]);
+            }
+        }
+    }
+
+
     public function obtenerTotales()
     {
         if (!$this->reporteDiarioCampos || !$this->tipoAsistencias) {

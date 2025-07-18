@@ -23,6 +23,54 @@ use Str;
 
 class CuadrilleroServicio
 {
+    public static function guardarBonoCuadrilla($fila, $fecha)
+    {
+        $cuadrilleroId = $fila['cuadrillero_id'] ?? null;
+        $campo = $fila['campo'] ?? null;
+        $labor = $fila['labor'] ?? null;
+        $totalBono = floatval($fila['total_bono'] ?? 0);
+
+        // Buscar el registro diario para la fecha
+        $registro = CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
+            ->whereDate('fecha', $fecha)
+            ->first();
+
+        if (!$registro) {
+            return;
+        }
+
+        // Obtener detalles de esa actividad, ordenados por horario
+        $detalles = $registro->detalleHoras()
+            ->where('campo_nombre', $campo)
+            ->where('codigo_labor', $labor)
+            ->orderBy('hora_inicio')
+            ->get();
+
+        $conteoTramos = $detalles->count();
+
+        if ($conteoTramos === 0) {
+            return;
+        }
+
+        // Calcular bono proporcional por tramo
+        $bonoPorTramo = round($totalBono / $conteoTramos, 2);
+
+        // Recolectar solo los valores de producción válidos
+        $producciones = [];
+        for ($i = 1; $i <= $conteoTramos; $i++) {
+            $produccionKey = "produccion_$i";
+            $producciones[] = isset($fila[$produccionKey]) ? floatval($fila[$produccionKey]) : 0;
+        }
+
+        // Actualizar cada detalle con costo_bono y producción
+        foreach ($detalles as $index => $detalle) {
+            $detalle->update([
+                'costo_bono' => $bonoPorTramo,
+                'produccion' => $producciones[$index] ?? 0
+            ]);
+        }
+    }
+    /*
     public static function guardarBonificacionesYConfiguracionActividad($actividadId, $datos, $tramos, $unidades, $estandarProduccion)
     {
         $actividad = Actividad::findOrFail($actividadId);
@@ -87,7 +135,7 @@ class CuadrilleroServicio
                 ]);
             }
         }
-    }
+    }*/
 
 
 
@@ -128,12 +176,12 @@ class CuadrilleroServicio
         $maxTramos = 0;
 
         foreach ($registros as $r) {
-            
+
             $row = [
                 'cuadrillero_id' => $r->cuadrillero_id,
-                'cuadrillero_nombres' => optional($r->cuadrillero)->nombres ?? '-',
-                'campo'=>$campo_nombre,
-                'labor'=>$codigo_labor,
+                'nombre_trabajador' => optional($r->cuadrillero)->nombres ?? '-',
+                'campo' => $campo_nombre,
+                'labor' => $codigo_labor,
                 'total_bono' => 0,
             ];
 
@@ -521,7 +569,7 @@ class CuadrilleroServicio
 
         foreach ($registroDiarioCuadrilla as $asistenciaCuadrillero) {
             $totalHoras = (float) $asistenciaCuadrillero->total_horas;
-            
+
 
             if ($totalHoras <= 0) {
                 $asistenciaCuadrillero->costo_dia = 0;
@@ -546,7 +594,7 @@ class CuadrilleroServicio
                 $asistenciaCuadrillero->save();
                 continue;
             }
-            
+
             $costoDiario = $costosDiariosDuranteFechas
                 ->where('fecha', $fechaStr)
                 ->where('codigo_grupo', $grupoCuadrilleroEnFecha->codigo_grupo)
@@ -1016,6 +1064,7 @@ class CuadrilleroServicio
 
         return true;
     }
+    /*
     public static function guardarDesdeHandsontable($fecha, $rows)
     {
         DB::beginTransaction();
@@ -1112,7 +1161,126 @@ class CuadrilleroServicio
             DB::rollBack();
             throw $e;
         }
+    }*/
+    public static function guardarDesdeHandsontable($fecha, $rows)
+    {
+        DB::beginTransaction();
+        try {
+            if (!$fecha) {
+                throw ValidationException::withMessages([
+                    'fecha' => 'Debe especificar una fecha.'
+                ]);
+            }
+
+            $labores = Labores::all()->pluck('id', 'codigo')->toArray();
+            $usuarioId = Auth::id();
+            $errores = [];
+
+            foreach ($rows as $i => $fila) {
+
+                $cuadrilleroNombre = trim($fila['cuadrillero_nombres'] ?? '');
+                $cuadrilleroId = $fila['cuadrillero_id'] ?? null;
+                $filaOrden = $i + 1;
+
+                $tramos = [];
+                for ($j = 1; $j <= 10; $j++) {
+                    $inicio = $fila["hora_inicio_$j"] ?? null;
+                    $fin = $fila["hora_fin_$j"] ?? null;
+                    $campo = $fila["campo_$j"] ?? null;
+                    $labor = $fila["labor_$j"] ?? null;
+
+                    if ($labor && !array_key_exists($labor, $labores)) {
+                        throw new Exception("Error en la fila {$filaOrden}, el código {$labor} no existe.");
+                    }
+
+                    if ($inicio || $fin || $campo || $labor) {
+                        if (!$inicio || !$fin || !$labor) {
+                            $errores[] = "Fila " . ($i + 1) . ", tramo $j: falta hora o labor.";
+                            continue;
+                        }
+
+                        $tramos[] = [
+                            'codigo_labor' => $labor,
+                            'campo_nombre' => $campo,
+                            'hora_inicio' => $inicio,
+                            'hora_fin' => $fin,
+                        ];
+                    }
+                }
+
+                if (empty($tramos)) {
+                    continue;
+                }
+
+                // Registro diario
+                $registro = CuadRegistroDiario::updateOrCreate(
+                    [
+                        'cuadrillero_id' => $cuadrilleroId,
+                        'fecha' => $fecha,
+                    ],
+                    [
+                        'asistencia' => $fila['asistencia'] ?? true,
+                        'costo_dia' => 0,
+                        'total_bono' => 0,
+                        'costo_personalizado_dia' => null,
+                    ]
+                );
+
+                // Obtener tramos existentes
+                $existentes = $registro->detalleHoras()->get();
+
+                // Mapear claves para comparar
+                $clave = fn($tramo) => implode('|', [
+                    $tramo['codigo_labor'],
+                    $tramo['campo_nombre'],
+                    Carbon::parse($tramo['hora_inicio'])->format('H:i'),
+                    Carbon::parse($tramo['hora_fin'])->format('H:i'),
+                ]);
+                $existentesMap = $existentes->keyBy($clave);
+                $nuevosMap = collect($tramos)->keyBy($clave);
+
+                // Eliminar los que ya no existen
+                foreach ($existentes as $existente) {
+
+                    $k = $clave($existente->toArray());
+                    if (!$nuevosMap->has($k)) {
+                        $existente->delete();
+                    }
+                }
+
+                // Insertar o actualizar los actuales
+                foreach ($nuevosMap as $k => $nuevo) {
+                    $detalle = $existentesMap->get($k);
+
+                    if ($detalle) {
+                        // Ya existe, se mantiene. Si necesitas actualizar algún campo adicional, hazlo aquí.
+                        continue;
+                    }
+
+                    // Crear nuevo
+                    $registro->detalleHoras()->create([
+                        'codigo_labor' => $nuevo['codigo_labor'],
+                        'campo_nombre' => $nuevo['campo_nombre'],
+                        'hora_inicio' => $nuevo['hora_inicio'],
+                        'hora_fin' => $nuevo['hora_fin'],
+                        'produccion' => null,
+                        'costo_bono' => 0,
+                    ]);
+                }
+            }
+
+            if (count($errores)) {
+                throw ValidationException::withMessages(['errores' => $errores]);
+            }
+
+            DB::commit();
+            return true;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
+
     protected static function getLaborNombre($laborId)
     {
         return optional(Labores::find($laborId))->nombre_labor ?? 'Labor desconocida';
