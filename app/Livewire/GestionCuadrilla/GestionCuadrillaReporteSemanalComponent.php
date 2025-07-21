@@ -274,7 +274,7 @@ class GestionCuadrillaReporteSemanalComponent extends Component
             $this->alert('error', $th->getMessage());
         }
     }
-
+   
     public function render()
     {
         return view('livewire.gestion-cuadrilla.gestion-cuadrilla-reporte-semanal-component', [

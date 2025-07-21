@@ -78,11 +78,15 @@
     </div>
 
     <x-flex class="w-full justify-end mt-4">
+        <x-button @click="$wire.dispatch('abrirGastosAdicionales',{inicio:fechaInicioSemana})">
+            <i class="fa fa-plus-minus"></i> Agregar/Quitar gastos adicionales
+        </x-button>
         <x-button @click="registrarHoras">
             <i class="fa fa-save"></i> Actualizar horas
         </x-button>
     </x-flex>
     <livewire:gestion-cuadrilla.gestion-cuadrilla-asignacion-costos-component />
+    <livewire:gestion-cuadrilla.gestion-cuadrilla-gastos-adicionales-component />
     <x-dialog-modal wire:model.live="mostrarFormularioCostoHora" maxWidth="full">
         <x-slot name="title">
             Personaliza el precio por cuadrillero
@@ -93,60 +97,56 @@
             <x-flex class="w-full">
                 <div class="flex-1">
                     <x-table>
-    <x-slot name="thead">
-        <x-tr>
-            <x-th class="text-center" rowspan="2">
-                N°
-            </x-th>
-            <x-th rowspan="2">
-                Cuadrillero
-            </x-th>
-            @if ($diasSemana)
-                @foreach ($diasSemana as $diaSemana)
-                    <x-th class="text-center">{{ \Carbon\Carbon::parse($diaSemana)->format('d') }}</x-th>
-                @endforeach
-            @endif
-        </x-tr>
-        <x-tr>
-            @if ($diasSemana)
-                @foreach ($diasSemana as $diaSemana)
-                    <x-th class="text-center">
-                        {{ \Carbon\Carbon::parse($diaSemana)->isoFormat('ddd') }}
-                    </x-th>
-                @endforeach
-            @endif
-        </x-tr>
-    </x-slot>
+                        <x-slot name="thead">
+                            <x-tr>
+                                <x-th class="text-center" rowspan="2">
+                                    N°
+                                </x-th>
+                                <x-th rowspan="2">
+                                    Cuadrillero
+                                </x-th>
+                                @if ($diasSemana)
+                                    @foreach ($diasSemana as $diaSemana)
+                                        <x-th class="text-center">{{ \Carbon\Carbon::parse($diaSemana)->format('d') }}</x-th>
+                                    @endforeach
+                                @endif
+                            </x-tr>
+                            <x-tr>
+                                @if ($diasSemana)
+                                    @foreach ($diasSemana as $diaSemana)
+                                        <x-th class="text-center">
+                                            {{ \Carbon\Carbon::parse($diaSemana)->isoFormat('ddd') }}
+                                        </x-th>
+                                    @endforeach
+                                @endif
+                            </x-tr>
+                        </x-slot>
 
-    <x-slot name="tbody">
-        @if ($cuadrillerosCostosPersonalizados)
-            @foreach ($cuadrillerosCostosPersonalizados as $indice => $cuadrillero)
-                <x-tr>
-                    <x-td class="text-center">
-                        {{ $indice + 1 }}
-                    </x-td>
-                    <x-td>
-                        {{ $cuadrillero['cuadrillero_nombres'] ?? '-' }}
-                    </x-td>
-                    @foreach ($cuadrillero['costos'] as $indice => $costo)
-                        @php
-                            $id = $cuadrillero['cuadrillero_id'];
-                        @endphp
-                        <x-td class="text-center">
-                            <x-input
-                                class="!p-2 text-center"
-                                wire:key="costo-{{ $indice }}-{{ $id }}"
-                                wire:model="cuadrillerosCostosPersonalizados.{{ $id }}.costos.{{ $indice }}"
-                                type="number"
-                                step="0.01"
-                            />
-                        </x-td>
-                    @endforeach
-                </x-tr>
-            @endforeach
-        @endif
-    </x-slot>
-</x-table>
+                        <x-slot name="tbody">
+                            @if ($cuadrillerosCostosPersonalizados)
+                                @foreach ($cuadrillerosCostosPersonalizados as $indice => $cuadrillero)
+                                    <x-tr>
+                                        <x-td class="text-center">
+                                            {{ $indice + 1 }}
+                                        </x-td>
+                                        <x-td>
+                                            {{ $cuadrillero['cuadrillero_nombres'] ?? '-' }}
+                                        </x-td>
+                                        @foreach ($cuadrillero['costos'] as $indice => $costo)
+                                            @php
+                                                $id = $cuadrillero['cuadrillero_id'];
+                                            @endphp
+                                            <x-td class="text-center">
+                                                <x-input class="!p-2 text-center" wire:key="costo-{{ $indice }}-{{ $id }}"
+                                                    wire:model="cuadrillerosCostosPersonalizados.{{ $id }}.costos.{{ $indice }}"
+                                                    type="number" step="0.01" />
+                                            </x-td>
+                                        @endforeach
+                                    </x-tr>
+                                @endforeach
+                            @endif
+                        </x-slot>
+                    </x-table>
 
                 </div>
             </x-flex>
@@ -169,11 +169,13 @@
                 <b class="block my-2">Instrucciones:</b>
                 <ul>
                     <li>
-                        <p>Modifique directamente los precios, el sistema te permitirá 1 segundo para que puedas digitar y luego lo guardará de forma automática.</p>
+                        <p>Modifique directamente los precios, el sistema te permitirá 1 segundo para que puedas digitar
+                            y luego lo guardará de forma automática.</p>
                     </li>
                     <li>
                         <p>
-                            Si deseas quitar el precio personalizado, simplemente bórralo, el sistema borrará el registro y usará el precio semanal o si existe, el precio personalizado por día.
+                            Si deseas quitar el precio personalizado, simplemente bórralo, el sistema borrará el
+                            registro y usará el precio semanal o si existe, el precio personalizado por día.
                         </p>
                     </li>
                 </ul>
@@ -191,12 +193,14 @@
             </x-flex>
         </x-slot>
     </x-dialog-modal>
+ 
 </div>
 @script
 <script>
     Alpine.data('reporte_semanal_cuadrilleros', () => ({
         listeners: [],
-        ocurrioModificaciones : @entangle('ocurrioModificaciones'),
+        fechaInicioSemana:@entangle('fechaInicioSemana'),
+        ocurrioModificaciones: @entangle('ocurrioModificaciones'),
         reporteSemanal: @json($reporteSemanal),
         headers: @json($headers),
         totalDias: @json($totalDias),
@@ -207,6 +211,7 @@
         init() {
             this.$nextTick(() => {
                 this.initTable();
+                //this.initTableGastosAdicionales();
             });
 
             Livewire.on('actualizarTablaReporteSemanal', (data) => {
@@ -216,6 +221,8 @@
                 this.headers = data[2];
                 this.$nextTick(() => this.initTable());
             });
+
+            
         },
         initTable() {
 
@@ -274,6 +281,7 @@
                 });
             }
         },
+       
         generarColumnasDinamicas() {
             const cols = [
 
@@ -281,7 +289,7 @@
                     data: 'codigo_grupo',
                     title: 'Grupo',
                     type: 'dropdown',
-                    width:100,
+                    width: 100,
                     source: this.gruposDisponibles,
                     strict: true,
                     allowInvalid: false,
@@ -303,7 +311,7 @@
             for (let i = 1; i <= this.totalDias; i++) {
                 cols.push({
                     data: `dia_${i}`,
-                    width:40,
+                    width: 40,
                     title: this.headers[i - 1] ?? '-',
                     type: 'numeric',
                     strict: true,
@@ -362,7 +370,7 @@
             return cols;
         },
         customizeCuadrillero() {
-            
+
             const selected = this.hot.getSelected();
             let preciosamodificar = [];
 
@@ -394,7 +402,7 @@
             const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
                 null && cell !== ''));
 
-                this.ocurrioModificaciones = false;
+            this.ocurrioModificaciones = false;
 
             $wire.storeTableDataGuardarHoras(filteredData);
         }

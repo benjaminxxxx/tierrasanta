@@ -12,6 +12,9 @@ class CuadrillaController extends Controller
     public function reporte_semanal(){
         return view("cuadrilla.gestion.reporte_semanal");
     }
+    public function pagos(){
+        return view("cuadrilla.gestion.pagos");
+    }
     public function bonificaciones(){
         return view("cuadrilla.gestion.bonificaciones");
     }

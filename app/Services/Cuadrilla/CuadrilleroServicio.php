@@ -12,7 +12,9 @@ use App\Models\CuadRegistroDiario;
 use App\Models\Cuadrillero;
 use App\Models\CuadrilleroActividad;
 use App\Models\CuaGrupo;
+use App\Models\GastoAdicionalPorGrupoCuadrilla;
 use App\Models\Labores;
+use App\Support\FormatoHelper;
 use DB;
 use Exception;
 use Illuminate\Support\Carbon;
@@ -23,6 +25,138 @@ use Str;
 
 class CuadrilleroServicio
 {
+    public static function registrarPagos(array $listaPagos, $fechaInicio, $fechaFin)
+    {
+        $fechaInicio = Carbon::parse($fechaInicio);
+
+        foreach ($listaPagos as $registro) {
+            $cuadrilleroId = $registro['cuadrillero_id'];
+            $codigoGrupo = $registro['codigo'];
+            $pagos = $registro['pagos'];
+
+            foreach ($pagos as $key => $monto) {
+                // Validar que el key sea tipo 'jornal_1', 'jornal_2', etc.
+                if (preg_match('/^jornal_(\d+)$/', $key, $matches)) {
+                    $index = (int) $matches[1]; // número del jornal
+                    $fecha = $fechaInicio->copy()->addDays($index - 1)->startOfDay();
+
+                    $detalle = CuadRegistroDiario::whereDate('fecha', $fecha)
+                        ->where('cuadrillero_id', $cuadrilleroId)
+                        ->first();
+
+                    if (!$detalle) {
+                        throw new Exception("No se encontró registro para el cuadrillero ID $cuadrilleroId en fecha $fecha");
+                    }
+
+                    $detalle->esta_pagado = true;
+                    $detalle->save();
+                }
+            }
+        }
+    }
+
+    public static function obtenerHandsonTablePagoCuadrilla($fecha_inicio, $fecha_fin, $grupo = null, $nombre = null)
+    {
+        $inicio = Carbon::parse($fecha_inicio)->startOfDay();
+        $fin = Carbon::parse($fecha_fin)->endOfDay();
+
+        // Paso 1: Obtener fechas en orden
+        $fechas = collect();
+        for ($date = $inicio->copy(); $date->lte($fin); $date->addDay()) {
+            $fechas->push($date->format('Y-m-d'));
+        }
+        // Obtener todos los grupos por cuadrillero y fecha en lote
+        $gruposPorDia = CuadGrupoCuadrilleroFecha::whereBetween('fecha', [$inicio, $fin])
+            ->get()
+            ->keyBy(fn($g) => $g->cuadrillero_id . '|' . $g->fecha);
+
+        // Cargar todos los registros diarios
+        $registros = CuadRegistroDiario::whereBetween('fecha', [$inicio, $fin])
+            ->with('cuadrillero')
+            ->get()
+            ->filter(function ($registro) use ($grupo, $nombre) {
+                return (!$nombre || stripos($registro->cuadrillero->nombres ?? '', $nombre) !== false);
+            });
+
+        // Agrupar por cuadrillero_id + grupo
+        $registrosAgrupados = [];
+
+        foreach ($registros as $registro) {
+            $fechaKey = $registro->fecha->format('Y-m-d');
+            $grupoAsignado = $gruposPorDia[$registro->cuadrillero_id . '|' . $fechaKey]->codigo_grupo ?? 'SIN GRUPO';
+
+            if ($grupo && $grupoAsignado !== $grupo) {
+                continue;
+            }
+
+            $grupoKey = $registro->cuadrillero_id . '|' . $grupoAsignado;
+
+            if (!isset($registrosAgrupados[$grupoKey])) {
+                $registrosAgrupados[$grupoKey] = [
+                    'codigo' => $grupoAsignado,
+                    'cuadrillero_id' => $registro->cuadrillero_id,
+                    'nombre_cuadrillero' => $registro->cuadrillero->nombres ?? '',
+                    'total' => 0, // inicializar total
+                ];
+            }
+
+            $fechaIndex = $fechas->search($fechaKey) + 1;
+            $registrosAgrupados[$grupoKey]["jornal_{$fechaIndex}"] = $registro->costo_dia;
+            $registrosAgrupados[$grupoKey]["pagado_{$fechaIndex}"] = $registro->esta_pagado ? 1 : 0;
+
+            // Sumar al total
+            $registrosAgrupados[$grupoKey]['total'] += floatval($registro->costo_dia);
+        }
+
+
+        return array_values($registrosAgrupados);
+    }
+    public static function listarHandsontableGastosAdicionales($inicio, $fin)
+    {
+        return GastoAdicionalPorGrupoCuadrilla::with('grupo')
+            ->whereBetween('fecha_gasto', [$inicio, $fin])
+            ->get()
+            ->map(function ($gasto) {
+                return [
+                    'grupo' => optional($gasto->grupo)->nombre, // relacion grupo
+                    'descripcion' => $gasto->descripcion,
+                    'fecha' => Carbon::parse($gasto->fecha_gasto)->format('d/m/Y'),
+                    'monto' => $gasto->monto
+                ];
+            })->toArray();
+    }
+
+    public static function guardarGastosAdicionalesXGrupo($datos, $inicio, $rangoDias)
+    {
+        $inicioCarbon = Carbon::parse($inicio)->startOfDay();
+        $finCarbon = (clone $inicioCarbon)->addDays($rangoDias)->endOfDay();
+
+        // 1. Eliminar los existentes en el rango
+        GastoAdicionalPorGrupoCuadrilla::whereBetween('fecha_gasto', [$inicioCarbon, $finCarbon])->delete();
+
+        // 2. Insertar todos los nuevos
+        foreach ($datos as $fila) {
+            // Validar que exista el grupo por nombre
+            $grupo = CuaGrupo::where('nombre', $fila['grupo'])->first();
+
+            if (!$grupo) {
+                throw new Exception("No se encontró el grupo con nombre '{$fila['grupo']}'");
+            }
+
+            // Convertir fecha
+            $fecha = FormatoHelper::parseFecha($fila['fecha']);
+
+            GastoAdicionalPorGrupoCuadrilla::create([
+                'monto' => $fila['monto'],
+                'descripcion' => $fila['descripcion'],
+                'anio_contable' => Carbon::parse($fecha)->year,
+                'mes_contable' => Carbon::parse($fecha)->month,
+                'fecha_gasto' => $fecha,
+                'codigo_grupo' => $grupo->codigo, // Usa la nueva columna
+            ]);
+        }
+    }
+
     public static function guardarBonoCuadrilla($fila, $fecha)
     {
         $cuadrilleroId = $fila['cuadrillero_id'] ?? null;

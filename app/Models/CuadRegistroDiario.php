@@ -18,6 +18,7 @@ class CuadRegistroDiario extends Model
         'total_bono',
         'total_horas',
         'costo_dia',
+        'esta_pagado'
     ];
 
     protected $casts = [
