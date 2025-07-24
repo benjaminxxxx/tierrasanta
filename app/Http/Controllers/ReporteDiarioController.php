@@ -13,7 +13,7 @@ class ReporteDiarioController extends Controller
         return view('reporte.actividades_diarias');
     }
     public function riego(){
-        return view('reporte.reporte_diario_riego');
+        return view('livewire.gestion-riego.reporte_diario_riego');
     }
     
 }

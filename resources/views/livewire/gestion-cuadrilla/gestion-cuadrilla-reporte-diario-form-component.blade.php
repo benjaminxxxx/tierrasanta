@@ -131,21 +131,6 @@
                 this.agregarCuadrillero();
             });
         },
-        /*
-                agregarActividad() {
-                    this.actividades.push({
-                        inicio: '',
-                        fin: '',
-                        campo: '',
-                        labor: ''
-                    });
-                },
-                 removerActividad(index) {
-            this.actividades.splice(index, 1);
-        },*/
-
-
-
         agregarCuadrillero() {
             if (!this.cuadrilleroSeleccionado) return;
 

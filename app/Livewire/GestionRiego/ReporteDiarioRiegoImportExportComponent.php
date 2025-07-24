@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\GestionRiego;
 use App\Exports\RiegosExport;
 use App\Models\Campo;
 use App\Models\Cuadrillero;

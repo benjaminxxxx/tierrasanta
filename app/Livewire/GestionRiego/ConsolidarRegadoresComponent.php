@@ -1,14 +1,10 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\GestionRiego;
 
 use App\Models\Configuracion;
 use App\Models\ConsolidadoRiego;
-use App\Models\Cuadrillero;
-use App\Models\DetalleRiego;
-use App\Models\Empleado;
 use App\Models\HorasAcumuladas;
-use App\Models\Observacion;
 use App\Models\ReporteDiarioRiego;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;

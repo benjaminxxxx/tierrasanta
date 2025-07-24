@@ -1,12 +1,11 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\GestionRiego;
 
-use App\Models\Configuracion;
 use App\Models\ConsolidadoRiego;
 use App\Models\Cuadrillero;
 use App\Models\Empleado;
-use App\Models\HorasAcumuladas;
+use App\Services\Campo\Riego\RiegoServicio;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use App\Models\LaboresRiego;
@@ -46,7 +45,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
     }
     public function render()
     {
-        return view('livewire.reporte-diario-riego-detalle-component');
+        return view('livewire.gestion-riego.reporte-diario-riego-detalle-component');
     }
 
     public function obtenerRegadores()
@@ -167,5 +166,13 @@ class ReporteDiarioRiegoDetalleComponent extends Component
         // Aquí puedes asegurarte de que el tiempo tenga el formato adecuado HH:mm:ss
         $date = \DateTime::createFromFormat('H.i', $time);
         return $date ? $date->format('H:i:s') : null;
+    }
+    public function eliminarRegador($riegoId){
+        try {
+            RiegoServicio::eliminarRegistroRegador($riegoId);
+            $this->dispatch('registroRiegoEliminado',$riegoId);
+        } catch (\Throwable $th) {
+            $this->alert('error',$th->getMessage());
+        }
     }
 }
