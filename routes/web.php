@@ -67,11 +67,11 @@ Route::middleware([
 
     //CUADRILLA
     Route::get('/cuadrilla/cuadrilleros', function () {
-        return view('cuadrilla.cuadrilleros');
+        return view('livewire.gestion-cuadrilla.administrar-cuadrillero.cuadrilleros');
     })->name('cuadrilla.cuadrilleros');
 
     Route::get('/cuadrilla/grupos', function () {
-        return view('cuadrilla.grupos');
+        return view('livewire.gestion-cuadrilla.administrar-cuadrillero.grupos');
     })->name('cuadrilla.grupos');
 
     Route::get('/cuadrilla/asistencia', function () {

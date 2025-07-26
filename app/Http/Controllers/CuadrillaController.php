@@ -10,7 +10,7 @@ class CuadrillaController extends Controller
         return view("cuadrilla.gestion.reporte_diario");
     }
     public function reporte_semanal(){
-        return view("cuadrilla.gestion.reporte_semanal");
+        return view("livewire.gestion-cuadrilla.reporte_semanal");
     }
     public function pagos(){
         return view("cuadrilla.gestion.pagos");

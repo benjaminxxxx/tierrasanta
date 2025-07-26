@@ -1,10 +1,8 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\GestionCuadrilla\AdministrarCuadrillero;
 
 use App\Models\Cuadrillero;
-use App\Models\CuaGrupo;
-use App\Models\GruposCuadrilla;
 use App\Services\Cuadrilla\CuadrilleroServicio;
 use Illuminate\Database\QueryException;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -28,12 +26,12 @@ class CuadrillaFormComponent extends Component
     public function registrar()
     {
         $this->validate([
-            'nombres' => 'required|string|max:255',
-            'dni' => 'required|string|max:20|unique:cuadrilleros,dni,' . $this->cuadrilleroId,
+            'nombres' => 'required|string|max:255|unique:cuadrilleros,nombres,' . $this->cuadrilleroId,
+            'dni' => 'nullable|max:20|unique:cuadrilleros,dni,' . $this->cuadrilleroId,
         ], [
             'nombres.required' => 'El nombre es obligatorio',
-            'dni.required' => 'El dni es obligatorio',
-            'dni.unique' => 'El dni ya está siendo utilizado',
+            'nombres.unique' => 'El nombre ya está siendo utilizado',
+            'dni.unique' => 'El DNI ya está siendo utilizado',
         ]);
 
         $data = [
@@ -74,9 +72,7 @@ class CuadrillaFormComponent extends Component
             $this->codigo_grupo = $cuadrillero->codigo_grupo;
             $this->mostrarFormulario = true;
         }
-
     }
-
     private function resetForm()
     {
         $this->resetErrorBag();
@@ -84,6 +80,6 @@ class CuadrillaFormComponent extends Component
     }
     public function render()
     {
-        return view('livewire.cuadrilla-form-component');
+        return view('livewire.gestion-cuadrilla.administrar-cuadrillero.cuadrilla-form-component');
     }
 }

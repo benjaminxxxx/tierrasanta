@@ -1,92 +1,98 @@
-<div x-data="reporte_semanal_cuadrilleros">
-    <x-loading wire:loading />
-
-    <x-flex class="w-full justify-between">
-        <x-flex class="my-3">
-            <x-h3>
-                Registro Semanal Cuadrilla
-            </x-h3>
-            <x-button wire:click="asignarCostos">
-                Asignar costos
-            </x-button>
+<div>
+    <div x-data="reporte_semanal_cuadrilleros">
+        <x-flex class="w-full justify-between">
+            <x-flex class="my-3">
+                <x-h3>
+                    Registro Semanal Cuadrilla
+                </x-h3>
+                <x-button wire:click="asignarCostos">
+                    Asignar costos
+                </x-button>
+            </x-flex>
+            <x-button-a href="{{ route('cuadrilleros.gestion') }}">
+                <i class="fa fa-arrow-left"></i> Volver a gestión de cuadrilleros
+            </x-button-a>
         </x-flex>
-        <x-button-a href="{{ route('cuadrilleros.gestion') }}">
-            <i class="fa fa-arrow-left"></i> Volver a gestión de cuadrilleros
-        </x-button-a>
-    </x-flex>
 
 
-    <div class="flex justify-between items-center">
-        <x-button wire:click="semanaAnterior">
-            <i class="fa fa-chevron-left"></i> Semana Anterior
-        </x-button>
+        <div class="flex justify-between items-center">
+            <x-button wire:click="semanaAnterior">
+                <i class="fa fa-chevron-left"></i> Semana Anterior
+            </x-button>
 
-        <div class="text-center">
-            <form wire:submit.prevent="seleccionarSemana">
-                <div class="flex items-center space-x-2">
-                    <x-select wire:model.live="anio">
-                        <option value="">Año</option>
-                        @for ($y = now()->year - 5; $y <= now()->year + 1; $y++)
-                            <option value="{{ $y }}">{{ $y }}</option>
-                        @endfor
-                    </x-select>
+            <div class="text-center">
+                <form wire:submit.prevent="seleccionarSemana">
+                    <div class="flex items-center space-x-2">
+                        <x-select wire:model.live="anio">
+                            <option value="">Año</option>
+                            @for ($y = now()->year - 5; $y <= now()->year + 1; $y++)
+                                <option value="{{ $y }}">{{ $y }}</option>
+                            @endfor
+                        </x-select>
 
-                    <x-select wire:model.live="mes">
-                        <option value="">Mes</option>
-                        @foreach ($meses as $num => $nombre)
-                            <option value="{{ $num }}">{{ $nombre }}</option>
-                        @endforeach
-                    </x-select>
+                        <x-select wire:model.live="mes">
+                            <option value="">Mes</option>
+                            @foreach ($meses as $num => $nombre)
+                                <option value="{{ $num }}">{{ $nombre }}</option>
+                            @endforeach
+                        </x-select>
 
-                    <x-select wire:model.live="semanaNumero">
-                        <option value="">Semana</option>
-                        @for ($s = 1; $s <= 5; $s++)
-                            <option value="{{ $s }}">Semana {{ $s }}</option>
-                        @endfor
-                    </x-select>
-                </div>
-            </form>
+                        <x-select wire:model.live="semanaNumero">
+                            <option value="">Semana</option>
+                            @for ($s = 1; $s <= 5; $s++)
+                                <option value="{{ $s }}">Semana {{ $s }}</option>
+                            @endfor
+                        </x-select>
+                    </div>
+                </form>
 
+            </div>
+
+            <x-button wire:click="siguienteSemana">
+                Semana Posterior <i class="fa fa-chevron-right"></i>
+            </x-button>
         </div>
 
-        <x-button wire:click="siguienteSemana">
-            Semana Posterior <i class="fa fa-chevron-right"></i>
-        </x-button>
-    </div>
 
+        <x-card2>
+            <x-h3 class="text-center w-full">
+                <strong>Semana:</strong> {{ $semana->inicio }} - {{ $semana->fin }}
+            </x-h3>
+        </x-card2>
 
-    <x-card2>
-        <x-h3 class="text-center w-full">
-            <strong>Semana:</strong> {{ $semana->inicio }} - {{ $semana->fin }}
-        </x-h3>
-    </x-card2>
-
-    <div wire:ignore>
-        <x-flex>
-            <x-select name="columns" id="columns" label="Filtro">
-                <option value="1">Nombre</option>
-                <option value="0">Código</option>
-            </x-select>
-            <x-group-field>
-                <x-label>
-                    Descripción
-                </x-label>
-                <x-input id="filterField" type="text" placeholder="Buscar por código o nombre" />
-            </x-group-field>
+        <div wire:ignore>
+            <x-flex>
+                <x-select name="columns" id="columns" label="Filtro">
+                    <option value="1">Nombre</option>
+                    <option value="0">Código</option>
+                </x-select>
+                <x-group-field>
+                    <x-label>
+                        Descripción
+                    </x-label>
+                    <x-input id="filterField" type="text" placeholder="Buscar por código o nombre" />
+                </x-group-field>
+            </x-flex>
+            <div x-ref="tableContainerSemana" class="mt-5"></div>
+        </div>
+        <x-flex class="mt-4 justify-between">
+            <x-button @click="abrirAgregarCuadrillero" wire:loading.attr="disabled">
+                <i class="fa fa-plus"></i> Agregar cuadrilleros
+            </x-button>
+            
+            <x-flex>
+                <x-button @click="$wire.dispatch('abrirGastosAdicionales',{inicio:fechaInicioSemana})">
+                    <i class="fa fa-plus-minus"></i> Agregar/Quitar gastos adicionales
+                </x-button>
+                <x-button @click="registrarHoras">
+                    <i class="fa fa-save"></i> Actualizar horas
+                </x-button>
+            </x-flex>
         </x-flex>
-        <div x-ref="tableContainerSemana" class="mt-5"></div>
+
     </div>
 
-    <x-flex class="w-full justify-end mt-4">
-        <x-button @click="$wire.dispatch('abrirGastosAdicionales',{inicio:fechaInicioSemana})">
-            <i class="fa fa-plus-minus"></i> Agregar/Quitar gastos adicionales
-        </x-button>
-        <x-button @click="registrarHoras">
-            <i class="fa fa-save"></i> Actualizar horas
-        </x-button>
-    </x-flex>
-    <livewire:gestion-cuadrilla.gestion-cuadrilla-asignacion-costos-component />
-    <livewire:gestion-cuadrilla.gestion-cuadrilla-gastos-adicionales-component />
+
     <x-dialog-modal wire:model.live="mostrarFormularioCostoHora" maxWidth="full">
         <x-slot name="title">
             Personaliza el precio por cuadrillero
@@ -193,13 +199,17 @@
             </x-flex>
         </x-slot>
     </x-dialog-modal>
- 
+
+    <livewire:gestion-cuadrilla.gestion-cuadrilla-asignacion-costos-component />
+
+    
+    <x-loading wire:loading />
 </div>
 @script
 <script>
     Alpine.data('reporte_semanal_cuadrilleros', () => ({
         listeners: [],
-        fechaInicioSemana:@entangle('fechaInicioSemana'),
+        fechaInicioSemana: @entangle('fechaInicioSemana'),
         ocurrioModificaciones: @entangle('ocurrioModificaciones'),
         reporteSemanal: @json($reporteSemanal),
         headers: @json($headers),
@@ -222,7 +232,7 @@
                 this.$nextTick(() => this.initTable());
             });
 
-            
+
         },
         initTable() {
 
@@ -281,7 +291,9 @@
                 });
             }
         },
-       
+        abrirAgregarCuadrillero(){
+            $wire.dispatch('agregarCuadrilleros',{fecha:this.fechaInicioSemana})
+        },
         generarColumnasDinamicas() {
             const cols = [
 

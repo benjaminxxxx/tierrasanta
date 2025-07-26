@@ -15,6 +15,9 @@ class Cuadrillero extends Model
         'codigo_grupo',
         'estado'
     ];
+    public function registrosDiarios(){
+        return $this->hasMany(CuadRegistroDiario::class);
+    }
     public function grupo(){
         return $this->belongsTo(CuaGrupo::class,'codigo_grupo');
     }

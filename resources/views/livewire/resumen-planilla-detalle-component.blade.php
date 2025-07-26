@@ -1,57 +1,55 @@
 <div>
-    <x-card class="mt-5">
-        <x-spacing>
-            <x-table>
-                <x-slot name="thead">
-                    <x-tr>
-                        <x-th rowspan="2">
+    <x-card2>
+        <div class="relative overflow-x-auto">
+            <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-primaryTextDark">
+                <thead class="text-xs text-gray-700 uppercase dark:bg-primaryDark dark:text-primaryTextDark">
+                    <tr>
+                        <th scope="col" class="px-6 py-3">
                             N°
-                        </x-th>
-                        <x-th rowspan="2">
+                        </th>
+                        <th scope="col" class="px-6 py-3">
                             Empleado
-                        </x-th>
+                        </th>
                         @foreach ($diasMes as $diaMes)
-                            <x-th>
-                                {{ $esDias[$diaMes->format('D')] }}
-                            </x-th>
+                            <th scope="col" class="px-6 py-3">
+                                {{ $esDias[$diaMes->format('D')] }} {{ $diaMes->format('d') }}
+                            </th>
                         @endforeach
-                    </x-tr>
-                    <x-tr>
-                        @foreach ($diasMes as $diaMes)
-                            <x-th>
-                                {{ $diaMes->format('d') }}
-                            </x-th>
-                        @endforeach
-                    </x-tr>
-                </x-slot>
-                <x-slot name="tbody">
+                    </tr>
+                </thead>
+                <tbody>
                     @foreach ($empleadosGeneral as $indice => $empleadoGeneral)
-                        <x-tr>
-                            <x-td>
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200">
+
+                            <td class="px-6 py-4">
                                 {{ $indice + 1 }}
-                            </x-td>
-                            <x-td>
+                            </td>
+                            <th scope="row"
+                                class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                                 {{ $empleadoGeneral->empleado_nombre }}
-                            </x-td>
+                            </th>
                             @foreach ($diasMes as $diaMes)
-                                <x-th>
+                                <td class="px-6 py-4">
                                     @if (isset($empleadosData[$empleadoGeneral['documento']][$diaMes->format('Y-m-d')]))
                                         @php
-                                            $detalles = $empleadosData[$empleadoGeneral['documento']][$diaMes->format('Y-m-d')]->detalles;
-                                            
+                                            $detalles =
+                                                $empleadosData[$empleadoGeneral['documento']][$diaMes->format('Y-m-d')]
+                                                    ->detalles;
+
                                         @endphp
                                         @if ($detalles)
                                             @foreach ($detalles as $detalle)
-                                                <p>{{$detalle->labor}}</p>
+                                                <p>{{ $detalle->labor }}</p>
                                             @endforeach
                                         @endif
                                     @endif
-                                </x-th>
+                                </td>
                             @endforeach
-                        </x-tr>
+                        </tr>
                     @endforeach
-                </x-slot>
-            </x-table>
-        </x-spacing>
-    </x-card>
+                </tbody>
+            </table>
+        </div>
+
+    </x-card2>
 </div>

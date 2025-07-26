@@ -208,7 +208,7 @@ class GestionCuadrillaReporteSemanalComponent extends Component
     {
         $this->seleccionarSemana();
     }
-    public function updatedSemana()
+    public function updatedSemanaNumero()
     {
         $this->seleccionarSemana();
     }
@@ -239,6 +239,8 @@ class GestionCuadrillaReporteSemanalComponent extends Component
         $fecha->addWeeks($semanaNumero - 1);
 
         $this->fechaInicioSemana = $fecha->toDateString();
+        $this->mes = (int)$fecha->format('m');
+        $this->anio = (int)$fecha->format('Y');
         $this->obtenerReporteSemanal();
         Session::put('cuadrilla_fecha_inicio_semana', $this->fechaInicioSemana);
     }

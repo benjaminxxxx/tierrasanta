@@ -229,6 +229,7 @@
                             'timeValidator' || source == 'Autofill.fill') {
 
                             this.hasUnsavedChanges = true;
+                            console.log('calculando');
 
                             changes.forEach((change) => {
                                 const changedRow = change[0]; // Fila que cambió

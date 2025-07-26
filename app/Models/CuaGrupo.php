@@ -22,4 +22,19 @@ class CuaGrupo extends Model
         'modalidad_pago',
         'estado'
     ];
+    public function cuadrilleros()
+    {
+        return $this->hasMany(Cuadrillero::class, 'codigo_grupo', 'codigo');
+    }
+    public function fechasCuadrilleros()
+    {
+        return $this->hasMany(CuadGrupoCuadrilleroFecha::class, 'codigo_grupo', 'codigo');
+    }
+    public function getFechasTrabajadasAttribute()
+    {
+        return $this->fechasCuadrilleros()
+            ->select('fecha')
+            ->distinct()
+            ->count('fecha');
+    }
 }

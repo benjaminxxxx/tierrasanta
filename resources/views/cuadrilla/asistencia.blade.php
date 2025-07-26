@@ -6,10 +6,7 @@
     <script src="{{ asset('handsontable/handsontable.full.min.js') }}"></script>
 
     <livewire:cuadrilla-asistencia-component/>
-    <livewire:cuadrilla-asistencia-agregar-component/>
-    <livewire:cuadrilla-form-component/>
     <livewire:cuadrilla-desde-empleados-component/>
-    <livewire:cuadrilla-grupo-form-component/>
     <livewire:cuadrillero-precio-por-dia-component/>
     <livewire:cuadrilla-asistencia-labores-component/>
     {{-- holaaaa <livewire:actividades-form-component/> --}}

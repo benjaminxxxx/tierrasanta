@@ -69,18 +69,29 @@
 
                         </x-nav-link-parent>
                     @endcanany
-
                     @hasanyrole('Administrador|Super Admin')
-                    <x-nav-link-parent name="sectorCuadrilla" :active="request()->routeIs(['cuadrilla.grupos', 'cuadrilla.cuadrilleros'])" logo='fas fa-hard-hat' text="Cuadrilla">
+                    <x-nav-link-parent name="sectorCuadrilla" :active="request()->routeIs([
+                        'cuadrilla.grupos', 
+                        'cuadrilla.cuadrilleros',
+                        'gestion_cuadrilleros.reporte-semanal.index'
+                        ])" logo='fas fa-hard-hat' text="Cuadrilla">
                         <x-nav-link-child href="{{ route('cuadrilla.cuadrilleros') }}"
                             :active="request()->routeIs('cuadrilla.cuadrilleros')">
                             Cuadrilleros
                         </x-nav-link-child>
                         <x-nav-link-child href="{{ route('cuadrilla.grupos') }}"
                             :active="request()->routeIs('cuadrilla.grupos')">
-                            Grupos
+                            Grupos de cuadrillas
                         </x-nav-link-child>
+                        <x-nav-link-child href="{{ route('gestion_cuadrilleros.reporte-semanal.index') }}"
+                            :active="request()->routeIs('gestion_cuadrilleros.reporte-semanal.index')">
+                            Reporte semanal (horas)
+                        </x-nav-link-child>
+                        
                     </x-nav-link-parent>
+                    @endhasanyrole
+                    @hasanyrole('Administrador|Super Admin')
+                 
 
                     <x-nav-link-parent name="sectorCampo" :active="request()->routeIs(['campo.mapa', 'campo.riego', 'campo.campos', 'campo.siembra'])" logo="fa fa-leaf" text="Campo">
                         <x-nav-link-child href="{{ route('campo.mapa') }}" :active="request()->routeIs('campo.mapa')">
@@ -186,8 +197,8 @@
         'productividad.avance',
         'reporte.actividades_diarias',
         'cuadrilleros.gestion',
-    ])"
-                        logo="fa fa-database" text="Reporte Diario">
+    ])" logo="fa fa-database"
+                        text="Reporte Diario">
                         <x-nav-link-child href="{{ route('cuadrilleros.gestion') }}"
                             :active="request()->routeIs('cuadrilleros.gestion')">
                             Gestión cuadrilleros

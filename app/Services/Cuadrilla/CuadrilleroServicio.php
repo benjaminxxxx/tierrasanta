@@ -347,6 +347,7 @@ class CuadrilleroServicio
 
     public static function obtenerHandsontableReporte($fechaInicio, $fechaFin)
     {
+        
         $inicio = Carbon::parse($fechaInicio)->startOfDay();
         $fin = Carbon::parse($fechaFin)->endOfDay();
         $coloresPorGrupo = CuaGrupo::pluck('color', 'codigo')->toArray();
@@ -471,7 +472,7 @@ class CuadrilleroServicio
             ->orderBy('orden')
             ->pluck('orden', 'cuadrillero_id')
             ->toArray();
-
+    //dd($ordenSemanal);
         $resultadosById = collect($resultados)->keyBy('cuadrillero_id');
 
         $ordenados = [];
@@ -690,7 +691,7 @@ class CuadrilleroServicio
     }
     public static function obtenerGrupos()
     {
-        return CuaGrupo::where('estado', true)->get();
+        return CuaGrupo::where('estado', true)->with(['cuadrilleros'])->get();
     }
     public static function calcularCostosCuadrilla($inicio, $fin = null)
     {

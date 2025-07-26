@@ -9,7 +9,7 @@
             <div class="space-y-4">
                 <!-- Nombre Completo -->
                 <div>
-                    <x-label for="nombres" value="Nombre Completo" />
+                    <x-label for="nombres" value="Nombre Completo (*)" />
                     <x-input wire:model="nombres" />
                     <x-input-error for="nombres" />
                 </div>
@@ -24,7 +24,6 @@
                 <!-- GRUPO -->
                 <div class="mt-2">
                     <x-select wire:model="codigo_grupo" label="Grupo Actual">
-
                         <option value="">Seleccionar su grupo actual</option>
                         @foreach ($grupos as $grupo)
                             <option value="{{ $grupo->codigo }}">{{ $grupo->nombre }}</option>

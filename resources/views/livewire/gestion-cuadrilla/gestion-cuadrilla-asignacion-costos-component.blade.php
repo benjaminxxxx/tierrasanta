@@ -20,7 +20,10 @@
                 </div>
 
             </div>
-            <div class="flex flex-row justify-end px-6 py-4 bg-whiten dark:bg-boxdarkbase text-end">
+            <div class="flex flex-row justify-between px-6 py-4 bg-whiten dark:bg-boxdarkbase text-end">
+                <x-button-a href="{{ route('cuadrilla.grupos') }}">
+                    Administrar grupos <i class="fa fa-link"></i>
+                </x-button-a>
                 <x-flex>
                     <x-secondary-button wire:click="$set('mostrarFormularioAignacionCostos', false)"
                         wire:loading.attr="disabled">

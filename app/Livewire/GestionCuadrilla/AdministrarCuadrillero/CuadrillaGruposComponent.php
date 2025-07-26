@@ -1,39 +1,28 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\GestionCuadrilla\AdministrarCuadrillero;
 
 use App\Models\CuaGrupo;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
+use Livewire\WithoutUrlPagination;
+use Livewire\WithPagination;
 
 class CuadrillaGruposComponent extends Component
 {
     use LivewireAlert;
-    public $grupos;
+    use WithPagination;
+    use WithoutUrlPagination;
     public $verEliminados;
     protected $listeners = ['confirmarEliminar','grupoRegistrado'=>'$refresh'];
 
-    public function render()
-    {
-        $this->grupos = CuaGrupo::where('estado',!$this->verEliminados)->get();
-        return view('livewire.cuadrilla-grupos-component');
-    }
     public function confirmarEliminarGrupo($codigo)
     {
         if (!$codigo)
             return;
 
-        $this->alert('question', '¿Está seguro(a) que desea eliminar el registro?', [
-            'showConfirmButton' => true,
-            'confirmButtonText' => 'Si, Eliminar',
-            'cancelButtonText' => 'Cancelar',
+        $this->confirm('¿Está seguro(a) que desea eliminar el registro?', [
             'onConfirmed' => 'confirmarEliminar',
-            'showCancelButton' => true,
-            'position' => 'center',
-            'toast' => false,
-            'timer' => null,
-            'confirmButtonColor' => '#056A70',
-            'cancelButtonColor' => '#2C2C2C',
             'data' => [
                 'codigo' => $codigo,
             ],
@@ -55,5 +44,12 @@ class CuadrillaGruposComponent extends Component
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }
+    }
+    public function render()
+    {
+        $grupos = CuaGrupo::with('fechasCuadrilleros')->where('estado',!$this->verEliminados)->orderByDesc('created_at')->paginate(10);
+        return view('livewire.gestion-cuadrilla.administrar-cuadrillero.cuadrilla-grupos-component',[
+            'grupos'=>$grupos
+        ]);
     }
 }
