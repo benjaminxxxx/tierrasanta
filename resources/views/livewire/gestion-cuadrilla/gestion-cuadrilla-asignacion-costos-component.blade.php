@@ -1,6 +1,6 @@
 <div>
     <x-modal wire:model.live="mostrarFormularioAignacionCostos" maxWidth="full">
-        <div x-data="asignacion_costos">
+        <div x-data="asignacion_costos_2025">
             <div class="px-6 py-4">
                 <div class="text-lg font-medium text-gray-900 dark:text-gray-100">
                     <x-flex>
@@ -39,7 +39,7 @@
 </div>
 @script
 <script>
-    Alpine.data('asignacion_costos', () => ({
+    Alpine.data('asignacion_costos_2025', () => ({
         hot: null,
         costosAsignados: @json($costosAsignados),
         totalDias: @json($totalDias),

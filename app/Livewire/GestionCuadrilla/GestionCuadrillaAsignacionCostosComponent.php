@@ -47,10 +47,12 @@ class GestionCuadrillaAsignacionCostosComponent extends Component
 
         CuadrilleroServicio::guardarCostosDiariosGrupo($datos, $this->fechaInicio);
         CuadrilleroServicio::guardarPrecioSugerido($datos);
+        CuadrilleroServicio::calcularCostosCuadrilla($this->fechaInicio,$this->fechaFin);
 
         $this->alert('success', 'Costos asignados guardados correctamente.');
         $this->mostrarFormularioAignacionCostos = false;
-        $this->obtenerCostosAsignados(); // refresca tabla
+        $this->dispatch('costosSemanalesModificados');
+        //$this->obtenerCostosAsignados(); // refresca tabla
     }
 
     public function render()

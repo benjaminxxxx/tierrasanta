@@ -5,9 +5,5 @@
 
     {{-- Este formulario tiene un handsontable dentro de un modal, debe estar aqui para evitar error de dom con id no encontrado --}}
     <livewire:gestion-cuadrilla.gestion-cuadrilla-gastos-adicionales-component />
-
-    
-    <livewire:cuadrilla-asistencia-agregar-component/>
-    
-    <livewire:gestion-cuadrilla.administrar-cuadrillero.cuadrilla-grupo-form-component />
+    <livewire:gestion-cuadrilla.gestion-cuadrilla-asignacion-costos-component />
 </x-app-layout>

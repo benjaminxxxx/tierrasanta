@@ -12,7 +12,7 @@ use Livewire\Component;
 class CuadrillaGrupoFormComponent extends Component
 {
     use LivewireAlert;
-    public $mostrarFormulario = false;
+    public $mostrarFormularioGrupoCuadrilla = false;
     public $grupoId;
     public $nombre;
     public $codigo;
@@ -25,7 +25,7 @@ class CuadrillaGrupoFormComponent extends Component
     {
         $this->resetErrorBag();
         $this->resetForm();
-        $this->mostrarFormulario = true;
+        $this->mostrarFormularioGrupoCuadrilla = true;
     }
     public function editarGrupo($codigo){
         $this->resetForm();        
@@ -37,7 +37,7 @@ class CuadrillaGrupoFormComponent extends Component
             $this->color = $grupo->color;
             $this->modalidad_pago = $grupo->modalidad_pago;
             $this->costo_dia_sugerido = $grupo->costo_dia_sugerido;
-            $this->mostrarFormulario = true;
+            $this->mostrarFormularioGrupoCuadrilla = true;
         }else{
             $this->alert('error','El grupo ha dejado de existir');
         }
@@ -77,7 +77,7 @@ class CuadrillaGrupoFormComponent extends Component
             GrupoServicio::guardarGrupo($data, $this->grupoId);
             $this->alert('success', $this->grupoId ? 'Grupo actualizado' : 'Grupo registrado');
             $this->resetForm();
-            $this->mostrarFormulario = false;
+            $this->mostrarFormularioGrupoCuadrilla = false;
             $this->dispatch('grupoRegistrado', $data);
         } catch (Exception $e) {
             $this->alert('error', $e->getMessage());

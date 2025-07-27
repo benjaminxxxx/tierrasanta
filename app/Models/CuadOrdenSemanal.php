@@ -12,6 +12,7 @@ class CuadOrdenSemanal extends Model
         'cuadrillero_id',
         'fecha_inicio',
         'orden',
+        'codigo_grupo'
     ];
 
     public function cuadrillero()

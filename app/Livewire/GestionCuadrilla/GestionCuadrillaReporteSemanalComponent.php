@@ -2,6 +2,7 @@
 
 namespace App\Livewire\GestionCuadrilla;
 
+use App\Models\CuadOrdenSemanal;
 use App\Models\CuadRegistroDiario;
 use App\Models\Cuadrillero;
 use App\Models\CuaGrupo;
@@ -46,6 +47,17 @@ class GestionCuadrillaReporteSemanalComponent extends Component
     public $mostrarFormularioCostoHora = false;
     public $cuadrillerosCostosPersonalizados = [];
 
+    #region Agregar Cuadrillero a semana
+    public $mostrarAgregarCuadrillero = false;
+    public $search;
+    public $results = [];
+    public $cuadrillerosAgregados = [];
+    public $fecha;
+    public $grupos = [];
+    public $codigo_grupo;
+    public $listaCuadrilleros = [];
+    protected $listeners = ['grupoRegistrado','costosSemanalesModificados'];
+    #endregion
     public function mount()
     {
         $this->gruposDisponibles = CuaGrupo::pluck('codigo')->toArray();
@@ -61,7 +73,25 @@ class GestionCuadrillaReporteSemanalComponent extends Component
         $this->calcularAnioMes();
         $this->obtenerReporteSemanal(false);
         $this->cuadrilleros = Cuadrillero::where('estado', true)->pluck('nombres')->toArray();
+
+        #region Agregar Cuadrillero a semana
+        $this->grupos = CuaGrupo::where('estado', true)->get();
+        if ($this->grupos->isNotEmpty()) {
+            $this->codigo_grupo = $this->grupos->first()->codigo;
+        }
+        $this->listaCuadrilleros = Cuadrillero::where('estado', true)
+            ->select('id', 'nombres', 'dni')
+            ->orderBy('nombres')
+            ->get()
+            ->toArray();
+        #endregion
     }
+
+    #region Panel principal
+    public function costosSemanalesModificados(){
+        $this->obtenerReporteSemanal();
+    }
+
     public function abrirPrecioPersonalizado($cuadrilleros)
     {
         try {
@@ -212,6 +242,10 @@ class GestionCuadrillaReporteSemanalComponent extends Component
     {
         $this->seleccionarSemana();
     }
+    public function updatedCodigoGrupo()
+    {
+        $this->obtenerCuadrillerosAgregados();
+    }
     public function seleccionarSemana()
     {
         // Si no llegan, usar valores por defecto
@@ -239,8 +273,8 @@ class GestionCuadrillaReporteSemanalComponent extends Component
         $fecha->addWeeks($semanaNumero - 1);
 
         $this->fechaInicioSemana = $fecha->toDateString();
-        $this->mes = (int)$fecha->format('m');
-        $this->anio = (int)$fecha->format('Y');
+        $this->mes = (int) $fecha->format('m');
+        $this->anio = (int) $fecha->format('Y');
         $this->obtenerReporteSemanal();
         Session::put('cuadrilla_fecha_inicio_semana', $this->fechaInicioSemana);
     }
@@ -255,13 +289,7 @@ class GestionCuadrillaReporteSemanalComponent extends Component
             'fin' => $fin->toDateString(),
         ];
     }
-    public function asignarCostos()
-    {
-        //asignar 7 dias a la fecha de inicio
-        $inicio = $this->fechaInicioSemana;
-        $fin = Carbon::parse($this->fechaInicioSemana)->copy()->addDays(7);
-        $this->dispatch('asignarCostosPorFecha', $inicio, $fin);
-    }
+
     public function storeTableDataGuardarHoras($datos)
     {
         try {
@@ -276,7 +304,114 @@ class GestionCuadrillaReporteSemanalComponent extends Component
             $this->alert('error', $th->getMessage());
         }
     }
-   
+    #endregion
+
+    #region Agregar Cuadrillero a semana
+    public function registrarComoNuevo()
+    {
+        try {
+            $data = [
+                'nombres' => mb_strtoupper(trim($this->search)),
+                'dni' => null,
+                'codigo_grupo' => $this->codigo_grupo,
+            ];
+            $cuadrillero = CuadrilleroServicio::guardarCuadrillero($data);
+            if ($cuadrillero) {
+                $this->cuadrillerosAgregados[] = [
+                    'id' => $cuadrillero->id,
+                    'nombres' => $cuadrillero->nombres,
+                ];
+                $this->search = null;
+            }
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
+        }
+    }
+    public function obtenerCuadrillerosAgregados()
+    {
+        if (!$this->codigo_grupo) {
+            $this->cuadrillerosAgregados = [];
+            return;
+        }
+        $this->cuadrillerosAgregados = CuadOrdenSemanal::whereDate('fecha_inicio', $this->fechaInicioSemana)
+            ->with(['cuadrillero'])
+            ->where('codigo_grupo', $this->codigo_grupo)
+            ->orderBy('orden')
+            ->get(['cuadrillero_id', 'fecha_inicio', 'orden'])
+            ->map(function ($cuadOrdenSemanal) {
+                return [
+                    'id' => $cuadOrdenSemanal->cuadrillero_id,
+                    'nombres' => $cuadOrdenSemanal->cuadrillero->nombres
+                ];
+            })
+            ->toArray();
+    }
+    public function agregarListaAgregada()
+    {
+        try {
+            if (empty($this->cuadrillerosAgregados)) {
+                throw new Exception("No ha agregado ningún cuadrillero");
+            }
+            if (!$this->codigo_grupo) {
+                throw new Exception("No ha elegido ningún grupo");
+            }
+            $fechaInicio = $this->fechaInicioSemana;
+            $rows = [];
+            foreach ($this->cuadrillerosAgregados as $cuadrillero) {
+
+                $rows[] = [
+                    'cuadrillero_nombres' => $cuadrillero['nombres'],
+                    'cuadrillero_id' => $cuadrillero['id']
+                ];
+            }
+
+            $lista = CuadrilleroServicio::registrarOrdenSemanal($fechaInicio, $this->codigo_grupo, $rows);
+            $this->alert('success', "Registros agregados");
+            $this->mostrarAgregarCuadrillero = false;
+            $this->resetForm();
+            $this->obtenerReporteSemanal();
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
+        }
+    }
+    public function resetForm()
+    {
+        $this->resetErrorBag();
+        $this->search = null;
+        $this->results = [];
+        $this->cuadrillerosAgregados = [];
+        $this->fecha = null;
+        $this->codigo_grupo = null;
+        $this->obtenerCuadrillerosAgregados();
+    }
+    public function cuadrilleroRegistrado($cuadrillero)
+    {
+        $this->agregarCuadrillero($cuadrillero['id']);
+    }
+    public function cuadrilleroRegistradoDeEmpleados($cuadrilleros)
+    {
+        if (!is_array($cuadrilleros)) {
+            return;
+        }
+        foreach ($cuadrilleros as $idCuadrillero) {
+            $this->agregarCuadrillero($idCuadrillero);
+        }
+
+    }
+    public function grupoRegistrado($grupo)
+    {
+        $this->grupos = CuaGrupo::where('estado', true)->get();
+        if ($this->grupos->isNotEmpty()) {
+            $this->codigo_grupo = $grupo['codigo'];
+        }
+        $this->obtenerCuadrillerosAgregados();
+    }
+    public function agregarCuadrillerosEnSemana()
+    {
+        $this->resetForm();
+        $this->mostrarAgregarCuadrillero = true;
+    }
+    #endregion
     public function render()
     {
         return view('livewire.gestion-cuadrilla.gestion-cuadrilla-reporte-semanal-component', [

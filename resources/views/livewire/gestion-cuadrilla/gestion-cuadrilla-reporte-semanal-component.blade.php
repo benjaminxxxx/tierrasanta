@@ -1,11 +1,12 @@
-<div>
-    <div x-data="reporte_semanal_cuadrilleros">
+<div x-data="reporte_semanal_cuadrilleros">
+    <div>
         <x-flex class="w-full justify-between">
             <x-flex class="my-3">
                 <x-h3>
                     Registro Semanal Cuadrilla
                 </x-h3>
-                <x-button wire:click="asignarCostos">
+                <x-button
+                    @click="$wire.dispatch('asignarCostosPorFecha',{fechaInicio:'{{ $semana->inicio }}',fechaFin:'{{ $semana->fin }}'})">
                     Asignar costos
                 </x-button>
             </x-flex>
@@ -76,10 +77,10 @@
             <div x-ref="tableContainerSemana" class="mt-5"></div>
         </div>
         <x-flex class="mt-4 justify-between">
-            <x-button @click="abrirAgregarCuadrillero" wire:loading.attr="disabled">
+            <x-button @click="agregarCuadrillerosEnSemana">
                 <i class="fa fa-plus"></i> Agregar cuadrilleros
             </x-button>
-            
+
             <x-flex>
                 <x-button @click="$wire.dispatch('abrirGastosAdicionales',{inicio:fechaInicioSemana})">
                     <i class="fa fa-plus-minus"></i> Agregar/Quitar gastos adicionales
@@ -92,123 +93,17 @@
 
     </div>
 
+    @include('livewire.gestion-cuadrilla.partial.personalizar-costo-hora-form')
+    @include('livewire.gestion-cuadrilla.partial.agregar-cuadrilleros-semanales-form')
 
-    <x-dialog-modal wire:model.live="mostrarFormularioCostoHora" maxWidth="full">
-        <x-slot name="title">
-            Personaliza el precio por cuadrillero
-        </x-slot>
 
-        <x-slot name="content">
-
-            <x-flex class="w-full">
-                <div class="flex-1">
-                    <x-table>
-                        <x-slot name="thead">
-                            <x-tr>
-                                <x-th class="text-center" rowspan="2">
-                                    N°
-                                </x-th>
-                                <x-th rowspan="2">
-                                    Cuadrillero
-                                </x-th>
-                                @if ($diasSemana)
-                                    @foreach ($diasSemana as $diaSemana)
-                                        <x-th class="text-center">{{ \Carbon\Carbon::parse($diaSemana)->format('d') }}</x-th>
-                                    @endforeach
-                                @endif
-                            </x-tr>
-                            <x-tr>
-                                @if ($diasSemana)
-                                    @foreach ($diasSemana as $diaSemana)
-                                        <x-th class="text-center">
-                                            {{ \Carbon\Carbon::parse($diaSemana)->isoFormat('ddd') }}
-                                        </x-th>
-                                    @endforeach
-                                @endif
-                            </x-tr>
-                        </x-slot>
-
-                        <x-slot name="tbody">
-                            @if ($cuadrillerosCostosPersonalizados)
-                                @foreach ($cuadrillerosCostosPersonalizados as $indice => $cuadrillero)
-                                    <x-tr>
-                                        <x-td class="text-center">
-                                            {{ $indice + 1 }}
-                                        </x-td>
-                                        <x-td>
-                                            {{ $cuadrillero['cuadrillero_nombres'] ?? '-' }}
-                                        </x-td>
-                                        @foreach ($cuadrillero['costos'] as $indice => $costo)
-                                            @php
-                                                $id = $cuadrillero['cuadrillero_id'];
-                                            @endphp
-                                            <x-td class="text-center">
-                                                <x-input class="!p-2 text-center" wire:key="costo-{{ $indice }}-{{ $id }}"
-                                                    wire:model="cuadrillerosCostosPersonalizados.{{ $id }}.costos.{{ $indice }}"
-                                                    type="number" step="0.01" />
-                                            </x-td>
-                                        @endforeach
-                                    </x-tr>
-                                @endforeach
-                            @endif
-                        </x-slot>
-                    </x-table>
-
-                </div>
-            </x-flex>
-            <div>
-                <b class="block my-2">Referencia:</b>
-                <ul>
-                    <li>
-                        <x-flex>
-                            <div class="w-5 h-5 block bg-lime-600"></div>
-                            Montos Personalizados por Día
-                        </x-flex>
-                    </li>
-                    <li>
-                        <x-flex>
-                            <div class="w-5 h-5 block bg-amber-400"></div>
-                            Montos Personalizados por Cuadrillero
-                        </x-flex>
-                    </li>
-                </ul>
-                <b class="block my-2">Instrucciones:</b>
-                <ul>
-                    <li>
-                        <p>Modifique directamente los precios, el sistema te permitirá 1 segundo para que puedas digitar
-                            y luego lo guardará de forma automática.</p>
-                    </li>
-                    <li>
-                        <p>
-                            Si deseas quitar el precio personalizado, simplemente bórralo, el sistema borrará el
-                            registro y usará el precio semanal o si existe, el precio personalizado por día.
-                        </p>
-                    </li>
-                </ul>
-            </div>
-        </x-slot>
-
-        <x-slot name="footer">
-            <x-flex class="flex-end">
-                <x-secondary-button wire:click="$set('mostrarFormularioCostoHora', false)" wire:loading.attr="disabled">
-                    Cerrar
-                </x-secondary-button>
-                <x-button wire:click="registrarCostoPersonalizado" wire:loading.attr="disabled">
-                    <i class="fa fa-save"></i> Registrar costo
-                </x-button>
-            </x-flex>
-        </x-slot>
-    </x-dialog-modal>
-
-    <livewire:gestion-cuadrilla.gestion-cuadrilla-asignacion-costos-component />
-
-    
-    <x-loading wire:loading />
+    <x-loading wire:loading wire:target="storeTableDataGuardarHoras" />
 </div>
 @script
 <script>
     Alpine.data('reporte_semanal_cuadrilleros', () => ({
         listeners: [],
+        codigo_grupo: @entangle('codigo_grupo'),
         fechaInicioSemana: @entangle('fechaInicioSemana'),
         ocurrioModificaciones: @entangle('ocurrioModificaciones'),
         reporteSemanal: @json($reporteSemanal),
@@ -218,6 +113,13 @@
         colorPorGrupo: @json($colorPorGrupo),
         cuadrilleros: @json($cuadrilleros),
         hot: null,
+
+        selectedIndex: 0,
+        cuadrillerosFiltrados: [],
+        cuadrillerosBuscar: @json($listaCuadrilleros),
+        search: @entangle('search'),
+        cuadrillerosAgregados: @entangle('cuadrillerosAgregados'),
+
         init() {
             this.$nextTick(() => {
                 this.initTable();
@@ -231,7 +133,20 @@
                 this.headers = data[2];
                 this.$nextTick(() => this.initTable());
             });
+            //Agregar cuadrillero
+            this.$watch('search', (value) => {
 
+                this.selectedIndex = 0;
+                if (value.trim() == '') {
+                    this.cuadrillerosFiltrados = [];
+                    return;
+                }
+                this.cuadrillerosFiltrados = this.cuadrillerosBuscar.filter(c =>
+                    (c.nombres?.toLowerCase() || '').includes(value.toLowerCase()) ||
+                    (c.dni?.toLowerCase() || '').includes(value.toLowerCase())
+                );
+            });
+            //fin agregar cuadrillero
 
         },
         initTable() {
@@ -251,7 +166,7 @@
                 height: 'auto',
                 stretchH: 'all',
                 filters: true,
-                minSpareRows: 1,
+                //minSpareRows: 1,
                 fixedColumnsLeft: 2,
                 contextMenu: {
                     items: {
@@ -291,8 +206,21 @@
                 });
             }
         },
-        abrirAgregarCuadrillero(){
-            $wire.dispatch('agregarCuadrilleros',{fecha:this.fechaInicioSemana})
+        registrarHoras() {
+            let allData = [];
+
+            // Recorre todas las filas de la tabla y obtiene los datos completos
+            for (let row = 0; row < this.hot.countRows(); row++) {
+                const rowData = this.hot.getSourceDataAtRow(row);
+                allData.push(rowData);
+            }
+
+            // Filtra las filas vacías
+            const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
+                null && cell !== ''));
+
+            this.ocurrioModificaciones = false;
+            $wire.storeTableDataGuardarHoras(filteredData);
         },
         generarColumnasDinamicas() {
             const cols = [
@@ -300,11 +228,12 @@
                 {
                     data: 'codigo_grupo',
                     title: 'Grupo',
-                    type: 'dropdown',
+                    type: 'text',
                     width: 100,
-                    source: this.gruposDisponibles,
-                    strict: true,
-                    allowInvalid: false,
+                    readOnly: true,
+                    //source: this.gruposDisponibles,
+                    //strict: true,
+                    //allowInvalid: false,
                     renderer: function (instance, td, row, col, prop, value, cellProperties) {
                         const rowData = instance.getSourceDataAtRow(row);
                         Handsontable.renderers.TextRenderer.apply(this, arguments);
@@ -314,8 +243,11 @@
                 }, {
                     data: 'cuadrillero_nombres',
                     title: 'Nombre',
-                    type: 'autocomplete',
-                    source: this.cuadrilleros
+                    type: 'text',
+                    //type: 'autocomplete',
+                    //source: this.cuadrilleros,
+                    readOnly: true,
+                    className: '!bg-gray-200'
                 },
             ];
 
@@ -401,23 +333,53 @@
                 $wire.abrirPrecioPersonalizado(preciosamodificar);
             }
         },
-        registrarHoras() {
-            let allData = [];
+        //agregar cuadrillero
+        agregarCuadrillero(cuadrillero) {
+            this.cuadrillerosAgregados.push({
+                nombres: cuadrillero.nombres,
+                id: cuadrillero.id
+            });
+            this.search = '';
+            this.cuadrillerosFiltrados = [];
+        },
+        navigateList(event) {
+            if (this.cuadrillerosFiltrados.length === 0) return;
 
-            // Recorre todas las filas de la tabla y obtiene los datos completos
-            for (let row = 0; row < this.hot.countRows(); row++) {
-                const rowData = this.hot.getSourceDataAtRow(row);
-                allData.push(rowData);
+            if (event.key === 'ArrowDown') {
+                this.selectedIndex = (this.selectedIndex + 1) % this.cuadrillerosFiltrados.length;
+            } else if (event.key === 'ArrowUp') {
+                this.selectedIndex = (this.selectedIndex - 1 + this.cuadrillerosFiltrados.length) % this.cuadrillerosFiltrados.length;
+            } else if (event.key === 'Enter') {
+                this.agregarCuadrillero(this.cuadrillerosFiltrados[this.selectedIndex]);
             }
-
-            // Filtra las filas vacías
-            const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
-                null && cell !== ''));
-
-            this.ocurrioModificaciones = false;
-
-            $wire.storeTableDataGuardarHoras(filteredData);
+        },
+        subir(index) {
+            if (index > 0) {
+                [this.cuadrillerosAgregados[index - 1], this.cuadrillerosAgregados[index]] =
+                    [this.cuadrillerosAgregados[index], this.cuadrillerosAgregados[index - 1]];
+            }
+        },
+        bajar(index) {
+            if (index < this.cuadrillerosAgregados.length - 1) {
+                [this.cuadrillerosAgregados[index + 1], this.cuadrillerosAgregados[index]] =
+                    [this.cuadrillerosAgregados[index], this.cuadrillerosAgregados[index + 1]];
+            }
+        },
+        eliminarCuadrillero(index) {
+            this.cuadrillerosAgregados.splice(index, 1);
+        },
+        setSelectedIndex(index) {
+            this.selectedIndex = index;
+        },
+        agregarCuadrillerosEnSemana(){
+          
+            if(this.ocurrioModificaciones){
+                alert('Guarda primero los cambios realizados dando clic en Actualizar Horas');
+                return;
+            }
+            $wire.agregarCuadrillerosEnSemana();
         }
+        //fin agregar cuadrillero
     }));
 </script>
 @endscript

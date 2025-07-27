@@ -347,7 +347,112 @@ class CuadrilleroServicio
 
     public static function obtenerHandsontableReporte($fechaInicio, $fechaFin)
     {
-        
+        $inicio = Carbon::parse($fechaInicio)->startOfDay();
+        $fin = Carbon::parse($fechaFin)->endOfDay();
+        $coloresPorGrupo = CuaGrupo::pluck('color', 'codigo')->toArray();
+
+        $dias = collect();
+        for ($date = $inicio->copy(); $date->lte($fin); $date->addDay()) {
+            $dias->push($date->copy());
+        }
+
+        $totalDias = $dias->count();
+
+        // 🟠 1. Registros de asistencia
+        $registros = CuadRegistroDiario::whereBetween('fecha', [$inicio, $fin])
+            ->with(['cuadrillero:id,nombres,dni,codigo_grupo'])
+            ->get()
+            ->groupBy('cuadrillero_id');
+
+        // 🟠 2. Relación de grupo personalizado por día
+        $grupoPorFecha = CuadGrupoCuadrilleroFecha::whereBetween('fecha', [$inicio, $fin])
+            ->get()
+            ->groupBy(fn($r) => $r->cuadrillero_id . '|' . $r->fecha);
+
+        $registrosPorOrden = CuadOrdenSemanal::whereDate('fecha_inicio', $inicio)
+            ->with(['cuadrillero'])
+            ->orderBy('codigo_grupo')
+            ->orderBy('orden')
+            ->get()
+            ->keyBy('cuadrillero_id');
+        $resultados = [];
+
+        foreach ($registrosPorOrden as $cuadrilleroId => $registro) {
+
+            $cuadrillero = $registro->cuadrillero;
+            $registrosDiarios = $registros[$cuadrillero->id] ?? null;
+            //dd($registrosDiarios);
+            $fila = [
+                'cuadrillero_id' => $cuadrilleroId,
+                'cuadrillero_nombres' => $cuadrillero->nombres,
+                'codigo_grupo' => $registro->codigo_grupo,
+                'color' => $coloresPorGrupo[$registro->codigo_grupo] ?? '#FFFFFF'
+            ];
+
+            $grupoFijo = null;
+            $totalCostos = 0;
+            $totalBonos = 0;
+
+            foreach ($dias as $index => $dia) {
+                $fecha = $dia->toDateString();
+                $registroHoras = null;
+
+                if ($registrosDiarios) {
+                    $registroHoras = $registrosDiarios->first(function ($item) use ($fecha) {
+                        return optional($item->fecha)->toDateString() === $fecha;
+                    });
+                }
+
+                $valorHoras = optional($registroHoras)->total_horas;
+                $total_horas = ($valorHoras && $valorHoras > 0) ? $valorHoras : '-';
+
+                $bono = optional($registroHoras)->total_bono ?? 0;
+                $costo_dia = optional($registroHoras)->costo_dia;
+                $costo_dia = ($costo_dia && $costo_dia > 0) ? $costo_dia : '-';
+
+                // Agregar columnas planas
+                $fila["dia_" . ($index + 1)] = $total_horas;
+                $fila["jornal_" . ($index + 1)] = $costo_dia;
+                $fila["bono_" . ($index + 1)] = $bono;
+
+                // Totales
+                $totalCostos += (float) $costo_dia;
+                $totalBonos += $bono;
+            }
+
+            $fila['total_costo'] = $totalCostos;
+            $fila['total_bono'] = $totalBonos;
+
+            $resultados[] = $fila;
+        }
+
+        // 🟠 Generar headers planos
+        $headers = [];
+
+        $diasSemana = ['D', 'L', 'M', 'M', 'J', 'V', 'S']; // empieza en domingo
+        foreach ($dias as $d) {
+            $headers[] = $diasSemana[$d->dayOfWeek] . '<br/>' . $d->day;
+        }
+        foreach ($dias as $d) {
+            $headers[] = $diasSemana[$d->dayOfWeek] . '<br/>' . $d->day;
+        }
+        foreach ($dias as $d) {
+            $headers[] = 'B<br/>' . $d->day;
+        }
+        $headers[] = "Total días";
+        $headers[] = "Total costos";
+        $headers[] = "Total bonos";
+
+        return [
+            'data' => $resultados,
+            'headers' => $headers,
+            'total_dias' => $totalDias,
+        ];
+    }
+
+    /*
+    public static function obtenerHandsontableReporte($fechaInicio, $fechaFin)
+    {
         $inicio = Carbon::parse($fechaInicio)->startOfDay();
         $fin = Carbon::parse($fechaFin)->endOfDay();
         $coloresPorGrupo = CuaGrupo::pluck('color', 'codigo')->toArray();
@@ -472,7 +577,7 @@ class CuadrilleroServicio
             ->orderBy('orden')
             ->pluck('orden', 'cuadrillero_id')
             ->toArray();
-    //dd($ordenSemanal);
+        //dd($ordenSemanal);
         $resultadosById = collect($resultados)->keyBy('cuadrillero_id');
 
         $ordenados = [];
@@ -495,7 +600,7 @@ class CuadrilleroServicio
             'total_dias' => $totalDias,
         ];
     }
-
+*/
     public static function asignarGrupoPeriodo(int $cuadrilleroId, string $codigoGrupo, string $fechaInicio, string $fechaFin): void
     {
         $inicio = Carbon::parse($fechaInicio)->startOfDay();
@@ -779,13 +884,74 @@ class CuadrilleroServicio
      * @param  array  $rows         Array de cuadrilleros con datos (id, nombre, grupo, etc.)
      * @return array                Lista final normalizada y con campo 'orden' asignado
      */
+    public static function registrarOrdenSemanal($fechaInicio, $codigo, $rows)
+    {
+        $orden = 0;
+
+        // Rango de 7 días desde la fecha de inicio
+        $inicio = Carbon::parse($fechaInicio);
+        $dias = collect();
+        for ($i = 0; $i < 7; $i++) {
+            $dias->push($inicio->copy()->addDays($i));
+        }
+
+        // Obtener los IDs de cuadrilleros que se van a registrar
+        $cuadrilleroIds = collect($rows)->pluck('cuadrillero_id')->filter()->unique()->toArray();
+
+        // Eliminar registros que ya no están en el nuevo orden
+        CuadOrdenSemanal::whereDate('fecha_inicio', $fechaInicio)
+            ->where('codigo_grupo', $codigo)
+            ->whereNotIn('cuadrillero_id', $cuadrilleroIds)
+            ->delete();
+
+        // Eliminar del grupo anterior en los 7 días si el cuadrillero ya no pertenece
+        $fechas = $dias->map(fn($d) => $d->toDateString());
+
+        CuadGrupoCuadrilleroFecha::whereIn('fecha', $fechas)
+            ->where('codigo_grupo', $codigo)
+            ->whereNotIn('cuadrillero_id', $cuadrilleroIds)
+            ->delete();
+
+        CuadRegistroDiario::whereIn('fecha', $fechas)
+            ->whereNotIn('cuadrillero_id', $cuadrilleroIds)
+            ->delete();
+
+        // Insertar o actualizar el orden y grupo en los 7 días
+        foreach ($rows as $row) {
+            $orden++;
+            $cuadrilleroId = $row['cuadrillero_id'];
+
+            CuadOrdenSemanal::updateOrCreate(
+                [
+                    'cuadrillero_id' => $cuadrilleroId,
+                    'fecha_inicio' => $fechaInicio,
+                ],
+                [
+                    'codigo_grupo' => $codigo,
+                    'orden' => $orden,
+                ]
+            );
+
+            // Asegurar grupo asignado en los 7 días
+            foreach ($dias as $d) {
+                CuadGrupoCuadrilleroFecha::updateOrCreate(
+                    [
+                        'cuadrillero_id' => $cuadrilleroId,
+                        'fecha' => $d->toDateString(),
+                    ],
+                    [
+                        'codigo_grupo' => $codigo,
+                    ]
+                );
+            }
+        }
+
+        return $rows;
+    }
+
+    /*
     public static function registrarOrdenSemanal($fechaInicio, $rows)
     {
-        $fechaInicio = \Carbon\Carbon::parse($fechaInicio)->startOfWeek()->format('Y-m-d');
-
-        // ✅ Limpiar registros previos de esa semana
-        CuadOrdenSemanal::where('fecha_inicio', $fechaInicio)->delete();
-
         $grupoArrays = [];
 
         foreach ($rows as &$row) {
@@ -874,7 +1040,7 @@ class CuadrilleroServicio
         }
 
         return $listaFinal;
-    }
+    }*/
 
 
     /**
@@ -900,8 +1066,6 @@ class CuadrilleroServicio
     {
         DB::beginTransaction();
         try {
-            // ✅ 1. Generar lista ordenada y normalizada
-            $rows = self::registrarOrdenSemanal($inicio, $rows);
 
             // ✅ 2. Calcular rango de fechas
             $inicioDate = Carbon::parse($inicio)->startOfDay();
@@ -950,7 +1114,7 @@ class CuadrilleroServicio
 
             // ✅ 5. Procesar cada fila de la nueva lista
             foreach ($rows as $i => $fila) {
-                $nombre = trim(mb_strtoupper($fila['cuadrillero_nombres']) ?? '');
+                //$nombre = trim(mb_strtoupper($fila['cuadrillero_nombres']) ?? '');
                 $cuadrilleroId = $fila['cuadrillero_id'] ?? null;
                 $codigoGrupo = trim($fila['codigo_grupo'] ?? null);
                 $codigoGrupo = $codigoGrupo === 'SIN GRUPO' ? null : $codigoGrupo;
@@ -973,7 +1137,7 @@ class CuadrilleroServicio
                         );
                     }
                 }
-
+/*
                 // ✅ Verificar si no tiene ningún registro en la semana
                 $existenRegistros = CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
                     ->whereBetween('fecha', [$inicioDate, $finDate])
@@ -991,7 +1155,7 @@ class CuadrilleroServicio
                             'costo_personalizado_dia' => null,
                         ]);
                     }
-                }
+                }*/
 
                 // ✅ Guardar asistencias diarias
                 foreach ($dias as $index => $d) {
@@ -1008,8 +1172,7 @@ class CuadrilleroServicio
                             'asistencia' => true,
                             'total_horas' => $total_horas,
                             'costo_dia' => 0,
-                            'total_bono' => 0,
-                            'costo_personalizado_dia' => null,
+                            'total_bono' => 0
                         ]
                     );
                 }

@@ -1,6 +1,6 @@
 <div>
 
-    <x-dialog-modal wire:model.live="mostrarFormulario">
+    <x-dialog-modal wire:model.live="mostrarFormularioGrupoCuadrilla">
         <x-slot name="title">
             Registrar Grupo de Cuadrilla
         </x-slot>
@@ -90,7 +90,7 @@
 
         <x-slot name="footer">
             <div class="flex items-center gap-2">
-                <x-secondary-button wire:click="$set('mostrarFormulario', false)" wire:loading.attr="disabled">
+                <x-secondary-button wire:click="$set('mostrarFormularioGrupoCuadrilla', false)" wire:loading.attr="disabled">
                     Cerrar
                 </x-secondary-button>
                 <x-button wire:click="registrar" wire:loading.attr="disabled">
@@ -111,7 +111,7 @@
     Alpine.data('form_cuadrilla_grupo', () => ({
         open: false,
         colorSeleccionado:@entangle('color'),
-        mostrarFormulario:@entangle('mostrarFormulario'),
+        mostrarFormularioGrupoCuadrilla:@entangle('mostrarFormularioGrupoCuadrilla'),
         selected: {
             hex:'',
             nombre: ''
@@ -131,7 +131,7 @@
             { hex: '#A6A09B', nombre: 'Gris Cálido' }
         ],
         init() {
-            this.$watch('mostrarFormulario', () => this.resetearColor());
+            this.$watch('mostrarFormularioGrupoCuadrilla', () => this.resetearColor());
         },
         resetearColor(){
             this.selected = {
