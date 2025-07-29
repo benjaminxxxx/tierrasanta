@@ -2,15 +2,10 @@
 
 namespace App\Livewire\GestionCuadrilla;
 
-use App\Models\CuadRegistroDiario;
-use App\Models\Cuadrillero;
 use App\Models\CuaGrupo;
 use App\Services\Cuadrilla\CuadrilleroServicio;
-use App\Services\CuadrillaServicio;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
-use DB;
-use Exception;
 use Illuminate\Support\Facades\Session;
 use Livewire\Component;
 use Jantinnerezo\LivewireAlert\LivewireAlert;

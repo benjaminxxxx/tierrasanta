@@ -87,6 +87,24 @@ class GestionCuadrillaBonificacionesComponent extends Component
             $this->alert('error', $th->getMessage());
         }
     }
+    public function guardarBonificaciones($datos)
+    {
+        try {
+            $data = [
+                'tramos_bonificacion' => json_encode($this->tramos),
+                'unidades' => $this->unidades,
+                'estandar_produccion' => $this->estandarProduccion
+            ];
+            
+            ActividadServicio::actualizarConfiguracionActividad($data,$this->actividadSeleccionada);
+            EmpleadoServicio::guardarBonificaciones($this->fecha,$datos);
+            
+            CuadrilleroServicio::calcularCostosCuadrilla($this->fecha);
+            $this->alert('success', 'Bonificaciones actualizadas correctamente.');
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
+        }
+    }
     #region Fechas
     public function fechaAnterior()
     {
@@ -106,23 +124,7 @@ class GestionCuadrillaBonificacionesComponent extends Component
         Session::put('fecha_reporte', $fecha);
         $this->obtenerActividades();
     }
-    public function guardarBonificaciones($datos)
-    {
-        try {
-            $data = [
-                'tramos_bonificacion' => json_encode($this->tramos),
-                'unidades' => $this->unidades,
-                'estandar_produccion' => $this->estandarProduccion
-            ];
-            ActividadServicio::actualizarConfiguracionActividad($data,$this->actividadSeleccionada);
-            EmpleadoServicio::guardarBonificaciones($this->fecha,$datos);
-            
-            CuadrilleroServicio::calcularCostosCuadrilla($this->fecha);
-            $this->alert('success', 'Bonificaciones actualizadas correctamente.');
-        } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
-        }
-    }
+    
     #endregion
     public function render()
     {

@@ -1,6 +1,6 @@
 @props([
     'label' => null,
-    'error' => true,
+    'error' => null,
 ])
 
 @php
@@ -12,7 +12,7 @@
         <x-label value="{{ $label }}" />
     @endif
     
-    <x-searchable-select
+    <x-searchable
         :options="$campos"
         :placeholder="$placeholder"
         {{ $attributes }}

@@ -110,11 +110,16 @@
                     const cellProperties = {};
                     const rowData = this.instance.getSourceDataAtRow(row);
 
-                    if (rowData?.cosecha_encontrada === true) {
-                        cellProperties.className = '!bg-lime-200';
-                    }
-                    if (rowData?.fusionada === true) {
-                        cellProperties.className = '!bg-blue-200';
+                    const colProp = this.instance.getSettings().columns[col]?.data;
+
+                    if (colProp === 'total_horas') {
+                        cellProperties.className = '!bg-amber-300 !font-bold !text-black !text-center';
+
+                        if (rowData?.total_horas_validado === true) {
+                            cellProperties.className += ' !text-green-800';
+                        } else if (rowData?.total_horas_validado === false) {
+                            cellProperties.className += ' !text-red-500';
+                        }
                     }
 
                     return cellProperties;
@@ -159,6 +164,8 @@
                         data: `campo_${i}`,
                         type: 'dropdown',
                         source: this.campos,
+                        strict: true, // solo permite valores de la lista
+                        allowInvalid: false,
                         className: `text-center ${bgClass}`,
                         title: `Camp. ${i}`
                     },
@@ -166,24 +173,42 @@
                         data: `labor_${i}`,
                         type: 'dropdown',
                         source: this.labores,
+                        strict: true, // solo permite valores de la lista
+                        allowInvalid: false,
                         className: `text-center ${bgClass}`,
                         title: `Lab. ${i}`
                     },
                     {
                         data: `hora_inicio_${i}`,
-                        type: 'text',
+                        type: 'time',
+                        width: 60,
+                        timeFormat: 'HH:mm',
+                        strict: true,
+                        correctFormat: true,
                         className: `text-center ${bgClass}`,
                         title: `Hora<br/>Ini. ${i}`
                     },
                     {
                         data: `hora_fin_${i}`,
-                        type: 'text',
+                        type: 'time',
+                        width: 60,
+                        timeFormat: 'HH:mm',
+                        correctFormat: true,
+                        strict: true,
                         className: `text-center ${bgClass}`,
                         title: `Hora<br/>Fin ${i}`
                     }
                 );
             }
 
+            cols.push({
+                data: 'total_horas',
+                type: 'time',
+                width: 60,
+                timeFormat: 'HH:mm',
+                readOnly: true,
+                title: 'TOTAL'
+            });
 
             return cols;
         },

@@ -6,7 +6,7 @@
 
         <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
             <div class=" mt-2">
-                <x-label for="codigo_grupo" value="Seleccione el grupo" />
+                <x-label for="codigo_grupo" value="Primero seleccione el grupo donde desea agregar cuadrilleros para esta semana" />
                 <div class="flex items-center gap-2">
                     <x-select wire:model.live="codigo_grupo" class="mt-1 w-full"
                         wire:key="codigo_grupo-{{ $codigo_grupo ?? Str::random(4) }}">
@@ -26,7 +26,7 @@
             <div @keydown.arrow-up.prevent="navigateList($event)" @keydown.arrow-down.prevent="navigateList($event)"
                 @keydown.enter.prevent="navigateList($event)" @input="selectedIndex = 0">
                 <div x-show="codigo_grupo">
-                    <x-label>Escriba el nombre del Cuadrillero</x-label>
+                    <x-label>Para agregar mas cuadrilleros digite su nombre aquí</x-label>
                     <div class="flex items-center gap-2">
                         <div class="relative mt-2">
                             <div

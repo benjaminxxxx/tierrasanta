@@ -3,6 +3,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Carbon;
 
 class CuadRegistroDiario extends Model
 {
@@ -42,4 +43,15 @@ class CuadRegistroDiario extends Model
     {
         return $this->total_bono + $this->costo_dia;
     }
+    public function getTotalHorasValidadoAttribute()
+    {
+       
+        $totalCalculado = $this->detalleHoras->reduce(function ($carry, $detalle) {
+                $inicio = Carbon::createFromFormat('H:i:s', $detalle->hora_inicio);
+                $fin = Carbon::createFromFormat('H:i:s', $detalle->hora_fin);
+                return $carry + ($inicio->diffInMinutes($fin) / 60);
+            }, 0);
+        return round($this->total_horas, 2) === round($totalCalculado, 2);
+    }
+
 }

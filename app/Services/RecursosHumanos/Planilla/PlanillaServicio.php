@@ -5,6 +5,7 @@ namespace App\Services\RecursosHumanos\Planilla;
 use App\Models\Actividad;
 use App\Models\ReporteDiario;
 use App\Models\ReporteDiarioDetalle;
+use App\Support\DateHelper;
 use Exception;
 
 class PlanillaServicio
@@ -134,7 +135,9 @@ class PlanillaServicio
             }
 
             $maxTramos = max($maxTramos, $detalles->count());
-            $row['horarios'] = implode(', ', $horariosConcatenados);
+            $row['horarios'] = implode(',', $horariosConcatenados);
+            $row['rango_total_horas'] = DateHelper::calcularDuracionPorTramo($row['horarios']);
+            $row['total_horas'] = DateHelper::calcularTotalHorasFloat($row['rango_total_horas']);
             $row['total_bono'] = $bono;
 
             $data[] = $row;

@@ -40,8 +40,10 @@
         <div x-ref="tableRegistroPagos"></div>
     </x-card2>
     <style>
-        body td.bg-green-400{
-            background-color: #b3ffba;
+        .handsontable .htDimmed.\!bg-green-400{
+            background-color: #b3ffba !important;
+            color:#000 !important;
+            font-weight: bold !important;
         }
     </style>
 </div>
@@ -96,7 +98,7 @@
         const index = match[1];
         const isPagado = this.instance.getDataAtRowProp(row, `pagado_${index}`);
         if (isPagado) {
-            cellProperties.className = 'bg-green-400';
+            cellProperties.className = '!bg-green-400';
         }
     }
 
@@ -162,7 +164,16 @@
             this.headers.forEach(header => {
                 columnas.push({
                     data: 'jornal_' + header.keyIndex,
-                    title: header.label,
+                    title: 'Día<br/>' + header.label,
+                    type: 'numeric',
+                    numericFormat: { pattern: '0.00' },
+                    readOnly: true
+                });
+            });
+            this.headers.forEach(header => {
+                columnas.push({
+                    data: 'bono_' + header.keyIndex,
+                    title: 'Bono<br/>' + header.label,
                     type: 'numeric',
                     numericFormat: { pattern: '0.00' },
                     readOnly: true
@@ -170,13 +181,28 @@
             });
 
             columnas.push({
+                data: 'total_jornal',
+                title: 'TOTAL<br/>JORNAL',
+                type: 'numeric',
+                numericFormat: { pattern: '0.00' },
+                readOnly: true,
+                className: '!text-lg !font-bold'
+            },{
+                data: 'total_bono',
+                title: 'TOTAL<br/>BONO',
+                type: 'numeric',
+                numericFormat: { pattern: '0.00' },
+                readOnly: true,
+                className: '!text-lg !font-bold'
+            },{
                 data: 'total',
-                title: 'Total',
+                title: 'TOTAL',
                 type: 'numeric',
                 numericFormat: { pattern: '0.00' },
                 readOnly: true,
                 className: '!text-lg !font-bold'
             });
+
 
             return columnas;
         }

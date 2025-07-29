@@ -14,6 +14,7 @@ use App\Models\CuadrilleroActividad;
 use App\Models\CuaGrupo;
 use App\Models\GastoAdicionalPorGrupoCuadrilla;
 use App\Models\Labores;
+use App\Support\DateHelper;
 use App\Support\FormatoHelper;
 use DB;
 use Exception;
@@ -65,12 +66,11 @@ class CuadrilleroServicio
         for ($date = $inicio->copy(); $date->lte($fin); $date->addDay()) {
             $fechas->push($date->format('Y-m-d'));
         }
-        // Obtener todos los grupos por cuadrillero y fecha en lote
+
         $gruposPorDia = CuadGrupoCuadrilleroFecha::whereBetween('fecha', [$inicio, $fin])
             ->get()
             ->keyBy(fn($g) => $g->cuadrillero_id . '|' . $g->fecha);
 
-        // Cargar todos los registros diarios
         $registros = CuadRegistroDiario::whereBetween('fecha', [$inicio, $fin])
             ->with('cuadrillero')
             ->get()
@@ -78,8 +78,8 @@ class CuadrilleroServicio
                 return (!$nombre || stripos($registro->cuadrillero->nombres ?? '', $nombre) !== false);
             });
 
-        // Agrupar por cuadrillero_id + grupo
         $registrosAgrupados = [];
+        $totalesFila = [];
 
         foreach ($registros as $registro) {
             $fechaKey = $registro->fecha->format('Y-m-d');
@@ -96,21 +96,49 @@ class CuadrilleroServicio
                     'codigo' => $grupoAsignado,
                     'cuadrillero_id' => $registro->cuadrillero_id,
                     'nombre_cuadrillero' => $registro->cuadrillero->nombres ?? '',
-                    'total' => 0, // inicializar total
+                    'total_jornal' => 0,
+                    'total_bono' => 0,
+                    'total' => 0
                 ];
             }
 
             $fechaIndex = $fechas->search($fechaKey) + 1;
-            $registrosAgrupados[$grupoKey]["jornal_{$fechaIndex}"] = $registro->costo_dia;
-            $registrosAgrupados[$grupoKey]["pagado_{$fechaIndex}"] = $registro->esta_pagado ? 1 : 0;
+            $jornalKey = "jornal_{$fechaIndex}";
+            $bonoKey = "bono_{$fechaIndex}";
+            $pagadoKey = "pagado_{$fechaIndex}";
 
-            // Sumar al total
-            $registrosAgrupados[$grupoKey]['total'] += floatval($registro->costo_dia);
+            $jornal = floatval($registro->costo_dia);
+            $bono = floatval($registro->total_bono);
+            $pagado = $registro->esta_pagado ? 1 : 0;
+
+            $registrosAgrupados[$grupoKey][$jornalKey] = $jornal;
+            $registrosAgrupados[$grupoKey][$bonoKey] = $bono;
+            $registrosAgrupados[$grupoKey][$pagadoKey] = $pagado;
+
+            // Sumar al subtotal
+            $registrosAgrupados[$grupoKey]['total_jornal'] += $jornal;
+            $registrosAgrupados[$grupoKey]['total_bono'] += $bono;
+            $registrosAgrupados[$grupoKey]['total'] += $jornal + $bono;
+
+            // Acumulamos en la fila de totales
+            $totalesFila[$jornalKey] = ($totalesFila[$jornalKey] ?? 0) + $jornal;
+            $totalesFila[$bonoKey] = ($totalesFila[$bonoKey] ?? 0) + $bono;
+            $totalesFila[$pagadoKey] = ($totalesFila[$pagadoKey] ?? 0) + $pagado;
         }
 
+        // Sumar totales generales
+        $totalesFila['nombre_cuadrillero'] = 'TOTAL';
+        $totalesFila['total_jornal'] = array_sum(array_filter($totalesFila, fn($v, $k) => str_starts_with($k, 'jornal_'), ARRAY_FILTER_USE_BOTH));
+        $totalesFila['total_bono'] = array_sum(array_filter($totalesFila, fn($v, $k) => str_starts_with($k, 'bono_'), ARRAY_FILTER_USE_BOTH));
+        $totalesFila['total'] = $totalesFila['total_jornal'] + $totalesFila['total_bono'];
 
-        return array_values($registrosAgrupados);
+        // Devolver
+        $data = array_values($registrosAgrupados);
+        $data[] = $totalesFila; // Fila TOTAL al final
+
+        return $data;
     }
+
     public static function listarHandsontableGastosAdicionales($inicio, $fin)
     {
         return GastoAdicionalPorGrupoCuadrilla::with('grupo')
@@ -198,6 +226,8 @@ class CuadrilleroServicio
 
         // Actualizar cada detalle con costo_bono y producción
         foreach ($detalles as $index => $detalle) {
+
+
             $detalle->update([
                 'costo_bono' => $bonoPorTramo,
                 'produccion' => $producciones[$index] ?? 0
@@ -271,11 +301,8 @@ class CuadrilleroServicio
         }
     }*/
 
-
-
     public static function obtenerHandsontableRegistrosPorActividad($actividadId)
     {
-
         $actividad = Actividad::find($actividadId);
         if (!$actividad) {
             throw new Exception('No existe la actividad');
@@ -283,17 +310,24 @@ class CuadrilleroServicio
 
         $campo_nombre = $actividad->campo;
         $codigo_labor = $actividad->codigo_labor;
+        $fecha = $actividad->fecha;
+
         $registros = CuadRegistroDiario::with([
-            'cuadrillero',
-            'detalleHoras'
-        ])->where('fecha', $actividad->fecha)
+            'cuadrillero:id,nombres',
+            'detalleHoras' => function ($query) use ($campo_nombre, $codigo_labor) {
+                $query->where('campo_nombre', $campo_nombre)
+                    ->where('codigo_labor', $codigo_labor)
+                    ->orderBy('hora_inicio');
+            }
+        ])
+            ->where('fecha', $fecha)
             ->whereHas('detalleHoras', function ($query) use ($campo_nombre, $codigo_labor) {
+                $query->where('campo_nombre', $campo_nombre)
+                    ->where('codigo_labor', $codigo_labor);
+            })
+            ->get();
 
-                $query->where('campo_nombre', $campo_nombre);
-                $query->where('codigo_labor', $codigo_labor);
-            })->get();
-
-        // 🟦 Generar colores por horario único
+        // 🟦 Obtener horarios únicos
         $horariosUnicos = collect();
         foreach ($registros as $r) {
             foreach ($r->detalleHoras as $d) {
@@ -302,15 +336,13 @@ class CuadrilleroServicio
                 $horariosUnicos->push("$inicio-$fin");
             }
         }
-
         $horariosUnicos = $horariosUnicos->unique()->values()->slice(0, 10);
 
-        // 🟩 Preparar filas para Handsontable
+        // 🟩 Preparar filas
         $data = [];
         $maxTramos = 0;
 
         foreach ($registros as $r) {
-
             $row = [
                 'cuadrillero_id' => $r->cuadrillero_id,
                 'nombre_trabajador' => optional($r->cuadrillero)->nombres ?? '-',
@@ -319,21 +351,23 @@ class CuadrilleroServicio
                 'total_bono' => 0,
             ];
 
-            $detalles = $r->detalleHoras;
             $bono = 0;
             $horariosConcatenados = [];
 
-            foreach ($detalles as $i => $d) {
+            foreach ($r->detalleHoras as $i => $d) {
                 $inicio = \Carbon\Carbon::parse($d->hora_inicio)->format('H:i');
                 $fin = \Carbon\Carbon::parse($d->hora_fin)->format('H:i');
-                $key = $inicio . '-' . $fin;
+                $key = "$inicio-$fin";
+
                 $row["produccion_" . ($i + 1)] = $d->produccion ?? 0;
                 $bono += $d->costo_bono ?? 0;
                 $horariosConcatenados[] = $key;
             }
 
-            $maxTramos = max($maxTramos, $detalles->count());
-            $row['horarios'] = implode(', ', $horariosConcatenados);
+            $maxTramos = max($maxTramos, $r->detalleHoras->count());
+            $row['horarios'] = implode(',', $horariosConcatenados);
+            $row['rango_total_horas'] = DateHelper::calcularDuracionPorTramo($row['horarios']);
+            $row['total_horas'] = DateHelper::calcularTotalHorasFloat($row['rango_total_horas']);
             $row['total_bono'] = $bono;
 
             $data[] = $row;
@@ -364,11 +398,6 @@ class CuadrilleroServicio
             ->get()
             ->groupBy('cuadrillero_id');
 
-        // 🟠 2. Relación de grupo personalizado por día
-        $grupoPorFecha = CuadGrupoCuadrilleroFecha::whereBetween('fecha', [$inicio, $fin])
-            ->get()
-            ->groupBy(fn($r) => $r->cuadrillero_id . '|' . $r->fecha);
-
         $registrosPorOrden = CuadOrdenSemanal::whereDate('fecha_inicio', $inicio)
             ->with(['cuadrillero'])
             ->orderBy('codigo_grupo')
@@ -376,12 +405,15 @@ class CuadrilleroServicio
             ->get()
             ->keyBy('cuadrillero_id');
         $resultados = [];
+        $totalTrabajadoresEseDia = [];
+        $totalJornalEseDia = [];
+        $totalBonoEseDia = [];
 
         foreach ($registrosPorOrden as $cuadrilleroId => $registro) {
 
             $cuadrillero = $registro->cuadrillero;
             $registrosDiarios = $registros[$cuadrillero->id] ?? null;
-            //dd($registrosDiarios);
+
             $fila = [
                 'cuadrillero_id' => $cuadrilleroId,
                 'cuadrillero_nombres' => $cuadrillero->nombres,
@@ -394,6 +426,9 @@ class CuadrilleroServicio
             $totalBonos = 0;
 
             foreach ($dias as $index => $dia) {
+
+
+
                 $fecha = $dia->toDateString();
                 $registroHoras = null;
 
@@ -406,7 +441,7 @@ class CuadrilleroServicio
                 $valorHoras = optional($registroHoras)->total_horas;
                 $total_horas = ($valorHoras && $valorHoras > 0) ? $valorHoras : '-';
 
-                $bono = optional($registroHoras)->total_bono ?? 0;
+                $bono = ($registroHoras && $registroHoras->total_bono > 0) ? $registroHoras->total_bono : '-';
                 $costo_dia = optional($registroHoras)->costo_dia;
                 $costo_dia = ($costo_dia && $costo_dia > 0) ? $costo_dia : '-';
 
@@ -416,15 +451,46 @@ class CuadrilleroServicio
                 $fila["bono_" . ($index + 1)] = $bono;
 
                 // Totales
+                $totalTrabajadoresEseDia[$index + 1] = $totalTrabajadoresEseDia[$index + 1] ?? 0;
+                $totalJornalEseDia[$index + 1] = $totalJornalEseDia[$index + 1] ?? 0;
+                $totalBonoEseDia[$index + 1] = $totalBonoEseDia[$index + 1] ?? 0;
+
+                if ((float) $total_horas > 0) {
+                    $totalTrabajadoresEseDia[$index + 1]++;
+                }
+                if ((float) $costo_dia > 0) {
+                    $totalJornalEseDia[$index + 1] += (float) $costo_dia;
+                }
+                if ((float) $bono > 0) {
+                    $totalBonoEseDia[$index + 1] += (float) $bono;
+                }
+
                 $totalCostos += (float) $costo_dia;
-                $totalBonos += $bono;
+                $totalBonos += (float) $bono;
             }
 
-            $fila['total_costo'] = $totalCostos;
+            $fila['total_costo'] = $totalCostos + $totalBonos;
             $fila['total_bono'] = $totalBonos;
 
             $resultados[] = $fila;
         }
+
+        $filaTotales = [
+            'cuadrillero_id' => null,
+            'cuadrillero_nombres' => 'TOTALES',
+        ];
+        foreach ($dias as $index => $dia) {
+            $filaTotales["dia_" . ($index + 1)] = $totalTrabajadoresEseDia[$index + 1] ?? 0;
+            $filaTotales["jornal_" . ($index + 1)] = $totalJornalEseDia[$index + 1] ?? 0;
+            $filaTotales["bono_" . ($index + 1)] = $totalBonoEseDia[$index + 1] ?? 0;
+        }
+        /* ya no funciona porque en totales ya esta el bono
+                $filaTotales['total_costo'] = collect($resultados)->sum(function ($resultado){
+                    return $resultado['total_costo'] + $resultado['total_bono'];
+                });*/
+        $filaTotales['total_costo'] = collect($resultados)->sum('total_costo');
+
+        $resultados[] = $filaTotales;
 
         // 🟠 Generar headers planos
         $headers = [];
@@ -446,7 +512,7 @@ class CuadrilleroServicio
         return [
             'data' => $resultados,
             'headers' => $headers,
-            'total_dias' => $totalDias,
+            'total_dias' => $totalDias
         ];
     }
 
@@ -1137,25 +1203,25 @@ class CuadrilleroServicio
                         );
                     }
                 }
-/*
-                // ✅ Verificar si no tiene ningún registro en la semana
-                $existenRegistros = CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
-                    ->whereBetween('fecha', [$inicioDate, $finDate])
-                    ->exists();
+                /*
+                                // ✅ Verificar si no tiene ningún registro en la semana
+                                $existenRegistros = CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
+                                    ->whereBetween('fecha', [$inicioDate, $finDate])
+                                    ->exists();
 
-                if (!$existenRegistros) {
-                    foreach ($dias as $d) {
-                        CuadRegistroDiario::create([
-                            'cuadrillero_id' => $cuadrilleroId,
-                            'fecha' => $d->toDateString(),
-                            'asistencia' => false,
-                            'total_horas' => 0,
-                            'costo_dia' => 0,
-                            'total_bono' => 0,
-                            'costo_personalizado_dia' => null,
-                        ]);
-                    }
-                }*/
+                                if (!$existenRegistros) {
+                                    foreach ($dias as $d) {
+                                        CuadRegistroDiario::create([
+                                            'cuadrillero_id' => $cuadrilleroId,
+                                            'fecha' => $d->toDateString(),
+                                            'asistencia' => false,
+                                            'total_horas' => 0,
+                                            'costo_dia' => 0,
+                                            'total_bono' => 0,
+                                            'costo_personalizado_dia' => null,
+                                        ]);
+                                    }
+                                }*/
 
                 // ✅ Guardar asistencias diarias
                 foreach ($dias as $index => $d) {
@@ -1194,10 +1260,17 @@ class CuadrilleroServicio
         // 1️⃣ Obtener todos los registros diarios para la fecha
         $registros = CuadRegistroDiario::with([
             'cuadrillero:id,nombres,dni',
-            'detalleHoras.actividad'
+            'detalleHoras.actividad',
         ])
             ->where('fecha', $fecha)
-            ->get();
+            ->orderBy(
+                Cuadrillero::select('nombres')
+                    ->whereColumn('cuadrilleros.id', 'cuad_registros_diarios.cuadrillero_id')
+                    ->limit(1)
+            )
+            ->get()
+            ->keyBy('cuadrillero_id');
+
 
         if ($registros->isEmpty()) {
             return [
@@ -1210,38 +1283,30 @@ class CuadrilleroServicio
         $resultados = [];
         $maxActividades = 0;
 
-        foreach ($registros->groupBy('cuadrillero_id') as $cuadrilleroId => $registrosCuadrillero) {
+        foreach ($registros as $cuadrilleroId => $registrosCuadrillero) {
 
-            $cuadrillero = optional($registrosCuadrillero->first()->cuadrillero);
-            $asistencia = $registrosCuadrillero->first()->asistencia;
+            $cuadrillero = $registrosCuadrillero->cuadrillero;
 
-            // Recolectar TODOS los detalles de este cuadrillero
             $todasActividades = collect();
-            foreach ($registrosCuadrillero as $registro) {
-                foreach ($registro->detalleHoras as $detalle) {
-
-                    $todasActividades->push([
-                        'campo' => $detalle->campo_nombre,
-                        'labor' => $detalle->codigo_labor,
-                        'hora_inicio' => Carbon::parse($detalle->hora_inicio)->format('H:i'),
-                        'hora_fin' => Carbon::parse($detalle->hora_fin)->format('H:i'),
-                    ]);
-                }
+            foreach ($registrosCuadrillero->detalleHoras as $detalle) {
+                $todasActividades->push([
+                    'campo' => $detalle->campo_nombre,
+                    'labor' => $detalle->codigo_labor,
+                    'hora_inicio' => Carbon::parse($detalle->hora_inicio)->format('H:i'),
+                    'hora_fin' => Carbon::parse($detalle->hora_fin)->format('H:i'),
+                ]);
             }
 
-            // Ordenar actividades por hora_inicio ASC
             $todasActividades = $todasActividades->sortBy('hora_inicio')->values();
-
-            // Actualizar máximo de columnas
             $maxActividades = max($maxActividades, $todasActividades->count());
 
-            // Construir fila final
             $fila = [
                 'cuadrillero_id' => $cuadrilleroId,
                 'cuadrillero_nombres' => $cuadrillero->nombres,
-                'cuadrillero_dni' => $cuadrillero->dni,
-                'asistencia' => $asistencia,
+                'cuadrillero_dni' => $cuadrillero->dni
             ];
+
+            $totalHoras = 0;
 
             foreach ($todasActividades as $index => $actividad) {
                 $n = $index + 1;
@@ -1249,32 +1314,26 @@ class CuadrilleroServicio
                 $fila["labor_$n"] = $actividad['labor'];
                 $fila["hora_inicio_$n"] = $actividad['hora_inicio'];
                 $fila["hora_fin_$n"] = $actividad['hora_fin'];
+
+                // Sumar diferencia en horas
+                $inicio = Carbon::createFromFormat('H:i', $actividad['hora_inicio']);
+                $fin = Carbon::createFromFormat('H:i', $actividad['hora_fin']);
+                $horas = $inicio->diffInMinutes($fin) / 60;
+                $totalHoras += $horas;
             }
+
+            // Redondear a 2 decimales por si acaso
+            $fila["total_horas"] = round($totalHoras, 2);
+            $fila["total_horas_validado"] = $registrosCuadrillero->total_horas_validado;
 
             $resultados[] = $fila;
         }
 
-        // 3️⃣ Ordenar lista por popularidad de actividades
-        $resultados = collect($resultados)
-            ->sortByDesc(fn($item) => self::contarActividadesEnFila($item))
-            ->values()
-            ->all();
 
         return [
             'data' => $resultados,
             'total_columnas' => $maxActividades
         ];
-    }
-
-    protected static function contarActividadesEnFila($fila)
-    {
-        $count = 0;
-        foreach ($fila as $key => $value) {
-            if (Str::startsWith($key, 'campo_') && !empty($value)) {
-                $count++;
-            }
-        }
-        return $count;
     }
 
     public static function registrarActividadDiaria($fecha, array $cuadrilleros, array $actividades)
@@ -1460,6 +1519,19 @@ class CuadrilleroServicio
             throw $e;
         }
     }*/
+    /**
+     * Guarda tramos de cuadrilleros desde un array de filas tipo Handsontable.
+     * 
+     * - No se crean registros diarios nuevos, solo se actualizan existentes.
+     * - Si no hay tramos en una fila, se eliminan todos los detalles actuales del registro.
+     * - Si hay tramos, se hace una comparación diferencial (no borra todo) y mantiene los existentes.
+     * - Cada registro tendrá un campo "horas_validadas" que indica si el total de horas detalladas coincide con el total_horas del registro diario.
+     * 
+     * @param string $fecha Fecha del registro (YYYY-MM-DD)
+     * @param array $rows Arreglo de filas con datos de tramos
+     * @return bool
+     * @throws Exception|ValidationException
+     */
     public static function guardarDesdeHandsontable($fecha, $rows)
     {
         DB::beginTransaction();
@@ -1471,17 +1543,23 @@ class CuadrilleroServicio
             }
 
             $labores = Labores::all()->pluck('id', 'codigo')->toArray();
-            $usuarioId = Auth::id();
             $errores = [];
+            $maxCol = 0;
+            if (!empty($rows)) {
+                foreach (array_keys($rows[0]) as $key) {
+                    if (preg_match('/^campo_(\d+)$/', $key, $matches)) {
+                        $maxCol = max($maxCol, (int) $matches[1]);
+                    }
+                }
+            }
 
             foreach ($rows as $i => $fila) {
 
-                $cuadrilleroNombre = trim($fila['cuadrillero_nombres'] ?? '');
                 $cuadrilleroId = $fila['cuadrillero_id'] ?? null;
                 $filaOrden = $i + 1;
 
                 $tramos = [];
-                for ($j = 1; $j <= 10; $j++) {
+                for ($j = 1; $j <= $maxCol; $j++) {
                     $inicio = $fila["hora_inicio_$j"] ?? null;
                     $fin = $fila["hora_fin_$j"] ?? null;
                     $campo = $fila["campo_$j"] ?? null;
@@ -1507,25 +1585,24 @@ class CuadrilleroServicio
                 }
 
                 if (empty($tramos)) {
+                    $registro = CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
+                        ->where('fecha', $fecha)->first();
+                    if (!$registro) {
+                        throw new Exception("No existe el registro con fecha {$fecha} e id {$cuadrilleroId}");
+                    }
+                    $existentes = $registro->detalleHoras()->delete();
                     continue;
                 }
 
                 // Registro diario
-                $registro = CuadRegistroDiario::updateOrCreate(
-                    [
-                        'cuadrillero_id' => $cuadrilleroId,
-                        'fecha' => $fecha,
-                    ],
-                    [
-                        'asistencia' => $fila['asistencia'] ?? true,
-                        'costo_dia' => 0,
-                        'total_bono' => 0,
-                        'costo_personalizado_dia' => null,
-                    ]
-                );
-
+                $registro = CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
+                    ->where('fecha', $fecha)->first();
+                if (!$registro) {
+                    throw new Exception("No existe el registro con fecha {$fecha} e id {$cuadrilleroId}");
+                }
                 // Obtener tramos existentes
                 $existentes = $registro->detalleHoras()->get();
+
 
                 // Mapear claves para comparar
                 $clave = fn($tramo) => implode('|', [
@@ -1541,11 +1618,13 @@ class CuadrilleroServicio
                 foreach ($existentes as $existente) {
 
                     $k = $clave($existente->toArray());
+
                     if (!$nuevosMap->has($k)) {
+                        // dd($existentes,$tramos,$nuevosMap,$k,$existente);
                         $existente->delete();
                     }
                 }
-
+                //dd($nuevosMap);
                 // Insertar o actualizar los actuales
                 foreach ($nuevosMap as $k => $nuevo) {
                     $detalle = $existentesMap->get($k);

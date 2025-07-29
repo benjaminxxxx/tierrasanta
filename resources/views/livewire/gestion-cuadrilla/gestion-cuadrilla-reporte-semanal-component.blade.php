@@ -247,7 +247,7 @@
                     //type: 'autocomplete',
                     //source: this.cuadrilleros,
                     readOnly: true,
-                    className: '!bg-gray-200'
+                    className: '!bg-gray-200  !text-black'
                 },
             ];
 
@@ -281,7 +281,7 @@
                 cols.push({
                     data: `jornal_${i}`,
                     title: this.headers[mas + i - 1] ?? '-',
-                    className: '!text-center !bg-gray-100',
+                    className: '!text-center !bg-gray-200 !text-black',
                     readOnly: true
                 });
             }
@@ -294,7 +294,7 @@
                     title: this.headers[mas + i - 1] ?? '-',
                     type: 'numeric',
                     numericFormat: { pattern: '0,0.00' },
-                    className: '!text-center !bg-gray-100',
+                    className: '!text-center !bg-gray-200 !text-black',
                     readOnly: true
                 });
             }
@@ -307,7 +307,7 @@
                     title: 'Total<br/>Costo',
                     type: 'numeric',
                     readOnly: true,
-                    className: 'bg-yellow-100 !text-center font-bold'
+                    className: '!bg-yellow-200 !text-center !font-bold !text-black'
                 }
             );
 

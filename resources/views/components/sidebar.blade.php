@@ -73,12 +73,21 @@
                     <x-nav-link-parent name="sectorCuadrilla" :active="request()->routeIs([
                         'cuadrilla.grupos', 
                         'cuadrilla.cuadrilleros',
-                        'gestion_cuadrilleros.reporte-semanal.index'
+                        'gestion_cuadrilleros.reporte-semanal.index',
+                        'gestion_cuadrilleros.registro-diario.index',
+                        'gestion_cuadrilleros.bonificaciones.index',
+                        'gestion_cuadrilleros.pagos.index',
+                        'cuadrilleros.gestion'
                         ])" logo='fas fa-hard-hat' text="Cuadrilla">
+                        <x-nav-link-child href="{{ route('cuadrilleros.gestion') }}"
+                            :active="request()->routeIs('cuadrilleros.gestion')">
+                            Panel de cuadrilleros
+                        </x-nav-link-child>
                         <x-nav-link-child href="{{ route('cuadrilla.cuadrilleros') }}"
                             :active="request()->routeIs('cuadrilla.cuadrilleros')">
-                            Cuadrilleros
+                            Lista de cuadrilleros
                         </x-nav-link-child>
+                        
                         <x-nav-link-child href="{{ route('cuadrilla.grupos') }}"
                             :active="request()->routeIs('cuadrilla.grupos')">
                             Grupos de cuadrillas
@@ -87,7 +96,19 @@
                             :active="request()->routeIs('gestion_cuadrilleros.reporte-semanal.index')">
                             Reporte semanal (horas)
                         </x-nav-link-child>
-                        
+                        <x-nav-link-child href="{{ route('gestion_cuadrilleros.registro-diario.index') }}"
+                            :active="request()->routeIs('gestion_cuadrilleros.registro-diario.index')">
+                            Reporte diario (actividades)
+                        </x-nav-link-child>
+                        <x-nav-link-child href="{{ route('gestion_cuadrilleros.bonificaciones.index') }}"
+                            :active="request()->routeIs('gestion_cuadrilleros.bonificaciones.index')">
+                            Bonificaciones
+                        </x-nav-link-child>
+                        <x-nav-link-child href="{{ route('gestion_cuadrilleros.pagos.index') }}"
+                            :active="request()->routeIs('gestion_cuadrilleros.pagos.index')">
+                            Pago de cuadrilla
+                        </x-nav-link-child>
+                       
                     </x-nav-link-parent>
                     @endhasanyrole
                     @hasanyrole('Administrador|Super Admin')
@@ -193,20 +214,10 @@
                     <x-nav-link-parent name="sectorReportes" :active="request()->routeIs([
         'reporte.reporte_diario',
         'reporte.reporte_diario_riego',
-        'cuadrilla.asistencia',
         'productividad.avance',
-        'reporte.actividades_diarias',
-        'cuadrilleros.gestion',
     ])" logo="fa fa-database"
                         text="Reporte Diario">
-                        <x-nav-link-child href="{{ route('cuadrilleros.gestion') }}"
-                            :active="request()->routeIs('cuadrilleros.gestion')">
-                            Gestión cuadrilleros
-                        </x-nav-link-child>
-                        <!--<x-nav-link-child href="{{ route('reporte.actividades_diarias') }}"
-                            :active="request()->routeIs('reporte.actividades_diarias')">
-                            Actividades Diarias
-                        </x-nav-link-child>-->
+                    
                         <x-nav-link-child href="{{ route('reporte.reporte_diario') }}"
                             :active="request()->routeIs('reporte.reporte_diario')">
                             Planilla
@@ -215,21 +226,14 @@
                             :active="request()->routeIs('reporte.reporte_diario_riego')">
                             Regadores
                         </x-nav-link-child>
-                        <x-nav-link-child href="{{ route('cuadrilla.asistencia') }}"
-                            :active="request()->routeIs('cuadrilla.asistencia')">
-                            Cuadrilleros
-                        </x-nav-link-child>
                         <x-nav-link-child href="{{ route('productividad.avance') }}"
                             :active="request()->routeIs('productividad.avance')">
                             Avance de Productividad
                         </x-nav-link-child>
                     </x-nav-link-parent>
 
-                    <x-nav-link-parent name="sectorReporte" :active="request()->routeIs(['reporte.pago_cuadrilla', 'reporte.resumen_planilla'])" logo="fas fa-file-alt" text="Reporte General">
-                        <x-nav-link-child href="{{ route('reporte.pago_cuadrilla') }}"
-                            :active="request()->routeIs('reporte.pago_cuadrilla')">
-                            Pago de cuadrilla
-                        </x-nav-link-child>
+                    <x-nav-link-parent name="sectorReporte" :active="request()->routeIs([ 'reporte.resumen_planilla'])" logo="fas fa-file-alt" text="Reporte General">
+                      
                         <x-nav-link-child href="{{ route('reporte.resumen_planilla') }}"
                             :active="request()->routeIs('reporte.resumen_planilla')">
                             Actividades de la Planilla

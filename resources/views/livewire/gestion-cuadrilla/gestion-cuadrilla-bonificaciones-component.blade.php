@@ -201,6 +201,11 @@
                 title: 'Horarios',
                 readOnly: true,
                 className: 'font-bold !text-center !bg-gray-100'
+            }, {
+                data: 'rango_total_horas',
+                title: 'Rango<br/>Horas',
+                readOnly: true,
+                className: 'font-bold !text-center !bg-gray-100'
             });
             // ➤ Producciones según cantidad máxima
             for (let i = 1; i <= this.total_horarios; i++) {
@@ -218,6 +223,13 @@
             cols.push({
                 data: 'total_bono',
                 title: 'Total Bono',
+                readOnly: true,
+                type: 'numeric',
+                numericFormat: { pattern: '0,0.00' },
+                className: '!bg-yellow-100 !text-center font-bold'
+            },{
+                data: 'total_horas',
+                title: 'Total Horas',
                 readOnly: true,
                 type: 'numeric',
                 numericFormat: { pattern: '0,0.00' },

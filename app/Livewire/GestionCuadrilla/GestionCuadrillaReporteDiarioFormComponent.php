@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Livewire\GestionCuadrilla;
-use App\Models\Cuadrillero;
+use App\Models\CuadRegistroDiario;
 use App\Services\Cuadrilla\CuadrilleroServicio;
 use App\Services\InformacionGeneral\LaboresServicio;
 use App\Services\RecursosHumanos\Personal\ActividadServicio;
@@ -27,14 +27,24 @@ class GestionCuadrillaReporteDiarioFormComponent extends Component
 
         $this->todosCuadrilleros = $todos;
 
-        $this->cuadrilleros = collect($todos)
-            ->map(fn($item) => [
-                'id' => $item['id'],
-                'name' => "{$item['dni']} - {$item['name']}"
-            ])
-            ->all();
+        $this->obtenerSearchableCuadrilleros();
 
         $this->labores = LaboresServicio::selectLabores();
+    }
+    public function obtenerSearchableCuadrilleros()
+    {
+        if (!$this->fecha) {
+            $this->cuadrilleros = [];
+            return;
+        }
+        $this->cuadrilleros = CuadRegistroDiario::whereDate('fecha', $this->fecha)
+            ->with(['cuadrillero'])
+            ->where('total_horas', '>', 0)
+            ->get()
+            ->map(fn($registroDiario) => [
+                'id' => $registroDiario->cuadrillero_id,
+                'name' => $registroDiario->cuadrillero->nombre_completo,
+            ])->toArray();
     }
     public function registrarReporteDiarioCuadrilla($fecha = null)
     {
@@ -42,7 +52,12 @@ class GestionCuadrillaReporteDiarioFormComponent extends Component
         $this->reset(['cuadrillerosAgregados', 'actividades']);
         $this->fecha = $fecha ? $fecha : Carbon::now()->format("Y-m-d");
         $this->agregarActividad();
+        $this->obtenerSearchableCuadrilleros();
         $this->mostrarFormularioRegistroDiarioCuadrilla = true;
+    }
+    public function updatedFecha(){
+        $this->obtenerSearchableCuadrilleros();
+        $this->cuadrillerosAgregados = [];
     }
     public function agregarActividad()
     {
@@ -69,8 +84,8 @@ class GestionCuadrillaReporteDiarioFormComponent extends Component
             ActividadServicio::detectarYCrearActividades($this->fecha);
 
             $this->mostrarFormularioRegistroDiarioCuadrilla = false;
-            
-        $this->alert('success', 'Actividades registradas correctamente.');
+
+            $this->alert('success', 'Actividades registradas correctamente.');
             $this->dispatch('cuadrilla_reporte_diario_registrado', $this->fecha);
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());

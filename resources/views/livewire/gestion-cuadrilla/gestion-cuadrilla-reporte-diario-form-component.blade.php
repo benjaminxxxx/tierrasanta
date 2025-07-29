@@ -9,7 +9,7 @@
                 <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
 
                     <x-flex class="mt-3 mb-2 w-full">
-                        <x-input-date wire:model="fecha" label="Seleccione una fecha" error="fecha" />
+                        <x-input-date wire:model.live="fecha" label="Seleccione una fecha" error="fecha" />
                     </x-flex>
                     <x-flex class="mt-3 mb-2 w-full">
                         <x-h3>Agregar las labores realizadas</x-h3>
@@ -18,50 +18,51 @@
                         </x-secondary-button>
                     </x-flex>
 
-                    <x-table>
-                        <x-slot name="thead">
-                            <x-tr>
-                                <x-th>Inicio</x-th>
-                                <x-th>Fin</x-th>
-                                <x-th>Campo</x-th>
-                                <x-th>Labor</x-th>
-                                <x-th>Acciones</x-th>
-                            </x-tr>
-                        </x-slot>
+                    <div class="grid gap-1">
+                        @foreach ($actividades as $index => $actividad)
+                            <div
+                                class="grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
+                                {{-- Inicio --}}
+                                <x-group-field>
+                                    <x-label>Inicio</x-label>
+                                    <x-input type="time" wire:model="actividades.{{ $index }}.inicio" />
+                                </x-group-field>
 
-                        <x-slot name="tbody">
-                            @foreach ($actividades as $index => $actividad)
-                                <x-tr>
-                                    <x-td>
-                                        <x-input type="time" wire:model="actividades.{{ $index }}.inicio" />
-                                    </x-td>
-                                    <x-td>
-                                        <x-input type="time" wire:model="actividades.{{ $index }}.fin" />
-                                    </x-td>
-                                    <x-td>
-                                        <x-select-campo wire:model="actividades.{{ $index }}.campo"
-                                            placeholder="Selecciona un campo" label="" />
-                                    </x-td>
-                                    <x-td>
-                                        <x-searchable-select :options="$labores" wire:model="actividades.{{ $index }}.labor"
-                                            search-placeholder="Selecciona una labor" />
-                                    </x-td>
-                                    <x-td>
-                                        <x-danger-button wire:click="removerActividad({{ $index }})">
-                                            <i class="fa fa-trash"></i>
-                                        </x-danger-button>
-                                    </x-td>
-                                </x-tr>
-                            @endforeach
+                                {{-- Fin --}}
+                                <x-group-field>
+                                    <x-label>Fin</x-label>
+                                    <x-input type="time" wire:model="actividades.{{ $index }}.fin" />
+                                </x-group-field>
 
-                        </x-slot>
-                    </x-table>
+                                {{-- Campo --}}
+                                <x-select-campo wire:model="actividades.{{ $index }}.campo"
+                                        placeholder="Selecciona un campo" label="Campo" />
+
+                                {{-- Labor --}}
+                                <x-group-field>
+                                    <x-label>Labor</x-label>
+                                    <x-searchable :options="$labores" wire:model="actividades.{{ $index }}.labor"
+                                        search-placeholder="Selecciona una labor" />
+                                </x-group-field>
+
+                                {{-- Botón eliminar ocupa 100% en móvil --}}
+                                <x-group-field class="sm:col-span-2 md:col-span-1">
+                                    <x-danger-button class="w-full sm:w-auto" wire:click="removerActividad({{ $index }})">
+                                        <i class="fa fa-trash mr-1"></i>
+                                    </x-danger-button>
+                                </x-group-field>
+                            </div>
+                        @endforeach
+                    </div>
+
+
+
 
                     <x-flex class="mt-3 mb-2">
                         <x-h3>Agregar cuadrilleros que realizaron dichas labores</x-h3>
                     </x-flex>
                     <x-group-field>
-                        <x-searchable-select :options="$cuadrilleros" placeholder="Seleccionar Cuadrillero"
+                        <x-searchable-dinamico entangle="cuadrilleros" placeholder="Seleccionar Cuadrillero"
                             wire:model="cuadrilleroSeleccionado" />
 
                     </x-group-field>
@@ -122,12 +123,11 @@
 <script>
     Alpine.data('registro_cuadrilla_diaria', () => ({
         cuadrillerosAgregados: @entangle('cuadrillerosAgregados'),
-        todosCuadrilleros: @js($todosCuadrilleros),
+        cuadrilleros: @entangle('cuadrilleros'),
         cuadrilleroSeleccionado: @entangle('cuadrilleroSeleccionado'),
 
         init() {
-            this.$watch('cuadrilleroSeleccionado', (value) => {
-
+            this.$watch('cuadrilleroSeleccionado', (value) => {                
                 this.agregarCuadrillero();
             });
         },
@@ -135,7 +135,7 @@
             if (!this.cuadrilleroSeleccionado) return;
 
             // Buscamos en todosCuadrilleros para obtener el objeto completo
-            const seleccionado = this.todosCuadrilleros.find(c => c.id == this.cuadrilleroSeleccionado);
+            const seleccionado = this.cuadrilleros.find(c => c.id == this.cuadrilleroSeleccionado);
             if (!seleccionado) {
                 this.cuadrilleroSeleccionado = null;
                 return;

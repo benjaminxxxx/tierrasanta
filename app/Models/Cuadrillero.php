@@ -15,11 +15,13 @@ class Cuadrillero extends Model
         'codigo_grupo',
         'estado'
     ];
-    public function registrosDiarios(){
+    public function registrosDiarios()
+    {
         return $this->hasMany(CuadRegistroDiario::class);
     }
-    public function grupo(){
-        return $this->belongsTo(CuaGrupo::class,'codigo_grupo');
+    public function grupo()
+    {
+        return $this->belongsTo(CuaGrupo::class, 'codigo_grupo');
     }
     public function determinarPago($fechaInicio, $fechaFin)
     {
@@ -82,8 +84,13 @@ class Cuadrillero extends Model
         ];
     }
     #region Atributos
-    public function getGrupoActualAttribute(){
-        return $this->grupo?->nombre??'-';
+    public function getGrupoActualAttribute()
+    {
+        return $this->grupo?->nombre ?? '-';
+    }
+    public function getNombreCompletoAttribute()
+    {
+        return $this->nombres . ($this->dni ? ' - ' . $this->dni : '');
     }
     #endregion
 }
