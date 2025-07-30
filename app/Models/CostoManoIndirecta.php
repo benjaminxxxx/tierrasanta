@@ -16,6 +16,7 @@ class CostoManoIndirecta extends Model
         // Cuadrillero
         'blanco_cuadrillero_monto',
         'blanco_cuadrillero_file',
+        'negro_cuadrillero_bono',
         'negro_cuadrillero_monto',
         'negro_cuadrillero_file',
 

@@ -126,6 +126,10 @@ Route::middleware([
         // Bonificaciones
         Route::get('/bonificaciones', [CuadrillaController::class, 'bonificaciones'])
             ->name('gestion_cuadrilleros.bonificaciones.index');
+
+        // Resumen anual cuadrilla
+        Route::get('/resumen_anual', [CuadrillaController::class, 'resumen_anual'])
+            ->name('gestion_cuadrilleros.resumen_anual');
     });
     Route::get('/reporte/actividades-diarias', [ReporteDiarioController::class, 'actividades_diarias'])->name('reporte.actividades_diarias');
     Route::get('/reporte/reporte-diario', [ReporteDiarioController::class, 'index'])->name('reporte.reporte_diario');

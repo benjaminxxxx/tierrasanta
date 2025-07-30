@@ -13,7 +13,7 @@
             <x-card2 class="hover:shadow-lg transition-shadow">
                 <div class="p-4 flex items-center space-x-3">
                     <div class="p-2 rounded-lg bg-gray-700">
-                        <i class="fas fa-hard-hat text-white"></i>
+                        <i class="fas fa-hard-hat text-white w-5 h-5 text-center"></i>
                     </div>
                     <x-h3>Lista de Cuadrilleros</x-h3>
                 </div>
@@ -28,7 +28,7 @@
             <x-card2 class="hover:shadow-lg transition-shadow">
                 <div class="p-4 flex items-center space-x-3">
                     <div class="p-2 rounded-lg bg-gray-500">
-                        <i class="fas fa-users text-white"></i>
+                        <i class="fas fa-users text-white w-5 h-5 text-center"></i>
                     </div>
                     <x-h3>Grupos de Cuadrillas</x-h3>
                 </div>
@@ -43,7 +43,7 @@
             <x-card2 class="hover:shadow-lg transition-shadow">
                 <div class="p-4 flex items-center space-x-3">
                     <div class="p-2 rounded-lg bg-orange-500">
-                        <i class="fas fa-calendar-alt text-white"></i>
+                        <i class="fas fa-calendar-alt text-white w-5 h-5 text-center"></i>
                     </div>
                     <x-h3>Reporte Semanal</x-h3>
                 </div>
@@ -58,7 +58,7 @@
             <x-card2 class="hover:shadow-lg transition-shadow">
                 <div class="p-4 flex items-center space-x-3">
                     <div class="p-2 rounded-lg bg-blue-500">
-                        <i class="fas fa-clock text-white"></i>
+                        <i class="fas fa-clock text-white w-5 h-5 text-center"></i>
                     </div>
                     <x-h3>Detallar Registro Diario</x-h3>
                 </div>
@@ -73,7 +73,7 @@
             <x-card2 class="hover:shadow-lg transition-shadow">
                 <div class="p-4 flex items-center space-x-3">
                     <div class="p-2 rounded-lg bg-indigo-500">
-                        <i class="fas fa-chart-bar text-white"></i>
+                        <i class="fas fa-chart-bar text-white w-5 h-5 text-center"></i>
                     </div>
                     <x-h3>Bonificaciones</x-h3>
                 </div>
@@ -88,7 +88,7 @@
             <x-card2 class="hover:shadow-lg transition-shadow">
                 <div class="p-4 flex items-center space-x-3">
                     <div class="p-2 rounded-lg bg-red-500">
-                        <i class="fas fa-dollar-sign text-white"></i>
+                        <i class="fas fa-dollar-sign text-white w-5 h-5 text-center"></i>
                     </div>
                     <x-h3>Pago de Cuadrilla</x-h3>
                 </div>

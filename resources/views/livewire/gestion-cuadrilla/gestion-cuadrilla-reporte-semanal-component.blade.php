@@ -54,12 +54,9 @@
             </x-button>
         </div>
 
-
-        <x-card2>
-            <x-h3 class="text-center w-full">
-                <strong>Semana:</strong> {{ $semana->inicio }} - {{ $semana->fin }}
-            </x-h3>
-        </x-card2>
+        <x-h3 class="text-center w-full my-3">
+            <strong>Semana:</strong> {{ $semana->inicio }} - {{ $semana->fin }}
+        </x-h3>
 
         <div wire:ignore>
             <x-flex>
@@ -371,9 +368,9 @@
         setSelectedIndex(index) {
             this.selectedIndex = index;
         },
-        agregarCuadrillerosEnSemana(){
-          
-            if(this.ocurrioModificaciones){
+        agregarCuadrillerosEnSemana() {
+
+            if (this.ocurrioModificaciones) {
                 alert('Guarda primero los cambios realizados dando clic en Actualizar Horas');
                 return;
             }

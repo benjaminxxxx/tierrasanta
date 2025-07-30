@@ -3,7 +3,7 @@
     <x-h3 class="mt-4">
         Costo de Mano Indirecta
     </x-h3>
-    <p>Estos costos se suman y se envian a COSTO OPERATIVO / MANO DE OBRA INDIRECTA</p>
+    <x-label>Estos costos se suman y se envian a COSTO OPERATIVO / MANO DE OBRA INDIRECTA</x-label>
     <x-card class="mt-4">
         <x-spacing>
             <x-table>
@@ -52,7 +52,7 @@
                         <x-td class="text-center">
                             @if ($costoManoIndirecta?->negro_cuadrillero_file)
                                 <x-button-a href="{{Storage::disk('public')->url($costoManoIndirecta?->negro_cuadrillero_file)}}">
-                                    <i class="fa fa-file-excel-o" aria-hidden="true"></i> Reporte
+                                    <i class="fa fa-file-excel" aria-hidden="true"></i> Reporte
                                 </x-button-a>
                             @endif
                         </x-td>

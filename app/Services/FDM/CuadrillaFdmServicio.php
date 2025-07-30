@@ -3,12 +3,17 @@
 namespace App\Services\FDM;
 
 use App\Models\Actividad;
+use App\Models\CuadCostoDiarioGrupo;
+use App\Models\CuadDetalleHora;
+use App\Models\CuadGrupoCuadrilleroFecha;
+use App\Models\CuadRegistroDiario;
 use App\Models\CuadrilleroActividad;
 use App\Models\GastoAdicionalPorGrupoCuadrilla;
 use App\Support\ExcelHelper;
 use Exception;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Concerns\ToArray;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class CuadrillaFdmServicio
@@ -28,7 +33,7 @@ class CuadrillaFdmServicio
                     'orden' => $index + 1,
                     'monto' => (float) $gasto->monto,
                     'descripcion' => $gasto->descripcion,
-                    'grupo' => $gasto->cuaAsistenciaSemanalGrupo?->grupo?->nombre,
+                    'grupo' => $gasto->grupo?->nombre,
                     'fecha_gasto' => formatear_fecha($gasto->fecha_gasto),
                     'fecha_contable' => $gasto->fecha_contable,
                 ];
@@ -42,43 +47,120 @@ class CuadrillaFdmServicio
             ->where('campo', $campo)
             ->pluck('id');
 
-        $actividades = CuadrilleroActividad::whereIn('actividad_id', $actividadIds)
-            ->with(['actividad', 'cuadrillero', 'labor'])
-            ->get()
-            ->map(function ($detalle) use ($campo) {
-                $horasTotales = (float) $detalle->actividad->horas_trabajadas;
-                $totalCosto = (float) $detalle->total_costo;
-                $totalBono = (float) $detalle->total_bono;
-                $costoHora = ($horasTotales > 0) ? ($totalCosto + $totalBono) / $horasTotales : 0;
+        /*
+    $detalleDiario = CuadDetalleHora::with(['registroDiario'])
+    ->whereHas('registroDiario',function ($registroDiario)use ($fechaInicio,$fechaFin){
+        $registroDiario->whereBetween('fecha',[$fechaInicio, $fechaFin]);
+    })->get();*/
+        $registrosDiarios = CuadRegistroDiario::whereBetween('fecha', [$fechaInicio, $fechaFin])
+            ->with(['detalleHoras', 'cuadrillero'])
+            ->get();
 
-                return [
-                    'labor' => $detalle->labor->nombre_labor . ' (' . $detalle->labor->id . ')',
-                    'fecha' => $detalle->actividad->fecha,
-                    'documento' => $detalle->cuadrillero->dni,
-                    'empleado_nombre' => $detalle->cuadrillero->nombres,
-                    'campo' => $campo,
-                    'horas_totales' => $horasTotales,
+        // Obtener combinaciones únicas de (fecha, cuadrillero_id)
+        $fechas = $registrosDiarios->pluck('fecha')->unique();
+        $cuadrilleroIds = $registrosDiarios->pluck('cuadrillero_id')->unique();
+
+        // 1. Cargar grupos por lote
+        $grupos = CuadGrupoCuadrilleroFecha::whereIn('fecha', $fechas)
+            ->whereIn('cuadrillero_id', $cuadrilleroIds)
+            ->get()
+            ->keyBy(fn($g) => $g->fecha . '-' . $g->cuadrillero_id);
+
+        // 2. Obtener todos los códigos de grupo
+        $codigosGrupo = $grupos->pluck('codigo_grupo')->unique();
+
+        // 3. Cargar costos por grupo por lote
+        $costoGrupos = CuadCostoDiarioGrupo::whereIn('fecha', $fechas)
+            ->whereIn('codigo_grupo', $codigosGrupo)
+            ->get()
+            ->keyBy(fn($c) => $c->fecha . '-' . $c->codigo_grupo);
+
+        // 4. Mapear los registros diarios con la lógica optimizada
+        $registrosDiarios = $registrosDiarios->flatMap(function ($registroDiario) use ($grupos, $costoGrupos) {
+            $totalHorasValidado = $registroDiario->total_horas_validado;
+            $fecha = $registroDiario->fecha;
+            $cuadrilleroId = $registroDiario->cuadrillero_id;
+            $detalleHoras = $registroDiario->detalleHoras;
+
+            // Determinar el costo del día
+            $costoDia = $registroDiario->costo_personalizado_dia ?? 0;
+            if (!$costoDia) {
+                $grupo = $grupos->get($fecha->format('Y-m-d') . '-' . $cuadrilleroId);
+                if ($grupo) {
+                    $codigoGrupo = $grupo->codigo_grupo;
+                    $costo = $costoGrupos->get($fecha->format('Y-m-d') . '-' . $codigoGrupo);
+                    if ($costo) {
+                        $costoDia = $costo->jornal;
+                    }
+                }
+            }
+
+            // Si tiene detalle y está validado, se hace el desglose proporcional
+            if ($totalHorasValidado && $detalleHoras->count() > 0 && $registroDiario->total_horas > 0) {
+                return $detalleHoras->sortBy('hora_inicio')->map(function ($detalleHora) use ($registroDiario, $costoDia) {
+                    $horaInicio = \Carbon\Carbon::parse($detalleHora->hora_inicio);
+                    $horaFin = \Carbon\Carbon::parse($detalleHora->hora_fin);
+
+                    $minutos = $horaInicio->diffInMinutes($horaFin);
+                    $horasDecimal = round($minutos / 60, 2);
+
+                    // Calcular proporción de gasto
+                    $gasto = round(($horasDecimal / $registroDiario->total_horas) * $costoDia, 2);
+
+                    return [
+                        'labor' => $detalleHora->codigo_labor,
+                        'fecha' => $registroDiario->fecha->format('Y-m-d'),
+                        'documento' => $registroDiario->cuadrillero->dni,
+                        'empleado_nombre' => $registroDiario->cuadrillero->nombres,
+                        'campo' => $detalleHora->campo_nombre,
+                        'horas_totales' => $registroDiario->total_horas,
+                        'hora_inicio' => $horaInicio->format('H:i'),
+                        'hora_salida' => $horaFin->format('H:i'),
+                        'factor' => 1,
+                        'hora_diferencia' => $minutos . ' min',
+                        'hora_diferencia_entero' => $horasDecimal,
+                        'costo_dia' => $costoDia,
+                        'total_horas' => $registroDiario->total_horas,
+                        'gasto' => $gasto,
+                        'gasto_bono' => $detalleHora->costo_bono ?? 0,
+                    ];
+                });
+            }
+
+            // Caso sin detalle válido
+            return [
+                [
+                    'labor' => 'SIN REGISTRO',
+                    'fecha' => $registroDiario->fecha->format('Y-m-d'),
+                    'documento' => $registroDiario->cuadrillero->dni,
+                    'empleado_nombre' => $registroDiario->cuadrillero->nombres,
+                    'campo' => 'SIN REGISTRO',
+                    'horas_totales' => $registroDiario->total_horas,
                     'hora_inicio' => '-',
                     'hora_salida' => '-',
                     'factor' => 1,
                     'hora_diferencia' => '-',
-                    'hora_diferencia_entero' => $detalle->actividad->horas_trabajadas,
-                    'costo_hora' => $costoHora,
-                    'gasto' => $totalCosto,
-                    'gasto_bono' => $totalBono,
-                ];
-            })
-            ->toArray();
-
-        $totalActividades = array_sum(array_column($actividades, 'gasto')) + array_sum(array_column($actividades, 'gasto_bono'));
-
+                    'hora_diferencia_entero' => '-',
+                    'costo_dia' => $costoDia,
+                    'total_horas' => $registroDiario->total_horas,
+                    'gasto' => $registroDiario->costo_dia,
+                    'gasto_bono' => $registroDiario->total_bono ?? 0,
+                ]
+            ];
+        });
+        
         // Generar Excel con ambas listas
-        $filePath = self::procesarExcelGastoCuadrillaFdm($actividades, $gastosAdicionales, $anio, $mes);
-
+        $filePath = self::procesarExcelGastoCuadrillaFdm($registrosDiarios->ToArray(), $gastosAdicionales, $anio, $mes);
+        $totalActividades = $registrosDiarios->sum(function ($registroDiario){
+            return $registroDiario['gasto'] + $registroDiario['gasto_bono'];
+        });
+        $totalBono = $registrosDiarios->sum('gasto_bono');
+        
         return [
             'total' => $totalActividades + $totalGastosAdicionales,
+            'bono'=>$totalBono,
             'file' => $filePath,
-            'detalle' => $actividades,
+            'detalle' => $registrosDiarios,
         ];
     }
 
@@ -107,8 +189,8 @@ class CuadrillaFdmServicio
             $sheet->setCellValue("I{$fila}", $reporte['horas_totales']);
             $sheet->setCellValue("J{$fila}", $reporte['hora_inicio']);
             $sheet->setCellValue("K{$fila}", $reporte['hora_salida']);
-            $sheet->setCellValue("L{$fila}", $reporte['hora_diferencia_entero']);
-            $sheet->setCellValue("M{$fila}", $reporte['costo_hora']);
+            $sheet->setCellValue("L{$fila}", $reporte['total_horas']);
+            $sheet->setCellValue("M{$fila}", $reporte['costo_dia']);
             $sheet->setCellValue("N{$fila}", $reporte['gasto']);
             $sheet->setCellValue("O{$fila}", $reporte['gasto_bono']);
             $sheet->setCellValue("P{$fila}", "=N{$fila}+O{$fila}");

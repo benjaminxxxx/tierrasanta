@@ -1,14 +1,10 @@
-@props(['active'])
+@props([
+    'href',
+    'active' => false,
+])
 
-@php
-    $classes =
-        $active ?? false
-            ? 'group relative flex items-center gap-2.5 rounded-md px-4 font-medium duration-300 ease-in-out hover:text-white !text-white'
-            : 'group relative flex items-center gap-2.5 rounded-md px-4 font-medium text-gray-300 duration-300 ease-in-out hover:text-white';
-@endphp
-
-<li>
-    <a {{ $attributes->merge(['class' => $classes]) }}>
-        {{ $slot }}
-    </a>
-</li>
+<a href="{{ $href }}"
+   class="block pl-12 pr-4 py-2 text-sm transition hover:text-white
+       {{ $active ? 'text-white font-semibold' : 'text-gray-200' }}">
+    {{ $slot }}
+</a>

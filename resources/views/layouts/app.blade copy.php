@@ -42,7 +42,6 @@
             opacity: 1;
             width: auto;
         }
-
         .sidebar.expanded .hidden-on-expanded {
             opacity: 0;
             width: 0;
@@ -146,15 +145,28 @@
 </head>
 
 <body
-    x-data="{ page: 'ecommerce', 'loaded': true, 'stickyMenu': false, 'sidebarToggle': false, 'scrollTop': false }"
-    >
+    x-data="{ page: 'ecommerce', 'loaded': true, 'darkMode': true, 'stickyMenu': false, 'sidebarToggle': false, 'scrollTop': false }"
+    x-init="darkMode = JSON.parse(localStorage.getItem('darkMode'));
+$watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(value)))"
+    :class="{ 'dark text-bodydark bg-boxdark-2': darkMode === true }">
     <x-preloader />
 
-    <div class="flex h-screen bg-gray-900">
-        <x-sidebar2 />
-        <main class="flex-1 p-5 overflow-auto">
-            {{ $slot }}
-        </main>
+    <!-- Mobile Overlay -->
+    <div id="mobile-overlay" class="mobile-overlay lg:hidden"></div>
+
+    <div class="flex h-screen overflow-hidden dark:bg-gray-900">
+        <!-- Sidebar -->
+        <x-sidebar />
+
+        <!-- Content Area -->
+        <div id="content-area" class="content-area relative flex flex-col overflow-y-auto overflow-x-hidden">
+            <!-- Main Content -->
+            <main class="flex-1">
+                <x-spacing>
+                    {{ $slot }}
+                </x-spacing>
+            </main>
+        </div>
     </div>
 
     @stack('modals')
@@ -165,6 +177,65 @@
     <x-livewire-alert::scripts />
 
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const sidebar = document.getElementById('sidebar');
+            const mobileOverlay = document.getElementById('mobile-overlay');
+            const hamburgerBtn = document.getElementById('hamburger-btn');
+            let expandTimeout;
+
+            // Desktop hover functionality
+            if (window.innerWidth >= 1024) {
+                sidebar.addEventListener('mouseenter', function () {
+                    clearTimeout(expandTimeout);
+                    sidebar.classList.add('expanded');
+                });
+
+                sidebar.addEventListener('mouseleave', function () {
+                    expandTimeout = setTimeout(() => {
+                        sidebar.classList.remove('expanded');
+                    }, 300);
+                });
+            }
+
+            // Mobile hamburger functionality
+            if (hamburgerBtn) {
+                hamburgerBtn.addEventListener('click', function () {
+                    sidebar.classList.toggle('mobile-open');
+                    mobileOverlay.classList.toggle('active');
+                });
+            }
+
+            // Close mobile sidebar when clicking overlay
+            mobileOverlay.addEventListener('click', function () {
+                sidebar.classList.remove('mobile-open');
+                mobileOverlay.classList.remove('active');
+            });
+
+            // Submenu toggle functionality
+            window.toggleSubmenu = function (menuId) {
+                const submenu = document.getElementById(menuId + '-submenu');
+                const chevron = document.getElementById(menuId + '-chevron');
+
+                if (submenu.classList.contains('open')) {
+                    submenu.classList.remove('open');
+                    chevron.style.transform = 'rotate(0deg)';
+                } else {
+                    submenu.classList.add('open');
+                    chevron.style.transform = 'rotate(90deg)';
+                }
+            };
+
+            // Handle window resize
+            window.addEventListener('resize', function () {
+                if (window.innerWidth >= 1024) {
+                    sidebar.classList.remove('mobile-open');
+                    mobileOverlay.classList.remove('active');
+                } else {
+                    sidebar.classList.remove('expanded');
+                }
+            });
+        });
+
         document.addEventListener('livewire:init', () => {
             Livewire.on('log', (event) => {
                 console.log(event[0]);

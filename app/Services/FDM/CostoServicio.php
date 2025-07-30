@@ -13,6 +13,7 @@ class CostoServicio
         $totalCosto = CuadrillaFdmServicio::generarReportePorMes($mes, $anio);
         $data = [
             'negro_cuadrillero_monto' => $totalCosto['total'],
+            'negro_cuadrillero_bono' => $totalCosto['bono'],
             'negro_cuadrillero_file' => $totalCosto['file'],
         ];
 

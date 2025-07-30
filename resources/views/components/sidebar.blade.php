@@ -1,4 +1,4 @@
-<aside id="sidebar" class="sidebar flex flex-col">
+<aside id="sidebar" class="sidebar flex flex-col border-r dark:border-gray-700">
     <!-- SIDEBAR HEADER CON LOGO -->
     <div class="buton-on-sidebar flex items-center justify-between m-auto p-2 border-b border-gray-700">
         <div class="flex items-center w-full justify-center">
@@ -26,7 +26,7 @@
 
                 <ul class="mb-6 flex flex-col gap-1.5">
                     @hasanyrole('Administrador|Super Admin')
-                    <x-nav-link-parent name="sectorPlanilla" :active="request()->routeIs(['planilla.asistencia'])"
+                    <x-nav-link-parent name="sectorPlanilla" :active="request()->routeIs(['planilla.asistencia','planilla.blanco'])"
                         logo='fa fa-table' text="Planilla">
                         <x-nav-link-child href="{{ route('planilla.asistencia') }}"
                             :active="request()->routeIs('planilla.asistencia')">
@@ -77,7 +77,8 @@
                         'gestion_cuadrilleros.registro-diario.index',
                         'gestion_cuadrilleros.bonificaciones.index',
                         'gestion_cuadrilleros.pagos.index',
-                        'cuadrilleros.gestion'
+                        'cuadrilleros.gestion',
+                        'gestion_cuadrilleros.resumen_anual'
                         ])" logo='fas fa-hard-hat' text="Cuadrilla">
                         <x-nav-link-child href="{{ route('cuadrilleros.gestion') }}"
                             :active="request()->routeIs('cuadrilleros.gestion')">
@@ -107,6 +108,10 @@
                         <x-nav-link-child href="{{ route('gestion_cuadrilleros.pagos.index') }}"
                             :active="request()->routeIs('gestion_cuadrilleros.pagos.index')">
                             Pago de cuadrilla
+                        </x-nav-link-child>
+                        <x-nav-link-child href="{{ route('gestion_cuadrilleros.resumen_anual') }}"
+                            :active="request()->routeIs('gestion_cuadrilleros.resumen_anual')">
+                            Resumen anual
                         </x-nav-link-child>
                        
                     </x-nav-link-parent>
