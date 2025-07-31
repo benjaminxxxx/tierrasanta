@@ -26,8 +26,16 @@
 
                 <ul class="mb-6 flex flex-col gap-1.5">
                     @hasanyrole('Administrador|Super Admin')
-                    <x-nav-link-parent name="sectorPlanilla" :active="request()->routeIs(['planilla.asistencia','planilla.blanco'])"
+                    <x-nav-link-parent name="sectorPlanilla" :active="request()->routeIs([
+                        'reporte.reporte_diario',
+                        'planilla.asistencia',
+                        'planilla.blanco'
+                        ])"
                         logo='fa fa-table' text="Planilla">
+                        <x-nav-link-child href="{{ route('reporte.reporte_diario') }}"
+                            :active="request()->routeIs('reporte.reporte_diario')">
+                            Planilla
+                        </x-nav-link-child>
                         <x-nav-link-child href="{{ route('planilla.asistencia') }}"
                             :active="request()->routeIs('planilla.asistencia')">
                             Asistencia
@@ -217,16 +225,13 @@
                     </x-nav-link-parent>
 
                     <x-nav-link-parent name="sectorReportes" :active="request()->routeIs([
-        'reporte.reporte_diario',
+        
         'reporte.reporte_diario_riego',
         'productividad.avance',
     ])" logo="fa fa-database"
                         text="Reporte Diario">
                     
-                        <x-nav-link-child href="{{ route('reporte.reporte_diario') }}"
-                            :active="request()->routeIs('reporte.reporte_diario')">
-                            Planilla
-                        </x-nav-link-child>
+                        
                         <x-nav-link-child href="{{ route('reporte.reporte_diario_riego') }}"
                             :active="request()->routeIs('reporte.reporte_diario_riego')">
                             Regadores

@@ -6,71 +6,84 @@
 
     <x-loading wire:loading />
 
-    <x-card class="mt-5">
-        <x-spacing>
-            <div class="w-full lg:flex justify-between gap-3 mb-4">
-                <div class="flex items-center gap-3">
-                    <x-input type="number" wire:model="minutosDescontados" placeholder="Descuento en minutos" />
-                    <x-secondary-button wire:click="aplicarDescuento" class="whitespace-nowrap">
-                        Aplicar <span class="hidden lg:inline">descuento</span>
-                    </x-secondary-button>
-                </div>
-                <div class="flex justify-end gap-3 mb-4 my-3 lg:my-0">
-                    <x-button wire:click="addGroupBtn" class="w-full lg:w-auto"><i class="fa fa-plus"></i></x-button>
-                    <x-danger-button wire:click="removeGroupBtn" class="w-full lg:w-auto"><i
-                            class="fa fa-minus"></i></x-danger-button>
-                </div>
+    <x-card2 class="mt-4">
+        <div class="w-full lg:flex justify-between gap-3 mb-4">
+            <div class="flex items-center gap-3">
+                <x-input type="number" wire:model="minutosDescontados" placeholder="Descuento en minutos" />
+                <x-secondary-button wire:click="aplicarDescuento" class="whitespace-nowrap">
+                    Aplicar <span class="hidden lg:inline">descuento</span>
+                </x-secondary-button>
+            </div>
+            <div class="flex justify-end gap-3 mb-4 my-3 lg:my-0">
+                <x-button wire:click="addGroupBtn" class="w-full lg:w-auto"><i class="fa fa-plus"></i></x-button>
+                <x-danger-button wire:click="removeGroupBtn" class="w-full lg:w-auto"><i
+                        class="fa fa-minus"></i></x-danger-button>
+            </div>
+        </div>
+
+        <div x-data="{{ $idTable }}" wire:ignore class="mt-5">
+            <div id="exampleParent" style="width:100%">
+                <div x-ref="tableContainer" id="example"></div>
             </div>
 
-            <div x-data="{{ $idTable }}" wire:ignore>
-                <div x-ref="tableContainer" class="mt-5"></div>
-                <div class="text-right mt-5">
-                    <x-button @click="sendDataReporteDiarioPlanilla">
-                        <i class="fa fa-save"></i> Guardar Información
-                    </x-button>
-                </div>
+          
+            <div class="text-right mt-5">
+                <x-button @click="sendDataReporteDiarioPlanilla">
+                    <i class="fa fa-save"></i> Guardar Información
+                </x-button>
             </div>
+        </div>
 
 
 
-            <div class="my-4">
-                <x-table>
-                    <x-slot name="thead">
-                    </x-slot>
-                    <x-slot name="tbody">
-                        @if ($totalesAsistencias)
-                            @foreach ($totalesAsistencias as $totalesAsistencia)
-                                <x-tr>
-                                    <x-th class="!text-left text-gray-800 dark:text-gray-200">TOTAL {{mb_strtoupper($totalesAsistencia['descripcion'])}}</x-th>
-                                    <x-td class="w-[10rem]">
-                                        <div x-ref="total_planillas_asistido" class="p-2">{{$totalesAsistencia['total']}}</div>
-                                    </x-td>
-                                </x-tr>
-                            @endforeach
-                        @endif
-
-                        <x-tr>
-                            <x-th class="!text-left  text-gray-800 dark:text-gray-200">TOTAL CUADRILLAS</x-th>
-                            <x-td>
-                                <div x-ref="total_cuadrillas" class="p-2">{{$totalesAsistenciasCuadrilleros}}</div>
-                            </x-td>
-                        </x-tr>
-                        @if ($reporteDiarioCampos)
+        <div class="my-4">
+            <x-table>
+                <x-slot name="thead">
+                </x-slot>
+                <x-slot name="tbody">
+                    @if ($totalesAsistencias)
+                        @foreach ($totalesAsistencias as $totalesAsistencia)
                             <x-tr>
-                                <x-th class="!text-left  text-gray-800 dark:text-gray-200"><b>TOTAL PLANILLA</b></x-th>
-                                <x-td>
-                                    <div x-ref="total_planilla" class="p-2">{{$reporteDiarioCampos->total_planilla}}</div>
+                                <x-th class="!text-left">TOTAL {{mb_strtoupper($totalesAsistencia['descripcion'])}}</x-th>
+                                <x-td class="w-[10rem]">
+                                    <div x-ref="total_planillas_asistido" class="p-2">{{$totalesAsistencia['total']}}</div>
                                 </x-td>
                             </x-tr>
-                        @endif
+                        @endforeach
+                    @endif
 
-                    </x-slot>
-                </x-table>
-            </div>
+                    <x-tr>
+                        <x-th class="!text-left">TOTAL CUADRILLAS</x-th>
+                        <x-td>
+                            <div x-ref="total_cuadrillas" class="p-2">{{$totalesAsistenciasCuadrilleros}}</div>
+                        </x-td>
+                    </x-tr>
+                    @if ($reporteDiarioCampos)
+                        <x-tr>
+                            <x-th class="!text-left"><b>TOTAL PLANILLA</b></x-th>
+                            <x-td>
+                                <div x-ref="total_planilla" class="p-2">{{$reporteDiarioCampos->total_planilla}}</div>
+                            </x-td>
+                        </x-tr>
+                    @endif
 
-        </x-spacing>
-    </x-card>
+                </x-slot>
+            </x-table>
+        </div>
+    </x-card2>
+    <style>
+        #exampleParent {
+            height: 157px;
+        }
 
+        #example {
+            height: 100%;
+        }
+
+        #example .ht-root-wrapper {
+            height: 100%;
+        }
+    </style>
 
 </div>
 
@@ -102,12 +115,11 @@
             this.listeners.push(
                 Livewire.on('setColumnas', (data) => {
 
-                    const tareas = data[0];
-                    const columns = this.generateColumns(tareas);
+                    this.tareas = data[0];
+                    const columns = this.generateColumns();
                     this.hot.updateSettings({
                         columns: columns
                     });
-                    this.tareas = tareas;
 
                     // Vuelve a cargar los datos actuales en la tabla (si fuera necesario)
                     this.hot.loadData(this.tableData);
@@ -179,25 +191,22 @@
             );
         },
         initTable() {
-            const tareas = this.tareas;
-            const columns = this.generateColumns(tareas);
-            let primeraCarga = 0;
-            let isUpdating = false
-
-            const container = this.$refs.tableContainer;
-            const hot = new Handsontable(container, {
+            const triggerBtn = document.querySelector('#triggerBtn');
+            const example = document.querySelector('#example');
+            const exampleParent = document.querySelector('#exampleParent');
+          
+            const hot = new Handsontable(this.$refs.tableContainer, {
+                themeName: 'ht-theme-main',
                 data: this.tableData,
                 colHeaders: true,
+                
                 rowHeaders: true,
-                columns: columns,
+                columns: this.generateColumns(),
                 width: '100%',
-                height: 'auto',
-                manualColumnResize: false,
-                manualRowResize: true,
+                height: '100%',
                 minSpareRows: 1,
+                autoWrapRow: true,
                 stretchH: 'all',
-                autoColumnSize: true,
-                autoRowSize: true,
                 fixedColumnsLeft: 4,
                 licenseKey: 'non-commercial-and-evaluation',
                 contextMenu: {
@@ -327,7 +336,21 @@
             });
 
             this.hot = hot;
-            //this.hot.render();
+            exampleParent.style.height = '70vh';
+            hot.refreshDimensions();
+            triggerBtn.textContent = 'Collapse container';
+
+            triggerBtn.addEventListener('click', () => {
+                if (triggerBtn.textContent === 'Collapse container') {
+                    exampleParent.style.height = ''; // reset to initial 150px;
+                    hot.refreshDimensions();
+                    triggerBtn.textContent = 'Expand container';
+                } else {
+                    exampleParent.style.height = '90vh';
+                    hot.refreshDimensions();
+                    triggerBtn.textContent = 'Collapse container';
+                }
+            });
 
             window.addEventListener('beforeunload', (event) => {
                 if (this.hasUnsavedChanges) {
@@ -351,20 +374,12 @@
             const mins = minutes % 60;
             return `${String(hours).padStart(2, '0')}.${String(mins).padStart(2, '0')}`;
         },
-        generateColumns(tareas) {
+        generateColumns() {
             let columns = [{
-                data: 'documento',
-                type: 'text',
-                width: 80,
-                title: 'DNI',
-                className: 'text-center !bg-gray-100',
-                readOnly: true
-            },
-            {
                 data: "empleado_nombre",
                 type: 'text',
-                width: 270,
-                className: '!bg-gray-100',
+                width: 200,
+                className: '!bg-gray-100 dark:!bg-gray-700 dark:!text-gray-100',
                 title: 'APELLIDOS Y NOMBRES'
             },
             {
@@ -373,19 +388,19 @@
                 source: this.tipoAsistenciasCodigos,
                 width: 60,
                 title: 'ASIST.',
-                className: 'text-center !bg-gray-100'
+                className: 'text-center !bg-gray-100 dark:!bg-gray-700 dark:!text-gray-100'
             },
             {
                 data: 'numero_cuadrilleros',
                 type: 'numeric',
                 width: 50,
                 title: 'N° C.',
-                className: '!text-center !bg-gray-100'
+                className: '!text-center !bg-gray-100 dark:!bg-gray-700 dark:!text-gray-100'
             }
             ];
 
             // Generar dinámicamente las columnas según las tareas
-            for (let indice = 1; indice <= tareas; indice++) {
+            for (let indice = 1; indice <= this.tareas; indice++) {
                 columns.push({
                     data: "campo_" + indice,
                     type: 'dropdown',

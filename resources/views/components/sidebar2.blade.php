@@ -27,13 +27,9 @@
     },
     isOpen(title) {
         return this.openMenus.includes(title);
-    },
-    cambiarModo(){
-        $root.darkMode = !$root.darkMode;
-        console.log($root.darkMode);
     }
 }" x-on:mouseenter="handleMouseEnter" x-on:mouseleave="handleMouseLeave"
-    class="relative h-screen bg-gray-800 border-r dark:border-gray-700 transition-all duration-300 ease-in-out flex flex-col"
+    class="relative h-screen bg-white dark:bg-gray-800 border-r dark:border-gray-700 transition-all duration-300 ease-in-out flex flex-col"
     :class="isExpanded ? 'w-64' : 'w-16'">
 
     <!-- Header -->
@@ -53,18 +49,19 @@
                         <div class="w-8 h-8 rounded-lg flex items-center justify-center">
                             <img src="{{ asset('images/logo/logotipo.svg') }}" class="w-full" alt="Logo" />
                         </div>
-                        <span class="font-semibold text-white whitespace-nowrap">THS</span>
+                        <span class="font-semibold text-gray-700 dark:text-white whitespace-nowrap">THS</span>
                     </div>
                 </div>
             </div>
             <!-- Pin icon -->
-            <button x-show="isExpanded" x-on:click="togglePin"
-                class="transition-all duration-300 text-white hover:text-gray-100"
-                :class="isPinned ? 'text-gray-200' : ''">
+            <button x-show="isExpanded" x-on:click="togglePin" class="transition-all duration-300 
+           text-gray-600 hover:text-gray-900 
+           dark:text-white dark:hover:text-gray-100" :class="isPinned ? 'text-gray-400 dark:text-gray-300' : ''">
+
                 <i class="fa fa-thumb-tack h-4 w-4" x-show="!isPinned"></i>
                 <i class="fa fa-times-circle h-4 w-4" x-show="isPinned"></i>
-
             </button>
+
         </div>
     </div>
 
@@ -72,7 +69,15 @@
     <div class="flex-1  py-4" :class="isExpanded ? 'overflow-y-auto ultra-thin-scroll' : 'overflow-hidden'">
         <nav class="space-y-1 px-2">
             @hasanyrole('Administrador|Super Admin')
-            <x-nav-link-parent name="sectorPlanilla" :active="request()->routeIs(['planilla.asistencia', 'planilla.blanco'])" logo='fa fa-table' text="Planilla">
+            <x-nav-link-parent name="sectorPlanilla" :active="request()->routeIs([
+        'reporte.reporte_diario',
+        'planilla.asistencia',
+        'planilla.blanco'
+    ])" logo='fa fa-table' text="Planilla">
+                <x-nav-link-child href="{{ route('reporte.reporte_diario') }}"
+                    :active="request()->routeIs('reporte.reporte_diario')">
+                    Reporte diario (actividades)
+                </x-nav-link-child>
                 <x-nav-link-child href="{{ route('planilla.asistencia') }}"
                     :active="request()->routeIs('planilla.asistencia')">
                     Asistencia
@@ -81,37 +86,7 @@
                     Blanco
                 </x-nav-link-child>
             </x-nav-link-parent>
-
-
-            <x-nav-link-parent name="sectorEmpleado" :active="request()->routeIs(['empleados', 'empleados.asignacion_familiar'])" logo='fa fa-users' text="Empleado">
-                <x-nav-link-child href="{{ route('empleados') }}" :active="request()->routeIs('empleados')">
-                    Lista de Empleados
-                </x-nav-link-child>
-                <x-nav-link-child href="{{ route('empleados.asignacion_familiar') }}"
-                    :active="request()->routeIs('empleados.asignacion_familiar')">
-                    Asignación Familiar
-                </x-nav-link-child>
-            </x-nav-link-parent>
-            @endhasanyrole
-            @canany(['Usuarios Administrar', 'Roles'])
-                <x-nav-link-parent name="sectorSistema" :active="request()->routeIs(['usuarios', 'roles_permisos'])"
-                    logo='fas fa-palette' text="Sistema">
-
-                    @can('Usuarios Administrar')
-                        <x-nav-link-child href="{{ route('usuarios') }}" :active="request()->routeIs('usuarios')">
-                            Usuarios
-                        </x-nav-link-child>
-                    @endcan
-
-                    @can('Roles')
-                        <x-nav-link-child href="{{ route('roles_permisos') }}" :active="request()->routeIs('roles_permisos')">
-                            Roles y Permisos
-                        </x-nav-link-child>
-                    @endcan
-
-                </x-nav-link-parent>
-            @endcanany
-            @hasanyrole('Administrador|Super Admin')
+  @hasanyrole('Administrador|Super Admin')
             <x-nav-link-parent name="sectorCuadrilla" :active="request()->routeIs([
         'cuadrilla.grupos',
         'cuadrilla.cuadrilleros',
@@ -158,6 +133,37 @@
 
             </x-nav-link-parent>
             @endhasanyrole
+
+
+            <x-nav-link-parent name="sectorEmpleado" :active="request()->routeIs(['empleados', 'empleados.asignacion_familiar'])" logo='fa fa-users' text="Empleado">
+                <x-nav-link-child href="{{ route('empleados') }}" :active="request()->routeIs('empleados')">
+                    Lista de Empleados
+                </x-nav-link-child>
+                <x-nav-link-child href="{{ route('empleados.asignacion_familiar') }}"
+                    :active="request()->routeIs('empleados.asignacion_familiar')">
+                    Asignación Familiar
+                </x-nav-link-child>
+            </x-nav-link-parent>
+            @endhasanyrole
+            @canany(['Usuarios Administrar', 'Roles'])
+                <x-nav-link-parent name="sectorSistema" :active="request()->routeIs(['usuarios', 'roles_permisos'])"
+                    logo='fas fa-palette' text="Sistema">
+
+                    @can('Usuarios Administrar')
+                        <x-nav-link-child href="{{ route('usuarios') }}" :active="request()->routeIs('usuarios')">
+                            Usuarios
+                        </x-nav-link-child>
+                    @endcan
+
+                    @can('Roles')
+                        <x-nav-link-child href="{{ route('roles_permisos') }}" :active="request()->routeIs('roles_permisos')">
+                            Roles y Permisos
+                        </x-nav-link-child>
+                    @endcan
+
+                </x-nav-link-parent>
+            @endcanany
+          
             @hasanyrole('Administrador|Super Admin')
 
 
@@ -256,15 +262,9 @@
             </x-nav-link-parent>
 
             <x-nav-link-parent name="sectorReportes" :active="request()->routeIs([
-        'reporte.reporte_diario',
         'reporte.reporte_diario_riego',
         'productividad.avance',
     ])" logo="fa fa-database" text="Reporte Diario">
-
-                <x-nav-link-child href="{{ route('reporte.reporte_diario') }}"
-                    :active="request()->routeIs('reporte.reporte_diario')">
-                    Planilla
-                </x-nav-link-child>
                 <x-nav-link-child href="{{ route('reporte.reporte_diario_riego') }}"
                     :active="request()->routeIs('reporte.reporte_diario_riego')">
                     Regadores
@@ -385,46 +385,53 @@
             @endhasanyrole
         </nav>
         <!-- BOTÓN DE MODO CLARO/OSCURO -->
-        <div class="border-t border-gray-700 p-4">
-            <button @click="cambiarModo"
-                class="w-full flex items-center p-2 rounded-lg text-white hover:bg-gray-700 transition-colors"
+        <div class="border-t border-gray-200 dark:border-gray-700 p-4">
+            <button @click="darkMode = !darkMode" class="w-full flex items-center p-2 rounded-lg 
+               text-gray-700 hover:bg-gray-100 
+               dark:text-white dark:hover:bg-gray-700 transition-colors"
                 :class="isExpanded ? 'justify-start' : 'justify-center'">
-                <!-- Icono dinámico -->
-                <i :class="$root.darkMode ? 'fa fa-moon' : 'fa fa-sun'" class="h-5 w-5"></i>
 
-                <!-- Texto solo cuando el menú está expandido -->
+                <i :class="darkMode ? 'fa fa-moon' : 'fa fa-sun'" class="h-5 w-5"></i>
+
                 <template x-if="isExpanded">
-                    <span class="ml-3">Modo</span>
+                    <span class="ml-3" x-text="darkMode ? 'Modo Oscuro' : 'Modo Claro'"></span>
                 </template>
             </button>
         </div>
 
 
 
+
         <!-- MENÚ DE USUARIO AL FINAL -->
-        <div class="border-t border-gray-700 p-4">
+        <div class="border-t border-gray-200 dark:border-gray-700 p-4">
             <div class="relative">
-                <button onclick="toggleUserMenu()"
-                    class="buton-on-sidebar w-full flex items-center p-2 rounded-lg text-white hover:bg-gray-800 transition-colors"
+                <button onclick="toggleUserMenu()" class="w-full flex items-center p-2 rounded-lg 
+           text-gray-700 hover:bg-gray-100 
+           dark:text-white dark:hover:bg-gray-800 transition-colors"
                     :class="isExpanded ? 'justify-start' : 'justify-center'">
-                    <!-- Avatar siempre visible -->
-                    <div
-                        class="w-8 h-8 flex-shrink-0 bg-gray-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm">
+
+                    <!-- Avatar -->
+                    <div class="w-8 h-8 flex-shrink-0 
+               bg-gray-300 text-gray-800 
+               dark:bg-gray-600 dark:text-white 
+               rounded-lg flex items-center justify-center font-semibold text-sm">
                         {{ substr(Auth::user()->name, 0, 2) }}
                     </div>
 
-                    <!-- Info del usuario solo cuando está expandido -->
+                    <!-- Info solo si el menú está expandido -->
                     <template x-if="isExpanded">
                         <div class="flex-1 flex items-center justify-between ml-2">
                             <div class="text-left">
-                                <div class="font-semibold text-sm truncate dark:text-white">{{ Auth::user()->name }}
+                                <div class="font-semibold text-sm truncate text-gray-900 dark:text-white">
+                                    {{ Auth::user()->name }}
                                 </div>
-                                <div class="text-xs text-gray-400 dark:text-white truncate">Empleado</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-300 truncate">Empleado</div>
                             </div>
                             <i id="user-chevron" class="fa fa-chevron-up transition-transform flex-shrink-0"></i>
                         </div>
                     </template>
                 </button>
+
 
                 <!-- Dropdown Menu -->
                 <div id="user-dropdown"

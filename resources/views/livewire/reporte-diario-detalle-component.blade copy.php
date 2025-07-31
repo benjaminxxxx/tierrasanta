@@ -23,7 +23,24 @@
             </div>
 
             <div x-data="{{ $idTable }}" wire:ignore>
-                <div x-ref="tableContainer" class="mt-5"></div>
+                <div class="h-[40rem] overflow-auto bg-red-200">
+                    <div x-ref="tableContainer" class="mt-5"></div>
+                </div>
+
+                <div class="my-3">
+                    <p>Si quiere agregar el resumen de las labores de Cuadrilla debe colocar el texto <b>Cuadrilla</b>
+                        en la columna de nombres y apellidos,
+                        debe dejar el campo de dni en blanco, asitencia en blanco y debe digitar EN la columna
+                        Cuadrilleros (N°C) el número de cuadrilleros para dicha actividad.</p>
+                    @if ($totalCuadrilleroSegunHora != $totalesAsistenciasCuadrilleros)
+                        <div class="my-2 bg-red-100 text-red-600 p-5 rounded-lg border border-1 border-red-200">
+                            <p>La cantidad registrada en este módulo no coincide con la cantidad de asistencias registradas
+                                en el reporte diario de cuadrilla</p>
+                            <p>Resumen en este módulo: {{$totalesAsistenciasCuadrilleros}}</p>
+                            <p>Reporte diario cuadrilleros: {{$totalCuadrilleroSegunHora}}</p>
+                        </div>
+                    @endif
+                </div>
                 <div class="text-right mt-5">
                     <x-button @click="sendDataReporteDiarioPlanilla">
                         <i class="fa fa-save"></i> Guardar Información
@@ -41,7 +58,7 @@
                         @if ($totalesAsistencias)
                             @foreach ($totalesAsistencias as $totalesAsistencia)
                                 <x-tr>
-                                    <x-th class="!text-left text-gray-800 dark:text-gray-200">TOTAL {{mb_strtoupper($totalesAsistencia['descripcion'])}}</x-th>
+                                    <x-th class="!text-left">TOTAL {{mb_strtoupper($totalesAsistencia['descripcion'])}}</x-th>
                                     <x-td class="w-[10rem]">
                                         <div x-ref="total_planillas_asistido" class="p-2">{{$totalesAsistencia['total']}}</div>
                                     </x-td>
@@ -50,14 +67,14 @@
                         @endif
 
                         <x-tr>
-                            <x-th class="!text-left  text-gray-800 dark:text-gray-200">TOTAL CUADRILLAS</x-th>
+                            <x-th class="!text-left">TOTAL CUADRILLAS</x-th>
                             <x-td>
                                 <div x-ref="total_cuadrillas" class="p-2">{{$totalesAsistenciasCuadrilleros}}</div>
                             </x-td>
                         </x-tr>
                         @if ($reporteDiarioCampos)
                             <x-tr>
-                                <x-th class="!text-left  text-gray-800 dark:text-gray-200"><b>TOTAL PLANILLA</b></x-th>
+                                <x-th class="!text-left"><b>TOTAL PLANILLA</b></x-th>
                                 <x-td>
                                     <div x-ref="total_planilla" class="p-2">{{$reporteDiarioCampos->total_planilla}}</div>
                                 </x-td>
@@ -188,6 +205,7 @@
             const hot = new Handsontable(container, {
                 data: this.tableData,
                 colHeaders: true,
+                themeName: 'ht-theme-main-dark-auto',
                 rowHeaders: true,
                 columns: columns,
                 width: '100%',

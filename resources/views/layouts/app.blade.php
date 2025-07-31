@@ -146,11 +146,13 @@
 </head>
 
 <body
-    x-data="{ page: 'ecommerce', 'loaded': true, 'stickyMenu': false, 'sidebarToggle': false, 'scrollTop': false }"
-    >
+    x-data="{ page: 'ecommerce', 'loaded': true,'darkMode': true,  'stickyMenu': false, 'sidebarToggle': false, 'scrollTop': false }"
+     x-init="darkMode = JSON.parse(localStorage.getItem('darkMode'));
+$watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(value)))"
+    :class="{ 'dark': darkMode === true }">
     <x-preloader />
 
-    <div class="flex h-screen bg-gray-900">
+    <div class="flex h-screen bg-gray-100 dark:bg-gray-900">
         <x-sidebar2 />
         <main class="flex-1 p-5 overflow-auto">
             {{ $slot }}
