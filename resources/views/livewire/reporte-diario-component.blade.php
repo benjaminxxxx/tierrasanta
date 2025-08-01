@@ -11,7 +11,7 @@
                 </x-secondary-button>
 
                 <div class="lg:flex gap-4 lg:w-auto text-center">
-                    <x-input type="date" wire:model.live="fecha" class="text-center" />
+                    <x-input type="date" wire:model.live="fecha" class="text-center !w-auto" />
                     <x-button @click="$dispatch('importarPlanilla')">Importar Empleados y Riegos</x-button>
                 </div>
 

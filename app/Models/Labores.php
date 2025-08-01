@@ -18,7 +18,11 @@ class Labores extends Model
         'estandar_produccion',
         'unidades',
         'tramos_bonificacion',
+        'codigo_mano_obra'
     ];
+    public function manoObra(){
+        return $this->belongsTo(ManoObra::class, 'codigo_mano_obra', 'codigo');
+    }
     public function valoraciones(){
         return $this->hasMany(LaborValoracion::class,'labor_id');
     }

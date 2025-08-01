@@ -13,7 +13,7 @@
         <x-label for="{{ $model }}">{{ $label ?? ucfirst(str_replace('_', ' ', $model)) }}</x-label>
     @endif
 
-    <x-input :id="$id" type="text" {{ $attributes->merge(['class' => 'form-input']) }} />
+    <x-input :id="$id" type="text" {{ $attributes }} />
 
     @if ($error && $model)
         <x-input-error for="{{ $model }}" />

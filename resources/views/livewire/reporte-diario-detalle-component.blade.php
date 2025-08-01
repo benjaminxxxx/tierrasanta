@@ -188,6 +188,7 @@
             const hot = new Handsontable(container, {
                 data: this.tableData,
                 colHeaders: true,
+                themeName: 'ht-theme-main',
                 rowHeaders: true,
                 columns: columns,
                 width: '100%',

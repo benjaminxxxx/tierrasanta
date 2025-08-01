@@ -45,8 +45,8 @@ export default {
             'gray-3': '#FAFAFA',      // Sin cambio, casi blanco
             whiten: '#F1F5F9',        // Sin cambio, blanco sucio
             whiter: '#F5F7FD',        // Sin cambio, blanco con un toque azul
-            boxdark: '#2C2C2C',  
-            boxdarkbase:'#272626',     // Sin cambio, color oscuro para cajas
+            boxdark: '#374151',  
+            boxdarkbase:'#1F2937',     // Sin cambio, color oscuro para cajas
             'boxdark-2': '#1A222C',   // Sin cambio, tono más oscuro
             strokedark: '#2E3A47',    // Sin cambio, color para líneas oscuras
             'form-strokedark': '#3d4d60', // Sin cambio, borde de formularios oscuros

@@ -3,14 +3,17 @@
 namespace App\Livewire;
 
 use App\Models\Labores;
+use App\Models\ManoObra;
 use App\Services\RecursosHumanos\Personal\ActividadServicio;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
+use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
 
 class LaboresComponent extends Component
 {
     use WithPagination;
+    use WithoutUrlPagination;
     use LivewireAlert;
     public $verActivos;
     public $laborId;
@@ -21,12 +24,18 @@ class LaboresComponent extends Component
     public $estandar_produccion;
     public $unidades;
     public $estado;
+    public $codigo_mano_obra;
+    public $manoObras;
     // App/Http/Livewire/MiComponente.php
     public array $tramos = [
         ['hasta' => '', 'monto' => '']
     ];
 
     protected $listeners = ['laborRegistrada' => '$refresh', 'confirmarEliminar', 'valoracionTrabajada' => '$refresh'];
+    public function mount()
+    {
+        $this->manoObras = ManoObra::all();
+    }
     public function crearNuevaLabor()
     {
         $this->resetearCampo();
@@ -42,9 +51,10 @@ class LaboresComponent extends Component
             $this->estandar_produccion = $labor->estandar_produccion;
             $this->unidades = $labor->unidades;
             $this->estado = $labor->estado;
-            $this->tramos = $labor->tramos_bonificacion!=null ? json_decode($labor->tramos_bonificacion, true) : [['hasta' => '', 'monto' => '']];
+            $this->codigo_mano_obra = $labor->codigo_mano_obra;
+            $this->tramos = $labor->tramos_bonificacion != null ? json_decode($labor->tramos_bonificacion, true) : [['hasta' => '', 'monto' => '']];
             $this->mostrarFormularioLabor = true;
-        }else{
+        } else {
             $this->alert('error', 'Labor no encontrada.');
             return;
         }
@@ -56,6 +66,7 @@ class LaboresComponent extends Component
             'nombre_labor' => 'required|string|max:255',
             'tramos.*.hasta' => 'nullable|numeric|min:0',
             'tramos.*.monto' => 'nullable|numeric|min:0',
+            'codigo_mano_obra' => 'nullable|exists:mano_obras,codigo',
         ]);
         try {
             // Preparar datos
@@ -65,7 +76,8 @@ class LaboresComponent extends Component
                 'estandar_produccion' => $this->estandar_produccion,
                 'unidades' => $this->unidades,
                 'tramos_bonificacion' => empty($this->tramos) ? null : json_encode($this->tramos),
-                'estado' => $this->estado ?? 1
+                'estado' => $this->estado ?? 1,
+                'codigo_mano_obra' => $this->codigo_mano_obra,
             ];
 
             ActividadServicio::guardarLabor($data, $this->laborId);
@@ -79,7 +91,7 @@ class LaboresComponent extends Component
     }
     public function resetearCampo()
     {
-        $this->reset(['laborId', 'codigo', 'nombre_labor', 'estandar_produccion', 'unidades', 'tramos', 'estado']);
+        $this->reset(['laborId', 'codigo', 'nombre_labor', 'codigo_mano_obra','estandar_produccion', 'unidades', 'tramos', 'estado']);
         $this->mostrarFormularioLabor = false;
     }
     public function confirmarEliminarLabor($id)
@@ -124,7 +136,7 @@ class LaboresComponent extends Component
         //buscar ahora por codigo o descripcion $query->where('nombre_labor', 'like', '%' . $this->search . '%');
         $query->where(function ($q) {
             $q->where('codigo', 'like', '%' . $this->search . '%')
-              ->orWhere('nombre_labor', 'like', '%' . $this->search . '%');
+                ->orWhere('nombre_labor', 'like', '%' . $this->search . '%');
         });
         $labores = $query->paginate(10);
 

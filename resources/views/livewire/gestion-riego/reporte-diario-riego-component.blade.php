@@ -141,7 +141,7 @@
                 Cerrar
             </x-secondary-button>
             <x-button wire:click="agregarRegadores" wire:loading.attr="disabled">
-                Agregar regadores seleccionados
+                <i class="fa fa-plus"></i> Agregar regadores seleccionados
             </x-button>
         </div>
     </x-modal>

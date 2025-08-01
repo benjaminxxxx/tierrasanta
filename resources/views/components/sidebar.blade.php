@@ -227,7 +227,6 @@
                     <x-nav-link-parent name="sectorReportes" :active="request()->routeIs([
         
         'reporte.reporte_diario_riego',
-        'productividad.avance',
     ])" logo="fa fa-database"
                         text="Reporte Diario">
                     
@@ -235,10 +234,6 @@
                         <x-nav-link-child href="{{ route('reporte.reporte_diario_riego') }}"
                             :active="request()->routeIs('reporte.reporte_diario_riego')">
                             Regadores
-                        </x-nav-link-child>
-                        <x-nav-link-child href="{{ route('productividad.avance') }}"
-                            :active="request()->routeIs('productividad.avance')">
-                            Avance de Productividad
                         </x-nav-link-child>
                     </x-nav-link-parent>
 

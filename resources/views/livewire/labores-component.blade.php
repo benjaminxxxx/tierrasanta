@@ -38,6 +38,7 @@
                     <x-tr>
                         <x-th value="Código" class="text-center" />
                         <x-th value="Nombre de la Labor" />
+                        <x-th value="Mano de obra" />
                         <x-th value="Estándar de producción" class="text-center" />
                         <x-th value="Tramos de bonificación" class="text-center" />
                         <x-th value="Acciones" class="text-center" />
@@ -49,7 +50,9 @@
                             <x-tr>
                                 <x-th valign="top" value="{{ $labor->codigo }}" class="text-center" />
                                 <x-td valign="top" value="{{ $labor->nombre_labor }}" />
-                                <x-td valign="top" value="{{ $labor->estandar_produccion . ' ' . $labor->unidades}}" class="text-center" />
+                                <x-td valign="top" value="{{ $labor->manoObra?->descripcion }}" />
+                                <x-td valign="top" value="{{ $labor->estandar_produccion . ' ' . $labor->unidades}}"
+                                    class="text-center" />
                                 <x-td valign="top" class="text-center">
                                     {{-- Lista de tramos --}}
                                     @php
@@ -73,7 +76,7 @@
                                 </x-td>
                                 <x-td valign="top" class="text-center">
                                     <x-flex class="justify-end">
-                                         @if ($labor->estado != 1)
+                                        @if ($labor->estado != 1)
                                             <x-warning-button wire:click="habilitar({{ $labor->id }},true)">
                                                 <i class="fa fa-ban"></i>
                                             </x-warning-button>
@@ -104,26 +107,27 @@
             </div>
         </x-spacing>
     </x-card>
-    <x-modal maxWidth="full" wire:model="mostrarFormularioLabor">
+    <x-modal maxWidth="lg" wire:model="mostrarFormularioLabor">
         <form wire:submit.prevent="guardarLabor">
             <div class="px-6 py-4">
                 <div class="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    <x-h3>
-                        Agregar Nueva Labor
-                    </x-h3>
+                    Registro de labores
                 </div>
+                <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <x-input-number wire:model="codigo" label="Código de labor" />
+                        <x-input-string wire:model="nombre_labor" label="Nombre de la labor" />
+                        <x-input-number wire:model="estandar_produccion" label="Estándar de producción" />
+                        <x-input-string wire:model="unidades" label="Unidades" placeholder="Ejem: Kg, Lavaderos" />
+                        <x-select wire:model="codigo_mano_obra" label="Mano de obra">
+                            <option value="">Seleccione un grupo</option>
+                            @foreach ($manoObras as $manoObra)
+                                <option value="{{ $manoObra->codigo }}">{{ $manoObra->descripcion }}</option>
+                            @endforeach
+                        </x-select>
+                    </div>
 
-                <x-flex class="mt-3 mb-2">
-                    <x-h3>Información Básica</x-h3>
-                </x-flex>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                    <x-input-number wire:model="codigo" label="Código de labor" />
-                    <x-input-string wire:model="nombre_labor" label="Nombre de la labor" />
-                    <x-input-number wire:model="estandar_produccion" label="Estándar de producción" />
-                    <x-input-string wire:model="unidades" label="Unidades" placeholder="Ejem: Kg, Lavaderos" />
-                </div>
-                <div x-data="{
+                    <div x-data="{
         tramos: @entangle('tramos'),
         addTramo() {
             this.tramos.push({ hasta: '', monto: '' });
@@ -132,36 +136,36 @@
             this.tramos.splice(index, 1);
         }
     }" class="space-y-4">
-                    <x-flex class="mt-3 mb-2">
-                        <x-h3>Tramos de Bonificación</x-h3>
-                        <x-secondary-button @click="addTramo">
-                            <i class="fa fa-plus"></i> Agregar Tramo
-                        </x-secondary-button>
-                    </x-flex>
+                        <x-flex class="mt-3 mb-2">
+                            <x-h3>Tramos de Bonificación</x-h3>
+                            <x-secondary-button @click="addTramo">
+                                <i class="fa fa-plus"></i> Agregar Tramo
+                            </x-secondary-button>
+                        </x-flex>
 
-                    <template x-for="(tramo, index) in tramos" :key="index">
-                        <div class="flex items-center space-x-4 p-2">
-                            <!-- Hasta -->
-                            <div class="flex flex-col">
-                                <x-input-number label="Hasta (unidades)" x-model="tramo.hasta" />
+                        <template x-for="(tramo, index) in tramos" :key="index">
+                            <div class="flex items-center space-x-4 p-2">
+                                <!-- Hasta -->
+                                <div class="flex flex-col">
+                                    <x-input-number label="Hasta (unidades)" x-model="tramo.hasta" />
+                                </div>
+
+                                <!-- Monto -->
+                                <div class="flex flex-col">
+                                    <x-input-number step="0.1" label="Se paga S/." x-model="tramo.monto" />
+                                </div>
+
+                                <!-- Remove button -->
+                                <x-danger-button @click="removeTramo(index)">
+                                    <i class="fa fa-trash"></i>
+                                </x-danger-button>
                             </div>
-
-                            <!-- Monto -->
-                            <div class="flex flex-col">
-                                <x-input-number step="0.1" label="Se paga S/." x-model="tramo.monto" />
-                            </div>
-
-                            <!-- Remove button -->
-                            <x-danger-button @click="removeTramo(index)">
-                                <i class="fa fa-trash"></i>
-                            </x-danger-button>
-                        </div>
-                    </template>
+                        </template>
+                    </div>
                 </div>
-
             </div>
-
-            <div class="flex flex-row justify-end px-6 py-4 bg-whiten dark:bg-boxdarkbase text-end gap-4">
+            <div
+                class="flex flex-row justify-end px-6 py-4 bg-white dark:bg-gray-800 border-t border-gray-700 text-end rounded-b-lg gap-3">
                 <x-secondary-button @click="$wire.set('mostrarFormularioLabor', false)">
                     Cancelar
                 </x-secondary-button>

@@ -3,7 +3,6 @@
 namespace App\Livewire;
 
 use App\Models\ReporteDiario;
-use App\Services\RecursosHumanos\Personal\EmpleadoServicio;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -40,8 +39,8 @@ class ResumenPlanillaDetalleComponent extends Component
             $this->diasMes[$fecha->day] = $fecha;
         }
 
-        $empleados = ReporteDiario::with('detalles')->whereBetween('fecha', [$fechaInicio, $fechaFin])->get();
-
+        $empleados = ReporteDiario::with('detalles','detalles.labores')->whereBetween('fecha', [$fechaInicio, $fechaFin])->get();
+       
         if ($empleados) {
             $this->empleadosGeneral = $empleados->keyBy('documento')->values();
             foreach ($empleados as $empleado) {

@@ -68,7 +68,8 @@ class ActividadServicio
             'tramos_bonificacion' => $tramos_bonificacion,
             'bono' => 0, // Campo deprecado
             'estado' => $data['estado'] ?? 1,
-            'nombre_labor' => $data['nombre_labor'] ?? 'Sin nombre'
+            'nombre_labor' => $data['nombre_labor'] ?? 'Sin nombre',
+            'codigo_mano_obra' => $data['codigo_mano_obra'] ?? null,
         ];
 
         return DB::transaction(function () use ($payload, $labor_id) {

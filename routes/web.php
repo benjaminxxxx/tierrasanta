@@ -52,13 +52,18 @@ Route::middleware([
         return view('empleados.asignacion_familiar');
     })->name('empleados.asignacion_familiar');
 
-    Route::get('/configuracion/labores-riego', function () {
+    Route::get('/riego/labores', function () {
         return view('configuracion.labores_riego');
     })->name('configuracion.labores_riego');
 
-    Route::get('/configuracion/labores', function () {
+    Route::get('/campo/labores', function () {
         return view('configuracion.labores');
     })->name('configuracion.labores');
+
+    Route::get('/campo/mano_obra', function () {
+        return view('livewire.gestion-campo.index-mano-obra');
+    })->name('campo.mano_obra');
+
 
     Route::get('/configuracion/tipos-asistencias', function () {
         return view('configuracion.tipo_asistencia');
@@ -83,13 +88,13 @@ Route::middleware([
     Route::get('/campo/camapania/{campo?}', [CampoController::class, 'campania'])->name('campo.campania');
 
     Route::get('/campo/mapa', [CampoController::class, 'mapa'])->name('campo.mapa');
-    Route::get('/campo/riego', [CampoController::class, 'riego'])->name('campo.riego');
+    Route::get('/riego/estados', [CampoController::class, 'riego'])->name('campo.riego');
     Route::get('/campo/campos', [CampoController::class, 'campos'])->name('campo.campos');
     Route::get('/campo/siembras', [CampoController::class, 'siembra'])->name('campo.siembra');
     Route::post('/campo/mapa/guardar-posicion/{nombre}', [CampoController::class, 'guardarPosicion'])->name('campo.mapa.guardar-posicion');
 
     //Consolidados
-    Route::get('/consolidado/riego', function () {
+    Route::get('/riego/resumen-diario', function () {
         return view('consolidado.riegos');
     })->name('consolidado.riego');
 
@@ -133,13 +138,13 @@ Route::middleware([
     });
     Route::get('/reporte/actividades-diarias', [ReporteDiarioController::class, 'actividades_diarias'])->name('reporte.actividades_diarias');
     Route::get('/reporte/reporte-diario', [ReporteDiarioController::class, 'index'])->name('reporte.reporte_diario');
-    Route::get('/reporte/reporte-diario-riego', [ReporteDiarioController::class, 'riego'])->name('reporte.reporte_diario_riego');
+    Route::get('/riego/reporte-diario', [ReporteDiarioController::class, 'riego'])->name('reporte.reporte_diario_riego');
     Route::post('/reporte/reporte-diario/importar-empleados', [ReporteDiarioController::class, 'ImportarEmpleados'])->name('reporte.reporte_diario.importar_empleados');
     Route::post('/reporte/reporte-diario/guardar-empleados', [ReporteDiarioController::class, 'GuardarInformacion'])->name('reporte.reporte_diario.guardar_informacion');
     Route::post('/reporte/reporte-diario/actualizar-campos', [ReporteDiarioController::class, 'ActualizarCampos'])->name('reporte.reporte_diario.actualizar_campos');
 
     Route::get('/reporte/pago-cuadrilla', [ReporteController::class, 'PagoCuadrilla'])->name('reporte.pago_cuadrilla');
-    Route::get('/reporte/resumen-planilla', [ReporteController::class, 'ResumenPlanilla'])->name('reporte.resumen_planilla');
+    Route::get('/planilla/resumen-mensual', [ReporteController::class, 'ResumenPlanilla'])->name('reporte.resumen_planilla');
     //Route::get('/reporte/reporte-diario/obtener-campos', [ReporteDiarioController::class, 'ObtenerCampos'])->name('reporte.reporte_diario.obtener_campos');
     //Route::get('/reporte/reporte-diario/obtener-campo', [ReporteDiarioController::class, 'ObtenerCampo'])->name('reporte.reporte_diario.obtener_campo');
 

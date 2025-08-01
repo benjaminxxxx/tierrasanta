@@ -1,3 +1,4 @@
+{{-- Sidebar2 --}}
 <div x-data="{
     isPinned: $persist(false).as('menu_pinned'),
     get isExpanded() {
@@ -72,7 +73,8 @@
             <x-nav-link-parent name="sectorPlanilla" :active="request()->routeIs([
         'reporte.reporte_diario',
         'planilla.asistencia',
-        'planilla.blanco'
+        'planilla.blanco',
+        'reporte.resumen_planilla'
     ])" logo='fa fa-table' text="Planilla">
                 <x-nav-link-child href="{{ route('reporte.reporte_diario') }}"
                     :active="request()->routeIs('reporte.reporte_diario')">
@@ -84,6 +86,10 @@
                 </x-nav-link-child>
                 <x-nav-link-child href="{{ route('planilla.blanco') }}" :active="request()->routeIs('planilla.blanco')">
                     Blanco
+                </x-nav-link-child>
+                <x-nav-link-child href="{{ route('reporte.resumen_planilla') }}"
+                    :active="request()->routeIs('reporte.resumen_planilla')">
+                    Resumen de actividades mensuales
                 </x-nav-link-child>
             </x-nav-link-parent>
   @hasanyrole('Administrador|Super Admin')
@@ -132,6 +138,30 @@
                 </x-nav-link-child>
 
             </x-nav-link-parent>
+
+            <x-nav-link-parent name="sectorReportes" :active="request()->routeIs([
+        'reporte.reporte_diario_riego',
+        'configuracion.labores_riego',
+        'campo.riego',
+        'consolidado.riego'
+    ])" logo="fa fa-water" text="Riego">
+                <x-nav-link-child href="{{ route('reporte.reporte_diario_riego') }}"
+                    :active="request()->routeIs('reporte.reporte_diario_riego')">
+                    Reporte diario regadores
+                </x-nav-link-child>
+                <x-nav-link-child href="{{ route('configuracion.labores_riego') }}"
+                    :active="request()->routeIs('configuracion.labores_riego')">
+                    Labores en riego
+                </x-nav-link-child>
+                   <x-nav-link-child href="{{ route('campo.riego') }}" :active="request()->routeIs('campo.riego')">
+                    Ver estado de riegos
+                </x-nav-link-child>
+                <x-nav-link-child href="{{ route('consolidado.riego') }}"
+                    :active="request()->routeIs('consolidado.riego')">
+                    Resumen diario de riegos
+                </x-nav-link-child>
+            </x-nav-link-parent>
+            
             @endhasanyrole
 
 
@@ -167,13 +197,22 @@
             @hasanyrole('Administrador|Super Admin')
 
 
-            <x-nav-link-parent name="sectorCampo" :active="request()->routeIs(['campo.mapa', 'campo.riego', 'campo.campos', 'campo.siembra'])" logo="fa fa-leaf" text="Campo">
-                <x-nav-link-child href="{{ route('campo.mapa') }}" :active="request()->routeIs('campo.mapa')">
-                    Mapa
+            <x-nav-link-parent name="sectorCampo" :active="request()->routeIs([
+                'campo.campos', 
+                'configuracion.labores',
+                'campo.siembra',
+                'campo.mano_obra'
+                ])" logo="fa fa-leaf" text="Campo">
+               
+                <x-nav-link-child href="{{ route('configuracion.labores') }}"
+                    :active="request()->routeIs('configuracion.labores')">
+                    Labores
                 </x-nav-link-child>
-                <x-nav-link-child href="{{ route('campo.riego') }}" :active="request()->routeIs('campo.riego')">
-                    Riego
+                <x-nav-link-child href="{{ route('campo.mano_obra') }}"
+                    :active="request()->routeIs('campo.mano_obra')">
+                    Mano de obra
                 </x-nav-link-child>
+             
                 <x-nav-link-child href="{{ route('campo.campos') }}" :active="request()->routeIs('campo.campos')">
                     Campos
                 </x-nav-link-child>
@@ -261,29 +300,6 @@
                 </x-nav-link-child>
             </x-nav-link-parent>
 
-            <x-nav-link-parent name="sectorReportes" :active="request()->routeIs([
-        'reporte.reporte_diario_riego',
-        'productividad.avance',
-    ])" logo="fa fa-database" text="Reporte Diario">
-                <x-nav-link-child href="{{ route('reporte.reporte_diario_riego') }}"
-                    :active="request()->routeIs('reporte.reporte_diario_riego')">
-                    Regadores
-                </x-nav-link-child>
-                <x-nav-link-child href="{{ route('productividad.avance') }}"
-                    :active="request()->routeIs('productividad.avance')">
-                    Avance de Productividad
-                </x-nav-link-child>
-            </x-nav-link-parent>
-
-            <x-nav-link-parent name="sectorReporte" :active="request()->routeIs(['reporte.resumen_planilla'])"
-                logo="fas fa-file-alt" text="Reporte General">
-
-                <x-nav-link-child href="{{ route('reporte.resumen_planilla') }}"
-                    :active="request()->routeIs('reporte.resumen_planilla')">
-                    Actividades de la Planilla
-                </x-nav-link-child>
-            </x-nav-link-parent>
-
             <x-nav-link-parent name="sectorProducto" :active="request()->routeIs(['productos.index', 'nutrientes.index', 'tabla_concentracion.index'])" logo="fa fa-box" text="Producto y Nutrientes">
                 <x-nav-link-child href="{{ route('productos.index') }}" :active="request()->routeIs('productos.index')">
                     Productos
@@ -314,15 +330,6 @@
                 </x-nav-link-child>
                 <x-nav-link-child href="{{ route('kardex.lista') }}" :active="request()->routeIs('kardex.lista')">
                     Ver Kardex
-                </x-nav-link-child>
-            </x-nav-link-parent>
-
-
-            <x-nav-link-parent name="sectorConsolidados" :active="request()->routeIs('consolidado.riego')"
-                logo="fa fa-database" text="Consolidado">
-                <x-nav-link-child href="{{ route('consolidado.riego') }}"
-                    :active="request()->routeIs('consolidado.riego')">
-                    Riego
                 </x-nav-link-child>
             </x-nav-link-parent>
 
@@ -359,8 +366,6 @@
             <x-nav-link-parent name="sectorConfiguracion" :active="request()->routeIs([
         'configuracion',
         'descuentos_afp',
-        'configuracion.labores',
-        'configuracion.labores_riego',
         'configuracion.tipo_asistencia',
     ])" logo="fa fa-cogs" text="Configuración">
                 <x-nav-link-child href="{{ route('configuracion') }}" :active="request()->routeIs('configuracion')">
@@ -369,14 +374,7 @@
                 <x-nav-link-child href="{{ route('descuentos_afp') }}" :active="request()->routeIs('descuentos_afp')">
                     Descuentos de AFP
                 </x-nav-link-child>
-                <x-nav-link-child href="{{ route('configuracion.labores') }}"
-                    :active="request()->routeIs('configuracion.labores')">
-                    Labores
-                </x-nav-link-child>
-                <x-nav-link-child href="{{ route('configuracion.labores_riego') }}"
-                    :active="request()->routeIs('configuracion.labores_riego')">
-                    Labores en Riego
-                </x-nav-link-child>
+                
                 <x-nav-link-child href="{{ route('configuracion.tipo_asistencia') }}"
                     :active="request()->routeIs('configuracion.tipo_asistencia')">
                     Tipo de Asistencia

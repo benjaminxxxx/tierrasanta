@@ -1,6 +1,8 @@
 <div>
-    <x-card>
-        <x-spacing>
+    <x-h3>
+        Consolidado de riego
+    </x-h3>
+    <x-card2 class="mt-4">
             <div class="flex items-center justify-between mb-4">
                 <!-- Botón para fecha anterior -->
                 <x-button wire:click="fechaAnterior">
@@ -59,6 +61,5 @@
                     @endforeach
                 </x-slot>
             </x-table>
-        </x-spacing>
-    </x-card>
+    </x-card2>
 </div>

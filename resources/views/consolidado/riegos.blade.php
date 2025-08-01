@@ -1,10 +1,6 @@
 <x-app-layout>
-    
-    <div class="flex justify-center w-full">
 
-        <livewire:consolidado-riego-component />
-        <livewire:consolidar-regadores-component/>
-        
-    </div>
-    
+    <livewire:consolidado-riego-component />
+    <livewire:gestion-riego.consolidar-regadores-component />
+
 </x-app-layout>
