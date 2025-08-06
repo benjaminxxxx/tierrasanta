@@ -75,7 +75,8 @@
         'planilla.asistencia',
         'planilla.blanco',
         'reporte.resumen_planilla'
-    ])" logo='fa fa-table' text="Planilla">
+    ])" logo='fa fa-table'
+                text="Planilla">
                 <x-nav-link-child href="{{ route('reporte.reporte_diario') }}"
                     :active="request()->routeIs('reporte.reporte_diario')">
                     Reporte diario (actividades)
@@ -92,7 +93,6 @@
                     Resumen de actividades mensuales
                 </x-nav-link-child>
             </x-nav-link-parent>
-  @hasanyrole('Administrador|Super Admin')
             <x-nav-link-parent name="sectorCuadrilla" :active="request()->routeIs([
         'cuadrilla.grupos',
         'cuadrilla.cuadrilleros',
@@ -153,7 +153,7 @@
                     :active="request()->routeIs('configuracion.labores_riego')">
                     Labores en riego
                 </x-nav-link-child>
-                   <x-nav-link-child href="{{ route('campo.riego') }}" :active="request()->routeIs('campo.riego')">
+                <x-nav-link-child href="{{ route('campo.riego') }}" :active="request()->routeIs('campo.riego')">
                     Ver estado de riegos
                 </x-nav-link-child>
                 <x-nav-link-child href="{{ route('consolidado.riego') }}"
@@ -161,58 +161,27 @@
                     Resumen diario de riegos
                 </x-nav-link-child>
             </x-nav-link-parent>
-            
+
             @endhasanyrole
 
-
-            <x-nav-link-parent name="sectorEmpleado" :active="request()->routeIs(['empleados', 'empleados.asignacion_familiar'])" logo='fa fa-users' text="Empleado">
-                <x-nav-link-child href="{{ route('empleados') }}" :active="request()->routeIs('empleados')">
-                    Lista de Empleados
-                </x-nav-link-child>
-                <x-nav-link-child href="{{ route('empleados.asignacion_familiar') }}"
-                    :active="request()->routeIs('empleados.asignacion_familiar')">
-                    Asignación Familiar
-                </x-nav-link-child>
-            </x-nav-link-parent>
-            @endhasanyrole
-            @canany(['Usuarios Administrar', 'Roles'])
-                <x-nav-link-parent name="sectorSistema" :active="request()->routeIs(['usuarios', 'roles_permisos'])"
-                    logo='fas fa-palette' text="Sistema">
-
-                    @can('Usuarios Administrar')
-                        <x-nav-link-child href="{{ route('usuarios') }}" :active="request()->routeIs('usuarios')">
-                            Usuarios
-                        </x-nav-link-child>
-                    @endcan
-
-                    @can('Roles')
-                        <x-nav-link-child href="{{ route('roles_permisos') }}" :active="request()->routeIs('roles_permisos')">
-                            Roles y Permisos
-                        </x-nav-link-child>
-                    @endcan
-
-                </x-nav-link-parent>
-            @endcanany
-          
             @hasanyrole('Administrador|Super Admin')
 
 
             <x-nav-link-parent name="sectorCampo" :active="request()->routeIs([
-                'campo.campos', 
-                'configuracion.labores',
-                'campo.siembra',
-                'campo.mano_obra'
-                ])" logo="fa fa-leaf" text="Campo">
-               
+        'campo.campos',
+        'configuracion.labores',
+        'campo.siembra',
+        'campo.mano_obra'
+    ])" logo="fa fa-leaf" text="Campo">
+
                 <x-nav-link-child href="{{ route('configuracion.labores') }}"
                     :active="request()->routeIs('configuracion.labores')">
                     Labores
                 </x-nav-link-child>
-                <x-nav-link-child href="{{ route('campo.mano_obra') }}"
-                    :active="request()->routeIs('campo.mano_obra')">
+                <x-nav-link-child href="{{ route('campo.mano_obra') }}" :active="request()->routeIs('campo.mano_obra')">
                     Mano de obra
                 </x-nav-link-child>
-             
+
                 <x-nav-link-child href="{{ route('campo.campos') }}" :active="request()->routeIs('campo.campos')">
                     Campos
                 </x-nav-link-child>
@@ -332,7 +301,33 @@
                     Ver Kardex
                 </x-nav-link-child>
             </x-nav-link-parent>
+            <x-nav-link-parent name="sectorEmpleado" :active="request()->routeIs(['empleados', 'empleados.asignacion_familiar'])" logo='fa fa-users' text="Empleado">
+                <x-nav-link-child href="{{ route('empleados') }}" :active="request()->routeIs('empleados')">
+                    Lista de Empleados
+                </x-nav-link-child>
+                <x-nav-link-child href="{{ route('empleados.asignacion_familiar') }}"
+                    :active="request()->routeIs('empleados.asignacion_familiar')">
+                    Asignación Familiar
+                </x-nav-link-child>
+            </x-nav-link-parent>
+            @canany(['Usuarios Administrar', 'Roles'])
+                <x-nav-link-parent name="sectorSistema" :active="request()->routeIs(['usuarios', 'roles_permisos'])"
+                    logo='fas fa-palette' text="Sistema">
 
+                    @can('Usuarios Administrar')
+                        <x-nav-link-child href="{{ route('usuarios') }}" :active="request()->routeIs('usuarios')">
+                            Usuarios
+                        </x-nav-link-child>
+                    @endcan
+
+                    @can('Roles')
+                        <x-nav-link-child href="{{ route('roles_permisos') }}" :active="request()->routeIs('roles_permisos')">
+                            Roles y Permisos
+                        </x-nav-link-child>
+                    @endcan
+
+                </x-nav-link-parent>
+            @endcanany
             <x-nav-link-parent name="sectorGastos" :active="request()->routeIs([
         'gastos.general',
         'contabilidad.costos_mensuales',
@@ -374,7 +369,7 @@
                 <x-nav-link-child href="{{ route('descuentos_afp') }}" :active="request()->routeIs('descuentos_afp')">
                     Descuentos de AFP
                 </x-nav-link-child>
-                
+
                 <x-nav-link-child href="{{ route('configuracion.tipo_asistencia') }}"
                     :active="request()->routeIs('configuracion.tipo_asistencia')">
                     Tipo de Asistencia

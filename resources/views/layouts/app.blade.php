@@ -156,7 +156,10 @@ $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(valu
         <x-sidebar2 />
         <main class="flex-1 p-5 overflow-auto">
             {{ $slot }}
+
+            
         </main>
+       
     </div>
 
     @stack('modals')
@@ -165,6 +168,8 @@ $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(valu
     @livewireScripts
     <script src="{{ asset('js/sweetalert2@11.js') }}"></script>
     <x-livewire-alert::scripts />
+
+    
 
     <script>
         document.addEventListener('livewire:init', () => {

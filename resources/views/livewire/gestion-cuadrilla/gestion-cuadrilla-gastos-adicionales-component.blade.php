@@ -1,103 +1,114 @@
 <div>
     <x-modal wire:model.live="mostrarFormularioGastosAdicionales" maxWidth="full">
-        <div x-data="gestion_cuadrilla_gastos_adicionales">
+        <div x-data="gestionGastosAdicionales">
             <div class="px-6 py-4">
                 <div class="text-lg font-medium text-gray-900 dark:text-gray-100">
                     Administración de costos adicionales durante la semana
                 </div>
 
-                <div class="mt-4 text-sm text-gray-600 dark:text-gray-400 min-h-[200px]" wire:ignore>
-
-                    <div x-ref="tableContainerGastosAdicionales" class="mt-5"></div>
-
+                <div class="mt-4 min-h-[200px] overflow-auto">
+                   
+                    <x-table>
+                        <x-slot name="thead">
+                            <x-tr>
+                                <x-th>Grupo</x-th>
+                                <x-th>Descripción</x-th>
+                                <x-th>Fecha</x-th>
+                                <x-th>Monto</x-th>
+                                <x-th></x-th>
+                            </x-tr>
+                        </x-slot>
+                        <x-slot name="tbody">
+                            <template x-for="(item, index) in gastos" :key="index">
+                                <x-tr>
+                                    <x-td>
+                                        <x-select x-model="item.grupo">
+                                            <option value="">SELECCIONE</option>
+                                            @foreach ($grupos as $grupo)
+                                                <option value="{{ $grupo }}">{{ $grupo }}</option>
+                                            @endforeach
+                                        </x-select>
+                                    </x-td>
+                                    <x-td>
+                                        <x-input type="text" x-model="item.descripcion"
+                                            @input="agregarFilaSiEsUltima(index)"
+                                            class="form-input w-full" />
+                                    </x-td>
+                                    <x-td>
+                                        <x-input type="date" x-model="item.fecha"
+                                            class="form-input w-full" />
+                                    </x-td>
+                                    <x-td>
+                                        <x-input type="number" step="0.01" x-model="item.monto"
+                                            class="form-input w-full text-right" />
+                                    </x-td>
+                                    <x-td>
+                                        <x-danger-button type="button" @click="eliminarFila(index)" >
+                                            <i class="fa fa-trash"></i>
+                                        </x-danger-button>
+                                    </x-td>
+                                </x-tr>
+                            </template>
+                        </x-slot>
+                        <x-slot name="tfoot">
+                            <x-tr>
+                                <x-td colspan="3" class="text-right font-semibold">Total</x-td>
+                                <x-td x-text="formatearMonto(totalMonto)" class="text-right"></x-td>
+                                <x-td></x-td>
+                            </x-tr>
+                        </x-slot>
+                    </x-table>
                 </div>
             </div>
 
-            <div class="flex flex-row justify-end px-6 py-4 bg-whiten dark:bg-boxdarkbase text-end">
+            <div class="flex flex-row justify-end px-6 py-4 bg-whiten dark:bg-boxdarkbase">
                 <x-flex>
                     <x-secondary-button wire:click="$set('mostrarFormularioGastosAdicionales', false)"
                         wire:loading.attr="disabled">
                         Cerrar
                     </x-secondary-button>
-                    <x-button @click="guardarGastosAdicionales">
+                    <x-button @click="guardar">
                         <i class="fa fa-save"></i> Guardar cambios
                     </x-button>
                 </x-flex>
             </div>
         </div>
     </x-modal>
-    <x-loading wire:loading />
 </div>
+
 @script
 <script>
-    Alpine.data('gestion_cuadrilla_gastos_adicionales', () => ({
+    Alpine.data('gestionGastosAdicionales', () => ({
+        gastos: @entangle('gastos'),
+        grupos: @js($grupos),
 
-        hotCostosAdicionales: null,
-        gastosAdicionales: [],
-        grupos: @json($grupos),
-
-        init() {
-            Livewire.on('cargarGastosAdicionales', (data) => {
-                console.log(data[0]);
-                this.gastosAdicionales = data[0];
-                this.$nextTick(() => this.initTableGastosAdicionales());
-            });
-        },
-        initTableGastosAdicionales() {
-
-            if (this.hotCostosAdicionales) {
-                this.hotCostosAdicionales.destroy();
+        agregarFilaSiEsUltima(index) {
+            if (index === this.gastos.length - 1) {
+                this.gastos.push({ grupo: '', descripcion: '', fecha: '', monto: '' });
             }
-
-            const containerGastoAdicional = this.$refs.tableContainerGastosAdicionales;
-            console.log(containerGastoAdicional);
-            this.hotCostosAdicionales = new Handsontable(containerGastoAdicional, {
-                data: this.gastosAdicionales,
-                themeName: 'ht-theme-main',
-                colHeaders: true,
-                rowHeaders: true,
-                columns: [{
-                    data: 'grupo',
-                    title: 'Grupo',
-                    type: 'dropdown',
-                    source: this.grupos
-                }, {
-                    data: 'descripcion',
-                    title: 'Descripción',
-                    type: 'text',
-                }, {
-                    data: 'fecha',
-                    title: 'Fecha',
-                    type: 'date',
-                }, {
-                    data: 'monto',
-                    title: 'Monto',
-                    type: 'numeric',
-                    numericFormat: { pattern: '0,0.00' },
-                }],
-                width: '100%',
-                height: 'auto',
-                stretchH: 'all',
-                minSpareRows: 1,
-                licenseKey: 'non-commercial-and-evaluation',
-            });
-
-            this.hotCostosAdicionales.render();
         },
-        guardarGastosAdicionales() {
-            let allData = [];
 
-            // Recorre todas las filas de la tabla y obtiene los datos completos
-            for (let row = 0; row < this.hotCostosAdicionales.countRows(); row++) {
-                const rowData = this.hotCostosAdicionales.getSourceDataAtRow(row);
-                allData.push(rowData);
-            }
+        eliminarFila(index) {
+            this.gastos.splice(index, 1);
+        },
 
-            // Filtra las filas vacías
-            const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
-                null && cell !== ''));
+        formatearMonto(valor) {
+            let num = parseFloat(valor);
+            return isNaN(num) ? '0.00' : num.toFixed(2);
+        },
 
-            $wire.storeTableDataGuardarDatosAdicionales(filteredData);
+        get totalMonto() {
+            return this.gastos.reduce((sum, item) => {
+                let val = parseFloat(item.monto);
+                return sum + (isNaN(val) ? 0 : val);
+            }, 0);
+        },
+
+        guardar() {
+            const datosFiltrados = this.gastos.filter(
+                item => item.grupo || item.descripcion || item.fecha || item.monto
+            );
+            $wire.storeTableDataGuardarDatosAdicionales(datosFiltrados);
         }
     }));
 </script>

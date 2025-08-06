@@ -14,18 +14,75 @@ use App\Models\CuadrilleroActividad;
 use App\Models\CuaGrupo;
 use App\Models\GastoAdicionalPorGrupoCuadrilla;
 use App\Models\Labores;
+use App\Models\CuadGrupoOrden;
 use App\Support\DateHelper;
 use App\Support\FormatoHelper;
 use DB;
 use Exception;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
-use Str;
 
 class CuadrilleroServicio
 {
+    public static function obtenerListaGruposOrdenados($fechaInicio)
+    {
+        $grupos = self::sincronizarOrdenGruposSemana($fechaInicio);
+        return $grupos;
+    }
+    public static function sincronizarOrdenGruposSemana($fechaInicio)
+    {
+        // Paso 1: obtener códigos de grupo desde registro diario
+        $gruposEnUso = CuadOrdenSemanal::whereDate('fecha_inicio', $fechaInicio)
+            ->distinct()
+            ->pluck('codigo_grupo')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($gruposEnUso->isEmpty()) {
+            return collect(); // Nada que ordenar
+        }
+
+        // Paso 2: obtener registros existentes en orden
+        $ordenesExistentes = CuadGrupoOrden::whereDate('fecha', $fechaInicio)->get();
+        $codigosExistentes = $ordenesExistentes->pluck('codigo_grupo');
+
+        // Paso 3: agregar los que faltan
+        $maxOrden = $ordenesExistentes->max('orden') ?? 0;
+
+        foreach ($gruposEnUso as $codigoGrupo) {
+            if (!$codigosExistentes->contains($codigoGrupo)) {
+                $maxOrden++;
+                CuadGrupoOrden::create([
+                    'fecha' => $fechaInicio,
+                    'codigo_grupo' => $codigoGrupo,
+                    'orden' => $maxOrden,
+                ]);
+            }
+        }
+
+        // Paso 4: eliminar los que ya no están en registro diario
+        CuadGrupoOrden::whereDate('fecha', $fechaInicio)
+            ->whereNotIn('codigo_grupo', $gruposEnUso)
+            ->delete();
+
+        // Paso 5: retornar la lista ordenada
+        return CuadGrupoOrden::with('grupo')
+            ->whereDate('fecha', $fechaInicio)
+            ->orderBy('orden')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'codigo' => $item->codigo_grupo,
+                    'nombre' => optional($item->grupo)->nombre,
+                    'color' => optional($item->grupo)->color,
+                    'orden' => $item->orden,
+                ];
+            })
+            ->toArray();
+    }
+
     public static function registrarPagos(array $listaPagos, $fechaInicio, $fechaFin)
     {
         $fechaInicio = Carbon::parse($fechaInicio);
@@ -148,7 +205,7 @@ class CuadrilleroServicio
                 return [
                     'grupo' => optional($gasto->grupo)->nombre, // relacion grupo
                     'descripcion' => $gasto->descripcion,
-                    'fecha' => Carbon::parse($gasto->fecha_gasto)->format('d/m/Y'),
+                    'fecha' => Carbon::parse($gasto->fecha_gasto)->format('Y-m-d'),
                     'monto' => $gasto->monto
                 ];
             })->toArray();
@@ -392,7 +449,6 @@ class CuadrilleroServicio
 
         $totalDias = $dias->count();
 
-        // 🟠 1. Registros de asistencia
         $registros = CuadRegistroDiario::whereBetween('fecha', [$inicio, $fin])
             ->with(['cuadrillero:id,nombres,dni,codigo_grupo'])
             ->get()
@@ -408,6 +464,35 @@ class CuadrilleroServicio
         $totalTrabajadoresEseDia = [];
         $totalJornalEseDia = [];
         $totalBonoEseDia = [];
+        
+        self::sincronizarOrdenGruposSemana($fechaInicio);
+
+        // Obtener orden de grupos para la semana
+        $ordenGrupos = CuadGrupoOrden::where('fecha', $inicio->toDateString())
+            ->orderBy('orden')
+            ->pluck('orden', 'codigo_grupo')
+            ->toArray();
+
+        // Obtener los registros sin aplicar ordenamiento aún
+        $registrosPorOrden = CuadOrdenSemanal::whereDate('fecha_inicio', $inicio)
+            ->with(['cuadrillero'])
+            ->get();
+
+        // Ordenar primero por grupo según CuadGrupoOrden, luego por 'orden' interno del CuadOrdenSemanal
+        $registrosOrdenados = $registrosPorOrden->sort(function ($a, $b) use ($ordenGrupos) {
+            $ordenGrupoA = $ordenGrupos[$a->codigo_grupo] ?? 9999;
+            $ordenGrupoB = $ordenGrupos[$b->codigo_grupo] ?? 9999;
+
+            if ($ordenGrupoA === $ordenGrupoB) {
+                // Mismo grupo: ordenar por orden interno
+                return $a->orden <=> $b->orden;
+            }
+
+            return $ordenGrupoA <=> $ordenGrupoB;
+        });
+
+        // Si quieres conservar el acceso por cuadrillero_id como antes
+        $registrosPorOrden = $registrosOrdenados->keyBy('cuadrillero_id');
 
         foreach ($registrosPorOrden as $cuadrilleroId => $registro) {
 
@@ -426,8 +511,6 @@ class CuadrilleroServicio
             $totalBonos = 0;
 
             foreach ($dias as $index => $dia) {
-
-
 
                 $fecha = $dia->toDateString();
                 $registroHoras = null;
@@ -484,10 +567,7 @@ class CuadrilleroServicio
             $filaTotales["jornal_" . ($index + 1)] = $totalJornalEseDia[$index + 1] ?? 0;
             $filaTotales["bono_" . ($index + 1)] = $totalBonoEseDia[$index + 1] ?? 0;
         }
-        /* ya no funciona porque en totales ya esta el bono
-                $filaTotales['total_costo'] = collect($resultados)->sum(function ($resultado){
-                    return $resultado['total_costo'] + $resultado['total_bono'];
-                });*/
+
         $filaTotales['total_costo'] = collect($resultados)->sum('total_costo');
 
         $resultados[] = $filaTotales;
@@ -932,6 +1012,30 @@ class CuadrilleroServicio
             $asistenciaCuadrillero->save();
         }
     }
+    public static function registrarOrdenGrupal($fechaInicio, $codigo)
+    {
+        // Verificar si ya existe el registro para esa fecha y grupo
+        $existe = CuadGrupoOrden::where('fecha', $fechaInicio)
+            ->where('codigo_grupo', $codigo)
+            ->exists();
+
+        if ($existe) {
+            return; // Ya existe, no hacer nada
+        }
+
+        // Obtener el orden máximo existente para esa fecha
+        $maxOrden = CuadGrupoOrden::where('fecha', $fechaInicio)->max('orden');
+
+        // Asignar nuevo orden (max + 1)
+        $nuevoOrden = is_null($maxOrden) ? 1 : $maxOrden + 1;
+
+        // Registrar nuevo orden del grupo
+        CuadGrupoOrden::create([
+            'fecha' => $fechaInicio,
+            'codigo_grupo' => $codigo,
+            'orden' => $nuevoOrden,
+        ]);
+    }
     /**
      * registrarOrdenSemanal
      *
@@ -954,7 +1058,10 @@ class CuadrilleroServicio
     {
         $orden = 0;
 
-        // Rango de 7 días desde la fecha de inicio
+
+        //Registrar Orden del grupo
+        self::registrarOrdenGrupal($fechaInicio, $codigo);
+
         $inicio = Carbon::parse($fechaInicio);
         $dias = collect();
         for ($i = 0; $i < 7; $i++) {
@@ -978,8 +1085,19 @@ class CuadrilleroServicio
             ->whereNotIn('cuadrillero_id', $cuadrilleroIds)
             ->delete();
 
+        // 1. Obtener los cuadrilleros que estaban en este grupo en esas fechas
+        $cuadrillerosAntiguos = CuadGrupoCuadrilleroFecha::whereIn('fecha', $fechas)
+            ->where('codigo_grupo', $codigo)
+            ->pluck('cuadrillero_id')
+            ->unique()
+            ->toArray();
+
+        // 2. Determinar cuáles de esos ya no están en la nueva lista
+        $cuadrillerosAEliminar = array_diff($cuadrillerosAntiguos, $cuadrilleroIds);
+
+        // 3. Eliminar solo registros de esos cuadrilleros en esas fechas
         CuadRegistroDiario::whereIn('fecha', $fechas)
-            ->whereNotIn('cuadrillero_id', $cuadrilleroIds)
+            ->whereIn('cuadrillero_id', $cuadrillerosAEliminar)
             ->delete();
 
         // Insertar o actualizar el orden y grupo en los 7 días

@@ -16,22 +16,52 @@
     </x-flex>
 
     <x-card2>
-        <form wire:submit="buscarRegistros">
-            <x-flex class="w-full">
-                <x-input-date label="Fecha inicio" wire:model="fecha_inicio" error="fecha_inicio" />
-                <x-input-date label="Fecha fin" wire:model="fecha_fin" error="fecha_fin" />
-                <x-select label="Grupo" wire:model="grupoSeleccionado" error="grupoSeleccionado">
-                    <option value="">TODOS LOS GRUPOS</option>
-                    @foreach ($grupos as $grupo)
-                        <option value="{{ $grupo->codigo }}">{{ $grupo->nombre }}</option>
-                    @endforeach
-                </x-select>
-                <x-input-string label="Buscar por nombre" wire:model="nombre_cuadrillero" error="nombre_cuadrillero" />
-                <x-button type="submit">
-                    <i class="fa fa-filter"></i> Filtrar
-                </x-button>
-            </x-flex>
-        </form>
+        <x-flex class="justify-between">
+            <form wire:submit="buscarRegistros">
+                <x-flex class="w-full">
+                    <x-input-date label="Fecha inicio" wire:model="fecha_inicio" error="fecha_inicio" />
+                    <x-input-date label="Fecha fin" wire:model="fecha_fin" error="fecha_fin" />
+                    <x-select label="Grupo" wire:model="grupoSeleccionado" error="grupoSeleccionado">
+                        <option value="">TODOS LOS GRUPOS</option>
+                        @foreach ($grupos as $grupo)
+                            <option value="{{ $grupo->codigo }}">{{ $grupo->nombre }}</option>
+                        @endforeach
+                    </x-select>
+                    <x-input-string label="Buscar por nombre" wire:model="nombre_cuadrillero"
+                        error="nombre_cuadrillero" />
+                    <x-button type="submit">
+                        <i class="fa fa-filter"></i> Filtrar
+                    </x-button>
+                </x-flex>
+            </form>
+            <div class="relative">
+                <x-dropdown width="60">
+                    <x-slot name="trigger">
+                        <span class="inline-flex rounded-md">
+                            <x-button class="flex items-center">
+                                Reporte <svg class="w-2.5 h-2.5 ms-3" aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                        stroke-width="2" d="m1 1 4 4 4-4" />
+                                </svg>
+                            </x-button>
+                        </span>
+                    </x-slot>
+
+                    <x-slot name="content">
+                        <div class="w-60">
+                            <x-dropdown-link class="text-center" wire:click="generarReportePagosCuadrilla">
+                                Generar reporte Excel
+                            </x-dropdown-link>
+                            <x-dropdown-link class="text-center" wire:click="generarReportePagosCuadrilla">
+                                Generar recibo de pagos
+                            </x-dropdown-link>
+                        </div>
+                    </x-slot>
+                </x-dropdown>
+            </div>
+        </x-flex>
+
     </x-card2>
     <x-h3 class="my-3">
         Registro de Pagos
@@ -40,9 +70,9 @@
         <div x-ref="tableRegistroPagos"></div>
     </x-card2>
     <style>
-        .handsontable .htDimmed.\!bg-green-400{
+        .handsontable .htDimmed.\!bg-green-400 {
             background-color: #b3ffba !important;
-            color:#000 !important;
+            color: #000 !important;
             font-weight: bold !important;
         }
     </style>
@@ -87,23 +117,23 @@
                     }
                 },
                 cells: function (row, col) {
-    const cellProperties = {};
+                    const cellProperties = {};
 
-    const colSettings = this.instance.getSettings().columns[col];
-    if (!colSettings || typeof colSettings.data !== 'string') return cellProperties;
+                    const colSettings = this.instance.getSettings().columns[col];
+                    if (!colSettings || typeof colSettings.data !== 'string') return cellProperties;
 
-    const dataKey = colSettings.data; // ej: 'jornal_1'
-    const match = dataKey.match(/^jornal_(\d+)$/);
-    if (match) {
-        const index = match[1];
-        const isPagado = this.instance.getDataAtRowProp(row, `pagado_${index}`);
-        if (isPagado) {
-            cellProperties.className = '!bg-green-400';
-        }
-    }
+                    const dataKey = colSettings.data; // ej: 'jornal_1'
+                    const match = dataKey.match(/^jornal_(\d+)$/);
+                    if (match) {
+                        const index = match[1];
+                        const isPagado = this.instance.getDataAtRowProp(row, `pagado_${index}`);
+                        if (isPagado) {
+                            cellProperties.className = '!bg-green-400';
+                        }
+                    }
 
-    return cellProperties;
-},
+                    return cellProperties;
+                },
                 licenseKey: 'non-commercial-and-evaluation'
             });
         },
@@ -187,14 +217,14 @@
                 numericFormat: { pattern: '0.00' },
                 readOnly: true,
                 className: '!text-lg !font-bold'
-            },{
+            }, {
                 data: 'total_bono',
                 title: 'TOTAL<br/>BONO',
                 type: 'numeric',
                 numericFormat: { pattern: '0.00' },
                 readOnly: true,
                 className: '!text-lg !font-bold'
-            },{
+            }, {
                 data: 'total',
                 title: 'TOTAL',
                 type: 'numeric',

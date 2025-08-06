@@ -9,6 +9,9 @@ use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Session;
 use Livewire\Component;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
+use App\Services\Cuadrilla\PagoServicio;
+use App\Exports\Cuadrilla\PagosCuadrillaExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class GestionCuadrillaPagosComponent extends Component
 {
@@ -39,6 +42,16 @@ class GestionCuadrillaPagosComponent extends Component
     public function updatedFechaFin($valor)
     {
         Session::put('fecha_fin', $valor);
+    }
+    public function generarReportePagosCuadrilla()
+    {
+        try {
+            $pagos = app(PagoServicio::class)->obtenerPagosPorRango($this->fecha_inicio, $this->fecha_fin, $this->grupoSeleccionado);
+      
+            return Excel::download(new PagosCuadrillaExport($pagos), 'reporte_pagos_cuadrilla.xlsx');
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
+        }
     }
     public function registrarPago($listaPagos)
     {

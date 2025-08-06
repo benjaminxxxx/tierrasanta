@@ -2,6 +2,7 @@
 
 namespace App\Livewire\GestionCuadrilla;
 
+use App\Models\CuadGrupoOrden;
 use App\Models\CuadOrdenSemanal;
 use App\Models\CuadRegistroDiario;
 use App\Models\Cuadrillero;
@@ -23,6 +24,8 @@ class GestionCuadrillaReporteSemanalComponent extends Component
     public $fechaInicioSemana;
     public $anio, $mes, $semanaNumero;
     public $ocurrioModificaciones = false;
+    public $mostrarReordenarGrupoForm = false;
+    public $listaGrupos = [];
     public $meses = [
         1 => 'Enero',
         2 => 'Febrero',
@@ -56,7 +59,7 @@ class GestionCuadrillaReporteSemanalComponent extends Component
     public $grupos = [];
     public $codigo_grupo;
     public $listaCuadrilleros = [];
-    protected $listeners = ['grupoRegistrado','costosSemanalesModificados'];
+    protected $listeners = ['grupoRegistrado', 'costosSemanalesModificados'];
     #endregion
     public function mount()
     {
@@ -88,7 +91,8 @@ class GestionCuadrillaReporteSemanalComponent extends Component
     }
 
     #region Panel principal
-    public function costosSemanalesModificados(){
+    public function costosSemanalesModificados()
+    {
         $this->obtenerReporteSemanal();
     }
 
@@ -410,6 +414,31 @@ class GestionCuadrillaReporteSemanalComponent extends Component
     {
         $this->resetForm();
         $this->mostrarAgregarCuadrillero = true;
+    }
+    #endregion
+    #region Reordenar Grupos
+    public function abrirReordenarGruposForm()
+    {
+        try {
+            $this->listaGrupos = CuadrilleroServicio::obtenerListaGruposOrdenados($this->fechaInicioSemana);
+
+            $this->mostrarReordenarGrupoForm = true;
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
+        }
+    }
+    public function registrarOrdenGrupal()
+    {
+        foreach ($this->listaGrupos as $index => $grupo) {
+            CuadGrupoOrden::updateOrInsert(
+                ['codigo_grupo' => $grupo['codigo'], 'fecha' => $this->fechaInicioSemana],
+                ['orden' => $index + 1]
+            );
+        }
+
+        $this->mostrarReordenarGrupoForm = false;
+        $this->obtenerReporteSemanal();
+        $this->alert('success', 'Orden actualizado correctamente');
     }
     #endregion
     public function render()

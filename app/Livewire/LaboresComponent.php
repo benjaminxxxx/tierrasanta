@@ -26,6 +26,7 @@ class LaboresComponent extends Component
     public $estado;
     public $codigo_mano_obra;
     public $manoObras;
+    public $manoObraFiltro;
     // App/Http/Livewire/MiComponente.php
     public array $tramos = [
         ['hasta' => '', 'monto' => '']
@@ -91,7 +92,7 @@ class LaboresComponent extends Component
     }
     public function resetearCampo()
     {
-        $this->reset(['laborId', 'codigo', 'nombre_labor', 'codigo_mano_obra','estandar_produccion', 'unidades', 'tramos', 'estado']);
+        $this->reset(['laborId', 'codigo', 'nombre_labor', 'codigo_mano_obra', 'estandar_produccion', 'unidades', 'tramos', 'estado']);
         $this->mostrarFormularioLabor = false;
     }
     public function confirmarEliminarLabor($id)
@@ -133,11 +134,24 @@ class LaboresComponent extends Component
         } elseif ($this->verActivos === '1') {
             $query->where('estado', '1');
         }
-        //buscar ahora por codigo o descripcion $query->where('nombre_labor', 'like', '%' . $this->search . '%');
-        $query->where(function ($q) {
-            $q->where('codigo', 'like', '%' . $this->search . '%')
-                ->orWhere('nombre_labor', 'like', '%' . $this->search . '%');
-        });
+        if ($this->search && $this->manoObraFiltro) {
+            $query->where(function ($q) {
+                $q->where('codigo_mano_obra', $this->manoObraFiltro)
+                    ->orWhere(function ($q2) {
+                        $q2->where('codigo', 'like', '%' . $this->search . '%')
+                            ->orWhere('nombre_labor', 'like', '%' . $this->search . '%');
+                    });
+            });
+        } elseif ($this->manoObraFiltro) {
+            $query->where('codigo_mano_obra', $this->manoObraFiltro);
+        } elseif ($this->search) {
+            $query->where(function ($q) {
+                $q->where('codigo', 'like', '%' . $this->search . '%')
+                    ->orWhere('nombre_labor', 'like', '%' . $this->search . '%');
+            });
+        }
+
+
         $labores = $query->paginate(10);
 
         return view('livewire.labores-component', [

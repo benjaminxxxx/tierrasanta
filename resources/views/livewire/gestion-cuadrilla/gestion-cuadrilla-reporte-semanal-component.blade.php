@@ -10,9 +10,16 @@
                     Asignar costos
                 </x-button>
             </x-flex>
-            <x-button-a href="{{ route('cuadrilleros.gestion') }}">
-                <i class="fa fa-arrow-left"></i> Volver a gestión de cuadrilleros
-            </x-button-a>
+            <x-flex>
+                <x-secondary-button @click="abrirReordenarGruposForm">
+                    <i class="fas fa-sort"></i>
+                    Reordenar grupos
+                </x-secondary-button>
+
+                <x-button-a href="{{ route('cuadrilleros.gestion') }}">
+                    <i class="fa fa-arrow-left"></i> Volver a gestión de cuadrilleros
+                </x-button-a>
+            </x-flex>
         </x-flex>
 
 
@@ -92,7 +99,7 @@
 
     @include('livewire.gestion-cuadrilla.partial.personalizar-costo-hora-form')
     @include('livewire.gestion-cuadrilla.partial.agregar-cuadrilleros-semanales-form')
-
+    @include('livewire.gestion-cuadrilla.partial.reordenar-grupo-form')
 
     <x-loading wire:loading wire:target="storeTableDataGuardarHoras" />
 </div>
@@ -174,17 +181,23 @@
                     }
                 },
                 afterChange: (changes, source) => {
-                    if (source === 'edit') {
-                        this.ocurrioModificaciones = true;
+                    if (!changes) return;
+                    console.log(source);
+                    // Fuentes válidas que deben disparar la lógica de cambio de color
+                    const fuentesValidas = ['edit', 'CopyPaste.paste', 'Autofill'];
+
+                    if (fuentesValidas.includes(source)) {
                         changes.forEach(([row, prop, oldVal, newVal]) => {
                             if (prop === 'codigo_grupo') {
-                                // Asigna el nuevo color
                                 const color = this.colorPorGrupo[newVal] || '#ffffff';
                                 this.hot.setDataAtRowProp(row, 'color', color);
                             }
                         });
+
+                        this.ocurrioModificaciones = true; // Solo se activa si viene de fuente válida
                     }
                 },
+
                 licenseKey: 'non-commercial-and-evaluation',
                 plugins: ['Filters'],
             });
@@ -338,6 +351,13 @@
             });
             this.search = '';
             this.cuadrillerosFiltrados = [];
+        },
+        abrirReordenarGruposForm(){
+            if (this.ocurrioModificaciones) {
+                alert('Guarda primero los cambios realizados dando clic en Actualizar Horas');
+                return;
+            }
+            $wire.abrirReordenarGruposForm();
         },
         navigateList(event) {
             if (this.cuadrillerosFiltrados.length === 0) return;

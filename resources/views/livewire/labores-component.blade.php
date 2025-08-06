@@ -23,14 +23,22 @@
                                 autocomplete="off" placeholder="Busca por Nombre de la labor aqui." required />
                         </div>
                     </x-group-field>
-                    <x-group-field>
+                    <div>
+                        <x-select wire:model.live="manoObraFiltro" label="Mano de obra">
+                            <option value="">Todos</option>
+                            @foreach ($manoObras as $manoObra)
+                                <option value="{{ $manoObra->codigo }}">{{ $manoObra->descripcion }}</option>                                
+                            @endforeach
+                        </x-select>
+                    </div>
+                    <div>
                         <x-label for="verActivos">Estado</x-label>
                         <x-select wire:model.live="verActivos">
                             <option value="">Todos</option>
                             <option value="0">Inactivos</option>
                             <option value="1">Activos</option>
                         </x-select>
-                    </x-group-field>
+                    </div>
                 </x-flex>
             </x-flex>
             <x-table class="mt-5">
