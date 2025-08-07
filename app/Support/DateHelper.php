@@ -9,6 +9,35 @@ use InvalidArgumentException;
 
 class DateHelper
 {
+    /**
+     * Limpia y formatea una cadena de texto para que represente un tiempo válido en formato HH:MM.
+     * Si no es válida, retorna '00:00'.
+     */
+    public static function formatearHorasDesdeTexto(?string $valor): string
+    {
+        $valor = isset($valor) ? trim(preg_replace('/[\x00-\x1F\x7F\xA0]/u', ' ', $valor)) : '00:00';
+
+        // Reemplazar punto por dos puntos (por si ingresaron "12.30" en vez de "12:30")
+        $valor = str_replace('.', ':', $valor);
+
+        // Si es solo un número (ej. "3") asumimos que es "3:00"
+        if (preg_match('/^\d+$/', $valor)) {
+            $valor .= ':00';
+        }
+        // Si es del tipo "3:5", completar con ceros para que sea "03:05"
+        elseif (preg_match('/^\d+:\d$/', $valor)) {
+            [$hours, $minutes] = explode(':', $valor);
+            $valor = str_pad($hours, 2, '0', STR_PAD_LEFT) . ':' . str_pad($minutes, 2, '0', STR_PAD_RIGHT);
+        }
+
+        // Validar formato final
+        if (!preg_match('/^([01]?\d|2[0-3]):[0-5]\d$/', $valor)) {
+            return '00:00';
+        }
+
+        // Asegurar formato HH:MM
+        return date('H:i', strtotime($valor));
+    }
     public static function fechasCoinciden($fecha1, $fecha2)
     {
         try {

@@ -8,21 +8,19 @@
 
     <x-card class="mt-5">
         <x-spacing>
-            <div class="w-full lg:flex justify-between gap-3 mb-4">
-                <div class="flex items-center gap-3">
-                    <x-input type="number" wire:model="minutosDescontados" placeholder="Descuento en minutos" />
-                    <x-secondary-button wire:click="aplicarDescuento" class="whitespace-nowrap">
-                        Aplicar <span class="hidden lg:inline">descuento</span>
-                    </x-secondary-button>
-                </div>
-                <div class="flex justify-end gap-3 mb-4 my-3 lg:my-0">
-                    <x-button wire:click="addGroupBtn" class="w-full lg:w-auto"><i class="fa fa-plus"></i></x-button>
-                    <x-danger-button wire:click="removeGroupBtn" class="w-full lg:w-auto"><i
-                            class="fa fa-minus"></i></x-danger-button>
-                </div>
-            </div>
+
 
             <div x-data="{{ $idTable }}" wire:ignore>
+                <x-flex class="justify-end">
+                    <div>
+                        <x-button @click="agregarTramo" class="w-full lg:w-auto">
+                            <i class="fa fa-plus"></i> Agregar tramo
+                        </x-button>
+                        <x-danger-button @click="quitarTramo" class="w-full lg:w-auto">
+                            <i class="fa fa-minus"></i> Quitar tramo
+                        </x-danger-button>
+                    </div>
+                </x-flex>
                 <div x-ref="tableContainer" class="mt-5"></div>
                 <div class="text-right mt-5">
                     <x-button @click="sendDataReporteDiarioPlanilla">
@@ -41,7 +39,8 @@
                         @if ($totalesAsistencias)
                             @foreach ($totalesAsistencias as $totalesAsistencia)
                                 <x-tr>
-                                    <x-th class="!text-left text-gray-800 dark:text-gray-200">TOTAL {{mb_strtoupper($totalesAsistencia['descripcion'])}}</x-th>
+                                    <x-th class="!text-left text-gray-800 dark:text-gray-200">TOTAL
+                                        {{mb_strtoupper($totalesAsistencia['descripcion'])}}</x-th>
                                     <x-td class="w-[10rem]">
                                         <div x-ref="total_planillas_asistido" class="p-2">{{$totalesAsistencia['total']}}</div>
                                     </x-td>
@@ -81,7 +80,7 @@
         tableData: @json($empleados),
         totales: null,
         hot: null,
-        tareas: @json($tareas),
+        tareas: @entangle('tareas'),
         campos: @json($campos),
         tipoAsistenciasHoras: @json($tipoAsistenciasHoras),
         tipoAsistenciasCodigos: @json($tipoAsistenciasCodigos),
@@ -99,84 +98,24 @@
                     //location.href = location.href;
                 })
             );
-            this.listeners.push(
-                Livewire.on('setColumnas', (data) => {
-
-                    const tareas = data[0];
-                    const columns = this.generateColumns(tareas);
-                    this.hot.updateSettings({
-                        columns: columns
-                    });
-                    this.tareas = tareas;
-
-                    // Vuelve a cargar los datos actuales en la tabla (si fuera necesario)
-                    this.hot.loadData(this.tableData);
-                    //location.href = location.href;
-                })
-            );
-            this.listeners.push(
-                Livewire.on('recalcular', (data) => {
-                    const rawData = this.hot.getData();
-                    this.minutosDescontados = data[1];
-                    this.hasUnsavedChanges = data[0];
-
-                    rawData.forEach((row, rowIndex) => {
-                        const camposNoNulos = row[1] != null && row[2] != null;
-
-                        const nombreCuadrilla = row[1].trim();
-                        const tipoAsistencia = row[2];
-                        const numeroCuadrilla = row[3];
-                        const campo1 = row[4];
-                        const labor1 = row[5];
-
-                        //FILTRO PARA EVITAR A LOS CUADRILLEROS QUE YA TIENEN TODO CALCULADO
-                        if ((labor1 == '81' || labor1 == 81) && campo1 == 'FDM' &&
-                            tipoAsistencia == 'A') {
-
-                            console.log('noper' + labor1 + ' campo: ' + campo1 +
-                                ' tipoAsistencia: ' + tipoAsistencia);
-                        } else {
-
-                            let totalMinutes = 0;
-                            const startAt = 6;
-
-                            const indiceTotal = (4 * this.tareas + 4);
-
-                            for (let indice = 0; indice < this.tareas; indice++) {
-                                const hora_inicio = row[4 * indice + startAt];
-                                const hora_salida = row[4 * indice + startAt + 1];
-
-                                if (hora_inicio != null && hora_salida != null) {
-                                    const start = this.timeToMinutes(hora_inicio);
-                                    const end = this.timeToMinutes(hora_salida);
-
-                                    if (start < end) {
-                                        totalMinutes += end - start;
-                                    }
-                                }
-                            }
-
-                            if (totalMinutes != 0) {
-                                const nombreCuadrillaLower = nombreCuadrilla?.toString()
-                                    .toLowerCase();
-                                const totalMinutesAdjusted = totalMinutes - this
-                                    .minutosDescontados;
-                                let totalHours = this.minutesToTime(totalMinutesAdjusted);
-
-                                if (nombreCuadrillaLower == 'cuadrilla') {
-                                    totalHours = this.minutesToTime(totalMinutesAdjusted *
-                                        numeroCuadrilla);
-                                }
-                                this.hot.setDataAtCell(rowIndex, indiceTotal, totalHours);
-                            }
-                        }
-                        /*
-                                                    if (camposNoNulos) {
-                                                        
-                                                    }*/
-                    });
-                })
-            );
+           
+        },
+        agregarTramo() {
+            this.tareas++;
+            const columns = this.generateColumns(this.tareas);
+            this.hot.updateSettings({
+                columns: columns
+            });
+        },
+        quitarTramo() {
+            if (this.tareas == 0) {
+                return;
+            }
+            this.tareas--;
+            const columns = this.generateColumns(this.tareas);
+            this.hot.updateSettings({
+                columns: columns
+            });
         },
         initTable() {
             const tareas = this.tareas;
@@ -195,7 +134,7 @@
                 height: 'auto',
                 manualColumnResize: false,
                 manualRowResize: true,
-                minSpareRows: 1,
+                //minSpareRows: 1,
                 stretchH: 'all',
                 autoColumnSize: true,
                 autoRowSize: true,
@@ -209,122 +148,35 @@
                         }
                     }
                 },
+
                 afterChange: (changes, source) => {
 
-                    if (source === 'loadData') {
-                        return; // No hacer nada si los datos se están cargando.
+                    //console.log(source);
+                    if (source === 'recalculado' || source === 'loadData') {
+                        console.log(source);
+                        return; // evitar loops infinitos
                     }
 
-                    if (source == 'edit' || source == 'CopyPaste.paste' || source ==
-                        'timeValidator' || source == 'Autofill.fill') {
-
+                    if (source === 'edit' || 
+                        source === 'CopyPaste.paste' ||
+                        source === 'timeValidator' ||
+                        source === 'Autofill.fill') {
+                            
                         this.hasUnsavedChanges = true;
-                        console.log('calculando');
 
-                        changes.forEach((change) => {
-                            const changedRow = change[0]; // Fila que cambió
-                            const fieldName = change[1]; // Nombre del campo o columna
-                            const oldValue = change[2]; // Valor antiguo
-                            const newValue = change[3]; // Valor nuevo
-
-
-
-                            if (fieldName === 'total_horas' || fieldName ===
-                                'bono_productividad' || fieldName === 'empleado_nombre'
-                            ) {
-                                return;
+                        const filasMap = new Map();
+                        changes.forEach(([row]) => {
+                            if (!filasMap.has(row)) {
+                                filasMap.set(row, this.hot.getDataAtRow(row)); // ⛳️ Solo una llamada por fila
                             }
-
-                            // Verificar si el nombre del campo comienza con "campo_" o "labor_"
-                            if (/^(campo_|labor_)/.test(fieldName)) {
-                                return;
-                            }
-
-
-                            if (fieldName == 'asistencia') {
-                                // Verificar si el nuevo valor es válido en tipoAsistenciasHoras
-                                if (!this.tipoAsistenciasHoras.hasOwnProperty(
-                                    newValue)) {
-                                    return; // Si no existe el valor en tipoAsistenciasHoras, retornar sin hacer nada
-                                }
-
-                                // Continuar solo si newValue no es 'A' ni vacío
-                                if (newValue != 'A' && newValue != '') {
-                                    const totalHours1 = this.minutesToTime(this
-                                        .tipoAsistenciasHoras[newValue] * 60);
-                                    hot.setDataAtCell(changedRow, (4 * this.tareas + 4),
-                                        totalHours1);
-
-                                    return;
-                                }
-
-                            }
-
-                            let totalMinutes = 0;
-
-                            const startAt = 6;
-
-
-                            if (oldValue != newValue) {
-
-
-                                for (let indice = 0; indice < this.tareas; indice++) {
-
-                                    const hora_inicio = hot.getDataAtCell(changedRow,
-                                        4 * indice +
-                                        startAt);
-                                    const hora_salida = hot.getDataAtCell(changedRow,
-                                        4 * indice +
-                                        startAt + 1);
-
-
-
-                                    if (hora_inicio != null && hora_salida != null) {
-
-
-                                        const start = this.timeToMinutes(hora_inicio);
-                                        const end = this.timeToMinutes(hora_salida);
-
-                                        // Si las horas son válidas y la hora de inicio es menor que la de fin
-                                        if (start < end) {
-                                            totalMinutes += end - start;
-
-
-                                        }
-                                    }
-
-
-                                }
-
-                                const numeroCuadrilla = hot.getDataAtCell(changedRow,
-                                    3);
-                                const esCuadrilla = hot.getDataAtCell(changedRow, 1)
-                                    ?.toString().toLowerCase()
-                                    .trim(); // Convertir a string y minúsculas
-                                console.log(esCuadrilla);
-
-                                const totalMinutesAdjusted = totalMinutes - this
-                                    .minutosDescontados;
-                                let totalHours;
-                                // Calcular el total de horas dependiendo de si es "cuadrilla"
-                                if (esCuadrilla == 'cuadrilla') {
-                                    totalHours = this.minutesToTime(
-                                        totalMinutesAdjusted * numeroCuadrilla);
-                                } else {
-                                    totalHours = this.minutesToTime(
-                                        totalMinutesAdjusted);
-                                }
-
-                                // Establecer el valor calculado en la celda correspondiente
-                                hot.setDataAtCell(changedRow, 4 * this.tareas + 4,
-                                    totalHours);
-
-                            }
-
+                        });
+                        filasMap.forEach((data, row) => {
+                            this.recalcularTotales(data, row);
                         });
 
                     }
                 }
+
             });
 
             this.hot = hot;
@@ -339,9 +191,43 @@
                 }
             });
         },
-        isValidTimeFormat(time) {
-            const timePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
-            return timePattern.test(time);
+        recalcularTotales(data, row) {
+            console.log(data, row);
+            const indiceTotal = data.length - 2;
+            const tipoAsistencia = data[1]; // antes era data[2]
+
+            if (tipoAsistencia !== 'A' && tipoAsistencia !== '' && tipoAsistencia !== null) {
+                const totalHoras = this.minutesToTime(this.tipoAsistenciasHoras[tipoAsistencia] * 60);
+                this.hot.setDataAtCell(row, indiceTotal, totalHoras, 'recalculado');
+                return;
+            }
+
+            let totalMinutos = 0;
+
+            // Empieza desde el índice 3, recorre de 4 en 4 hasta antes de los 2 últimos
+            for (let i = 3; i <= data.length - 6; i += 4) {
+                const dias = parseFloat(data[i]);
+                const cantidad = parseFloat(data[i + 1]);
+                const horaInicio = data[i + 2];
+                const horaFin = data[i + 3];
+
+                if (horaInicio == null || horaFin == null) {
+                    continue;
+                }
+
+                const inicioMin = this.timeToMinutes(horaInicio);
+                const finMin = this.timeToMinutes(horaFin);
+
+                if (finMin <= inicioMin) {
+                    continue;
+                }
+
+                const minutos = finMin - inicioMin;
+                totalMinutos += minutos;
+            }
+
+            const totalHoras = this.minutesToTime(totalMinutos);
+            this.hot.setDataAtCell(row, indiceTotal, totalHoras, 'recalculado');
         },
         timeToMinutes(time) {
             const [hours, minutes] = time.split('.').map(Number);
@@ -354,17 +240,9 @@
         },
         generateColumns(tareas) {
             let columns = [{
-                data: 'documento',
-                type: 'text',
-                width: 80,
-                title: 'DNI',
-                className: 'text-center !bg-gray-100',
-                readOnly: true
-            },
-            {
                 data: "empleado_nombre",
                 type: 'text',
-                width: 270,
+                width: 220,
                 className: '!bg-gray-100',
                 title: 'APELLIDOS Y NOMBRES'
             },
@@ -387,18 +265,19 @@
 
             // Generar dinámicamente las columnas según las tareas
             for (let indice = 1; indice <= tareas; indice++) {
+                const intercalado = (indice % 2 === 0) ? '!bg-blue-100' : '';
                 columns.push({
                     data: "campo_" + indice,
                     type: 'dropdown',
                     width: 50,
-                    className: 'text-center',
+                    className: `text-center ${intercalado}`,
                     source: this.campos,
                     title: `CAM. ${indice}`
                 }, {
                     data: "labor_" + indice,
                     type: 'text',
                     width: 40,
-                    className: 'text-center',
+                    className: `text-center ${intercalado}`,
                     title: `LAB. ${indice}`
                 }, {
                     data: "entrada_" + indice,
@@ -406,7 +285,7 @@
                     width: 50,
                     timeFormat: 'H.mm',
                     correctFormat: true,
-                    className: 'text-center',
+                    className: `text-center ${intercalado}`,
                     title: `ENT. ${indice}`
                 }, {
                     data: "salida_" + indice,
@@ -414,7 +293,7 @@
                     width: 50,
                     timeFormat: 'H.mm',
                     correctFormat: true,
-                    className: 'text-center',
+                    className: `text-center ${intercalado}`,
                     title: `SAL. ${indice}`
                 });
             }
@@ -497,17 +376,17 @@
             }
         },
         sendDataReporteDiarioPlanilla() {
-            const rawData = this.hot.getData();
+            const rawData = this.hot.getData(); // solo obtiene los valores visibles
+            const sourceData = this.hot.getSourceData(); // incluye columnas ocultas si fuera necesario
 
-            const filteredData = rawData.filter(row => {
+            const filteredData = rawData.map((row, index) => {
+                const documento = sourceData[index]?.documento ?? ''; // puedes ajustar la fuente del documento aquí
+                return [documento, ...row]; // Insertar en índice 0
+            }).filter(row => {
                 return row.some(cell => cell !== null && cell !== '');
             });
 
-            const data = {
-                datos: filteredData
-            };
-
-            $wire.dispatchSelf('GuardarInformacion', data);
+            $wire.guardarInformacionRegistroPlanilla(filteredData);
             this.hasUnsavedChanges = false;
         }
     }));
