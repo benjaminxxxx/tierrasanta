@@ -12,6 +12,7 @@ use App\Models\PlanillaAsistencia;
 use App\Models\PlanillaBlanco;
 use App\Models\PlanillaBlancoDetalle;
 use App\Services\PlanillaServicio;
+use App\Services\RecursosHumanos\Personal\PlanillaAsistenciaServicio;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\QueryException;
@@ -23,19 +24,41 @@ use Illuminate\Support\Str;
 class PlanillaBlancoDetalleComponent extends Component
 {
     use LivewireAlert;
-    public $anio;
-    public $mes;
+    //INFORMACION DE TABLA PLANILLA BLANCO
+
     public $informacionBlanco;
     public $meses;
     public $mesTitulo;
+    public $informacionBlancoDetalle;
+    public $horasExtraMaximas;
+    public $porcentajeHoraExtra;
+    public $porcentajeBonificacion;
+    public $porcentajeAfp;
+    public $porcentajeOnp;
+    #region TABLA PLANILLA BLANCA
+    public $mes;
+    public $anio;
     public $diasLaborables;
     public $totalHoras;
-    public $informacionBlancoDetalle;
     public $factorRemuneracionBasica;
+    public $asignacionFamiliar;
+    public $ctsPorcentaje;
+    public $gratificaciones;
+    public $essaludGratificaciones;
+    public $rmv;
+    public $beta30;
+    public $essalud;
+    public $vidaLey;
+    public $vidaLeyPorcentaje;
+    public $pensionSctr;
+    public $pensionSctrPorcentaje;
+    public $essaludEps;
+    public $porcentajeConstante;
+    public $remBasicaEssalud;
+    #endregion
     public $diasMes;
     public $descuentoColores;
     public $grupoColores;
-    public $rmv;
     public $reporteTotalHorasPorMes;
     protected $listeners = ['GuardarInformacion'];
     public function mount()
@@ -53,31 +76,84 @@ class PlanillaBlancoDetalleComponent extends Component
             return;
         }
 
-        $this->reporteTotalHorasPorMes = PlanillaAsistencia::where('mes', $this->mes)->where('anio', $this->anio)->get()->pluck('total_horas', 'documento');
+        // Total de horas por documento en asistencia
+        $this->reporteTotalHorasPorMes = PlanillaAsistencia::where('mes', $this->mes)
+            ->where('anio', $this->anio)
+            ->get()
+            ->pluck('total_horas', 'documento');
 
-
+        // Días del mes
         $this->diasMes = Carbon::createFromDate($this->anio, $this->mes)->daysInMonth;
-     
 
-        $this->informacionBlanco = PlanillaBlanco::where('mes', $this->mes)->where('anio', $this->anio)->first();
+        // Buscar planilla blanca del mes
+        $this->informacionBlanco = PlanillaBlanco::where('mes', $this->mes)
+            ->where('anio', $this->anio)
+            ->first();
 
         if (!$this->informacionBlanco) {
+            // Obtener valores desde configuracion
+            $config = Configuracion::whereIn('codigo', [
+                'asignacion_familiar',
+                'cts_porcentaje',
+                'gratificaciones',
+                'essalud_gratificaciones',
+                'rmv',
+                'beta30',
+                'essalud',
+                'vida_ley',
+                'vida_ley_porcentaje',
+                'pension_sctr',
+                'pension_sctr_porcentaje',
+                'essalud_eps',
+                'porcentaje_constante',
+                'rem_basica_essalud'
+            ])->pluck('valor', 'codigo');
 
-            $factorRemuneracionBasica = $this->buscarDelMesAnterior();
-
+            // Crear con valores por defecto
             PlanillaBlanco::create([
                 'mes' => $this->mes,
                 'anio' => $this->anio,
-                'factor_remuneracion_basica' => $factorRemuneracionBasica,
                 'dias_laborables' => 0,
                 'total_horas' => 0,
-                'total_empleados' => 0
+                'total_empleados' => 0,
+                'factor_remuneracion_basica' => $this->buscarDelMesAnterior(),
+                'asignacion_familiar' => $config['asignacion_familiar'] ?? 0,
+                'cts_porcentaje' => $config['cts_porcentaje'] ?? 0,
+                'gratificaciones' => $config['gratificaciones'] ?? 0,
+                'essalud_gratificaciones' => $config['essalud_gratificaciones'] ?? 0,
+                'rmv' => $config['rmv'] ?? 0,
+                'beta30' => $config['beta30'] ?? 0,
+                'essalud' => $config['essalud'] ?? 0,
+                'vida_ley' => $config['vida_ley'] ?? 0,
+                'vida_ley_porcentaje' => $config['vida_ley_porcentaje'] ?? 0,
+                'pension_sctr' => $config['pension_sctr'] ?? 0,
+                'pension_sctr_porcentaje' => $config['pension_sctr_porcentaje'] ?? 0,
+                'essalud_eps' => $config['essalud_eps'] ?? 0,
+                'porcentaje_constante' => $config['porcentaje_constante'] ?? 0,
+                'rem_basica_essalud' => $config['rem_basica_essalud'] ?? 0,
             ]);
+
+            // Volver a cargar datos recién creados
             $this->obtenerInformacionMensual();
         } else {
+            // Asignar variables desde planilla_blanco
             $this->diasLaborables = $this->informacionBlanco->dias_laborables;
             $this->totalHoras = $this->informacionBlanco->total_horas;
             $this->factorRemuneracionBasica = $this->informacionBlanco->factor_remuneracion_basica;
+            $this->asignacionFamiliar = $this->informacionBlanco->asignacion_familiar;
+            $this->ctsPorcentaje = $this->informacionBlanco->cts_porcentaje;
+            $this->gratificaciones = $this->informacionBlanco->gratificaciones;
+            $this->essaludGratificaciones = $this->informacionBlanco->essalud_gratificaciones;
+            $this->rmv = $this->informacionBlanco->rmv;
+            $this->beta30 = $this->informacionBlanco->beta30;
+            $this->essalud = $this->informacionBlanco->essalud;
+            $this->vidaLey = $this->informacionBlanco->vida_ley;
+            $this->vidaLeyPorcentaje = $this->informacionBlanco->vida_ley_porcentaje;
+            $this->pensionSctr = $this->informacionBlanco->pension_sctr;
+            $this->pensionSctrPorcentaje = $this->informacionBlanco->pension_sctr_porcentaje;
+            $this->essaludEps = $this->informacionBlanco->essalud_eps;
+            $this->porcentajeConstante = $this->informacionBlanco->porcentaje_constante;
+            $this->remBasicaEssalud = $this->informacionBlanco->rem_basica_essalud;
             $this->informacionBlancoDetalle = $this->informacionBlanco->detalle;
         }
     }
@@ -111,43 +187,122 @@ class PlanillaBlancoDetalleComponent extends Component
         }
         return view('livewire.planilla-blanco-detalle-component');
     }
-    public function guardarPlanillaDatos()
+    public function guardarPlanillaDatos($option = 1)
     {
         if (!$this->informacionBlanco) {
             return;
         }
 
         try {
-            $this->informacionBlanco->dias_laborables = $this->diasLaborables;
-            $this->informacionBlanco->total_horas = $this->totalHoras;
-            $this->informacionBlanco->factor_remuneracion_basica = $this->factorRemuneracionBasica;
-            $this->informacionBlanco->save();
+            if ($option == 2) {
+                // 1️⃣ Traer datos desde configuración
+                $configuracionDatos = Configuracion::whereIn('codigo', [
+                    'asignacion_familiar',
+                    'cts_porcentaje',
+                    'gratificaciones',
+                    'essalud_gratificaciones',
+                    'rmv',
+                    'beta30',
+                    'essalud',
+                    'vida_ley',
+                    'vida_ley_porcentaje',
+                    'pension_sctr',
+                    'pension_sctr_porcentaje',
+                    'essalud_eps',
+                    'porcentaje_constante',
+                    'rem_basica_essalud'
+                ])->pluck('valor', 'codigo');
+
+                // 2️⃣ Asignar valores desde configuración a las variables locales
+                foreach ($configuracionDatos as $codigo => $valor) {
+                    $propiedad = \Illuminate\Support\Str::camel($codigo);
+                    if (property_exists($this, $propiedad)) {
+                        $this->$propiedad = $valor;
+                    }
+                }
+            }
+
+            // 3️⃣ Guardar en la tabla planillas_blanco
+            $this->informacionBlanco->update([
+                'dias_laborables' => $this->diasLaborables,
+                'total_horas' => $this->totalHoras,
+                'factor_remuneracion_basica' => $this->factorRemuneracionBasica,
+                'asignacion_familiar' => $this->asignacionFamiliar,
+                'cts_porcentaje' => $this->ctsPorcentaje,
+                'gratificaciones' => $this->gratificaciones,
+                'essalud_gratificaciones' => $this->essaludGratificaciones,
+                'rmv' => $this->rmv,
+                'beta30' => $this->beta30,
+                'essalud' => $this->essalud,
+                'vida_ley' => $this->vidaLey,
+                'vida_ley_porcentaje' => $this->vidaLeyPorcentaje,
+                'pension_sctr' => $this->pensionSctr,
+                'pension_sctr_porcentaje' => $this->pensionSctrPorcentaje,
+                'essalud_eps' => $this->essaludEps,
+                'porcentaje_constante' => $this->porcentajeConstante,
+                'rem_basica_essalud' => $this->remBasicaEssalud,
+            ]);
+
+            if ($option == 3) {
+                // 4️⃣ Guardar también en configuración como predeterminado
+                $configuracionDatos = [
+                    'asignacion_familiar' => $this->asignacionFamiliar,
+                    'cts_porcentaje' => $this->ctsPorcentaje,
+                    'gratificaciones' => $this->gratificaciones,
+                    'essalud_gratificaciones' => $this->essaludGratificaciones,
+                    'rmv' => $this->rmv,
+                    'beta30' => $this->beta30,
+                    'essalud' => $this->essalud,
+                    'vida_ley' => $this->vidaLey,
+                    'vida_ley_porcentaje' => $this->vidaLeyPorcentaje,
+                    'pension_sctr' => $this->pensionSctr,
+                    'pension_sctr_porcentaje' => $this->pensionSctrPorcentaje,
+                    'essalud_eps' => $this->essaludEps,
+                    'porcentaje_constante' => $this->porcentajeConstante,
+                    'rem_basica_essalud' => $this->remBasicaEssalud,
+                ];
+
+                foreach ($configuracionDatos as $codigo => $valor) {
+                    Configuracion::updateOrCreate(
+                        ['codigo' => $codigo],
+                        ['valor' => $valor]
+                    );
+                }
+            }
+
             $this->alert("success", "Información actualizada con éxito");
         } catch (\Throwable $th) {
             $this->alert("error", "Ocurrió un error: " . $th->getMessage());
         }
     }
+
+
     public function updatedDiasLaborables()
     {
         if ($this->diasLaborables > 0) {
             $this->totalHoras = $this->diasLaborables * 8;
         }
+
     }
     public function generarPlanilla()
     {
         try {
+            //Primero que nada generar las asistencias del año y mes seleccionado
+            app(PlanillaAsistenciaServicio::class)->generarResumenAsistencia($this->mes, $this->anio);
 
-            $asignacionFamiliar = Configuracion::where('codigo', 'asignacion_familiar')->first();
-            $configuracion = Configuracion::get()->pluck('valor', 'codigo')->toArray();
-            $montoAsignacionFamiliar = $asignacionFamiliar ? $asignacionFamiliar->valor : 0;
-            //$empleadosDisponibles = Empleado::with(['descuento', 'asignacionFamiliar'])->where('status', 'activo')->get()->keyBy('documento')->toArray();
+            //$configuracion = Configuracion::get()->pluck('valor', 'codigo')->toArray();
+
+            $asignacionFamiliar = $this->asignacionFamiliar ?? 0;
+            
             $empleadosDisponibles = Empleado::planillaAgraria()
-            ->with(['descuento', 'asignacionFamiliar'])
-            ->get()->keyBy('documento')->toArray();
+                ->with(['descuento', 'asignacionFamiliar', 'contratos', 'contratos.descuento'])
+                ->get()->keyBy('documento')->toArray();
 
             $planillaDetalle = PlanillaBlancoDetalle::where('planilla_blanco_id', $this->informacionBlanco->id)
                 ->get(['bonificacion', 'documento'])
                 ->pluck('bonificacion', 'documento');
+
+
             $fechaReferencia = Carbon::createFromDate($this->anio, $this->mes, 1)->startOfMonth();
 
             $codigos = ['HAB F', 'INT F', 'PRI F', 'PRO F', 'SNP', 'HAB M', 'INT M', 'PRI M', 'PRO M'];
@@ -161,7 +316,7 @@ class PlanillaBlancoDetalleComponent extends Component
                     ->first();
 
                 if (!$descuento) {
-                    throw new \Exception("No se encontró un descuento para el código: $codigo");
+                    throw new Exception("No se encontró un descuento para el código: $codigo");
                 }
 
                 $descuentosAgrupados[$codigo] = $descuento->toArray();
@@ -169,36 +324,70 @@ class PlanillaBlancoDetalleComponent extends Component
 
             $asistencias = [];
             $planillaAsistencia = PlanillaAsistencia::where('mes', $this->mes)->where('anio', $this->anio)
-            ->get();
+                ->get();
 
-            if($planillaAsistencia){
+
+            if ($planillaAsistencia) {
                 foreach ($planillaAsistencia as $asistencia) {
 
                     $empleadoData = $empleadosDisponibles[$asistencia->documento] ?? null;
-
+                    
                     if (!$empleadoData) {
                         continue;
                         //throw new \Exception("Empleado no encontrado para el documento: {$asistencia->documento}");
                     }
-                    $sppSnp = $empleadoData['descuento']['codigo'] ?? null;
-                    if (!$sppSnp) {
-                        throw new Exception("El empleado: " . $asistencia->nombres . " no tiene un sistema de descuento de pensiones");
+
+                    $nombres = $empleadoData['apellido_paterno'] . ' ' . $empleadoData['apellido_materno'] . ', ' . $empleadoData['nombres'];
+
+                    //calcular ahora el sueldo del personal basandose en su contrato
+                    $contratos = $empleadoData['contratos'];
+                    $fechaReferencia = Carbon::createFromDate($this->anio, $this->mes, 1);
+                    $contratoMasCercano = collect($contratos)
+                        ->filter(function ($contrato) use ($fechaReferencia) {
+                            // Tomar contratos que ya iniciaron antes o el mismo mes/año
+                            return Carbon::parse($contrato['fecha_inicio'])->lte($fechaReferencia);
+                        })
+                        ->sortByDesc(function ($contrato) {
+                            // Ordenar por fecha de inicio más reciente
+                            return Carbon::parse($contrato['fecha_inicio']);
+                        })
+                        ->first();
+
+                    if (!$contratoMasCercano) {
+                        throw new Exception("El empleado {$nombres} no tiene un contrato para este mes y año seleccionado");
                     }
 
+                    $sppSnp = $contratoMasCercano['descuento']['codigo'] ?? null;
+                    if (!$sppSnp) {
+                        throw new Exception("El empleado {$nombres} no tiene un sistema de descuento de pensiones");
+                    }
+
+                    //$grupoCodigo = $empleadoData['grupo_codigo']; version anterior
+                    //$compensacionVacacional = $empleadoData['compensacion_vacacional'];
+                    //MODULO DE CONTRATOS
+                    $grupoCodigo = $contratoMasCercano['grupo_codigo'];
+                    $compensacionVacacional = $contratoMasCercano['compensacion_vacacional'];
+                    $estaJubilado = $contratoMasCercano['esta_jubilado'];
+                    //FIN MODULO DE CONTRATOS
                     $bonificacion = isset($planillaDetalle[$asistencia->documento]) ? $planillaDetalle[$asistencia->documento] : 0;
-                    $asignacionFamiliar = count($empleadoData['asignacion_familiar']) > 0 ? $montoAsignacionFamiliar : 0;
-                    $compensacionVacacional = $empleadoData['compensacion_vacacional'];
-                    $descuentoSeguro = $this->obtenerDescuentoEmpleado($empleadoData, $this->anio, $this->mes);
-                    $grupoColor = $this->grupoColores[$empleadoData['grupo_codigo']] ?? '#ffffff';
-                    $sueldoPersonal = $empleadoData['salario'];
+                    
+                    //Si tiene una cantidad de hijos registros mayor a 0, asignar al valor de la asignacion familiar
+                    $asignacionFamiliar = count($empleadoData['asignacion_familiar']) > 0 ? $asignacionFamiliar : 0;
+
+
+                    $descuentoSeguro = $this->obtenerDescuentoEmpleado($empleadoData, $this->anio, $this->mes, $contratoMasCercano);
+                    $grupoColor = $this->grupoColores[$grupoCodigo] ?? '#ffffff';
+                    
+
+                    $sueldoPersonal = $contratoMasCercano['sueldo'];
                     $totalHoras = isset($this->reporteTotalHorasPorMes[$empleadoData['documento']]) ? $this->reporteTotalHorasPorMes[$empleadoData['documento']] : 0;
 
                     $fechaNacimiento = Carbon::parse($empleadoData['fecha_nacimiento']);
                     $edad = round($fechaNacimiento->diffInYears($fechaReferencia, false));
-                    
+
                     $asistencias[] = [
                         'dni' => $asistencia->documento,//str_starts_with($asistencia->documento, '0') ? "'{$asistencia->documento}" : $asistencia->documento, al compara con los dni al momento de obtener las hors en la tercera hoja no hace coincidencia
-                        'nombres' => $empleadoData['apellido_paterno'] . ' ' . $empleadoData['apellido_materno'] . ', ' . $empleadoData['nombres'],
+                        'nombres' => $nombres,
                         'edad' => $edad,
                         'sppSnp' => $sppSnp,
                         'bonificacion' => $bonificacion,
@@ -208,15 +397,15 @@ class PlanillaBlancoDetalleComponent extends Component
                         'grupoColor' => $grupoColor,
                         'sueldoPersonal' => $sueldoPersonal,
                         'totalHoras' => $totalHoras,
-                        'estaJubilado' => $empleadoData['esta_jubilado']=='1'?'SI':'',
+                        'estaJubilado' => $estaJubilado == '1' ? 'SI' : '',
                         'color' => $descuentosAgrupados[$sppSnp]['descuento_sp']['color'],
-                        
+
                     ];
                 }
             }
             $asistencias = collect($asistencias)->sortBy('nombres')
-            ->values()
-            ->toArray();
+                ->values()
+                ->toArray();
 
             if (count($asistencias) == 0) {
                 throw new Exception("Aún no se ha generado las asistencias");
@@ -227,7 +416,8 @@ class PlanillaBlancoDetalleComponent extends Component
             if (!is_numeric($this->diasLaborables) || $this->diasLaborables <= 0) {
                 throw new Exception("Debe registrar un valor numérico válido para los días laborables de este mes.");
             }
-            
+            /*
+
             $ctsPorcentaje = array_key_exists('cts_porcentaje', $configuracion) ? $configuracion['cts_porcentaje'] : 0;
             $gratificacionesPorcentaje = array_key_exists('gratificaciones', $configuracion) ? $configuracion['gratificaciones'] : 0;
             $essaludGratificacionesPorcentaje = array_key_exists('essalud_gratificaciones', $configuracion) ? $configuracion['essalud_gratificaciones'] : 0;
@@ -241,10 +431,10 @@ class PlanillaBlancoDetalleComponent extends Component
             $essaludEpsPorcentaje = array_key_exists('essalud_eps', $configuracion) ? $configuracion['essalud_eps'] : 0;
             $porcentajeConstante = array_key_exists('porcentaje_constante', $configuracion) ? $configuracion['porcentaje_constante'] : 0;
             $rem_basica_essalud = array_key_exists('rem_basica_essalud', $configuracion) ? $configuracion['rem_basica_essalud'] : 0;
-            
-            $horas = PlanillaAsistencia::horas($this->anio,$this->mes);
-            $bonos = PlanillaServicio::obtenerBonosPlanilla($this->anio,$this->mes);
-            
+*/
+            $horas = PlanillaAsistencia::horas($this->anio, $this->mes);
+            $bonos = PlanillaServicio::obtenerBonosPlanilla($this->anio, $this->mes);
+
             $data = [
                 'mes' => $this->mes,
                 'anio' => $this->anio,
@@ -265,8 +455,8 @@ class PlanillaBlancoDetalleComponent extends Component
                 'porcentajeConstante' => $porcentajeConstante,
                 'rem_basica_essalud' => $rem_basica_essalud,
                 'descuentosAfp' => $descuentosAgrupados,
-                'horas'=>$horas,
-                'bonos'=>$bonos,
+                'horas' => $horas,
+                'bonos' => $bonos,
             ];
 
             $filePath = 'planilla/' . date('Y-m') . '/planilla' . '_' .
@@ -335,13 +525,14 @@ class PlanillaBlancoDetalleComponent extends Component
             return $this->alert('error', $ex->getMessage());
         }
     }
-    function obtenerDescuentoEmpleado($empleadoData, $anio, $mes)
+    function obtenerDescuentoEmpleado($empleadoData, $anio, $mes, $contrato)
     {
         $response = [];
 
         $fechaReferencia = Carbon::createFromDate($anio, $mes, 1)->startOfMonth();
+        $empleadoEstaJubilado = $contrato['esta_jubilado'];
 
-        $descuento = DescuentoSpHistorico::where('descuento_codigo', $empleadoData['descuento']['codigo'])
+        $descuento = DescuentoSpHistorico::where('descuento_codigo', $contrato['descuento']['codigo'])
             ->where('fecha_inicio', '<=', $fechaReferencia)
             ->orderBy('fecha_inicio', 'desc')
             ->first();
@@ -356,14 +547,14 @@ class PlanillaBlancoDetalleComponent extends Component
         $edad = $fechaNacimiento->diffInYears($fechaReferencia);
 
         // Determinar el porcentaje a aplicar
-        if ($empleadoData['esta_jubilado'] == '1') {
+        if ($empleadoEstaJubilado == '1') {
             $response = [
                 'explicacion' => 'POR SER PENSIONISTA NO TIENE RETENCIÓN',
                 'descuento' => 0,
             ];
             return $response;
         } elseif ($edad > 65) {
-            if ($empleadoData['descuento']['codigo'] == 'SNP') {
+            if ($contrato['descuento']['codigo'] == 'SNP') {
                 $response = [
                     'explicacion' => 'MAYOR DE 65 EXONERADOS DE PRIMA, POR SER ONP NO TIENE PRIMA',
                     'descuento' => $descuento->porcentaje_65,

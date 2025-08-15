@@ -93,6 +93,8 @@ Route::middleware([
     Route::get('/campo/siembras', [CampoController::class, 'siembra'])->name('campo.siembra');
     Route::post('/campo/mapa/guardar-posicion/{nombre}', [CampoController::class, 'guardarPosicion'])->name('campo.mapa.guardar-posicion');
 
+    Route::get('/campania/costos', [CampaniaController::class, 'costos'])->name('campania.costos');
+    
     //Consolidados
     Route::get('/riego/resumen-diario', function () {
         return view('consolidado.riegos');

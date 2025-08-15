@@ -1,17 +1,28 @@
 @props(['align' => 'right', 'width' => '48', 'contentClasses' => 'py-1 bg-white dark:bg-gray-700', 'dropdownClasses' => ''])
 
 @php
-$alignmentClasses = match ($align) {
-    'left' => 'ltr:origin-top-left rtl:origin-top-right start-0',
-    'top' => 'origin-top',
-    'none', 'false' => '',
-    default => 'ltr:origin-top-right rtl:origin-top-left end-0',
-};
+switch ($align) {
+    case 'left':
+        $alignmentClasses = 'ltr:origin-top-left rtl:origin-top-right start-0';
+        break;
+    case 'top':
+        $alignmentClasses = 'origin-top';
+        break;
+    case 'none':
+    case 'false':
+        $alignmentClasses = '';
+        break;
+    case 'right':
+    default:
+        $alignmentClasses = 'ltr:origin-top-right rtl:origin-top-left end-0';
+        break;
+}
 
-$width = match ($width) {
-    '48' => 'w-48',
-    '60' => 'w-60',
-    default => 'w-48',
+// Se modificó esta sección para que sea responsiva
+$widthClasses = match ($width) {
+    '60' => 'w-full sm:w-60', // Ancho completo en móvil, w-60 en pantallas sm y superiores
+    'full' => 'w-full',      // Siempre ancho completo
+    default => 'w-full sm:w-48', // Ancho completo en móvil, w-48 en pantallas sm y superiores
 };
 @endphp
 
@@ -27,7 +38,7 @@ $width = match ($width) {
             x-transition:leave="transition ease-in duration-75"
             x-transition:leave-start="transform opacity-100 scale-100"
             x-transition:leave-end="transform opacity-0 scale-95"
-            class="absolute z-50 mt-2 {{ $width }} rounded-md shadow-lg {{ $alignmentClasses }} {{ $dropdownClasses }}"
+            class="absolute z-50 mt-2 rounded-md shadow-lg {{ $alignmentClasses }} {{ $dropdownClasses }} {{ $widthClasses }}"
             style="display: none;"
             @click="open = false">
         <div class="rounded-md ring-1 ring-black ring-opacity-5 {{ $contentClasses }}">

@@ -22,20 +22,10 @@ return new class extends Migration {
             $table->string('status')->default('activo'); // Estado del empleado (activo, inactivo, etc.)
             $table->string('email')->nullable()->unique(); // Correo electrónico del empleado
             $table->string('numero')->nullable(); // Número de teléfono
-            $table->decimal('salario', 8, 2)->nullable(); // Salario del empleado
             $table->date('fecha_nacimiento')->nullable(); // Fecha de nacimiento del empleado
             $table->string('direccion')->nullable(); // Dirección del empleado
-            $table->string('genero')->nullable();
-            $table->string('descuento_sp_id')->nullable();
-            $table->foreign('descuento_sp_id')->references('codigo')->on('descuento_sp')->onDelete('set null');
-            $table->string('cargo_id')->nullable(); // Relación con el cargo
-            $table->foreign('cargo_id')->references('codigo')->on('cargos')->onDelete('set null'); // Clave foránea
-            $table->string('grupo_codigo')->nullable();
-            $table->foreign('grupo_codigo')->references('codigo')->on('grupos')->onDelete('set null');
-            $table->decimal('compensacion_vacacional', 10, 2)->nullable();
-            $table->boolean('esta_jubilado')->default(false);
+            $table->string('genero')->nullable();            
             $table->integer('orden')->nullable();
-            $table->string('asistencia')->nullable();
             $table->timestamps();
         });
     }

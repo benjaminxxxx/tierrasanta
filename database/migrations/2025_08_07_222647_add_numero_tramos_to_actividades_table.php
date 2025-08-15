@@ -11,8 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('planillas_blanco', function (Blueprint $table) {
-            $table->text('excel')->nullable();
+        Schema::table('actividades', function (Blueprint $table) {
+            $table->unsignedInteger('recojos')
+              ->default(1);
         });
     }
 
@@ -21,8 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('planillas_blanco', function (Blueprint $table) {
-            $table->dropColumn('excel');
+        Schema::table('actividades', function (Blueprint $table) {
+            $table->dropColumn('recojos');
         });
     }
 };

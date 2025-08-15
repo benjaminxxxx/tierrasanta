@@ -74,7 +74,10 @@
         'reporte.reporte_diario',
         'planilla.asistencia',
         'planilla.blanco',
-        'reporte.resumen_planilla'
+        'reporte.resumen_planilla',
+        'empleados.asignacion_familiar',
+        'empleados'
+
     ])" logo='fa fa-table'
                 text="Planilla">
                 <x-nav-link-child href="{{ route('reporte.reporte_diario') }}"
@@ -91,6 +94,13 @@
                 <x-nav-link-child href="{{ route('reporte.resumen_planilla') }}"
                     :active="request()->routeIs('reporte.resumen_planilla')">
                     Resumen de actividades mensuales
+                </x-nav-link-child>
+                <x-nav-link-child href="{{ route('empleados') }}" :active="request()->routeIs('empleados')">
+                    Lista de Planilleros
+                </x-nav-link-child>
+                <x-nav-link-child href="{{ route('empleados.asignacion_familiar') }}"
+                    :active="request()->routeIs('empleados.asignacion_familiar')">
+                    Asignación Familiar de planilla
                 </x-nav-link-child>
             </x-nav-link-parent>
             <x-nav-link-parent name="sectorCuadrilla" :active="request()->routeIs([
@@ -189,10 +199,14 @@
                     Siembras
                 </x-nav-link-child>
             </x-nav-link-parent>
-            <x-nav-link-parent name="sectorCampanias" :active="request()->routeIs(['campo.campania', 'campanias'])"
+            <x-nav-link-parent name="sectorCampanias" :active="request()->routeIs(['campo.campania', 'campanias','campania.costos'])"
                 logo="fa fa-flag" text="Campañas">
                 <x-nav-link-child href="{{ route('campanias') }}" :active="request()->routeIs('campanias')">
                     Todas las campañas
+                </x-nav-link-child>
+                <x-nav-link-child href="{{ route('campania.costos') }}"
+                    :active="request()->routeIs('campania.costos')">
+                    Costos
                 </x-nav-link-child>
                 <x-nav-link-child href="{{ route('campo.campania') }}" :active="request()->routeIs('campo.campania')">
                     Campañas por campo
@@ -262,7 +276,8 @@
 
 
             <x-nav-link-parent name="sectorFdm" :active="request()->routeIs(['fdm.costos_generales'])"
-                logo="fa fa-coins" text="FDM">
+                logo="fa fa-coins" text="Costos">
+                
                 <x-nav-link-child href="{{ route('fdm.costos_generales') }}"
                     :active="request()->routeIs('fdm.costos_generales')">
                     Costos Generales FDM
@@ -299,15 +314,6 @@
                 </x-nav-link-child>
                 <x-nav-link-child href="{{ route('kardex.lista') }}" :active="request()->routeIs('kardex.lista')">
                     Ver Kardex
-                </x-nav-link-child>
-            </x-nav-link-parent>
-            <x-nav-link-parent name="sectorEmpleado" :active="request()->routeIs(['empleados', 'empleados.asignacion_familiar'])" logo='fa fa-users' text="Empleado">
-                <x-nav-link-child href="{{ route('empleados') }}" :active="request()->routeIs('empleados')">
-                    Lista de Empleados
-                </x-nav-link-child>
-                <x-nav-link-child href="{{ route('empleados.asignacion_familiar') }}"
-                    :active="request()->routeIs('empleados.asignacion_familiar')">
-                    Asignación Familiar
                 </x-nav-link-child>
             </x-nav-link-parent>
             @canany(['Usuarios Administrar', 'Roles'])

@@ -77,6 +77,7 @@
                         <x-tabs-trigger value="aplicaciones_fitosanitarias">Aplicaciones Fitosanitarias</x-tabs-trigger>
                         <x-tabs-trigger value="riego">Riego</x-tabs-trigger>
                         <x-tabs-trigger value="etapas">Etapas</x-tabs-trigger>
+                        <x-tabs-trigger value="mano_obra_costos">Mano de obra - costos</x-tabs-trigger>
                     </x-tabs-list>
                     </x-card>
 
@@ -146,6 +147,11 @@
                     <x-tabs-content value="etapas">
                         @include('livewire.campania-component.grupo-etapas')
                     </x-tabs-content>
+                    <x-tabs-content value="mano_obra_costos">
+                        <livewire:poblacion-plantas-por-campania-component campaniaId="{{ $campania->id }}"
+                            wire:key="mano_obra_costos.{{ $campania->id }}" />
+                    </x-tabs-content>
+                    
             </x-tabs>
         </div>
     @endif

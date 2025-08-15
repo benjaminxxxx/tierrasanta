@@ -9,6 +9,11 @@ use InvalidArgumentException;
 
 class DateHelper
 {
+    public static function convertirHorasADecimal(string $hora): float
+    {
+        [$horas, $minutos, $segundos] = explode(':', $hora);
+        return (int) $horas + ((int) $minutos / 60) + ((int) $segundos / 3600);
+    }
     /**
      * Limpia y formatea una cadena de texto para que represente un tiempo válido en formato HH:MM.
      * Si no es válida, retorna '00:00'.

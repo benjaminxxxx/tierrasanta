@@ -20,13 +20,13 @@ class CampaniaDetalleComponent extends Component
         if(!$this->campania){
             return $this->alert('error','La campaña ya no existe.');
         }
-
+        
         $campaniaServicio = new CampaniaServicio($this->campania->id);
-        $campaniaServicio->registrarHistorialPoblacionPlantas();
-        $campaniaServicio->registrarHistorialBrotes();
+       /* $campaniaServicio->registrarHistorialPoblacionPlantas();
+        $campaniaServicio->registrarHistorialBrotes();*/
         $campaniaServicio->actualizarGastosyConsumos();
-        $campaniaServicio->registrarHistorialDeInfestaciones();
-        $campaniaServicio->registrarHistorialDeInfestaciones('reinfestacion');
+        /*$campaniaServicio->registrarHistorialDeInfestaciones();
+        $campaniaServicio->registrarHistorialDeInfestaciones('reinfestacion');*/
     }
     public function abrirCampaniaDetalle($campaniaId)
     {

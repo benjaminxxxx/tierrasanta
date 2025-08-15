@@ -7,7 +7,6 @@ use App\Models\CuadCostoDiarioGrupo;
 use App\Models\CuadDetalleHora;
 use App\Models\CuadGrupoCuadrilleroFecha;
 use App\Models\CuadRegistroDiario;
-use App\Models\CuadrilleroActividad;
 use App\Models\GastoAdicionalPorGrupoCuadrilla;
 use App\Support\ExcelHelper;
 use Exception;

@@ -9,4 +9,7 @@ class CampaniaController extends Controller
     public function campanias(){
         return view("campanias.lista-campanias");
     }
+    public function costos(){
+        return view('livewire.gestion-campania.indice-costos');
+    }
 }

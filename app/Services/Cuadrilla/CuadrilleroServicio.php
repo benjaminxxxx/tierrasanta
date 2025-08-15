@@ -4,13 +4,14 @@ namespace App\Services\Cuadrilla;
 
 use App\Models\Actividad;
 use App\Models\CuaAsistenciaSemanal;
+use App\Models\CuadActividadBono;
+use App\Models\CuadActividadProduccion;
 use App\Models\CuadCostoDiarioGrupo;
 use App\Models\CuadDetalleHora;
 use App\Models\CuadGrupoCuadrilleroFecha;
 use App\Models\CuadOrdenSemanal;
 use App\Models\CuadRegistroDiario;
 use App\Models\Cuadrillero;
-use App\Models\CuadrilleroActividad;
 use App\Models\CuaGrupo;
 use App\Models\GastoAdicionalPorGrupoCuadrilla;
 use App\Models\Labores;
@@ -241,8 +242,61 @@ class CuadrilleroServicio
             ]);
         }
     }
+    public static function guardarBonoCuadrilla($fila, $numeroRecojos, $actividadId)
+    {
+        $registroDiarioId = $fila['registro_diario_id'] ?? null;
 
-    public static function guardarBonoCuadrilla($fila, $fecha)
+        if (!$registroDiarioId) {
+            throw new Exception("Falta el parámetro de identificación de reporte diario");
+        }
+
+        // 1️⃣ Buscar o crear el registro de bono para esta actividad en este registro diario
+        $actividadBono = CuadActividadBono::updateOrCreate(
+            [
+                'registro_diario_id' => $registroDiarioId,
+                'actividad_id' => $actividadId
+            ],
+            [
+                'total_bono' => $fila['total_bono'] ?? 0
+            ]
+        );
+
+        // 2️⃣ Eliminar producciones que ya no existen
+        CuadActividadProduccion::where('actividad_bono_id', $actividadBono->id)
+            ->where('numero_recojo', '>', $numeroRecojos)
+            ->delete();
+
+        // 3️⃣ Guardar o actualizar producciones
+        for ($i = 1; $i <= $numeroRecojos; $i++) {
+            $produccion = $fila['produccion_' . $i] ?? null;
+
+            if ($produccion) {
+                CuadActividadProduccion::updateOrCreate(
+                    [
+                        'actividad_bono_id' => $actividadBono->id,
+                        'numero_recojo' => $i
+                    ],
+                    [
+                        'produccion' => $produccion
+                    ]
+                );
+            } else {
+                CuadActividadProduccion::where('actividad_bono_id', $actividadBono->id)
+                    ->where('numero_recojo', $i)
+                    ->delete();
+            }
+        }
+
+        // 4️⃣ Recalcular total_bono del registro diario sumando todos los bonos de sus actividades
+        $sumaBonos = CuadActividadBono::where('registro_diario_id', $registroDiarioId)->sum('total_bono');
+
+        $registroDiario = CuadRegistroDiario::findOrFail($registroDiarioId);
+        $registroDiario->update([
+            'total_bono' => $sumaBonos
+        ]);
+    }
+
+    public static function guardarBonoCuadrillaobsoleta($fila, $fecha)
     {
         $cuadrilleroId = $fila['cuadrillero_id'] ?? null;
         $campo = $fila['campo'] ?? null;
@@ -291,72 +345,6 @@ class CuadrilleroServicio
             ]);
         }
     }
-    /*
-    public static function guardarBonificacionesYConfiguracionActividad($actividadId, $datos, $tramos, $unidades, $estandarProduccion)
-    {
-        $actividad = Actividad::findOrFail($actividadId);
-        $fecha = $actividad->fecha;
-
-        // 1️⃣ Guardar la configuración en la actividad
-        $actividad->update([
-            'tramos_bonificacion' => json_encode($tramos),
-            'unidades' => $unidades,
-            'estandar_produccion' => $estandarProduccion
-        ]);
-
-        // 2️⃣ Para cada fila de datos
-        foreach ($datos as $fila) {
-
-            $cuadrilleroId = $fila['cuadrillero_id'] ?? null;
-            $campo = $fila['campo'] ?? null;
-            $labor = $fila['labor'] ?? null;
-            $totalBono = floatval($fila['total_bono'] ?? 0);
-
-            if (!$cuadrilleroId) {
-                continue; // Nada que hacer si no hay cuadrillero o bono
-            }
-
-            // Buscar el registro diario para la fecha
-            $registro = CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
-                ->whereDate('fecha', $fecha)
-                ->first();
-
-            if (!$registro) {
-                continue; // No existe registro diario
-            }
-
-            // Obtener detalles de esa actividad, ordenados por horario
-            $detalles = $registro->detalleHoras()
-                ->where('campo_nombre', $campo)
-                ->where('codigo_labor', $labor)
-                ->orderBy('hora_inicio')
-                ->get();
-
-            $conteoTramos = $detalles->count();
-
-            if ($conteoTramos === 0) {
-                continue;
-            }
-
-            // Calcular bono proporcional por tramo
-            $bonoPorTramo = round($totalBono / $conteoTramos, 2);
-
-            // Recolectar solo los valores de producción válidos
-            $producciones = [];
-            for ($i = 1; $i <= $conteoTramos; $i++) {
-                $produccionKey = "produccion_$i";
-                $producciones[] = isset($fila[$produccionKey]) ? floatval($fila[$produccionKey]) : 0;
-            }
-
-            // Actualizar cada detalle con costo_bono y producción
-            foreach ($detalles as $index => $detalle) {
-                $detalle->update([
-                    'costo_bono' => $bonoPorTramo,
-                    'produccion' => $producciones[$index] ?? 0
-                ]);
-            }
-        }
-    }*/
 
     public static function obtenerHandsontableRegistrosPorActividad($actividadId)
     {
@@ -464,7 +452,7 @@ class CuadrilleroServicio
         $totalTrabajadoresEseDia = [];
         $totalJornalEseDia = [];
         $totalBonoEseDia = [];
-        
+
         self::sincronizarOrdenGruposSemana($fechaInicio);
 
         // Obtener orden de grupos para la semana
@@ -1381,6 +1369,7 @@ class CuadrilleroServicio
             'detalleHoras.actividad',
         ])
             ->where('fecha', $fecha)
+            ->where('total_horas', '>', 0)
             ->orderBy(
                 Cuadrillero::select('nombres')
                     ->whereColumn('cuadrilleros.id', 'cuad_registros_diarios.cuadrillero_id')
@@ -1539,104 +1528,7 @@ class CuadrilleroServicio
 
         return true;
     }
-    /*
-    public static function guardarDesdeHandsontable($fecha, $rows)
-    {
-        DB::beginTransaction();
-        try {
-            if (!$fecha) {
-                throw ValidationException::withMessages([
-                    'fecha' => 'Debe especificar una fecha.'
-                ]);
-            }
-            $labores = Labores::all()->pluck('id', 'codigo')->toArray();
-            $usuarioId = Auth::id();
-            $errores = [];
 
-            foreach ($rows as $i => $fila) {
-
-                $cuadrilleroNombre = trim($fila['cuadrillero_nombres'] ?? '');
-                $cuadrilleroId = $fila['cuadrillero_id'] ?? null;
-                $tieneTramos = false;
-                $tramos = [];
-                $filaOrden = $i + 1;
-
-                // 2️⃣ Recolectar tramos válidos
-                // como maximo habran 10 labores por trabajador, mas adelante debemos detectar cuantos son
-                for ($j = 1; $j <= 10; $j++) {
-                    $inicio = $fila["hora_inicio_$j"] ?? null;
-                    $fin = $fila["hora_fin_$j"] ?? null;
-                    $campo = $fila["campo_$j"] ?? null;
-                    $labor = $fila["labor_$j"] ?? null;
-
-                    if ($labor) {
-                        if (!array_key_exists($labor, $labores)) {
-
-                            throw new Exception("Error en la fila {$filaOrden}, el código {$labor} no existe.");
-                        }
-                    }
-
-                    if ($inicio || $fin || $campo || $labor) {
-                        if (!$inicio || !$fin || !$labor) {
-                            $errores[] = "Fila " . ($i + 1) . ", tramo $j: falta hora o labor.";
-                            continue;
-                        }
-
-                        $tieneTramos = true;
-                        $tramos[] = compact('inicio', 'fin', 'campo', 'labor');
-                    }
-                }
-
-                $registro = CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
-                    ->where('fecha', $fecha)
-                    ->first();
-
-                if ($registro) {
-                    $registro->detalleHoras()->delete();
-                }
-
-                // 5️⃣ Crear o actualizar registro diario
-                $registro = CuadRegistroDiario::updateOrCreate(
-                    [
-                        'cuadrillero_id' => $cuadrilleroId,
-                        'fecha' => $fecha,
-                    ],
-                    [
-                        'asistencia' => $fila['asistencia'] ?? true,
-                        'costo_dia' => 0,
-                        'total_bono' => 0,
-                        'costo_personalizado_dia' => null,
-                    ]
-                );
-
-                foreach ($tramos as $tramo) {
-
-                    $detalle = CuadDetalleHora::firstOrCreate(
-                        [
-                            'registro_diario_id' => $registro->id,
-                            'codigo_labor' => $tramo['labor'],
-                            'campo_nombre' => $tramo['campo'],
-                            'hora_inicio' => $tramo['inicio'],
-                            'hora_fin' => $tramo['fin'],
-                        ],
-                        [
-                            'produccion' => null,
-                            'costo_bono' => 0,
-                        ]
-                    );
-                }
-            }
-            if (count($errores)) {
-                throw ValidationException::withMessages(['errores' => $errores]);
-            }
-
-            DB::commit();
-            return true;
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    }*/
     /**
      * Guarda tramos de cuadrilleros desde un array de filas tipo Handsontable.
      * 
@@ -1841,51 +1733,6 @@ class CuadrilleroServicio
 
         return collect($lista)->sortBy(['grupo', 'nombres'])->values();
     }
-    public static function obtenerTrabajadoresXDia($fecha, $actividadId = null)
-    {
-        $cuadrillerosEnFecha = self::obtenerCuadrillerosEnFecha($fecha);
-        $cuadrillerosAgregados = $cuadrillerosEnFecha->toArray();
-
-        foreach ($cuadrillerosAgregados as $indice => $cuadrilleroAgregado) {
-            $cua_asi_sem_cua_id = $cuadrilleroAgregado['cua_asi_sem_cua_id'];
-
-            // valores por defecto
-            $cuadrillerosAgregados[$indice]['bono'] = '-';
-            $cuadrillerosAgregados[$indice]['horas'] = 0;
-            $cuadrillerosAgregados[$indice]['costo_diario'] = 0;
-            $cuadrillerosAgregados[$indice]['total'] = 0;
-
-            // Solo si actividadId está presente, buscamos los datos
-            if ($actividadId) {
-                $actividad = CuadrilleroActividad::where('actividad_id', $actividadId)
-                    ->where('cua_asi_sem_cua_id', $cua_asi_sem_cua_id)
-                    ->first();
-
-                if ($actividad) {
-                    // asignar datos básicos
-                    $cuadrillerosAgregados[$indice]['bono'] = $actividad->total_bono ?? 0;
-                    $cuadrillerosAgregados[$indice]['horas'] = $actividad->total_horas ?? 0;
-                    $cuadrillerosAgregados[$indice]['costo_diario'] = $actividad->total_costo ?? 0;
-
-                    // calcular total
-                    $cuadrillerosAgregados[$indice]['total'] =
-                        ($actividad->total_costo ?? 0) + ($actividad->total_bono ?? 0);
-
-                    // ahora expandir cantidades
-                    $cantidades = $actividad->cantidades ?? [];
-                    if (is_string($cantidades)) {
-                        $cantidades = json_decode($cantidades, true) ?? [];
-                    }
-
-                    foreach ($cantidades as $i => $cantidad) {
-                        $key = 'cantidad_' . ($i + 1);
-                        $cuadrillerosAgregados[$indice][$key] = $cantidad;
-                    }
-                }
-            }
-        }
-
-        return $cuadrillerosAgregados;
-    }
+   
 
 }

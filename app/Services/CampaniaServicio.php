@@ -281,10 +281,10 @@ class CampaniaServicio
             'gasto_planilla' => $this->gastoPlanilla(),
             'gasto_cuadrilla' => $this->gastoCuadrilla()
         ]);
-
+/*
         $this->actualizarConsumo();
         $this->campoCampania->refresh();
-        $this->generarBddMensual();
+        $this->generarBddMensual();*/
     }
     public function generarBddMensual()
     {

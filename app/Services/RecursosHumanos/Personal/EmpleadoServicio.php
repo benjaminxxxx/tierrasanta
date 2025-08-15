@@ -106,7 +106,7 @@ class EmpleadoServicio
         }
         return $trabajadores;
     }
-    public static function guardarBonificaciones($fecha, $datos)
+    public static function guardarBonificaciones($actividad, $datos, $numeroRecojos)
     {
         // 2️⃣ Para cada fila de datos
         foreach ($datos as $fila) {
@@ -114,12 +114,12 @@ class EmpleadoServicio
             $tipo = $fila['tipo'] ?? null;
 
             if ($tipo == 'CUADRILLA') {
-                CuadrilleroServicio::guardarBonoCuadrilla($fila, $fecha);
+                CuadrilleroServicio::guardarBonoCuadrilla($fila, $numeroRecojos,$actividad->id);
             }
             if ($tipo == 'PLANILLA') {
-                PlanillaServicio::guardarBonoPlanilla($fila, $fecha);
+                PlanillaServicio::guardarBonoPlanilla($fila, $actividad->fecha);
             }
         }
-        PlanillaServicio::calcularBonosTotalesPlanilla($fecha);
+        //PlanillaServicio::calcularBonosTotalesPlanilla($fecha);
     }
 }

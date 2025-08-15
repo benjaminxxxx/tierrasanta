@@ -1,7 +1,7 @@
 <x-app-layout>
 
-    <link rel="stylesheet" href="{{ asset('css/handsontable.css') }}">
-    <script src="{{ asset('js/handsontable.js') }}"></script>
+    
+    @include('comun.handsontable')
 
     <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css">
     <script src="https://unpkg.com/@popperjs/core@2"></script>

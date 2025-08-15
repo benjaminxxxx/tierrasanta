@@ -33,6 +33,14 @@ class Empleado extends Model
         'asistencia',
         'tipo_planilla'
     ];
+    public function contratos()
+    {
+        return $this->hasMany(Contrato::class, 'empleado_id');
+    }
+    public function ultimoContrato()
+    {
+        return $this->hasOne(Contrato::class, 'empleado_id')->latestOfMany('fecha_inicio');
+    }
     public function descuento()
     {
         return $this->belongsTo(DescuentoSP::class, 'descuento_sp_id');
@@ -62,13 +70,13 @@ class Empleado extends Model
         $descripcion = '-';
         switch ($this->tipo_planilla) {
             case 1:
-                $descripcion  =  'P. AGRARIA';
+                $descripcion = 'P. AGRARIA';
                 break;
             case 2:
-                $descripcion  =  'P. OFICINA';
+                $descripcion = 'P. OFICINA';
                 break;
             default:
-                $descripcion  =  'P. DESCONOCIDA';
+                $descripcion = 'P. DESCONOCIDA';
                 break;
         }
         return $descripcion;
@@ -101,4 +109,5 @@ class Empleado extends Model
             'cantidad' => $cantidadHijos,
         ];
     }
+
 }

@@ -9,22 +9,14 @@ class Actividad extends Model
 {
     use HasFactory;
     protected $table = 'actividades';
-    /*
-    Antigua estructura, ahora con mas campos
-    protected $fillable = [
-        'fecha',
-        'campo',
-        'labor_id',
-        'horas_trabajadas',
-        'labor_valoracion_id',
-    ];*/
+
     protected $fillable = [
         'fecha',
         'campo',
         'labor_id',
         'nombre_labor',
         'codigo_labor',
-        //'horarios',
+        'recojos',
         'tramos_bonificacion',
         'estandar_produccion',
         'total_horas',
@@ -50,15 +42,5 @@ class Actividad extends Model
     {
         return $this->hasMany(CuadrilleroActividad::class, 'actividad_id');
     }
-    /*obsoleto por cambiar
-    public function getKgAttribute()
-    {
-        return $this->valoracion ? $this->valoracion->kg_8 : '-';
-    }*/
-
-    protected $casts = [
-        'horarios' => 'array',
-        'tramos_bonificacion' => 'array',
-    ];
 
 }

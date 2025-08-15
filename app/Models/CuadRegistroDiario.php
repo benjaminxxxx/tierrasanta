@@ -28,6 +28,10 @@ class CuadRegistroDiario extends Model
     ];
 
     // Relaciones
+    public function actividadesBonos()
+    {
+        return $this->hasMany(CuadActividadBono::class, 'registro_diario_id');
+    }
     public function cuadrillero()
     {
         return $this->belongsTo(Cuadrillero::class);
@@ -37,6 +41,7 @@ class CuadRegistroDiario extends Model
     {
         return $this->hasMany(CuadDetalleHora::class, 'registro_diario_id');
     }
+    
 
     // Accesor para total_costo calculado
     public function getTotalCostoAttribute()

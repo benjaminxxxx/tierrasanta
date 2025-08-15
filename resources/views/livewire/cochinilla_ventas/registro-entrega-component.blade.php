@@ -41,7 +41,7 @@
                             <x-td class="text-center">{{ $venta->fecha_venta }}</x-td>
                             <x-td class="text-center">
                                 <b>
-                                    {{ $venta->total_venta ? 'S/ ' . number_format($venta->total_venta, 2) : '-' }}
+                                    {{ $venta->total_venta ? number_format($venta->total_venta, 2) : '-' }}
                                 </b>
                             </x-td>
                             <x-td class="text-center">

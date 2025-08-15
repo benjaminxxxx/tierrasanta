@@ -79,7 +79,7 @@
                             $fecha_actual_estilo = $fechasRegistrada==$fecha_inicio?'text-primaryText bg-primary':''; // Ajusta esto según tu lógica
                         @endphp
                         <a href="#" wire:click.prevent="cambiarFechaA('{{ $fechasRegistrada }}')" aria-current="true"
-                            class="block w-full px-4 py-3 {{$fecha_actual_estilo}} text-center font-bold border-b border-gray-200 rounded-t-lg cursor-pointer dark:bg-gray-800 dark:border-gray-600">
+                            class="block w-full px-4 py-3 {{$fecha_actual_estilo}} text-center font-bold border-b border-gray-200 rounded-t-lg cursor-pointer dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
                             {{ $fechasRegistrada }}
                         </a>
                     @endforeach

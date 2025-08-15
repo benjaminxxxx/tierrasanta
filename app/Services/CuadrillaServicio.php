@@ -6,6 +6,8 @@ use App\Models\Actividad;
 use App\Models\CampoCampania;
 use App\Models\CuaAsistenciaSemanal;
 use App\Models\CuaAsistenciaSemanalCuadrillero;
+use App\Models\CuadDetalleHora;
+use App\Models\CuadRegistroDiario;
 use App\Models\CuadrillaHora;
 use App\Models\CuadrilleroActividad;
 use App\Support\ExcelHelper;
@@ -39,50 +41,64 @@ class CuadrillaServicio
             throw new Exception("La campaña no existe.");
         }
 
-        $query = Actividad::whereDate('fecha', '>=', $campoCampania->fecha_inicio)
-            ->where('campo', $campoCampania->campo);
+        $fechaInicio = $campoCampania->fecha_inicio;
+        $fechaFin = $campoCampania->fecha_fin??Carbon::now()->format('Y-m-d');
 
-        if ($campoCampania->fecha_fin) {
-            $query->whereDate('fecha', '<=', $campoCampania->fecha_fin);
-        }
+        $actividades = Actividad::whereBetween('fecha', [$fechaInicio,$fechaFin])
+            ->where('campo', $campoCampania->campo)
+            ->get();
 
-        // Verificamos si existen actividades antes de continuar
-        if (!$query->exists()) {
+        if(!$actividades){
             return 0;
         }
 
-        // Obtener actividades y buscar cuadrillero en la misma consulta
-        $cuadrilleroActividades = CuadrilleroActividad::whereIn('actividad_id', $query->pluck('id'))
-            ->with(['actividad', 'cuadrillero', 'labor'])
-            ->get()
-            ->toArray();
+        $registros = [];
 
-
+        foreach ($actividades as $actividad) {
+            $fecha = $actividad->fecha;
+            $campo = $actividad->campo;
+            $data = CuadDetalleHora::with(['registroDiario'])
+            ->where('campo_nombre',$campo)
+            ->whereHas('registroDiario',function ($registroDiario) use ($fecha){
+                return $registroDiario->whereDate('fecha',$fecha);
+            })
+            ->get();
+            if($data){
+                foreach ($data as $registro) {
+                    $registros[] = $registro;
+                }
+            }
+            
+            
+        }
 
         $lista = [];
         $total = 0;
-        foreach ($cuadrilleroActividades as $detalle) {
+        foreach ($registros as $registroData) {
 
-            $horasTotales = (float) $detalle['actividad']['horas_trabajadas'];
+            dd($registroData);
             $factor = 1;
-
-            $fecha = $detalle['actividad']['fecha'];
+            /**
+             *    "id" => 565
+                    "cuadrillero_id" => 2
+                    "fecha" => "2025-08-07"
+                    "costo_personalizado_dia" => null
+                    "asistencia" => 1
+                    "total_horas" => "8.00"
+                    "total_bono" => "320.00"
+                    "costo_dia" => "90.00"
+                    "created_at" => "2025-08-05 23:03:32"
+                    "updated_at" => "2025-08-09 01:37:55"
+                    "esta_pagado" => 0
+             */ 
+            
             $nombreCampania = $campoCampania->nombre_campania;
-            $documento = $detalle['cuadrillero']['dni'];
-            $empleadoNombre = $detalle['cuadrillero']['nombres'];
-            $campo = $detalle['actividad']['campo'];
-            $horasTrabajadas = $detalle['actividad']['horas_trabajadas'];
-            $totalCosto = $detalle['total_costo'];
-            $totalBono = $detalle['total_bono'];
-            $labor = $detalle['labor']['nombre_labor'] . ' (' . $detalle['labor']['id'] . ')';
-            // Evitar división por cero
-            $costoHora = ($horasTotales > 0) ? ($totalCosto + $totalBono) / $horasTotales : 0;
 
             $lista[] = [
                 'campos_campanias_id' => $campoCampania->id,
                 'nombre_campania' => $nombreCampania,
-                'labor' => $labor,
-                'fecha' => $fecha,
+                'labor' => $registroData->codigo_labor,
+                'fecha' => $registroData->registroDiario->fecha,
                 'documento' => $documento,
                 'empleado_nombre' => $empleadoNombre,
                 'campo' => $campo,
