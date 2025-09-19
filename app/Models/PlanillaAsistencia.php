@@ -39,7 +39,7 @@ class PlanillaAsistencia extends Model
         
         $ultimoDiaMes = Carbon::createFromDate($anio, $mes, 1)->endOfMonth()->day;
         $informacionAsistenciaAdicional = [];
-        $empleadosDatas = Empleado::planillaAgraria()->get()->keyBy('documento')->toArray();
+        $empleadosDatas = Empleado::planillaAgraria($mes,$anio)->get()->keyBy('documento')->toArray();
 
 
         $empleados = self::where('mes', $mes)

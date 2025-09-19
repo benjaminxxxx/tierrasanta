@@ -19,7 +19,8 @@ class CuadRegistroDiario extends Model
         'total_bono',
         'total_horas',
         'costo_dia',
-        'esta_pagado'
+        'esta_pagado',
+        'codigo_grupo'
     ];
 
     protected $casts = [
@@ -28,6 +29,10 @@ class CuadRegistroDiario extends Model
     ];
 
     // Relaciones
+    public function grupo()
+    {
+        return $this->belongsTo(CuaGrupo::class,'codigo_grupo');
+    }
     public function actividadesBonos()
     {
         return $this->hasMany(CuadActividadBono::class, 'registro_diario_id');

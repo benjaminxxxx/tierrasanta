@@ -36,7 +36,7 @@
                                     </x-td>
                                     <x-td>
                                         <x-input type="date" x-model="item.fecha"
-                                            class="form-input w-full" />
+                                            class="form-input w-full" min="{{ $tramoLaboral->fecha_inicio }}" max="{{ $tramoLaboral->fecha_fin }}" />
                                     </x-td>
                                     <x-td>
                                         <x-input type="number" step="0.01" x-model="item.monto"
@@ -67,7 +67,7 @@
                         wire:loading.attr="disabled">
                         Cerrar
                     </x-secondary-button>
-                    <x-button @click="guardar">
+                    <x-button @click="guardarDatosAdicionalesCuadrilla">
                         <i class="fa fa-save"></i> Guardar cambios
                     </x-button>
                 </x-flex>
@@ -81,10 +81,12 @@
     Alpine.data('gestionGastosAdicionales', () => ({
         gastos: @entangle('gastos'),
         grupos: @js($grupos),
+        fechaDefault: @entangle('fechaDefault'),
 
         agregarFilaSiEsUltima(index) {
+            console.log(this.fechaDefault);//2025-08-02T00:00:00-05:00
             if (index === this.gastos.length - 1) {
-                this.gastos.push({ grupo: '', descripcion: '', fecha: '', monto: '' });
+                this.gastos.push({ grupo: '', descripcion: '', fecha: this.fechaDefault, monto: '' });
             }
         },
 
@@ -104,7 +106,7 @@
             }, 0);
         },
 
-        guardar() {
+        guardarDatosAdicionalesCuadrilla() {
             const datosFiltrados = this.gastos.filter(
                 item => item.grupo || item.descripcion || item.fecha || item.monto
             );

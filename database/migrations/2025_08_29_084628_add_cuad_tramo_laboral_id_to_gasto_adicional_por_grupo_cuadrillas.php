@@ -12,7 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('gasto_adicional_por_grupo_cuadrillas', function (Blueprint $table) {
-            $table->timestamp('fecha_gasto')->default(DB::raw('CURRENT_TIMESTAMP'))->after('updated_at');
+            $table->unsignedBigInteger('cuad_tramo_laboral_id')->nullable()->after('id');
+
+            $table->foreign('cuad_tramo_laboral_id', 'fk_gasto_tra_lab1')
+                ->references('id')
+                ->on('cuad_tramo_laborals')
+                ->onDelete('cascade');
         });
     }
 
@@ -22,7 +27,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('gasto_adicional_por_grupo_cuadrillas', function (Blueprint $table) {
-            $table->dropColumn('fecha_gasto');
+            $table->dropForeign('fk_gasto_tra_lab1');
+            $table->dropColumn('cuad_tramo_laboral_id');
         });
     }
 };

@@ -1,9 +1,8 @@
 <?php
 
 namespace App\Livewire\GestionCuadrilla;
-use App\Models\CuaGrupo;
-use App\Models\Grupo;
 use App\Services\Cuadrilla\CuadrilleroServicio;
+use App\Services\Cuadrilla\TramoLaboralServicio;
 use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -13,54 +12,54 @@ class GestionCuadrillaGastosAdicionalesComponent extends Component
     use LivewireAlert;
 
     public $mostrarFormularioGastosAdicionales = false;
+    public $tramoLaboral;
     public $inicio;
-    public $rangoDias = 7;
     public $grupos = [];
     public $gastos = [];
+    public $fechaDefault;
     protected $listeners = ['abrirGastosAdicionales'];
-    public function mount()
+    public function mount($tramoId)
     {
-        $this->grupos = CuaGrupo::where('estado',true)->get()->pluck('nombre')->toArray();
+        $this->tramoLaboral = app(TramoLaboralServicio::class)->encontrarTramoPorId($tramoId);
+        $this->grupos = $this->tramoLaboral->grupos()->get()->pluck('nombre')->toArray();
     }
-    public function abrirGastosAdicionales($inicio)
+    public function abrirGastosAdicionales()
     {
-        $this->inicio = $inicio;
-        $this->fin = Carbon::parse($inicio)->addDays($this->rangoDias);
+        $inicio = $this->tramoLaboral->fecha_inicio;
+        $fin = $this->tramoLaboral->fecha_fin;
 
         $this->mostrarFormularioGastosAdicionales = true;
-        $this->gastos = CuadrilleroServicio::listarHandsontableGastosAdicionales($this->inicio,$this->fin);
- 
-  /*
-  array:2 [▼ // app\Livewire\GestionCuadrilla\GestionCuadrillaGastosAdicionalesComponent.php:32
-  0 => array:4 [▼
-    "grupo" => "COSEDORES"
-    "descripcion" => "ddd"
-    "fecha" => "2025-08-06"
-    "monto" => "44.00"
-  ]
-  1 => array:4 [▼
-    "grupo" => "COSEDORES"
-    "descripcion" => "ddffffff"
-    "fecha" => "2025-08-07"
-    "monto" => "33.00"
-  ]
-]
-   */
+        $this->gastos = CuadrilleroServicio::listarHandsontableGastosAdicionales($inicio, $fin);
+
+        $inicio = Carbon::parse($inicio);
+        $fin = Carbon::parse($fin);
+        $hoy = Carbon::today();
+        $fechaDefault = null;
+
+        if ($inicio->equalTo($fin)) {
+            $fechaDefault = $inicio;
+        } elseif ($hoy->between($inicio, $fin)) {
+            $fechaDefault = $hoy;
+        } else {
+            $fechaDefault = $inicio;
+        }
+        $this->fechaDefault = $fechaDefault->toDateString();
         $this->gastos[] = [
-                'grupo'=> '', 
-                'descripcion'=>  '', 
-                'fecha'=>  '', 
-                'monto'=> ''
-            ];
+            'grupo' => '',
+            'descripcion' => '',
+            'fecha' => $this->fechaDefault,
+            'monto' => ''
+        ];
     }
-    public function storeTableDataGuardarDatosAdicionales($datos){
-     
+    public function storeTableDataGuardarDatosAdicionales($datos)
+    {
+
         try {
-            CuadrilleroServicio::guardarGastosAdicionalesXGrupo($datos,$this->inicio,$this->rangoDias);
+            CuadrilleroServicio::guardarGastosAdicionalesXGrupo($this->tramoLaboral->id, $datos, $this->tramoLaboral->fecha_inicio, $this->tramoLaboral->fecha_fin);
             $this->mostrarFormularioGastosAdicionales = false;
-            $this->alert('success','Los gastos adicionales han sido registrados.');
+            $this->alert('success', 'Los gastos adicionales han sido registrados.');
         } catch (\Throwable $th) {
-            $this->alert('error',$th->getMessage());
+            $this->alert('error', $th->getMessage());
         }
     }
     public function render()

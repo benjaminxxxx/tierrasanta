@@ -6,17 +6,17 @@
             <div class="mt-5 flex flex-wrap gap-4">
                 <x-group-field>
                     <x-label>Días Laborables</x-label>
-                    <x-input wire:model.live="diasLaborables" />
+                    <x-input wire:model="diasLaborables" @input="calcularTotalHoras(event.target.value)" />
                 </x-group-field>
 
                 <x-group-field>
                     <x-label>Total Horas</x-label>
-                    <x-input wire:model.live="totalHoras" />
+                    <x-input wire:model="totalHoras" />
                 </x-group-field>
 
                 <x-group-field>
                     <x-label>Factor Rem. Básica</x-label>
-                    <x-input wire:model.live="factorRemuneracionBasica" />
+                    <x-input wire:model="factorRemuneracionBasica" />
                 </x-group-field>
 
                 <x-group-field>
@@ -160,6 +160,7 @@
     Alpine.data('planilla_blanco', () => ({
         listeners: [],
         tableData: @json($informacionBlancoDetalle),
+        totalHoras: @entangle('totalHoras'),
         hot: null,
         init() {
 
@@ -214,6 +215,11 @@
             this.hot.render();
 
             //this.calcularTotales();
+        },
+        calcularTotalHoras(diasLaborables){
+            if(diasLaborables>0){
+                this.totalHoras = diasLaborables * 8;
+            }
         },
         isValidTimeFormat(time) {
             const timePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;

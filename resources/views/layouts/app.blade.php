@@ -156,10 +156,7 @@ $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(valu
         <x-sidebar2 />
         <main class="flex-1 p-5 overflow-auto">
             {{ $slot }}
-
-            
         </main>
-       
     </div>
 
     @stack('modals')

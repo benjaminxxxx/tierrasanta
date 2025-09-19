@@ -14,14 +14,14 @@ class CuadrillaDesdeEmpleadosComponent extends Component
     public $mostrarFormulario = false;
     public $empleadosSeleccionados = [];
     protected $listeners = ["registrarCuadrilleroDePlanilla"];
-    public function registrarCuadrilleroDePlanilla(){
+    /*public function registrarCuadrilleroDePlanilla(){
         $this->empleados = Empleado::planillaAgraria()
         ->orderBy('apellido_paterno')
         ->orderBy('apellido_materno')
         ->orderBy('nombres')
         ->get();
         $this->mostrarFormulario = true;
-    }
+    }*/
     public function registrarSeleccionados(){
         $dataAgregados = [];
         if(is_array($this->empleadosSeleccionados) && count($this->empleadosSeleccionados)>0){

@@ -10,7 +10,7 @@ class CuadOrdenSemanal extends Model
 
     protected $fillable = [
         'cuadrillero_id',
-        'fecha_inicio',
+        'cuad_tramo_laboral_id',
         'orden',
         'codigo_grupo'
     ];

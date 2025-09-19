@@ -49,9 +49,7 @@ class GestionCuadrillaReporteSemanalComponent extends Component
     public $gruposDisponibles = [];
     public $colorPorGrupo;
     public $cuadrilleros = [];
-    public $diasSemana = [];
-    public $mostrarFormularioCostoHora = false;
-    public $cuadrillerosCostosPersonalizados = [];
+    
 
     #region Agregar Cuadrillero a semana
     public $mostrarAgregarCuadrillero = false;
@@ -119,97 +117,8 @@ class GestionCuadrillaReporteSemanalComponent extends Component
         $this->obtenerReporteSemanal();
     }
 
-    public function abrirPrecioPersonalizado($cuadrilleros)
-    {
-        try {
-            //Buscar al menos un registro con cuadrillero_id siendo null
-            $existeRegistroNuevo = collect($cuadrilleros)->some('cuadrillero_id', null);
-            if ($existeRegistroNuevo) {
-                throw new Exception("Guarde primero los registros, clic en Actualizar horas");
-            }
-
-            if ($this->ocurrioModificaciones) {
-                throw new Exception("Guarde primero los registros, clic en Actualizar horas");
-            }
-            $inicio = $this->semana->inicio;
-            $fin = $this->semana->fin;
-
-            $registros = CuadRegistroDiario::whereBetween('fecha', [$inicio, $fin])
-                ->whereNotNull('costo_personalizado_dia')
-                ->get(['cuadrillero_id', 'fecha', 'costo_personalizado_dia']);
-
-            $diasSemana = [];
-
-            // Inicializar las fechas de la semana vacías
-            $periodo = CarbonPeriod::create($inicio, $fin);
-            foreach ($periodo as $date) {
-                $fechaStr = $date->toDateString();
-                $diasSemana[] = $fechaStr;
-            }
-
-            $registroCuadrilla = [];
-
-            foreach ($cuadrilleros as $cuadrilla) {
-                $indiceCuadrilla = $cuadrilla['cuadrillero_id'];
-                $registroCuadrilla[$indiceCuadrilla] = [
-                    'cuadrillero_id' => $cuadrilla['cuadrillero_id'],
-                    'cuadrillero_nombres' => $cuadrilla['cuadrillero_nombres'],
-                ];
-                foreach ($periodo as $key => $date) {
-                    $fechaStr = $date->toDateString();
-                    $costoPersonalizado = $registros->first(function ($registro) use ($indiceCuadrilla, $fechaStr) {
-                        return $registro->cuadrillero_id === $indiceCuadrilla && $registro->fecha->toDateString() === $fechaStr;
-                    });
-
-                    $registroCuadrilla[$indiceCuadrilla]['costos'][$key] = $costoPersonalizado?->costo_personalizado_dia;
-                }
-            }
-
-            $this->diasSemana = $diasSemana;
-            $this->cuadrillerosCostosPersonalizados = $registroCuadrilla;
-            $this->mostrarFormularioCostoHora = true;
-        } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
-        }
-    }
-    public function registrarCostoPersonalizado()
-    {
-        try {
-            DB::beginTransaction();
-
-            foreach ($this->cuadrillerosCostosPersonalizados as $cuadrilla) {
-                $cuadrilleroId = $cuadrilla['cuadrillero_id'];
-
-                foreach ($cuadrilla['costos'] as $index => $costo) {
-                    $fecha = $this->diasSemana[$index];
-
-                    if (!is_null($costo)) {
-
-                        CuadRegistroDiario::updateOrCreate(
-                            [
-                                'cuadrillero_id' => $cuadrilleroId,
-                                'fecha' => $fecha,
-                            ],
-                            [
-                                'costo_personalizado_dia' => $costo,
-                            ]
-                        );
-                    }
-                }
-            }
-
-            CuadrilleroServicio::calcularCostosCuadrilla($this->semana->inicio, $this->semana->fin);
-
-            DB::commit();
-            $this->obtenerReporteSemanal();
-            $this->alert('success', 'Costos personalizados actualizados correctamente');
-            $this->mostrarFormularioCostoHora = false;
-
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            $this->alert('error', 'Error al guardar: ' . $th->getMessage());
-        }
-    }
+   
+    
 
     public function obtenerReporteSemanal($dispatch = true)
     {
@@ -273,10 +182,7 @@ class GestionCuadrillaReporteSemanalComponent extends Component
     {
         $this->seleccionarSemana();
     }
-    public function updatedCodigoGrupo()
-    {
-        $this->obtenerCuadrillerosAgregados();
-    }
+    
     public function seleccionarSemana()
     {
         // Si no llegan, usar valores por defecto
@@ -321,20 +227,7 @@ class GestionCuadrillaReporteSemanalComponent extends Component
         ];
     }
 
-    public function storeTableDataGuardarHoras($datos)
-    {
-        try {
-
-            $fechaInicio = $this->semana->inicio;
-            $fechaFin = $this->semana->fin;
-            CuadrilleroServicio::guardarReporteSemanal($fechaInicio, $fechaFin, $datos);
-            CuadrilleroServicio::calcularCostosCuadrilla($fechaInicio, $fechaFin);
-            $this->obtenerReporteSemanal();
-            $this->alert('success', 'Información actualizada');
-        } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
-        }
-    }
+   
     #endregion
 
     #region Agregar Cuadrillero a semana
@@ -358,53 +251,8 @@ class GestionCuadrillaReporteSemanalComponent extends Component
             $this->alert('error', $th->getMessage());
         }
     }
-    public function obtenerCuadrillerosAgregados()
-    {
-        if (!$this->codigo_grupo) {
-            $this->cuadrillerosAgregados = [];
-            return;
-        }
-        $this->cuadrillerosAgregados = CuadOrdenSemanal::whereDate('fecha_inicio', $this->fechaInicioSemana)
-            ->with(['cuadrillero'])
-            ->where('codigo_grupo', $this->codigo_grupo)
-            ->orderBy('orden')
-            ->get(['cuadrillero_id', 'fecha_inicio', 'orden'])
-            ->map(function ($cuadOrdenSemanal) {
-                return [
-                    'id' => $cuadOrdenSemanal->cuadrillero_id,
-                    'nombres' => $cuadOrdenSemanal->cuadrillero->nombres
-                ];
-            })
-            ->toArray();
-    }
-    public function agregarListaOBSOLETOAgregada()
-    {
-        try {
-            if (empty($this->cuadrillerosAgregados)) {
-                throw new Exception("No ha agregado ningún cuadrillero");
-            }
-            if (!$this->codigo_grupo) {
-                throw new Exception("No ha elegido ningún grupo");
-            }
-            $fechaInicio = $this->fechaInicioSemana;
-            $rows = [];
-            foreach ($this->cuadrillerosAgregados as $cuadrillero) {
-
-                $rows[] = [
-                    'cuadrillero_nombres' => $cuadrillero['nombres'],
-                    'cuadrillero_id' => $cuadrillero['id']
-                ];
-            }
-
-            CuadrilleroServicio::registrarOrdenSemanal($fechaInicio, $this->codigo_grupo, $rows);
-            $this->alert('success', "Registros agregados");
-            $this->mostrarAgregarCuadrillero = false;
-            $this->resetForm();
-            $this->obtenerReporteSemanal();
-        } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
-        }
-    }
+    
+    
     public function resetForm()
     {
         $this->resetErrorBag();

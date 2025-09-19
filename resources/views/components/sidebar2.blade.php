@@ -78,8 +78,7 @@
         'empleados.asignacion_familiar',
         'empleados'
 
-    ])" logo='fa fa-table'
-                text="Planilla">
+    ])" logo='fa fa-table' text="Planilla">
                 <x-nav-link-child href="{{ route('reporte.reporte_diario') }}"
                     :active="request()->routeIs('reporte.reporte_diario')">
                     Reporte diario (actividades)
@@ -199,13 +198,11 @@
                     Siembras
                 </x-nav-link-child>
             </x-nav-link-parent>
-            <x-nav-link-parent name="sectorCampanias" :active="request()->routeIs(['campo.campania', 'campanias','campania.costos'])"
-                logo="fa fa-flag" text="Campañas">
+            <x-nav-link-parent name="sectorCampanias" :active="request()->routeIs(['campo.campania', 'campanias', 'campania.costos'])" logo="fa fa-flag" text="Campañas">
                 <x-nav-link-child href="{{ route('campanias') }}" :active="request()->routeIs('campanias')">
                     Todas las campañas
                 </x-nav-link-child>
-                <x-nav-link-child href="{{ route('campania.costos') }}"
-                    :active="request()->routeIs('campania.costos')">
+                <x-nav-link-child href="{{ route('campania.costos') }}" :active="request()->routeIs('campania.costos')">
                     Costos
                 </x-nav-link-child>
                 <x-nav-link-child href="{{ route('campo.campania') }}" :active="request()->routeIs('campo.campania')">
@@ -277,7 +274,7 @@
 
             <x-nav-link-parent name="sectorFdm" :active="request()->routeIs(['fdm.costos_generales'])"
                 logo="fa fa-coins" text="Costos">
-                
+
                 <x-nav-link-child href="{{ route('fdm.costos_generales') }}"
                     :active="request()->routeIs('fdm.costos_generales')">
                     Costos Generales FDM
@@ -485,15 +482,24 @@
 
         // Close user menu when clicking outside
         document.addEventListener('click', function (event) {
-            const userMenu = event.target.closest('#user-dropdown') || event.target.closest('button[onclick="toggleUserMenu()"]');
+            const userMenu = event.target.closest('#user-dropdown')
+                || event.target.closest('button[onclick="toggleUserMenu()"]');
+
             if (!userMenu) {
                 const dropdown = document.getElementById('user-dropdown');
                 const chevron = document.getElementById('user-chevron');
-                dropdown.classList.add('opacity-0', 'invisible');
-                dropdown.classList.remove('opacity-100', 'visible');
-                chevron.classList.remove('fa-chevron-down');
-                chevron.classList.add('fa-chevron-up');
+
+                if (dropdown) {
+                    dropdown.classList.add('opacity-0', 'invisible');
+                    dropdown.classList.remove('opacity-100', 'visible');
+                }
+
+                if (chevron) {
+                    chevron.classList.remove('fa-chevron-down');
+                    chevron.classList.add('fa-chevron-up');
+                }
             }
         });
+
     </script>
 </div>

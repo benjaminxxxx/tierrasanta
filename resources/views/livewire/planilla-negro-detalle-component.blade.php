@@ -16,6 +16,21 @@
             --tw-text-opacity: 1 !important;
             color: rgb(22 163 74 / var(--tw-text-opacity)) !important;
         }
+
+        body .handsontable .htDimmed.\!text-indigo-700 {
+            --tw-text-opacity: 1 !important;
+            color: rgb(67 56 202 / var(--tw-text-opacity)) !important;
+        }
+
+        body .handsontable .htDimmed.\!bg-blue-100 {
+            --tw-bg-opacity: 1 !important;
+            background-color: rgb(219 234 254 / var(--tw-bg-opacity)) !important;
+        }
+
+        body .handsontable .htDimmed.\!bg-\[\#F2DCDB\] {
+            --tw-bg-opacity: 1 !important;
+            background-color: rgb(242 220 219 / var(--tw-bg-opacity)) !important;
+        }
     </style>
 </div>
 
@@ -154,7 +169,13 @@
                 className: '!text-center',
                 readOnly: true
             },
-
+            {
+                data: 'negro_sueldo_por_hora_total',
+                type: 'text',
+                title: 'SUELDO<br/>POR HORA<br/>TOTAL',
+                className: '!text-center !bg-blue-100 text-lg font-bold !text-indigo-700',
+                readOnly: true
+            },
             {
                 data: 'negro_diferencia_por_hora',
                 type: 'text',

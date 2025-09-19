@@ -37,6 +37,22 @@ class Empleado extends Model
     {
         return $this->hasMany(Contrato::class, 'empleado_id');
     }
+    public static function planillaAgraria($mes, $anio)
+    {
+        $fechaInicioMes = Carbon::createFromDate($anio, $mes, 1)->startOfMonth();
+        $fechaFinMes = Carbon::createFromDate($anio, $mes, 1)->endOfMonth();
+
+        return self::where('status', 'activo')
+            ->whereHas('contratos', function ($query) use ($fechaInicioMes, $fechaFinMes) {
+                $query->where('tipo_planilla', '1')
+                    ->where('fecha_inicio', '<=', $fechaFinMes)
+                    ->where(function ($q) use ($fechaInicioMes) {
+                        $q->whereNull('fecha_fin')
+                            ->orWhere('fecha_fin', '>=', $fechaInicioMes);
+                    });
+            });
+    }
+
     public function ultimoContrato()
     {
         return $this->hasOne(Contrato::class, 'empleado_id')->latestOfMany('fecha_inicio');
@@ -61,10 +77,7 @@ class Empleado extends Model
     {
         return "{$this->apellido_paterno} {$this->apellido_materno}, {$this->nombres}";
     }
-    public static function planillaAgraria()
-    {
-        return self::where('status', 'activo')->where('tipo_planilla', '1');
-    }
+
     public function getTipoPlanillaDescripcionAttribute()
     {
         $descripcion = '-';

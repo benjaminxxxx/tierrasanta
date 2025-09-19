@@ -180,13 +180,7 @@ class PlanillaBlancoDetalleComponent extends Component
 
         return $factorRemuneracionBasica;
     }
-    public function render()
-    {
-        if ($this->mes) {
-            $this->mesTitulo = $this->meses[$this->mes - 1];
-        }
-        return view('livewire.planilla-blanco-detalle-component');
-    }
+
     public function guardarPlanillaDatos($option = 1)
     {
         if (!$this->informacionBlanco) {
@@ -277,13 +271,6 @@ class PlanillaBlancoDetalleComponent extends Component
     }
 
 
-    public function updatedDiasLaborables()
-    {
-        if ($this->diasLaborables > 0) {
-            $this->totalHoras = $this->diasLaborables * 8;
-        }
-
-    }
     public function generarPlanilla()
     {
         try {
@@ -293,8 +280,8 @@ class PlanillaBlancoDetalleComponent extends Component
             //$configuracion = Configuracion::get()->pluck('valor', 'codigo')->toArray();
 
             $asignacionFamiliar = $this->asignacionFamiliar ?? 0;
-            
-            $empleadosDisponibles = Empleado::planillaAgraria()
+
+            $empleadosDisponibles = Empleado::planillaAgraria($this->mes, $this->anio)
                 ->with(['descuento', 'asignacionFamiliar', 'contratos', 'contratos.descuento'])
                 ->get()->keyBy('documento')->toArray();
 
@@ -328,10 +315,11 @@ class PlanillaBlancoDetalleComponent extends Component
 
 
             if ($planillaAsistencia) {
+
                 foreach ($planillaAsistencia as $asistencia) {
 
                     $empleadoData = $empleadosDisponibles[$asistencia->documento] ?? null;
-                    
+
                     if (!$empleadoData) {
                         continue;
                         //throw new \Exception("Empleado no encontrado para el documento: {$asistencia->documento}");
@@ -370,14 +358,13 @@ class PlanillaBlancoDetalleComponent extends Component
                     $estaJubilado = $contratoMasCercano['esta_jubilado'];
                     //FIN MODULO DE CONTRATOS
                     $bonificacion = isset($planillaDetalle[$asistencia->documento]) ? $planillaDetalle[$asistencia->documento] : 0;
-                    
+
                     //Si tiene una cantidad de hijos registros mayor a 0, asignar al valor de la asignacion familiar
                     $asignacionFamiliar = count($empleadoData['asignacion_familiar']) > 0 ? $asignacionFamiliar : 0;
 
 
-                    $descuentoSeguro = $this->obtenerDescuentoEmpleado($empleadoData, $this->anio, $this->mes, $contratoMasCercano);
+                    $descuentoSeguro = $this->obtenerDescuentoEmpleado($empleadoData, $this->anio, $this->mes, $contratoMasCercano,$descuentosAgrupados);
                     $grupoColor = $this->grupoColores[$grupoCodigo] ?? '#ffffff';
-                    
 
                     $sueldoPersonal = $contratoMasCercano['sueldo'];
                     $totalHoras = isset($this->reporteTotalHorasPorMes[$empleadoData['documento']]) ? $this->reporteTotalHorasPorMes[$empleadoData['documento']] : 0;
@@ -416,22 +403,6 @@ class PlanillaBlancoDetalleComponent extends Component
             if (!is_numeric($this->diasLaborables) || $this->diasLaborables <= 0) {
                 throw new Exception("Debe registrar un valor numérico válido para los días laborables de este mes.");
             }
-            /*
-
-            $ctsPorcentaje = array_key_exists('cts_porcentaje', $configuracion) ? $configuracion['cts_porcentaje'] : 0;
-            $gratificacionesPorcentaje = array_key_exists('gratificaciones', $configuracion) ? $configuracion['gratificaciones'] : 0;
-            $essaludGratificacionesPorcentaje = array_key_exists('essalud_gratificaciones', $configuracion) ? $configuracion['essalud_gratificaciones'] : 0;
-            $rmv = array_key_exists('rmv', $configuracion) ? $configuracion['rmv'] : 1025;
-            $beta30Porcentaje = array_key_exists('beta30', $configuracion) ? $configuracion['beta30'] : 30;
-            $essaludPorcentaje = array_key_exists('essalud', $configuracion) ? $configuracion['essalud'] : 6;
-            $vidaLey = array_key_exists('vida_ley', $configuracion) ? $configuracion['vida_ley'] : 0;
-            $vidaLeyPorcentaje = array_key_exists('vida_ley_porcentaje', $configuracion) ? $configuracion['vida_ley_porcentaje'] : 0;
-            $pensionSctr = array_key_exists('pension_sctr', $configuracion) ? $configuracion['pension_sctr'] : 0;
-            $pensionSctrPorcentaje = array_key_exists('pension_sctr_porcentaje', $configuracion) ? $configuracion['pension_sctr_porcentaje'] : 0;
-            $essaludEpsPorcentaje = array_key_exists('essalud_eps', $configuracion) ? $configuracion['essalud_eps'] : 0;
-            $porcentajeConstante = array_key_exists('porcentaje_constante', $configuracion) ? $configuracion['porcentaje_constante'] : 0;
-            $rem_basica_essalud = array_key_exists('rem_basica_essalud', $configuracion) ? $configuracion['rem_basica_essalud'] : 0;
-*/
             $horas = PlanillaAsistencia::horas($this->anio, $this->mes);
             $bonos = PlanillaServicio::obtenerBonosPlanilla($this->anio, $this->mes);
 
@@ -441,19 +412,19 @@ class PlanillaBlancoDetalleComponent extends Component
                 'diasLaborables' => $this->diasLaborables,
                 'factorRemuneracionBasica' => $this->factorRemuneracionBasica,
                 'empleados' => $asistencias,
-                'ctsPorcentaje' => $ctsPorcentaje,
-                'gratificacionesPorcentaje' => $gratificacionesPorcentaje,
-                'essaludGratificacionesPorcentaje' => $essaludGratificacionesPorcentaje,
-                'rmv' => $rmv,
-                'beta30Porcentaje' => $beta30Porcentaje,
-                'essaludPorcentaje' => $essaludPorcentaje,
-                'vidaLey' => $vidaLey,
-                'vidaLeyPorcentaje' => $vidaLeyPorcentaje,
-                'pensionSctr' => $pensionSctr,
-                'pensionSctrPorcentaje' => $pensionSctrPorcentaje,
-                'essaludEpsPorcentaje' => $essaludEpsPorcentaje,
-                'porcentajeConstante' => $porcentajeConstante,
-                'rem_basica_essalud' => $rem_basica_essalud,
+                'ctsPorcentaje' => $this->ctsPorcentaje,// $ctsPorcentaje,
+                'gratificacionesPorcentaje' => $this->gratificaciones,// $gratificacionesPorcentaje,
+                'essaludGratificacionesPorcentaje' => $this->essaludGratificaciones,// $essaludGratificacionesPorcentaje,
+                'rmv' => $this->rmv,// $rmv,
+                'beta30Porcentaje' => $this->beta30, // $beta30Porcentaje,
+                'essaludPorcentaje' => $this->essalud, // $essaludPorcentaje,
+                'vidaLey' => $this->vidaLey,// $vidaLey,
+                'vidaLeyPorcentaje' => $this->vidaLeyPorcentaje,// $vidaLeyPorcentaje,
+                'pensionSctr' => $this->pensionSctr,// $pensionSctr,
+                'pensionSctrPorcentaje' => $this->pensionSctrPorcentaje,// $pensionSctrPorcentaje,
+                'essaludEpsPorcentaje' => $this->essaludEps,// $essaludEpsPorcentaje,
+                'porcentajeConstante' => $this->porcentajeConstante,// $porcentajeConstante,
+                'rem_basica_essalud' => $this->remBasicaEssalud,// $rem_basica_essalud,
                 'descuentosAfp' => $descuentosAgrupados,
                 'horas' => $horas,
                 'bonos' => $bonos,
@@ -475,7 +446,7 @@ class PlanillaBlancoDetalleComponent extends Component
             $this->alert('success', "Planilla generada correctamente");
         } catch (QueryException $th) {
             $this->dispatch('log', $th->getMessage());
-            $this->alert('error', 'Ocurrió un error interno al generar e importar.');
+            $this->alert('error', $th->getMessage());
         } catch (Exception $th) {
             $this->alert('error', $th->getMessage());
         }
@@ -525,6 +496,47 @@ class PlanillaBlancoDetalleComponent extends Component
             return $this->alert('error', $ex->getMessage());
         }
     }
+    function obtenerDescuentoEmpleado($empleadoData, $anio, $mes, $contrato, $descuentosAgrupados)
+    {
+
+        $fechaReferencia = Carbon::createFromDate($anio, $mes, 1)->startOfMonth();
+        $empleadoEstaJubilado = $contrato['esta_jubilado'];
+
+        $codigo = $contrato['descuento']['codigo'];
+        $descuento = $descuentosAgrupados[$codigo] ?? null;
+
+        if (!$descuento) {
+            throw new Exception("No se encontró un descuento precargado para el código: {$codigo}");
+        }
+
+        $fechaNacimiento = Carbon::parse($empleadoData['fecha_nacimiento']);
+        $edad = $fechaNacimiento->diffInYears($fechaReferencia);
+
+        if ($empleadoEstaJubilado == '1') {
+            return [
+                'explicacion' => 'POR SER PENSIONISTA NO TIENE RETENCIÓN',
+                'descuento' => 0,
+            ];
+        } elseif ($edad > 65) {
+            if ($codigo == 'SNP') {
+                return [
+                    'explicacion' => 'MAYOR DE 65 EXONERADOS DE PRIMA, POR SER ONP NO TIENE PRIMA',
+                    'descuento' => $descuento['porcentaje_65'],
+                ];
+            }
+            return [
+                'explicacion' => 'MAYOR DE 65 EXONERADOS DE PRIMA',
+                'descuento' => $descuento['porcentaje_65'],
+            ];
+        } else {
+            return [
+                'explicacion' => '',
+                'descuento' => $descuento['porcentaje'],
+            ];
+        }
+    }
+
+    /*
     function obtenerDescuentoEmpleado($empleadoData, $anio, $mes, $contrato)
     {
         $response = [];
@@ -573,5 +585,12 @@ class PlanillaBlancoDetalleComponent extends Component
             ];
             return $response;
         }
+    }*/
+    public function render()
+    {
+        if ($this->mes) {
+            $this->mesTitulo = $this->meses[$this->mes - 1];
+        }
+        return view('livewire.planilla-blanco-detalle-component');
     }
 }

@@ -15,14 +15,11 @@ return new class extends Migration
             $table->id(); // Clave primaria
             $table->decimal('monto', 10, 2); // Campo para precios con hasta 10 dígitos, 2 decimales
             $table->string('descripcion');
-            $table->unsignedBigInteger('cua_asistencia_semanal_grupo_id'); // Relación con 'cua_asistencia_semanal_grupos'
+            $table->year('anio_contable')->nullable();  // Para el año contable
+            $table->tinyInteger('mes_contable')->nullable();  // Para el mes contable (1-12)
+            $table->string('codigo_grupo');
+            $table->timestamp('fecha_gasto')->default(DB::raw('CURRENT_TIMESTAMP'))->after('updated_at');
             $table->timestamps();
-
-            // Definición de la clave foránea con un nombre corto
-            $table->foreign('cua_asistencia_semanal_grupo_id', 'fk_cua_asistencia_grupo')
-                  ->references('id')
-                  ->on('cua_asistencia_semanal_grupos')
-                  ->onDelete('cascade'); // Borra los registros relacionados si se elimina el grupo
         });
     }
 

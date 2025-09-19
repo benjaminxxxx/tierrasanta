@@ -2,6 +2,7 @@
 
 namespace App\Livewire\GestionCuadrilla;
 use App\Services\Cuadrilla\CuadrilleroServicio;
+use App\Services\Cuadrilla\TramoLaboralServicio;
 use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -16,27 +17,33 @@ class GestionCuadrillaAsignacionCostosComponent extends Component
     public $totalDias = 0;
     public $headers = [];
     public $mostrarFormularioAignacionCostos = false;
+    public $tramoLaboral;
+    public $tramoId;
     protected $listeners = ['asignarCostosPorFecha'];
     public function mount()
     {
+        
+    }
+    public function reInicializar($tramoId){
+        $this->tramoLaboral = app(TramoLaboralServicio::class)->encontrarTramoPorId($tramoId);
+        if($this->tramoLaboral){
+           $this->fechaInicio = $this->tramoLaboral->fecha_inicio;
+           $this->fechaFin = $this->tramoLaboral->fecha_fin; 
+        }
         $this->obtenerCostosAsignados();
     }
-    public function asignarCostosPorFecha($fechaInicio, $fechaFin)
+    public function asignarCostosPorFecha($tramoId)
     {
-        $this->fechaInicio = $fechaInicio;
-        $this->fechaFin = $fechaFin;
         $this->mostrarFormularioAignacionCostos = true;
-        $this->obtenerCostosAsignados(true);
+        $this->reInicializar($tramoId);
     }
-    public function obtenerCostosAsignados($usarDispatch = false)
+    public function obtenerCostosAsignados()
     {
-        $resultado = CuadrilleroServicio::obtenerHandsontableCostosAsignados($this->fechaInicio, $this->fechaFin);
+        $resultado = CuadrilleroServicio::obtenerHandsontableCostosAsignados($this->tramoLaboral->id);
         $this->costosAsignados = $resultado['data'];
         $this->totalDias = $resultado['total_dias'];
         $this->headers = $resultado['headers'];
-        if ($usarDispatch) {
-            $this->dispatch('actualizarTablaAsignacionCosto', $this->costosAsignados, $this->totalDias, $this->headers);
-        }
+        $this->dispatch('actualizarTablaAsignacionCosto', $this->costosAsignados, $this->totalDias, $this->headers);
     }
     public function guardarAsignacionCostos($datos)
     {
@@ -52,7 +59,6 @@ class GestionCuadrillaAsignacionCostosComponent extends Component
         $this->alert('success', 'Costos asignados guardados correctamente.');
         $this->mostrarFormularioAignacionCostos = false;
         $this->dispatch('costosSemanalesModificados');
-        //$this->obtenerCostosAsignados(); // refresca tabla
     }
 
     public function render()

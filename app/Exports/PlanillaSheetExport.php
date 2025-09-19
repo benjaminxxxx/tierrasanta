@@ -51,8 +51,8 @@ class PlanillaSheetExport implements FromArray, WithHeadings, WithStyles, WithTi
         $this->anio = $data['anio'];
 
         $this->dias = Carbon::create($this->anio, $this->mes)->daysInMonth;
-     
-        $this->mesCadena = $meses[(int)$this->mes] ?? 'MES INVÁLIDO';
+
+        $this->mesCadena = $meses[(int) $this->mes] ?? 'MES INVÁLIDO';
     }
 
     public function title(): string
@@ -69,6 +69,13 @@ class PlanillaSheetExport implements FromArray, WithHeadings, WithStyles, WithTi
 
     public function styles(Worksheet $sheet)
     {
+        $sheet->getColumnDimension('B')->setVisible(false);
+        $sheet->freezePane('F7');
+        // Fondo negro en columnas Y y Z (todas las filas usadas)
+        $sheet->getStyle('Y:Z')->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FF000000'); // FF + RGB (negro)
+
         function calculateColumnWidthFromPixels($pixels)
         {
             return ($pixels) / 7;
@@ -313,7 +320,7 @@ class PlanillaSheetExport implements FromArray, WithHeadings, WithStyles, WithTi
                     'color' => ['rgb' => '00B050'],
                 ],
             ]);
-            $sheet->getStyle("AK{$this->filaInicial}:AK" . (4 + count($this->planillaLista) + 2))
+        $sheet->getStyle("AK{$this->filaInicial}:AK" . (4 + count($this->planillaLista) + 2))
             ->applyFromArray([
                 'font' => [
                     'bold' => true,
@@ -554,7 +561,7 @@ class PlanillaSheetExport implements FromArray, WithHeadings, WithStyles, WithTi
         return array_map(function ($item, $index) use ($indiceInicio) {
 
             $f = $index + $indiceInicio;
-            $indiceHoras = $f-2;
+            $indiceHoras = $f - 2;
             return [
                 $index + 1, // Número secuencial, inicia en 1
                 $item['dni'] ?? '',

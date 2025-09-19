@@ -16,11 +16,11 @@ class GastoAdicionalPorGrupoCuadrilla extends Model
     protected $fillable = [
         'monto',
         'descripcion',
-        'cua_asistencia_semanal_grupo_id',
         'anio_contable',
         'mes_contable',
         'fecha_gasto',
-        'codigo_grupo'
+        'codigo_grupo',
+        'cuad_tramo_laboral_id'
     ];
     public function grupo()
     {
@@ -30,12 +30,5 @@ class GastoAdicionalPorGrupoCuadrilla extends Model
     public function getFechaContableAttribute()
     {
         return "{$this->mes_contable}-{$this->anio_contable}";
-    }
-    /**
-     * Relación con el modelo CuaAsistenciaSemanalGrupo.
-     */
-    public function cuaAsistenciaSemanalGrupo()
-    {
-        return $this->belongsTo(CuaAsistenciaSemanalGrupo::class, 'cua_asistencia_semanal_grupo_id');
     }
 }

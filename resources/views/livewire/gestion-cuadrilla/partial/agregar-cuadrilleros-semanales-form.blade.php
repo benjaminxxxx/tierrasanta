@@ -87,8 +87,8 @@
         <x-secondary-button wire:click="$set('mostrarAgregarCuadrillero', false)" wire:loading.attr="disabled">
             Cerrar
         </x-secondary-button>
-        <x-button wire:click="agregarListaAgregada" wire:loading.attr="disabled">
-            <i class="fa fa-plus"></i> Agregar Cuadrilleros
+        <x-button wire:click="agregarListaOBSOLETOAgregada" wire:loading.attr="disabled">
+            <i class="fa fa-plus"></i> Agregar Cuadrilleros v2
         </x-button>
     </div>
 </x-modal>

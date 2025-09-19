@@ -6,15 +6,21 @@
                     Registro Semanal Cuadrilla
                 </x-h3>
                 <x-button
-                    @click="$wire.dispatch('asignarCostosPorFecha',{fechaInicio:'{{ $semana->inicio }}',fechaFin:'{{ $semana->fin }}'})">
-                    Asignar costos
+                    @click="$wire.dispatch('asignarCosOBSOLETOtosPorFecha',{fechaInicio:'{{ $semana->inicio }}',fechaFin:'{{ $semana->fin }}'})">
+                    <i class="fa fa-money-bill"></i> Asignar costos
+                </x-button>
+                <x-button @click="agregarCuadrillerosEnSemana">
+                    <i class="fa fa-plus"></i> Agregar cuadrilleros
+                </x-button>
+                <x-button wire:click="administrarExtras">
+                    <i class="fa fa-plus"></i> Administrar extras
                 </x-button>
             </x-flex>
             <x-flex>
-                <x-secondary-button @click="abrirReordenarGruposForm">
+                <x-button @click="abrirReordenarGruposForm">
                     <i class="fas fa-sort"></i>
                     Reordenar grupos
-                </x-secondary-button>
+                </x-button>
 
                 <x-button-a href="{{ route('cuadrilleros.gestion') }}">
                     <i class="fa fa-arrow-left"></i> Volver a gestión de cuadrilleros
@@ -81,18 +87,48 @@
             <div x-ref="tableContainerSemana" class="mt-5"></div>
         </div>
         <x-flex class="mt-4 justify-between">
-            <x-button @click="agregarCuadrillerosEnSemana">
-                <i class="fa fa-plus"></i> Agregar cuadrilleros
-            </x-button>
 
-            <x-flex>
-                <x-button @click="$wire.dispatch('abrirGastosAdicionales',{inicio:fechaInicioSemana})">
-                    <i class="fa fa-plus-minus"></i> Agregar/Quitar gastos adicionales
-                </x-button>
-                <x-button @click="registrarHoras">
-                    <i class="fa fa-save"></i> Actualizar horas
-                </x-button>
-            </x-flex>
+            <x-button @click="$wire.dispatch('abrirGastosAdicionales',{inicio:fechaInicioSemana})">
+                <i class="fa fa-plus-minus"></i> Agregar/Quitar gastos adicionales
+            </x-button>
+            <x-button @click="registrarHoras">
+                <i class="fa fa-save"></i> Actualizar horas
+            </x-button>
+        </x-flex>
+        <x-flex class="mt-5 justify-end">
+            <div>
+                <x-h3>
+                    Cuadro resumen:
+                </x-h3>
+                <div class="border border-gray-600 rounded">
+                    <x-table class="mt-5">
+                        <x-slot name="thead">
+                            <x-tr>
+                                <x-th>GRUPO</x-th>
+                                <x-th>COSTO <br />PRODUCCIÓN</x-th>
+                                <x-th>CONDICIÓN</x-th>
+                                <x-th>FECHA</x-th>
+                                <x-th>RECIBO</x-th>
+                                <x-th>DEUDA ACUMULADA</x-th>
+                            </x-tr>
+                        </x-slot>
+                        <x-slot name="tbody">
+                            @foreach ($listaGrupos as $grupo)
+
+                                <x-tr>
+                                    <x-th>{{ $grupo['nombre'] }}</x-th>
+                                    <x-td class="text-right">{{ formatear_numero($grupo['costo_produccion']) }}</x-td>
+                                    <x-td>CONDICIÓN</x-td>
+                                    <x-td>FECHA</x-td>
+                                    <x-td>RECIBO</x-td>
+                                    <x-td>DEUDA ACUMULADA</x-td>
+                                </x-tr>
+                            @endforeach
+                        </x-slot>
+                    </x-table>
+                </div>
+
+            </div>
         </x-flex>
 
     </div>
@@ -100,8 +136,10 @@
     @include('livewire.gestion-cuadrilla.partial.personalizar-costo-hora-form')
     @include('livewire.gestion-cuadrilla.partial.agregar-cuadrilleros-semanales-form')
     @include('livewire.gestion-cuadrilla.partial.reordenar-grupo-form')
+    @include('livewire.gestion-cuadrilla.partial.administrar-extras')
 
     <x-loading wire:loading wire:target="storeTableDataGuardarHoras" />
+    <x-loading wire:loading wire:target="fecha" />
 </div>
 @script
 <script>
@@ -117,7 +155,7 @@
         colorPorGrupo: @json($colorPorGrupo),
         cuadrilleros: @json($cuadrilleros),
         hot: null,
-
+        hotExtras: null,
         selectedIndex: 0,
         cuadrillerosFiltrados: [],
         cuadrillerosBuscar: @json($listaCuadrilleros),
@@ -137,6 +175,7 @@
                 this.headers = data[2];
                 this.$nextTick(() => this.initTable());
             });
+            
             //Agregar cuadrillero
             this.$watch('search', (value) => {
 
@@ -323,6 +362,7 @@
 
             return cols;
         },
+        
         customizeCuadrillero() {
 
             const selected = this.hot.getSelected();
@@ -352,7 +392,7 @@
             this.search = '';
             this.cuadrillerosFiltrados = [];
         },
-        abrirReordenarGruposForm(){
+        abrirReordenarGruposForm() {
             if (this.ocurrioModificaciones) {
                 alert('Guarda primero los cambios realizados dando clic en Actualizar Horas');
                 return;

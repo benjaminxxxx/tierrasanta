@@ -16,6 +16,7 @@ class CuadGrupoOrden extends Model
         'fecha',
         'codigo_grupo',
         'orden',
+        'cuad_tramo_laboral_id'
     ];
 
     protected $casts = [

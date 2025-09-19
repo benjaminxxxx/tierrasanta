@@ -102,4 +102,16 @@ class DateHelper
 
         return round($totalHoras, 2); // ej: 8.5
     }
+    public static function calcularTotalDias($fechaInicio, $fechaFin)
+    {
+        if (!$fechaInicio || !$fechaFin) {
+            return 0;
+        }
+
+        $inicio = Carbon::parse($fechaInicio);
+        $fin = Carbon::parse($fechaFin);
+
+        // diffInDays siempre devuelve número positivo
+        return $inicio->diffInDays($fin) + 1; // +1 si quieres incluir ambos días
+    }
 }

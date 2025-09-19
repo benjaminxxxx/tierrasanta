@@ -79,6 +79,7 @@ class CuadrilleroServicio
                     'nombre' => optional($item->grupo)->nombre,
                     'color' => optional($item->grupo)->color,
                     'orden' => $item->orden,
+                    'costo_produccion' => 0
                 ];
             })
             ->toArray();
@@ -212,10 +213,10 @@ class CuadrilleroServicio
             })->toArray();
     }
 
-    public static function guardarGastosAdicionalesXGrupo($datos, $inicio, $rangoDias)
+    public static function guardarGastosAdicionalesXGrupo($tramoId,$datos, $inicio, $fin)
     {
         $inicioCarbon = Carbon::parse($inicio)->startOfDay();
-        $finCarbon = (clone $inicioCarbon)->addDays($rangoDias)->endOfDay();
+        $finCarbon =  Carbon::parse($fin)->endOfDay();
 
         // 1. Eliminar los existentes en el rango
         GastoAdicionalPorGrupoCuadrilla::whereBetween('fecha_gasto', [$inicioCarbon, $finCarbon])->delete();
@@ -226,7 +227,7 @@ class CuadrilleroServicio
             $grupo = CuaGrupo::where('nombre', $fila['grupo'])->first();
 
             if (!$grupo) {
-                throw new Exception("No se encontró el grupo con nombre '{$fila['grupo']}'");
+                continue;
             }
 
             // Convertir fecha
@@ -238,6 +239,7 @@ class CuadrilleroServicio
                 'anio_contable' => Carbon::parse($fecha)->year,
                 'mes_contable' => Carbon::parse($fecha)->month,
                 'fecha_gasto' => $fecha,
+                'cuad_tramo_laboral_id' => $tramoId,
                 'codigo_grupo' => $grupo->codigo, // Usa la nueva columna
             ]);
         }
@@ -764,7 +766,7 @@ class CuadrilleroServicio
                 continue;
 
             for ($i = 1; array_key_exists("dia_$i", $grupo); $i++) {
-                $valor = $grupo["dia_$i"];
+                $valor = (float)$grupo["dia_$i"];
                 $fecha = $fechaInicio->copy()->addDays($i - 1)->toDateString();
 
                 if (is_numeric($valor) && $valor > 0) {
@@ -805,25 +807,16 @@ class CuadrilleroServicio
         }
     }
 
-    public static function obtenerHandsontableCostosAsignados($fechaInicio, $fechaFin)
+    public static function obtenerHandsontableCostosAsignados($tramoLaboralId)
     {
-        // ✅ 1. Calcular fechas por defecto si vienen null
-        if (!$fechaInicio || !$fechaFin) {
-            $hoy = Carbon::today();
-
-            // Inicio: Lunes de la semana actual
-            $inicioSemana = $hoy->copy()->startOfWeek(weekStartsAt: Carbon::MONDAY);
-
-            // Fin: 7 días después (lunes siguiente)
-            $finSemana = $inicioSemana->copy()->addDays(6);
-
-            // Si quieres exactamente lunes -> lunes+7, usa:
-            // $finSemana = $inicioSemana->copy()->addDays(7);
-
-            $fechaInicio = $inicioSemana->toDateString();
-            $fechaFin = $finSemana->toDateString();
+        
+        $tramoLaboral = app(TramoLaboralServicio::class)->encontrarTramoPorId($tramoLaboralId);
+        if(!$tramoLaboral){
+            return [];
         }
-
+        $fechaInicio = $tramoLaboral->fecha_inicio;
+        $fechaFin = $tramoLaboral->fecha_fin;
+        
         $inicio = Carbon::parse($fechaInicio)->startOfDay();
         $fin = Carbon::parse($fechaFin)->endOfDay();
 
@@ -839,26 +832,27 @@ class CuadrilleroServicio
             ->groupBy(fn($item) => $item->codigo_grupo);
 
         // 3️⃣ Obtener TODOS los grupos activos (o incluso inactivos si se usaron)
-        $gruposUsadosEnCostos = $costosGuardados->keys();
+        $gruposUsadosEnCostos = $tramoLaboral->gruposEnTramos()->pluck('codigo_grupo')->toArray();
+        
+        
 
         // Incluye también grupos activos aunque no tengan costos aún
-        $gruposActivos = CuaGrupo::where('estado', true)->pluck('codigo');
+        
 
-        $gruposFinales = $gruposUsadosEnCostos->merge($gruposActivos)->unique();
+        $gruposFinales = CuaGrupo::whereIn('codigo', $gruposUsadosEnCostos)->get();
 
         $result = collect();
         $total_dias = 0;
 
-        foreach ($gruposFinales as $codigo) {
-            $grupo = CuaGrupo::where('codigo', $codigo)->first();
-
+        foreach ($gruposFinales as $grupo) {
+            
             if (!$grupo)
                 continue;
 
             $total_dias = $dias->count();
 
             $item = [
-                'codigo_grupo' => $codigo,
+                'codigo_grupo' => $grupo->codigo,
                 'nombre' => $grupo->nombre,
                 'color' => $grupo->color,
                 'modalidad_pago' => $grupo->modalidad_pago,
@@ -869,7 +863,7 @@ class CuadrilleroServicio
             $index = 1;
             foreach ($dias as $dia) {
                 $valor = optional(
-                    $costosGuardados->get($codigo)?->firstWhere('fecha', $dia)
+                    $costosGuardados->get($grupo->codigo)?->firstWhere('fecha', $dia)
                 )->jornal;
 
                 $item["dia_{$index}"] = $valor;
@@ -936,14 +930,18 @@ class CuadrilleroServicio
     {
         $inicioDate = Carbon::parse($inicio)->startOfDay();
         $finDate = $fin ? Carbon::parse($fin)->endOfDay() : $inicioDate->copy()->endOfDay();
+      
 
-        $registroDiarioCuadrilla = CuadRegistroDiario::whereBetween('fecha', [$inicioDate, $finDate])->get();
+        $registroDiarioCuadrilla = CuadRegistroDiario::whereBetween('fecha', [$inicioDate, $finDate])
+        ->with(['grupo'])
+        ->get();
         $costosDiariosDuranteFechas = CuadCostoDiarioGrupo::whereBetween('fecha', [$inicioDate, $finDate])->get();
-        $grupoCuadrilleroEnFechas = CuadGrupoCuadrilleroFecha::whereBetween('fecha', [$inicioDate, $finDate])->get();
+        //$grupoCuadrilleroEnFechas = CuadGrupoCuadrilleroFecha::whereBetween('fecha', [$inicioDate, $finDate])->get();
 
         foreach ($registroDiarioCuadrilla as $asistenciaCuadrillero) {
             $totalHoras = (float) $asistenciaCuadrillero->total_horas;
-
+            $codigoGrupo = $asistenciaCuadrillero->grupo;
+            
 
             if ($totalHoras <= 0) {
                 $asistenciaCuadrillero->costo_dia = 0;
@@ -957,12 +955,8 @@ class CuadrilleroServicio
                 ? $asistenciaCuadrillero->fecha->toDateString()
                 : (string) $asistenciaCuadrillero->fecha;
 
-            $grupoCuadrilleroEnFecha = $grupoCuadrilleroEnFechas
-                ->where('fecha', $fechaStr)
-                ->where('cuadrillero_id', $asistenciaCuadrillero->cuadrillero_id)
-                ->first();
 
-            if (!$grupoCuadrilleroEnFecha) {
+            if (!$codigoGrupo) {
                 $asistenciaCuadrillero->costo_dia = 0;
                 $asistenciaCuadrillero->total_bono = 0;
                 $asistenciaCuadrillero->save();
@@ -971,7 +965,7 @@ class CuadrilleroServicio
 
             $costoDiario = $costosDiariosDuranteFechas
                 ->where('fecha', $fechaStr)
-                ->where('codigo_grupo', $grupoCuadrilleroEnFecha->codigo_grupo)
+                ->where('codigo_grupo', $asistenciaCuadrillero->codigo_grupo)
                 ->first();
 
             $costoEseDiaX8Horas = 0;
@@ -1048,7 +1042,7 @@ class CuadrilleroServicio
 
 
         //Registrar Orden del grupo
-        self::registrarOrdenGrupal($fechaInicio, $codigo);
+        //self::registrarOrdenGrupal(fechaInicio: $fechaInicio, $codigo);
 
         $inicio = Carbon::parse($fechaInicio);
         $dias = collect();

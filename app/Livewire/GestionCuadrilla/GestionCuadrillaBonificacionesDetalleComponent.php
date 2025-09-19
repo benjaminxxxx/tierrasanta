@@ -68,7 +68,8 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
             $registros = $this->obtenerCuadrillasPorFechaYLabor($campoNombre, $codigoLabor, $fecha, $this->actividad->id);
             
             $registrosPlanilla = $this->obtenerPlanillasPorFechaYLabor($campoNombre, $codigoLabor, $fecha);
-            dd($registrosPlanilla);
+            //dd($registrosPlanilla);
+            //hasta aqui me quede la revision, falta planilla
             $dataHandsontable = [];
             $dataHandsontablePlanilla = [];
             foreach ($registros as $registro) {

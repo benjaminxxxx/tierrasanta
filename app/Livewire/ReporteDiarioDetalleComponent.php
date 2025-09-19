@@ -35,7 +35,7 @@ class ReporteDiarioDetalleComponent extends Component
     public $reporteDiarioCampos;
     public $totalesAsistenciasCuadrilleros = 0;
     public $totalCuadrilleroSegunHora = 0;
-    protected $listeners = ["importarPlanilla", "eliminarPlanilla"];
+    protected $listeners = ["importarPlanillaAgraria", "eliminarPlanilla"];
     public function mount()
     {
         $this->reporteDiarioCampos = ReporteDiarioCampos::whereDate('fecha', $this->fecha)->first();
@@ -344,10 +344,13 @@ class ReporteDiarioDetalleComponent extends Component
         $this->totalCuadrilleroSegunHora = CuadrillaServicio::cantidadCuadrilleros($this->reporteDiarioCampos->fecha);
     }
 
-    public function importarPlanilla()
+    public function importarPlanillaAgraria()
     {
-        $empleados = Empleado::planillaAgraria()->get();
-
+        $fecha = Carbon::parse($this->fecha);
+        $mes = $fecha->format('m');
+        $anio = $fecha->format('Y');
+        $empleados = Empleado::planillaAgraria($mes,$anio)->get();
+        
         if ($empleados->count() == 0) {
             return;
         }

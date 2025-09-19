@@ -34,6 +34,7 @@
                     </x-button>
                 </x-flex>
             </div>
+        </div>
     </x-modal>
     <x-loading wire:loading />
 </div>
@@ -65,6 +66,12 @@
             }
 
             const container = this.$refs.tableAsignacionCostos;
+
+            if (!container) {
+                console.error("No se encontró el contenedor tableAsignacionCostos");
+                return;
+            }
+
             this.hot = new Handsontable(container, {
                 data: this.costosAsignados,
                 colHeaders: true,
