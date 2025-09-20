@@ -2,6 +2,7 @@
     <x-card2 class="my-5 mb-20">
         @include('livewire.gestion-cuadrilla.partial.reporte-semanal-opciones')
         @include('livewire.gestion-cuadrilla.partial.reporte-semanal-tabla')
+        @include('livewire.gestion-cuadrilla.partial.reporte-semanal-resumen')
         @include('livewire.gestion-cuadrilla.partial.personalizar-costo-hora-form')
     </x-card2>
     <x-loading wire:loading />

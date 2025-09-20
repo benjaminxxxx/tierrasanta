@@ -3,7 +3,7 @@
         <x-flex class="w-full justify-between">
             <x-flex class="my-3">
                 <x-h3>
-                    Registro Semanal Cuadrilla
+                    Registro Semanal OBSOLETO Cuadrilla
                 </x-h3>
                 <x-button
                     @click="$wire.dispatch('asignarCosOBSOLETOtosPorFecha',{fechaInicio:'{{ $semana->inicio }}',fechaFin:'{{ $semana->fin }}'})">

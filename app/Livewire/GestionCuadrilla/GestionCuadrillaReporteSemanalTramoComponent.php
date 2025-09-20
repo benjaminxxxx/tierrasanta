@@ -287,12 +287,12 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
                         ];
 
                         if (is_null($total_horas) || $total_horas <= 0) {
-                            // ❌ No debe existir registro cuando no hay horas
+                            // No debe existir registro cuando no hay horas
                             CuadRegistroDiario::where($where)->delete();
                             continue;
                         }
 
-                        // ✅ Upsert cuando hay horas > 0
+                        // Upsert cuando hay horas > 0
                         CuadRegistroDiario::updateOrCreate(
                             $where,
                             [
@@ -312,7 +312,14 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
         }
     }
 
-
+    public function recalcularResumen(){
+        try {
+            app(TramoLaboralServicio::class)->generarResumen($this->tramoLaboral->id);
+            $this->alert('success', 'Resumen actualizado correctamente.');
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
+        }
+    }
     public function render()
     {
         return view('livewire.gestion-cuadrilla.gestion-cuadrilla-reporte-semanal-tramo-component');

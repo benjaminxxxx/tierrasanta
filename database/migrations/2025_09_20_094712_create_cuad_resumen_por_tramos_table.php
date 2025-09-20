@@ -1,0 +1,48 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('cuad_resumen_por_tramos', function (Blueprint $table) {
+            $table->id();
+
+            // Datos principales
+            $table->string('grupo_codigo'); // se guarda como string para mantener historial
+            $table->string('color', 10)->nullable(); // formato corto tipo #FFFFFF
+            $table->enum('tipo', ['sueldo', 'adicional']);
+            $table->string('descripcion', 255);
+            $table->enum('condicion', ['Pendiente', 'Pagado'])->default('Pendiente');
+            $table->date('fecha')->nullable();
+            $table->string('recibo')->nullable();
+
+            // Montos
+            $table->decimal('deuda_actual', 12, 2)->default(0);
+            $table->decimal('deuda_acumulada', 12, 2)->default(0);
+
+            // Relaciones
+            $table->foreignId('tramo_id')
+                ->constrained('cuad_tramo_laborals')
+                ->onDelete('cascade');
+
+            $table->unsignedBigInteger('tramo_acumulado_id')->nullable();
+            
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('cuad_resumen_por_tramos');
+    }
+};

@@ -218,7 +218,7 @@ class GestionCuadrillaReporteSemanalTramosComponent extends Component
         $this->cargarDatosActuales();
         $this->cambios++;
     }
-
+    
     public function render()
     {
         return view('livewire.gestion-cuadrilla.gestion-cuadrilla-reporte-semanal-tramos-component');
