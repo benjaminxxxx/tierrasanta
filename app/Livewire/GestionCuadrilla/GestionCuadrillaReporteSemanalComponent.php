@@ -321,20 +321,6 @@ class GestionCuadrillaReporteSemanalComponent extends Component
         ];
     }
 
-    public function storeTableDataGuardarHoras($datos)
-    {
-        try {
-
-            $fechaInicio = $this->semana->inicio;
-            $fechaFin = $this->semana->fin;
-            CuadrilleroServicio::guardarReporteSemanal($fechaInicio, $fechaFin, $datos);
-            CuadrilleroServicio::calcularCostosCuadrilla($fechaInicio, $fechaFin);
-            $this->obtenerReporteSemanal();
-            $this->alert('success', 'Información actualizada');
-        } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
-        }
-    }
     #endregion
 
     #region Agregar Cuadrillero a semana
@@ -443,31 +429,7 @@ class GestionCuadrillaReporteSemanalComponent extends Component
         $this->mostrarAgregarCuadrillero = true;
     }
     #endregion
-    #region Reordenar Grupos
-    public function abrirReordenarGruposForm()
-    {
-        try {
-
-
-            $this->mostrarReordenarGrupoForm = true;
-        } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
-        }
-    }
-    public function registrarOrdenGrupal()
-    {
-        foreach ($this->listaGrupos as $index => $grupo) {
-            CuadGrupoOrden::updateOrInsert(
-                ['codigo_grupo' => $grupo['codigo'], 'fecha' => $this->fechaInicioSemana],
-                ['orden' => $index + 1]
-            );
-        }
-
-        $this->mostrarReordenarGrupoForm = false;
-        $this->obtenerReporteSemanal();
-        $this->alert('success', 'Orden actualizado correctamente');
-    }
-    #endregion
+    
     #region tiempo extra
     public function updatedFecha()
     {
@@ -490,79 +452,6 @@ class GestionCuadrillaReporteSemanalComponent extends Component
         $fecha = $this->fecha;
         $this->dispatch('abrirExtrasForm', $fecha, $registros);
     }
-    public function storeTableDataGuardarHorasExtras($data, $fecha)
-    {
-        DB::beginTransaction();
-
-        try {
-            // 1. Filtrar filas válidas (nombre no vacío/null y horas > 0)
-            $filasValidas = collect($data)
-                ->filter(
-                    fn($row) =>
-                    !empty(trim($row['nombres'] ?? '')) &&
-                    (float) ($row['horas'] ?? 0) > 0
-                );
-
-            $idsProcesados = [];
-            $orden = 0;
-
-            foreach ($filasValidas as $row) {
-                $orden++;
-                $nombre = trim($row['nombres']);
-                $horas = (float) $row['horas'];
-                $costoPorHora = (float) ($row['costo_por_hora'] ?? 0);
-                $montoTotal = (float) ($row['costo_jornal'] ?? ($horas * $costoPorHora));
-
-                // 2. Buscar o crear el cuadrillero
-                $cuadrillero = Cuadrillero::firstOrCreate(
-                    ['nombres' => $nombre],
-                    ['activo' => 1] // ejemplo si tu modelo tiene columna "activo"
-                );
-
-                // 3. Buscar si ya existe un registro para ese cuadrillero + fecha
-                $extra = CuadTrabajoExtra::where('cuadrillero_id', $cuadrillero->id)
-                    ->whereDate('fecha', $fecha)
-                    ->first();
-
-                if ($extra) {
-                    // actualizar
-                    $extra->update([
-                        'horas' => $horas,
-                        'costo_x_hora' => $costoPorHora,
-                        'monto_total' => $montoTotal,
-                        'orden' => $orden,
-                    ]);
-                } else {
-                    // crear
-                    $extra = CuadTrabajoExtra::create([
-                        'cuadrillero_id' => $cuadrillero->id,
-                        'fecha' => $fecha,
-                        'horas' => $horas,
-                        'costo_x_hora' => $costoPorHora,
-                        'monto_total' => $montoTotal,
-                        'esta_pagado' => false,
-                        'orden' => $orden,
-                    ]);
-                }
-
-                $idsProcesados[] = $extra->id;
-            }
-
-            // 4. Eliminar los que ya existían pero no están en la nueva data
-            CuadTrabajoExtra::whereDate('fecha', $fecha)
-                ->whereNotIn('id', $idsProcesados)
-                ->delete();
-            $this->mostrarFormularioAdministracionExtras = false;
-
-            DB::commit();
-
-            $this->alert('success', 'Registros actualizados correctamente.');
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            $this->alert('error', $th->getMessage());
-        }
-    }
-
     #endregion
     public function render()
     {

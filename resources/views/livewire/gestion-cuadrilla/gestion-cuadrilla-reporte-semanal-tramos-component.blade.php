@@ -43,7 +43,6 @@
         <livewire:gestion-cuadrilla.gestion-cuadrilla-asignacion-costos-component />
         <livewire:gestion-cuadrilla.gestion-cuadrilla-gastos-adicionales-component :tramoId="$tramoActual->id"
             wire:key="gastosAdicionales{{ $tramoActual->id }}" />
-
         <livewire:gestion-cuadrilla.administrar-cuadrillero.cuadrilla-grupo-form-component /> 
 
     @endif

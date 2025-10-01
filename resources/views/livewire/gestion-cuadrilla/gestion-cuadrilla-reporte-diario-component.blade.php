@@ -92,6 +92,7 @@
             }
 
             const tareas = this.tareas;
+            console.log(this.trabajadores);
 
             const container = this.$refs.tableReporteContainer;
             const hot = new Handsontable(container, {
@@ -147,6 +148,13 @@
         generarColumnasDinamicas() {
             const cols = [
                 {
+                    data: 'codigo_grupo',
+                    type: 'text',
+                    readOnly: true,
+                    className: '!bg-gray-200',
+                    title: 'GRUPO'
+                },
+                {
                     data: 'cuadrillero_nombres',
                     type: 'text',
                     readOnly: true,
@@ -174,7 +182,7 @@
                         type: 'dropdown',
                         source: this.labores,
                         strict: true, // solo permite valores de la lista
-                        allowInvalid: false,
+                        allowInvalid: true,
                         className: `text-center ${bgClass}`,
                         title: `Lab. ${i}`
                     },
@@ -221,6 +229,7 @@
 
                 // Crear una copia limpia con solo columnas activas
                 let cleanedRow = {
+                    codigo_grupo: rowData.codigo_grupo ?? null,
                     cuadrillero_id: rowData.cuadrillero_id ?? null,
                     cuadrillero_nombres: rowData.cuadrillero_nombres ?? '',
                     cuadrillero_dni: rowData.cuadrillero_dni ?? null,

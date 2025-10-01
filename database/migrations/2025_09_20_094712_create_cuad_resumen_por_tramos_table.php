@@ -22,6 +22,11 @@ return new class extends Migration
             $table->enum('condicion', ['Pendiente', 'Pagado'])->default('Pendiente');
             $table->date('fecha')->nullable();
             $table->string('recibo')->nullable();
+            $table->integer('orden')->nullable();
+            $table->enum('modalidad_pago',['quincenal','mensual','semanal']);
+            $table->date('fecha_inicio')->nullable();
+            $table->date('fecha_fin')->nullable();
+            $table->date('fecha_acumulada')->nullable();
 
             // Montos
             $table->decimal('deuda_actual', 12, 2)->default(0);

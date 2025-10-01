@@ -17,10 +17,6 @@
                 </x-button>
             </x-flex>
             <x-flex>
-                <x-button @click="abrirReordenarGruposForm">
-                    <i class="fas fa-sort"></i>
-                    Reordenar grupos
-                </x-button>
 
                 <x-button-a href="{{ route('cuadrilleros.gestion') }}">
                     <i class="fa fa-arrow-left"></i> Volver a gestión de cuadrilleros
@@ -136,9 +132,6 @@
     @include('livewire.gestion-cuadrilla.partial.personalizar-costo-hora-form')
     @include('livewire.gestion-cuadrilla.partial.agregar-cuadrilleros-semanales-form')
     @include('livewire.gestion-cuadrilla.partial.reordenar-grupo-form')
-    @include('livewire.gestion-cuadrilla.partial.administrar-extras')
-
-    <x-loading wire:loading wire:target="storeTableDataGuardarHoras" />
     <x-loading wire:loading wire:target="fecha" />
 </div>
 @script
@@ -255,25 +248,16 @@
                 });
             }
         },
-        registrarHoras() {
-            let allData = [];
-
-            // Recorre todas las filas de la tabla y obtiene los datos completos
-            for (let row = 0; row < this.hot.countRows(); row++) {
-                const rowData = this.hot.getSourceDataAtRow(row);
-                allData.push(rowData);
-            }
-
-            // Filtra las filas vacías
-            const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
-                null && cell !== ''));
-
-            this.ocurrioModificaciones = false;
-            $wire.storeTableDataGuardarHoras(filteredData);
-        },
+     
         generarColumnasDinamicas() {
             const cols = [
-
+                {
+                    data: 'orden',
+                    title: 'N°',
+                    type: 'text',
+                    width: 40,
+                    readOnly: true,
+                },
                 {
                     data: 'codigo_grupo',
                     title: 'Grupo',
@@ -391,13 +375,6 @@
             });
             this.search = '';
             this.cuadrillerosFiltrados = [];
-        },
-        abrirReordenarGruposForm() {
-            if (this.ocurrioModificaciones) {
-                alert('Guarda primero los cambios realizados dando clic en Actualizar Horas');
-                return;
-            }
-            $wire.abrirReordenarGruposForm();
         },
         navigateList(event) {
             if (this.cuadrillerosFiltrados.length === 0) return;

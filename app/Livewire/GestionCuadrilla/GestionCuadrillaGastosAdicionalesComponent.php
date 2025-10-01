@@ -21,15 +21,20 @@ class GestionCuadrillaGastosAdicionalesComponent extends Component
     public function mount($tramoId)
     {
         $this->tramoLaboral = app(TramoLaboralServicio::class)->encontrarTramoPorId($tramoId);
+        $this->obtenerGrupos();
+    }
+    public function obtenerGrupos(){
         $this->grupos = $this->tramoLaboral->grupos()->get()->pluck('nombre')->toArray();
     }
     public function abrirGastosAdicionales()
     {
+        $this->obtenerGrupos();
         $inicio = $this->tramoLaboral->fecha_inicio;
         $fin = $this->tramoLaboral->fecha_fin;
 
         $this->mostrarFormularioGastosAdicionales = true;
         $this->gastos = CuadrilleroServicio::listarHandsontableGastosAdicionales($inicio, $fin);
+        
 
         $inicio = Carbon::parse($inicio);
         $fin = Carbon::parse($fin);

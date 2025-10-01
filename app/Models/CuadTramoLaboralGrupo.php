@@ -22,6 +22,15 @@ class CuadTramoLaboralGrupo extends Model
     {
         return $this->hasMany(CuadTramoLaboralCuadrillero::class, 'cuad_tramo_laboral_grupo_id');
     }
+    public function cuadrillerosDirectos()
+    {
+        return $this->belongsToMany(
+            Cuadrillero::class,                      // Modelo destino
+            'cuad_tramo_laboral_cuadrilleros',       // Tabla pivote
+            'cuad_tramo_laboral_grupo_id',           // FK en pivote hacia este modelo
+            'cuadrillero_id'                         // FK en pivote hacia cuadrillero
+        );
+    }
     public function tramoLaboral()
     {
         return $this->belongsTo(CuadTramoLaboral::class, 'cuad_tramo_laboral_id');

@@ -2,7 +2,6 @@
 
 namespace App\Livewire\GestionCuadrilla;
 
-use App\Models\CuadGrupoOrden;
 use App\Models\Cuadrillero;
 use App\Models\CuadTramoLaboral;
 use App\Models\CuadTramoLaboralCuadrillero;

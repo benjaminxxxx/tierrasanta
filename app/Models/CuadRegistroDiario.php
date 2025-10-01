@@ -20,12 +20,17 @@ class CuadRegistroDiario extends Model
         'total_horas',
         'costo_dia',
         'esta_pagado',
-        'codigo_grupo'
+        'codigo_grupo',
+        'bono_esta_pagado',
+        'tramo_pagado_jornal_id',
+        'tramo_pagado_bono_id',
     ];
 
     protected $casts = [
         'asistencia' => 'boolean',
         'fecha' => 'date',
+        'esta_pagado' => 'boolean',
+        'bono_esta_pagado' => 'boolean',
     ];
 
     // Relaciones

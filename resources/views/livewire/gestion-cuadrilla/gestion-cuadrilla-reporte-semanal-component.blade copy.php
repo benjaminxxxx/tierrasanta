@@ -14,10 +14,6 @@
                 </x-button>
             </x-flex>
             <x-flex>
-                <x-button @click="abrirReordenarGruposForm">
-                    <i class="fas fa-sort"></i>
-                    Reordenar grupos
-                </x-button>
 
                 <x-button-a href="{{ route('cuadrilleros.gestion') }}">
                     <i class="fa fa-arrow-left"></i> Volver a gestión de cuadrilleros
@@ -123,10 +119,6 @@
 
     
     @include('livewire.gestion-cuadrilla.partial.agregar-cuadrilleros-semanales-form')
-    @include('livewire.gestion-cuadrilla.partial.reordenar-grupo-form')
-    @include('livewire.gestion-cuadrilla.partial.administrar-extras')
-
-    <x-loading wire:loading wire:target="storeTableDataGuardarHoras" />
     <x-loading wire:loading wire:target="fecha" />
 </div>
 @script
@@ -179,20 +171,6 @@
             });
             //fin agregar cuadrillero
 
-        },
-        
-        
-        
-        
-        
-        //agregar cuadrillero
-        
-        abrirReordenarGruposForm() {
-            if (this.ocurrioModificaciones) {
-                alert('Guarda primero los cambios realizados dando clic en Actualizar Horas');
-                return;
-            }
-            $wire.abrirReordenarGruposForm();
         },
         
         

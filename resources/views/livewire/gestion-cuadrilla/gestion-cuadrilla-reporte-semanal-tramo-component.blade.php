@@ -1,14 +1,20 @@
-<div x-data="reporteSemanalTramo" class="">
+<div x-data="reporteSemanalTramo" @keydown.window.prevent.ctrl.s="registrarHoras"
+    @keydown.window.prevent.meta.s="registrarHoras" class="">
     <x-card2 class="my-5 mb-20">
         @include('livewire.gestion-cuadrilla.partial.reporte-semanal-opciones')
         @include('livewire.gestion-cuadrilla.partial.reporte-semanal-tabla')
         @include('livewire.gestion-cuadrilla.partial.reporte-semanal-resumen')
         @include('livewire.gestion-cuadrilla.partial.personalizar-costo-hora-form')
+        @include('livewire.gestion-cuadrilla.partial.reordenar-grupo-form')
     </x-card2>
+
+
+    <livewire:gestion-cuadrilla.gestion-cuadrilla-reporte-pago-component />
+
     <x-loading wire:loading />
     <style>
-        body .handsontable .htDimmed{
-            color:#000 !important;
+        body .handsontable .htDimmed {
+            color: #000 !important;
         }
     </style>
 </div>
@@ -27,7 +33,7 @@
         init() {
             this.headersDias = this.generarEncabezados(this.fechaInicio, this.fechaFin);
             this.initTable();
-            Livewire.on('recargarTablaTramos',(data)=>{
+            Livewire.on('recargarTablaTramos', (data) => {
                 this.reporteSemanal = data[0];
                 this.initTable();
             });
@@ -45,12 +51,13 @@
                 nestedHeaders: [
                     [
                         '',
+                        '',
                         { label: 'HORAS TRABAJADAS', colspan: this.totalDias, headerClassName: 'htCenter' },
                         { label: 'COSTO JORNAL', colspan: this.totalDias, headerClassName: 'htCenter' },
                         { label: 'BONOS POR DIA', colspan: this.totalDias, headerClassName: 'htCenter' },
                         '', '', ''
                     ],
-                    ['NOMBRES', ...this.headersDias, ...this.headersDias, ...this.headersDias,'TOTAL JORNAL', 'TOTAL BONOS', 'TOTAL']
+                    ['N°','NOMBRES', ...this.headersDias, ...this.headersDias, ...this.headersDias, 'TOTAL JORNAL', 'TOTAL BONOS', 'TOTAL']
                 ],
                 rowHeaders: true,
                 columns: this.generarColumnasDinamicas(),
@@ -58,7 +65,8 @@
                 height: 'auto',
                 stretchH: 'all',
                 filters: true,
-                fixedColumnsLeft: 1,
+                rowHeaders: false,
+                fixedColumnsLeft: 2,
                 contextMenu: {
                     items: {
                         "customize_quadrillero": {
@@ -103,6 +111,13 @@
                 });
             }
         },
+        abrirReordenarGruposForm() {
+            if (this.ocurrioModificaciones) {
+                alert('Guarda primero los cambios realizados dando clic en Actualizar Horas');
+                return;
+            }
+            $wire.abrirReordenarGruposForm();
+        },
         customizeCuadrillero() {
 
             const selected = this.hot.getSelected();
@@ -117,7 +132,7 @@
                         preciosamodificar.push(cuadrillero);
                     }
                 });
-               
+
                 $wire.abrirPrecioPersonalizado(preciosamodificar);
             }
         },
@@ -147,6 +162,13 @@
         },
         generarColumnasDinamicas() {
             const cols = [{
+                data: 'orden',
+                title: 'N°',
+                type: 'numeric',
+                width: 25,
+                readOnly: true,
+                className: '!text-center !bg-gray-200 !text-black font-bold'
+            }, {
                 data: 'nombres',
                 title: 'Nombre',
                 type: 'text',
@@ -158,8 +180,8 @@
                     const rowData = instance.getSourceDataAtRow(row) || {};
 
                     td.style.backgroundColor = rowData.color || '#e5e7eb';
-                    
-                        td.classList.remove('htDimmed');
+
+                    td.classList.remove('htDimmed');
                     if (rowData.header) {
                         td.style.color = '#000';
                         td.style.fontWeight = 'bold';
@@ -228,19 +250,19 @@
                     type: 'numeric',
                     readOnly: true,
                     className: '!bg-yellow-200 !text-center !font-bold !text-black'
-                },{
-                    data: 'total_jornal',
-                    title: 'Total<br/>Bono',
-                    type: 'numeric',
-                    readOnly: true,
-                    className: '!bg-yellow-200 !text-center !font-bold !text-black'
-                },{
-                    data: 'total',
-                    title: 'Total',
-                    type: 'numeric',
-                    readOnly: true,
-                    className: '!bg-yellow-200 !text-center !font-bold !text-black'
-                }
+                }, {
+                data: 'total_jornal',
+                title: 'Total<br/>Bono',
+                type: 'numeric',
+                readOnly: true,
+                className: '!bg-yellow-200 !text-center !font-bold !text-black'
+            }, {
+                data: 'total',
+                title: 'Total',
+                type: 'numeric',
+                readOnly: true,
+                className: '!bg-yellow-200 !text-center !font-bold !text-black'
+            }
             );
 
             return cols;

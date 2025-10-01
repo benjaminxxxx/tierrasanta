@@ -26,11 +26,24 @@
                     <x-dropdown-link class="text-center" @click="$wire.dispatch('abrirGastosAdicionales')">
                         Agregar/Quitar gastos adicionales
                     </x-dropdown-link>
+                    <x-dropdown-link class="text-center" @click="$wire.dispatch('abrirGastosAdicionales')">
+                        Calcular Billetes
+                    </x-dropdown-link>
+                    <x-dropdown-link class="text-center" @click="abrirReordenarGruposForm">
+                        Reordenar grupos
+                    </x-dropdown-link>
                     <x-dropdown-link class="text-center" @click="$wire.dispatch('editarTramo')">
                         Editar tramo
                     </x-dropdown-link>
                     <x-dropdown-link class="text-center" @click="$wire.dispatch('eliminarTramo')">
                         Eliminar tramo
+                    </x-dropdown-link>
+                    <hr/>
+                    <x-dropdown-link class="text-center" href="{{ route('gestion_cuadrilleros.registro-diario.index') }}" target="_blank">
+                        Administrar registros diarios
+                    </x-dropdown-link>
+                    <x-dropdown-link class="text-center" href="{{ route('gestion_cuadrilleros.bonificaciones.index') }}" target="_blank">
+                        Adminsitrar bonos
                     </x-dropdown-link>
                 </div>
             </x-slot>

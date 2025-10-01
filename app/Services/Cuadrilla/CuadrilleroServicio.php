@@ -936,17 +936,15 @@ class CuadrilleroServicio
         ->with(['grupo'])
         ->get();
         $costosDiariosDuranteFechas = CuadCostoDiarioGrupo::whereBetween('fecha', [$inicioDate, $finDate])->get();
-        //$grupoCuadrilleroEnFechas = CuadGrupoCuadrilleroFecha::whereBetween('fecha', [$inicioDate, $finDate])->get();
 
         foreach ($registroDiarioCuadrilla as $asistenciaCuadrillero) {
             $totalHoras = (float) $asistenciaCuadrillero->total_horas;
             $codigoGrupo = $asistenciaCuadrillero->grupo;
-            
 
             if ($totalHoras <= 0) {
                 $asistenciaCuadrillero->costo_dia = 0;
                 // Actualizar también total_bono en cero
-                $asistenciaCuadrillero->total_bono = 0;
+                //$asistenciaCuadrillero->total_bono = 0; calculado en otro sitio
                 $asistenciaCuadrillero->save();
                 continue;
             }
@@ -958,7 +956,7 @@ class CuadrilleroServicio
 
             if (!$codigoGrupo) {
                 $asistenciaCuadrillero->costo_dia = 0;
-                $asistenciaCuadrillero->total_bono = 0;
+                //$asistenciaCuadrillero->total_bono = 0;  calculado en otro sitio
                 $asistenciaCuadrillero->save();
                 continue;
             }
@@ -979,7 +977,7 @@ class CuadrilleroServicio
 
             if ($costoEseDiaX8Horas <= 0) {
                 $asistenciaCuadrillero->costo_dia = 0;
-                $asistenciaCuadrillero->total_bono = 0;
+                //$asistenciaCuadrillero->total_bono = 0;  calculado en otro sitio
                 $asistenciaCuadrillero->save();
                 continue;
             }
@@ -987,37 +985,17 @@ class CuadrilleroServicio
             $costo_dia = ($totalHoras / 8) * $costoEseDiaX8Horas;
             $asistenciaCuadrillero->costo_dia = round($costo_dia, 2);
 
-            // ➜ Calcular el total_bono sumando los costo_bono de sus detalles
+            
+/*
+funciones calculadas en otro sitio
+// ➜ Calcular el total_bono sumando los costo_bono de sus detalles
             $totalBono = $asistenciaCuadrillero->detalleHoras()->sum('costo_bono');
             $asistenciaCuadrillero->total_bono = round($totalBono, 2);
-
+*/
             $asistenciaCuadrillero->save();
         }
     }
-    public static function registrarOrdenGrupal($fechaInicio, $codigo)
-    {
-        // Verificar si ya existe el registro para esa fecha y grupo
-        $existe = CuadGrupoOrden::where('fecha', $fechaInicio)
-            ->where('codigo_grupo', $codigo)
-            ->exists();
 
-        if ($existe) {
-            return; // Ya existe, no hacer nada
-        }
-
-        // Obtener el orden máximo existente para esa fecha
-        $maxOrden = CuadGrupoOrden::where('fecha', $fechaInicio)->max('orden');
-
-        // Asignar nuevo orden (max + 1)
-        $nuevoOrden = is_null($maxOrden) ? 1 : $maxOrden + 1;
-
-        // Registrar nuevo orden del grupo
-        CuadGrupoOrden::create([
-            'fecha' => $fechaInicio,
-            'codigo_grupo' => $codigo,
-            'orden' => $nuevoOrden,
-        ]);
-    }
     /**
      * registrarOrdenSemanal
      *
@@ -1042,7 +1020,6 @@ class CuadrilleroServicio
 
 
         //Registrar Orden del grupo
-        //self::registrarOrdenGrupal(fechaInicio: $fechaInicio, $codigo);
 
         $inicio = Carbon::parse($fechaInicio);
         $dias = collect();
@@ -1369,8 +1346,8 @@ class CuadrilleroServicio
                     ->whereColumn('cuadrilleros.id', 'cuad_registros_diarios.cuadrillero_id')
                     ->limit(1)
             )
-            ->get()
-            ->keyBy('cuadrillero_id');
+            ->orderBy('codigo_grupo')
+            ->get();
 
 
         if ($registros->isEmpty()) {
@@ -1384,12 +1361,12 @@ class CuadrilleroServicio
         $resultados = [];
         $maxActividades = 0;
 
-        foreach ($registros as $cuadrilleroId => $registrosCuadrillero) {
-
-            $cuadrillero = $registrosCuadrillero->cuadrillero;
+        foreach ($registros as $registro) {
+            
+            $cuadrillero = $registro->cuadrillero;
 
             $todasActividades = collect();
-            foreach ($registrosCuadrillero->detalleHoras as $detalle) {
+            foreach ($registro->detalleHoras as $detalle) {
                 $todasActividades->push([
                     'campo' => $detalle->campo_nombre,
                     'labor' => $detalle->codigo_labor,
@@ -1402,7 +1379,8 @@ class CuadrilleroServicio
             $maxActividades = max($maxActividades, $todasActividades->count());
 
             $fila = [
-                'cuadrillero_id' => $cuadrilleroId,
+                'cuadrillero_id' => $cuadrillero->id,
+                'codigo_grupo' => $registro->codigo_grupo, 
                 'cuadrillero_nombres' => $cuadrillero->nombres,
                 'cuadrillero_dni' => $cuadrillero->dni
             ];
@@ -1425,11 +1403,10 @@ class CuadrilleroServicio
 
             // Redondear a 2 decimales por si acaso
             $fila["total_horas"] = round($totalHoras, 2);
-            $fila["total_horas_validado"] = $registrosCuadrillero->total_horas_validado;
+            $fila["total_horas_validado"] = $registro->total_horas_validado;
 
             $resultados[] = $fila;
         }
-
 
         return [
             'data' => $resultados,
@@ -1558,8 +1535,9 @@ class CuadrilleroServicio
             }
 
             foreach ($rows as $i => $fila) {
-
+                
                 $cuadrilleroId = $fila['cuadrillero_id'] ?? null;
+                $codigoGrupo = $fila['codigo_grupo'] ?? null;
                 $filaOrden = $i + 1;
 
                 $tramos = [];
@@ -1590,7 +1568,9 @@ class CuadrilleroServicio
 
                 if (empty($tramos)) {
                     $registro = CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
-                        ->where('fecha', $fecha)->first();
+                        ->where('fecha', $fecha)
+                        ->where('codigo_grupo',$codigoGrupo)
+                        ->first();
                     if (!$registro) {
                         throw new Exception("No existe el registro con fecha {$fecha} e id {$cuadrilleroId}");
                     }
@@ -1600,7 +1580,9 @@ class CuadrilleroServicio
 
                 // Registro diario
                 $registro = CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
-                    ->where('fecha', $fecha)->first();
+                    ->where('fecha', $fecha)
+                    ->where('codigo_grupo',$codigoGrupo)
+                    ->first();
                 if (!$registro) {
                     throw new Exception("No existe el registro con fecha {$fecha} e id {$cuadrilleroId}");
                 }

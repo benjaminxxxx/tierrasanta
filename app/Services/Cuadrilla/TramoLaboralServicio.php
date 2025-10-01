@@ -4,7 +4,10 @@ namespace App\Services\Cuadrilla;
 
 use App\Models\CuadCostoDiarioGrupo;
 use App\Models\CuadRegistroDiario;
+use App\Models\CuadResumenPorTramo;
 use App\Models\CuadTramoLaboral;
+use App\Models\GastoAdicionalPorGrupoCuadrilla;
+use App\Services\Cuadrilla\TramoLaboral\ResumenTramoServicio;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
@@ -21,98 +24,9 @@ class TramoLaboralServicio
 
     public function generarResumen(int $tramoId): void
     {
-        $tramo = CuadTramoLaboral::findOrFail($tramoId);
-
-        $grupos = $tramo->grupos()->get()->keyBy('codigo')->map(function ($grupo) {
-            return [
-                'color' => $grupo->color,
-                'nombre' => $grupo->nombre,
-                'modalidad_pago' => $grupo->modalidad_pago, // 'semanal', 'quincenal', 'mensual'
-            ];
-        })->toArray();
-        if (empty($grupos)) {
-            throw new \Exception('No hay grupos asociados a este tramo.');
-        }
-
-        $data = [];
-
-        foreach ($grupos as $codigoGrupo => $grupo) {
-            // cuando la la modalidad es mensual, debemos revisar las fechas, si el periodo desde fecha_inicio hasta fecha_fin
-            // hay el fin de mes, digamos 28,29,30,1,2,3,4, entonces deben haber dos registros data, calculando el sum hasta la fecha final
-            // y los demas dias sera sum total - sum hasta la fecha final
-            /*version simple $registros = CuadRegistroDiario::where('codigo_grupo', $codigoGrupo)
-                            ->whereBetween('fecha', [$tramo->fecha_inicio, $tramo->fecha_fin])
-                            ->sum('costo_dia');
-                        $data[] = [
-                            'grupo_codigo' => $codigoGrupo,
-                            'color' => $grupo['color'] ?? null,
-                            'tipo' => 'sueldo',
-                            'descripcion' => $grupo['nombre'] ?? 'N/A',
-                            'deuda_actual' => $registros,
-                            'deuda_acumulada' => 0, // Este campo se puede calcular según la lógica de negocio
-                            'tramo_id' => $tramo->id,
-                            'tramo_acumulado_id' => null // Ajustar si es necesario
-                        ];*/
-            $costosQuery = CuadRegistroDiario::where('codigo_grupo', $codigoGrupo)
-                ->whereBetween('fecha', [$tramo->fecha_inicio, $tramo->fecha_fin]);
-            $totalCostos = $costosQuery->sum('costo_dia');
-
-            if ($grupo['modalidad_pago'] === 'mensual') {
-                $fechaInicio = Carbon::parse($tramo->fecha_inicio);
-                $fechaFin = Carbon::parse($tramo->fecha_fin);
-
-                $fechasCorte = [];
-                $current = $fechaInicio->copy()->endOfMonth();
-                while ($current->lessThanOrEqualTo($fechaFin)) {
-                    $fechasCorte[] = $current->toDateString();
-                    $current->addDay()->endOfMonth();
-                }
-
-                if (empty($fechasCorte) || end($fechasCorte) < $fechaFin->toDateString()) {
-                    $fechasCorte[] = $fechaFin->toDateString();
-                }
-
-                $ultimoCorte = $fechaInicio->copy()->subDay()->toDateString();
-                foreach ($fechasCorte as $corte) {
-                    $costosHastaCorte = (clone $costosQuery)
-                        ->whereBetween('fecha', [$ultimoCorte, $corte])
-                        ->sum('costo_dia');
-
-                    $data[] = [
-                        'grupo_codigo' => $codigoGrupo,
-                        'color' => $grupo['color'],
-                        'tipo' => 'sueldo',
-                        'descripcion' => "Sueldo del grupo {$grupo['nombre']} hasta el {$corte}",
-                        'condicion' => 'Pendiente',
-                        'fecha' => null,
-                        'recibo' => null,
-                        'deuda_actual' => $costosHastaCorte,
-                        'deuda_acumulada' => 0, // Se calculará después
-                        'tramo_id' => $tramo->id,
-                        'tramo_acumulado_id' => null,
-                    ];
-
-                    $ultimoCorte = Carbon::parse($corte)->addDay()->toDateString();
-                }
-            } else {
-                // Para modalidades semanal y quincenal, un solo registro
-                $data[] = [
-                    'grupo_codigo' => $codigoGrupo,
-                    'color' => $grupo['color'],
-                    'tipo' => 'sueldo',
-                    'descripcion' => "Sueldo del grupo {$grupo['nombre']}",
-                    'condicion' => 'Pendiente',
-                    'fecha' => null,
-                    'recibo' => null,
-                    'deuda_actual' => $totalCostos,
-                    'deuda_acumulada' => 0, // Se calculará después
-                    'tramo_id' => $tramo->id,
-                    'tramo_acumulado_id' => null,
-                ];
-
-            }
-        }
-        dd($data);
+       
+        app(ResumenTramoServicio::class)->generarResumen($tramoId);
+       
     }
 
     /**
@@ -130,7 +44,7 @@ class TramoLaboralServicio
         }
 
         // 2. Si no se encontró por sesión, calcularlo.
-        if (! $tramoActual) {
+        if (!$tramoActual) {
             // Buscar un tramo que contenga la fecha de hoy.
             $tramoActual = CuadTramoLaboral::whereDate('fecha_inicio', '<=', $hoy)
                 ->whereDate('fecha_fin', '>=', $hoy)
@@ -138,7 +52,7 @@ class TramoLaboralServicio
                 ->first();
 
             // Si no hay tramo que contenga hoy, buscar el más cercano.
-            if (! $tramoActual) {
+            if (!$tramoActual) {
                 $previo = $this->encontrarAnteriorAFecha($hoy);
                 $siguiente = $this->encontrarSiguienteAFecha($hoy);
                 $tramoActual = $previo ?: $siguiente; // Prioriza el anterior, si no, el siguiente.
@@ -164,6 +78,7 @@ class TramoLaboralServicio
             ->orderBy('fecha_inicio', 'desc')
             ->first();
     }
+
 
     /**
      * Encuentra el tramo inmediatamente siguiente a un tramo dado.
@@ -226,20 +141,14 @@ class TramoLaboralServicio
             // 🔎 Obtener códigos de grupos del tramo
             $codigosGrupos = $tramo->gruposEnTramos()->pluck('codigo_grupo')->toArray();
 
-            if (! empty($codigosGrupos)) {
+            if (!empty($codigosGrupos)) {
                 // 🗑️ Borrar costos diarios SOLO dentro del rango del tramo
                 CuadCostoDiarioGrupo::whereIn('codigo_grupo', $codigosGrupos)
                     ->whereBetween('fecha', [$tramo->fecha_inicio, $tramo->fecha_fin])
                     ->delete();
             }
-
-            // 🗑️ Borrar relaciones de grupos del tramo
             $tramo->gruposEnTramos()->delete();
-
-            // 🗑️ Borrar el tramo en sí
             $tramo->delete();
-
-            // 🔄 Limpiar sesión
             Session::forget('tramo_actual_id');
         });
     }
