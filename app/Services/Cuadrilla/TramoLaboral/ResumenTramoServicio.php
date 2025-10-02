@@ -7,11 +7,235 @@ use App\Models\CuadResumenPorTramo;
 use App\Models\CuadTramoLaboral;
 use App\Models\CuaGrupo;
 use App\Models\GastoAdicionalPorGrupoCuadrilla;
+use App\Services\Cuadrilla\Reporte\RptCuadrillaPagosXTramo;
 use Exception;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ResumenTramoServicio
 {
+    public function procesarPago($resumenPorTramo, $listaPago, $periodo)
+    {
+        if ($resumenPorTramo->condicion == 'Pagado') {
+
+            return $this->quitarPagosEnTramo($resumenPorTramo);
+        }
+
+        //Actualizar los estados de los registros diarios
+        $codigoGrupo = $resumenPorTramo->grupo_codigo;
+        $tramoLaboral = $resumenPorTramo->tramo;
+        $this->actualizarRegistrosDiarios($listaPago, $periodo, $codigoGrupo, $tramoLaboral);
+        $listaFiltrada = $this->filtrarListaPago($listaPago, $tramoLaboral->id);
+       
+        //
+        //destruir el file excel
+        $fileReporteExcel = $resumenPorTramo->excel_reporte_file;
+        if ($fileReporteExcel) {
+            $path = Storage::disk('public')->path($fileReporteExcel);
+            if (file_exists($path)) {
+                unlink($path);
+            }
+        }
+        $data = [
+            'resumen_tramo' => $resumenPorTramo,
+            'lista_pago' => $listaFiltrada,
+            'fecha_inicio' => $resumenPorTramo->fecha_acumulada,
+            'fecha_reporte' => now()->format('Y-m-d'),
+            //'excel_reporte_file' => null,
+        ];
+
+        $rptCuadrillaPagoXTramo = new RptCuadrillaPagosXTramo();
+        $ExcelResumenfile = $rptCuadrillaPagoXTramo->generarReporte($data);
+
+        $resumenPorTramo->update([
+            'condicion' => 'Pagado',
+            'fecha' => Carbon::now()->format('Y-m-d'),
+            'excel_reporte_file' => $ExcelResumenfile,
+        ]);
+        return $resumenPorTramo;
+    }
+    private function quitarPagosEnTramo($resumenPorTramo)
+    {
+        $registroTramoFuturo = CuadResumenPorTramo::where('tramo_acumulado_id', $resumenPorTramo->tramo_id)
+            ->where('grupo_codigo', $resumenPorTramo->grupo_codigo)->first();
+        //dd($resumenPorTramo->tramo_id, $resumenPorTramo->grupo_codigo,$registroTramoFuturo);
+        //quitar los pagos en los registros diarios
+        CuadRegistroDiario::where('tramo_pagado_jornal_id', $resumenPorTramo->tramo_id)
+            ->where('codigo_grupo', [$resumenPorTramo->grupo_codigo])
+            ->update([
+                'esta_pagado' => false,
+                'tramo_pagado_jornal_id' => null
+            ]);
+        CuadRegistroDiario::where('tramo_pagado_bono_id', $resumenPorTramo->tramo_id)
+            ->where('codigo_grupo', [$resumenPorTramo->grupo_codigo])
+            ->update([
+                'bono_esta_pagado' => false,
+                'tramo_pagado_bono_id' => null
+            ]);
+
+        //destruir el file excel
+        $fileReporteExcel = $resumenPorTramo->excel_reporte_file;
+        if ($fileReporteExcel) {
+            $path = Storage::disk('public')->path($fileReporteExcel);
+            if (file_exists($path)) {
+                unlink($path);
+            }
+        }
+
+        $resumenPorTramo->update([
+            'condicion' => 'Pendiente',
+            'fecha' => null,
+            'excel_reporte_file' => null,
+        ]);
+        if($registroTramoFuturo){
+            $registroTramoFuturo->update([
+                'tramo_acumulado_id' => null,
+            ]);
+        }
+        
+        return $resumenPorTramo;
+    }
+    private function filtrarListaPago($listaPago, $tramoLaboralId)
+    {
+        return collect($listaPago)
+            ->map(function ($personal) use ($tramoLaboralId) {
+                $fechasFiltradas = collect($personal)
+                    ->filter(function ($valores, $clave) use ($tramoLaboralId) {
+                        if (!is_array($valores)) {
+                            return true;
+                        }
+
+                        $costo = (float) ($valores['costo_dia'] ?? 0);
+                        $bono = (float) ($valores['total_bono'] ?? 0);
+
+                        $estaPagadoJornal = filter_var($valores['esta_pagado'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                        $estaPagadoBono = filter_var($valores['bono_esta_pagado'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+                        $jornalMismoTramo = ($valores['tramo_pagado_jornal_id'] ?? null) == $tramoLaboralId;
+                        $bonoMismoTramo = ($valores['tramo_pagado_bono_id'] ?? null) == $tramoLaboralId;
+
+                        // solo pasa si pertenece al tramo actual
+                        return ($estaPagadoJornal && $costo > 0 && $jornalMismoTramo)
+                            || ($estaPagadoBono && $bono > 0 && $bonoMismoTramo);
+                    });
+
+                $nuevo = $fechasFiltradas->mapWithKeys(function ($valores, $clave) use ($tramoLaboralId) {
+                    if (!is_array($valores)) {
+                        return [$clave => $valores];
+                    }
+
+                    $costo = (float) ($valores['costo_dia'] ?? 0);
+                    $bono = (float) ($valores['total_bono'] ?? 0);
+
+                    $estaPagadoJornal = filter_var($valores['esta_pagado'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                    $estaPagadoBono = filter_var($valores['bono_esta_pagado'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+                    $jornalMismoTramo = ($valores['tramo_pagado_jornal_id'] ?? null) == $tramoLaboralId;
+                    $bonoMismoTramo = ($valores['tramo_pagado_bono_id'] ?? null) == $tramoLaboralId;
+
+                    return [
+                        $clave => [
+                            'costo_dia' => ($estaPagadoJornal && $jornalMismoTramo) ? $costo : 0,
+                            'total_bono' => ($estaPagadoBono && $bonoMismoTramo) ? $bono : 0,
+                            'esta_pagado' => ($estaPagadoJornal && $jornalMismoTramo),
+                            'bono_esta_pagado' => ($estaPagadoBono && $bonoMismoTramo),
+                        ]
+                    ];
+                });
+
+                return $nuevo;
+            })
+            ->filter(fn($personal) => collect($personal)->filter(fn($v) => is_array($v))->isNotEmpty())
+            ->toArray();
+    }
+    private function actualizarRegistrosDiarios(array &$listaPago, array $periodo, string $codigoGrupo, $tramoLaboral)
+    {
+        // Agrupa todo en una transacción para consistencia
+        DB::transaction(function () use (&$listaPago, $periodo, $codigoGrupo, $tramoLaboral) {
+            // Recorremos la estructura por referencia para poder mutarla
+            foreach ($listaPago as $cuadrilleroId => &$personal) {
+                // salt safety: asegúrate que personal sea array
+                if (!is_array($personal))
+                    continue;
+
+                foreach ($periodo as $fecha) {
+                    $valores = $personal[$fecha] ?? null;
+                    if (!$valores || !is_array($valores)) {
+                        continue;
+                    }
+
+                    $estaPagado = filter_var($valores['esta_pagado'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                    $bonoPagado = filter_var($valores['bono_esta_pagado'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+                    // === Jornal ===
+                    $jornal = CuadRegistroDiario::whereDate('fecha', $fecha)
+                        ->where('codigo_grupo', $codigoGrupo)
+                        ->where('cuadrillero_id', $cuadrilleroId)
+                        ->where('costo_dia', '>', 0)
+                        ->first();
+
+                    if ($jornal) {
+                        // regla: si tramo null o mismo tramo, permitimos actualizar
+                        if (is_null($jornal->tramo_pagado_jornal_id) || $jornal->tramo_pagado_jornal_id == $tramoLaboral->id) {
+                            // siempre actualizamos el booleano (puedes marcar o desmarcar)
+                            $jornal->esta_pagado = $estaPagado ? 1 : 0;
+
+                            // Si marcaste como pagado y antes era null -> asigna tramo
+                            // Si desmarcaste y tramo era este tramo -> lo dejamos null
+                            if ($estaPagado) {
+                                if (is_null($jornal->tramo_pagado_jornal_id)) {
+                                    $jornal->tramo_pagado_jornal_id = $tramoLaboral->id;
+                                }
+                            } else {
+                                if ($jornal->tramo_pagado_jornal_id == $tramoLaboral->id) {
+                                    $jornal->tramo_pagado_jornal_id = null;
+                                }
+                            }
+
+                            $jornal->save();
+                        }
+                        // SIN IMPORTAR si actualizamos o no en BD, sincronizamos el array en memoria con el estado real en BD
+                        $personal[$fecha]['esta_pagado'] = (bool) $jornal->esta_pagado;
+                        $personal[$fecha]['tramo_pagado_jornal_id'] = $jornal->tramo_pagado_jornal_id;
+                        // Aseguramos que el monto que mostramos venga de la BD
+                        $personal[$fecha]['costo_dia'] = $jornal->costo_dia;
+                    }
+
+                    // === Bono ===
+                    $bono = CuadRegistroDiario::whereDate('fecha', $fecha)
+                        ->where('codigo_grupo', $codigoGrupo)
+                        ->where('cuadrillero_id', $cuadrilleroId)
+                        ->where('total_bono', '>', 0)
+                        ->first();
+
+                    if ($bono) {
+                        if (is_null($bono->tramo_pagado_bono_id) || $bono->tramo_pagado_bono_id == $tramoLaboral->id) {
+                            $bono->bono_esta_pagado = $bonoPagado ? 1 : 0;
+
+                            if ($bonoPagado) {
+                                if (is_null($bono->tramo_pagado_bono_id)) {
+                                    $bono->tramo_pagado_bono_id = $tramoLaboral->id;
+                                }
+                            } else {
+                                if ($bono->tramo_pagado_bono_id == $tramoLaboral->id) {
+                                    $bono->tramo_pagado_bono_id = null;
+                                }
+                            }
+
+                            $bono->save();
+                        }
+
+                        $personal[$fecha]['bono_esta_pagado'] = (bool) $bono->bono_esta_pagado;
+                        $personal[$fecha]['tramo_pagado_bono_id'] = $bono->tramo_pagado_bono_id;
+                        $personal[$fecha]['total_bono'] = $bono->total_bono;
+                    }
+                }
+            }
+            // liberar la referencia
+            unset($personal);
+        }); // end transaction
+    }
     public function cambiarCondicion($resumenId)
     {
         $resumenPorTramo = CuadResumenPorTramo::findOrFail($resumenId);

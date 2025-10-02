@@ -12,11 +12,7 @@ class ListaAcumuladaTramos
     public function obtenerPagoCuadrillerosPorTramo($resumenTramo, $listaPago)
     {
         $tramos = $this->obtenerTramosAcumulados($resumenTramo);
-        /*$listaCuadrilleros = $tramos
-            ->flatMap(fn($tramo) => $tramo->cuadrilleros())
-            ->unique('id')
-            ->sortBy('nombres')
-            ->values();*/
+      
         $resultado = [];
 
         foreach ($tramos as $tramo) {
@@ -74,7 +70,7 @@ class ListaAcumuladaTramos
     {
         $tramos = collect();
         $actual = $tramo;
-
+        
         while ($actual) {
             $tramos->push($actual);
 
@@ -84,8 +80,8 @@ class ListaAcumuladaTramos
 
             $actual = CuadResumenPorTramo::where('tramo_id', $actual->tramo_acumulado_id)
                 ->where('grupo_codigo', $actual->grupo_codigo)->first();
+                //dd($actual);
         }
-
         return $tramos->sortBy('fecha_inicio')->values();
     }
     private function construirListaPagos($listaCuadrilleros, CuadResumenPorTramo $resumenTramo): array
@@ -94,6 +90,7 @@ class ListaAcumuladaTramos
         $codigoGrupo = $resumenTramo->grupo_codigo;
         $fechaInicioPago = $resumenTramo->fecha_acumulada;
         $tramoLaboral = $resumenTramo->tramo;
+        $tramoLaboralId = $tramoLaboral->id;
 
         $pagosEnTramo = CuadRegistroDiario::whereBetween('fecha', [$fechaInicioPago, $fechaFin])
             ->where('codigo_grupo', $codigoGrupo)
@@ -102,7 +99,10 @@ class ListaAcumuladaTramos
         $bonosPendientes = collect();
         $fechaInicio = null;
 
-        $bonosPendientes = CuadRegistroDiario::where('bono_esta_pagado', false)
+        $bonosPendientes = CuadRegistroDiario::where(function ($query) use ($tramoLaboralId) {
+            $query->where('bono_esta_pagado', false)
+                ->orWhere('tramo_pagado_bono_id', $tramoLaboralId);
+        })
             ->where('total_bono', '>', 0)
             ->where('codigo_grupo', $codigoGrupo)
             ->whereDate('fecha', '<', $fechaInicioPago)
@@ -122,7 +122,7 @@ class ListaAcumuladaTramos
             ->map(fn($date) => $date->toDateString())
             ->all();
 
-        $cuadrilleros = $listaCuadrilleros->map(function ($cuadrillero) use ($periodo, $pagosIndexados, $bonosPendientes, $fechaInicioPago,$tramoLaboral) {
+        $cuadrilleros = $listaCuadrilleros->map(function ($cuadrillero) use ($periodo, $pagosIndexados, $bonosPendientes, $fechaInicioPago, $tramoLaboral) {
             $info = $cuadrillero;
 
             $data = [
@@ -149,7 +149,7 @@ class ListaAcumuladaTramos
                     $registro = $bonosPendientes
                         ->where('cuadrillero_id', $info->id)
                         ->first(fn($item) => Carbon::parse($item->fecha)->isSameDay($fechaObj));
-                    
+
                     $costoDia = $registro->costo_dia ?? null;
                     $totalBono = $registro->total_bono ?? 0;
                     $data[$fecha] = [
@@ -159,7 +159,7 @@ class ListaAcumuladaTramos
                         'bono_esta_pagado' => $registro->bono_esta_pagado ?? false,
                         'tramo_pagado_jornal_id' => $registro->tramo_pagado_jornal_id ?? null,
                         'tramo_pagado_bono_id' => $registro->tramo_pagado_bono_id ?? null,
-                        
+
                         'bloqueado_jornal' => isset($registro->tramo_pagado_jornal_id) && $registro->tramo_pagado_jornal_id != $tramoLaboral->id,
                         'bloqueado_bono' => isset($registro->tramo_pagado_bono_id) && $registro->tramo_pagado_bono_id != $tramoLaboral->id,
                     ];
@@ -182,7 +182,7 @@ class ListaAcumuladaTramos
 
             return $data;
         })->toArray();
-        
+
         return [
             'periodo' => $periodo,
             'listaPago' => $cuadrilleros,

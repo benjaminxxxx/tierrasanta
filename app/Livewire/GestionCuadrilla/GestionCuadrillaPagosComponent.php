@@ -47,7 +47,7 @@ class GestionCuadrillaPagosComponent extends Component
     {
         try {
             $pagos = app(PagoServicio::class)->obtenerPagosPorRango($this->fecha_inicio, $this->fecha_fin, $this->grupoSeleccionado);
-            dd($pagos);
+            //dd($pagos);
             return Excel::download(new PagosCuadrillaExport($pagos), 'reporte_pagos_cuadrilla.xlsx');
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());

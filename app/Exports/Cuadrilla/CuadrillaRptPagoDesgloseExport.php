@@ -95,14 +95,46 @@ class CuadrillaRptPagoDesgloseExport implements FromArray, WithTitle, WithEvents
             $rows[] = $row;
             $workerIndex++;
         }
+        // ====================
+// Gastos adicionales
+// ====================
+        if (!empty($this->data['adicionales'])) {
+            foreach ($this->data['adicionales'] as $adicional) {
+                $currentRow++;
+                $row = [];
+                $row[] = ''; // Columna N°
+                $row[] = $adicional['descripcion']; // Nombre/adicional
+                $row[] = (float) ($adicional['deuda'] ?? 0); // Total a pagar (col C)
+                $row[] = "=FLOOR(C{$currentRow}, 0.1)"; // Monto redondeado (col D)
 
-        // Fila de totales de la tabla principal
+                $remainderFormula = "D{$currentRow}";
+                $colIndex = 5;
+                foreach ($this->denominations as $index => $denom) {
+                    $currentColLetter = Coordinate::stringFromColumnIndex($colIndex);
+                    $denominationCell = $currentColLetter . '4';
+                    if ($index === 0) {
+                        $row[] = "=INT({$remainderFormula}/{$denominationCell})";
+                    } else {
+                        $prevColLetter = Coordinate::stringFromColumnIndex($colIndex - 1);
+                        $row[] = "=INT( ( {$remainderFormula} - SUMPRODUCT(\$E$4:{$prevColLetter}$4, E{$currentRow}:{$prevColLetter}{$currentRow}) ) / {$denominationCell} )";
+                    }
+                    $colIndex++;
+                }
+                $rows[] = $row;
+            }
+        }
+
+        // ====================
+        // Fila de totales
+        // ====================
         $totalRow = ['', '', 'TOTALES', ''];
         $startDataRow = $startRow;
-        $endDataRow = $startRow + count($workers) - 1;
+        $endDataRow = $currentRow; // ahora incluye trabajadores + adicionales
+
         if ($endDataRow >= $startDataRow) {
             $totalAmountFormula = "=SUM(D{$startDataRow}:D{$endDataRow})";
             $totalRow[3] = $totalAmountFormula;
+
             for ($i = 5; $i <= (4 + count($this->denominations)); $i++) {
                 $colLetter = Coordinate::stringFromColumnIndex($i);
                 $totalRow[] = "=SUM({$colLetter}{$startDataRow}:{$colLetter}{$endDataRow})";
@@ -110,17 +142,23 @@ class CuadrillaRptPagoDesgloseExport implements FromArray, WithTitle, WithEvents
         }
         $rows[] = $totalRow;
 
-        // Dos líneas de respeto
+        // ====================
+        // Dos líneas en blanco
+        // ====================
         $rows[] = [''];
         $rows[] = [''];
 
-        // Cabecera de la tabla resumen
+        // ====================
+        // Cabecera resumen
+        // ====================
         $rows[] = ['Resumen de Billetes y Monedas', '', '', ''];
         $rows[] = ['N°', 'Descripción', 'Cantidad', 'Monto Total'];
 
-        // Contenido de la tabla resumen
-        $totalsRowIndex = $endDataRow + 1;
-        $colIndex = 5; // La columna 'E' es donde empiezan los totales de las denominaciones
+        // ====================
+        // Contenido resumen
+        // ====================
+        $totalsRowIndex = $endDataRow + 1; // fila de totales de la tabla principal
+        $colIndex = 5;
         $summaryIndex = 1;
 
         foreach ($this->denominations as $denom) {
@@ -130,133 +168,146 @@ class CuadrillaRptPagoDesgloseExport implements FromArray, WithTitle, WithEvents
             $quantityColLetter = Coordinate::stringFromColumnIndex($colIndex);
             $quantityFormula = "={$quantityColLetter}{$totalsRowIndex}";
 
-            $denomValueColLetter = Coordinate::stringFromColumnIndex($colIndex);
             $summaryCurrentRow = count($rows) + 1;
-            // Formula Monto = Cantidad * ValorDenominacion (de la fila oculta 4)
-            $amountFormula = "=C{$summaryCurrentRow}*{$denomValueColLetter}4";
+            $amountFormula = "=C{$summaryCurrentRow}*{$quantityColLetter}4";
 
             $rows[] = [$summaryIndex, $description, $quantityFormula, $amountFormula];
             $colIndex++;
             $summaryIndex++;
         }
 
-        // Fila de Total General del resumen
+        // ====================
+        // Total general resumen
+        // ====================
         $summaryStartDataRow = count($rows) - count($this->denominations) + 1;
         $summaryEndDataRow = count($rows);
         $totalGeneralFormula = "=SUM(D{$summaryStartDataRow}:D{$summaryEndDataRow})";
         $rows[] = ['', 'TOTAL GENERAL', '', $totalGeneralFormula];
 
         return $rows;
+
     }
 
 
     public function registerEvents(): array
-    {
-        return [
-            AfterSheet::class => function (AfterSheet $event) {
-                $sheet = $event->sheet->getDelegate();
-                $workers = $this->getUniqueWorkers();
-                $lastColLetter = Coordinate::stringFromColumnIndex(4 + count($this->denominations));
+{
+    return [
+        AfterSheet::class => function (AfterSheet $event) {
+            $sheet = $event->sheet->getDelegate();
+            $workers = $this->getUniqueWorkers();
+            $lastColLetter = Coordinate::stringFromColumnIndex(4 + count($this->denominations));
 
-                // === ESTILOS TABLA PRINCIPAL ===
-                $sheet->mergeCells("A1:{$lastColLetter}1");
-                $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-                $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                $sheet->getRowDimension('4')->setVisible(false);
+            // === ESTILOS TABLA PRINCIPAL ===
+            $sheet->mergeCells("A1:{$lastColLetter}1");
+            $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+            $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getRowDimension('4')->setVisible(false);
 
-                // Cabecera con WrapText
-                $sheet->getStyle("A3:{$lastColLetter}3")->applyFromArray([
-                    'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
-                    'alignment' => [
-                        'horizontal' => Alignment::HORIZONTAL_CENTER,
-                        'vertical' => Alignment::VERTICAL_CENTER,
-                        'wrapText' => true, // <-- AQUÍ SE APLICA EL AJUSTE DE TEXTO
-                    ],
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF4F81BD']],
-                    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
-                ]);
-                $sheet->getRowDimension('3')->setRowHeight(30); // Altura ajustada
+            // Cabecera
+            $sheet->getStyle("A3:{$lastColLetter}3")->applyFromArray([
+                'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                    'wrapText' => true,
+                ],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF4F81BD']],
+                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+            ]);
+            $sheet->getRowDimension('3')->setRowHeight(30);
 
-                $firstDataRow = 5;
-                $lastDataRow = $firstDataRow + count($workers) - 1;
-                $sheet->getStyle("A{$firstDataRow}:{$lastColLetter}{$lastDataRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-                $sheet->getStyle("A{$firstDataRow}:A{$lastDataRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $firstDataRow = 5;
 
-                $totalRowIndex = $lastDataRow + 1;
-                $sheet->getStyle("A{$totalRowIndex}:{$lastColLetter}{$totalRowIndex}")->applyFromArray([
-                    'font' => ['bold' => true],
-                    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
-                ]);
-                $sheet->getStyle("C{$totalRowIndex}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-                $sheet->getStyle("C{$firstDataRow}:D{$totalRowIndex}")->getNumberFormat()->setFormatCode('"S/ " #,##0.00');
-                $sheet->getStyle("E{$firstDataRow}:{$lastColLetter}{$totalRowIndex}")->getNumberFormat()->setFormatCode('#,##0');
+            // Ahora el último dato incluye trabajadores + adicionales
+            $numWorkers = count($workers);
+            $numAdicionales = isset($this->data['adicionales']) ? count($this->data['adicionales']) : 0;
+            $lastDataRow = $firstDataRow + $numWorkers + $numAdicionales - 1;
 
-                // Anchos de Columna de la tabla principal
-                $sheet->getColumnDimension('A')->setWidth(5);
-                $sheet->getColumnDimension('B')->setAutoSize(true);
-                $sheet->getColumnDimension('C')->setWidth(15);
-                $sheet->getColumnDimension('D')->setWidth(18);
-                for ($i = 5; $i <= (4 + count($this->denominations)); $i++) {
-                    $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($i))->setWidth(10);
-                }
+            // Bordes de todo el rango de datos
+            if ($lastDataRow >= $firstDataRow) {
+                $sheet->getStyle("A{$firstDataRow}:{$lastColLetter}{$lastDataRow}")
+                    ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
 
-                // --- ESTILOS PARA LA NUEVA TABLA RESUMEN ---
-                $summaryTitleRow = $totalRowIndex + 3;
-                $summaryHeaderRow = $summaryTitleRow + 1;
-                $summaryFirstDataRow = $summaryHeaderRow + 1;
-                $summaryLastDataRow = $summaryFirstDataRow + count($this->denominations) - 1;
-                $summaryTotalRow = $summaryLastDataRow + 1;
-
-                // Título del resumen
-                $sheet->mergeCells("A{$summaryTitleRow}:D{$summaryTitleRow}");
-                $sheet->getStyle("A{$summaryTitleRow}")->applyFromArray([
-                    'font' => ['bold' => true, 'size' => 12],
-                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-                ]);
-
-                // Cabecera de la tabla resumen
-                $sheet->getStyle("A{$summaryHeaderRow}:D{$summaryHeaderRow}")->applyFromArray([
-                    'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
-                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF4F81BD']],
-                    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
-                ]);
-
-                // Cuerpo de la tabla resumen
-                $sheet->getStyle("A{$summaryFirstDataRow}:D{$summaryLastDataRow}")
-                      ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-                $sheet->getStyle("A{$summaryFirstDataRow}:A{$summaryLastDataRow}")
-                      ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER); // Centrar N°
-                $sheet->getStyle("C{$summaryFirstDataRow}:C{$summaryLastDataRow}")
-                      ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER); // Centrar Cantidad
-
-                // Fila Total General del resumen
-                $sheet->mergeCells("B{$summaryTotalRow}:C{$summaryTotalRow}");
-                $sheet->getStyle("A{$summaryTotalRow}:D{$summaryTotalRow}")->applyFromArray([
-                    'font' => ['bold' => true],
-                    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
-                ]);
-                $sheet->getStyle("B{$summaryTotalRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-
-                // Formatos de número para la tabla resumen
-                $sheet->getStyle("C{$summaryHeaderRow}:C{$summaryLastDataRow}")->getNumberFormat()->setFormatCode('#,##0');
-                $sheet->getStyle("D{$summaryHeaderRow}:D{$summaryTotalRow}")->getNumberFormat()->setFormatCode('"S/ " #,##0.00');
-
-                // Anchos de Columna específicos para la tabla resumen
-                $sheet->getColumnDimension('B')->setWidth(25);
-                $sheet->getColumnDimension('C')->setWidth(15);
-                $sheet->getColumnDimension('D')->setWidth(18);
-
-                $sheet->getPageSetup()
-                    ->setPaperSize(PageSetup::PAPERSIZE_A4);
-                $sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
-                $sheet->getPageSetup()->setFitToWidth(1);
-                $sheet->getPageSetup()->setFitToHeight(0);
-
-                $sheet->getPageSetup()->setHorizontalCentered(true);
+                $sheet->getStyle("A{$firstDataRow}:A{$lastDataRow}")
+                    ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             }
-        ];
-    }
+
+            // Fila de totales (justo debajo de los últimos datos)
+            $totalRowIndex = $lastDataRow + 1;
+            $sheet->getStyle("A{$totalRowIndex}:{$lastColLetter}{$totalRowIndex}")->applyFromArray([
+                'font' => ['bold' => true],
+                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+            ]);
+            $sheet->getStyle("C{$totalRowIndex}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+
+            // Formatos numéricos
+            $sheet->getStyle("C{$firstDataRow}:D{$totalRowIndex}")
+                ->getNumberFormat()->setFormatCode('"S/ " #,##0.00');
+            $sheet->getStyle("E{$firstDataRow}:{$lastColLetter}{$totalRowIndex}")
+                ->getNumberFormat()->setFormatCode('#,##0');
+
+            // Anchos de columna
+            $sheet->getColumnDimension('A')->setWidth(5);
+            $sheet->getColumnDimension('B')->setAutoSize(true);
+            $sheet->getColumnDimension('C')->setWidth(15);
+            $sheet->getColumnDimension('D')->setWidth(18);
+            for ($i = 5; $i <= (4 + count($this->denominations)); $i++) {
+                $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($i))->setWidth(10);
+            }
+
+            // === ESTILOS TABLA RESUMEN ===
+            $summaryTitleRow = $totalRowIndex + 3;
+            $summaryHeaderRow = $summaryTitleRow + 1;
+            $summaryFirstDataRow = $summaryHeaderRow + 1;
+            $summaryLastDataRow = $summaryFirstDataRow + count($this->denominations) - 1;
+            $summaryTotalRow = $summaryLastDataRow + 1;
+
+            $sheet->mergeCells("A{$summaryTitleRow}:D{$summaryTitleRow}");
+            $sheet->getStyle("A{$summaryTitleRow}")->applyFromArray([
+                'font' => ['bold' => true, 'size' => 12],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            ]);
+
+            $sheet->getStyle("A{$summaryHeaderRow}:D{$summaryHeaderRow}")->applyFromArray([
+                'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF4F81BD']],
+                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+            ]);
+
+            $sheet->getStyle("A{$summaryFirstDataRow}:D{$summaryLastDataRow}")
+                ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+            $sheet->getStyle("A{$summaryFirstDataRow}:A{$summaryLastDataRow}")
+                ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("C{$summaryFirstDataRow}:C{$summaryLastDataRow}")
+                ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+            $sheet->mergeCells("B{$summaryTotalRow}:C{$summaryTotalRow}");
+            $sheet->getStyle("A{$summaryTotalRow}:D{$summaryTotalRow}")->applyFromArray([
+                'font' => ['bold' => true],
+                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+            ]);
+            $sheet->getStyle("B{$summaryTotalRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+
+            $sheet->getStyle("C{$summaryHeaderRow}:C{$summaryLastDataRow}")
+                ->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->getStyle("D{$summaryHeaderRow}:D{$summaryTotalRow}")
+                ->getNumberFormat()->setFormatCode('"S/ " #,##0.00');
+
+            $sheet->getColumnDimension('B')->setWidth(25);
+            $sheet->getColumnDimension('C')->setWidth(15);
+            $sheet->getColumnDimension('D')->setWidth(18);
+
+            // Configuración de página
+            $sheet->getPageSetup()->setPaperSize(PageSetup::PAPERSIZE_A4);
+            $sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
+            $sheet->getPageSetup()->setFitToWidth(1);
+            $sheet->getPageSetup()->setFitToHeight(0);
+            $sheet->getPageSetup()->setHorizontalCentered(true);
+        }
+    ];
+}
+
 
     public function styles(Worksheet $sheet)
     {

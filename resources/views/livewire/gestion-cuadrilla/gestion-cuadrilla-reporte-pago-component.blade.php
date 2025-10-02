@@ -23,18 +23,23 @@
                     </div>
                     <x-flex class="justify-end">
                         @if ($resumenPorTramo?->condicion == 'Pendiente')
-                            <x-button variant="default" wire:click="cambiarCondicionResumen({{ $resumenPorTramo?->id }})">
-                                Cambiar a Pagado <i class="fa fa-money-bill"></i>
+                            <x-button variant="default" wire:click="generarExcel">
+                                Registrar pagos <i class="fa fa-money-bill"></i>
                             </x-button>
                         @else
-                            <x-button variant="danger" wire:click="cambiarCondicionResumen({{ $resumenPorTramo?->id }})">
+                            <x-button variant="danger" wire:click="generarExcel">
                                 Volver a Pendiente <i class="fa-solid fa-rotate-left"></i>
                             </x-button>
-                        @endif
 
-                        <x-button variant="success" wire:click="generarExcel">
-                            Guardar y Descargar Excel <i class="fa fa-file-excel"></i>
-                        </x-button>
+                            @if ($resumenPorTramo?->excel_reporte_file)
+                                <a href="{{ Storage::disk('public')->url($resumenPorTramo->excel_reporte_file) }}" target="_blank" rel="noopener noreferrer"
+                                    class="ml-2">
+                                    <x-button variant="success">
+                                        Descargar Reporte <i class="fa fa-file-excel"></i>
+                                    </x-button>
+                                </a>
+                            @endif
+                        @endif
                     </x-flex>
                 </x-flex>
 

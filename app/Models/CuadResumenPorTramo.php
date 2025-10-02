@@ -28,6 +28,7 @@ class CuadResumenPorTramo extends Model
         'deuda_acumulada',
         'tramo_id',
         'tramo_acumulado_id',
+        'excel_reporte_file',
     ];
     public function grupo()
     {
