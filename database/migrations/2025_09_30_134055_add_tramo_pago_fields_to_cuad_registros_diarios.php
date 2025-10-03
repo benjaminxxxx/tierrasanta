@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('cuad_registros_diarios', function (Blueprint $table) {
+            
             // Tramo donde se pagó el jornal
             $table->foreignId('tramo_pagado_jornal_id')
                 ->nullable()
@@ -23,6 +24,8 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('cuad_tramo_laborals', 'id', 'fk_cuad_registros_diarios_bono')
                 ->onDelete('set null');
+
+            
         });
     }
 
@@ -32,6 +35,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('cuad_registros_diarios', function (Blueprint $table) {
+          
+
             $table->dropForeign('fk_cuad_registros_diarios_jornal');
             $table->dropColumn('tramo_pagado_jornal_id');
 

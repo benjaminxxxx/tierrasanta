@@ -96,6 +96,11 @@ class ConfiguracionTableSeeder extends Seeder
                 'codigo' => 'porcentaje_constante',
                 'valor' => '1.18',
                 'descripcion' => 'Porcentaje Constante',
+            ],
+            [
+                'codigo' => 'rem_basica_essalud',
+                'valor' => '1.06',
+                'descripcion' => 'Remuneración básica essalud',
             ]
         ]);
     }

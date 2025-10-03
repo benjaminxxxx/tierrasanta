@@ -206,6 +206,7 @@
          this.calcularBonos();
       },
       calcularBonos() {
+      
          if (!this.estandarProduccion || this.estandarProduccion <= 0) {
             // No hay bono si el estándar no está definido
             this.tableDataBonificados.forEach(trabajador => trabajador.total_bono = 0);
@@ -219,9 +220,13 @@
                const key = `produccion_${i}`;
                sumaCantidad += parseFloat(trabajador[key] || 0);
             }
-
+            
+            //calcular el estandar esperado
+            const totalHorasTrabajadas = parseFloat(trabajador.total_horas || 0);
+            const estandarEsperado = (this.estandarProduccion / 8) * totalHorasTrabajadas;
+console.log(trabajador.total_horas);
             // Calcular excedente
-            let excedente = sumaCantidad - this.estandarProduccion;
+            let excedente = sumaCantidad - estandarEsperado;
             if (excedente <= 0) {
                trabajador.total_bono = 0;
                return;

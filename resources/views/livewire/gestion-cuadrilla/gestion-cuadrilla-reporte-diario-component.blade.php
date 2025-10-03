@@ -3,7 +3,7 @@
 
     <x-flex class="w-full justify-between">
         <x-flex class="my-3">
-            <x-h3>
+            <x-h3 class="mb-4 md:mb-0">
                 Registro Diario Cuadrilla
             </x-h3>
             <x-button @click="$wire.dispatch('registrarReporteDiarioCuadrilla',{fecha:'{{ $fecha }}'})">
@@ -15,29 +15,44 @@
         </x-button-a>
     </x-flex>
 
-    <div class="flex items-center justify-between mb-4">
+    <x-flex class="flex items-center justify-between my-2">
         <!-- Botón para fecha anterior -->
         <x-button wire:click="fechaAnterior">
-            <i class="fa fa-chevron-left"></i> Fecha Anterior
+            <i class="fa fa-chevron-left"></i> <span class="hidden md:inline-block">Fecha Anterior</span>
         </x-button>
 
-        <!-- Input para seleccionar la fecha -->
-        <x-input type="date" wire:model.live="fecha" class="text-center mx-2 !w-auto" />
+        <x-input type="date" wire:model.live="fecha" class="text-center !w-auto" />
 
         <!-- Botón para fecha posterior -->
         <x-button wire:click="fechaPosterior">
-            Fecha Posterior <i class="fa fa-chevron-right"></i>
+            <span class="hidden md:inline-block">Fecha Posterior</span> <i class="fa fa-chevron-right"></i>
         </x-button>
-    </div>
-
+    </x-flex>
+    <x-flex class="justify-center mb-4">
+        @if($tramos && $tramos->count() > 0)
+            <x-select wire:model.live="tramoSeleccionadoId" class="w-full text-center lg:w-auto">
+                @foreach($tramos as $tramo)
+                    <option value="{{ $tramo->id }}">Tramo: {{ $tramo->fecha_inicio }} - {{ $tramo->fecha_fin }}</option>
+                @endforeach
+            </x-select>
+        @endif
+    </x-flex>
+    @if ($tramos && $tramos->count() == 0)
+        <x-warning class="mb-4">
+            No se ha registrado ningún tramo en esta fecha.
+        </x-warning>
+    @endif
     <x-card2>
         <div wire:ignore>
-            <x-h3>Detalle de trabajadores</x-h3>
-            <x-flex class="lg:justify-end gap-3 w-full my-3">
-                <x-button @click="agregarGrupo" class="w-full lg:w-auto"><i class="fa fa-plus"></i></x-button>
-                <x-danger-button @click="quitarGrupo" class="w-full lg:w-auto"><i
-                        class="fa fa-minus"></i></x-danger-button>
+            <x-flex class="justify-between mb-4">
+                <x-h3>Detalle de trabajadores</x-h3>
+                <x-flex class="lg:justify-end gap-3 space-y-2 md:space-y-0">
+                    <x-button @click="agregarGrupo" class="w-full lg:w-auto"><i class="fa fa-plus"></i></x-button>
+                    <x-danger-button @click="quitarGrupo" class="w-full lg:w-auto"><i
+                            class="fa fa-minus"></i></x-danger-button>
+                </x-flex>
             </x-flex>
+
             <div x-ref="tableReporteContainer"></div>
 
         </div>

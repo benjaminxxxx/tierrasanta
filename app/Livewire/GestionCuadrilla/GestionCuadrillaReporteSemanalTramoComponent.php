@@ -35,6 +35,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
     #region resumenes
     public $resumenes = [];
     #endregion
+    public $fechaHastaBono;
     protected $listeners = [
         'cuadrillerosAgregadosEnTramo' => 'renovarListaYResumir',
         'costosSemanalesModificados' => 'renovarListaYResumir'
@@ -42,6 +43,9 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
     public function mount($tramoId)
     {
         $this->tramoLaboral = app(TramoLaboralServicio::class)->encontrarTramoPorId($tramoId);
+        if ($this->tramoLaboral) {
+            $this->fechaHastaBono = $this->tramoLaboral->fecha_hasta_bono;
+        }
         $this->totalDias = DateHelper::calcularTotalDias($this->tramoLaboral->fecha_inicio, $this->tramoLaboral->fecha_fin);
         $this->obtenerReporteTramo(false);
         $this->listarResumenes();
@@ -274,24 +278,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
         }
     }
     #region Resumen por tramo
-    /*
-    public function actualizarResumen()
-    {
-        try {
-            foreach ($this->resumenes as $id => $resumenData) {
-                // Solo enviar fecha y recibo
-                $payload = [
-                    'fecha' => $resumenData['fecha'] ?? null,
-                    'recibo' => $resumenData['recibo'] ?? null,
-                ];
-
-                ResumenTramoServicio::actualizar($id, $payload);
-            }
-        } catch (\Throwable $th) {
-            throw new Exception($th->getMessage());
-            
-        }
-    }*/
+   
     public function cambiarEstadoResumen($resumenId)
     {
         try {
@@ -321,7 +308,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
     }
     public function procesarCalculoListadoResumen(){
         try {
-            app(TramoLaboralServicio::class)->generarResumen($this->tramoLaboral->id);
+            app(TramoLaboralServicio::class)->generarResumen($this->tramoLaboral->id,$this->fechaHastaBono);
             $this->listarResumenes();
         } catch (\Throwable $th) {
             throw new Exception($th->getMessage());            

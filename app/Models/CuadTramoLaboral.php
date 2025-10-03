@@ -19,6 +19,7 @@ class CuadTramoLaboral extends Model
         'dinero_recibido',
         'saldo',
         'titulo',
+        'fecha_hasta_bono'
     ];
     public function gruposEnTramos(){
         return $this->hasMany(CuadTramoLaboralGrupo::class,'cuad_tramo_laboral_id');

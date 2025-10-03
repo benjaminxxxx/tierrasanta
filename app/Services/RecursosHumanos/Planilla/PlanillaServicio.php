@@ -22,8 +22,16 @@ class PlanillaServicio
             ]);
         }
     }
-    public static function guardarBonoPlanilla($fila, $fecha)
+    public static function guardarBonoPlanilla($fila, $numeroRecojos,$actividadId)
     {
+
+        $registroDiarioId = $fila['registro_diario_id'] ?? null;
+
+        if (!$registroDiarioId) {
+            throw new Exception("Falta el parámetro de identificación de reporte diario");
+        }
+        dd($registroDiarioId);
+        $fecha = now();
 
         $planillaDni = $fila['planilla_dni'] ?? null;
         $campo = $fila['campo'] ?? null;

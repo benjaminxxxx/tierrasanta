@@ -6,6 +6,7 @@ use App\Models\CuadTramoLaboral as TramoLaboral;
 use App\Models\CuadTramoLaboralGrupo as GrupoTramo;
 use App\Models\CuadTramoLaboralCuadrillero as CuadrilleroTramo;
 use App\Models\CuaGrupo as Grupo;
+use App\Services\Cuadrilla\TramoLaboralServicio;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
 class HSTCuadrillaReporteSemanalHoras
@@ -34,7 +35,7 @@ class HSTCuadrillaReporteSemanalHoras
     public function generate(): array
     {
         $handsontableData = [];
-        $gruposEnTramos = $this->fetchGroupsWithCrews();
+        $gruposEnTramos = $this->obtenerListaOficial();
 
         foreach ($gruposEnTramos as $grupoEnTramo) {
             
@@ -63,7 +64,7 @@ class HSTCuadrillaReporteSemanalHoras
      */
     public function getGroupList(): array
     {
-        return $this->fetchGroupsWithCrews()->map(function (GrupoTramo $grupoTramo) {
+        return $this->obtenerListaOficial()->map(function (GrupoTramo $grupoTramo) {
             return [
                 'codigo' => $grupoTramo->grupo->codigo,
                 'color'  => $grupoTramo->grupo->color,
@@ -102,17 +103,9 @@ class HSTCuadrillaReporteSemanalHoras
     /**
      * Obtiene los grupos y sus respectivos cuadrilleros ordenados.
      */
-    private function fetchGroupsWithCrews(): Collection
+    private function obtenerListaOficial(): Collection
     {
-        return $this->tramoLaboral
-            ->gruposEnTramos()
-            ->with([
-                'grupo', 
-                'cuadrilleros' => fn($query) => $query->orderBy('orden'),
-                'cuadrilleros.cuadrillero'
-            ])
-            ->orderBy('orden')
-            ->get();
+        return TramoLaboralServicio::obtenerListaOficial($this->tramoLaboral->id);
     }
 
     /**

@@ -985,13 +985,6 @@ class CuadrilleroServicio
             $costo_dia = ($totalHoras / 8) * $costoEseDiaX8Horas;
             $asistenciaCuadrillero->costo_dia = round($costo_dia, 2);
 
-            
-/*
-funciones calculadas en otro sitio
-// ➜ Calcular el total_bono sumando los costo_bono de sus detalles
-            $totalBono = $asistenciaCuadrillero->detalleHoras()->sum('costo_bono');
-            $asistenciaCuadrillero->total_bono = round($totalBono, 2);
-*/
             $asistenciaCuadrillero->save();
         }
     }
@@ -1092,99 +1085,7 @@ funciones calculadas en otro sitio
         return $rows;
     }
 
-    /*
-    public static function registrarOrdenSemanal($fechaInicio, $rows)
-    {
-        $grupoArrays = [];
-
-        foreach ($rows as &$row) {
-
-            // ✅ 1. Filtrar vacíos (eliminados por usuario)
-            if (empty(trim($row['cuadrillero_nombres'] ?? ''))) {
-                continue;  // no lo procesamos, se borró arriba
-            }
-
-            $grupo = $row['codigo_grupo'] ?? 'SIN GRUPO';
-            $cuadrilleroId = $row['cuadrillero_id'] ?? null;
-
-            // ✅ 2. Normalizar ID y Nombre
-            if ($cuadrilleroId) {
-                // Verificar si nombre coincide
-                $cuadrillero = Cuadrillero::find($cuadrilleroId);
-                if (!$cuadrillero || mb_strtoupper($cuadrillero->nombres) !== mb_strtoupper($row['cuadrillero_nombres'])) {
-                    // Buscar por nombre
-                    $nuevo = Cuadrillero::whereRaw('UPPER(nombres) = ?', [mb_strtoupper($row['cuadrillero_nombres'])])->first();
-                    if ($nuevo) {
-                        $row['cuadrillero_id'] = $nuevo->id;
-                    } else {
-                        // Crear nuevo
-                        $nuevo = Cuadrillero::create([
-                            'nombres' => $row['cuadrillero_nombres'],
-                            'codigo_grupo' => $row['codigo_grupo'] == 'SIN GRUPO' ? null : $row['codigo_grupo'],
-                        ]);
-                        $row['cuadrillero_id'] = $nuevo->id;
-                    }
-                }
-            } else {
-                // No hay id → buscar por nombre
-                $nuevo = Cuadrillero::whereRaw('UPPER(nombres) = ?', [mb_strtoupper($row['cuadrillero_nombres'])])->first();
-                if ($nuevo) {
-                    $row['cuadrillero_id'] = $nuevo->id;
-                } else {
-                    // Crear nuevo
-                    $nuevo = Cuadrillero::create([
-                        'nombres' => $row['cuadrillero_nombres'],
-                        'codigo_grupo' => $row['codigo_grupo'] == 'SIN GRUPO' ? null : $row['codigo_grupo'],
-                    ]);
-                    $row['cuadrillero_id'] = $nuevo->id;
-                }
-            }
-
-            // ✅ 3. Clasificar por grupo
-            $grupoArrays[$grupo][] = $row;
-        }
-
-        // ✅ 4. Reconstruir lista final ordenada
-        $listaFinal = [];
-        foreach ($grupoArrays as $grupo => $lista) {
-            if ($grupo === 'SIN GRUPO' || !$grupo || trim($grupo) === '')
-                continue;
-            foreach ($lista as $item) {
-                $listaFinal[] = $item;
-            }
-        }
-
-        if (isset($grupoArrays['SIN GRUPO'])) {
-            foreach ($grupoArrays['SIN GRUPO'] as $item) {
-                $listaFinal[] = $item;
-            }
-        }
-
-        // ✅ 5. Asignar orden e insertar
-        $orden = 1;
-        foreach ($listaFinal as &$item) {
-            $item['orden'] = $orden++;
-
-            // ✅ Verificar duplicidad antes de crear
-            $yaExiste = CuadOrdenSemanal::where('cuadrillero_id', $item['cuadrillero_id'])
-                ->where('fecha_inicio', $fechaInicio)
-                ->exists();
-
-            if ($yaExiste) {
-                $nombre = $item['cuadrillero_nombres'] ?? 'ID: ' . $item['cuadrillero_id'];
-                throw new Exception("El cuadrillero '{$nombre}' ya está registrado en la semana que inicia el {$fechaInicio}.");
-            }
-
-            CuadOrdenSemanal::create([
-                'cuadrillero_id' => $item['cuadrillero_id'],
-                'fecha_inicio' => $fechaInicio,
-                'orden' => $item['orden'],
-            ]);
-        }
-
-        return $listaFinal;
-    }*/
-
+  
 
     /**
      * guardarReporteSemanal
@@ -1330,7 +1231,7 @@ funciones calculadas en otro sitio
     }
 
 
-    public static function obtenerHandsontableReporteDiario($fecha)
+    public static function obtenerHandsontableReporteDiario($fecha,$tramoSeleccionadoId)
     {
         $fecha = Carbon::parse($fecha)->format('Y-m-d');
 

@@ -25,26 +25,31 @@ class ReporteDiario extends Model
     {
         return $this->hasMany(ReporteDiarioDetalle::class);
     }
-    public static function empleadosEnFecha($fecha,$campo,$labor){
-        return self::whereDate('fecha',$fecha)
-        ->whereHas('detalles', function ($q) use ($campo,$labor) {
-            $q->where('campo', $campo);
-            $q->where('labor', $labor);
-        })
-        ->get()
-        ->map(function ($empleados){
-            $empleado = Empleado::where('documento',$empleados->documento)->first();
-            if(!$empleado){
-                throw new \Exception("El empleado ya no existe.");                
-            }
+    public function actividadesBonos()
+    {
+        return $this->hasMany(PlanActividadBono::class, 'registro_diario_id');
+    }
+    public static function empleadosEnFecha($fecha, $campo, $labor)
+    {
+        return self::whereDate('fecha', $fecha)
+            ->whereHas('detalles', function ($q) use ($campo, $labor) {
+                $q->where('campo', $campo);
+                $q->where('labor', $labor);
+            })
+            ->get()
+            ->map(function ($empleados) {
+                $empleado = Empleado::where('documento', $empleados->documento)->first();
+                if (!$empleado) {
+                    throw new \Exception("El empleado ya no existe.");
+                }
 
-            return [
-                'id'=>$empleado->id,
-                'tipo'=>'planilla',
-                'dni'=>$empleados->documento,
-                'nombres'=>$empleados->empleado_nombre,
-            ];
-        })->toArray();
+                return [
+                    'id' => $empleado->id,
+                    'tipo' => 'planilla',
+                    'dni' => $empleados->documento,
+                    'nombres' => $empleados->empleado_nombre,
+                ];
+            })->toArray();
     }
 
 }

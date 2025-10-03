@@ -64,11 +64,12 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
             $campoNombre = $this->actividad->campo;
             $codigoLabor = $this->actividad->codigo_labor;
             $fecha = $this->actividad->fecha;
-            
+
             $registros = $this->obtenerCuadrillasPorFechaYLabor($campoNombre, $codigoLabor, $fecha, $this->actividad->id);
-            
-            $registrosPlanilla = $this->obtenerPlanillasPorFechaYLabor($campoNombre, $codigoLabor, $fecha);
+
+            $registrosPlanilla = $this->obtenerPlanillasPorFechaYLabor($campoNombre, $codigoLabor, $fecha, $this->actividad->id);
             //dd($registrosPlanilla);
+            //dd($registros,$registrosPlanilla);
             //hasta aqui me quede la revision, falta planilla
             $dataHandsontable = [];
             $dataHandsontablePlanilla = [];
@@ -119,38 +120,53 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
                 $dataHandsontable[] = $row;
             }
 
-            /*
+
             foreach ($registrosPlanilla as $registroPlanilla) {
+
+                $totalBonoCalculado = $registroPlanilla->actividadesBonos->sum(function ($actividadBono) {
+                    return $actividadBono->total_bono ?? 0;
+                });
+
                 $row = [
                     'registro_diario_id' => $registroPlanilla->id,
                     'tipo' => 'PLANILLA',
                     'nombre_trabajador' => $registroPlanilla->empleado_nombre,
                     'campo' => $campoNombre,
                     'labor' => $codigoLabor,
-                    'total_bono' => $registroPlanilla->bono_productividad,
+                    'total_bono' => $totalBonoCalculado,
                 ];
-                $recojos = $registro->detalleProduccion->keyBy('numero_recojo');
-
-                for ($i = 0; $i < $this->recojos; $i++) {
-                    $numeroRecojo = $i + 1;
-                    $row['produccion_' . $numeroRecojo] = isset($recojos[$numeroRecojo]) ? $recojos[$numeroRecojo]->produccion : '';
-                }
 
                 $horariosConcatenados = [];
 
-                foreach ($registro->detalleHoras as $detalle) {
+                $producciones = collect();
+                foreach ($registroPlanilla->actividadesBonos as $actividadBono) {
+                    foreach ($actividadBono->producciones as $produccion) {
+                        $producciones->push($produccion);
+                    }
+                }
+                $recojos = $producciones->keyBy('numero_recojo');
+
+                for ($i = 0; $i < $this->recojos; $i++) {
+                    $numeroRecojo = $i + 1;
+                    $row['produccion_' . $numeroRecojo] = isset($recojos[$numeroRecojo])
+                        ? $recojos[$numeroRecojo]->produccion
+                        : '';
+                }
+
+                foreach ($registroPlanilla->detalles as $detalle) {
                     $inicio = Carbon::parse($detalle->hora_inicio)->format('H:i');
-                    $fin = Carbon::parse($detalle->hora_fin)->format('H:i');
+                    $fin = Carbon::parse($detalle->hora_salida)->format('H:i');
                     $key = "$inicio-$fin";
                     $horariosConcatenados[] = $key;
                 }
 
                 $row['horarios'] = implode(',', $horariosConcatenados);
+
                 $row['rango_total_horas'] = DateHelper::calcularDuracionPorTramo($row['horarios']);
                 $row['total_horas'] = DateHelper::calcularTotalHorasFloat($row['rango_total_horas']);
 
                 $dataHandsontable[] = $row;
-            }*/
+            }
             $this->tableDataBonificados = $dataHandsontable;
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
@@ -158,7 +174,7 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
     }
     public function obtenerCuadrillasPorFechaYLabor($campoNombre, $codigoLabor, $fecha, $actividadId)
     {
-       
+
         $filtroDetalleHoras = function ($query) use ($campoNombre, $codigoLabor) {
             $query->where('campo_nombre', $campoNombre)
                 ->where('codigo_labor', $codigoLabor);
@@ -185,16 +201,26 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
     }
 
 
-    public function obtenerPlanillasPorFechaYLabor($campoNombre, $codigoLabor, $fecha)
+    public function obtenerPlanillasPorFechaYLabor($campoNombre, $codigoLabor, $fecha, $actividadId)
     {
         $filtroDetalles = function ($query) use ($campoNombre, $codigoLabor) {
             $query->where('campo', $campoNombre)
                 ->where('labor', $codigoLabor);
         };
 
+        $filtroActividadBono = function ($query) use ($actividadId) {
+            $query->where('actividad_id', $actividadId);
+        };
+
         return ReporteDiario::with([
+
+            'actividadesBonos' => function ($query) use ($filtroActividadBono) {
+                $filtroActividadBono($query);
+                $query->with('producciones'); // carga las recogidas
+            },
             'detalles' => function ($query) use ($filtroDetalles) {
                 $filtroDetalles($query);
+                $query->orderBy('hora_inicio');
             }
         ])
             ->where('fecha', $fecha)

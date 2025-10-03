@@ -96,7 +96,7 @@ class GestionCuadrillaReporteSemanalTramoAgregarCuadrilleroComponent extends Com
             if (!$this->codigo_grupo) {
                 throw new Exception("No ha elegido ningún grupo");
             }
-
+            
             // IDs de cuadrilleros que se registrarán en esta ejecución
             $idsNuevos = [];
 

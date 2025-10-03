@@ -94,7 +94,7 @@
         <x-flex class="mt-5 justify-end">
             <div>
                 <x-h3>
-                    Cuadro resumen:
+                    Cuadro OBSOLETO resumen:
                 </x-h3>
                 <div class="border border-gray-600 rounded">
                     <x-table class="mt-5">

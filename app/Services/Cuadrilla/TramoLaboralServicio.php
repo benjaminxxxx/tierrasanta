@@ -17,16 +17,47 @@ use Illuminate\Support\Facades\Session;
  */
 class TramoLaboralServicio
 {
+    /** Obtiene la lista ordenada por grupos y luego por trabajadores de un tramo laboral dado.
+     *
+     * @param int $tramoSeleccionadoId El ID del tramo laboral seleccionado.
+     * @return \Illuminate\Database\Eloquent\Collection La colección de grupos con sus cuadrilleros.
+     * @throws \Exception Si el tramo laboral no se encuentra.
+     */
+    public static function obtenerListaOficial(int $tramoSeleccionadoId)
+    {
+        $tramoLaboral = CuadTramoLaboral::find($tramoSeleccionadoId);
+        if (!$tramoLaboral) {
+            throw new \Exception("Tramo laboral no encontrado.");
+        }
+        return $tramoLaboral
+            ->gruposEnTramos()
+            ->with([
+                'grupo',
+                'cuadrilleros' => fn($query) => $query->orderBy('orden'),
+                'cuadrilleros.cuadrillero'
+            ])
+            ->orderBy('orden')
+            ->get();
+    }
+    public static function tramosEnFecha(string $fecha)
+    {
+        $fechaCarbon = Carbon::parse($fecha);
+
+        return CuadTramoLaboral::whereDate('fecha_inicio', '<=', $fechaCarbon)
+            ->whereDate('fecha_fin', '>=', $fechaCarbon)
+            ->orderBy('fecha_inicio', 'asc')
+            ->get();
+    }
     public function encontrarTramoPorId(int $id): ?CuadTramoLaboral
     {
         return CuadTramoLaboral::find($id);
     }
 
-    public function generarResumen(int $tramoId): void
+    public function generarResumen(int $tramoId, $fechaHastaBono): void
     {
-       
-        app(ResumenTramoServicio::class)->generarResumen($tramoId);
-       
+
+        app(ResumenTramoServicio::class)->generarResumen($tramoId, $fechaHastaBono);
+
     }
 
     /**

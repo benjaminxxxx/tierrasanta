@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('cuad_registros_diarios', function (Blueprint $table) {
-            $table->boolean('bono_esta_pagado')->default(false); 
+        Schema::table('cuad_tramo_laborals', function (Blueprint $table) {
+            $table->date('fecha_hasta_bono')->nullable();
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('cuad_registros_diarios', function (Blueprint $table) {
-            $table->dropColumn('bono_esta_pagado');
+        Schema::table('cuad_tramo_laborals', function (Blueprint $table) {
+            $table->dropColumn('fecha_hasta_bono');
         });
     }
 };

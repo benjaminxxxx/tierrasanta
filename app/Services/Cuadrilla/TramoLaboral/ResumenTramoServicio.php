@@ -27,7 +27,7 @@ class ResumenTramoServicio
         $tramoLaboral = $resumenPorTramo->tramo;
         $this->actualizarRegistrosDiarios($listaPago, $periodo, $codigoGrupo, $tramoLaboral);
         $listaFiltrada = $this->filtrarListaPago($listaPago, $tramoLaboral->id);
-       
+
         //
         //destruir el file excel
         $fileReporteExcel = $resumenPorTramo->excel_reporte_file;
@@ -88,12 +88,12 @@ class ResumenTramoServicio
             'fecha' => null,
             'excel_reporte_file' => null,
         ]);
-        if($registroTramoFuturo){
+        if ($registroTramoFuturo) {
             $registroTramoFuturo->update([
                 'tramo_acumulado_id' => null,
             ]);
         }
-        
+
         return $resumenPorTramo;
     }
     private function filtrarListaPago($listaPago, $tramoLaboralId)
@@ -286,9 +286,13 @@ class ResumenTramoServicio
      * Genera o actualiza el cuadro resumen para un tramo laboral específico.
      * Consolida sueldos y gastos adicionales, acumulando saldos pendientes de tramos anteriores.
      */
-    public function generarResumen(int $tramoId): void
+    public function generarResumen(int $tramoId, $fechaHastaBono): void
     {
         $tramoLaboral = CuadTramoLaboral::findOrFail($tramoId);
+        $tramoLaboral->update([
+            'fecha_hasta_bono' => $fechaHastaBono
+        ]);
+
         $tramoAnterior = $this->encontrarAcumuladoAnterior($tramoLaboral);
 
         // 1. Obtenemos todos los resúmenes pendientes del tramo anterior.
@@ -330,6 +334,10 @@ class ResumenTramoServicio
             // 🔹 Calcular adicionales
             $adicionales = $this->calcularAdicionales($tramoLaboral, $resumenesAnterioresDelGrupo, $grupo, $codigoGrupo, $tramoAnterior);
             $dataParaUpsert = array_merge($dataParaUpsert, $adicionales);
+
+            // 🔹 Calcular bonos
+            $bonos = $this->calcularBonos($tramoLaboral, $resumenesAnterioresDelGrupo, $grupo, $codigoGrupo, $tramoAnterior);
+            $dataParaUpsert = array_merge($dataParaUpsert, $bonos);
         }
         // 1. Obtenemos las "claves únicas" de los registros que acabamos de calcular.
         // Una clave puede ser: "COD01-sueldo-ANDRES (septiembre)"
@@ -391,9 +399,7 @@ class ResumenTramoServicio
                 'tipo' => 'sueldo',
                 'descripcion' => $descripcion,
                 'condicion' => 'Pendiente',
-                'fecha' => null,
                 'fecha_acumulada' => $fechaAcumulada,
-                'recibo' => null,
                 'deuda_actual' => $totalCostosActual,
                 'deuda_acumulada' => $deudaAcumuladaFinal, // Deuda anterior + actual
                 'tramo_id' => $tramoLaboral->id,
@@ -404,7 +410,57 @@ class ResumenTramoServicio
             ]
         ];
     }
+    private function calcularBonos($tramoLaboral, $resumenesAnteriores, $grupo, $codigoGrupo, $tramoAnterior)
+    {
+        //los bonos no se pueden acumular de tramo en tramo, a veces se paga un sabado, dejado el viernes sin pagar del tramo anterior
+        //entonces debo si hay tramo acumulado, luego consultar el tramo anterior si hay fecha_hasta_bono
+        //si hay fecha_inicio seria desde esa fecha y fecha sin tampoco seria hasta fecha_fin sino seria hasta fecha_hasta_bono si es que es diferente de null
+        //dd($tramoAnterior);
+        $fechaDesde = $tramoLaboral->fecha_inicio;
+        $fechaHasta = $tramoLaboral->fecha_hasta_bono ?? $tramoLaboral->fecha_fin;
+        if($tramoAnterior && $tramoAnterior->fecha_hasta_bono){
+            $fechaDesde = Carbon::parse($tramoAnterior->fecha_hasta_bono)->addDay();
+        }
+        
+        $costosQuery = CuadRegistroDiario::where('codigo_grupo', $codigoGrupo)
+            ->whereBetween('fecha', [$fechaDesde, $fechaHasta]);
+/*
+        if ($grupo->modalidad_pago === 'mensual') {
+            return $this->calcularSueldosMensuales($tramoLaboral, $resumenesAnteriores, $grupo, $codigoGrupo, $tramoAnterior, $costosQuery);
+        }*/
 
+        $totalCostosActual = $costosQuery->sum('total_bono');
+        $descripcion = 'BONO ' . $grupo->nombre;
+
+        $registroAnterior = $resumenesAnteriores->firstWhere('descripcion', $descripcion);
+
+        // La deuda pendiente es simplemente la deuda acumulada del registro anterior.
+        $deudaPendienteAnterior = $registroAnterior->deuda_acumulada ?? 0;
+        $deudaAcumuladaFinal = $deudaPendienteAnterior + $totalCostosActual;
+
+        // Si no hay deuda nueva ni pendiente, no generamos un registro vacío.
+        if ($deudaAcumuladaFinal == 0) {
+            return [];
+        }
+        $fechaAcumulada = $registroAnterior->fecha_acumulada ?? $fechaDesde;
+        return [
+            [
+                'grupo_codigo' => $codigoGrupo,
+                'color' => $grupo->color,
+                'tipo' => 'bono',
+                'descripcion' => $descripcion,
+                'condicion' => 'Pendiente',
+                'fecha_acumulada' => $fechaAcumulada,
+                'deuda_actual' => $totalCostosActual,
+                'deuda_acumulada' => $deudaAcumuladaFinal, // Deuda anterior + actual
+                'tramo_id' => $tramoLaboral->id,
+                'tramo_acumulado_id' => $tramoAnterior?->id,
+                'modalidad_pago' => $grupo->modalidad_pago,
+                'fecha_inicio' => $fechaDesde,
+                'fecha_fin' => $fechaHasta,
+            ]
+        ];
+    }
     /**
      * Lógica específica para el cálculo de sueldos con modalidad 'mensual'.
      * ESTA VERSIÓN ESTÁ CORREGIDA para arrastrar deudas de meses anteriores aunque no tengan actividad actual.
@@ -455,9 +511,7 @@ class ResumenTramoServicio
                     'tipo' => 'sueldo',
                     'descripcion' => $descripcion,
                     'condicion' => 'Pendiente',
-                    'fecha' => null,
                     'fecha_acumulada' => $fechaAcumulada,
-                    'recibo' => null,
                     'deuda_actual' => $costoActual,
                     'deuda_acumulada' => $deudaAcumuladaFinal,
                     'tramo_id' => $tramoLaboral->id,
@@ -511,9 +565,7 @@ class ResumenTramoServicio
                 'tipo' => 'adicional',
                 'descripcion' => $descripcion,
                 'condicion' => 'Pendiente',
-                'fecha' => null,
                 'fecha_acumulada' => $fechaAcumulada,
-                'recibo' => null,
                 'deuda_actual' => $montoActual,
                 'deuda_acumulada' => $deudaAcumuladaFinal,
                 'tramo_id' => $tramoLaboral->id,
@@ -535,6 +587,7 @@ class ResumenTramoServicio
 
         $orden = 0;
         foreach ($data as $row) {
+
             // 1. Define los atributos que hacen único a un registro.
             $uniqueAttributes = [
                 'tramo_id' => $tramoId,
@@ -553,8 +606,6 @@ class ResumenTramoServicio
             // 4. [LA CLAVE] Si el registro ya existía, usamos sus valores guardados
             // para no sobrescribir los cambios manuales.
             if ($existingRecord) {
-                $valuesToUpsert['fecha'] = $existingRecord->fecha;
-                $valuesToUpsert['recibo'] = $existingRecord->recibo;
                 $valuesToUpsert['condicion'] = $existingRecord->condicion;
             }
 

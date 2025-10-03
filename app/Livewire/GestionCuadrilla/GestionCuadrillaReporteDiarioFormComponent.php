@@ -86,7 +86,7 @@ class GestionCuadrillaReporteDiarioFormComponent extends Component
             $this->mostrarFormularioRegistroDiarioCuadrilla = false;
 
             $this->alert('success', 'Actividades registradas correctamente.');
-            $this->dispatch('cuadrilla_reporte_diario_registrado', $this->fecha);
+            $this->dispatch('registroDetalleHorasExterno', $this->fecha);
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }

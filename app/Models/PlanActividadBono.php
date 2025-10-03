@@ -5,30 +5,30 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class CuadActividadBono extends Model
+class PlanActividadBono extends Model
 {
     use HasFactory;
 
-    protected $table = 'cuad_actividades_bonos';
+    protected $table = 'plan_actividad_bonos';
 
     protected $fillable = [
         'registro_diario_id',
         'actividad_id',
-        'total_bono'
+        'total_bono',
     ];
 
-    // Relación inversa
+    // Relaciones
     public function registroDiario()
     {
-        return $this->belongsTo(CuadRegistroDiario::class, 'registro_diario_id');
+        return $this->belongsTo(ReporteDiario::class, 'registro_diario_id');
     }
+
     public function actividad()
     {
         return $this->belongsTo(Actividad::class, 'actividad_id');
     }
-    // Relación con producciones
     public function producciones()
     {
-        return $this->hasMany(CuadActividadProduccion::class, 'actividad_bono_id');
+        return $this->hasMany(PlanActividadProduccion::class, 'actividad_bono_id');
     }
 }
