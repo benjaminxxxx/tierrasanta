@@ -3,12 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\CochinillaFiltrado;
-use App\Models\CochinillaVenteado;
 use App\Support\ExcelHelper;
 use Exception;
 use Illuminate\Database\Seeder;
-use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 class CochinillaFiltradoSeeder extends Seeder

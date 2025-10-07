@@ -23,7 +23,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('kardex', function (Blueprint $table) {
-            $table->dropUnique('kardex_anio_combustible_unique');
             $table->dropColumn(['anio', 'es_combustible']);
         });
     }

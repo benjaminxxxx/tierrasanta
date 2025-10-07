@@ -26,8 +26,8 @@ return new class extends Migration
             
             $table->decimal('total_bono', 8, 2)->nullable();
             $table->decimal('total_costo', 8, 2)->nullable();
-            $table->json('cantidades')->nullable()->after('total_costo');
-            $table->decimal('total_horas', 8, 2)->nullable()->after('cantidades');
+            $table->json('cantidades')->nullable();
+            $table->decimal('total_horas', 8, 2)->nullable();
 
             $table->timestamps();
             

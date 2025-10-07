@@ -4,14 +4,10 @@ namespace Database\Seeders;
 
 use App\Models\Campo;
 use App\Models\CampoCampania;
-use App\Models\CochinillaFiltrado;
 use App\Models\CochinillaInfestacion;
-use App\Models\CochinillaVenteado;
 use App\Support\ExcelHelper;
 use Exception;
 use Illuminate\Database\Seeder;
-use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 class CochinillaInfestacionesSeeder extends Seeder

@@ -5,16 +5,12 @@ namespace Database\Seeders;
 use App\Support\ExcelHelper;
 use Exception;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Models\Campo;
 use App\Models\CampoCampania;
 use App\Models\CochinillaIngreso;
 use App\Models\CochinillaIngresoDetalle;
 use App\Models\CochinillaObservacion;
-use Maatwebsite\Excel\Facades\Excel;
-use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class CochinillaIngresoSeeder extends Seeder

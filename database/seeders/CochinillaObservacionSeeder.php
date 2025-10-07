@@ -29,7 +29,7 @@ class CochinillaObservacionSeeder extends Seeder
             'Pre - Cosecha Cartón',
             'Pre - Cosecha Tubo',
         ];
-
+        //CochinillaObservacion::truncate();
         foreach ($datos as $descripcion) {
             $codigo = $this->generarCodigoSlug($descripcion);
 

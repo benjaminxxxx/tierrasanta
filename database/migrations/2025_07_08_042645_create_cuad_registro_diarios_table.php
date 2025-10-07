@@ -48,6 +48,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cuad_registro_diarios');
+        Schema::dropIfExists('cuad_registros_diarios');
     }
 };

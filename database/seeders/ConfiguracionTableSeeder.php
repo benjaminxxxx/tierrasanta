@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -14,7 +13,7 @@ class ConfiguracionTableSeeder extends Seeder
     public function run(): void
     {
         // Limpiar la tabla 'configuracion'
-        DB::table('configuracion')->truncate();
+        //DB::table('configuracion')->truncate();
 
         DB::table('configuracion')->insert([
             [

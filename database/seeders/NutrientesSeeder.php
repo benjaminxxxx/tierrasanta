@@ -10,6 +10,9 @@ class NutrientesSeeder extends Seeder
 {
     public function run(): void
     {
+        // Truncar la tabla antes de insertar nuevos datos
+        //DB::table('nutrientes')->truncate();
+        // Insertar los nutrientes
         DB::table('nutrientes')->insert([
             ['codigo' => 'N', 'nombre' => 'Nitrógeno', 'unidad' => '%', 'created_at' => now(), 'updated_at' => now()],
             ['codigo' => 'P', 'nombre' => 'Fósforo', 'unidad' => '%', 'created_at' => now(), 'updated_at' => now()],

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->year('anio_contable')->nullable();  // Para el año contable
             $table->tinyInteger('mes_contable')->nullable();  // Para el mes contable (1-12)
             $table->string('codigo_grupo');
-            $table->timestamp('fecha_gasto')->default(DB::raw('CURRENT_TIMESTAMP'))->after('updated_at');
+            $table->timestamp('fecha_gasto')->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamps();
         });
     }

@@ -13,28 +13,40 @@ class CargosSeeder extends Seeder
      */
     public function run(): void
     {
+        // Truncate the table before seeding
+        //DB::table('cargos')->truncate();
+
+        // Insert all cargos data
         DB::table('cargos')->insert([
-            ['codigo' => 'ASISIST', 'nombre' => 'ASIST. SISTEMA'],
-            ['codigo' => 'GER', 'nombre' => 'GERENTE'],
-            ['codigo' => 'RIE', 'nombre' => 'RIEGO'],
-            ['codigo' => 'OBR', 'nombre' => 'OBRERO'],
-            ['codigo' => 'FIL', 'nombre' => 'FILTRADO'],
-            ['codigo' => 'VARLAB', 'nombre' => 'VARIAS LABORES'],
-            ['codigo' => 'ASISPROD', 'nombre' => 'ASIST. PRODUCCIÓN'],
-            ['codigo' => 'ASISFIN', 'nombre' => 'ASIST. FINANZAS'],
-            ['codigo' => 'INGAGR', 'nombre' => 'ING. GER. AGRIC'],
-            ['codigo' => 'FUM', 'nombre' => 'FUMIGADOR'],
-            ['codigo' => 'ASISGER', 'nombre' => 'ASIST. GERENCIA'],
-            ['codigo' => 'EVAL', 'nombre' => 'EVALUADOR'],
-            ['codigo' => 'SERVGEN', 'nombre' => 'SERV. GENERALES'],
-            ['codigo' => 'TRAC', 'nombre' => 'TRACTORISTA'],
-            ['codigo' => 'VIG', 'nombre' => 'VIGILANTE'],
-            ['codigo' => 'CAPGRL', 'nombre' => 'CAPATAZ GENERAL'],
-            ['codigo' => 'LOG', 'nombre' => 'LOGÍSTICA'],
-            ['codigo' => 'ASISCONT', 'nombre' => 'ASIST. CONTABILIDAD'],
-            ['codigo' => 'CAP2', 'nombre' => 'CAPATAZ 2'],
-            ['codigo' => 'ASISADM', 'nombre' => 'ASIST. ADMINISTRATIVO CAMPO'],
-            ['codigo' => 'COC', 'nombre' => 'COCINA'],
+            ['codigo' => 'ASI', 'nombre' => 'ASIST. PROD', 'created_at' => '2024-09-20 06:41:14', 'updated_at' => '2024-09-20 06:41:14'],
+            ['codigo' => 'ASI1', 'nombre' => 'ASIST. FINANZ.', 'created_at' => '2024-09-20 06:41:14', 'updated_at' => '2024-09-20 06:41:14'],
+            ['codigo' => 'ASI2', 'nombre' => 'ASIST. CONTAB', 'created_at' => '2024-09-20 06:41:14', 'updated_at' => '2024-09-20 06:41:14'],
+            ['codigo' => 'ASI3', 'nombre' => 'ASIST.SISTEMA', 'created_at' => '2024-09-20 06:41:14', 'updated_at' => '2024-09-20 06:41:14'],
+            ['codigo' => 'ASISADM', 'nombre' => 'ASIST. ADMINISTRATIVO CAMPO', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'ASISCONT', 'nombre' => 'ASIST. CONTABILIDAD', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'ASISFIN', 'nombre' => 'ASIST. FINANZAS', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'ASISGER', 'nombre' => 'ASIST. GERENCIA', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'ASISIST', 'nombre' => 'ASIST. SISTEMA', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'ASISPROD', 'nombre' => 'ASIST. PRODUCCIÓN', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'CAP', 'nombre' => 'CAPTZ. GRL', 'created_at' => '2024-09-20 06:41:14', 'updated_at' => '2024-09-20 06:41:14'],
+            ['codigo' => 'CAP1', 'nombre' => 'CAPTZ. 2', 'created_at' => '2024-09-20 06:41:14', 'updated_at' => '2024-09-20 06:41:14'],
+            ['codigo' => 'CAP2', 'nombre' => 'CAPATAZ 2', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'CAPGRL', 'nombre' => 'CAPATAZ GENERAL', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'COC', 'nombre' => 'COCINA', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'EVAL', 'nombre' => 'EVALUADOR', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'FIL', 'nombre' => 'FILTRADO', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'FUM', 'nombre' => 'FUMIGADOR', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'GER', 'nombre' => 'GERENTE', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'ING', 'nombre' => 'ING - GER. AGRIC', 'created_at' => '2024-09-20 06:41:14', 'updated_at' => '2024-09-20 06:41:14'],
+            ['codigo' => 'INGAGR', 'nombre' => 'ING. GER. AGRIC', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'LOG', 'nombre' => 'LOGÍSTICA', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'OBR', 'nombre' => 'OBRERO', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'RIE', 'nombre' => 'RIEGO', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'SER', 'nombre' => 'SERV GENER', 'created_at' => '2024-09-20 06:41:14', 'updated_at' => '2024-09-20 06:41:14'],
+            ['codigo' => 'SERVGEN', 'nombre' => 'SERV. GENERALES', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'TRAC', 'nombre' => 'TRACTORISTA', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'VARLAB', 'nombre' => 'VARIAS LABORES', 'created_at' => null, 'updated_at' => null],
+            ['codigo' => 'VIG', 'nombre' => 'VIGILANTE', 'created_at' => null, 'updated_at' => null],
         ]);
     }
 }

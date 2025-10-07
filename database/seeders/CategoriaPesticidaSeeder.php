@@ -24,7 +24,7 @@ class CategoriaPesticidaSeeder extends Seeder
             'Biológicos',
             'Dispersantes de sales',
         ];
-
+        //CategoriaPesticida::truncate(); referenciado
         foreach ($categorias as $descripcion) {
             CategoriaPesticida::create([
                 'codigo' => Str::slug($descripcion),

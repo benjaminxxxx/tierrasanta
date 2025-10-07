@@ -2,18 +2,12 @@
 
 namespace Database\Seeders;
 
-use App\Models\Campo;
-use App\Models\CampoCampania;
 use App\Services\Campo\Gestion\CampoServicio;
 use App\Services\Cochinilla\VentaServicio;
 use App\Support\ExcelHelper;
 use DB;
 use Exception;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Storage;
-use Maatwebsite\Excel\Facades\Excel;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 

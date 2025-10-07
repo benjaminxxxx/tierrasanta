@@ -2,8 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Campo;
-use App\Models\CampoCampania;
 use App\Models\CochinillaVenteado;
 use App\Support\ExcelHelper;
 use Exception;
