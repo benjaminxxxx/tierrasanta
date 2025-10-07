@@ -3,6 +3,8 @@
 namespace App\Services\RecursosHumanos\Planilla;
 
 use App\Models\Actividad;
+use App\Models\PlanActividadBono;
+use App\Models\PlanActividadProduccion;
 use App\Models\ReporteDiario;
 use App\Models\ReporteDiarioDetalle;
 use App\Support\DateHelper;
@@ -10,19 +12,20 @@ use Exception;
 
 class PlanillaServicio
 {
-    public static function calcularBonosTotalesPlanilla($fecha){
-        $reportes = ReporteDiario::whereDate('fecha',$fecha)
-        ->with(['detalles'])
-        ->get();
+    public static function calcularBonosTotalesPlanilla($fecha)
+    {
+        $reportes = ReporteDiario::whereDate('fecha', $fecha)
+            ->with(['detalles'])
+            ->get();
 
         foreach ($reportes as $reporte) {
             $bono_productividad = $reporte->detalles->sum('costo_bono');
             $reporte->update([
-                'bono_productividad'=>$bono_productividad,
+                'bono_productividad' => $bono_productividad,
             ]);
         }
     }
-    public static function guardarBonoPlanilla($fila, $numeroRecojos,$actividadId)
+    public static function guardarBonoPlanilla($fila, $numeroRecojos, $actividadId)
     {
 
         $registroDiarioId = $fila['registro_diario_id'] ?? null;
@@ -30,7 +33,50 @@ class PlanillaServicio
         if (!$registroDiarioId) {
             throw new Exception("Falta el parámetro de identificación de reporte diario");
         }
-        dd($registroDiarioId);
+
+        $actividadBono = PlanActividadBono::updateOrCreate(
+            [
+                'registro_diario_id' => $registroDiarioId,
+                'actividad_id' => $actividadId
+            ],
+            [
+                'total_bono' => $fila['total_bono'] ?? 0
+            ]
+        );
+
+        PlanActividadProduccion::where('actividad_bono_id', $actividadBono->id)
+            ->where('numero_recojo', '>', $numeroRecojos)
+            ->delete();
+
+        for ($i = 1; $i <= $numeroRecojos; $i++) {
+            $produccion = $fila['produccion_' . $i] ?? null;
+
+            if ($produccion) {
+                PlanActividadProduccion::updateOrCreate(
+                    [
+                        'actividad_bono_id' => $actividadBono->id,
+                        'numero_recojo' => $i
+                    ],
+                    [
+                        'produccion' => $produccion
+                    ]
+                );
+            } else {
+                PlanActividadProduccion::where('actividad_bono_id', $actividadBono->id)
+                    ->where('numero_recojo', $i)
+                    ->delete();
+            }
+        }
+
+        $sumaBonos = PlanActividadBono::where('registro_diario_id', $registroDiarioId)->sum('total_bono');
+
+        $registroDiario = ReporteDiario::findOrFail($registroDiarioId);
+        $registroDiario->update([
+            'bono_productividad' => $sumaBonos
+        ]);
+
+        //dd($registroDiario);
+/*
         $fecha = now();
 
         $planillaDni = $fila['planilla_dni'] ?? null;
@@ -77,7 +123,7 @@ class PlanillaServicio
                 'costo_bono' => $bonoPorTramo,
                 'produccion' => $producciones[$index] ?? 0
             ]);
-        }
+        }*/
     }
     public static function obtenerTrabajadoresPlanillaPorCampoYLabor($fecha, $campo, $labor)
     {

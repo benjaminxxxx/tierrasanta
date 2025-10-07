@@ -113,7 +113,7 @@ class ReporteDiarioDetalleComponent extends Component
 
                 if (!$documento) {
                     if (mb_strtolower($nombresEmpleado) == 'cuadrilla') {
-
+/*
                         $numeroCuadrilleros = trim(preg_replace('/[\x00-\x1F\x7F\xA0]/u', ' ', $fila[3]));
 
                         if ($numeroCuadrilleros) {
@@ -175,8 +175,9 @@ class ReporteDiarioDetalleComponent extends Component
                             $reporteDiarioCuadrilla->update([
                                 'total_horas' => $totalHorasFormateadas
                             ]);
-                        }
+                        }*/
                     }
+                        
                 } else {
                     // Insertar o actualizar el reporte diario
                     if ($asistencia != null) {
@@ -231,7 +232,7 @@ class ReporteDiarioDetalleComponent extends Component
                             'total_horas' => $horaFormateada, // Puedes ajustar esto según sea necesario
                             'tipo_trabajador' => 'planilla',
                             'asistencia' => $asistencia ?? '',
-                            'bono_productividad' => $bonoProductividad
+                            //'bono_productividad' => $bonoProductividad
                         ]
                     );
 

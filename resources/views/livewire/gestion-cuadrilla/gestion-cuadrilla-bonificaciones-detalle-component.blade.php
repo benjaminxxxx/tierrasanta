@@ -96,7 +96,7 @@
          const container = this.$refs.tableBonificacionesCuadrilleros;
          this.hot = new Handsontable(container, {
             data: this.tableDataBonificados,
-            themeName: 'ht-theme-main-dark-auto',
+            //themeName: 'ht-theme-main-dark-auto',
             colHeaders: true,
             rowHeaders: true,
             columns: this.generarColumnasDinamicas(),

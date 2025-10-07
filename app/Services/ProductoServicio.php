@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\CompraProducto;
-use App\Models\CuadrillaHora;
 use Exception;
 
 class ProductoServicio

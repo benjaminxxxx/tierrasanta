@@ -252,7 +252,7 @@ class CuadrilleroServicio
             throw new Exception("Falta el parámetro de identificación de reporte diario");
         }
 
-        // 1️⃣ Buscar o crear el registro de bono para esta actividad en este registro diario
+        // Buscar o crear el registro de bono para esta actividad en este registro diario
         $actividadBono = CuadActividadBono::updateOrCreate(
             [
                 'registro_diario_id' => $registroDiarioId,
@@ -263,12 +263,12 @@ class CuadrilleroServicio
             ]
         );
 
-        // 2️⃣ Eliminar producciones que ya no existen
+        // Eliminar producciones que ya no existen
         CuadActividadProduccion::where('actividad_bono_id', $actividadBono->id)
             ->where('numero_recojo', '>', $numeroRecojos)
             ->delete();
 
-        // 3️⃣ Guardar o actualizar producciones
+        // Guardar o actualizar producciones
         for ($i = 1; $i <= $numeroRecojos; $i++) {
             $produccion = $fila['produccion_' . $i] ?? null;
 
@@ -289,7 +289,7 @@ class CuadrilleroServicio
             }
         }
 
-        // 4️⃣ Recalcular total_bono del registro diario sumando todos los bonos de sus actividades
+        //Recalcular total_bono del registro diario sumando todos los bonos de sus actividades
         $sumaBonos = CuadActividadBono::where('registro_diario_id', $registroDiarioId)->sum('total_bono');
 
         $registroDiario = CuadRegistroDiario::findOrFail($registroDiarioId);

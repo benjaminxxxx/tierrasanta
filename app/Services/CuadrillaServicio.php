@@ -4,36 +4,16 @@ namespace App\Services;
 
 use App\Models\Actividad;
 use App\Models\CampoCampania;
-use App\Models\CuaAsistenciaSemanal;
-use App\Models\CuaAsistenciaSemanalCuadrillero;
 use App\Models\CuadDetalleHora;
-use App\Models\CuadRegistroDiario;
 use App\Models\CuadrillaHora;
-use App\Models\CuadrilleroActividad;
 use App\Support\ExcelHelper;
 use Exception;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class CuadrillaServicio
 {
-    
-
-    /*
-    public static function calcularCostoFdmMensual($mes,$anio){
-        $registrosDiarios = CuadrillaHora::whereMonth('fecha', $mes)
-            ->whereYear('fecha', $anio)
-            ->get();
-
-        //varios registros, cada campo con costo_dia y bono, sumar cambos campos y sumar cada registro y retornar el tota
-        return $registrosDiarios->sum(function ($registro) {
-            $costoDia = $registro->costo_dia ?? 0;
-            $bono = $registro->bono ?? 0;
-            return $costoDia + $bono;
-        });
-    }*/
     public static function calcularGastoCuadrilla($campoCampaniaId)
     {
         $campoCampania = CampoCampania::find($campoCampaniaId);
@@ -78,19 +58,7 @@ class CuadrillaServicio
 
             dd($registroData);
             $factor = 1;
-            /**
-             *    "id" => 565
-                    "cuadrillero_id" => 2
-                    "fecha" => "2025-08-07"
-                    "costo_personalizado_dia" => null
-                    "asistencia" => 1
-                    "total_horas" => "8.00"
-                    "total_bono" => "320.00"
-                    "costo_dia" => "90.00"
-                    "created_at" => "2025-08-05 23:03:32"
-                    "updated_at" => "2025-08-09 01:37:55"
-                    "esta_pagado" => 0
-             */ 
+          
             
             $nombreCampania = $campoCampania->nombre_campania;
 

@@ -79,9 +79,6 @@ Route::middleware([
         return view('livewire.gestion-cuadrilla.administrar-cuadrillero.grupos');
     })->name('cuadrilla.grupos');
 
-    Route::get('/cuadrilla/asistencia', function () {
-        return view('cuadrilla.asistencia');
-    })->name('cuadrilla.asistencia');
 
     //CAMPAÑAS
     Route::get('/campanias', [CampaniaController::class, 'campanias'])->name('campanias');

@@ -211,7 +211,7 @@
                     </x-flex>
                     <x-flex class="w-full justify-end gap-3 mt-3">
                         @if (!$modoEdicion)
-                            <x-input type="date" wire:model="fechaDistribucion" class="!w-auto !bg-gray-200 cursor-not-allowed" disabled />
+                            <x-input type="date" wire:model="fechaDistribucion" class="!w-auto cursor-not-allowed" disabled />
                             <x-secondary-button type="button" wire:click="distribuirCostoFijo">
                                 <i class="fa fa-list"></i> Distribuir Costo Fijo
                             </x-secondary-button>

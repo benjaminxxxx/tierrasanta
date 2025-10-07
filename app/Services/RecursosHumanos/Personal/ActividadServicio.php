@@ -285,17 +285,7 @@ class ActividadServicio
                     'cantidades' => json_encode($cantidades),
                     'total_horas' => (float) ($cuadrillero['horas'] ?? 0),
                 ];
-                /*
-                                CuadrillaHora::updateOrCreate(
-                                    [
-                                        'cua_asi_sem_cua_id' => $cuadrillero['cua_asi_sem_cua_id'],
-                                        'fecha' => $dataActividad['fecha']
-                                    ],
-                                    [
-                                        'horas' => 0,
-                                        'costo_dia' => 0,
-                                    ]
-                                );*/
+                
 
                 $actividad->cuadrillero_actividades()->create($data);
             }

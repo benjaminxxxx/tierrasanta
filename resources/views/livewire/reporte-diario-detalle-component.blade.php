@@ -329,17 +329,18 @@
                     pattern: '##,##0.00', // Formato de miles con al menos dos decimales
                     culture: 'en-US' // Cultura para usar coma como separador de miles y punto para decimales
                 },
-                correctFormat: true,
+                readOnly: true,
                 title: 'BONO',
-                className: '!text-right font-bold text-lg',
+                className: '!text-right font-bold text-lg !bg-gray-100',
                 renderer: function (hotInstance, td, row, col, prop, value, cellProperties) {
                     Handsontable.renderers.TextRenderer.apply(this,
                         arguments); // Render por defecto
 
+                        
+                    td.classList.remove('htDimmed');
                     // Aplicar estilos condicionales
                     if (value > 0) {
                         // Valor es 0 o nulo -> color rojo
-
                         td.classList.add('!text-green-600', 'font-bold');
                     } else {
                         // Valor diferente a 0 -> color verde
