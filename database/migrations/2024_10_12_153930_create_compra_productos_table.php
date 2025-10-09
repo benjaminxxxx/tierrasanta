@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -23,6 +22,14 @@ return new class extends Migration
             $table->decimal('total', 10, 2)->default(0); // Reemplaza 'existing_column' por el nombre de una columna existente si quieres un orden específico
             $table->decimal('stock', 10, 3)->default(0);
             $table->date('fecha_termino')->nullable();
+            $table->string('tipo_compra_codigo', 4)->nullable();
+            $table->string('serie')->nullable();
+            $table->string('numero')->nullable();
+            $table->string('tabla12_tipo_operacion')->nullable();
+            $table->enum('tipo_kardex', ['blanco', 'negro']); // Blanco: Facturas, Negro: Boletas
+            // Establecer las claves foráneas
+            $table->foreign('tipo_compra_codigo')->references('codigo')->on('sunat_tabla10_tipo_comprobantes_pago')->onDelete('set null');
+
             $table->timestamps();
 
             // Claves foráneas

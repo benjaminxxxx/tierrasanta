@@ -68,6 +68,7 @@ class GestionCuadrillaReporteDiarioComponent extends Component
     public function storeTableDataGuardarActividadDiaria($datos)
     {
         try {
+            
             $this->reporteDiarioCuadrillaServicio->guardarReporteDiario($this->fecha, $datos);
             $this->refrescarTabla($this->fecha); 
             $this->alert('success', 'Registro actualizado correctamente');
@@ -75,7 +76,7 @@ class GestionCuadrillaReporteDiarioComponent extends Component
         } catch (ValidationException $ex) {
             $this->alert('error', implode("\n", $ex->validator->errors()->all()));
         } catch (\Throwable $e) {
-            $this->manejarError($e,'Error al guardar el reporte diario');
+            $this->manejarError($e,$e->getMessage());
         }
     }
     public function refrescarTabla($fecha)

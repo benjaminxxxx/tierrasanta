@@ -15,7 +15,6 @@ class CuadRegistroDiario extends Model
         'cuadrillero_id',
         'fecha',
         'costo_personalizado_dia',
-        'asistencia',
         'total_bono',
         'total_horas',
         'costo_dia',
@@ -24,6 +23,7 @@ class CuadRegistroDiario extends Model
         'bono_esta_pagado',
         'tramo_pagado_jornal_id',
         'tramo_pagado_bono_id',
+        'tramo_laboral_id'
     ];
 
     protected $casts = [

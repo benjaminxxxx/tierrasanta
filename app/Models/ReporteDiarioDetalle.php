@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class ReporteDiarioDetalle extends Model
 {
     use HasFactory;
+    protected $table = 'plan_detalles_horas';
     protected $fillable = [
         'reporte_diario_id',
         'campo',

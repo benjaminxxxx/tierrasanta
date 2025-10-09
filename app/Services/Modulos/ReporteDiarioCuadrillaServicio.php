@@ -45,7 +45,7 @@ class ReporteDiarioCuadrillaServicio
     {
         // 1. Guardar los datos principales del reporte de cuadrilla
         CuadrilleroServicio::guardarDesdeHandsontable($fecha, $datos);
-
+        
         // 2. Ejecutar la lógica de negocio secundaria (detección y creación de actividades)
         ActividadServicio::detectarYCrearActividades($fecha);
     }

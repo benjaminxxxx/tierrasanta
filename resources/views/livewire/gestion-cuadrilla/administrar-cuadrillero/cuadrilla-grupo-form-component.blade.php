@@ -6,7 +6,7 @@
         </x-slot>
 
         <x-slot name="content">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" x-data="form_cuadrilla_grupo">
+            <form class="grid grid-cols-1 md:grid-cols-2 gap-4" x-data="form_cuadrilla_grupo" id="form_cuadrilla_grupo" wire:submit="registrar">
                 <!-- Nombre -->
                 <div>
                     <x-label for="nombre" value="Nombre del Grupo (*)" />
@@ -74,9 +74,8 @@
                 </div>
 
                 <!-- Modalidad de Pago -->
-                <div>
-                    <x-label for="modalidad_pago" value="Modalidad de Pago" />
-                    <x-select id="modalidad_pago" wire:model="modalidad_pago" class="mt-1">
+                <div class="col-span-2">
+                    <x-select id="modalidad_pago" wire:model="modalidad_pago" label="Modalidad de Pago" class="w-full">
                         <option value="semanal">Semanal</option>
                         <option value="quincenal">Quincenal</option>
                         <option value="mensual">Mensual</option>
@@ -85,7 +84,7 @@
                 </div>
 
 
-            </div>
+            </form>
         </x-slot>
 
         <x-slot name="footer">
@@ -93,7 +92,8 @@
                 <x-secondary-button wire:click="$set('mostrarFormularioGrupoCuadrilla', false)" wire:loading.attr="disabled">
                     Cerrar
                 </x-secondary-button>
-                <x-button wire:click="registrar" wire:loading.attr="disabled">
+                <x-button type="submit" form="form_cuadrilla_grupo" wire:loading.attr="disabled">
+                    <i class="fa fa-save"></i> 
                     @if (!$grupoId)
                         Registrar
                     @else

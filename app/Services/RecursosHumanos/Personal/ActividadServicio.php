@@ -4,11 +4,9 @@ namespace App\Services\RecursosHumanos\Personal;
 
 use App\Models\Actividad;
 use App\Models\CuadDetalleHora;
-use App\Models\CuadRegistroDiario;
 use App\Models\Labores;
 use App\Models\ReporteDiarioDetalle;
 use Auth;
-use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -66,7 +64,6 @@ class ActividadServicio
             'estandar_produccion' => $estandar_produccion,
             'unidades' => $data['unidades'] ?? null,
             'tramos_bonificacion' => $tramos_bonificacion,
-            'bono' => 0, // Campo deprecado
             'estado' => $data['estado'] ?? 1,
             'nombre_labor' => $data['nombre_labor'] ?? 'Sin nombre',
             'codigo_mano_obra' => $data['codigo_mano_obra'] ?? null,
@@ -141,13 +138,10 @@ class ActividadServicio
                 'fecha' => 'Debe especificar una fecha para detectar y crear actividades.'
             ]);
         }
-
-        $usuarioId = Auth::id();
-
-        // 👉 Cargar labores con claves por código
+        
         $labores = Labores::all()->keyBy('codigo');
 
-        // 1️⃣ Detalles de CUADRILLA
+        // Detalles de CUADRILLA
         $detalleCuadrilla = CuadDetalleHora::whereHas('registroDiario', function ($query) use ($fecha) {
             $query->where('fecha', $fecha);
         })
@@ -193,7 +187,6 @@ class ActividadServicio
         $actividadesExistentes = Actividad::where('fecha', $fecha)->get();
 
         $clavesNuevas = $paresUnicos->map(fn($item) => $item['campo'] . '-' . $item['codigo_labor']);
-        $clavesExistentes = $actividadesExistentes->map(fn($item) => $item->campo . '-' . $item->codigo_labor);
 
         // 5️⃣ Eliminar actividades que ya no están
         $actividadesAEliminar = $actividadesExistentes->filter(function ($actividad) use ($clavesNuevas) {
@@ -218,87 +211,28 @@ class ActividadServicio
             /** @var \App\Models\Labores $labor */
             $labor = $labores->get($codigoLabor);
 
-            Actividad::updateOrCreate(
-                [
+            $matchQuery = Actividad::where('fecha', $fecha)
+                ->where('campo', $campo)
+                ->where('codigo_labor', $codigoLabor);
+
+            $actividad = $matchQuery->first();
+
+            $data = [];
+
+            if ($actividad) {
+                $actividad->update($data);
+            } else {
+                Actividad::create(array_merge($data, [
+                    'unidades' => $labor->unidades ?? 0,
+                    'codigo_labor' => $codigoLabor,
+                    'nombre_labor' => $labor->nombre_labor,
                     'fecha' => $fecha,
                     'campo' => $campo,
                     'labor_id' => $labor->id,
-                ],
-                [
-                    'nombre_labor' => $labor->nombre_labor,
-                    'codigo_labor' => $codigoLabor,
-                    'unidades' => $labor->unidades,
-                    'created_by' => $usuarioId,
-                ]
-            );
+                ]));
+            }
         }
     }
 
-
-    public static function registrarActividadCuadrilla($dataActividad, $dataCuadrilleros, $actividadId = null)
-    {
-        DB::beginTransaction();
-
-        try {
-            // 1️⃣ Buscamos datos de la labor para completar los campos
-            $labor = Labores::find($dataActividad['labor_id']);
-            if ($labor) {
-                $dataActividad['nombre_labor'] = $labor->nombre_labor;
-                $dataActividad['codigo_labor'] = $labor->codigo;
-            } else {
-                $dataActividad['nombre_labor'] = null;
-                $dataActividad['codigo_labor'] = null;
-            }
-
-            // 2️⃣ Crear o actualizar la Actividad
-            if ($actividadId) {
-                $actividad = Actividad::findOrFail($actividadId);
-                $actividad->update($dataActividad);
-            } else {
-                $actividad = Actividad::create($dataActividad);
-            }
-
-
-            // 3️⃣ Limpiar cuadrilleros vinculados anteriores
-            $actividad->cuadrillero_actividades()->delete();
-            $recogidas = count($dataActividad['horarios']);
-
-            // 4️⃣ Registrar nuevamente todos los cuadrilleros enviados
-            foreach ($dataCuadrilleros as $cuadrillero) {
-                // Generar cantidades dinámicamente
-                $cantidades = [];
-                for ($i = 1; $i <= $recogidas; $i++) {
-                    $key = 'cantidad_' . $i;
-                    $cantidades[] = $cuadrillero[$key] ?? 0;
-                }
-
-                // Verificar suma de cantidades
-                $sumaCantidades = array_sum($cantidades);
-                if ($sumaCantidades == 0) {
-                    continue; // Salta este registro
-                }
-
-                $data = [
-                    'cua_asi_sem_cua_id' => $cuadrillero['cua_asi_sem_cua_id'] ?? null,
-                    'total_bono' => (float) ($cuadrillero['bono'] ?? 0),
-                    'total_costo' => (float) ($cuadrillero['costo_diario'] ?? 0),
-                    'cantidades' => json_encode($cantidades),
-                    'total_horas' => (float) ($cuadrillero['horas'] ?? 0),
-                ];
-                
-
-                $actividad->cuadrillero_actividades()->create($data);
-            }
-
-
-
-            DB::commit();
-            return $actividad;
-
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    }
     #endregion
 }

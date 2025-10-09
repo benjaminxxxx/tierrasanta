@@ -4,7 +4,6 @@ namespace App\Livewire;
 
 use App\Models\CompraProducto;
 use App\Models\GastoAdicionalPorGrupoCuadrilla;
-use App\Models\PagoCuadrilla;
 use Carbon\Carbon;
 use Exception;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -48,7 +47,7 @@ class GastoGeneralComponent extends Component
             $finMes = Carbon::createFromDate($this->anio, $this->mes, 1)->endOfMonth();
 
 
-            $this->pagoCuadrilleros = PagoCuadrilla::where('anio_contable', $this->anio)->where('mes_contable', $this->mes)->sum('monto_pagado');
+            $this->pagoCuadrilleros = 0;
             $this->compraCombustibleNegro = CompraProducto::calcularCompras($this->mes, $this->anio, 'negro', true);
             $this->compraCombustibleBlanco = CompraProducto::calcularCompras($this->mes, $this->anio, 'blanco', true);
             $this->compraInsumosNegro = CompraProducto::calcularCompras($this->mes, $this->anio, 'negro', false);

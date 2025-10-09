@@ -23,7 +23,7 @@ return new class extends Migration
 
             // Claves foráneas
             $table->foreignId('empleado_id')->nullable()->constrained()->onDelete('set null');
-            $table->foreignId('cuadrillero_id')->nullable()->constrained('cuadrilleros')->onDelete('set null');
+            $table->foreignId('cuadrillero_id')->nullable()->constrained('cuad_cuadrilleros')->onDelete('set null');
             $table->foreign('campania_id')->references('id')->on('campos_campanias')->onDelete('cascade');
         });
     }

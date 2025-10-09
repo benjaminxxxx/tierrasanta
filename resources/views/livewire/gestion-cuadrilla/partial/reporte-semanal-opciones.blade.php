@@ -26,9 +26,6 @@
                     <x-dropdown-link class="text-center" @click="$wire.dispatch('abrirGastosAdicionales')">
                         Agregar/Quitar gastos adicionales
                     </x-dropdown-link>
-                    <x-dropdown-link class="text-center" @click="$wire.dispatch('abrirGastosAdicionales')">
-                        Calcular Billetes
-                    </x-dropdown-link>
                     <x-dropdown-link class="text-center" @click="abrirReordenarGruposForm">
                         Reordenar grupos
                     </x-dropdown-link>

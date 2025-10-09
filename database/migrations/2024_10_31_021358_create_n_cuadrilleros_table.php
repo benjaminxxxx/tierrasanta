@@ -10,18 +10,20 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('cuadrilleros', function (Blueprint $table) {
+        Schema::create('cuad_cuadrilleros', function (Blueprint $table) {
             $table->id();
-            $table->string('nombres');
-            $table->string('codigo_grupo')->nullable();
+            $table->string('nombres')->unique();
+            $table->string('codigo_grupo',30)->nullable();
             $table->string('dni')->nullable()->unique();
-            $table->boolean('estado')->default(true);
+            $table->foreignId('creado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('actualizado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('eliminado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
-
+            $table->softDeletes();
             $table->foreign('codigo_grupo')
                 ->references('codigo')
-                ->on('cua_grupos')
-                ->onDelete('set null');
+                ->on('cuad_grupos')
+                ->nullOnDelete();
         });
     }
 
@@ -30,6 +32,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('cuadrilleros');
+        Schema::dropIfExists('cuad_cuadrilleros');
     }
 };

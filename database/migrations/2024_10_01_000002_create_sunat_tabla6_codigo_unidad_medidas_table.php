@@ -11,7 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('sunat_tabla6_codigo_unidad_medida', function (Blueprint $table) {
+        Schema::create('sunat_tabla6_codigo_unidad_medida', function (Blueprint $table) {
+            $table->string('codigo', 4)->primary(); // Campo 'codigo' de longitud 4 como clave primaria
+            $table->string('descripcion', 255); // Campo 'descripcion' de longitud 255
             $table->string('alias')->nullable();
         });
     }
@@ -21,8 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('sunat_tabla6_codigo_unidad_medida', function (Blueprint $table) {
-            $table->dropColumn(['alias']);
-        });
+        Schema::dropIfExists('sunat_tabla6_codigo_unidad_medida');
     }
 };

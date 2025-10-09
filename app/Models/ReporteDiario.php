@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class ReporteDiario extends Model
 {
     use HasFactory;
-
+    protected $table = 'plan_registros_diarios';
     // Definir los campos que se pueden asignar de forma masiva
     protected $fillable = [
         'documento',

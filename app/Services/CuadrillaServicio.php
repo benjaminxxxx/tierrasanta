@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Actividad;
 use App\Models\CampoCampania;
 use App\Models\CuadDetalleHora;
-use App\Models\CuadrillaHora;
 use App\Support\ExcelHelper;
 use Exception;
 use Illuminate\Support\Carbon;
@@ -156,9 +155,5 @@ class CuadrillaServicio
         $writer->save(Storage::disk('public')->path($filePath));
 
         return $filePath;
-    }
-    public static function cantidadCuadrilleros($fecha)
-    {
-        return CuadrillaHora::whereDate('fecha', $fecha)->count();
     }
 }

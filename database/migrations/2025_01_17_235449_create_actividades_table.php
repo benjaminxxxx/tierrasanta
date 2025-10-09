@@ -14,19 +14,31 @@ return new class extends Migration {
             $table->id();
             $table->date('fecha');
             $table->string('campo');
+
             $table->foreignId('labor_id')
                 ->nullable()
                 ->constrained('labores')
                 ->nullOnDelete();
+
             $table->string('nombre_labor');
             $table->integer('codigo_labor');
-            $table->json('horarios')->nullable();
+            $table->unsignedInteger('recojos')->default(1);
             $table->json('tramos_bonificacion')->nullable();
-            $table->decimal('estandar_produccion')->nullable();
-            $table->decimal('total_horas', 8, 2)->nullable();
-            $table->string('unidades',20)->nullable();
+            $table->decimal('estandar_produccion', 10, 2)->nullable();
+            $table->string('unidades', 20)->nullable();
+
+            // Control de auditoría
+            $table->foreignId('creado_por')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+
+            $table->foreignId('actualizado_por')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+
             $table->timestamps();
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
         });
     }
 

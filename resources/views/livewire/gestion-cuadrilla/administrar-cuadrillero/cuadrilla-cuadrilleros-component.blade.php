@@ -1,31 +1,40 @@
-<div>
+<div x-data="gestionCuadrilla">
     <x-flex>
         <x-h3>
             Cuadrilleros
         </x-h3>
         <x-button type="button" @click="$wire.dispatch('registrarCuadrillero')">
-            <i class="fa fa-plus"></i> Registrar cuadrillero
+            <i class="fa fa-plus"></i> Agregar Cuadrillero
         </x-button>
     </x-flex>
     <x-card2 class="mt-3">
         <x-flex class="justify-between">
             <form wire:submit="filtrarCuadrilleros">
-                <x-flex>
+                <x-flex class="!items-end">
                     <x-group-field>
                         <x-label>
                             Nombre o Documento
                         </x-label>
                         <x-input type="search" wire:model="nombreDocumentoFiltro" />
                     </x-group-field>
-                    <x-select wire:model.live="codigo_grupo" label="Grupo">
-                        <option value="">TODOS</option>
-                        @foreach ($grupos as $grupo)
-                            <option value="{{ $grupo->codigo }}">{{ $grupo->nombre }} ({{ $grupo->cuadrilleros->count() }})</option>
-                        @endforeach
-                    </x-select>
+                    <div>
+                        <x-select wire:model.live="grupoSeleccionado" label="Grupo">
+                            <option value="">TODOS</option>
+                            @foreach ($grupoCuadrillas as $grupoCuadrilla)
+                                <option value="{{ $grupoCuadrilla->codigo }}">{{ $grupoCuadrilla->nombre }}
+                                    ({{ $grupoCuadrilla->cuadrilleros->count() }})
+                                </option>
+                            @endforeach
+                        </x-select>
+                    </div>
                     <x-button type="submit">
                         <i class="fa fa-search"></i> Buscar
                     </x-button>
+                    <template x-if="nombre || grupo">
+                        <x-button type="button" variant="danger" @click="limpiarFiltro()">
+                            <i class="fa fa-remove"></i> Limpiar Filtro
+                        </x-button>
+                    </template>
                 </x-flex>
             </form>
             <x-toggle-switch :checked="$verEliminados" label="Ver eliminados" wire:model.live="verEliminados" />
@@ -52,12 +61,13 @@
                             <x-td value="{{ $cuadrillero->registrosDiarios->count() }}" class="text-center" />
                             <x-td class="text-center">
                                 <x-flex class="justify-center">
-                                    @if ($cuadrillero->estado == '1')
+                                    @if (!$cuadrillero->trashed())
                                         <x-button
-                                            @click="$wire.dispatch('editarCuadrillero',{cuadrilleroId:{{ $cuadrillero->id }}})">
+                                            @click="$wire.dispatch('editarCuadrillero', { cuadrilleroId: {{ $cuadrillero->id }} })">
                                             <i class="fa fa-edit"></i>
                                         </x-button>
-                                        <x-danger-button wire:click="confirmarEliminarCuadrillero({{ $cuadrillero->id }})">
+
+                                        <x-danger-button wire:click="eliminarCuadrillero({{ $cuadrillero->id }})">
                                             <i class="fa fa-trash"></i>
                                         </x-danger-button>
                                     @else
@@ -65,9 +75,9 @@
                                             Restaurar
                                         </x-secondary-button>
                                     @endif
-
                                 </x-flex>
                             </x-td>
+
                         </x-tr>
                     @endforeach
                 @else
@@ -86,3 +96,19 @@
 
     <x-loading wire:loading />
 </div>
+@script
+<script>
+    Alpine.data('gestionCuadrilla', () => ({
+        nombre: @entangle('nombreDocumentoFiltro'),
+        grupo: @entangle('grupoSeleccionado'),
+        init() {
+
+        },
+        limpiarFiltro() {
+            this.nombre = '';
+            this.grupo = '';
+            $wire.$refresh();
+        }
+    }));
+</script>
+@endscript

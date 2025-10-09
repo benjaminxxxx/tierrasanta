@@ -10,7 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('cuad_tramo_laboral_grupos', function (Blueprint $table) {
+        Schema::create('cuad_tramo_grupos', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('cuad_tramo_laboral_id'); // FK hacia tramo
             $table->string('codigo_grupo'); // FK hacia grupos
@@ -19,13 +19,8 @@ return new class extends Migration {
 
             $table->foreign('cuad_tramo_laboral_id')
                 ->references('id')
-                ->on('cuad_tramo_laborals')
+                ->on('cuad_tramos_laborales')
                 ->onDelete('cascade');
-
-            $table->foreign('codigo_grupo')
-                ->references('codigo')
-                ->on('cua_grupos')
-                ->onDelete('restrict');
         });
     }
 
@@ -34,6 +29,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('cuad_tramo_laboral_grupos');
+        Schema::dropIfExists('cuad_tramo_grupos');
     }
 };

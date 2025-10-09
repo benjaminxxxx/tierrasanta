@@ -9,12 +9,13 @@ class CuadTramoLaboralCuadrillero extends Model
 {
     use HasFactory;
 
-    protected $table = 'cuad_tramo_laboral_cuadrilleros';
+    protected $table = 'cuad_tramo_cuadrilleros';
 
     protected $fillable = [
         'cuadrillero_id',
         'cuad_tramo_laboral_grupo_id',
-        'orden'
+        'orden',
+        'nombres'
     ];
 
     // Relaciones

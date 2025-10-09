@@ -28,19 +28,17 @@ class GestionCuadrillaReporteSemanalTramoAgregarCuadrilleroComponent extends Com
 
         $this->tramoLaboral = CuadTramoLaboral::find($tramoId);
         $this->listarGrupos();
-        $this->grupos = CuaGrupo::where('estado', true)->get();
         if ($this->grupos->isNotEmpty()) {
             $this->codigo_grupo = $this->grupos->first()->codigo;
         }
-        $this->listaCuadrilleros = Cuadrillero::where('estado', true)
-            ->select('id', 'nombres', 'dni')
+        $this->listaCuadrilleros = Cuadrillero::select('id', 'nombres', 'dni')
             ->orderBy('nombres')
             ->get()
             ->toArray();
     }
     public function listarGrupos()
     {
-        $this->grupos = CuaGrupo::where('estado', true)->get();
+        $this->grupos = CuaGrupo::all();
     }
     public function grupoRegistrado($grupo)
     {
@@ -111,10 +109,10 @@ class GestionCuadrillaReporteSemanalTramoAgregarCuadrilleroComponent extends Com
                 if (!$cuadrilleroId) {
                     // Buscar cuadrillero por nombre o crear si no existe
                     $cuadrilleroModel = Cuadrillero::firstOrCreate(
-                        ['nombres' => $nombres],
-                        ['estado' => true] // puedes setear valores por defecto aquí
+                        ['nombres' => $nombres]
                     );
                     $cuadrilleroId = $cuadrilleroModel->id;
+                    $nombres = $cuadrilleroModel->nombres;
                 }
 
                 // Guardamos el id en la lista de nuevos
@@ -124,6 +122,7 @@ class GestionCuadrillaReporteSemanalTramoAgregarCuadrilleroComponent extends Com
                     [
                         'cuadrillero_id' => $cuadrilleroId,
                         'cuad_tramo_laboral_grupo_id' => $grupo->id,
+                        'nombres' => $nombres
                     ],
                     [
                         'orden' => $orden,

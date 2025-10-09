@@ -5,7 +5,6 @@ namespace App\Livewire\GestionCuadrilla\AdministrarCuadrillero;
 use App\Models\CuaGrupo;
 use App\Services\Cuadrilla\GrupoServicio;
 use Exception;
-use Illuminate\Database\QueryException;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
@@ -49,7 +48,7 @@ class CuadrillaGrupoFormComponent extends Component
             'codigo' => [
                 'required',
                 'string',
-                'max:100',
+                'max:30',
                 'regex:/^[a-zA-Z_][a-zA-Z0-9_]*$/', // Solo texto, no iniciar con número, permite solo guion bajo
             ],
             'color' => 'nullable|string|max:7', // Formato hexadecimal

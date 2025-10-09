@@ -2,40 +2,50 @@
 
 namespace App\Models;
 
+use Auth;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Labores extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
     protected $table = "labores";
-    
+
     protected $fillable = [
         'nombre_labor',
-        'bono',
-        'estado',
         'codigo',
         'estandar_produccion',
         'unidades',
         'tramos_bonificacion',
-        'codigo_mano_obra'
+        'codigo_mano_obra',
+        'creado_por',
+        'actualizado_por',
+        'eliminado_por',
     ];
-    public function manoObra(){
+    public function manoObra()
+    {
         return $this->belongsTo(ManoObra::class, 'codigo_mano_obra', 'codigo');
     }
-    public function valoraciones(){
-        return $this->hasMany(LaborValoracion::class,'labor_id');
-    }
-    public function getTieneBonoAttribute(){
-        return $this->bono=='1'?'Activado':'Desactivado';   
-    }
-    public function getValoracionActualAttribute(){
-        $valoracionActual = $this->valoraciones()->orderBy('vigencia_desde','desc')->first();
-        if($valoracionActual){
-            return $valoracionActual->kg_8 . 'kg en 8 horas, valor adicional x hora: ' . $valoracionActual->valor_kg_adicional;
-        }
+    protected static function booted()
+    {
+        static::creating(function ($model) {
+            if (Auth::check()) {
+                $model->creado_por = Auth::id();
+            }
+        });
 
-        return 'Sin valoración';   
+        static::updating(function ($model) {
+            if (Auth::check()) {
+                $model->actualizado_por = Auth::id();
+            }
+        });
+
+        static::deleting(function ($model) {
+            if (Auth::check()) {
+                $model->eliminado_por = Auth::id();
+                $model->saveQuietly(); // guarda sin volver a disparar eventos
+            }
+        });
     }
-    
 }

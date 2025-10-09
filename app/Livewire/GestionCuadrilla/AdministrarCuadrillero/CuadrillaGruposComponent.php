@@ -10,36 +10,24 @@ use Livewire\WithPagination;
 
 class CuadrillaGruposComponent extends Component
 {
-    use LivewireAlert;
-    use WithPagination;
-    use WithoutUrlPagination;
+    use LivewireAlert, WithPagination, WithoutUrlPagination;
     public $verEliminados;
-    protected $listeners = ['confirmarEliminar','grupoRegistrado'=>'$refresh'];
-
-    public function confirmarEliminarGrupo($codigo)
+    protected $listeners = ['confirmarEliminar', 'grupoRegistrado' => '$refresh'];
+    public function restaurar($codigo)
     {
-        if (!$codigo)
-            return;
-
-        $this->confirm('¿Está seguro(a) que desea eliminar el registro?', [
-            'onConfirmed' => 'confirmarEliminar',
-            'data' => [
-                'codigo' => $codigo,
-            ],
-        ]);
-    }
-    public function restaurar($codigo){
-        CuaGrupo::where('codigo', $codigo)->update(['estado'=>true]);
+        CuaGrupo::where('codigo', $codigo)->restore();
+        $this->resetPage();
         $this->alert('success', 'Registro restaurado correctamente.');
     }
-    public function updatedVerEliminados(){
+    public function updatedVerEliminados()
+    {
         $this->resetPage();
     }
-    public function confirmarEliminar($data)
+    public function eliminarGrupoCuadrilla($codigo)
     {
         try {
-            $codigo = $data['codigo'];
-            CuaGrupo::where('codigo', $codigo)->update(['estado'=>false]);
+            CuaGrupo::where('codigo', $codigo)->delete();
+            $this->resetPage();
             $this->alert('success', 'Registro Eliminado Correctamente.');
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
@@ -47,9 +35,18 @@ class CuadrillaGruposComponent extends Component
     }
     public function render()
     {
-        $grupos = CuaGrupo::with('fechasCuadrilleros')->where('estado',!$this->verEliminados)->orderByDesc('created_at')->paginate(10);
-        return view('livewire.gestion-cuadrilla.administrar-cuadrillero.cuadrilla-grupos-component',[
-            'grupos'=>$grupos
+        $query = CuaGrupo::with('fechasCuadrilleros')
+            ->orderByDesc('created_at');
+
+        // Si se deben mostrar los eliminados (soft deleted)
+        if ($this->verEliminados) {
+            $query->onlyTrashed();
+        }
+
+        $grupos = $query->paginate(10);
+
+        return view('livewire.gestion-cuadrilla.administrar-cuadrillero.cuadrilla-grupos-component', [
+            'grupos' => $grupos,
         ]);
     }
 }

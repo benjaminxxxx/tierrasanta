@@ -11,14 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('cua_grupos', function (Blueprint $table) {
-            $table->string('codigo')->primary();
+        Schema::create('cuad_grupos', function (Blueprint $table) {
+            $table->string('codigo',30)->primary();
             $table->string('color');
             $table->string('nombre');
             $table->enum('modalidad_pago',['mensual','quincenal','semanal','variado'])->default('mensual');
             $table->decimal('costo_dia_sugerido', 8, 2);
-            $table->boolean('estado')->default(true);
+            $table->foreignId('creado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('actualizado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('eliminado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
@@ -27,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cua_grupos');
+        Schema::dropIfExists('cuad_grupos');
     }
 };

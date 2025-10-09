@@ -4,15 +4,12 @@ namespace App\Services\FDM;
 
 use App\Models\Actividad;
 use App\Models\CuadCostoDiarioGrupo;
-use App\Models\CuadDetalleHora;
-use App\Models\CuadGrupoCuadrilleroFecha;
 use App\Models\CuadRegistroDiario;
 use App\Models\GastoAdicionalPorGrupoCuadrilla;
 use App\Support\ExcelHelper;
 use Exception;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
-use Maatwebsite\Excel\Concerns\ToArray;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class CuadrillaFdmServicio
@@ -46,11 +43,7 @@ class CuadrillaFdmServicio
             ->where('campo', $campo)
             ->pluck('id');
 
-        /*
-    $detalleDiario = CuadDetalleHora::with(['registroDiario'])
-    ->whereHas('registroDiario',function ($registroDiario)use ($fechaInicio,$fechaFin){
-        $registroDiario->whereBetween('fecha',[$fechaInicio, $fechaFin]);
-    })->get();*/
+
         $registrosDiarios = CuadRegistroDiario::whereBetween('fecha', [$fechaInicio, $fechaFin])
             ->with(['detalleHoras', 'cuadrillero'])
             ->get();

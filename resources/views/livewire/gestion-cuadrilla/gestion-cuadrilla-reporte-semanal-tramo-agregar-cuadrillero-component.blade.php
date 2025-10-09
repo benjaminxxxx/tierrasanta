@@ -41,7 +41,7 @@
 
                             </div>
                             <x-button type="button" x-show="search && cuadrillerosFiltrados.length === 0"
-                                @click="registrarComoNuevo" title="Registrar Cuadrillero">
+                                @click="registrarComoNuevo">
                                 <i class="fa fa-save"></i> Registrar como nuevo
                             </x-button>
                         </div>

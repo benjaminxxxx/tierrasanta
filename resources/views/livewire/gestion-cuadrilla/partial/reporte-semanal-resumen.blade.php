@@ -11,7 +11,7 @@
         </x-flex>
         <x-flex>
 
-            <x-button wire:click="recalcularResumen" size="xs" variant="success">
+            <x-button wire:click="recalcularResumenTramo" size="xs" variant="success">
                 <i class="fa fa-sync"></i> Recalcular resumen
             </x-button>
         </x-flex>

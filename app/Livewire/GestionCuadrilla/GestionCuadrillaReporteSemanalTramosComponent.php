@@ -44,7 +44,9 @@ class GestionCuadrillaReporteSemanalTramosComponent extends Component
      */
     public function mount(): void
     {
+        
         $this->cargarDatosActuales();
+        
     }
 
     /**
@@ -185,7 +187,7 @@ class GestionCuadrillaReporteSemanalTramosComponent extends Component
     /**
      * Carga el tramo actual y sus vecinos (anterior y siguiente).
      */
-    private function cargarDatosActuales(): void
+    private function cargarDatosActuales()
     {
         $this->tramoActual = $this->tramoLaboralServicio->encontrarActual();
 
@@ -210,7 +212,7 @@ class GestionCuadrillaReporteSemanalTramosComponent extends Component
     /**
      * Cierra el formulario, resetea su estado y recarga los datos de los tramos.
      */
-    private function cerrarFormularioYRecargar(): void
+    private function cerrarFormularioYRecargar()
     {
         $this->mostrarFormularioReporteSemanalTramo = false;
         $this->reset(['fecha_inicio', 'fecha_fin', 'titulo', 'tramoId']);

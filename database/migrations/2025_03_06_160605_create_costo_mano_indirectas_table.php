@@ -45,6 +45,8 @@ return new class extends Migration {
             $table->decimal('negro_costos_adicionales_monto', 14, 6)->nullable();
             $table->string('negro_costos_adicionales_file')->nullable();
 
+            $table->decimal('negro_cuadrillero_bono', 10, 2)->nullable();
+
             $table->timestamps();
         });
 

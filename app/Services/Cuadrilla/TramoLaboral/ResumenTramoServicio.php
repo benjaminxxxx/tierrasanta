@@ -307,7 +307,6 @@ class ResumenTramoServicio
             ->with('grupo')
             ->orderBy('orden')
             ->get();
-
         // 3. (CORRECCIÓN CLAVE #1) Unificamos los códigos de grupo: tanto los que tienen
         // actividad actual como los que solo tienen deudas pendientes. Esto resuelve el problema
         // de que no se arrastraban deudas si no había actividad nueva.
@@ -316,21 +315,26 @@ class ResumenTramoServicio
         $todosLosCodigos = $codigosGrupoActuales->merge($codigosGrupoAnteriores)->unique();
 
         $dataParaUpsert = [];
-
+        $contadorAuxiliar = 0;
         // 4. Iteramos sobre la lista unificada de códigos de grupo.
         foreach ($todosLosCodigos as $codigoGrupo) {
+            $contadorAuxiliar++;
             $grupoEnTramo = $gruposEnTramoActual->firstWhere('codigo_grupo', $codigoGrupo);
             $grupo = $grupoEnTramo ? $grupoEnTramo->grupo : CuaGrupo::where('codigo', $codigoGrupo)->first();
 
-            if (!$grupo)
-                continue; // Si por alguna razón el grupo ya no existe, lo omitimos.
+            if (!$grupo) {
+                throw new Exception("Un grupo ya no existe no se puede genrar el resumen");
+            }
+            
 
             $resumenesAnterioresDelGrupo = $resumenesAnteriores->where('grupo_codigo', $codigoGrupo);
 
             // 🔹 Calcular sueldos
             $sueldos = $this->calcularSueldos($tramoLaboral, $resumenesAnterioresDelGrupo, $grupo, $codigoGrupo, $tramoAnterior);
             $dataParaUpsert = array_merge($dataParaUpsert, $sueldos);
-
+/*if($contadorAuxiliar==1){
+                dd($sueldos,$tramoLaboral, $resumenesAnterioresDelGrupo, $grupo, $codigoGrupo, $tramoAnterior);
+            }*/
             // 🔹 Calcular adicionales
             $adicionales = $this->calcularAdicionales($tramoLaboral, $resumenesAnterioresDelGrupo, $grupo, $codigoGrupo, $tramoAnterior);
             $dataParaUpsert = array_merge($dataParaUpsert, $adicionales);
@@ -379,6 +383,7 @@ class ResumenTramoServicio
         }
 
         $totalCostosActual = $costosQuery->sum('costo_dia');
+        //dd($totalCostosActual);
         $descripcion = $grupo->nombre;
 
         $registroAnterior = $resumenesAnteriores->firstWhere('descripcion', $descripcion);
@@ -418,16 +423,16 @@ class ResumenTramoServicio
         //dd($tramoAnterior);
         $fechaDesde = $tramoLaboral->fecha_inicio;
         $fechaHasta = $tramoLaboral->fecha_hasta_bono ?? $tramoLaboral->fecha_fin;
-        if($tramoAnterior && $tramoAnterior->fecha_hasta_bono){
+        if ($tramoAnterior && $tramoAnterior->fecha_hasta_bono) {
             $fechaDesde = Carbon::parse($tramoAnterior->fecha_hasta_bono)->addDay();
         }
-        
+
         $costosQuery = CuadRegistroDiario::where('codigo_grupo', $codigoGrupo)
             ->whereBetween('fecha', [$fechaDesde, $fechaHasta]);
-/*
-        if ($grupo->modalidad_pago === 'mensual') {
-            return $this->calcularSueldosMensuales($tramoLaboral, $resumenesAnteriores, $grupo, $codigoGrupo, $tramoAnterior, $costosQuery);
-        }*/
+        /*
+                if ($grupo->modalidad_pago === 'mensual') {
+                    return $this->calcularSueldosMensuales($tramoLaboral, $resumenesAnteriores, $grupo, $codigoGrupo, $tramoAnterior, $costosQuery);
+                }*/
 
         $totalCostosActual = $costosQuery->sum('total_bono');
         $descripcion = 'BONO ' . $grupo->nombre;

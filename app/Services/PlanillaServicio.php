@@ -2,15 +2,12 @@
 
 namespace App\Services;
 
-use App\Exports\CampoGastoPlanillaExport;
 use App\Models\CampoCampania;
 use App\Models\PlanillaBlanco;
 use App\Models\PlanillaBlancoDetalle;
 use App\Models\ReporteCostoPlanilla;
 use App\Models\ReporteDiario;
 use App\Models\ReporteDiarioCampos;
-use App\Models\RegistroProductividad;
-use App\Models\RegistroProductividadBono;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Exception;
@@ -195,7 +192,7 @@ class PlanillaServicio
         $planillas = self::obtenerPlanillas($fechaInicio, $fechaFin);
 
         /**
-         * Para obtener los bonos debemos considerar el registro de productiviad, guardado en registro_productividads
+         * Para obtener los bonos debemos considerar el registro de productiviad, guardado en 
          * como se van a recorrer los detalles de reporte diario, pueda que algunos registros en registro de productividad tengan valores, y no sean procesados
          * entonces se hare una lista de productividad, luego, se ira quitando esa lista, luego si al final del foreach aun hay valores se mostrara un throw indicando el error
          * 
@@ -219,19 +216,10 @@ class PlanillaServicio
                 *35.00
                 *2.50
          */
-        $registroBonos = RegistroProductividadBono::whereHas('registroProductividad', function ($query) use ($fechaInicio, $fechaFin, $campo) {
-            $query->whereDate('fecha', '>=', $fechaInicio)
-                  ->where('campo', $campo);
-            if ($fechaFin) {
-                $query->whereDate('fecha', '<=', $fechaFin);
-            }
-        })
-        ->with('registroProductividad')
-        ->get()
-        ->keyBy(fn($bono) => "{$bono->registroProductividad->fecha}_{$bono->empleado->documento}_{$bono->registroProductividad->labor_id}_{$bono->registroProductividad->campo}")
-        ->toArray();
+        /*
 
-        
+ */
+        $registroBonos = 0;
         $lista = [];
         foreach ($detalles as $detalle) {
 

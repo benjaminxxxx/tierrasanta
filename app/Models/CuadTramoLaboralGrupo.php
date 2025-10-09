@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class CuadTramoLaboralGrupo extends Model
 {
     use HasFactory;
-
+    protected $table = 'cuad_tramo_grupos';
     protected $fillable = [
         'cuad_tramo_laboral_id',
         'codigo_grupo',
@@ -26,7 +26,7 @@ class CuadTramoLaboralGrupo extends Model
     {
         return $this->belongsToMany(
             Cuadrillero::class,                      // Modelo destino
-            'cuad_tramo_laboral_cuadrilleros',       // Tabla pivote
+            'cuad_tramo_cuadrilleros',       // Tabla pivote
             'cuad_tramo_laboral_grupo_id',           // FK en pivote hacia este modelo
             'cuadrillero_id'                         // FK en pivote hacia cuadrillero
         );

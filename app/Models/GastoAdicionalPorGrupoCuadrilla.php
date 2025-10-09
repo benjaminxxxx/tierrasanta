@@ -10,7 +10,7 @@ class GastoAdicionalPorGrupoCuadrilla extends Model
     use HasFactory;
 
     // Tabla asociada al modelo (opcional si el nombre sigue las convenciones)
-    protected $table = 'gasto_adicional_por_grupo_cuadrillas';
+    protected $table = 'cuad_gastos_grupos';
 
     // Campos asignables masivamente
     protected $fillable = [

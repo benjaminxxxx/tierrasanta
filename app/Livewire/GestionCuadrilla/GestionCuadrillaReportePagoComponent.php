@@ -2,13 +2,9 @@
 
 namespace App\Livewire\GestionCuadrilla;
 
-use App\Models\CuadRegistroDiario;
 use App\Models\CuadResumenPorTramo;
-use App\Services\Cuadrilla\Reporte\RptCuadrillaPagosXTramo;
 use App\Services\Cuadrilla\TramoLaboral\ListaAcumuladaTramos;
 use App\Services\Cuadrilla\TramoLaboral\ResumenTramoServicio;
-use Carbon\CarbonPeriod;
-use DB;
 use Illuminate\Support\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;

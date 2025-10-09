@@ -10,28 +10,30 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('cuad_tramo_laboral_cuadrilleros', function (Blueprint $table) {
+        Schema::create('cuad_tramo_cuadrilleros', function (Blueprint $table) {
             $table->id();
 
-            // Relación con cuadrillero
+            // Relación con cuadrillero (no se elimina histórico)
             $table->foreignId('cuadrillero_id')
-                ->constrained('cuadrilleros')
+                ->constrained('cuad_cuadrilleros', 'id', 'fk_tramo_cuad_cuadri')
+                ->restrictOnDelete();
+
+            // Relación con grupo de tramo laboral
+            $table->foreignId('cuad_tramo_laboral_grupo_id')
+                ->constrained('cuad_tramo_grupos', 'id', 'fk_tramo_cuad_grupo')
                 ->cascadeOnDelete();
 
-            // Relación con tramo laboral grupo (nombre de constraint reducido manualmente)
-            $table->unsignedBigInteger('cuad_tramo_laboral_grupo_id');
-            $table->foreign('cuad_tramo_laboral_grupo_id', 'tramo_grupo_fk')
-                ->references('id')
-                ->on('cuad_tramo_laboral_grupos')
-                ->cascadeOnDelete();
-
-            // Orden dentro del tramo
+            // Datos históricos
+            $table->string('nombres');   // Nombre del cuadrillero al momento del registro
             $table->unsignedInteger('orden');
 
             $table->timestamps();
 
-            // Único por cuadrillero+grupo
-            $table->unique(['cuadrillero_id', 'cuad_tramo_laboral_grupo_id'], 'cuad_tramo_cuad_grupo_unq');
+            // Evita duplicados por cuadrillero + grupo
+            $table->unique(
+                ['cuadrillero_id', 'cuad_tramo_laboral_grupo_id'],
+                'unq_tramo_cuadri_grupo'
+            );
         });
     }
 
@@ -40,6 +42,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('cuad_tramo_laboral_cuadrilleros');
+        Schema::dropIfExists('cuad_tramo_cuadrilleros');
     }
 };

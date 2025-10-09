@@ -20,6 +20,20 @@ return new class extends Migration
             $table->integer('total_empleados')->nullable();
             $table->decimal('factor_remuneracion_basica', 15, 12)->nullable();
             $table->text('excel')->nullable();
+            $table->decimal('asignacion_familiar', 10, 2)->nullable();
+            $table->decimal('cts_porcentaje', 10, 2)->nullable();
+            $table->decimal('gratificaciones', 10, 2)->nullable();
+            $table->decimal('essalud_gratificaciones', 10, 2)->nullable();
+            $table->decimal('rmv', 10, 2)->nullable();
+            $table->decimal('beta30', 10, 2)->nullable();
+            $table->decimal('essalud', 10, 2)->nullable();
+            $table->decimal('vida_ley', 10, 2)->nullable();
+            $table->decimal('vida_ley_porcentaje', 10, 2)->nullable();
+            $table->decimal('pension_sctr', 10, 2)->nullable();
+            $table->decimal('pension_sctr_porcentaje', 10, 2)->nullable();
+            $table->decimal('essalud_eps', 10, 2)->nullable();
+            $table->decimal('porcentaje_constante', 10, 2)->nullable();
+            $table->decimal('rem_basica_essalud', 10, 2)->nullable();
 
             $table->timestamps();
         });

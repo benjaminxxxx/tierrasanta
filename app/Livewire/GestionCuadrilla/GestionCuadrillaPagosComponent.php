@@ -26,7 +26,7 @@ class GestionCuadrillaPagosComponent extends Component
     public function mount()
     {
         $this->grupoSeleccionado = Session::get('grupo_seleccionado');
-        $this->grupos = CuaGrupo::where('estado', true)->get();
+        $this->grupos = CuaGrupo::all();
         $this->fecha_inicio = Session::get('fecha_inicio', Carbon::now()->startOfWeek()->format('Y-m-d'));
         $this->fecha_fin = Session::get('fecha_fin', Carbon::now()->endOfWeek()->format('Y-m-d'));
         $this->buscarRegistros();

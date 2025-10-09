@@ -19,6 +19,10 @@ return new class extends Migration
             $table->string('categoria');
             $table->decimal('cantidad', 10, 3)->nullable();
             $table->decimal('total_costo', 10, 2)->nullable();
+            $table->enum('tipo_kardex', ['blanco', 'negro','-']);
+            $table->string('orden_compra', 12)->nullable();
+            $table->text('tienda_comercial')->nullable();
+            $table->string('factura', 50)->nullable();
             $table->unsignedBigInteger('campos_campanias_id')->nullable();
             $table->foreign('campos_campanias_id', 'fk_c_c2_id')->references('id')->on('campos_campanias')->onDelete('cascade');
             $table->timestamps();

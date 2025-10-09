@@ -9,7 +9,7 @@ class CuadResumenPorTramo extends Model
 {
     use HasFactory;
 
-    protected $table = 'cuad_resumen_por_tramos';
+    protected $table = 'cuad_resumen_tramos';
 
     protected $fillable = [
         'grupo_codigo',

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CuadActividadProduccion extends Model
 {
-    protected $table = 'cuad_actividades_produccion';
+    protected $table = 'cuad_produccion_actividades';
 
     protected $fillable = [
         'actividad_bono_id',

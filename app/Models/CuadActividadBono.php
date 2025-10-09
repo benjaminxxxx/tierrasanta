@@ -9,7 +9,7 @@ class CuadActividadBono extends Model
 {
     use HasFactory;
 
-    protected $table = 'cuad_actividades_bonos';
+    protected $table = 'cuad_bonos_actividades';
 
     protected $fillable = [
         'registro_diario_id',

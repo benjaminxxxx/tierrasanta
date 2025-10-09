@@ -10,18 +10,12 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('cuad_costo_diario_grupos', function (Blueprint $table) {
+        Schema::create('cuad_costos_diarios_grupos', function (Blueprint $table) {
             $table->id();
             $table->string('codigo_grupo');
             $table->date('fecha');
-            $table->decimal('jornal', 8, 2)->nullable(); // puede ser null si aún no se asignó
-            $table->timestamps();
-
+            $table->decimal('jornal', 8, 2)->nullable();
             $table->unique(['codigo_grupo', 'fecha']);
-            $table->foreign('codigo_grupo')
-                ->references('codigo')
-                ->on('cua_grupos')
-                ->onDelete('restrict');
         });
     }
 

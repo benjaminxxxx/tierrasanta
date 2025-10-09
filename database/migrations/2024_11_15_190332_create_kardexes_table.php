@@ -18,6 +18,8 @@ return new class extends Migration
             $table->date('fecha_final')->nullable(); // Fecha de cierre
             $table->enum('estado', ['activo', 'cerrado'])->default('activo'); // Estado general del kardex
             $table->boolean('eliminado')->default(false); // Estado general del kardex
+            $table->year('anio');
+            $table->boolean('es_combustible');
             $table->timestamps(); // created_at y updated_at
         });
     }

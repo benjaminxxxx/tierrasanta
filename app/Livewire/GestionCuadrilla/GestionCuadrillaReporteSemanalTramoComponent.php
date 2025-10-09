@@ -169,7 +169,8 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
             }
             $fechaInicio = $this->tramoLaboral->fecha_inicio;
             $fechaFin = $this->tramoLaboral->fecha_fin;
-            $this->guardarReporteSemanal($fechaInicio, $fechaFin, $datos,$this->resumenes);
+            $tramoLaboralId = $this->tramoLaboral->id;
+            $this->guardarReporteSemanal($fechaInicio, $fechaFin, $datos,$this->resumenes,$tramoLaboralId);
             CuadrilleroServicio::calcularCostosCuadrilla($fechaInicio, $fechaFin);
             $this->obtenerReporteTramo();
             $this->procesarCalculoListadoResumen();
@@ -178,7 +179,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
             $this->alert('error', $th->getMessage());
         }
     }
-    public static function guardarReporteSemanal($inicio, $fin, $rows,$resumenes)
+    public static function guardarReporteSemanal($inicio, $fin, $rows,$resumenes,$tramoLaboralId)
     {
         DB::beginTransaction();
         try {
@@ -216,6 +217,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
                 $cuadrilleroIdsNuevos = $filasGrupo->pluck('cuadrillero_id')->filter()->unique();
 
                 $cuadrilleroIdsActuales = CuadRegistroDiario::where('codigo_grupo', $codigoGrupo)
+                    ->where('tramo_laboral_id',$tramoLaboralId)
                     ->whereBetween('fecha', [$inicioDate, $finDate])
                     ->pluck('cuadrillero_id')
                     ->unique();
@@ -224,6 +226,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
                 if ($cuadrillerosAEliminar->isNotEmpty()) {
                     
                     CuadRegistroDiario::where('codigo_grupo', $codigoGrupo)
+                        ->where('tramo_laboral_id',$tramoLaboralId)
                         ->whereBetween('fecha', [$inicioDate, $finDate])
                         ->whereIn('cuadrillero_id', $cuadrillerosAEliminar)
                         ->delete();
@@ -250,6 +253,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
                             'cuadrillero_id' => $cuadrilleroId,
                             'fecha' => $fechaStr,
                             'codigo_grupo' => $codigoGrupo,
+                            'tramo_laboral_id' => $tramoLaboralId
                         ];
 
                         if (is_null($total_horas) || $total_horas <= 0) {
@@ -262,7 +266,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
                         CuadRegistroDiario::updateOrCreate(
                             $where,
                             [
-                                'asistencia' => true,
+                                'tramo_laboral_id' => $tramoLaboralId,
                                 'total_horas' => $total_horas,
                                 'costo_dia' => 0,
                             ]
@@ -314,7 +318,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
             throw new Exception($th->getMessage());            
         }
     }
-    public function recalcularResumen()
+    public function recalcularResumenTramo()
     {
         try {
             $this->procesarCalculoListadoResumen();

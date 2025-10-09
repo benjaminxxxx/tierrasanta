@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CuadCostoDiarioGrupo extends Model
 {
-     protected $table = 'cuad_costo_diario_grupos';
+    protected $table = 'cuad_costos_diarios_grupos';
 
     protected $fillable = [
         'codigo_grupo',
@@ -18,4 +18,5 @@ class CuadCostoDiarioGrupo extends Model
     {
         return $this->belongsTo(CuaGrupo::class, 'codigo_grupo', 'codigo');
     }
+    public $timestamps = false;
 }

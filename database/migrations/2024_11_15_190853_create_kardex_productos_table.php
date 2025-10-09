@@ -24,6 +24,7 @@ return new class extends Migration
             $table->enum('metodo_valuacion', ['promedio', 'peps'])->default('promedio');
             $table->string('file',255)->nullable();
             $table->enum('tipo_kardex', ['blanco','negro'])->nullable();
+            $table->string('codigo_existencia')->nullable();
             $table->timestamps(); // created_at y updated_at
 
             // Claves foráneas

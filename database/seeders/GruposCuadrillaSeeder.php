@@ -13,9 +13,8 @@ class GruposCuadrillaSeeder extends Seeder
      */
     public function run(): void
     {
-        //DB::table('cua_grupos')->truncate();
 
-        DB::table('cua_grupos')->insert([
+        DB::table('cuad_grupos')->insert([
             [
                 'codigo' => 'CMSR',
                 'color' => '#D0CECE',
@@ -24,7 +23,6 @@ class GruposCuadrillaSeeder extends Seeder
                 'costo_dia_sugerido' => 115.00,
                 'created_at' => '2024-08-25 14:20:55',
                 'updated_at' => '2025-10-02 17:52:21',
-                'estado' => 1
             ],
             [
                 'codigo' => 'COSED',
@@ -34,7 +32,6 @@ class GruposCuadrillaSeeder extends Seeder
                 'costo_dia_sugerido' => 70.00,
                 'created_at' => '2024-08-25 14:20:55',
                 'updated_at' => '2025-08-12 20:01:55',
-                'estado' => 1
             ],
             [
                 'codigo' => 'CQSR',
@@ -44,7 +41,6 @@ class GruposCuadrillaSeeder extends Seeder
                 'costo_dia_sugerido' => 100.00,
                 'created_at' => '2024-08-25 14:20:55',
                 'updated_at' => '2025-08-12 20:01:55',
-                'estado' => 1
             ],
             [
                 'codigo' => 'CQSR2',
@@ -54,7 +50,6 @@ class GruposCuadrillaSeeder extends Seeder
                 'costo_dia_sugerido' => 85.00,
                 'created_at' => '2024-08-25 14:20:55',
                 'updated_at' => '2025-08-05 16:04:48',
-                'estado' => 0
             ],
             [
                 'codigo' => 'CSC',
@@ -64,7 +59,6 @@ class GruposCuadrillaSeeder extends Seeder
                 'costo_dia_sugerido' => 120.00,
                 'created_at' => '2025-07-08 19:41:20',
                 'updated_at' => '2025-08-12 20:01:55',
-                'estado' => 1
             ],
             [
                 'codigo' => 'CSJ',
@@ -74,7 +68,6 @@ class GruposCuadrillaSeeder extends Seeder
                 'costo_dia_sugerido' => 120.00,
                 'created_at' => '2024-11-02 09:01:25',
                 'updated_at' => '2025-08-12 20:01:55',
-                'estado' => 1
             ],
             [
                 'codigo' => 'CSSR',
@@ -84,7 +77,6 @@ class GruposCuadrillaSeeder extends Seeder
                 'costo_dia_sugerido' => 110.00,
                 'created_at' => '2024-08-25 14:20:55',
                 'updated_at' => '2025-08-12 20:01:55',
-                'estado' => 1
             ],
             [
                 'codigo' => 'CSSRD',
@@ -93,8 +85,7 @@ class GruposCuadrillaSeeder extends Seeder
                 'modalidad_pago' => 'semanal',
                 'costo_dia_sugerido' => 100.00,
                 'created_at' => '2025-06-25 19:24:19',
-                'updated_at' => '2025-08-12 20:01:55',
-                'estado' => 1
+                'updated_at' => '2025-08-12 20:01:55'
             ],
             [
                 'codigo' => 'CSSRFL',
@@ -103,8 +94,7 @@ class GruposCuadrillaSeeder extends Seeder
                 'modalidad_pago' => 'semanal',
                 'costo_dia_sugerido' => 110.00,
                 'created_at' => '2025-08-05 16:00:26',
-                'updated_at' => '2025-08-12 20:01:55',
-                'estado' => 1
+                'updated_at' => '2025-08-12 20:01:55'
             ],
             [
                 'codigo' => 'CSSRII',
@@ -113,8 +103,7 @@ class GruposCuadrillaSeeder extends Seeder
                 'modalidad_pago' => 'semanal',
                 'costo_dia_sugerido' => 105.00,
                 'created_at' => '2025-03-28 20:39:42',
-                'updated_at' => '2025-08-12 20:01:55',
-                'estado' => 1
+                'updated_at' => '2025-08-12 20:01:55'
             ],
             [
                 'codigo' => 'CSSRRY',
@@ -123,8 +112,7 @@ class GruposCuadrillaSeeder extends Seeder
                 'modalidad_pago' => 'semanal',
                 'costo_dia_sugerido' => 110.00,
                 'created_at' => '2025-08-05 16:01:03',
-                'updated_at' => '2025-08-12 20:01:55',
-                'estado' => 1
+                'updated_at' => '2025-08-12 20:01:55'
             ],
             [
                 'codigo' => 'FUMIG',
@@ -133,8 +121,7 @@ class GruposCuadrillaSeeder extends Seeder
                 'modalidad_pago' => 'mensual',
                 'costo_dia_sugerido' => 75.00,
                 'created_at' => '2024-08-25 14:20:55',
-                'updated_at' => '2025-08-05 16:04:40',
-                'estado' => 0
+                'updated_at' => '2025-08-05 16:04:40'
             ],
             [
                 'codigo' => 'LAJOYA',
@@ -143,8 +130,7 @@ class GruposCuadrillaSeeder extends Seeder
                 'modalidad_pago' => 'quincenal',
                 'costo_dia_sugerido' => 0.00,
                 'created_at' => '2024-08-25 14:20:55',
-                'updated_at' => '2025-08-12 20:01:55',
-                'estado' => 1
+                'updated_at' => '2025-08-12 20:01:55'
             ],
             [
                 'codigo' => 'REGADOR',
@@ -153,8 +139,7 @@ class GruposCuadrillaSeeder extends Seeder
                 'modalidad_pago' => 'mensual',
                 'costo_dia_sugerido' => 81.00,
                 'created_at' => '2024-08-25 14:20:55',
-                'updated_at' => '2025-08-05 16:04:32',
-                'estado' => 0
+                'updated_at' => '2025-08-05 16:04:32'
             ]
         ]);
     }

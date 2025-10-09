@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('gasto_adicional_por_grupo_cuadrillas', function (Blueprint $table) {
+        Schema::create('cuad_gastos_grupos', function (Blueprint $table) {
             $table->id(); // Clave primaria
             $table->decimal('monto', 10, 2); // Campo para precios con hasta 10 dígitos, 2 decimales
             $table->string('descripcion');
@@ -19,6 +19,12 @@ return new class extends Migration
             $table->tinyInteger('mes_contable')->nullable();  // Para el mes contable (1-12)
             $table->string('codigo_grupo');
             $table->timestamp('fecha_gasto')->default(DB::raw('CURRENT_TIMESTAMP'));
+            $table->unsignedBigInteger('cuad_tramo_laboral_id')->nullable();
+
+            $table->foreign('cuad_tramo_laboral_id', 'fk_gasto_tra_lab1')
+                ->references('id')
+                ->on('cuad_tramos_laborales')
+                ->onDelete('cascade');
             $table->timestamps();
         });
     }
@@ -28,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('gasto_adicional_por_grupo_cuadrillas');
+        Schema::dropIfExists('cuad_gastos_grupos');
     }
 };

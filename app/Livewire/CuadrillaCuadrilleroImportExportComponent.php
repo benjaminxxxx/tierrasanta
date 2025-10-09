@@ -100,7 +100,7 @@ class CuadrillaCuadrilleroImportExportComponent extends Component
                     $cuadrillero->update($data);
                 } else {
                     if($identificador){
-                        DB::table('cuadrilleros')->insert($data); //esto permite insercion de id personalizado
+                        DB::table('cuad_cuadrilleros')->insert($data); //esto permite insercion de id personalizado
                     }else{
                         Cuadrillero::create($data);
                     }

@@ -48,7 +48,8 @@ class CreateCochinillaIngresosTable extends Migration
             $table->decimal('filtrado_basura_porcentaje', 5, 2)->default(0);
             $table->decimal('filtrado_diferencia_kilos', 8, 2)->default(0);
             $table->decimal('filtrado_diferencia_porcentaje', 5, 2)->default(0);
-        
+            
+            $table->decimal('stock_disponible', 10, 2)->nullable();
             $table->timestamps();
         
             $table->foreign('campo_campania_id')->references('id')->on('campos_campanias')->onDelete('set null');

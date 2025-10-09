@@ -10,7 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('cuad_tramo_laborals', function (Blueprint $table) {
+        Schema::create('cuad_tramos_laborales', function (Blueprint $table) {
             $table->id();
             $table->date('fecha_inicio');
             $table->date('fecha_fin');
@@ -19,6 +19,9 @@ return new class extends Migration {
             $table->decimal('dinero_recibido', 12, 2)->default(0);
             $table->decimal('saldo', 12, 2)->default(0);
             $table->string('titulo')->nullable();
+            $table->date('fecha_hasta_bono')->nullable();
+            $table->foreignId('creado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('actualizado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
         });
     }
@@ -28,6 +31,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('cuad_tramo_laborals');
+        Schema::dropIfExists('cuad_tramos_laborales');
     }
 };

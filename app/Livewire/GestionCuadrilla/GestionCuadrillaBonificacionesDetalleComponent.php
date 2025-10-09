@@ -5,14 +5,12 @@ use App\Models\Actividad;
 use App\Models\CuadRegistroDiario;
 use App\Models\Labores;
 use App\Models\ReporteDiario;
-use App\Services\Cuadrilla\CuadrilleroServicio;
 use App\Services\RecursosHumanos\Personal\EmpleadoServicio;
 use App\Support\DateHelper;
 use Exception;
 use Illuminate\Support\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
-use Session;
 
 class GestionCuadrillaBonificacionesDetalleComponent extends Component
 {

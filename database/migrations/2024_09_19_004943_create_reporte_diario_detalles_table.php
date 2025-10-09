@@ -11,18 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('reporte_diario_detalles', function (Blueprint $table) {
+        //antes reporte_diario_detalles
+        //reporte_diarios pasara a plan_registros_diarios
+        Schema::create('plan_detalles_horas', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('reporte_diario_id'); // Foreign key a reporte_diarios
+            $table->unsignedBigInteger('reporte_diario_id');
             $table->string('campo', 10); // campo (varchar 10)
             $table->integer('labor'); // labor (int)
             $table->time('hora_inicio'); // hora de inicio (time)
             $table->time('hora_salida'); // hora de salida (time)
             $table->timestamps(); // timestamps para created_at y updated_at
-    
-            // Definir la relación con la tabla reporte_diarios
+            
             $table->foreign('reporte_diario_id')
-                  ->references('id')->on('reporte_diarios')
+                  ->references('id')->on('plan_registros_diarios')
                   ->onDelete('cascade'); // Eliminar detalles si se elimina el reporte
         });
     }
@@ -32,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('reporte_diario_detalles');
+        Schema::dropIfExists('plan_detalles_horas');
     }
 };

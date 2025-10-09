@@ -11,12 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('reporte_diarios', function (Blueprint $table) {
+        Schema::create('plan_registros_diarios', function (Blueprint $table) {
             $table->id();
             $table->string('documento'); // campo para el documento del empleado
             $table->string('empleado_nombre'); // nombre del empleado
             $table->string('asistencia', 6); // asistencia (varchar 6)
-            $table->string('tipo_trabajador', 20); // tipo de trabajador (varchar 20)
             $table->time('total_horas'); // total de horas (time)
             $table->date('fecha'); // fecha
             $table->integer('orden')->nullable(); 
@@ -30,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('reporte_diarios');
+        Schema::dropIfExists('plan_detalles_horas');
     }
 };

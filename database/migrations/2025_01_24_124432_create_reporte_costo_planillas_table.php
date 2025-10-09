@@ -27,6 +27,7 @@ return new class extends Migration
             $table->decimal('costo_hora',12,8);
             $table->decimal('gasto',12,8);
             $table->decimal('gasto_bono',12,8);
+            $table->text('labor')->nullable(); 
             $table->timestamps();
 
             $table->foreign('campos_campanias_id', 'fk_campania_reporte_pl')

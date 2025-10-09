@@ -41,15 +41,11 @@ return new class extends Migration
             $table->decimal('rem_basica_asg_fam_essalud_cts_grat_beta', 10, 2)->nullable();            
             $table->decimal('jornal_diario', 10, 2)->nullable();
             $table->decimal('costo_hora', 10, 2)->nullable();
-            //$table->decimal('sueldo_final', 10, 2)->nullable();
-            //$table->decimal('rem_basica_essalud_total', 10, 2)->nullable();
-            //$table->decimal('beneficios_beta', 10, 2)->nullable();
-            //$table->decimal('vacacional', 10, 2)->nullable();
-            //$table->decimal('bruto', 10, 2)->nullable();
-            //$table->decimal('afp_seguro', 10, 2)->nullable();
-            //$table->decimal('sctr', 10, 2)->nullable();
-            //$table->decimal('eps', 10, 2)->nullable();
-
+            $table->decimal('negro_sueldo_por_dia_total', 10, 2)->nullable();
+            $table->decimal('negro_sueldo_por_hora_total', 12, 5)->nullable();
+            $table->decimal('negro_otros_bonos_acumulados', 10, 2)->nullable();
+            $table->decimal('negro_sueldo_final_empleado', 10, 2)->nullable();
+            $table->string('esta_jubilado', 10)->nullable();
             // Nuevos campos con el prefijo 'negro_'
             $table->decimal('negro_diferencia_bonificacion', 10, 2)->nullable();
             $table->decimal('negro_sueldo_neto_total', 10, 2)->nullable();

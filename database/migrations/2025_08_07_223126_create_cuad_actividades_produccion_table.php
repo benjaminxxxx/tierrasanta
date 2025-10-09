@@ -10,12 +10,12 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('cuad_actividades_produccion', function (Blueprint $table) {
+        Schema::create('cuad_produccion_actividades', function (Blueprint $table) {
             $table->id();
 
             // Relación a la tabla de bono
             $table->foreignId('actividad_bono_id')
-                ->constrained('cuad_actividades_bonos')
+                ->constrained('cuad_bonos_actividades')
                 ->cascadeOnDelete();
 
             $table->integer('numero_recojo');
@@ -33,6 +33,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('cuad_actividades_produccion');
+        Schema::dropIfExists('cuad_produccion_actividades');
     }
 };

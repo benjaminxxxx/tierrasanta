@@ -3,12 +3,10 @@
 namespace App\Services\Cuadrilla;
 
 use App\Models\Actividad;
-use App\Models\CuaAsistenciaSemanal;
 use App\Models\CuadActividadBono;
 use App\Models\CuadActividadProduccion;
 use App\Models\CuadCostoDiarioGrupo;
 use App\Models\CuadDetalleHora;
-use App\Models\CuadGrupoCuadrilleroFecha;
 use App\Models\CuadOrdenSemanal;
 use App\Models\CuadRegistroDiario;
 use App\Models\Cuadrillero;
@@ -22,10 +20,159 @@ use DB;
 use Exception;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class CuadrilleroServicio
 {
+    /**
+     * Obtiene una lista paginada de cuadrilleros con filtros opcionales.
+     *
+     * @param string|null $filtroBusqueda Cadena para buscar en nombres o DNI.
+     * @param string|null $grupoId Código del grupo para filtrar.
+     * @param bool $incluirEliminados Si se deben incluir solo los registros eliminados (soft delete).
+     * @param int $porPagina Número de registros por página.
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     */
+    public function listar(
+        ?string $filtroBusqueda = null,
+        ?string $grupoId = null,
+        bool $incluirEliminados = false,
+        int $porPagina = 15
+    ) {
+        $query = Cuadrillero::query()
+            ->orderBy('nombres');
+
+        // 1. Aplicar filtro de búsqueda (nombre o DNI)
+        if ($filtroBusqueda) {
+            $query->where(function ($q) use ($filtroBusqueda) {
+                $q->where('nombres', 'like', '%' . $filtroBusqueda . '%')
+                    ->orWhere('dni', 'like', '%' . $filtroBusqueda . '%');
+            });
+        }
+
+        // 2. Aplicar filtro por grupo
+        if ($grupoId) {
+            $query->where('codigo_grupo', $grupoId);
+        }
+
+        // 3. Manejar registros eliminados (soft deletes)
+        if ($incluirEliminados) {
+            $query->onlyTrashed(); // Solo los eliminados
+        } else {
+            // Por defecto, Laravel solo muestra los que no tienen soft delete.
+            // withoutTrashed() es redundante si no se usó withTrashed() antes.
+            // Lo mantendremos sin un withoutTrashed explícito para ser más limpio.
+            // Si el modelo Cuadrillero usa SoftDeletes, solo los activos se mostrarán.
+        }
+
+        return $query->paginate($porPagina);
+    }
+    /**
+     * Define las reglas de validación para el modelo Cuadrillero.
+     *
+     * @param bool $isUpdate
+     * @return array
+     */
+    private function getValidationRules($cuadrilleroId = null): array
+    {
+        return [
+            'nombres' => 'required|string|max:100',
+            'dni' => [
+                'nullable',
+                'string',
+                'regex:/^\d{8,12}$/', // Solo números, entre 8 y 12 dígitos
+                Rule::unique('cuad_cuadrilleros', 'dni')->ignore($cuadrilleroId),
+            ],
+            'codigo_grupo' => 'nullable|string|max:50',
+        ];
+    }
+
+    /**
+     * Valida los datos de entrada.
+     *
+     * @param array $data
+     * @param bool $isUpdate
+     * @throws ValidationException
+     */
+    private function validateData(array $data, $cuadrilleroId): void
+    {
+        $validator = Validator::make($data, $this->getValidationRules($cuadrilleroId));
+
+        if ($validator->fails()) {
+            // Lanza una excepción de validación que se puede manejar en el controlador
+            throw new ValidationException($validator);
+        }
+    }
+
+    // --------------------------------------------------------------------------
+
+    /**
+     * Crea un nuevo registro de Cuadrillero.
+     *
+     * @param array $data
+     * @return Cuadrillero
+     */
+    private function crear(array $data): Cuadrillero
+    {
+        return Cuadrillero::create([
+            'nombres' => mb_strtoupper($data['nombres']),
+            'dni' => $data['dni'],
+            'codigo_grupo' => $data['codigo_grupo'] ?? null,
+        ]);
+    }
+
+    /**
+     * Actualiza un registro existente de Cuadrillero.
+     *
+     * @param Cuadrillero $cuadrillero
+     * @param array $data
+     * @return Cuadrillero
+     */
+    private function actualizar(Cuadrillero $cuadrillero, array $data): Cuadrillero
+    {
+        // Solo actualizar los campos permitidos y limpiar los datos
+        $cuadrillero->nombres = mb_strtoupper($data['nombres']);
+        $cuadrillero->dni = $data['dni'];
+        $cuadrillero->codigo_grupo = $data['codigo_grupo'] ?? null;
+        $cuadrillero->save();
+
+        return $cuadrillero;
+    }
+
+    // --------------------------------------------------------------------------
+
+    /**
+     * Guarda (crea o actualiza) un registro de Cuadrillero.
+     *
+     * @param array $data
+     * @param int|null $cuadrilleroId
+     * @return Cuadrillero
+     * @throws ValidationException|Exception
+     */
+    public function guardar(array $data, int $cuadrilleroId = null): Cuadrillero
+    {
+        // 1. Validar los datos
+        $this->validateData($data, $cuadrilleroId);
+
+        try {
+            if ($cuadrilleroId) {
+                // 2. Buscar y Actualizar
+                $cuadrillero = Cuadrillero::findOrFail($cuadrilleroId);
+                return $this->actualizar($cuadrillero, $data);
+            } else {
+                // 3. Crear nuevo
+                return $this->crear($data);
+            }
+        } catch (ValidationException $e) {
+            // Re-lanzar la excepción de validación para manejo específico (si es necesario)
+            throw $e;
+        } catch (Exception $e) {
+            // Manejar otros errores de base de datos o lógicos
+            // Aquí puedes registrar el error ($e->getMessage())
+            throw new Exception("Error al guardar el Cuadrillero: " . $e->getMessage());
+        }
+    }
     public static function obtenerListaGruposOrdenados($fechaInicio)
     {
         $grupos = self::sincronizarOrdenGruposSemana($fechaInicio);
@@ -213,10 +360,10 @@ class CuadrilleroServicio
             })->toArray();
     }
 
-    public static function guardarGastosAdicionalesXGrupo($tramoId,$datos, $inicio, $fin)
+    public static function guardarGastosAdicionalesXGrupo($tramoId, $datos, $inicio, $fin)
     {
         $inicioCarbon = Carbon::parse($inicio)->startOfDay();
-        $finCarbon =  Carbon::parse($fin)->endOfDay();
+        $finCarbon = Carbon::parse($fin)->endOfDay();
 
         // 1. Eliminar los existentes en el rango
         GastoAdicionalPorGrupoCuadrilla::whereBetween('fecha_gasto', [$inicioCarbon, $finCarbon])->delete();
@@ -586,157 +733,6 @@ class CuadrilleroServicio
         ];
     }
 
-    /*
-    public static function obtenerHandsontableReporte($fechaInicio, $fechaFin)
-    {
-        $inicio = Carbon::parse($fechaInicio)->startOfDay();
-        $fin = Carbon::parse($fechaFin)->endOfDay();
-        $coloresPorGrupo = CuaGrupo::pluck('color', 'codigo')->toArray();
-
-        $dias = collect();
-        for ($date = $inicio->copy(); $date->lte($fin); $date->addDay()) {
-            $dias->push($date->copy());
-        }
-
-        $totalDias = $dias->count();
-
-        // 🟠 1. Registros de asistencia
-        $registros = CuadRegistroDiario::whereBetween('fecha', [$inicio, $fin])
-            ->with(['cuadrillero:id,nombres,dni,codigo_grupo'])
-            ->get()
-            ->groupBy('cuadrillero_id');
-
-        // 🟠 2. Relación de grupo personalizado por día
-        $grupoPorFecha = CuadGrupoCuadrilleroFecha::whereBetween('fecha', [$inicio, $fin])
-            ->get()
-            ->groupBy(fn($r) => $r->cuadrillero_id . '|' . $r->fecha);
-
-        $resultados = [];
-
-        foreach ($registros as $cuadrilleroId => $items) {
-
-            $cuadrillero = $items->first()->cuadrillero;
-
-            // 🟠 Chequear solo la PRIMERA FECHA del rango
-            $fechaPrimera = $inicio->toDateString();
-            $tieneGrupoAsignado = CuadGrupoCuadrilleroFecha::where('cuadrillero_id', $cuadrilleroId)
-                ->where('fecha', $fechaPrimera)
-                ->exists();
-
-            // Si NO tiene asignación y tiene grupo predeterminado
-            if (!$tieneGrupoAsignado && $cuadrillero->codigo_grupo) {
-
-                self::asignarGrupoPeriodo(
-                    $cuadrilleroId,
-                    $cuadrillero->codigo_grupo,
-                    $inicio->toDateString(),
-                    $fin->toDateString()
-                );
-
-                // volver a cargar SOLO una vez para que incluya lo nuevo
-                $grupoPorFecha = CuadGrupoCuadrilleroFecha::whereBetween('fecha', [$inicio, $fin])
-                    ->get()
-                    ->groupBy(fn($r) => $r->cuadrillero_id . '|' . $r->fecha);
-            }
-
-            $fila = [
-                'cuadrillero_id' => $cuadrilleroId,
-                'cuadrillero_nombres' => $cuadrillero->nombres,
-                'codigo_grupo' => null,
-            ];
-
-            $grupoFijo = null;
-            $totalCostos = 0;
-            $totalBonos = 0;
-
-            foreach ($dias as $index => $dia) {
-                $fecha = $dia->toDateString();
-
-                $key = $cuadrilleroId . '|' . $fecha;
-
-                $registro = $items->first(function ($item) use ($fecha) {
-                    return optional($item->fecha)->toDateString() === $fecha;
-                });
-
-                $valorHoras = optional($registro)->total_horas;
-                $total_horas = ($valorHoras && $valorHoras > 0) ? $valorHoras : '-';
-
-                $bono = optional($registro)->total_bono ?? 0;
-                $costo_dia = optional($registro)->costo_dia;
-                $costo_dia = ($costo_dia && $costo_dia > 0) ? $costo_dia : '-';
-
-                // Grupo del día
-                $grupo = $grupoPorFecha[$key][0]->codigo_grupo ?? null;
-
-                $grupoFijo ??= $grupo;
-
-                // Agregar columnas planas
-                $fila["dia_" . ($index + 1)] = $total_horas;
-                $fila["jornal_" . ($index + 1)] = $costo_dia;
-                $fila["bono_" . ($index + 1)] = $bono;
-
-                // Totales
-                $totalCostos += (float) $costo_dia;
-                $totalBonos += $bono;
-            }
-
-            $grupoAsignado = $grupoFijo ?? 'SIN GRUPO';
-            $fila['codigo_grupo'] = $grupoAsignado;
-            $fila['color'] = $coloresPorGrupo[$grupoAsignado] ?? '#FFFFFF';
-            $fila['total_costo'] = $totalCostos;
-            $fila['total_bono'] = $totalBonos;
-
-            $resultados[] = $fila;
-        }
-
-        // 🟠 Generar headers planos
-        $headers = [];
-
-        $diasSemana = ['D', 'L', 'M', 'M', 'J', 'V', 'S']; // empieza en domingo
-        foreach ($dias as $d) {
-            $headers[] = $diasSemana[$d->dayOfWeek] . '<br/>' . $d->day;
-        }
-        foreach ($dias as $d) {
-            $headers[] = $diasSemana[$d->dayOfWeek] . '<br/>' . $d->day;
-        }
-        foreach ($dias as $d) {
-            $headers[] = 'B<br/>' . $d->day;
-        }
-        $headers[] = "Total días";
-        $headers[] = "Total costos";
-        $headers[] = "Total bonos";
-
-        // 🟠 ORDENAR POR ORDEN SEMANAL
-        $inicioSemana = Carbon::parse($fechaInicio)->startOfWeek()->format('Y-m-d');
-
-        $ordenSemanal = CuadOrdenSemanal::where('fecha_inicio', $inicioSemana)
-            ->orderBy('orden')
-            ->pluck('orden', 'cuadrillero_id')
-            ->toArray();
-        //dd($ordenSemanal);
-        $resultadosById = collect($resultados)->keyBy('cuadrillero_id');
-
-        $ordenados = [];
-        foreach ($ordenSemanal as $cuadrilleroId => $orden) {
-            if (isset($resultadosById[$cuadrilleroId])) {
-                $ordenados[] = $resultadosById[$cuadrilleroId];
-            }
-        }
-
-        // Agregar al final los que no tengan orden guardado (nuevos)
-        foreach ($resultadosById as $id => $fila) {
-            if (!isset($ordenSemanal[$id])) {
-                $ordenados[] = $fila;
-            }
-        }
-
-        return [
-            'data' => $ordenados,
-            'headers' => $headers,
-            'total_dias' => $totalDias,
-        ];
-    }
-*/
     public static function asignarGrupoPeriodo(int $cuadrilleroId, string $codigoGrupo, string $fechaInicio, string $fechaFin): void
     {
         $inicio = Carbon::parse($fechaInicio)->startOfDay();
@@ -766,7 +762,7 @@ class CuadrilleroServicio
                 continue;
 
             for ($i = 1; array_key_exists("dia_$i", $grupo); $i++) {
-                $valor = (float)$grupo["dia_$i"];
+                $valor = (float) $grupo["dia_$i"];
                 $fecha = $fechaInicio->copy()->addDays($i - 1)->toDateString();
 
                 if (is_numeric($valor) && $valor > 0) {
@@ -809,14 +805,14 @@ class CuadrilleroServicio
 
     public static function obtenerHandsontableCostosAsignados($tramoLaboralId)
     {
-        
+
         $tramoLaboral = app(TramoLaboralServicio::class)->encontrarTramoPorId($tramoLaboralId);
-        if(!$tramoLaboral){
+        if (!$tramoLaboral) {
             return [];
         }
         $fechaInicio = $tramoLaboral->fecha_inicio;
         $fechaFin = $tramoLaboral->fecha_fin;
-        
+
         $inicio = Carbon::parse($fechaInicio)->startOfDay();
         $fin = Carbon::parse($fechaFin)->endOfDay();
 
@@ -833,11 +829,11 @@ class CuadrilleroServicio
 
         // 3️⃣ Obtener TODOS los grupos activos (o incluso inactivos si se usaron)
         $gruposUsadosEnCostos = $tramoLaboral->gruposEnTramos()->pluck('codigo_grupo')->toArray();
-        
-        
+
+
 
         // Incluye también grupos activos aunque no tengan costos aún
-        
+
 
         $gruposFinales = CuaGrupo::whereIn('codigo', $gruposUsadosEnCostos)->get();
 
@@ -845,7 +841,7 @@ class CuadrilleroServicio
         $total_dias = 0;
 
         foreach ($gruposFinales as $grupo) {
-            
+
             if (!$grupo)
                 continue;
 
@@ -893,35 +889,7 @@ class CuadrilleroServicio
             'headers' => $headers,
         ];
     }
-    /**
-     * Crea o actualiza un cuadrillero.
-     *
-     * @param array $data
-     * @param int|null $cuadrilleroId
-     * @return Cuadrillero
-     * @throws QueryException
-     */
-    public static function guardarCuadrillero(array $data, $cuadrilleroId = null)
-    {
-        return DB::transaction(function () use ($data, $cuadrilleroId) {
-            if ($cuadrilleroId) {
-                $cuadrillero = Cuadrillero::findOrFail($cuadrilleroId);
-                $cuadrillero->nombres = mb_strtoupper($data['nombres']);
-                $cuadrillero->dni = $data['dni'];
-                $cuadrillero->codigo_grupo = $data['codigo_grupo'] ?? null;
-                $cuadrillero->save();
-            } else {
-                $cuadrillero = new Cuadrillero([
-                    'nombres' => mb_strtoupper($data['nombres']),
-                    'dni' => $data['dni'],
-                    'codigo_grupo' => $data['codigo_grupo'] ?? null,
-                ]);
-                $cuadrillero->save();
-            }
 
-            return $cuadrillero;
-        });
-    }
     public static function obtenerGrupos()
     {
         return CuaGrupo::where('estado', true)->with(['cuadrilleros'])->get();
@@ -930,11 +898,11 @@ class CuadrilleroServicio
     {
         $inicioDate = Carbon::parse($inicio)->startOfDay();
         $finDate = $fin ? Carbon::parse($fin)->endOfDay() : $inicioDate->copy()->endOfDay();
-      
+
 
         $registroDiarioCuadrilla = CuadRegistroDiario::whereBetween('fecha', [$inicioDate, $finDate])
-        ->with(['grupo'])
-        ->get();
+            ->with(['grupo'])
+            ->get();
         $costosDiariosDuranteFechas = CuadCostoDiarioGrupo::whereBetween('fecha', [$inicioDate, $finDate])->get();
 
         foreach ($registroDiarioCuadrilla as $asistenciaCuadrillero) {
@@ -1085,7 +1053,7 @@ class CuadrilleroServicio
         return $rows;
     }
 
-  
+
 
     /**
      * guardarReporteSemanal
@@ -1181,26 +1149,7 @@ class CuadrilleroServicio
                         );
                     }
                 }
-                /*
-                                // ✅ Verificar si no tiene ningún registro en la semana
-                                $existenRegistros = CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
-                                    ->whereBetween('fecha', [$inicioDate, $finDate])
-                                    ->exists();
-
-                                if (!$existenRegistros) {
-                                    foreach ($dias as $d) {
-                                        CuadRegistroDiario::create([
-                                            'cuadrillero_id' => $cuadrilleroId,
-                                            'fecha' => $d->toDateString(),
-                                            'asistencia' => false,
-                                            'total_horas' => 0,
-                                            'costo_dia' => 0,
-                                            'total_bono' => 0,
-                                            'costo_personalizado_dia' => null,
-                                        ]);
-                                    }
-                                }*/
-
+           
                 // ✅ Guardar asistencias diarias
                 foreach ($dias as $index => $d) {
                     $fechaStr = $d->toDateString();
@@ -1213,7 +1162,6 @@ class CuadrilleroServicio
                             'fecha' => $fechaStr,
                         ],
                         [
-                            'asistencia' => true,
                             'total_horas' => $total_horas,
                             'costo_dia' => 0,
                             'total_bono' => 0
@@ -1231,7 +1179,7 @@ class CuadrilleroServicio
     }
 
 
-    public static function obtenerHandsontableReporteDiario($fecha,$tramoSeleccionadoId)
+    public static function obtenerHandsontableReporteDiario($fecha, $tramoSeleccionadoId)
     {
         $fecha = Carbon::parse($fecha)->format('Y-m-d');
 
@@ -1263,7 +1211,7 @@ class CuadrilleroServicio
         $maxActividades = 0;
 
         foreach ($registros as $registro) {
-            
+
             $cuadrillero = $registro->cuadrillero;
 
             $todasActividades = collect();
@@ -1281,7 +1229,7 @@ class CuadrilleroServicio
 
             $fila = [
                 'cuadrillero_id' => $cuadrillero->id,
-                'codigo_grupo' => $registro->codigo_grupo, 
+                'codigo_grupo' => $registro->codigo_grupo,
                 'cuadrillero_nombres' => $cuadrillero->nombres,
                 'cuadrillero_dni' => $cuadrillero->dni
             ];
@@ -1390,8 +1338,6 @@ class CuadrilleroServicio
                         'campo_nombre' => $actividad['campo'],
                         'hora_inicio' => $actividad['inicio'],
                         'hora_fin' => $actividad['fin'],
-                        'produccion' => null,
-                        'costo_bono' => 0,
                     ]);
                 }
             }
@@ -1425,6 +1371,7 @@ class CuadrilleroServicio
             }
 
             $labores = Labores::all()->pluck('id', 'codigo')->toArray();
+            
             $errores = [];
             $maxCol = 0;
             if (!empty($rows)) {
@@ -1436,7 +1383,7 @@ class CuadrilleroServicio
             }
 
             foreach ($rows as $i => $fila) {
-                
+
                 $cuadrilleroId = $fila['cuadrillero_id'] ?? null;
                 $codigoGrupo = $fila['codigo_grupo'] ?? null;
                 $filaOrden = $i + 1;
@@ -1466,11 +1413,10 @@ class CuadrilleroServicio
                         ];
                     }
                 }
-
                 if (empty($tramos)) {
                     $registro = CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
                         ->where('fecha', $fecha)
-                        ->where('codigo_grupo',$codigoGrupo)
+                        ->where('codigo_grupo', $codigoGrupo)
                         ->first();
                     if (!$registro) {
                         throw new Exception("No existe el registro con fecha {$fecha} e id {$cuadrilleroId}");
@@ -1482,7 +1428,7 @@ class CuadrilleroServicio
                 // Registro diario
                 $registro = CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
                     ->where('fecha', $fecha)
-                    ->where('codigo_grupo',$codigoGrupo)
+                    ->where('codigo_grupo', $codigoGrupo)
                     ->first();
                 if (!$registro) {
                     throw new Exception("No existe el registro con fecha {$fecha} e id {$cuadrilleroId}");
@@ -1511,7 +1457,7 @@ class CuadrilleroServicio
                         $existente->delete();
                     }
                 }
-                //dd($nuevosMap);
+
                 // Insertar o actualizar los actuales
                 foreach ($nuevosMap as $k => $nuevo) {
                     $detalle = $existentesMap->get($k);
@@ -1564,52 +1510,5 @@ class CuadrilleroServicio
         ]);
     }
 
-    public static function buscarSemana(string $fecha): CuaAsistenciaSemanal
-    {
-        $semana = CuaAsistenciaSemanal::whereDate('fecha_inicio', '<=', $fecha)
-            ->whereDate('fecha_fin', '>=', $fecha)
-            ->firstOrFail();
-
-        if (!$semana) {
-            throw new \Exception("No hay una semana para esta fecha {$fecha}");
-        }
-
-        return $semana;
-    }
-    /**
-     * Devuelve los cuadrilleros con asistencia en una fecha dada
-     */
-    public static function obtenerCuadrillerosEnFecha(string $fecha)
-    {
-        $semana = self::buscarSemana($fecha);
-        $grupos = $semana->grupos;
-
-        if (!$grupos) {
-            throw new \Exception("No hay ningún grupo en el registro semanal {$semana->id}");
-        }
-
-        $lista = [];
-
-        foreach ($grupos as $grupo) {
-            $cuadrilleros = $grupo->cuadrillerosEnAsistencia;
-            if ($cuadrilleros) {
-                foreach ($cuadrilleros as $cuadrillero) {
-                    $data = $cuadrillero->cuadrillero;
-                    $lista[] = [
-                        'cua_asi_sem_cua_id' => $cuadrillero->id,
-                        'id' => $data->id,
-                        'grupo' => $grupo->id,
-                        'grupo_nombre' => $grupo->grupo->nombre,
-                        'tipo' => 'cuadrilla',
-                        'dni' => $data->dni,
-                        'nombres' => $data->nombres,
-                    ];
-                }
-            }
-        }
-
-        return collect($lista)->sortBy(['grupo', 'nombres'])->values();
-    }
-   
 
 }

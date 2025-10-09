@@ -13,11 +13,11 @@
             <x-slot name="thead">
                 <x-tr>
                     <x-th value="N°" class="text-center" />
-                    <x-th value="Código del Grupo" />
-                    <x-th value="Nombre del Grupo" />
-                    <x-th value="Cuadrilleros activos" />
-                    <x-th value="Fechas trabajadas" />
-                    <x-th value="Precio Sugerido por Jornal" class="text-center" />
+                    <x-th value="Código" class="text-center" />
+                    <x-th value="Descripción" />
+                    <x-th value="Cuadrilleros activos" class="text-center" />
+                    <x-th value="Fechas trabajadas" class="text-center" />
+                    <x-th value="Costo Día" class="text-center" />
                     <x-th value="Color" class="text-center" />
                     <x-th value="Creado en" class="text-center" />
                     <x-th value="Acciones" class="text-center" />
@@ -35,7 +35,7 @@
                         </x-td>
                         <x-td value="{{ $grupo->nombre }}" />
                         <x-td value="{{ $grupo->cuadrilleros->count() }}" class="text-center" />
-                        <x-td value="{{ $grupo->fechas_trabajadas  }}" class="text-center" />
+                        <x-td value="0" class="text-center" />
                         <x-td value="{{ $grupo->costo_dia_sugerido }}" class="text-center text-black  text-lg font-bold" />
                         <x-td>
                             <div class="rounded-lg p-2 text-center text-black text-lg font-bold"
@@ -46,15 +46,15 @@
                         <x-td class="text-center">
                             {{ formatear_fecha($grupo->created_at) }}
                         </x-td>
-
                         <x-td class="text-center">
                             <x-flex class="justify-center">
-                                @if ($grupo->estado == '1')
+                                @if (!$grupo->trashed())
                                     <x-button type="button"
-                                        @click="$wire.dispatch('editarGrupo',{codigo:'{{ $grupo->codigo }}'})">
+                                        @click="$wire.dispatch('editarGrupo', { codigo: '{{ $grupo->codigo }}' })">
                                         <i class="fa fa-edit"></i>
                                     </x-button>
-                                    <x-danger-button type="button" wire:click="confirmarEliminarGrupo('{{ $grupo->codigo }}')">
+
+                                    <x-danger-button type="button" wire:click="eliminarGrupoCuadrilla('{{ $grupo->codigo }}')">
                                         <i class="fa fa-trash"></i>
                                     </x-danger-button>
                                 @else
@@ -62,6 +62,7 @@
                                         Restaurar
                                     </x-secondary-button>
                                 @endif
+
                             </x-flex>
                         </x-td>
                     </x-tr>

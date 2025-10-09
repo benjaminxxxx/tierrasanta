@@ -10,16 +10,11 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('cuad_detalle_horas', function (Blueprint $table) {
+        Schema::create('cuad_detalles_horas', function (Blueprint $table) {
             $table->id();
 
             $table->foreignId('registro_diario_id')
                 ->constrained('cuad_registros_diarios')
-                ->cascadeOnDelete();
-
-            $table->foreignId('actividad_id')
-                ->nullable()
-                ->constrained('actividades')
                 ->cascadeOnDelete();
 
             $table->string('campo_nombre');
@@ -27,8 +22,6 @@ return new class extends Migration {
 
             $table->time('hora_inicio');
             $table->time('hora_fin');
-            $table->decimal('produccion', 10, 2)->nullable();
-            $table->decimal('costo_bono', 10, 2)->default(0);
 
             $table->timestamps();
         });
@@ -39,6 +32,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('cuad_detalle_horas');
+        Schema::dropIfExists('cuad_detalles_horas');
     }
 };

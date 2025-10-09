@@ -13,7 +13,7 @@ return new class extends Migration {
         Schema::create('plan_actividad_bonos', function (Blueprint $table) {
             $table->id();
             $table->foreignId('registro_diario_id')
-                ->constrained('reporte_diarios')
+                ->constrained('plan_registros_diarios')
                 ->cascadeOnDelete();
 
             $table->foreignId('actividad_id')
