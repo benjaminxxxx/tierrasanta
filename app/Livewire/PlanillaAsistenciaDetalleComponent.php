@@ -2,8 +2,8 @@
 
 namespace App\Livewire;
 
-use App\Models\Empleado;
-use App\Models\Grupo;
+use App\Models\PlanEmpleado;
+use App\Models\PlanGrupo;
 use App\Models\PlanillaAsistencia;
 use App\Models\PlanillaAsistenciaDetalle;
 use App\Models\ReporteDiario;
@@ -61,7 +61,7 @@ class PlanillaAsistenciaDetalleComponent extends Component
         $ultimoDiaMes = Carbon::createFromDate($anio, $mes, 1)->endOfMonth()->day;
         $informacionAsistenciaAdicional = [];
 
-        $empleadosDatas = Empleado::get()->keyBy('documento')->toArray();
+        $empleadosDatas = PlanEmpleado::get()->keyBy('documento')->toArray();
 
 
         $this->empleados = PlanillaAsistencia::where('mes', $mes)

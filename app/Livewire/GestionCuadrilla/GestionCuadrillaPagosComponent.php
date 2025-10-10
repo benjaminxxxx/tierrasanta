@@ -2,8 +2,8 @@
 
 namespace App\Livewire\GestionCuadrilla;
 
-use App\Models\CuaGrupo;
 use App\Services\Cuadrilla\CuadrilleroServicio;
+use App\Traits\ListasComunes\ConGrupoCuadrilla;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Session;
@@ -15,18 +15,16 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class GestionCuadrillaPagosComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, ConGrupoCuadrilla;
     public $fecha_inicio;
     public $fecha_fin;
     public $grupoSeleccionado;
     public $nombre_cuadrillero;
-    public $grupos = [];
     public $registros;
     public $header;
     public function mount()
     {
         $this->grupoSeleccionado = Session::get('grupo_seleccionado');
-        $this->grupos = CuaGrupo::all();
         $this->fecha_inicio = Session::get('fecha_inicio', Carbon::now()->startOfWeek()->format('Y-m-d'));
         $this->fecha_fin = Session::get('fecha_fin', Carbon::now()->endOfWeek()->format('Y-m-d'));
         $this->buscarRegistros();

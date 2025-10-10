@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('descuento_sp', function (Blueprint $table) {
+        Schema::create('plan_sp_desc', function (Blueprint $table) {
             $table->string('codigo')->primary();
             $table->string('referencia');
             $table->string('orden');
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('descuento_sp');
+        Schema::dropIfExists('plan_sp_desc');
     }
 };

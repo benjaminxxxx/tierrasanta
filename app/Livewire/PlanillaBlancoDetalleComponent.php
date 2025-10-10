@@ -4,10 +4,10 @@ namespace App\Livewire;
 
 use App\Exports\PlanillaExport;
 use App\Models\Configuracion;
-use App\Models\DescuentoSP;
-use App\Models\DescuentoSpHistorico;
-use App\Models\Empleado;
-use App\Models\Grupo;
+use App\Models\PlanDescuentoSP;
+use App\Models\PlanDescuentoSPHistorico;
+use App\Models\PlanEmpleado;
+use App\Models\PlanGrupo;
 use App\Models\PlanillaAsistencia;
 use App\Models\PlanillaBlanco;
 use App\Models\PlanillaBlancoDetalle;
@@ -63,7 +63,7 @@ class PlanillaBlancoDetalleComponent extends Component
     protected $listeners = ['GuardarInformacion'];
     public function mount()
     {
-        $this->descuentoColores = DescuentoSP::get()->pluck("color", "codigo")->toArray();
+        $this->descuentoColores = PlanDescuentoSP::get()->pluck("color", "codigo")->toArray();
         $this->grupoColores = Grupo::get()->pluck("color", "codigo")->toArray();
 
 
@@ -281,7 +281,7 @@ class PlanillaBlancoDetalleComponent extends Component
 
             $asignacionFamiliar = $this->asignacionFamiliar ?? 0;
 
-            $empleadosDisponibles = Empleado::planillaAgraria($this->mes, $this->anio)
+            $empleadosDisponibles = PlanEmpleado::planillaAgraria($this->mes, $this->anio)
                 ->with(['descuento', 'asignacionFamiliar', 'contratos', 'contratos.descuento'])
                 ->get()->keyBy('documento')->toArray();
 

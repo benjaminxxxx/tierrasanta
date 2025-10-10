@@ -5,7 +5,7 @@ namespace App\Livewire;
 use Livewire\Component;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\WithPagination;
-use  App\Models\Empleado;
+use  App\Models\PlanEmpleado;
 use  App\Models\AsignacionFamiliar;
 class AsignacionFamiliarListComponent extends Component
 {

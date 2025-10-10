@@ -1,7 +1,7 @@
 @props([
     'type' => 'button',
     'disabled' => false,
-    'size' => 'base',    // xs, sm, base, lg, xl
+    'size' => 'xs',    // xs, sm, base, lg, xl
     'variant' => 'primary', // primary, secondary, danger, etc.
     'target' => null,
 ])

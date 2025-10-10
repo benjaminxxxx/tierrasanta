@@ -18,13 +18,14 @@
     <x-card2>
         <x-flex class="justify-between">
             <form wire:submit="buscarRegistros">
-                <x-flex class="w-full">
+                <x-flex class="w-full !items-end">
                     <x-input-date label="Fecha inicio" wire:model="fecha_inicio" error="fecha_inicio" />
                     <x-input-date label="Fecha fin" wire:model="fecha_fin" error="fecha_fin" />
+                    
                     <x-select label="Grupo" wire:model="grupoSeleccionado" error="grupoSeleccionado">
                         <option value="">TODOS LOS GRUPOS</option>
-                        @foreach ($grupos as $grupo)
-                            <option value="{{ $grupo->codigo }}">{{ $grupo->nombre }}</option>
+                        @foreach ($grupoCuadrillas as $grupoCuadrilla)
+                            <option value="{{ $grupoCuadrilla->codigo }}">{{ $grupoCuadrilla->nombre }}</option>
                         @endforeach
                     </x-select>
                     <x-input-string label="Buscar por nombre" wire:model="nombre_cuadrillero"

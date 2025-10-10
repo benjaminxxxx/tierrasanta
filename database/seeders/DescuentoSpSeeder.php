@@ -15,7 +15,7 @@ class DescuentoSpSeeder extends Seeder
     {
         //truncar
         //DB::table('descuento_sp')->truncate();
-        DB::table('descuento_sp')->insert([
+        DB::table('plan_sp_desc')->insert([
             ['codigo' => 'HAB F','orden'=>'1','color'=>'#000000', 'referencia' => 'HABITAT', 'descripcion' => 'Habitat Flujo', 'porcentaje' => 13.17, 'porcentaje_65' => 11.67, 'tipo' => 'Flujo'],
             ['codigo' => 'INT F','orden'=>'2','color'=>'#33CC33', 'referencia' => 'INTEGRA', 'descripcion' => 'Integra Flujo', 'porcentaje' => 13.25, 'porcentaje_65' => 11.75, 'tipo' => 'Flujo'],
             ['codigo' => 'PRI F','orden'=>'3','color'=>'#000000', 'referencia' => 'PRIMA', 'descripcion' => 'Prima Flujo', 'porcentaje' => 13.30, 'porcentaje_65' => 11.80, 'tipo' => 'Flujo'],

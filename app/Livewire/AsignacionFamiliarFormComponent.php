@@ -3,7 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\AsignacionFamiliar;
-use App\Models\Empleado;
+use App\Models\PlanEmpleado;
 use Livewire\Component;
 use Illuminate\Database\QueryException;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -52,7 +52,7 @@ class AsignacionFamiliarFormComponent extends Component
     }
     public function AgregarAsignacionFamiliar($code){
         $this->resetErrorBag();
-        $empleado = Empleado::where('code', $code)->first();
+        $empleado = PlanEmpleado::where('code', $code)->first();
         if ($empleado) {
             $this->empleadoId = $empleado->id;
             $this->nombre_empleado = $empleado->nombreCompleto;

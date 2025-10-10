@@ -3,8 +3,8 @@
 namespace App\Livewire;
 
 use App\Models\Configuracion;
-use App\Models\DescuentoSP;
-use App\Models\Grupo;
+use App\Models\PlanDescuentoSP;
+use App\Models\PlanGrupo;
 use App\Models\PlanillaBlanco;
 use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;

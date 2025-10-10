@@ -6,9 +6,11 @@
             <x-h3 class="mb-4 md:mb-0">
                 Registro Diario Cuadrilla
             </x-h3>
-            <x-button @click="$wire.dispatch('registrarReporteDiarioCuadrilla',{fecha:'{{ $fecha }}'})">
+            {{-- FUNCION OCULTA POR FALTA DE ACTUALIZACION PARA COMPATIBILIDAD CON EL REGISTRO POR METODO DE HANDSONTABLE --}}
+            {{-- <x-button @click="$wire.dispatch('registrarReporteDiarioCuadrilla',{fecha:'{{ $fecha }}'})">
                 <i class="fa fa-plus"></i> Registrar reporte
-            </x-button>
+            </x-button> --}}
+        
         </x-flex>
         <x-button-a href="{{ route('cuadrilleros.gestion') }}">
             <i class="fa fa-arrow-left"></i> Volver a gestión de cuadrilleros

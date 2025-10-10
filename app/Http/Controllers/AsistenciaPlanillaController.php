@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Dia;
-use App\Models\Empleado;
+use App\Models\PlanEmpleado;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 

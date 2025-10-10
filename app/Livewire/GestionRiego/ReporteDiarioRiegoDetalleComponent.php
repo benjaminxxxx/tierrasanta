@@ -4,7 +4,7 @@ namespace App\Livewire\GestionRiego;
 
 use App\Models\ConsolidadoRiego;
 use App\Models\Cuadrillero;
-use App\Models\Empleado;
+use App\Models\PlanEmpleado;
 use App\Services\Campo\Riego\RiegoServicio;
 use Illuminate\Support\Str;
 use Livewire\Component;
@@ -156,7 +156,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
     }
     private function obtenerNombreRegador($documento)
     {
-        return optional(Empleado::where('documento', $documento)->first())->nombre_completo
+        return optional(PlanEmpleado::where('documento', $documento)->first())->nombre_completo
             ?? Cuadrillero::where('dni', $documento)->value('nombres')
             ?? 'NN';
     }

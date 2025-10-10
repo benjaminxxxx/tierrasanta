@@ -4,7 +4,7 @@ namespace App\Livewire\GestionRiego;
 use App\Exports\RiegosExport;
 use App\Models\Campo;
 use App\Models\Cuadrillero;
-use App\Models\Empleado;
+use App\Models\PlanEmpleado;
 use App\Models\ReporteDiarioRiego;
 use Carbon\Carbon;
 use Exception;
@@ -118,7 +118,7 @@ class ReporteDiarioRiegoImportExportComponent extends Component
 
 
             // Validar que el DNI existe en Empleado o Cuadrilla
-            $empleado = Empleado::where('documento', $documento)->first();
+            $empleado = PlanEmpleado::where('documento', $documento)->first();
             $cuadrilla = Cuadrillero::where('dni', $documento)->first();
 
             $fechaExcel = Carbon::parse($fecha);

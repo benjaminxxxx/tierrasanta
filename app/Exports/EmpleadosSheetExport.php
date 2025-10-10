@@ -1,7 +1,7 @@
 <?php
 namespace App\Exports;
 
-use App\Models\Empleado;
+use App\Models\PlanEmpleado;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -20,7 +20,7 @@ class EmpleadosSheetExport implements FromCollection, WithHeadings, WithMapping,
 
     public function collection()
     {
-        return Empleado::with(['grupo', 'descuento']) // Aseguramos que el grupo y descuento se carguen con los empleados
+        return PlanEmpleado::with(['grupo', 'descuento']) // Aseguramos que el grupo y descuento se carguen con los empleados
             ->orderBy('orden')
             ->get();
     }

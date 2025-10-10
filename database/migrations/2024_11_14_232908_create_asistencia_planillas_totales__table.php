@@ -13,11 +13,10 @@ return new class extends Migration
     {
         Schema::create('asistencia_planillas_totales', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('tipo_asistencia_id');
+            $table->string('estado_asistencia',5);
             $table->unsignedBigInteger('reporte_diario_planilla_id');
             $table->integer('total');
             $table->timestamps();
-            $table->foreign('tipo_asistencia_id')->references('id')->on('tipo_asistencias')->onDelete('cascade');
             $table->foreign('reporte_diario_planilla_id')->references('id')->on('reporte_diario_campos')->onDelete('cascade');
         });
     }

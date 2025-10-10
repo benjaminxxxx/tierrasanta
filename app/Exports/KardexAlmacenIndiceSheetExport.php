@@ -2,7 +2,7 @@
 namespace App\Exports;
 
 use App\Models\Cuadrillero;
-use App\Models\Empleado;
+use App\Models\PlanEmpleado;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;

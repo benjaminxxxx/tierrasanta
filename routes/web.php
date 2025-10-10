@@ -29,7 +29,7 @@ Route::middleware([
 ])->group(function () {
 
     Route::get('/', function () {
-        return view('empleados');
+        return view('livewire.gestion-planilla.administrar-planillero.indice-empleados');
     })->name('inicio');
 
     Route::get('/dashboard', function () {

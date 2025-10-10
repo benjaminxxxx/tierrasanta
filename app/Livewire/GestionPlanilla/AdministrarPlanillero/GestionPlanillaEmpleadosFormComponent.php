@@ -1,92 +1,100 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\GestionPlanilla\AdministrarPlanillero;
 
-use App\Models\Cargo;
-use App\Models\Contrato;
-use App\Models\DescuentoSP;
-use App\Models\Grupo;
+use App\Services\Modulos\Planilla\GestionPlanillaEmpleados;
 use App\Services\RecursosHumanos\Personal\ContratoServicio;
-use DB;
-use Exception;
+use App\Traits\ListasComunes\ConGrupoPlanilla;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
-use App\Models\Empleado;
+use App\Models\PlanEmpleado;
 use Illuminate\Database\QueryException;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
-class EmpleadoFormComponent extends Component
+class GestionPlanillaEmpleadosFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, ConGrupoPlanilla;
     public $empleadoId;
-    public $isFormOpen = false;
     public $nombres;
     public $apellido_paterno;
     public $apellido_materno;
     public $documento;
-    public $descuentos;
-    public $cargos;
-    public $grupos;
-    public $fecha_ingreso;
-    public $fecha_nacimiento;
-    public $cargo_id;
-    public $descuento_sp_id;
+    public $email;
+    public $direccion;
     public $genero;
-    public $salario;
-    public $grupo_codigo;
-    public $compensacion_vacacional;
-    public $esta_jubilado;
-    public $tipo_planilla;
-    public $contratos = [];
-    public $mostrarFormularioContrato = false;
-    #region contrato
-    public $tipo_contrato;
-    public $fecha_inicio;
-    public $fecha_fin;
-    public $sueldo;
-    public $cargo_codigo;
-    public $modalidad_pago = 'mensual';
-    public $motivo_despido;
-    #endregion
-    protected $listeners = ['EditarEmpleado'];
+    public $fecha_nacimiento;
+    public $fecha_ingreso;
+
+    public $mostrarFormularioEmpleados = false;
+
+    protected $listeners = ['editarEmpleado', 'abrirFormularioNuevoEmpleado'];
 
     public function mount()
     {
-        $this->descuentos = DescuentoSP::all();
-        $this->cargos = Cargo::all();
-        $this->grupos = Grupo::all();
+
     }
 
-    public function EditarEmpleado($code)
+    public function editarEmpleado($uuid)
     {
         $this->resetForm();
-        $empleado = Empleado::with(['contratos'])->where('code', $code)->first();
+        $empleado = app(GestionPlanillaEmpleados::class)->obtenerEmpleadoPorUuid($uuid);
+        ;
         if ($empleado) {
 
-
             $this->empleadoId = $empleado->id;
+            $this->uuid = $empleado->uuid;
             $this->nombres = $empleado->nombres;
             $this->apellido_paterno = $empleado->apellido_paterno;
             $this->apellido_materno = $empleado->apellido_materno;
             $this->documento = $empleado->documento;
-            $this->fecha_ingreso = $empleado->fecha_ingreso;
-            $this->fecha_nacimiento = $empleado->fecha_nacimiento;
+            $this->email = $empleado->email;
+            $this->numero = $empleado->numero;
+            $this->direccion = $empleado->direccion;
             $this->genero = $empleado->genero;
-            $this->obtenerContratos();
-            $this->isFormOpen = true;
+            $this->fecha_nacimiento = $empleado->fecha_nacimiento;
+            $this->fecha_ingreso = $empleado->fecha_ingreso;
+            $this->comentarios = $empleado->comentarios;
+            $this->orden = $empleado->orden;
+            $this->mostrarFormularioEmpleados = true;
         }
     }
-    public function store()
+    public function guardarEmpleado()
     {
+        try {
+            $datos = [
+                'nombres' => $this->nombres,
+                'apellido_paterno' => $this->apellido_paterno,
+                'apellido_materno' => $this->apellido_materno,
+                'documento' => $this->documento,
+                'email' => $this->email,
+                'direccion' => $this->direccion,
+                'genero' => $this->genero,
+                'fecha_nacimiento' => $this->fecha_nacimiento,
+                'fecha_ingreso' => $this->fecha_ingreso,
+            ];
+
+            app(GestionPlanillaEmpleados::class)->guardarEmpleado($datos,$this->empleadoId);
+            $this->alert('success', 'Los datos fueron guardados correctamente');
+            $this->mostrarFormularioEmpleados = false;
+            $this->dispatch('empleadoGuardado');
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
+        }
+        return;
         // Validar solo el campo 'nombres' con un mensaje personalizado
         $datosValidados = [
             'nombres' => 'required|string',
             'documento' => [
                 'required',
                 'string',
-                Rule::unique('empleados', 'documento')->ignore($this->empleadoId),
+                Rule::unique('plan_empleados', 'documento')->ignore($this->empleadoId),
             ],
+
+            'descuento_sp_id' => 'required',
             'fecha_ingreso' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today'],
             'fecha_nacimiento' => ['nullable', 'date_format:Y-m-d', 'before:today'],
         ];
@@ -96,7 +104,7 @@ class EmpleadoFormComponent extends Component
                 'documento' => [
                     'required',
                     'string',
-                    Rule::unique('empleados', 'documento')->ignore($this->empleadoId),
+                    Rule::unique('plan_empleados', 'documento')->ignore($this->empleadoId),
                 ],
                 'fecha_ingreso' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today'],
                 'fecha_nacimiento' => ['nullable', 'date_format:Y-m-d', 'before:today'],
@@ -109,6 +117,7 @@ class EmpleadoFormComponent extends Component
                         }
                     }
                 ],
+                'descuento_sp_id' => 'required',
                 'tipo_planilla' => 'required',
                 'sueldo' => 'required|numeric|min:0',
             ];
@@ -142,14 +151,14 @@ class EmpleadoFormComponent extends Component
             ];
 
             if ($this->empleadoId) {
-                $empleado = Empleado::find($this->empleadoId);
+                $empleado = PlanEmpleado::find($this->empleadoId);
                 if ($empleado) {
                     $empleado->update($data);
                     $this->alert('success', 'Registro actualizado exitosamente.');
                 }
             } else {
                 $data['code'] = Str::random(15);
-                $empleado = Empleado::create($data);
+                $empleado = PlanEmpleado::create($data);
                 $data = [
                     'tipo_contrato' => $this->tipo_contrato ?? 'indefinido',
                     'fecha_inicio' => $this->fecha_inicio,
@@ -173,7 +182,7 @@ class EmpleadoFormComponent extends Component
             // Limpiar los campos después de guardar
 
             $this->dispatch('EmpleadoRegistrado');
-            $this->isFormOpen = false;
+            $this->mostrarFormularioEmpleados = false;
             $this->resetForm();
 
         } catch (QueryException $e) {
@@ -184,40 +193,23 @@ class EmpleadoFormComponent extends Component
     public function abrirFormularioNuevoEmpleado()
     {
         $this->resetForm();
-        $this->isFormOpen = true;
+        $this->mostrarFormularioEmpleados = true;
     }
     public function resetForm()
     {
         $this->resetErrorBag();
-        $this->dispatch('reset-tab');
-        $this->reset([
-            'empleadoId',
-            'contratos',
+        $this->reset(
             'nombres',
             'apellido_paterno',
             'apellido_materno',
             'documento',
-            'fecha_ingreso',
-            'fecha_nacimiento',
+            'email',
+            'direccion',
             'genero',
-
-            'tipo_contrato',
-
-            'fecha_inicio',
-            'descuento_sp_id',
-            'grupo_codigo',
-
-            'cargo_codigo',
-            'tipo_planilla',
-            'sueldo',
-
-            'compensacion_vacacional',
-            'modalidad_pago',
-            'esta_jubilado',
-
-            'fecha_fin',
-            'motivo_despido'
-        ]);
+            'fecha_nacimiento',
+            'fecha_ingreso',
+            'empleadoId'
+        );
     }
     #region contrato
 
@@ -292,7 +284,7 @@ class EmpleadoFormComponent extends Component
         }
 
         // Obtener todos los contratos
-        $this->contratos = Contrato::where('empleado_id', $this->empleadoId)
+        $this->contratos = PlanContrato::where('empleado_id', $this->empleadoId)
             ->orderBy('fecha_inicio', 'desc')
             ->get();
 
@@ -318,6 +310,6 @@ class EmpleadoFormComponent extends Component
     #endregion
     public function render()
     {
-        return view('livewire.empleado-form-component');
+        return view('livewire.gestion-planilla.administrar-planillero.gestion-planilla-empleados-form');
     }
 }

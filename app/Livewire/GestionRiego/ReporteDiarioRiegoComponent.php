@@ -4,7 +4,7 @@ namespace App\Livewire\GestionRiego;
 
 use App\Models\ConsolidadoRiego;
 use App\Models\Cuadrillero;
-use App\Models\Empleado;
+use App\Models\PlanEmpleado;
 use App\Services\Campo\Riego\RiegoServicio;
 use App\Services\RecursosHumanos\Personal\EmpleadoServicio;
 use Exception;

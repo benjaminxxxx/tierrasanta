@@ -4,7 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Campo;
 use App\Models\DetalleRiego;
-use App\Models\Empleado;
+use App\Models\PlanEmpleado;
 use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -25,7 +25,7 @@ class AsignarRiegoComponent extends Component
     protected $listeners = ['abrirRiego', 'asignarCargarRegadorHoras'];
     public function mount()
     {
-        $this->regadores = Empleado::orderBy('apellido_paterno')->orderBy('apellido_materno')->orderBy('nombres')->get();
+        $this->regadores = PlanEmpleado::orderBy('apellido_paterno')->orderBy('apellido_materno')->orderBy('nombres')->get();
     }
     public function render()
     {

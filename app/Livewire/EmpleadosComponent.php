@@ -2,22 +2,20 @@
 
 namespace App\Livewire;
 
-use App\Models\Cargo;
-use App\Models\Contrato;
-use App\Models\DescuentoSP;
-use App\Models\Grupo;
+use App\Models\PlanCargo;
+use App\Models\PlanDescuentoSP;
 use App\Services\RecursosHumanos\Personal\ContratoServicio;
+use App\Traits\ListasComunes\ConGrupoPlanilla;
 use Carbon\Carbon;
 use Exception;
 use Livewire\Component;
-use App\Models\Empleado;
+use App\Models\PlanEmpleado;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\WithPagination;
 
 class EmpleadosComponent extends Component
 {
-    use LivewireAlert;
-    use WithPagination;
+    use LivewireAlert, WithPagination, ConGrupoPlanilla;
     public $isFormOpen = true;
     public $empleadoCode;
     public $search = '';
@@ -26,7 +24,6 @@ class EmpleadosComponent extends Component
     public $grupo_codigo;
     public $cargos;
     public $descuentos;
-    public $grupos;
     public $estado;
     public $genero;
     public $tipo_planilla;
@@ -37,40 +34,11 @@ class EmpleadosComponent extends Component
     protected $listeners = ['EmpleadoRegistrado' => '$refresh', 'eliminacionConfirmada', 'HijoRegistrado' => '$refresh'];
     public function mount()
     {
-        $this->cargos = Cargo::all();
-        $this->descuentos = DescuentoSP::all();
-        $this->grupos = Grupo::all();
+        $this->cargos = PlanCargo::all();
+        $this->descuentos = PlanDescuentoSP::all();
         $this->estado = 'activo';
         $this->mesVigencia = Carbon::now()->format('m');
         $this->anioVigencia = Carbon::now()->format('Y');
-        //funcion momentanea mientras falen hacer contratos
-        $this->generarContratos();
-    }
-    public function generarContratos()
-    {
-        $empleados = Empleado::whereDoesntHave('contratos')->get();
-        if ($empleados->count() == 0) {
-            return;
-        }
-        foreach ($empleados as $empleado) {
-            $fecha_inicio = $empleado->fecha_ingreso ?? '2016-01-01';
-            Contrato::create([
-                'empleado_id' => $empleado->id,
-                'tipo_contrato' => 'indefinido',
-                'fecha_inicio' => $fecha_inicio,
-                'fecha_fin' => null,
-                'sueldo' => $empleado->salario,
-                'cargo_codigo' => $empleado->cargo_id,
-                'grupo_codigo' => $empleado->grupo_codigo,
-                'compensacion_vacacional' => $empleado->compensacion_vacacional,
-                'tipo_planilla' => $empleado->tipo_planilla,
-                'descuento_sp_id' => $empleado->descuento_sp_id,
-                'esta_jubilado' => $empleado->esta_jubilado,
-                'modalidad_pago' => 'mensual',
-                'motivo_despido' => null
-            ]);
-        }
-
     }
 
     public function updatingSearch()
@@ -88,34 +56,17 @@ class EmpleadosComponent extends Component
     public function eliminacionConfirmada()
     {
         if ($this->empleadoCode) {
-            $empleado = Empleado::where('code', $this->empleadoCode);
+            $empleado = PlanEmpleado::where('code', $this->empleadoCode);
             if ($empleado) {
                 $empleado->delete();
                 $this->empleadoCode = null;
             }
         }
     }
-    /*
-    public function enable($code)
-    {
-        $empleado = Empleado::where('code', $code)->first();
-        if ($empleado) {
-            $empleado->status = 'activo';
-            $empleado->save();
-        }
-    }
-
-    public function disable($code)
-    {
-        $empleado = Empleado::where('code', $code)->first();
-        if ($empleado) {
-            $empleado->status = 'inactivo';
-            $empleado->save();
-        }
-    }*/
+   
     public function restaurar($code)
     {
-        $empleado = Empleado::where('code', $code)->first();
+        $empleado = PlanEmpleado::where('code', $code)->first();
         if ($empleado) {
             $empleado->status = 'activo';
             $empleado->save();
@@ -124,7 +75,7 @@ class EmpleadosComponent extends Component
     public function confirmarEliminacion($code)
     {
         try {
-            $empleado = Empleado::where('code', $code)->firstOrFail();
+            $empleado = PlanEmpleado::where('code', $code)->firstOrFail();
             $empleado->status = 'inactivo';
             $empleado->save();
             $this->alert('success', 'Registro eliminado correctamente.');
@@ -134,7 +85,7 @@ class EmpleadosComponent extends Component
     }
     public function moveUp($id)
     {
-        $empleado = Empleado::find($id);
+        $empleado = PlanEmpleado::find($id);
 
         if ($empleado) {
             // Verificar si el empleado tiene un valor de 'orden' NULL
@@ -143,7 +94,7 @@ class EmpleadosComponent extends Component
                 $this->assignOrderValues();
             } else {
                 // Mover el empleado hacia arriba si ya tiene un valor de 'orden'
-                $previous = Empleado::where('orden', '<', $empleado->orden)
+                $previous = PlanEmpleado::where('orden', '<', $empleado->orden)
                     ->orderBy('orden', 'desc')
                     ->where('status', 'activo')
                     ->first();
@@ -157,7 +108,7 @@ class EmpleadosComponent extends Component
 
     public function moveDown($id)
     {
-        $empleado = Empleado::find($id);
+        $empleado = PlanEmpleado::find($id);
 
         if ($empleado) {
             // Verificar si el empleado tiene un valor de 'orden' NULL
@@ -166,7 +117,7 @@ class EmpleadosComponent extends Component
                 $this->assignOrderValues();
             } else {
                 // Mover el empleado hacia abajo si ya tiene un valor de 'orden'
-                $next = Empleado::where('orden', '>', $empleado->orden)
+                $next = PlanEmpleado::where('orden', '>', $empleado->orden)
                     ->orderBy('orden', 'asc')
                     ->where('status', 'activo')
                     ->first();
@@ -179,7 +130,7 @@ class EmpleadosComponent extends Component
     }
     public function moveAt($id, $value)
     {
-        $empleado = Empleado::find($id);
+        $empleado = PlanEmpleado::find($id);
 
         if ($empleado) {
             // Asignar el valor al campo 'orden'
@@ -190,7 +141,7 @@ class EmpleadosComponent extends Component
     private function assignOrderValues()
     {
         // Inicializar el valor de orden
-        $empleados = Empleado::orderBy('id')->where('status', 'activo')->get();
+        $empleados = PlanEmpleado::orderBy('id')->where('status', 'activo')->get();
         $order = 1;
 
         foreach ($empleados as $empleado) {
@@ -216,7 +167,7 @@ class EmpleadosComponent extends Component
     #region aumento de sueldo
     public function abrirFormCambioMasivoSueldo()
     {
-        $lista = Empleado::where('status', 'activo')
+        $lista = PlanEmpleado::where('status', 'activo')
             ->with(['ultimoContrato'])
             ->get()
             ->map(function ($e) {
@@ -258,7 +209,7 @@ class EmpleadosComponent extends Component
     #endregion
     public function render()
     {
-        $query = Empleado::query();
+        $query = PlanEmpleado::query();
 
         if (!empty($this->search)) {
             $query->where(function ($query) {

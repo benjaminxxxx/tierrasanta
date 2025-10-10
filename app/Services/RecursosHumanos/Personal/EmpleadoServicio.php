@@ -5,7 +5,7 @@ namespace App\Services\RecursosHumanos\Personal;
 use App\Models\Actividad;
 use App\Models\ConsolidadoRiego;
 use App\Models\Cuadrillero;
-use App\Models\Empleado;
+use App\Models\PlanEmpleado;
 use App\Models\ReporteDiario;
 use App\Services\Cuadrilla\CuadrilleroServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaServicio;
@@ -79,7 +79,7 @@ class EmpleadoServicio
         $trabajadores = [];
         switch ($tipoEmpleado) {
             case "empleados":
-                $trabajadores = Empleado::whereNotIn('documento', $documentosAgregados)
+                $trabajadores = PlanEmpleado::whereNotIn('documento', $documentosAgregados)
                     ->orderBy('apellido_paterno')
                     ->orderBy('apellido_materno')
                     ->orderBy('nombres')

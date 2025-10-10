@@ -2,7 +2,7 @@
 
 namespace App\Livewire;
 
-use App\Models\Empleado;
+use App\Models\PlanEmpleado;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Session;
 use Livewire\Component;
@@ -15,7 +15,7 @@ class ReporteDiarioComponent extends Component
         //$this->fecha = Carbon::now()->format("Y-m-d");
         
         $this->fecha = Session::get('fecha_reporte', Carbon::now()->format('Y-m-d'));
-        $this->empleados = Empleado::where('status','activo')->orderBy('orden')->get();
+        $this->empleados = PlanEmpleado::where('status','activo')->orderBy('orden')->get();
        
     }
     public function fechaAnterior()

@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('cargos', function (Blueprint $table) {
+        Schema::create('plan_cargos', function (Blueprint $table) {
             $table->string('codigo')->primary(); // campo primary
             $table->string('nombre');
             $table->timestamps();
@@ -23,6 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cargos');
+        Schema::dropIfExists('plan_cargos');
     }
 };

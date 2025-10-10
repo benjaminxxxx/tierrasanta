@@ -17,7 +17,7 @@ class CargosSeeder extends Seeder
         //DB::table('cargos')->truncate();
 
         // Insert all cargos data
-        DB::table('cargos')->insert([
+        DB::table('plan_cargos')->insert([
             ['codigo' => 'ASI', 'nombre' => 'ASIST. PROD', 'created_at' => '2024-09-20 06:41:14', 'updated_at' => '2024-09-20 06:41:14'],
             ['codigo' => 'ASI1', 'nombre' => 'ASIST. FINANZ.', 'created_at' => '2024-09-20 06:41:14', 'updated_at' => '2024-09-20 06:41:14'],
             ['codigo' => 'ASI2', 'nombre' => 'ASIST. CONTAB', 'created_at' => '2024-09-20 06:41:14', 'updated_at' => '2024-09-20 06:41:14'],

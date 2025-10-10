@@ -4,7 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Campo;
 use App\Models\DetalleRiego;
-use App\Models\Empleado;
+use App\Models\PlanEmpleado;
 use Carbon\Carbon;
 use Livewire\Component;
 

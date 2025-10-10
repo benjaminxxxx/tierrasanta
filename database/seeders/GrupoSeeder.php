@@ -13,7 +13,7 @@ class GrupoSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('grupos')->insert([
+        DB::table('plan_grupos')->insert([
             [
                 'codigo' => 'PLAANT',
                 'descripcion' => 'PLANILLA ANTIGUA',

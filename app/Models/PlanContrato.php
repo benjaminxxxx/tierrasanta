@@ -4,10 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Contrato extends Model
+class PlanContrato extends Model
 {
     protected $fillable = [
-        'empleado_id',
+        'plan_empleado_id',
         'tipo_contrato',
         'fecha_inicio',
         'fecha_fin',
@@ -16,17 +16,17 @@ class Contrato extends Model
         'grupo_codigo',
         'compensacion_vacacional',
         'tipo_planilla',
-        'descuento_sp_id',
+        'plan_sp_codigo',
         'esta_jubilado',
         'modalidad_pago',
         'motivo_despido',
     ];
     public function empleado()
     {
-        return $this->belongsTo(Empleado::class);
+        return $this->belongsTo(PlanEmpleado::class);
     }
     public function descuento()
     {
-        return $this->belongsTo(DescuentoSP::class, 'descuento_sp_id');
+        return $this->belongsTo(PlanDescuentoSP::class, 'plan_sp_codigo');
     }
 }

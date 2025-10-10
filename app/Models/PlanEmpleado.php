@@ -2,76 +2,48 @@
 
 namespace App\Models;
 
+use Auth;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Empleado extends Model
+class PlanEmpleado extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
+    protected $table = 'plan_empleados';
     protected $fillable = [
-        'code',
+        'uuid',
         'nombres',
         'apellido_paterno',
         'apellido_materno',
         'documento',
         'fecha_ingreso',
         'comentarios',
-        'status',
         'email',
         'numero',
-        'cargo_id',
-        'genero',
-        'descuento_sp_id',
-        'salario',
         'fecha_nacimiento',
         'direccion',
-        'grupo_codigo',
-        'compensacion_vacacional',
-        'esta_jubilado',
+        'genero',
         'orden',
-        'asistencia',
-        'tipo_planilla'
+        'creado_por',
+        'actualizado_por',
+        'eliminado_por',
     ];
+
     public function contratos()
     {
-        return $this->hasMany(Contrato::class, 'empleado_id');
+        return $this->hasMany(PlanContrato::class, 'plan_empleado_id');
     }
-    public static function planillaAgraria($mes, $anio)
-    {
-        $fechaInicioMes = Carbon::createFromDate($anio, $mes, 1)->startOfMonth();
-        $fechaFinMes = Carbon::createFromDate($anio, $mes, 1)->endOfMonth();
-
-        return self::where('status', 'activo')
-            ->whereHas('contratos', function ($query) use ($fechaInicioMes, $fechaFinMes) {
-                $query->where('tipo_planilla', '1')
-                    ->where('fecha_inicio', '<=', $fechaFinMes)
-                    ->where(function ($q) use ($fechaInicioMes) {
-                        $q->whereNull('fecha_fin')
-                            ->orWhere('fecha_fin', '>=', $fechaInicioMes);
-                    });
-            });
-    }
-
+    
     public function ultimoContrato()
     {
-        return $this->hasOne(Contrato::class, 'empleado_id')->latestOfMany('fecha_inicio');
+        return $this->hasOne(PlanContrato::class, 'plan_empleado_id')->latestOfMany('fecha_inicio');
     }
-    public function descuento()
-    {
-        return $this->belongsTo(DescuentoSP::class, 'descuento_sp_id');
-    }
+   
     public function asignacionFamiliar()
     {
         return $this->hasMany(AsignacionFamiliar::class, 'empleado_id');
-    }
-    public function cargo()
-    {
-        return $this->belongsTo(Cargo::class, 'cargo_id');
-    }
-    public function grupo()
-    {
-        return $this->belongsTo(Grupo::class, 'grupo_codigo');
     }
     public function getNombreCompletoAttribute()
     {
@@ -82,10 +54,10 @@ class Empleado extends Model
     {
         $descripcion = '-';
         switch ($this->tipo_planilla) {
-            case 1:
+            case 'agraria':
                 $descripcion = 'P. AGRARIA';
                 break;
-            case 2:
+            case 'oficina':
                 $descripcion = 'P. OFICINA';
                 break;
             default:
@@ -122,5 +94,29 @@ class Empleado extends Model
             'cantidad' => $cantidadHijos,
         ];
     }
+    protected static function boot()
+    {
+        parent::boot();
 
+        static::creating(function ($model) {
+            $model->uuid = $model->uuid ?? \Illuminate\Support\Str::uuid();
+            if (Auth::check()) {
+                $model->creado_por = Auth::id();
+            }
+        });
+
+        static::updating(function ($model) {
+            if (Auth::check()) {
+                $model->actualizado_por = Auth::id();
+            }
+        });
+
+        static::deleting(function ($model) {
+            if (Auth::check()) {
+                $model->eliminado_por = Auth::id();
+                $model->saveQuietly(); // guarda sin volver a disparar eventos
+            }
+        });
+    }
+    
 }

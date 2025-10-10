@@ -5,7 +5,7 @@ namespace App\Livewire;
 use App\Models\Campo;
 use App\Models\ConsolidadoRiego;
 use App\Models\Cuadrillero;
-use App\Models\Empleado;
+use App\Models\PlanEmpleado;
 use App\Models\ReporteDiarioRiego;
 use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;

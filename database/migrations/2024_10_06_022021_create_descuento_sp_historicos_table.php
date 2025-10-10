@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('descuento_sp_historicos', function (Blueprint $table) {
+        Schema::create('plan_sp_desc_hist', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('descuento_codigo'); // Referencia a la tabla descuentos
             $table->decimal('porcentaje', 5, 2);
@@ -20,7 +20,7 @@ return new class extends Migration
             $table->date('fecha_fin')->nullable(); // Si es NULL, significa que el descuento está vigente
             $table->timestamps();
         
-            $table->foreign('descuento_codigo')->references('codigo')->on('descuento_sp')->onDelete('cascade');
+            $table->foreign('descuento_codigo')->references('codigo')->on('plan_sp_desc')->onDelete('cascade');
         });
     }
 
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('descuento_sp_historicos');
+        Schema::dropIfExists('plan_sp_desc_hist');
     }
 };

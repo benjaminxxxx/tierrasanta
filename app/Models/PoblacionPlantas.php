@@ -25,7 +25,7 @@ class PoblacionPlantas extends Model
 
     public function empleado()
     {
-        return $this->belongsTo(Empleado::class, 'empleado_id');
+        return $this->belongsTo(PlanEmpleado::class, 'empleado_id');
     }
 
     public function cuadrillero()

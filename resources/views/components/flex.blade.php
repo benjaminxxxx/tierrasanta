@@ -1,3 +1,3 @@
-<div {{ $attributes->merge(['class' => 'lg:flex items-center gap-3']) }}>
+<div {{ $attributes->merge(['class' => 'flex flex-wrap items-center gap-x-3 gap-y-3']) }}>
     {{ $slot }}
 </div>

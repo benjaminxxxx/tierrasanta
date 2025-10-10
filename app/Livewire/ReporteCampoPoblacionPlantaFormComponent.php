@@ -4,7 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Campo;
 use App\Models\CampoCampania;
-use App\Models\Empleado;
+use App\Models\PlanEmpleado;
 use App\Models\PoblacionPlantas;
 use App\Models\PoblacionPlantasDetalle;
 use App\Services\CampaniaServicio;
@@ -279,7 +279,7 @@ class ReporteCampoPoblacionPlantaFormComponent extends Component
 
     public function updatedEvaluador()
     {
-        $this->evaluadores = Empleado::whereRaw(
+        $this->evaluadores = PlanEmpleado::whereRaw(
             "CONCAT(nombres, ' ', apellido_paterno, ' ', apellido_materno) LIKE ?",
             ["%{$this->evaluador}%"]
         )

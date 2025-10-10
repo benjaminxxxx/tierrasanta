@@ -3,7 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\CampoCampania;
-use App\Models\Empleado;
+use App\Models\PlanEmpleado;
 use App\Services\CampaniaServicio;
 use Illuminate\Support\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -396,7 +396,7 @@ class ReporteCampoEvaluacionBrotesFormComponent extends Component
     }
     public function updatedEvaluador()
     {
-        $this->evaluadores = Empleado::whereRaw(
+        $this->evaluadores = PlanEmpleado::whereRaw(
             "CONCAT(nombres, ' ', apellido_paterno, ' ', apellido_materno) LIKE ?",
             ["%{$this->evaluador}%"]
         )

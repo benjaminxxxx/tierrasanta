@@ -38,7 +38,7 @@ class ReporteDiario extends Model
             })
             ->get()
             ->map(function ($empleados) {
-                $empleado = Empleado::where('documento', $empleados->documento)->first();
+                $empleado = PlanEmpleado::where('documento', $empleados->documento)->first();
                 if (!$empleado) {
                     throw new \Exception("El empleado ya no existe.");
                 }

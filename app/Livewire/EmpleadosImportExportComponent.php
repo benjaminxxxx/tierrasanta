@@ -3,14 +3,14 @@
 namespace App\Livewire;
 
 use App\Models\AsignacionFamiliar;
-use App\Models\Cargo;
-use App\Models\DescuentoSP;
-use App\Models\Grupo;
+use App\Models\PlanCargo;
+use App\Models\PlanDescuentoSP;
+use App\Models\PlanGrupo;
 use DateTime;
 use Exception;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use App\Models\Empleado;
+use App\Models\PlanEmpleado;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -122,7 +122,7 @@ class EmpleadosImportExportComponent extends Component
                 if ($cargo_nombre && $cargo_nombre !== '-') {
                     $cargo_nombre = strtoupper($cargo_nombre);
 
-                    $cargo = Cargo::whereRaw('LOWER(nombre) = ?', [strtolower($cargo_nombre)])->first();
+                    $cargo = PlanCargo::whereRaw('LOWER(nombre) = ?', [strtolower($cargo_nombre)])->first();
 
                     if (!$cargo) {
                         // Generar un código único para el nuevo cargo
@@ -130,13 +130,13 @@ class EmpleadosImportExportComponent extends Component
                         $codigo = $base_codigo;
                         $counter = 1;
 
-                        while (Cargo::where('codigo', $codigo)->exists()) {
+                        while (PlanCargo::where('codigo', $codigo)->exists()) {
                             $codigo = $base_codigo . $counter;
                             $counter++;
                         }
 
                         // Crear un nuevo cargo
-                        $cargo = Cargo::create([
+                        $cargo = PlanCargo::create([
 
                             'codigo' => mb_strtoupper($codigo),
                             'nombre' => $cargo_nombre
@@ -147,7 +147,7 @@ class EmpleadosImportExportComponent extends Component
                 }
 
                 if ($descuento_sp_codigo && $descuento_sp_codigo !== '-') {
-                    $descuento_sp = DescuentoSP::where('codigo', $descuento_sp_codigo)->first();
+                    $descuento_sp = PlanDescuentoSP::where('codigo', $descuento_sp_codigo)->first();
                     $descuento_sp_id = $descuento_sp ? $descuento_sp->codigo : null;
                 }
 
@@ -173,7 +173,7 @@ class EmpleadosImportExportComponent extends Component
                     'orden'=>$orden,
                 ];
 
-                $empleado = Empleado::where('documento', $documento)->first();
+                $empleado = PlanEmpleado::where('documento', $documento)->first();
 
                 if ($empleado) {
 
@@ -183,13 +183,13 @@ class EmpleadosImportExportComponent extends Component
                 } else {
                     // Crear un nuevo registro
                     $data['code'] = Str::random(15);
-                    Empleado::create($data);
+                    PlanEmpleado::create($data);
                 }
                 $this->empleadosNoImportados[] = $documento;
             }
         }
 
-        $this->empleadosNoImportadosQuery = Empleado::whereNotIn('documento',$this->empleadosNoImportados)->get();
+        $this->empleadosNoImportadosQuery = PlanEmpleado::whereNotIn('documento',$this->empleadosNoImportados)->get();
         if($this->empleadosNoImportadosQuery->count()>0){
             $this->isFormOpen = true;
         }
@@ -218,7 +218,7 @@ class EmpleadosImportExportComponent extends Component
     public function eliminacionEmlpeadoConfirmado()
     {
         if ($this->empleadoCode) {
-            $empleado = Empleado::where('code', $this->empleadoCode);
+            $empleado = PlanEmpleado::where('code', $this->empleadoCode);
             if ($empleado) {
                 $empleado->delete();
                 $this->empleadoCode = null;
@@ -272,7 +272,7 @@ class EmpleadosImportExportComponent extends Component
 
             if ($empleado_documento && $familiar_documento && $familiar_fecha_nacimiento) {
 
-                $empleado = Empleado::where('documento', $empleado_documento)->first();
+                $empleado = PlanEmpleado::where('documento', $empleado_documento)->first();
 
                 if ($empleado) {
 

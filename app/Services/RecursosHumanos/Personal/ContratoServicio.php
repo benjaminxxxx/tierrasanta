@@ -2,8 +2,8 @@
 
 namespace App\Services\RecursosHumanos\Personal;
 
-use App\Models\Contrato;
-use App\Models\Empleado;
+use App\Models\PlanContrato;
+use App\Models\PlanEmpleado;
 use Carbon\Carbon;
 use DB;
 use Exception;
@@ -20,7 +20,7 @@ class ContratoServicio
         DB::beginTransaction();
 
         try {
-            $empleado = Empleado::findOrFail($empleadoId);
+            $empleado = PlanEmpleado::findOrFail($empleadoId);
             $ultimoContrato = $this->_obtenerUltimoContrato($empleadoId);
 
             // 1. Validar la fecha de inicio
@@ -33,18 +33,8 @@ class ContratoServicio
 
             // 3. Crear el nuevo contrato
             $data['empleado_id'] = $empleadoId;
-            Contrato::create($data);
+            PlanContrato::create($data);
 
-            // 4. Actualizar los datos principales del empleado
-            $this->_actualizarDatosEmpleado($empleado, [
-                'salario' => $data['sueldo'],
-                'cargo_id' => $data['cargo_codigo'],
-                'grupo_codigo' => $data['grupo_codigo'],
-                'descuento_sp_id' => $data['descuento_sp_id'],
-                'compensacion_vacacional' => $data['compensacion_vacacional'] ?? 0,
-                'esta_jubilado' => $data['esta_jubilado'] ?? 0,
-                'tipo_planilla' => $data['tipo_planilla'],
-            ]);
 
             DB::commit();
 
@@ -79,7 +69,7 @@ class ContratoServicio
 
         DB::transaction(function () use ($cambios, $fechaInicio) {
             foreach ($cambios as $cambio) {
-                $empleado = Empleado::findOrFail($cambio['empleado_id']);
+                $empleado = PlanEmpleado::findOrFail($cambio['empleado_id']);
                 $nuevoSueldo = $cambio['nuevo_sueldo'];
                 $ultimoContrato = $this->_obtenerUltimoContrato($empleado->id);
 
@@ -93,18 +83,7 @@ class ContratoServicio
 
                 // 3. Preparar y crear el nuevo contrato
                 $nuevoContratoData = $this->_prepararDatosNuevoContrato($empleado, $ultimoContrato, $nuevoSueldo, $fechaInicio);
-                Contrato::create($nuevoContratoData);
-
-                // 4. Actualizar solo el salario y datos relacionados en el empleado
-                $this->_actualizarDatosEmpleado($empleado, [
-                    'salario' => $nuevoSueldo,
-                    'cargo_id' => $nuevoContratoData['cargo_codigo'],
-                    'grupo_codigo' => $nuevoContratoData['grupo_codigo'],
-                    'descuento_sp_id' => $nuevoContratoData['descuento_sp_id'],
-                    'compensacion_vacacional' => $nuevoContratoData['compensacion_vacacional'],
-                    'esta_jubilado' => $nuevoContratoData['esta_jubilado'],
-                    'tipo_planilla' => $nuevoContratoData['tipo_planilla'],
-                ]);
+                PlanContrato::create($nuevoContratoData);
             }
         });
     }
@@ -115,11 +94,11 @@ class ContratoServicio
     public function eliminarContratoPorId(int $contratoId): void
     {
         DB::transaction(function () use ($contratoId) {
-            $contratoAEliminar = Contrato::findOrFail($contratoId);
+            $contratoAEliminar = PlanContrato::findOrFail($contratoId);
             $empleadoId = $contratoAEliminar->empleado_id;
 
             // Buscamos el contrato anterior al que vamos a eliminar
-            $contratoAnterior = Contrato::where('empleado_id', $empleadoId)
+            $contratoAnterior = PlanContrato::where('empleado_id', $empleadoId)
                 ->where('fecha_inicio', '<', $contratoAEliminar->fecha_inicio)
                 ->orderByDesc('fecha_inicio')
                 ->first();
@@ -129,7 +108,7 @@ class ContratoServicio
                 $contratoAnterior->update(['fecha_fin' => null]);
 
                 // Actualizamos los datos del empleado para que reflejen los del contrato anterior
-                $empleado = Empleado::findOrFail($empleadoId);
+                $empleado = PlanEmpleado::findOrFail($empleadoId);
                 $this->_actualizarDatosEmpleado($empleado, [
                     'salario' => $contratoAnterior->sueldo,
                     'cargo_id' => $contratoAnterior->cargo_codigo,
@@ -154,7 +133,7 @@ class ContratoServicio
      */
     private function _obtenerUltimoContrato(int $empleadoId): ?Contrato
     {
-        return Contrato::where('empleado_id', $empleadoId)
+        return PlanContrato::where('empleado_id', $empleadoId)
             ->orderByDesc('fecha_inicio')
             ->first();
     }
@@ -201,11 +180,5 @@ class ContratoServicio
         ];
     }
 
-    /**
-     * Actualiza los campos principales en el registro del empleado.
-     */
-    private function _actualizarDatosEmpleado(Empleado $empleado, array $datos): void
-    {
-        $empleado->update($datos);
-    }
+    
 }

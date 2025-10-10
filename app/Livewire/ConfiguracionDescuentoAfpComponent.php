@@ -3,8 +3,8 @@
 namespace App\Livewire;
 
 use App\Models\Configuracion;
-use App\Models\DescuentoSP;
-use App\Models\DescuentoSpHistorico;
+use App\Models\PlanDescuentoSP;
+use App\Models\PlanDescuentoSPHistorico;
 use Carbon\Carbon;
 use Livewire\Component;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -100,7 +100,7 @@ class ConfiguracionDescuentoAfpComponent extends Component
 
         return $valoresDescuentos;
     }
-    protected function actualizarDescuento(DescuentoSP $descuento, array $valoresDescuentos)
+    protected function actualizarDescuento(PlanDescuentoSP $descuento, array $valoresDescuentos)
     {
         if (isset($valoresDescuentos[$descuento->referencia])) {
             $valorDescuento = $valoresDescuentos[$descuento->referencia];
@@ -132,7 +132,7 @@ class ConfiguracionDescuentoAfpComponent extends Component
             $this->actualizarDescuentoSNP($descuento);
         }
     }
-    protected function actualizarDescuentoSNP(DescuentoSP $descuento)
+    protected function actualizarDescuentoSNP(PlanDescuentoSP $descuento)
     {
         $descuentoSnp = Configuracion::find('descuento_snp');
         $valor = $descuentoSnp ? $descuentoSnp->valor : 0;

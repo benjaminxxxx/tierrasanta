@@ -18,6 +18,6 @@ class DescuentoSpHistorico extends Model
         'fecha_fin',
     ];
     public function descuentoSp(){
-        return $this->belongsTo(DescuentoSP::class,'descuento_codigo');
+        return $this->belongsTo(PlanDescuentoSP::class,'descuento_codigo');
     }
 }
