@@ -189,7 +189,7 @@ class PlanillaHorasSheetExport implements FromArray, WithHeadings, WithStyles, W
             $formulaTotal = "=SUM({$columnaLetra}{$filaInicio}:{$columnaLetra}{$filaFin})";
 
             // Establecer la fórmula en la fila 2 para la columna correspondiente
-            $informacionAdicionalPorDia = $this->informacionAdicional['dia_' . $dia[0]];
+            $informacionAdicionalPorDia = $this->informacionAdicional['dia_' . $dia[0]]??null;
             $sheet->setCellValue("{$columnaLetra}2", $formula);
             $sheet->setCellValue("{$columnaLetra}{$filaFinTotales}", $formulaTotal);
 
@@ -197,7 +197,7 @@ class PlanillaHorasSheetExport implements FromArray, WithHeadings, WithStyles, W
             foreach ($this->planillaLista as $planilla) {
                 $filaEmpleadoContador++;
                 $documento = $planilla['dni'];
-                if (array_key_exists($documento, $informacionAdicionalPorDia)) {
+                if (is_array($informacionAdicionalPorDia) && array_key_exists($documento, $informacionAdicionalPorDia)) {
                     $informacionEmpleado = $informacionAdicionalPorDia[$documento];
                     if (array_key_exists('color', $informacionEmpleado)) {
                         $informacionEmpleado = $informacionAdicionalPorDia[$documento];
@@ -212,7 +212,7 @@ class PlanillaHorasSheetExport implements FromArray, WithHeadings, WithStyles, W
                         $sheet->getStyle("{$columnaLetra}{$filaEmpleadoContador}")
                             ->applyFromArray([
                                 'fill' => [
-                                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, // Tipo de relleno
+                                    'fillType' => Fill::FILL_SOLID, // Tipo de relleno
                                     'startColor' => [
                                         'rgb' => $color, // Color de fondo
                                     ],
@@ -289,6 +289,7 @@ class PlanillaHorasSheetExport implements FromArray, WithHeadings, WithStyles, W
 
                 return str_pad($empleado['documento'], 8, '0', STR_PAD_LEFT) === str_pad($item['dni'], 8, '0', STR_PAD_LEFT);
             });
+            
             $empleado = [];
             if (count($empleadoBuscados) > 0) {
 
@@ -299,12 +300,11 @@ class PlanillaHorasSheetExport implements FromArray, WithHeadings, WithStyles, W
                     $empleado['grupo'] ?? '',
                     $item['nombres'] ?? '',
                 ];
-
-                // Agregar dinámicamente los días desde dia_1 hasta dia_último_dia_del_mes
+                
                 foreach ($this->dias as $dia) {
-                    $claveDia = "dia_" . $dia[0];
-                    $resultado[] = $empleado[$claveDia] ?? null; // Agregar valor del día o null si no existe
+                    $resultado[] = $empleado["dia_" . $dia[0]] ?? null; // Agregar valor del día o null si no existe
                 }
+                
                 $diasActuales = count($this->dias);
                 $diasFaltantes = 31 - $diasActuales; // Calcular cuántas celdas faltan
                 for ($i = 0; $i < $diasFaltantes; $i++) {

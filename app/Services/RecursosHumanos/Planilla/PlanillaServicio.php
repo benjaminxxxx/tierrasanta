@@ -5,6 +5,7 @@ namespace App\Services\RecursosHumanos\Planilla;
 use App\Models\Actividad;
 use App\Models\PlanActividadBono;
 use App\Models\PlanActividadProduccion;
+use App\Models\PlanRegistroDiario;
 use App\Models\ReporteDiario;
 use App\Models\ReporteDiarioDetalle;
 use App\Support\DateHelper;
@@ -12,19 +13,6 @@ use Exception;
 
 class PlanillaServicio
 {
-    public static function calcularBonosTotalesPlanilla($fecha)
-    {
-        $reportes = ReporteDiario::whereDate('fecha', $fecha)
-            ->with(['detalles'])
-            ->get();
-
-        foreach ($reportes as $reporte) {
-            $bono_productividad = $reporte->detalles->sum('costo_bono');
-            $reporte->update([
-                'bono_productividad' => $bono_productividad,
-            ]);
-        }
-    }
     public static function guardarBonoPlanilla($fila, $numeroRecojos, $actividadId)
     {
 
@@ -70,9 +58,9 @@ class PlanillaServicio
 
         $sumaBonos = PlanActividadBono::where('registro_diario_id', $registroDiarioId)->sum('total_bono');
 
-        $registroDiario = ReporteDiario::findOrFail($registroDiarioId);
+        $registroDiario = PlanRegistroDiario::findOrFail($registroDiarioId);
         $registroDiario->update([
-            'bono_productividad' => $sumaBonos
+            'total_bono' => $sumaBonos
         ]);
 
         //dd($registroDiario);

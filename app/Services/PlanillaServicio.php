@@ -3,8 +3,12 @@
 namespace App\Services;
 
 use App\Models\CampoCampania;
+use App\Models\PlanEmpleado;
 use App\Models\PlanillaBlanco;
 use App\Models\PlanillaBlancoDetalle;
+use App\Models\PlanMensualDetalle;
+use App\Models\PlanRegistroDiario;
+use App\Models\PlanSueldo;
 use App\Models\ReporteCostoPlanilla;
 use App\Models\ReporteDiario;
 use App\Models\ReporteDiarioCampos;
@@ -17,7 +21,60 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class PlanillaServicio
 {
-    public static function procesarExcelPlanillaDetalle(PlanillaBlanco $planillaBlanco)
+    public function guardarSueldosMasivos($cambios, $mesVigencia, $anioVigencia)
+    {
+        
+        if (empty($cambios)) {
+            throw new Exception('No se proporcionaron cambios para procesar.');
+        }
+
+        if (!$mesVigencia || !$anioVigencia) {
+            throw new Exception('Debe seleccionar el mes y el año de vigencia.');
+        }
+        $fechaInicio = Carbon::create($anioVigencia, $mesVigencia, 1)->startOfDay();
+
+        // 🔍 Obtener todos los IDs de empleados que vienen en los cambios
+        $empleadoIds = collect($cambios)->pluck('empleado_id')->toArray();
+
+        // ⚠️ Validar que ninguno tenga un sueldo con fecha >= $fechaInicio
+        $conflictos = PlanSueldo::whereIn('plan_empleado_id', $empleadoIds)
+            ->where('fecha_inicio', '>=', $fechaInicio)
+            ->pluck('plan_empleado_id')
+            ->unique()
+            ->toArray();
+
+        if (!empty($conflictos)) {
+            $nombres = PlanEmpleado::whereIn('id', $conflictos)
+                ->pluck('nombres')
+                ->implode(', ');
+
+            throw new Exception("Los siguientes empleados ya tienen sueldos vigentes desde {$fechaInicio->format('d/m/Y')}: {$nombres}");
+        }
+
+        foreach ($cambios as $cambio) {
+       
+            $empleado = PlanEmpleado::findOrFail($cambio['empleado_id']);
+            $nuevoSueldo = $cambio['nuevo_sueldo'];
+            $ultimoSueldo = $empleado->ultimoSueldo;
+
+            if ($ultimoSueldo) {
+                $this->_finalizarSueldo($ultimoSueldo, $fechaInicio);
+            }
+
+            PlanSueldo::create([
+                'plan_empleado_id'   => $empleado->id,
+                'sueldo'        => $nuevoSueldo,
+                'fecha_inicio'  => $fechaInicio,
+            ]);
+        }
+    }
+    private function _finalizarSueldo($ultimoSueldo, Carbon $fechaInicioSueldo): void
+    {
+        $ultimoSueldo->update([
+            'fecha_fin' => $fechaInicioSueldo->copy()->subDay()->format('Y-m-d')
+        ]);
+    }
+    public static function procesarExcelPlanillaDetalle($planillaBlanco)
     {
         if (!$planillaBlanco) {
             return;
@@ -80,9 +137,9 @@ class PlanillaServicio
                 continue;
             }
 
-            PlanillaBlancoDetalle::updateOrCreate(
+            PlanMensualDetalle::updateOrCreate(
                 [
-                    'planilla_blanco_id' => $planillaBlanco->id,
+                    'plan_mensual_id' => $planillaBlanco->id,
                     'documento' => $documento
                 ],
                 [
@@ -127,13 +184,13 @@ class PlanillaServicio
     }
     public static function obtenerBonosPlanilla($anio, $mes)
     {
-        $reporteDiario = ReporteDiario::whereMonth('fecha', $mes)
+        $reporteDiario = PlanRegistroDiario::whereMonth('fecha', $mes)
             ->whereYear('fecha', $anio)
             ->get();
 
         $registros = [];
         foreach ($reporteDiario as $reporte) {
-            $registros[$reporte->documento]['dia_' . Carbon::parse($reporte->fecha)->format('d')] = $reporte->bono_productividad;
+            $registros[$reporte->detalleMensual->documento]['dia_' . Carbon::parse($reporte->fecha)->format('d')] = $reporte->total_bono;
         }
         return $registros;
     }
@@ -236,10 +293,10 @@ class PlanillaServicio
             $diferenciaEnHoras = sprintf('%02d:%02d', intdiv($diferenciaEnMinutos, 60), $diferenciaEnMinutos % 60);
             $costoHora = $planillas[$reporte->documento][$reporte->fecha] ?? 0;
 
-            $indiceBono = $reporte->fecha . '_' . $reporte->documento. '_' . $detalle->labor. '_' . $detalle->campo;
+            $indiceBono = $reporte->fecha . '_' . $reporte->documento . '_' . $detalle->labor . '_' . $detalle->campo;
             $gastoBono = 0;
-            if(array_key_exists($indiceBono,$registroBonos)){
-                $gastoBono = (float)$registroBonos[$indiceBono]['bono'];
+            if (array_key_exists($indiceBono, $registroBonos)) {
+                $gastoBono = (float) $registroBonos[$indiceBono]['bono'];
                 unset($registroBonos[$indiceBono]);
             }
 
@@ -264,7 +321,7 @@ class PlanillaServicio
 
         }
 
-        if(count($registroBonos)>0){
+        if (count($registroBonos) > 0) {
             throw new Exception('Hay bonos que no estan registrados en el reporte diario pero si en registro de productividad');
         }
 
@@ -428,31 +485,4 @@ class PlanillaServicio
         return $minutosConDescuento / $minutosSinDescuento;
     }
 
-    public static function agregarBono($documento, $fecha, $montoBono)
-    {
-
-        $reporteDiario = ReporteDiario::where('documento', $documento)
-            ->where('fecha', $fecha)
-            ->first();
-
-        if (!$reporteDiario) {
-            throw new Exception("No existe el registro en planilla con DNI: {$documento} para la fecha {$fecha}.");
-        }
-
-        $reporteDiario->update([
-            'bono_productividad' => (float) $montoBono
-        ]);
-    }
-    public static function quitarBono($documento, $fecha, $bono_productividad = 0)
-    {
-        $reporteDiario = ReporteDiario::where('documento', $documento)
-            ->where('fecha', $fecha)
-            ->first();
-
-        if ($reporteDiario) {
-            $reporteDiario->update([
-                'bono_productividad' => $bono_productividad
-            ]);
-        }
-    }
 }

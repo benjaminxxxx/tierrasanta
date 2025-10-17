@@ -2,11 +2,16 @@
 
 namespace App\Services\Modulos\Planilla;
 
+use App\Services\PlanillaServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaEmpleadoServicio;
 use Illuminate\Support\Carbon;
 
 class GestionPlanillaEmpleados
 {
+    public function guardarSueldosMasivos($cambios, $mesVigencia, $anioVigencia){
+
+        app(PlanillaServicio::class)->guardarSueldosMasivos($cambios, $mesVigencia, $anioVigencia);
+    }
     public function obtenerPlanillaAgrariaActual(){
         $mes  = Carbon::now()->format('m');
         $anio  = Carbon::now()->format('Y');
@@ -20,6 +25,9 @@ class GestionPlanillaEmpleados
     }
     public function restaurarEmpleado($uuid){
         app(PlanillaEmpleadoServicio::class)->restaurarEmpleado($uuid);
+    }
+    public function guardarOrdenPlanilla($empleados){
+        app(PlanillaEmpleadoServicio::class)->actualizarOrdenEmpleados($empleados);
     }
     
     // Métodos y propiedades genéricos para la gestión de empleados en la planilla

@@ -4,7 +4,7 @@ namespace App\Livewire\GestionCuadrilla;
 use App\Models\Actividad;
 use App\Models\CuadRegistroDiario;
 use App\Models\Labores;
-use App\Models\ReporteDiario;
+use App\Models\PlanRegistroDiario;
 use App\Services\RecursosHumanos\Personal\EmpleadoServicio;
 use App\Support\DateHelper;
 use Exception;
@@ -128,7 +128,7 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
                 $row = [
                     'registro_diario_id' => $registroPlanilla->id,
                     'tipo' => 'PLANILLA',
-                    'nombre_trabajador' => $registroPlanilla->empleado_nombre,
+                    'nombre_trabajador' => $registroPlanilla->detalleMensual->nombres,
                     'campo' => $campoNombre,
                     'labor' => $codigoLabor,
                     'total_bono' => $totalBonoCalculado,
@@ -202,16 +202,16 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
     public function obtenerPlanillasPorFechaYLabor($campoNombre, $codigoLabor, $fecha, $actividadId)
     {
         $filtroDetalles = function ($query) use ($campoNombre, $codigoLabor) {
-            $query->where('campo', $campoNombre)
-                ->where('labor', $codigoLabor);
+            $query->where('campo_nombre', $campoNombre)
+                ->where('codigo_labor', $codigoLabor);
         };
 
         $filtroActividadBono = function ($query) use ($actividadId) {
             $query->where('actividad_id', $actividadId);
         };
 
-        return ReporteDiario::with([
-
+        return PlanRegistroDiario::with([
+            'detalleMensual',
             'actividadesBonos' => function ($query) use ($filtroActividadBono) {
                 $filtroActividadBono($query);
                 $query->with('producciones'); // carga las recogidas

@@ -7,16 +7,16 @@ use Livewire\Component;
 
 class VerLaboresComponent extends Component
 {
-    public $isFormOpen = false;
+    public $mostrarFormularioLabores = false;
     public $labores;
     public function mount(){
-        $this->labores = Labores::where('estado',true)->get();
+        $this->labores = Labores::all();
     }
     public function render()
     {
         return view('livewire.ver-labores-component');
     }
     public function verLabores(){
-        $this->isFormOpen = true;
+        $this->mostrarFormularioLabores = true;
     }
 }

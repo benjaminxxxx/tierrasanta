@@ -69,7 +69,7 @@ class GestionCuadrillaReporteDiarioComponent extends Component
     {
         try {
             
-            $this->reporteDiarioCuadrillaServicio->guardarReporteDiario($this->fecha, $datos);
+            $this->reporteDiarioCuadrillaServicio->guardarReporteDiario($this->fecha, $datos,$this->totalColumnas);
             $this->refrescarTabla($this->fecha); 
             $this->alert('success', 'Registro actualizado correctamente');
 

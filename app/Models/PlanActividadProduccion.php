@@ -9,7 +9,7 @@ class PlanActividadProduccion extends Model
 {
     use HasFactory;
 
-    protected $table = 'plan_actividad_produccions';
+    protected $table = 'plan_actividad_producciones';
 
     protected $fillable = [
         'actividad_bono_id',

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class ConsolidadoRiego extends Model
 {
     use HasFactory;
-    protected $table = 'consolidado_riegos';
+    protected $table = 'reg_resumen';
 
     /**
      * Atributos asignables masivamente.

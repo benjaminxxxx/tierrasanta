@@ -5,6 +5,7 @@ namespace App\Services\RecursosHumanos\Personal;
 use App\Models\Actividad;
 use App\Models\CuadDetalleHora;
 use App\Models\Labores;
+use App\Models\PlanDetalleHora;
 use App\Models\ReporteDiarioDetalle;
 use Auth;
 use Illuminate\Support\Facades\DB;
@@ -154,15 +155,13 @@ class ActividadServicio
             });
 
         // 2️⃣ Detalles de PLANILLA
-        $detallePlanilla = ReporteDiarioDetalle::select('campo as campo', 'labor as codigo_labor')
-            ->whereHas('reporteDiario', function ($query) use ($fecha) {
+        $detallePlanilla = PlanDetalleHora::whereHas('registroDiario', function ($query) use ($fecha) {
                 $query->where('fecha', $fecha);
             })
-            ->groupBy('campo', 'labor')
-            ->get()
+            ->get(['campo_nombre', 'codigo_labor'])
             ->map(function ($item) {
                 return [
-                    'campo' => trim($item->campo),
+                    'campo' => trim($item->campo_nombre),
                     'codigo_labor' => trim($item->codigo_labor),
                 ];
             });

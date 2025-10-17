@@ -37,6 +37,6 @@
     </select>
 
     @if ($error && $model)
-        <x-input-error for="{{ $model }}" />
+        <x-input-error for="{{ $error }}" />
     @endif
 </x-group-field>

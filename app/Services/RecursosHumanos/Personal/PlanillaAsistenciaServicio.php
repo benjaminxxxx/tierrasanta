@@ -11,6 +11,7 @@ use Illuminate\Support\Carbon;
 
 class PlanillaAsistenciaServicio
 {
+    /*
     public function generarResumenAsistencia(int $mes, int $anio): void
     {
         DB::transaction(function () use ($mes, $anio) {
@@ -75,5 +76,5 @@ class PlanillaAsistenciaServicio
                 PlanillaAsistenciaDetalle::insert($detalles);
             }
         });
-    }
+    }*/
 }

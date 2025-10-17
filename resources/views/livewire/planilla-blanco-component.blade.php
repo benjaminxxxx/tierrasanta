@@ -1,11 +1,11 @@
 <div>
-    <x-loading wire:loading />
+    
     <x-card2>
         <div class="flex items-center justify-between">
 
-            <x-secondary-button wire:click="mesAnterior">
+            <x-button wire:click="mesAnterior">
                 <i class="fa fa-chevron-left"></i> Mes Anterior
-            </x-secondary-button>
+            </x-button>
 
             <x-flex>
                 <x-select wire:model.live="mes">
@@ -45,9 +45,9 @@
 
 
             <!-- Botón para mes posterior -->
-            <x-secondary-button wire:click="mesSiguiente" class="ml-3">
+            <x-button wire:click="mesSiguiente">
                 Mes Siguiente <i class="fa fa-chevron-right"></i>
-            </x-secondary-button>
+            </x-button>
         </div>
     </x-card2>
     @if($componente == 'blanco')
@@ -57,5 +57,5 @@
         <livewire:planilla-negro-detalle-component wire:key="{{$mes}}-{{$anio}}-negro" :mes="$mes" :anio="$anio" />
     @endif
 
-
+    <x-loading wire:loading />
 </div>

@@ -79,27 +79,28 @@
         'empleados'
 
     ])" logo='fa fa-table' text="Planilla">
+                
+                <x-nav-link-child href="{{ route('empleados') }}" :active="request()->routeIs('empleados')">
+                    Empleados
+                </x-nav-link-child>
                 <x-nav-link-child href="{{ route('reporte.reporte_diario') }}"
                     :active="request()->routeIs('reporte.reporte_diario')">
-                    Reporte diario (actividades)
+                    Actividades Diarias
                 </x-nav-link-child>
                 <x-nav-link-child href="{{ route('planilla.asistencia') }}"
                     :active="request()->routeIs('planilla.asistencia')">
-                    Asistencia
-                </x-nav-link-child>
-                <x-nav-link-child href="{{ route('planilla.blanco') }}" :active="request()->routeIs('planilla.blanco')">
-                    Blanco
+                    Asistencia Mensual
                 </x-nav-link-child>
                 <x-nav-link-child href="{{ route('reporte.resumen_planilla') }}"
                     :active="request()->routeIs('reporte.resumen_planilla')">
-                    Resumen de actividades mensuales
+                    Resumen Mensual
                 </x-nav-link-child>
-                <x-nav-link-child href="{{ route('empleados') }}" :active="request()->routeIs('empleados')">
-                    Lista de Planilleros
+                <x-nav-link-child href="{{ route('planilla.blanco') }}" :active="request()->routeIs('planilla.blanco')">
+                    Planilla B+N
                 </x-nav-link-child>
                 <x-nav-link-child href="{{ route('empleados.asignacion_familiar') }}"
                     :active="request()->routeIs('empleados.asignacion_familiar')">
-                    Asignación Familiar de planilla
+                    Familiares
                 </x-nav-link-child>
             </x-nav-link-parent>
             <x-nav-link-parent name="sectorCuadrilla" :active="request()->routeIs([

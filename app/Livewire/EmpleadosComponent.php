@@ -199,6 +199,7 @@ class EmpleadosComponent extends Component
                 $this->mesVigencia,
                 $this->anioVigencia
             );
+            $this->mostrarFormularioCambioSueldos = false;
             $this->alert('success', 'Sueldos modificados correctamente en su nuevo contrato.');
 
         } catch (\Throwable $th) {

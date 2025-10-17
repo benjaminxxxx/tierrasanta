@@ -17,8 +17,9 @@ class DatabaseSeeder extends Seeder
         $this->call(CategoriaPesticidaSeeder::class);
         $this->call(ManoObraSeeder::class);
         $this->call(LaborSeeder::class);
+        $this->call(LaborRiegoSeeder::class);
         $this->call(NutrientesSeeder::class);
-        $this->call(TipoAsistenciaSeeder::class);
+        $this->call(PlanTipoAsistenciaSeeder::class);
         $this->call(ConfiguracionTableSeeder::class);
         $this->call(DescuentoSpSeeder::class);
         $this->call(UsersTableSeeder::class);
@@ -26,5 +27,6 @@ class DatabaseSeeder extends Seeder
         $this->call(GrupoSeeder::class);
         $this->call(GruposCuadrillaSeeder::class);
         $this->call(CochinillaObservacionSeeder::class);
+        $this->call(PlanEmpleadosSeeder::class);
     }
 }

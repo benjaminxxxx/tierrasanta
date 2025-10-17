@@ -2,10 +2,8 @@
 
 namespace App\Livewire;
 
-use App\Models\Configuracion;
-use App\Models\PlanDescuentoSP;
 use App\Models\PlanGrupo;
-use App\Models\PlanillaBlanco;
+use App\Models\PlanMensual;
 use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -26,7 +24,7 @@ class PlanillaNegroDetalleComponent extends Component
 
     public function mount()
     {
-        $this->grupoColores = Grupo::get()->pluck("color", "codigo")->toArray();
+        $this->grupoColores = PlanGrupo::get()->pluck("color", "codigo")->toArray();
         $this->obtenerInformacionMensual();
         $this->meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     }
@@ -40,7 +38,7 @@ class PlanillaNegroDetalleComponent extends Component
 
        
 
-        $this->informacionBlanco = PlanillaBlanco::where('mes', $this->mes)->where('anio', $this->anio)->first();
+        $this->informacionBlanco = PlanMensual::where('mes', $this->mes)->where('anio', $this->anio)->first();
 
         if ($this->informacionBlanco) {
             $this->diasLaborables = $this->informacionBlanco->dias_laborables;

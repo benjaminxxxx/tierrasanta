@@ -14,8 +14,10 @@ use App\Models\CuaGrupo;
 use App\Models\GastoAdicionalPorGrupoCuadrilla;
 use App\Models\Labores;
 use App\Models\CuadGrupoOrden;
+use App\Models\PlanResumenDiario;
 use App\Support\DateHelper;
 use App\Support\FormatoHelper;
+use Carbon\CarbonPeriod;
 use DB;
 use Exception;
 use Illuminate\Support\Carbon;
@@ -25,6 +27,124 @@ use Illuminate\Validation\ValidationException;
 
 class CuadrilleroServicio
 {
+    /**
+     * Genera un resumen para planilla agrupando trabajadores con el mismo conjunto canónico de actividades.
+     *
+     * @param string $fecha La fecha (no se usa en la lógica de agrupación, pero se mantiene).
+     * @param array $datos El array de registros de trabajadores.
+     * @param int $totalColumnas El número de pares de columnas de Campo/Labor/Hora Inicio/Hora Fin.
+     * @return void
+     */
+    public static function generarResumenParaPlanilla($fecha, $datos, $totalColumnas = 1) // Asumo 2 columnas
+    {
+        $trabajadoresAgrupados = [];
+
+        foreach ($datos as $registro) {
+            //dd($registro);
+            $labores = [];
+            // 1. Recolectar todas las actividades válidas del trabajador.
+            for ($x = 1; $x <= $totalColumnas; $x++) {
+                $campo = $registro['campo_' . $x] ?? null;
+                $labor = $registro['labor_' . $x] ?? null;
+                $inicio = $registro['hora_inicio_' . $x] ?? null;
+                $fin = $registro['hora_fin_' . $x] ?? null;
+
+                // Omitir si la actividad no está completa
+                if (!$campo || !$labor || !$inicio || !$fin) {
+                    continue;
+                }
+
+                // Almacenar la actividad estandarizada
+                $labores[] = [
+                    'campo' => $campo,
+                    'labor' => $labor,
+                    'hora_inicio' => $inicio,
+                    'hora_fin' => $fin,
+                ];
+            }
+
+            // 2. Generar la Clave Canónica (independiente del orden de las columnas)
+            if (empty($labores)) {
+                continue; // Omitir trabajadores sin actividades completas
+            }
+
+            // 2.1 Ordenar las labores: Se usa una clave de ordenamiento combinada para asegurar canonicidad.
+            usort($labores, function ($a, $b) {
+                $claveA = $a['campo'] . '|' . $a['labor'] . '|' . $a['hora_inicio'] . '|' . $a['hora_fin'];
+                $claveB = $b['campo'] . '|' . $b['labor'] . '|' . $b['hora_inicio'] . '|' . $b['hora_fin'];
+                return strcmp($claveA, $claveB);
+            });
+
+            // 2.2 Generar la clave final a partir de las labores ordenadas
+            $clave_labores = '';
+            foreach ($labores as $actividad) {
+                $clave_labores .= implode('|', $actividad) . '||';
+            }
+
+            // 3. Agrupar y Calcular Horas Unitarias
+            if (!isset($trabajadoresAgrupados[$clave_labores])) {
+                // Inicializar nuevo grupo
+                $trabajadoresAgrupados[$clave_labores] = [
+                    'numero_cuadrilleros' => 0,
+                    'labores' => $labores, // Guardamos el conjunto de labores canónico y ordenado
+                    'total_horas_unitarias' => 0.0, // Horas totales de UN solo cuadrillero para este set de labores
+                ];
+
+                // Calcular la Duración Unitaria Total para este set de labores
+                $duracion_unitaria_total = 0.0;
+                foreach ($labores as $labor) {
+                    $hInicio = Carbon::parse($labor['hora_inicio']);
+                    $hFin = Carbon::parse($labor['hora_fin']);
+                    $duracion_unitaria_total += $hInicio->floatDiffInHours($hFin);
+                }
+                // Guardar la duración unitaria que será multiplicada por el número de cuadrilleros
+                $trabajadoresAgrupados[$clave_labores]['duracion_unitaria_total'] = $duracion_unitaria_total;
+            }
+
+            // Aumentar el contador de cuadrilleros para este tipo de actividad
+            $trabajadoresAgrupados[$clave_labores]['numero_cuadrilleros']++;
+        }
+
+        // 4. Formatear el resultado y calcular el total de horas final
+        $resultado = [];
+
+        foreach ($trabajadoresAgrupados as $grupo) {
+            // La lógica final: Total de horas = Duración Unitaria Total * Número de cuadrilleros
+            $total_horas_final = $grupo['duracion_unitaria_total'] * $grupo['numero_cuadrilleros'];
+
+            $resultado[] = [
+                'numero_cuadrilleros' => $grupo['numero_cuadrilleros'],
+                // Las labores ya están ordenadas canónicamente y representan el set de actividades
+                'labores' => $grupo['labores'],
+                'total_horas' => round($total_horas_final, 2)
+            ];
+        }
+
+        $resumen = json_encode(array_values($resultado));//para depuracion , JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+        //dd($resumen); // Para depuración
+        $resumenPlanilla = PlanResumenDiario::firstOrCreate([
+            'fecha'=>$fecha
+        ]);
+     
+        $totalActividades = max($totalColumnas,$resumenPlanilla->total_actividades);
+
+        $resumenPlanilla->update([
+            'resumen_cuadrilla' => $resumen,
+            'total_actividades' => $totalActividades
+        ]);
+    }
+
+    public static function registrarTotalesEnResumenDiarioPlanilla($fechaInicio, $fechaFin)
+    {
+        $periodo = CarbonPeriod::create($fechaInicio, $fechaFin);
+        foreach ($periodo as $fecha) {
+            $totalCuadrilleros = CuadRegistroDiario::whereDate('fecha', $fecha)->distinct('cuadrillero_id')->count();
+            $resumenPlanilla = PlanResumenDiario::firstOrCreate(['fecha' => $fecha]);
+            $resumenPlanilla->update([
+                'total_cuadrillas' => $totalCuadrilleros
+            ]);
+        }
+    }
     /**
      * Obtiene una lista paginada de cuadrilleros con filtros opcionales.
      *
@@ -1149,7 +1269,7 @@ class CuadrilleroServicio
                         );
                     }
                 }
-           
+
                 // ✅ Guardar asistencias diarias
                 foreach ($dias as $index => $d) {
                     $fechaStr = $d->toDateString();
@@ -1371,7 +1491,7 @@ class CuadrilleroServicio
             }
 
             $labores = Labores::all()->pluck('id', 'codigo')->toArray();
-            
+
             $errores = [];
             $maxCol = 0;
             if (!empty($rows)) {

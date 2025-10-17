@@ -190,7 +190,7 @@ class PlanillaPagoSheetExport implements FromArray, WithHeadings, WithStyles, Wi
             $formulaTotal = "=SUM({$columnaLetra}{$filaInicio}:{$columnaLetra}{$filaFin})";
 
             // Establecer la fórmula en la fila 2 para la columna correspondiente
-            $informacionAdicionalPorDia = $this->informacionAdicional['dia_' . $dia[0]];
+            $informacionAdicionalPorDia = $this->informacionAdicional['dia_' . $dia[0]]??null;
             $sheet->setCellValue("{$columnaLetra}2", $formula);
             $sheet->setCellValue("{$columnaLetra}{$filaFinTotales}", $formulaTotal);
 
@@ -198,7 +198,7 @@ class PlanillaPagoSheetExport implements FromArray, WithHeadings, WithStyles, Wi
             foreach ($this->planillaLista as $planilla) {
                 $filaEmpleadoContador++;
                 $documento = $planilla['dni'];
-                if (array_key_exists($documento, $informacionAdicionalPorDia)) {
+                if (is_array($informacionAdicionalPorDia) && array_key_exists($documento, $informacionAdicionalPorDia)) {
                     $informacionEmpleado = $informacionAdicionalPorDia[$documento];
                     if (array_key_exists('color', $informacionEmpleado)) {
                         $informacionEmpleado = $informacionAdicionalPorDia[$documento];
@@ -302,7 +302,6 @@ class PlanillaPagoSheetExport implements FromArray, WithHeadings, WithStyles, Wi
                     $item['nombres'] ?? '',
                 ];
 
-                // Agregar dinámicamente los días desde dia_1 hasta dia_último_dia_del_mes
                 foreach ($this->dias as $dia) {
 
                     $columnaIndice = $dia[0]+3;

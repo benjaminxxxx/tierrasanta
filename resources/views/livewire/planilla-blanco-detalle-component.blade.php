@@ -1,157 +1,61 @@
 <div x-data="planilla_blanco">
-    <x-loading wire:loading />
-    @if ($informacionBlanco)
+    @if (!$planillaMensual)
+        <x-card2 class="mt-4">
+            <x-label>
+                No hay registros de empleados para generar esta planilla, registre asistencias en <a
+                    href="{{ route('reporte.reporte_diario') }}" class="underline text-blue-600">[Registro Diario de
+                    Planilla]</a>
+            </x-label>
+        </x-card2>
+    @endif
+    @if ($planillaMensual)
         <x-card2 class="mt-5">
-            <x-h3>MES DE {{ mb_strtoupper($mesTitulo) }} - {{ $anio }}</x-h3>
-            <div class="mt-5 flex flex-wrap gap-4">
-                <x-group-field>
-                    <x-label>Días Laborables</x-label>
-                    <x-input wire:model="diasLaborables" @input="calcularTotalHoras(event.target.value)" />
-                </x-group-field>
-
-                <x-group-field>
-                    <x-label>Total Horas</x-label>
-                    <x-input wire:model="totalHoras" />
-                </x-group-field>
-
-                <x-group-field>
-                    <x-label>Factor Rem. Básica</x-label>
-                    <x-input wire:model="factorRemuneracionBasica" />
-                </x-group-field>
-
-                <x-group-field>
-                    <x-label>Asignación Familiar</x-label>
-                    <x-input wire:model="asignacionFamiliar" />
-                </x-group-field>
-
-                <x-group-field>
-                    <x-label>CTS (%)</x-label>
-                    <x-input wire:model="ctsPorcentaje" />
-                </x-group-field>
-
-                <x-group-field>
-                    <x-label>Gratificaciones</x-label>
-                    <x-input wire:model="gratificaciones" />
-                </x-group-field>
-
-                <x-group-field>
-                    <x-label>Essalud Gratificaciones</x-label>
-                    <x-input wire:model="essaludGratificaciones" />
-                </x-group-field>
-
-                <x-group-field>
-                    <x-label>RMV</x-label>
-                    <x-input wire:model="rmv" />
-                </x-group-field>
-
-                <x-group-field>
-                    <x-label>Beta 30%</x-label>
-                    <x-input wire:model="beta30" />
-                </x-group-field>
-
-                <x-group-field>
-                    <x-label>Essalud (%)</x-label>
-                    <x-input wire:model="essalud" />
-                </x-group-field>
-
-                <x-group-field>
-                    <x-label>Vida Ley</x-label>
-                    <x-input wire:model="vidaLey" />
-                </x-group-field>
-
-                <x-group-field>
-                    <x-label>Vida Ley (%)</x-label>
-                    <x-input wire:model="vidaLeyPorcentaje" />
-                </x-group-field>
-
-                <x-group-field>
-                    <x-label>Pensión SCTR</x-label>
-                    <x-input wire:model="pensionSctr" />
-                </x-group-field>
-
-                <x-group-field>
-                    <x-label>Pensión SCTR (%)</x-label>
-                    <x-input wire:model="pensionSctrPorcentaje" />
-                </x-group-field>
-
-                <x-group-field>
-                    <x-label>Essalud EPS</x-label>
-                    <x-input wire:model="essaludEps" />
-                </x-group-field>
-
-                <x-group-field>
-                    <x-label>Porcentaje Constante</x-label>
-                    <x-input wire:model="porcentajeConstante" />
-                </x-group-field>
-
-                <x-group-field>
-                    <x-label>Rem. Básica Essalud</x-label>
-                    <x-input wire:model="remBasicaEssalud" />
-                </x-group-field>
-
-                <x-group-field class="mt-5">
-                    <x-button wire:click="guardarPlanillaDatos(1)">
-                        <i class="fa fa-refresh"></i> Guardar cambios
+            <x-flex class="justify-between">
+                <x-flex>
+                    <div>
+                        <x-label value="Días Laborables" />
+                        <p class="dark:text-white font-bold text-xs">{{ $diasLaborables }}</p>
+                    </div>
+                    <div>
+                        <x-label value="Total Horas" />
+                        <p class="dark:text-white font-bold text-xs">{{ $totalHoras }}</p>
+                    </div>
+                    <div>
+                        <x-label value="Factor Rem. Básica" />
+                        <p class="dark:text-white font-bold text-xs">{{ $factorRemuneracionBasica }}</p>
+                    </div>
+                </x-flex>
+                <x-flex>
+                    <x-button type="button" @click="$wire.set('mostrarDescuentosBeneficiosPlanilla',true)">
+                        <i class="fa fa-refresh"></i> Cambiar Parámetros
                     </x-button>
-                </x-group-field>
+                    @if ($planillaMensual->excel)
+                        <x-button variant="success" href="{{ Storage::disk('public')->url($planillaMensual->excel) }}">
+                            <i class="fa fa-file-excel"></i> Descargar Planilla Generada
+                        </x-button>
+                    @endif
+                </x-flex>
 
-                <x-group-field class="mt-5">
-                    <x-button wire:click="guardarPlanillaDatos(2)">
-                        <i class="fa fa-refresh"></i> Recuperar datos desde configuración
-                    </x-button>
-                </x-group-field>
-
-                <x-group-field class="mt-5">
-                    <x-button wire:click="guardarPlanillaDatos(3)">
-                        <i class="fa fa-refresh"></i> Guardar + Actualizar configuración
-                    </x-button>
-                </x-group-field>
-
-            </div>
+            </x-flex>
 
         </x-card2>
-        <x-card class="mt-5">
-            <x-spacing>
-                <div class="mt-5 md:flex items-end gap-4">
-
-
-                    @if ($informacionBlanco)
-                        <div class="mt-3">
-                            <x-button wire:click="generarPlanilla">
-                                <i class="fa fa-list"></i>
-                                @if ($informacionBlancoDetalle && $informacionBlancoDetalle->count() > 0)
-                                    Regenerar Planilla
-                                @else
-                                    Generar Planilla
-                                @endif
-                            </x-button>
-                        </div>
-                        @if ($informacionBlanco->excel)
-                            <div class="mt-3">
-                                <x-button-a href="{{ Storage::disk('public')->url($informacionBlanco->excel) }}">
-                                    <i class="fa fa-file-excel"></i> Descargar Planilla Generada
-                                </x-button-a>
-                            </div>
-                        @endif
-                    @endif
-                    <div class="mt-3">
-                        <x-button-a href="{{ route('planilla.asistencia', ['mes' => $mes, 'anio' => $anio]) }}"
-                            class="whitespace-nowrap">
-                            <i class="fa fa-link"></i> Revisar Asistencia
-                        </x-button-a>
-                    </div>
-                </div>
-                <div class="mt-5" wire:ignore>
-                    <div x-ref="tableContainer" class="overflow-auto"></div>
-                </div>
-                <div class="mt-5 flex justify-end">
-                    <x-button @click="sendData">
-                        <i class="fa fa-save"></i> Guardar Bonificaciones
-                    </x-button>
-                </div>
-            </x-spacing>
-        </x-card>
+        <x-card2 class="mt-5">
+            <div wire:ignore>
+                <div x-ref="tableContainer" class="overflow-auto"></div>
+            </div>
+        </x-card2>
     @endif
+    @if ($planillaMensual)
+        <div class="absolute w-auto bottom-0 right-0 z-999 pt-1 pb-7 pr-7">
+            <x-button @click="enviarYGenerarPlanilla">
+                <i class="fa fa-save"></i> Generar Planilla
+            </x-button>
+        </div>
+    @endif
+
+    @include('livewire.gestion-planilla.administrar-planilla.partial.modal-descuentos-beneficios')
+    <x-loading wire:loading />
+
 </div>
 
 
@@ -159,7 +63,7 @@
 <script>
     Alpine.data('planilla_blanco', () => ({
         listeners: [],
-        tableData: @json($informacionBlancoDetalle),
+        tableData: @json($planillaMensualDetalle),
         totalHoras: @entangle('totalHoras'),
         hot: null,
         init() {
@@ -216,8 +120,8 @@
 
             //this.calcularTotales();
         },
-        calcularTotalHoras(diasLaborables){
-            if(diasLaborables>0){
+        calcularTotalHoras(diasLaborables) {
+            if (diasLaborables > 0) {
                 this.totalHoras = diasLaborables * 8;
             }
         },
@@ -334,7 +238,7 @@
 
                 readOnly: true
             },
-            {
+            /*{
                 data: 'cts',
                 type: 'text',
                 title: 'CTS',
@@ -389,7 +293,7 @@
                 title: 'ESSAL<br/> EPS.',
                 className: '!text-right',
                 readOnly: true
-            },
+            },*/
             {
                 data: 'sueldo_neto',
                 type: 'text',
@@ -397,7 +301,7 @@
                 className: '!text-right',
                 readOnly: true
             },
-            {
+            /*{
                 data: 'rem_basica_essalud',
                 type: 'text',
                 title: 'REM.<br/> BAS. +<br/> ESSAL.',
@@ -410,7 +314,7 @@
                 title: 'REM. BA.<br/> ASIGN. FA.<br/> ESSALUD<br/>CTS<br/>GRATIF.<br/>BETA',
                 className: '!text-right',
                 readOnly: true
-            },
+            },*/
             {
                 data: 'jornal_diario',
                 type: 'text',
@@ -432,19 +336,17 @@
         calcularTotales() {
 
         },
-        sendData() {
-            const rawData = this.hot.getData();
+        enviarYGenerarPlanilla() {
+            //EXTRAE LA DATA HANDSONTABLE COMPLETA
+            let allData = [];
+            for (let row = 0; row < this.hot.countRows(); row++) {
+                const rowData = this.hot.getSourceDataAtRow(row);
+                allData.push(rowData);
+            }
+            const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
+                null && cell !== ''));
 
-            const filteredData = rawData.filter(row => {
-                return row.some(cell => cell !== null && cell !== '');
-            });
-
-            const data = {
-                datos: filteredData
-            };
-            console.log(data);
-
-            $wire.dispatchSelf('GuardarInformacion', data);
+            $wire.generarPlanillaMensual(filteredData);
         }
     }));
 </script>

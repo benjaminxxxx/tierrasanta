@@ -21,7 +21,7 @@ class PlanillaExport implements WithMultipleSheets
             new PlanillaHorasSheetExport($this->data),                          //HOJA HORAS
             new PlanillaBonosSheetExport($this->data),                          //HOJA BONOS
             new PlanillaPagoSheetExport($this->data),                           //HOJA JORNAL
-            new PlanillaCostoRealSheetExport($this->data)                       //HOJA JORNAL_TOTAL_COSTO
+            new PlanillaCostoRealSheetExport($this->data)                       //HOJA JORNAL_TOTAL_COSTO*/
         ];
     }
 }

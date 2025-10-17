@@ -30,20 +30,46 @@ class PlanEmpleado extends Model
         'actualizado_por',
         'eliminado_por',
     ];
+    public function edadContableSegun(int $mes, int $anio): ?int
+    {
+        if (!$this->fecha_nacimiento) {
+            return null;
+        }
 
+        $fechaCorte = Carbon::createFromDate($anio, $mes, 1)->endOfMonth();
+
+        return Carbon::parse($this->fecha_nacimiento)->diffInYears($fechaCorte);
+    }
     public function contratos()
     {
         return $this->hasMany(PlanContrato::class, 'plan_empleado_id');
     }
-    
+    public function sueldos()
+    {
+        return $this->hasMany(PlanSueldo::class, 'plan_empleado_id');
+    }
+
     public function ultimoContrato()
     {
         return $this->hasOne(PlanContrato::class, 'plan_empleado_id')->latestOfMany('fecha_inicio');
     }
-   
+    public function contratoSegun(int $mes, int $anio): ?PlanContrato
+    {
+        $fechaReferencia = Carbon::createFromDate($anio, $mes, 1)->startOfMonth();
+
+        return $this->hasOne(PlanContrato::class, 'plan_empleado_id')
+            ->where('fecha_inicio', '<=', $fechaReferencia)
+            ->orderBy('fecha_inicio', 'desc')
+            ->first();
+    }
+    public function ultimoSueldo()
+    {
+        return $this->hasOne(PlanSueldo::class, 'plan_empleado_id')->latestOfMany('fecha_inicio');
+    }
+
     public function asignacionFamiliar()
     {
-        return $this->hasMany(AsignacionFamiliar::class, 'empleado_id');
+        return $this->hasMany(PlanFamiliar::class, 'plan_empleado_id');
     }
     public function getNombreCompletoAttribute()
     {
@@ -53,7 +79,8 @@ class PlanEmpleado extends Model
     public function getTipoPlanillaDescripcionAttribute()
     {
         $descripcion = '-';
-        switch ($this->tipo_planilla) {
+        $ultimoContrato = $this->ultimoContrato;
+        switch ($ultimoContrato?->tipo_planilla) {
             case 'agraria':
                 $descripcion = 'P. AGRARIA';
                 break;
@@ -66,11 +93,19 @@ class PlanEmpleado extends Model
         }
         return $descripcion;
     }
+    public function getColorGrupoAttribute(): ?string
+    {
+        return $this->ultimoContrato?->grupo?->color;
+    }
+    public function getColorTextoGrupoAttribute(): ?string
+    {
+        return $this->color_grupo ? '#000' : null;
+    }
 
-    public function getTieneAsignacionFamiliarAttribute()
+    public function getTienePlanFamiliarAttribute()
     {
         // Obtener todas las asignaciones familiares del empleado
-        $asignaciones = AsignacionFamiliar::where('empleado_id', $this->id)->get();
+        $asignaciones = PlanFamiliar::where('plan_empleado_id', $this->id)->get();
 
         $cantidadHijos = 0;
 
@@ -118,5 +153,5 @@ class PlanEmpleado extends Model
             }
         });
     }
-    
+
 }

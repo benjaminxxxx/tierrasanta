@@ -49,9 +49,12 @@
             <x-flex class="justify-between mb-4">
                 <x-h3>Detalle de trabajadores</x-h3>
                 <x-flex class="lg:justify-end gap-3 space-y-2 md:space-y-0">
-                    <x-button @click="agregarGrupo" class="w-full lg:w-auto"><i class="fa fa-plus"></i></x-button>
-                    <x-danger-button @click="quitarGrupo" class="w-full lg:w-auto"><i
-                            class="fa fa-minus"></i></x-danger-button>
+                    <x-button @click="agregarGrupo">
+                        <i class="fa fa-plus"></i>
+                    </x-button>
+                    <x-button @click="quitarGrupo" variant="danger">
+                        <i class="fa fa-minus"></i>
+                    </x-button>
                 </x-flex>
             </x-flex>
 

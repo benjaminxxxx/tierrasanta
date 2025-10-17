@@ -6,7 +6,7 @@ class ReporteDiarioController extends Controller
 {
     public function index()
     {
-        return view('reporte.reporte_diario');
+        return view('livewire.gestion-planilla.administrar-registro-diario.indice-reporte-diario-planilla');
     }
     public function actividades_diarias()
     {

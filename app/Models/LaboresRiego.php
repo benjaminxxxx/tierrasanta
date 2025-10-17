@@ -9,7 +9,7 @@ class LaboresRiego extends Model
 {
     use HasFactory;
 
-    protected $table = 'labores_riegos';
+    protected $table = 'reg_labores';
 
     protected $fillable = [
         'nombre_labor',

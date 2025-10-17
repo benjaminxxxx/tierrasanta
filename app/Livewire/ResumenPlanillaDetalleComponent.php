@@ -2,7 +2,7 @@
 
 namespace App\Livewire;
 
-use App\Models\ReporteDiario;
+use App\Models\PlanRegistroDiario;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -11,16 +11,18 @@ use Livewire\Component;
 class ResumenPlanillaDetalleComponent extends Component
 {
     use LivewireAlert;
-    public $anio;
-    public $mes;
     public $empleadosData = [];
     public $empleadosGeneral = [];
     public $fechas = [];
     public $diasMes = [];
     public $esDias = [];
+    public $mes;
+    public $anio;
    
-    public function mount()
+    public function mount($mes,$anio)
     {
+        $this->mes = $mes;
+        $this->anio = $anio;
         $this->esDias = [
             'Mon' => 'Lunes',
             'Tue' => 'Martes',
@@ -30,6 +32,7 @@ class ResumenPlanillaDetalleComponent extends Component
             'Sat' => 'Sábado',
             'Sun' => 'Domingo',
         ];
+        
         $fechaInicio = Carbon::createFromDate($this->anio, $this->mes, 1);
         $diasEnMes = $fechaInicio->daysInMonth();
         $fechaFin = Carbon::createFromDate($this->anio, $this->mes, $diasEnMes);
@@ -39,12 +42,12 @@ class ResumenPlanillaDetalleComponent extends Component
             $this->diasMes[$fecha->day] = $fecha;
         }
 
-        $empleados = ReporteDiario::with('detalles','detalles.labores')->whereBetween('fecha', [$fechaInicio, $fechaFin])->get();
+        $empleados = PlanRegistroDiario::with('detalleMensual','detalles','detalles.labores')->whereBetween('fecha', [$fechaInicio, $fechaFin])->get();
        
         if ($empleados) {
-            $this->empleadosGeneral = $empleados->keyBy('documento')->values();
+            $this->empleadosGeneral = $empleados->keyBy('plan_det_men_id')->values();
             foreach ($empleados as $empleado) {
-                $this->empleadosData[$empleado->documento][$empleado->fecha] = $empleado;
+                $this->empleadosData[$empleado->plan_det_men_id][$empleado->fecha] = $empleado;
             }
         }
     }

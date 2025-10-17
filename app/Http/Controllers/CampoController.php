@@ -7,13 +7,6 @@ use Illuminate\Http\Request;
 
 class CampoController extends Controller
 {
-    public function mapa()
-    {
-        $campos = Campo::all();
-        return view('campo.mapa', [
-            'campos' => $campos
-        ]);
-    }
     public function riego()
     {
         $campos = Campo::all();

@@ -163,7 +163,6 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
     public function storeTableDataGuardarHoras($datos)
     {
         try {
-            
             if (!$this->tramoLaboral) {
                 throw new Exception("Recargar la página");
             }
@@ -171,6 +170,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
             $fechaFin = $this->tramoLaboral->fecha_fin;
             $tramoLaboralId = $this->tramoLaboral->id;
             $this->guardarReporteSemanal($fechaInicio, $fechaFin, $datos,$this->resumenes,$tramoLaboralId);
+            CuadrilleroServicio::registrarTotalesEnResumenDiarioPlanilla($fechaInicio, $fechaFin);
             CuadrilleroServicio::calcularCostosCuadrilla($fechaInicio, $fechaFin);
             $this->obtenerReporteTramo();
             $this->procesarCalculoListadoResumen();

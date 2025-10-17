@@ -26,14 +26,14 @@
                             {{ $indice + 1 }}
                         </td>
                         <th scope="row" class="px-1 py-1 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            {{ $empleadoGeneral->empleado_nombre }}
+                            {{ $empleadoGeneral->detalleMensual->nombres }}
                         </th>
                         @foreach ($diasMes as $diaMes)
                             <td class="px-1 py-1">
-                                @if (isset($empleadosData[$empleadoGeneral['documento']][$diaMes->format('Y-m-d')]))
+                                @if (isset($empleadosData[$empleadoGeneral['plan_det_men_id']][$diaMes->format('Y-m-d')]))
                                     @php
                                         $detalles =
-                                            $empleadosData[$empleadoGeneral['documento']][$diaMes->format('Y-m-d')]
+                                            $empleadosData[$empleadoGeneral['plan_det_men_id']][$diaMes->format('Y-m-d')]
                                                 ->detalles;
 
                                     @endphp

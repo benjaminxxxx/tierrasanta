@@ -2,9 +2,9 @@
 
 namespace App\Livewire;
 
+use App\Models\PlanTipoAsistencia;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
-use App\Models\TipoAsistencia;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Artisan;
 
@@ -38,7 +38,7 @@ class TipoAsistenciaComponent extends Component
     public function confirmarEliminar($data)
     {
         try {
-            $tipoAsistencia = TipoAsistencia::findOrFail($data['id']);
+            $tipoAsistencia = PlanTipoAsistencia::findOrFail($data['id']);
             $tipoAsistencia->delete();
             $this->alert('success', '¡Tipo de asistencia eliminado con éxito!');
 
@@ -63,7 +63,7 @@ class TipoAsistenciaComponent extends Component
     }
     public function resturar(){
         try {
-            TipoAsistencia::truncate();
+            PlanTipoAsistencia::truncate();
 
             Artisan::call('db:seed', [
                 '--class' => 'TipoAsistenciaSeeder'
@@ -77,7 +77,7 @@ class TipoAsistenciaComponent extends Component
     }
     public function render()
     {
-        $this->tipoAsistencias = TipoAsistencia::all();
+        $this->tipoAsistencias = PlanTipoAsistencia::all();
         return view('livewire.tipo-asistencia-component');
     }
 }

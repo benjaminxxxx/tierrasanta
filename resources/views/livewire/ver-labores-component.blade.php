@@ -1,13 +1,13 @@
 <div>
     <x-secondary-button wire:click="verLabores"><i class="fa fa-eye"></i> Ver Labores</x-secondary-button>
-    <x-dialog-modal-header wire:model="isFormOpen" maxWidth="full">
+    <x-dialog-modal-header wire:model="mostrarFormularioLabores" maxWidth="full">
         <x-slot name="title">
             <div class="flex items-center justify-between">
                 <div class="">
                     Seleccionar Labor
                 </div>
                 <div class="flex-shrink-0">
-                    <button wire:click="$set('isFormOpen', false)" class="focus:outline-none">
+                    <button wire:click="$set('mostrarFormularioLabores', false)" class="focus:outline-none">
                         <i class="fa-solid fa-circle-xmark"></i>
                     </button>
                 </div>
@@ -32,7 +32,7 @@
 
         </x-slot>
         <x-slot name="footer">
-            <x-button type="button" wire:click="$set('isFormOpen', false)">Cerrar</x-button>
+            <x-button type="button" wire:click="$set('mostrarFormularioLabores', false)">Cerrar</x-button>
         </x-slot>
     </x-dialog-modal-header>
 </div>

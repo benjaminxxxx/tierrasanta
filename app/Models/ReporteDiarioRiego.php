@@ -9,7 +9,7 @@ class ReporteDiarioRiego extends Model
 {
     use HasFactory;
 
-    protected $table = 'reporte_diario_riegos';
+    protected $table = 'reg_registro_diario';
 
     protected $fillable = [
         'campo',

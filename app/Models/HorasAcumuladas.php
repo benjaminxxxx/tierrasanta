@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class HorasAcumuladas extends Model
 {
     use HasFactory;
+    protected $table = 'reg_horas_acumuladas';
     protected $fillable = [
         'documento',
         'fecha_acumulacion',

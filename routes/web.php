@@ -13,7 +13,6 @@ use App\Http\Controllers\ReporteDiarioController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AsistenciaPlanillaController;
 use App\Http\Controllers\GastoController;
-use App\Http\Controllers\ProductividadController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\ReporteCampoController;
@@ -37,10 +36,10 @@ Route::middleware([
     })->name('dashboard');
 
     Route::get('/planilla/asistencia/{anio?}/{mes?}', [AsistenciaPlanillaController::class, 'index'])->name('planilla.asistencia');
-    Route::get('/planilla/blanco', [AsistenciaPlanillaController::class, 'blanco'])->name('planilla.blanco');
+    Route::get('/planilla/bn', [AsistenciaPlanillaController::class, 'blanco'])->name('planilla.blanco');
 
     Route::get('/empleados', function () {
-        return view('empleados');
+        return view('livewire.gestion-planilla.administrar-planillero.indice-empleados');
     })->name('empleados');
     Route::get('/configuracion', function () {
         return view('configuracion');
@@ -84,7 +83,6 @@ Route::middleware([
     Route::get('/campanias', [CampaniaController::class, 'campanias'])->name('campanias');
     Route::get('/campo/camapania/{campo?}', [CampoController::class, 'campania'])->name('campo.campania');
 
-    Route::get('/campo/mapa', [CampoController::class, 'mapa'])->name('campo.mapa');
     Route::get('/riego/estados', [CampoController::class, 'riego'])->name('campo.riego');
     Route::get('/campo/campos', [CampoController::class, 'campos'])->name('campo.campos');
     Route::get('/campo/siembras', [CampoController::class, 'siembra'])->name('campo.siembra');
@@ -143,9 +141,7 @@ Route::middleware([
     Route::post('/reporte/reporte-diario/actualizar-campos', [ReporteDiarioController::class, 'ActualizarCampos'])->name('reporte.reporte_diario.actualizar_campos');
 
     Route::get('/planilla/resumen-mensual', [ReporteController::class, 'ResumenPlanilla'])->name('reporte.resumen_planilla');
-    //Route::get('/reporte/reporte-diario/obtener-campos', [ReporteDiarioController::class, 'ObtenerCampos'])->name('reporte.reporte_diario.obtener_campos');
-    //Route::get('/reporte/reporte-diario/obtener-campo', [ReporteDiarioController::class, 'ObtenerCampo'])->name('reporte.reporte_diario.obtener_campo');
-
+ 
     //PROVEEDORES
     Route::get('/proveedores', [ProveedorController::class, 'index'])->name('proveedores.index');
 
@@ -177,8 +173,6 @@ Route::middleware([
     Route::get('/contabilidad/gasto/general', [GastoController::class, 'general'])->name('gastos.general');
     Route::get('/contabilidad/costos_mensuales', [GastoController::class, 'costos_mensuales'])->name('contabilidad.costos_mensuales');
     Route::get('/contabilidad/costos_generales', [GastoController::class, 'costos_generales'])->name('contabilidad.costos_generales');
-
-    Route::get('/productividad/avance', [ProductividadController::class, 'avance'])->name('productividad.avance');
 
     //FDM
     Route::get('/fdm/costos_generales', [FdmController::class, 'costos_generales'])->name('fdm.costos_generales');

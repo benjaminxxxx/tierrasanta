@@ -2,8 +2,7 @@
 
 namespace App\Livewire;
 
-use App\Models\PlanillaBlanco;
-use App\Models\PlanillaBlancoDetalle;
+use App\Models\PlanMensual;
 use Carbon\Carbon;
 use Livewire\Component;
 use Illuminate\Support\Facades\Session;
@@ -57,7 +56,7 @@ class PlanillaBlancoComponent extends Component
     public function render()
     {
         if ($this->mes && $this->anio) {
-            $informacionBlanco = PlanillaBlanco::where('mes', $this->mes)->where('anio', $this->anio)->first();
+            $informacionBlanco = PlanMensual::where('mes', $this->mes)->where('anio', $this->anio)->first();
             if ($informacionBlanco) {
                 $this->sePuedeVerNegro = $informacionBlanco->detalle->count() > 0;
             }

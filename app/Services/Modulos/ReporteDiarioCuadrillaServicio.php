@@ -41,11 +41,12 @@ class ReporteDiarioCuadrillaServicio
      * @throws \Dotenv\Exception\ValidationException Si la validación de datos falla.
      * @throws \Throwable Para cualquier otro tipo de error.
      */
-    public function guardarReporteDiario(string $fecha, array $datos): void
+    public function guardarReporteDiario(string $fecha, array $datos,$totalColumnas): void
     {
         // 1. Guardar los datos principales del reporte de cuadrilla
         CuadrilleroServicio::guardarDesdeHandsontable($fecha, $datos);
-        
+        // Enviar un resumen a planillaDiario
+        CuadrilleroServicio::generarResumenParaPlanilla($fecha,$datos,$totalColumnas);
         // 2. Ejecutar la lógica de negocio secundaria (detección y creación de actividades)
         ActividadServicio::detectarYCrearActividades($fecha);
     }

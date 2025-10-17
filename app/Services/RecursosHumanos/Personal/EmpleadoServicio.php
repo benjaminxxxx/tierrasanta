@@ -120,6 +120,5 @@ class EmpleadoServicio
                 PlanillaServicio::guardarBonoPlanilla($fila, $numeroRecojos,$actividad->id);
             }
         }
-        //PlanillaServicio::calcularBonosTotalesPlanilla($fecha);
     }
 }

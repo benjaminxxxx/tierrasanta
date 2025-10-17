@@ -29,4 +29,12 @@ class PlanContrato extends Model
     {
         return $this->belongsTo(PlanDescuentoSP::class, 'plan_sp_codigo');
     }
+    public function cargo()
+    {
+        return $this->belongsTo(PlanCargo::class, 'cargo_codigo');
+    }
+    public function grupo()
+    {
+        return $this->belongsTo(PlanGrupo::class, 'grupo_codigo');
+    }
 }

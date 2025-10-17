@@ -6,7 +6,7 @@ use Livewire\Component;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\WithPagination;
 use  App\Models\PlanEmpleado;
-use  App\Models\AsignacionFamiliar;
+use  App\Models\PlanFamiliar;
 class AsignacionFamiliarListComponent extends Component
 {
     use LivewireAlert;
@@ -16,7 +16,7 @@ class AsignacionFamiliarListComponent extends Component
     public $asignacionId;
     public function render()
     {
-        $query = AsignacionFamiliar::query()
+        $query = PlanFamiliar::query()
             ->with('empleado'); // Incluye la relación con Empleado
 
         if (!empty($this->search)) {
@@ -61,7 +61,7 @@ class AsignacionFamiliarListComponent extends Component
     public function confirmarEliminarHijo()
     {
         if ($this->asignacionId) {
-            $asignacion = AsignacionFamiliar::find($this->asignacionId);
+            $asignacion = PlanFamiliar::find($this->asignacionId);
             if ($asignacion) {
                 $asignacion->delete();
                 $this->alert('success','Se ha eliminado el registro');
@@ -72,7 +72,7 @@ class AsignacionFamiliarListComponent extends Component
     }
     public function actualizarEstado($id, $estaEstudiando)
     {
-        $asignacion = AsignacionFamiliar::find($id);
+        $asignacion = PlanFamiliar::find($id);
         
         if ($asignacion) {
             $asignacion->update([

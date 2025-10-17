@@ -190,7 +190,7 @@ class PlanillaCostoRealSheetExport implements FromArray, WithHeadings, WithStyle
             $formulaTotal = "=SUM({$columnaLetra}{$filaInicio}:{$columnaLetra}{$filaFin})";
 
             // Establecer la fórmula en la fila 2 para la columna correspondiente
-            $informacionAdicionalPorDia = $this->informacionAdicional['dia_' . $dia[0]];
+            $informacionAdicionalPorDia = $this->informacionAdicional['dia_' . $dia[0]]??null;
             $sheet->setCellValue("{$columnaLetra}2", $formula);
             $sheet->setCellValue("{$columnaLetra}{$filaFinTotales}", $formulaTotal);
 
@@ -198,7 +198,7 @@ class PlanillaCostoRealSheetExport implements FromArray, WithHeadings, WithStyle
             foreach ($this->planillaLista as $planilla) {
                 $filaEmpleadoContador++;
                 $documento = $planilla['dni'];
-                if (array_key_exists($documento, $informacionAdicionalPorDia)) {
+                if (is_array($informacionAdicionalPorDia) && array_key_exists($documento, $informacionAdicionalPorDia)) {
                     $informacionEmpleado = $informacionAdicionalPorDia[$documento];
                     if (array_key_exists('color', $informacionEmpleado)) {
                         $informacionEmpleado = $informacionAdicionalPorDia[$documento];

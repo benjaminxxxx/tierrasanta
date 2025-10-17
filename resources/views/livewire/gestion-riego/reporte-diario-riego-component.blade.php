@@ -3,13 +3,13 @@
     <x-card2>
         <x-flex class="justify-between">
             <x-flex>
-                <x-secondary-button wire:click="fechaAnterior" class="w-full lg:w-auto">
+                <x-button variant="secondary" wire:click="fechaAnterior" class="w-full lg:w-auto">
                     <i class="fa fa-chevron-left"></i> Fecha Anterior
-                </x-secondary-button>
+                </x-button>
                 <x-input type="date" wire:model.live="fecha" class="text-center w-full lg:w-auto" />
-                <x-secondary-button wire:click="fechaPosterior" class="w-full lg:w-auto">
+                <x-button variant="secondary" wire:click="fechaPosterior" class="w-full lg:w-auto">
                     Fecha Posterior <i class="fa fa-chevron-right"></i>
-                </x-secondary-button>
+                </x-button>
             </x-flex>
             <x-flex>
                 <x-button @click="$wire.set('mostrarFormularioAgregarRegador', true)">

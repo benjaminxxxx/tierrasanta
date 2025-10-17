@@ -15,7 +15,8 @@ class AsistenciaPlanillaController extends Controller
             'anio'=>$anio,
             'mes'=>$mes,
         ];
-        return view('planilla.horas',$data);
+        
+        return view('livewire.gestion-planilla.administrar-planillero.indice-asistencias-empleados',$data);
     }
     public function blanco()
     {

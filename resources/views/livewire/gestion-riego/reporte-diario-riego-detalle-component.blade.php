@@ -1,5 +1,5 @@
 <div>
-    <x-card2>
+    <x-card2 class="mb-5">
         @if ($riego)
             <x-flex class="justify-between">
                 <div>
@@ -17,9 +17,9 @@
                     </div>
                 </div>
                 <div>
-                    <x-danger-button wire:confirm="¿Estás seguro que desea eliminar este registro?" wire:click="eliminarRegador({{ $riego->id }})">
+                    <x-button variant="danger" wire:confirm="¿Estás seguro que desea eliminar este registro?" wire:click="eliminarRegador({{ $riego->id }})">
                         <i class="fa fa-trash"></i> Eliminar regador
-                    </x-danger-button>
+                    </x-button>
                 </div>
             </x-flex>
 
@@ -35,7 +35,7 @@
             <div x-ref="tableContainer" class="min-h-[20rem] mt-5 overflow-auto"></div>
 
             <x-button @click="sendData" class="mt-5">
-                Guardar Cambios
+                <i class="fa fa-save"></i> Guardar Cambios
             </x-button>
         </div>
     </x-card2>

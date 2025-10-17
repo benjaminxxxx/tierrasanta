@@ -3,6 +3,7 @@
 namespace App\Services\RecursosHumanos\Planilla;
 
 use App\Models\PlanEmpleado;
+use DB;
 use Exception;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
@@ -11,6 +12,31 @@ use Illuminate\Validation\ValidationException;
 
 class PlanillaEmpleadoServicio
 {
+    public function actualizarOrdenEmpleados(array $empleados): void
+    {
+        if (empty($empleados))
+            return;
+
+        $ids = [];
+        $cases = [];
+
+        foreach ($empleados as $indice => $empleadoOrden) {
+            $id = (int) $empleadoOrden['id'];
+            $orden = $indice + 1;
+            $ids[] = $id;
+            $cases[] = "WHEN id = {$id} THEN {$orden}";
+        }
+
+        $casesSql = implode(' ', $cases);
+        $idsSql = implode(',', $ids);
+
+        DB::statement("
+                UPDATE plan_empleados
+                SET orden = CASE {$casesSql} END
+                WHERE id IN ({$idsSql})
+            ");
+    }
+
     public function obtenerEmpleadoPorUuid($uuid)
     {
         $empleado = PlanEmpleado::where('uuid', $uuid)->first();
@@ -166,7 +192,7 @@ class PlanillaEmpleadoServicio
     /**
      * Retorna los empleados con contrato agrario vigente en el mes/año indicado.
      */
-    public function obtenerPlanillaAgraria(int $mes, int $anio)
+    public function obtenerPlanillaAgraria(int $mes, int $anio, $orden = "orden")
     {
         $fechaInicioMes = Carbon::createFromDate($anio, $mes, 1)->startOfMonth();
         $fechaFinMes = Carbon::createFromDate($anio, $mes, 1)->endOfMonth();
@@ -193,7 +219,7 @@ class PlanillaEmpleadoServicio
                         ->limit(1); // solo el contrato más reciente
                 }
             ])
-            ->orderBy('nombres')
+            ->orderBy($orden)
             ->get();
     }
 }

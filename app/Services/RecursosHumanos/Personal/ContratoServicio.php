@@ -7,6 +7,8 @@ use App\Models\PlanEmpleado;
 use Carbon\Carbon;
 use DB;
 use Exception;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class ContratoServicio
 {
@@ -15,6 +17,28 @@ class ContratoServicio
      */
     public function registrarContrato(int $empleadoId, array $data): void
     {
+        // 🔹 Validaciones antes de iniciar la transacción
+
+        $validator = Validator::make($data, [
+            'fecha_inicio' => [
+                'required',
+                'date',
+                function ($attribute, $value, $fail) {
+                    if (date('d', strtotime($value)) != 1) {
+                        $fail('La fecha de inicio debe ser siempre el día 1.');
+                    }
+                }
+            ],
+            'tipo_planilla' => 'required',
+            'plan_sp_codigo'=>'required',
+            'tipo_contrato' => 'required',
+            'modalidad_pago' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
         $fechaInicio = Carbon::parse($data['fecha_inicio']);
 
         DB::beginTransaction();
@@ -23,31 +47,20 @@ class ContratoServicio
             $empleado = PlanEmpleado::findOrFail($empleadoId);
             $ultimoContrato = $this->_obtenerUltimoContrato($empleadoId);
 
-            // 1. Validar la fecha de inicio
             $this->_validarFechaInicio($fechaInicio, $ultimoContrato, $empleado->nombres);
 
-            // 2. Finalizar el contrato anterior si existe
             if ($ultimoContrato) {
                 $this->_finalizarContrato($ultimoContrato, $fechaInicio);
             }
 
-            // 3. Crear el nuevo contrato
-            $data['empleado_id'] = $empleadoId;
+            $data['plan_empleado_id'] = $empleadoId;
+            
             PlanContrato::create($data);
-
 
             DB::commit();
 
         } catch (\Throwable $e) {
             DB::rollBack();
-
-            // Registrar error
-            \Log::error('Error registrando contrato', [
-                'empleado_id' => $empleadoId,
-                'error' => $e->getMessage(),
-            ]);
-
-            // Relanzar la excepción
             throw $e;
         }
     }
@@ -95,10 +108,10 @@ class ContratoServicio
     {
         DB::transaction(function () use ($contratoId) {
             $contratoAEliminar = PlanContrato::findOrFail($contratoId);
-            $empleadoId = $contratoAEliminar->empleado_id;
+            $empleadoId = $contratoAEliminar->plan_empleado_id;
 
             // Buscamos el contrato anterior al que vamos a eliminar
-            $contratoAnterior = PlanContrato::where('empleado_id', $empleadoId)
+            $contratoAnterior = PlanContrato::where('plan_empleado_id', $empleadoId)
                 ->where('fecha_inicio', '<', $contratoAEliminar->fecha_inicio)
                 ->orderByDesc('fecha_inicio')
                 ->first();
@@ -106,18 +119,6 @@ class ContratoServicio
             // Si existe un contrato anterior, le quitamos la fecha de fin para que vuelva a ser el activo
             if ($contratoAnterior) {
                 $contratoAnterior->update(['fecha_fin' => null]);
-
-                // Actualizamos los datos del empleado para que reflejen los del contrato anterior
-                $empleado = PlanEmpleado::findOrFail($empleadoId);
-                $this->_actualizarDatosEmpleado($empleado, [
-                    'salario' => $contratoAnterior->sueldo,
-                    'cargo_id' => $contratoAnterior->cargo_codigo,
-                    'grupo_codigo' => $contratoAnterior->grupo_codigo,
-                    'descuento_sp_id' => $contratoAnterior->descuento_sp_id,
-                    'compensacion_vacacional' => $contratoAnterior->compensacion_vacacional,
-                    'esta_jubilado' => $contratoAnterior->esta_jubilado,
-                    'tipo_planilla' => $contratoAnterior->tipo_planilla,
-                ]);
             }
 
             $contratoAEliminar->delete();
@@ -131,9 +132,9 @@ class ContratoServicio
     /**
      * Obtiene el contrato más reciente de un empleado.
      */
-    private function _obtenerUltimoContrato(int $empleadoId): ?Contrato
+    private function _obtenerUltimoContrato(int $empleadoId)
     {
-        return PlanContrato::where('empleado_id', $empleadoId)
+        return PlanContrato::where('plan_empleado_id', $empleadoId)
             ->orderByDesc('fecha_inicio')
             ->first();
     }
@@ -141,7 +142,7 @@ class ContratoServicio
     /**
      * Valida que la fecha de inicio sea posterior a la del último contrato.
      */
-    private function _validarFechaInicio(Carbon $fechaInicio, ?Contrato $ultimoContrato, string $nombreEmpleado): void
+    private function _validarFechaInicio(Carbon $fechaInicio, $ultimoContrato, string $nombreEmpleado): void
     {
         if ($ultimoContrato && $fechaInicio->lte(Carbon::parse($ultimoContrato->fecha_inicio))) {
             throw new Exception("La fecha de inicio debe ser posterior al último contrato para el empleado {$nombreEmpleado}");
@@ -151,7 +152,7 @@ class ContratoServicio
     /**
      * Actualiza la fecha de fin de un contrato.
      */
-    private function _finalizarContrato(Contrato $contrato, Carbon $fechaInicioNuevoContrato): void
+    private function _finalizarContrato($contrato, Carbon $fechaInicioNuevoContrato): void
     {
         $contrato->update([
             'fecha_fin' => $fechaInicioNuevoContrato->copy()->subDay()->format('Y-m-d')
@@ -180,5 +181,5 @@ class ContratoServicio
         ];
     }
 
-    
+
 }

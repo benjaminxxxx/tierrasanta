@@ -2,8 +2,12 @@
 
 namespace App\Livewire\GestionPlanilla\AdministrarPlanillero;
 
+use App\Models\PlanContrato;
+use App\Models\PlanEmpleado;
 use App\Services\RecursosHumanos\Personal\ContratoServicio;
 use App\Traits\ListasComunes\ConGrupoPlanilla;
+use Exception;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 
@@ -11,64 +15,65 @@ class GestionPlanillaEmpleadosContratoFormComponent extends Component
 {
     use LivewireAlert, ConGrupoPlanilla;
     public $empleadoId;
+    public $contratos = [];
+    public $tipoContrato = 'indefinido';
+    public $fechaInicio;
+    public $cargoCodigo;
+    public $grupoCodigo;
+    public $compensacionVacacional;
+    public $tipoPlanilla;
+    public $planSpCodigo;
+    public $estaJubilado;
+    public $modalidadPago;
     public $mostrarFormularioEmpleadoContrato = false;
 
     protected $listeners = ['abrirFormularioRegistroEmpleadoContrato'];
 
-    public function abrirFormularioRegistroEmpleadoContrato()
+    public function abrirFormularioRegistroEmpleadoContrato($uuid)
     {
+        $empleado = PlanEmpleado::where('uuid', $uuid)->first();
+        if (!$empleado) {
+            throw new Exception('El empleado ya no existe');
+        }
+        $this->empleadoId = $empleado->id;
         $this->mostrarFormularioEmpleadoContrato = true;
+        $this->obtenerContratos();
     }
 
     public function guardarContrato()
     {
+        
         if (!$this->empleadoId) {
             $this->alert('error', 'Debe seleccionar un empleado primero');
             return;
         }
 
-        // 1️⃣ Validaciones básicas
-        $this->validate([
-            'fecha_inicio' => [
-                'required',
-                'date',
-                function ($attribute, $value, $fail) {
-                    if (date('d', strtotime($value)) != 1) {
-                        $fail('La fecha de inicio debe ser siempre el día 1.');
-                    }
-                }
-            ],
-            'tipo_planilla' => 'required',
-            'sueldo' => 'required|numeric|min:0'
-        ]);
-
         try {
             $data = [
-                'tipo_contrato' => $this->tipo_contrato ?? 'indefinido',
-                'fecha_inicio' => $this->fecha_inicio,
-                'fecha_fin' => $this->fecha_fin,
-                'sueldo' => $this->sueldo,
-                'cargo_codigo' => $this->cargo_codigo,
-                'grupo_codigo' => $this->grupo_codigo,
-                'compensacion_vacacional' => $this->compensacion_vacacional ?? 0,
-                'tipo_planilla' => $this->tipo_planilla,
-                'descuento_sp_id' => $this->descuento_sp_id,
-                'esta_jubilado' => $this->esta_jubilado ?? 0,
-                'modalidad_pago' => $this->modalidad_pago,
-                'motivo_despido' => $this->motivo_despido ?? null,
+                'tipo_contrato' => $this->tipoContrato ?? 'indefinido',
+                'fecha_inicio' => $this->fechaInicio,
+                'cargo_codigo' => $this->cargoCodigo,
+                'grupo_codigo' => $this->grupoCodigo,
+                'compensacion_vacacional' => $this->compensacionVacacional ?? 0,
+                'tipo_planilla' => $this->tipoPlanilla,
+                'plan_sp_codigo' => $this->planSpCodigo,
+                'esta_jubilado' => $this->estaJubilado ?? 0,
+                'modalidad_pago' => $this->modalidadPago,
             ];
 
             app(ContratoServicio::class)->registrarContrato($this->empleadoId, $data);
 
             $this->alert('success', 'Contrato registrado correctamente');
             $this->mostrarFormularioContrato = false;
-            $this->reset(['fecha_inicio', 'fecha_fin', 'sueldo', 'cargo_codigo', 'grupo_codigo', 'compensacion_vacacional', 'tipo_planilla', 'descuento_sp_id', 'esta_jubilado', 'modalidad_pago', 'motivo_despido']);
+            $this->resetearForm();
             $this->obtenerContratos();
+
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->alert('error', 'Ocurrió un error: ' . $th->getMessage());
         }
     }
-
     public function eliminarContrato($contratoId)
     {
         try {
@@ -90,31 +95,25 @@ class GestionPlanillaEmpleadosContratoFormComponent extends Component
             return;
         }
 
-        // Obtener todos los contratos
-        $this->contratos = PlanContrato::where('empleado_id', $this->empleadoId)
-            ->orderBy('fecha_inicio', 'desc')
+        $this->contratos = PlanContrato::where('plan_empleado_id', $this->empleadoId)
+            ->orderBy('fecha_inicio', 'asc')
             ->get();
-
-        // Si hay contratos, tomar el último y asignar valores iniciales
-        $ultimoContrato = $this->contratos->first();
-        if ($ultimoContrato) {
-            $this->tipo_contrato = $ultimoContrato->tipo_contrato ?? 'indefinido';
-            $this->fecha_inicio = now()->format('Y-m-d'); // nueva fecha por defecto
-            $this->fecha_fin = null;
-            $this->sueldo = $ultimoContrato->sueldo;
-            $this->cargo_codigo = $ultimoContrato->cargo_codigo;
-            $this->grupo_codigo = $ultimoContrato->grupo_codigo;
-            $this->compensacion_vacacional = $ultimoContrato->compensacion_vacacional ?? 0;
-            $this->tipo_planilla = $ultimoContrato->tipo_planilla;
-            $this->descuento_sp_id = $ultimoContrato->descuento_sp_id;
-            $this->esta_jubilado = $ultimoContrato->esta_jubilado ?? 0;
-            $this->modalidad_pago = $ultimoContrato->modalidad_pago;
-            $this->motivo_despido = null; // nuevo contrato → sin motivo de despido
-        }
     }
-
-
-    #endregion
+    private function resetearForm()
+    {
+        $this->resetErrorBag();
+        $this->reset([
+            'tipoContrato',
+            'fechaInicio',
+            'cargoCodigo',
+            'grupoCodigo',
+            'compensacionVacacional',
+            'tipoPlanilla',
+            'planSpCodigo',
+            'estaJubilado',
+            'modalidadPago',
+        ]);
+    }
     public function render()
     {
         return view('livewire.gestion-planilla.administrar-planillero.gestion-planilla-empleados-contrato-form');
