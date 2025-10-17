@@ -4,7 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Configuracion;
 use App\Models\PlanDescuentoSp;
-use App\Models\PlanDescuentoSPHistorico;
+use App\Models\PlanDescuentoSpHistorico;
 use Carbon\Carbon;
 use Livewire\Component;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -44,7 +44,7 @@ class ConfiguracionDescuentoAfpComponent extends Component
     {
         try {
             $fecha = Carbon::createFromFormat('Y-m', $this->fecha_inicio)->startOfMonth()->format('Y-m-d');
-            PlanDescuentoSPHistorico::whereDate('fecha_inicio', $fecha)->delete();
+            PlanDescuentoSpHistorico::whereDate('fecha_inicio', $fecha)->delete();
 
 
             $this->alert('success', 'Los montos para la feccha seleccionada han sido limpiados exitosamente.');
@@ -117,7 +117,7 @@ class ConfiguracionDescuentoAfpComponent extends Component
                 $porcentaje_65 = $valorDescuento['mixta_65'];
             }
 
-            PlanDescuentoSPHistorico::updateOrCreate(
+            PlanDescuentoSpHistorico::updateOrCreate(
                 [
                     'fecha_inicio' => $fecha,
                     'descuento_codigo' => $descuento->codigo,
@@ -140,7 +140,7 @@ class ConfiguracionDescuentoAfpComponent extends Component
         $fecha = Carbon::createFromFormat('Y-m', $this->fecha_inicio)->startOfMonth()->format('Y-m-d');
 
         // Guardar en el histórico
-        PlanDescuentoSPHistorico::updateOrCreate(
+        PlanDescuentoSpHistorico::updateOrCreate(
             [
                 'fecha_inicio' => $fecha,
                 'descuento_codigo' => $descuento->codigo,
@@ -161,7 +161,7 @@ class ConfiguracionDescuentoAfpComponent extends Component
     }
     public function render()
     {
-        $this->fechasRegistradas = PlanDescuentoSPHistorico::select('fecha_inicio')
+        $this->fechasRegistradas = PlanDescuentoSpHistorico::select('fecha_inicio')
             ->distinct()
             ->orderBy('fecha_inicio', 'desc')
             ->pluck('fecha_inicio')
@@ -172,7 +172,7 @@ class ConfiguracionDescuentoAfpComponent extends Component
 
         if ($this->fecha_inicio) {
 
-            $this->descuentosSPHistorico = PlanDescuentoSPHistorico::whereDate('fecha_inicio', Carbon::createFromFormat('Y-m', $this->fecha_inicio)->startOfMonth()->format('Y-m-d'))->get();
+            $this->descuentosSPHistorico = PlanDescuentoSpHistorico::whereDate('fecha_inicio', Carbon::createFromFormat('Y-m', $this->fecha_inicio)->startOfMonth()->format('Y-m-d'))->get();
         } else {
             $this->descuentosSPHistorico = null;
         }
