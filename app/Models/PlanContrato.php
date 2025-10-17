@@ -27,7 +27,7 @@ class PlanContrato extends Model
     }
     public function descuento()
     {
-        return $this->belongsTo(PlanDescuentoSP::class, 'plan_sp_codigo');
+        return $this->belongsTo(PlanDescuentoSp::class, 'plan_sp_codigo');
     }
     public function cargo()
     {

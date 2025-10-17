@@ -4,7 +4,7 @@ namespace App\Livewire;
 
 use App\Models\AsignacionFamiliar;
 use App\Models\PlanCargo;
-use App\Models\PlanDescuentoSP;
+use App\Models\PlanDescuentoSp;
 use App\Models\PlanGrupo;
 use DateTime;
 use Exception;
@@ -147,7 +147,7 @@ class EmpleadosImportExportComponent extends Component
                 }
 
                 if ($descuento_sp_codigo && $descuento_sp_codigo !== '-') {
-                    $descuento_sp = PlanDescuentoSP::where('codigo', $descuento_sp_codigo)->first();
+                    $descuento_sp = PlanDescuentoSp::where('codigo', $descuento_sp_codigo)->first();
                     $descuento_sp_id = $descuento_sp ? $descuento_sp->codigo : null;
                 }
 

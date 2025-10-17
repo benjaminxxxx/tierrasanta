@@ -3,7 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Configuracion;
-use App\Models\PlanDescuentoSP;
+use App\Models\PlanDescuentoSp;
 use App\Models\PlanGrupo;
 use App\Models\PlanMensual;
 use App\Models\PlanMensualDetalle;
@@ -60,7 +60,7 @@ class PlanillaBlancoDetalleComponent extends Component
     {
         $this->mes = $mes;
         $this->anio = $anio;
-        $this->descuentoColores = PlanDescuentoSP::get()->pluck("color", "codigo")->toArray();
+        $this->descuentoColores = PlanDescuentoSp::get()->pluck("color", "codigo")->toArray();
         $this->grupoColores = PlanGrupo::get()->pluck("color", "codigo")->toArray();
         $this->obtenerInformacionMensual();
     }

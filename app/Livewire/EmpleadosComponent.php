@@ -3,7 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\PlanCargo;
-use App\Models\PlanDescuentoSP;
+use App\Models\PlanDescuentoSp;
 use App\Services\RecursosHumanos\Personal\ContratoServicio;
 use App\Traits\ListasComunes\ConGrupoPlanilla;
 use Carbon\Carbon;
@@ -35,7 +35,7 @@ class EmpleadosComponent extends Component
     public function mount()
     {
         $this->cargos = PlanCargo::all();
-        $this->descuentos = PlanDescuentoSP::all();
+        $this->descuentos = PlanDescuentoSp::all();
         $this->estado = 'activo';
         $this->mesVigencia = Carbon::now()->format('m');
         $this->anioVigencia = Carbon::now()->format('Y');
