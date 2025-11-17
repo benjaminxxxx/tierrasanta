@@ -670,7 +670,7 @@
             </x-card>
             @if ($campania)
                 <div class="mt-4">
-                    @livewire('consulta-actividad-diaria-component', [
+                    @_@livewire('consulta-actividad-diaria-component', [
                         'campaniaId' => $campania->id,
                     ])
                 </div>

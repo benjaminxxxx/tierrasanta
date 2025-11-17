@@ -7,9 +7,6 @@ use App\Models\CampoCampania;
 use App\Support\ExcelHelper;
 use Exception;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Storage;
-use Maatwebsite\Excel\Facades\Excel;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -50,14 +47,6 @@ class CampoCampaniaSeeder extends Seeder
             }
             $i = 0;
             foreach ($data as $fila) {
-                /*
-                239 => array:5 [
-                    "campo" => "B10"
-                    "fecha_inicio" => 42400
-                    "fecha_final" => 43112
-                    "tipo_cambio" => 1
-                    "nombre_campania" => "T.2016"
-                  ]*/
                 $i++;
                 $fecha_inicio = $this->parseFecha($fila['fecha_inicio'], $i + 2);
                 $fecha_final = $this->parseFecha($fila['fecha_final'] ?? null, $i + 2);
@@ -103,8 +92,8 @@ class CampoCampaniaSeeder extends Seeder
             }
 
             return Carbon::parse(str_replace(['.', '/', '\\'], '-', $valor))->format('Y-m-d');
-        } catch (\Exception $e) {
-            throw new \Exception("Error al interpretar la fecha '{$valor}' en la fila #{$fila}: " . $e->getMessage());
+        } catch (Exception $e) {
+            throw new Exception("Error al interpretar la fecha '{$valor}' en la fila #{$fila}: " . $e->getMessage());
         }
     }
 }

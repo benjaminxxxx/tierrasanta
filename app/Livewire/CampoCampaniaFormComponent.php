@@ -161,7 +161,7 @@ class CampoCampaniaFormComponent extends Component
             $this->alert('success', $mensaje);
             $this->resetForm();
             $this->mostrarFormulario = false;
-            $this->dispatch('campaniaInsertada');
+            $this->dispatch('campaniaInsertada',$data);
 
         } catch (\Throwable $th) {
             // Captura errores y muestra mensaje

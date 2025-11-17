@@ -34,6 +34,10 @@ class CuadRegistroDiario extends Model
     ];
 
     // Relaciones
+    public function tramoLaboral()
+    {
+        return $this->belongsTo(CuadTramoLaboral::class,'tramo_laboral_id');
+    }
     public function grupo()
     {
         return $this->belongsTo(CuaGrupo::class,'codigo_grupo');
@@ -58,7 +62,8 @@ class CuadRegistroDiario extends Model
     {
         return $this->total_bono + $this->costo_dia;
     }
-    public function getTotalHorasValidadoAttribute()
+    
+    public function getCoincideTotalHorasAttribute()
     {
        
         $totalCalculado = $this->detalleHoras->reduce(function ($carry, $detalle) {
@@ -68,5 +73,4 @@ class CuadRegistroDiario extends Model
             }, 0);
         return round($this->total_horas, 2) === round($totalCalculado, 2);
     }
-
 }

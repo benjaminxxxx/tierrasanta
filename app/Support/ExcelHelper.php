@@ -6,20 +6,26 @@ use Illuminate\Support\Carbon;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Chart\Chart;
-use PhpOffice\PhpSpreadsheet\Chart\DataSeries;
-use PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues;
-use PhpOffice\PhpSpreadsheet\Chart\Layout;
-use PhpOffice\PhpSpreadsheet\Chart\Legend;
-use PhpOffice\PhpSpreadsheet\Chart\PlotArea;
-use PhpOffice\PhpSpreadsheet\Chart\Title;
-use PhpOffice\PhpSpreadsheet\Chart\XAxis;
-use PhpOffice\PhpSpreadsheet\Chart\YAxis;
 use Exception;
-
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 class ExcelHelper
 {
+     public static function descargar( $spreadsheet, $filename )
+    {
+        return new StreamedResponse(function () use ($spreadsheet) {
+
+            $writer = new Xlsx($spreadsheet);
+
+            // salida directa
+            $writer->save('php://output');
+
+        }, 200, [
+            "Content-Type" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "Content-Disposition" => "attachment; filename=\"{$filename}\"",
+            "Cache-Control" => "max-age=0, no-cache, no-store, must-revalidate",
+        ]);
+    }
     /**
      * Carga un archivo Excel y devuelve la hoja solicitada.
      *

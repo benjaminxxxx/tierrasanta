@@ -5,9 +5,8 @@
         <x-flex class="my-3">
             <div>
                 <x-h3>
-                    Registro Pagos Cuadrilla
+                    Reporte General de Cuadrilla
                 </x-h3>
-                <x-label>Gestión flexible de pagos por trabajador</x-label>
             </div>
         </x-flex>
         <x-button-a href="{{ route('cuadrilleros.gestion') }}">
@@ -19,16 +18,16 @@
         <x-flex class="justify-between">
             <form wire:submit="buscarRegistros">
                 <x-flex class="w-full !items-end">
-                    <x-input-date label="Fecha inicio" wire:model="fecha_inicio" error="fecha_inicio" />
-                    <x-input-date label="Fecha fin" wire:model="fecha_fin" error="fecha_fin" />
-                    
-                    <x-select label="Grupo" wire:model="grupoSeleccionado" error="grupoSeleccionado">
+                    <x-input-date label="Fecha inicio" wire:model.live="fecha_inicio" error="fecha_inicio" />
+                    <x-input-date label="Fecha fin" wire:model.live="fecha_fin" error="fecha_fin" />
+
+                    <x-select label="Grupo" wire:model.live="grupoSeleccionado" error="grupoSeleccionado">
                         <option value="">TODOS LOS GRUPOS</option>
                         @foreach ($grupoCuadrillas as $grupoCuadrilla)
                             <option value="{{ $grupoCuadrilla->codigo }}">{{ $grupoCuadrilla->nombre }}</option>
                         @endforeach
                     </x-select>
-                    <x-input-string label="Buscar por nombre" wire:model="nombre_cuadrillero"
+                    <x-input type="search" label="Buscar por nombre" wire:model="nombre_cuadrillero"
                         error="nombre_cuadrillero" />
                     <x-button type="submit">
                         <i class="fa fa-filter"></i> Filtrar
@@ -51,11 +50,8 @@
 
                     <x-slot name="content">
                         <div class="w-60">
-                            <x-dropdown-link class="text-center" wire:click="generarReportePagosCuadrilla">
-                                Generar reporte Excel
-                            </x-dropdown-link>
-                            <x-dropdown-link class="text-center" wire:click="generarReportePagosCuadrilla">
-                                Generar recibo de pagos
+                            <x-dropdown-link class="text-center" wire:click="generarInformeGeneralCuadrilla">
+                                Descargar Reporte Excel
                             </x-dropdown-link>
                         </div>
                     </x-slot>
@@ -64,180 +60,111 @@
         </x-flex>
 
     </x-card2>
-    <x-h3 class="my-3">
-        Registro de Pagos
-    </x-h3>
-    <x-card2 wire:ignore>
-        <div x-ref="tableRegistroPagos"></div>
+    <x-card2 class="mt-4">
+        <x-table>
+            <x-slot name="thead">
+                <x-tr>
+                    <x-th class="text-center">Fecha</x-th>
+                    <x-th>Grupo</x-th>
+                    <x-th>Cuadrillero</x-th>
+                    <x-th class="text-center">Costo Personalizado</x-th>
+                    <x-th class="text-center">Horas Registradas</x-th>
+                    <x-th class="text-center">Horas Detalladas</x-th>
+                    <x-th class="text-center">Total Jornal</x-th>
+                    <x-th class="text-center">Total Bono</x-th>
+                    <x-th class="text-center">Costo Total</x-th>
+                    <x-th class="text-center">¿Está Pagado?</x-th>
+                    <x-th class="text-center">¿Bono Pagado?</x-th>
+                    <x-th class="text-center">Campos</x-th>
+                </x-tr>
+            </x-slot>
+            <x-slot name="tbody">
+                @php
+                    $tot_costo_personalizado = 0;
+                    $tot_horas = 0;
+                    $tot_horas_detalladas = 0;
+                    $tot_costo_dia = 0;
+                    $tot_bono = 0;
+                    $tot_general = 0;
+                @endphp
+                @foreach ($registros as $registro)
+                    @php
+                        $tot_costo_personalizado += $registro['costo_personalizado_dia'];
+                        $tot_horas += $registro['total_horas'];
+                        $tot_horas_detalladas += $registro['horas_detalladas'];
+                        $tot_costo_dia += $registro['costo_dia'];
+                        $tot_bono += $registro['total_bono'];
+                        $tot_general += $registro['costo_dia'] + $registro['total_bono'];
+
+                    @endphp
+                    <x-tr>
+                        <x-td class="text-center">{{ $registro['fecha'] }}</x-td>
+                        <x-td>{{ $registro['codigo_grupo'] }}</x-td>
+                        <x-td>{{ $registro['nombres'] }}</x-td>
+                        <x-td class="text-center">S/. {{ formatear_numero($registro['costo_personalizado_dia']) }}</x-td>
+                        <x-td class="text-center">{{ formatear_numero($registro['total_horas']) }}</x-td>
+                        <x-td class="text-center">
+                            {{ formatear_numero($registro['horas_detalladas']) }}
+                            @if ($registro['total_horas'] == $registro['horas_detalladas'])
+                                <i class="fa-solid fa-check text-green-600"></i>
+                            @else
+                                <i class="fa-solid fa-triangle-exclamation text-red-600"></i>
+                            @endif
+                        </x-td>
+                        <x-td class="text-center">S/. {{ formatear_numero($registro['costo_dia']) }}</x-td>
+                        <x-td class="text-center">S/. {{ formatear_numero($registro['total_bono']) }}</x-td>
+                        <x-td class="text-center">S/.
+                            {{ formatear_numero($registro['total_bono'] + $registro['costo_dia']) }}</x-td>
+                        <x-td class="text-center">{{ $registro['esta_pagado'] ? 'Sí' : 'No' }}</x-td>
+                        <x-td class="text-center">{{ $registro['bono_esta_pagado'] ? 'Sí' : 'No' }}</x-td>
+                        <x-td>{{ $registro['detalle_campos'] }}</x-td>
+                    </x-tr>
+                @endforeach
+            </x-slot>
+            <x-slot name="tfoot">
+                <x-tr class="font-bold">
+                    <x-td></x-td> {{-- Fecha --}}
+                    <x-td></x-td> {{-- Grupo --}}
+                    <x-td class="text-right">TOTALES:</x-td>
+
+                    {{-- Costo personalizado --}}
+                    <x-td class="text-center">
+                        S/. {{ formatear_numero($tot_costo_personalizado) }}
+                    </x-td>
+
+                    {{-- Total horas --}}
+                    <x-td class="text-center">
+                        {{ formatear_numero($tot_horas) }}
+                    </x-td>
+
+                    {{-- Horas detalladas --}}
+                    <x-td class="text-center">
+                        {{ formatear_numero($tot_horas_detalladas) }}
+                    </x-td>
+
+                    {{-- Costo día --}}
+                    <x-td class="text-center">
+                        S/. {{ formatear_numero($tot_costo_dia) }}
+                    </x-td>
+
+                    {{-- Total bono --}}
+                    <x-td class="text-center">
+                        S/. {{ formatear_numero($tot_bono) }}
+                    </x-td>
+
+                    {{-- Total general --}}
+                    <x-td class="text-center">
+                        S/. {{ formatear_numero($tot_general) }}
+                    </x-td>
+
+                    {{-- Pagado / bono pagado (sin total) --}}
+                    <x-td></x-td>
+                    <x-td></x-td>
+
+                    {{-- Campos --}}
+                    <x-td></x-td>
+                </x-tr>
+            </x-slot>
+        </x-table>
     </x-card2>
-    <style>
-        .handsontable .htDimmed.\!bg-green-400 {
-            background-color: #b3ffba !important;
-            color: #000 !important;
-            font-weight: bold !important;
-        }
-    </style>
 </div>
-@script
-<script>
-    Alpine.data('gestion_cuadrilla_pagos', () => ({
-        registroPagos: @json($registros),
-        hot: null,
-        headers: @json($header),
-        init() {
-            this.initTable();
-            Livewire.on('cargarRegistroPagos', (data) => {
-                this.registroPagos = data[0];
-                this.headers = data[1];
-                console.log(this.registroPagos);
-                this.$nextTick(() => this.initTable());
-            });
-        },
-        initTable() {
-            if (this.hot) {
-                this.hot.destroy();
-            }
-
-            const container = this.$refs.tableRegistroPagos;
-            this.hot = new Handsontable(container, {
-                data: this.registroPagos,
-                themeName: 'ht-theme-main-dark-auto',
-                colHeaders: true,
-                rowHeaders: true,
-                columns: this.generarColumnasDinamicas(),
-                width: '100%',
-                height: 'auto',
-                stretchH: 'all',
-                fixedColumnsLeft: 2,
-                contextMenu: {
-                    items: {
-                        "realizar_pago": {
-                            name: 'Registrar Pago',
-                            callback: () => this.registrarPago()
-                        }
-                    }
-                },
-                cells: function (row, col) {
-                    const cellProperties = {};
-
-                    const colSettings = this.instance.getSettings().columns[col];
-                    if (!colSettings || typeof colSettings.data !== 'string') return cellProperties;
-
-                    const dataKey = colSettings.data; // ej: 'jornal_1'
-                    const match = dataKey.match(/^jornal_(\d+)$/);
-                    if (match) {
-                        const index = match[1];
-                        const isPagado = this.instance.getDataAtRowProp(row, `pagado_${index}`);
-                        if (isPagado) {
-                            cellProperties.className = '!bg-green-400';
-                        }
-                    }
-
-                    return cellProperties;
-                },
-                licenseKey: 'non-commercial-and-evaluation'
-            });
-        },
-        registrarPago() {
-            const selected = this.hot.getSelected();
-            let registrosAPagar = [];
-
-            if (selected) {
-                const columnsSettings = this.hot.getSettings().columns;
-
-                selected.forEach(range => {
-                    const [startRow, startCol, endRow, endCol] = range;
-
-                    for (let row = startRow; row <= endRow; row++) {
-                        const cuadrillero = this.hot.getSourceDataAtRow(row);
-
-                        const filaProcesada = {
-                            cuadrillero_id: cuadrillero.cuadrillero_id ?? null,
-                            codigo: cuadrillero.codigo ?? null,
-                            nombre_cuadrillero: cuadrillero.nombre_cuadrillero ?? '',
-                            pagos: {}
-                        };
-
-                        for (let col = startCol; col <= endCol; col++) {
-                            const key = columnsSettings[col]?.data; // Aquí obtenemos la clave real, como 'jornal_1'
-                            const valor = this.hot.getDataAtCell(row, col);
-
-                            if (key?.startsWith('jornal_') && valor !== null && valor !== '') {
-                                filaProcesada.pagos[key] = valor;
-                            }
-                        }
-
-                        registrosAPagar.push(filaProcesada);
-                    }
-                });
-
-                console.log('Registros a pagar:', registrosAPagar);
-
-                $wire.registrarPago(registrosAPagar);
-            }
-        },
-        generarColumnasDinamicas() {
-            const columnas = [
-                {
-                    data: 'codigo',
-                    title: 'Grupo',
-                    readOnly: true,
-                    width: 100,
-                },
-                {
-                    data: 'nombre_cuadrillero',
-                    title: 'Trabajador',
-                    readOnly: true,
-                    width: 150,
-                }
-            ];
-
-            this.headers.forEach(header => {
-                columnas.push({
-                    data: 'jornal_' + header.keyIndex,
-                    title: 'Día<br/>' + header.label,
-                    type: 'numeric',
-                    numericFormat: { pattern: '0.00' },
-                    readOnly: true
-                });
-            });
-            this.headers.forEach(header => {
-                columnas.push({
-                    data: 'bono_' + header.keyIndex,
-                    title: 'Bono<br/>' + header.label,
-                    type: 'numeric',
-                    numericFormat: { pattern: '0.00' },
-                    readOnly: true
-                });
-            });
-
-            columnas.push({
-                data: 'total_jornal',
-                title: 'TOTAL<br/>JORNAL',
-                type: 'numeric',
-                numericFormat: { pattern: '0.00' },
-                readOnly: true,
-                className: '!text-lg !font-bold'
-            }, {
-                data: 'total_bono',
-                title: 'TOTAL<br/>BONO',
-                type: 'numeric',
-                numericFormat: { pattern: '0.00' },
-                readOnly: true,
-                className: '!text-lg !font-bold'
-            }, {
-                data: 'total',
-                title: 'TOTAL',
-                type: 'numeric',
-                numericFormat: { pattern: '0.00' },
-                readOnly: true,
-                className: '!text-lg !font-bold'
-            });
-
-
-            return columnas;
-        }
-
-    }));
-</script>
-@endscript

@@ -18,6 +18,8 @@ class CampoController extends Controller
     {
         return view('campo.campos');
     }
+    
+    
     public function siembra()
     {
         return view('campo.siembra');
@@ -34,6 +36,10 @@ class CampoController extends Controller
         return view('campo.campania',[
             'campo'=>$campo
         ]);
+    }
+    public function campaniaxcampo()
+    {
+        return view('livewire.gestion-campania.campania-x-campo-indice');
     }
     public function guardarPosicion(Request $request, $nombre)
     {

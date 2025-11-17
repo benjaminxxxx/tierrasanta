@@ -88,13 +88,13 @@
             <x-card2 class="hover:shadow-lg transition-shadow">
                 <div class="p-4 flex items-center space-x-3">
                     <div class="p-2 rounded-lg bg-red-500">
-                        <i class="fas fa-dollar-sign text-white w-5 h-5 text-center"></i>
+                        <i class="fas fa-file-excel text-white w-5 h-5 text-center"></i>
                     </div>
-                    <x-h3>Pago de Cuadrilla</x-h3>
+                    <x-h3>Resumen General</x-h3>
                 </div>
                 <div class="p-4">
-                    <x-label class="text-lg mb-4">Procesar pagos y generar reportes</x-label>
-                    <x-button-a href="{{ route('gestion_cuadrilleros.pagos.index') }}">
+                    <x-label class="text-lg mb-4">Informe General de Cuadrilla</x-label>
+                    <x-button-a href="{{ route('gestion_cuadrilleros.resumen_general.index') }}">
                         Acceder al Módulo
                     </x-button-a>
                 </div>

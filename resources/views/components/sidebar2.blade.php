@@ -109,7 +109,7 @@
         'gestion_cuadrilleros.reporte-semanal.index',
         'gestion_cuadrilleros.registro-diario.index',
         'gestion_cuadrilleros.bonificaciones.index',
-        'gestion_cuadrilleros.pagos.index',
+        'gestion_cuadrilleros.resumen_general.index',
         'cuadrilleros.gestion',
         'gestion_cuadrilleros.resumen_anual'
     ])"            logo='fas fa-hard-hat' text="Cuadrilla">
@@ -138,9 +138,9 @@
                     :active="request()->routeIs('gestion_cuadrilleros.bonificaciones.index')">
                     Bonificaciones
                 </x-nav-link-child>
-                <x-nav-link-child href="{{ route('gestion_cuadrilleros.pagos.index') }}"
-                    :active="request()->routeIs('gestion_cuadrilleros.pagos.index')">
-                    Pago de cuadrilla
+                <x-nav-link-child href="{{ route('gestion_cuadrilleros.resumen_general.index') }}"
+                    :active="request()->routeIs('gestion_cuadrilleros.resumen_general.index')">
+                    Resumen General
                 </x-nav-link-child>
                 <x-nav-link-child href="{{ route('gestion_cuadrilleros.resumen_anual') }}"
                     :active="request()->routeIs('gestion_cuadrilleros.resumen_anual')">

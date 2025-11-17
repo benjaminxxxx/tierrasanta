@@ -7,6 +7,39 @@ use InvalidArgumentException;
 
 class CalculoHelper
 {
+    
+    /**
+     * Calcula el costo total que representa una actividad específica
+     * realizada por un empleado, en base a las horas trabajadas y los bonos.
+     *
+     * @param float|int $totalHoras     Total de horas trabajadas en el día
+     * @param float|int $totalJornal    Monto total ganado por el empleado ese día
+     * @param float|int $horasParcial   Horas trabajadas en la actividad/campo
+     * @param float|int $bonoParcial    Bono asociado a la actividad/campo
+     * @return float Costo total (costo proporcional + bono)
+     * @throws InvalidArgumentException Si algún parámetro no es válido
+     */
+    public static function calcularCostoActividad(
+        float|int $totalHoras,
+        float|int $totalJornal,
+        float|int $horasParcial,
+        float|int $bonoParcial = 0
+    ): float {
+        if ($totalHoras <= 0) {
+            throw new InvalidArgumentException("El total de horas debe ser mayor que cero.");
+        }
+
+        if ($totalJornal < 0 || $horasParcial < 0 || $bonoParcial < 0) {
+            throw new InvalidArgumentException("Los valores no pueden ser negativos.");
+        }
+
+        // Costo proporcional al tiempo trabajado
+        $tasaHora = $totalJornal / $totalHoras;
+        $costoParcial = $horasParcial * $tasaHora;
+
+        // Costo total (proporcional + bono)
+        return $costoParcial + $bonoParcial;
+    }
     /**
      * Calcula la cantidad de jornales en base a las horas trabajadas.
      *

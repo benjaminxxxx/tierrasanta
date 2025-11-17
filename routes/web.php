@@ -10,6 +10,7 @@ use App\Http\Controllers\KardexController;
 use App\Http\Controllers\MaquinariaController;
 use App\Http\Controllers\NutrienteController;
 use App\Http\Controllers\ReporteDiarioController;
+use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AsistenciaPlanillaController;
 use App\Http\Controllers\GastoController;
@@ -82,7 +83,7 @@ Route::middleware([
     //CAMPAÑAS
     Route::get('/campanias', [CampaniaController::class, 'campanias'])->name('campanias');
     Route::get('/campo/camapania/{campo?}', [CampoController::class, 'campania'])->name('campo.campania');
-
+    Route::get('/campanias_x_campo', [CampoController::class, 'campaniaxcampo'])->name('campania.x.campo');
     Route::get('/riego/estados', [CampoController::class, 'riego'])->name('campo.riego');
     Route::get('/campo/campos', [CampoController::class, 'campos'])->name('campo.campos');
     Route::get('/campo/siembras', [CampoController::class, 'siembra'])->name('campo.siembra');
@@ -122,8 +123,8 @@ Route::middleware([
             ->name('gestion_cuadrilleros.periodos.index');
 
         // Módulo de Pagos
-        Route::get('/pagos', [CuadrillaController::class, 'pagos'])
-            ->name('gestion_cuadrilleros.pagos.index');
+        Route::get('/resumen-general', [CuadrillaController::class, 'pagos'])
+            ->name('gestion_cuadrilleros.resumen_general.index');
 
         // Bonificaciones
         Route::get('/bonificaciones', [CuadrillaController::class, 'bonificaciones'])
@@ -191,4 +192,5 @@ Route::middleware([
     Route::get('/cochinilla/infestacion', [CochinillaController::class, 'infestacion'])->name('cochinilla.infestacion');
     Route::get('/cochinilla/ventas', [CochinillaController::class, 'ventas'])->name('cochinilla.ventas');
 
+    Route::get('/test/costos',[TestController::class,'mano_obra']);
 });

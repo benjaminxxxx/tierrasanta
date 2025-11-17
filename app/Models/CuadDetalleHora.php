@@ -23,4 +23,5 @@ class CuadDetalleHora extends Model
     {
         return $this->belongsTo(CuadRegistroDiario::class, 'registro_diario_id');
     }
+    
 }

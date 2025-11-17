@@ -33,6 +33,9 @@ class GestionCuadrillaReporteDiarioComponent extends Component
         $this->inicializarValores();
         $this->cargarDatosDeReporte();
     }
+    public function updatedTramoSeleccionadoId($tramoId){
+        $this->refrescarTabla($this->fecha);
+    }
     protected function despuesFechaModificada(string $fecha)
     {
         $this->detectarTramos($fecha);
@@ -43,8 +46,10 @@ class GestionCuadrillaReporteDiarioComponent extends Component
     #region METODOS
     private function detectarTramos($fecha){
         $this->tramos = $this->reporteDiarioCuadrillaServicio->obtenerTramosEnFecha($fecha);
-        if($this->tramos && $this->tramos->count() == 1){
+
+        if($this->tramos && $this->tramos->count() >= 1){
             $this->tramoSeleccionadoId = $this->tramos->first()->id;
+            
         }
     }
     private function inicializarValores()

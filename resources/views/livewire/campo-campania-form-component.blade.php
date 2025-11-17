@@ -1,16 +1,9 @@
 <div>
     <x-dialog-modal wire:model="mostrarFormulario">
         <x-slot name="title">
-            <div class="flex items-center justify-between">
-                <x-h3>
-                    Registro de Campaña
-                </x-h3>
-                <div class="flex-shrink-0">
-                    <button wire:click="$set('mostrarFormulario',false)" class="focus:outline-none">
-                        <i class="fa-solid fa-circle-xmark"></i>
-                    </button>
-                </div>
-            </div>
+            <x-h3>
+                Registro de Campaña
+            </x-h3>
         </x-slot>
         <x-slot name="content">
             <div>
