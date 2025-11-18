@@ -150,16 +150,15 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
                         ? $recojos[$numeroRecojo]->produccion
                         : '';
                 }
-
                 foreach ($registroPlanilla->detalles as $detalle) {
                     $inicio = Carbon::parse($detalle->hora_inicio)->format('H:i');
-                    $fin = Carbon::parse($detalle->hora_salida)->format('H:i');
+                    $fin = Carbon::parse($detalle->hora_fin)->format('H:i');
                     $key = "$inicio-$fin";
                     $horariosConcatenados[] = $key;
                 }
 
                 $row['horarios'] = implode(',', $horariosConcatenados);
-
+                
                 $row['rango_total_horas'] = DateHelper::calcularDuracionPorTramo($row['horarios']);
                 $row['total_horas'] = DateHelper::calcularTotalHorasFloat($row['rango_total_horas']);
 

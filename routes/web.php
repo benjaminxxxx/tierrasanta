@@ -90,7 +90,7 @@ Route::middleware([
     Route::post('/campo/mapa/guardar-posicion/{nombre}', [CampoController::class, 'guardarPosicion'])->name('campo.mapa.guardar-posicion');
 
     Route::get('/campania/costos', [CampaniaController::class, 'costos'])->name('campania.costos');
-    
+
     //Consolidados
     Route::get('/riego/resumen-diario', function () {
         return view('consolidado.riegos');
@@ -100,7 +100,14 @@ Route::middleware([
     Route::get('/planilla/asistencia/cargar-asistencias', [AsistenciaPlanillaController::class, 'cargarAsistencias'])->name('planilla.asistencia.cargar_asistencias');
 
     //REPORTE
-
+    Route::prefix('planilla')->group(function () {
+        // Pantalla principal / dashboard
+        Route::get('/gestion_planilla/reporte_general', function () {
+            // Apunta a la nueva y más corta ubicación
+            return view('livewire.gestion-planilla.reportes.reporte-general-index');
+        })
+            ->name('gestion_planilla.reporte_general'); // ¡Cambia el nombre de la ruta para ser más específico!
+    });
     Route::prefix('cuadrilla/gestion_cuadrilleros')->group(function () {
         // Pantalla principal / dashboard
         Route::get('/', [CuadrillaController::class, 'gestion'])
@@ -142,7 +149,7 @@ Route::middleware([
     Route::post('/reporte/reporte-diario/actualizar-campos', [ReporteDiarioController::class, 'ActualizarCampos'])->name('reporte.reporte_diario.actualizar_campos');
 
     Route::get('/planilla/resumen-mensual', [ReporteController::class, 'ResumenPlanilla'])->name('reporte.resumen_planilla');
- 
+
     //PROVEEDORES
     Route::get('/proveedores', [ProveedorController::class, 'index'])->name('proveedores.index');
 
@@ -192,5 +199,5 @@ Route::middleware([
     Route::get('/cochinilla/infestacion', [CochinillaController::class, 'infestacion'])->name('cochinilla.infestacion');
     Route::get('/cochinilla/ventas', [CochinillaController::class, 'ventas'])->name('cochinilla.ventas');
 
-    Route::get('/test/costos',[TestController::class,'mano_obra']);
+    Route::get('/test/costos', [TestController::class, 'mano_obra']);
 });

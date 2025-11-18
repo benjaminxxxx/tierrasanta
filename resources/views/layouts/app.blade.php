@@ -153,7 +153,7 @@ $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(valu
     <x-preloader />
 
     <div class="flex h-screen bg-gray-100 dark:bg-gray-900">
-        <x-sidebar2 />
+        <x-sidebar />
         <main class="flex-1 p-5 overflow-auto">
             {{ $slot }}
         </main>
