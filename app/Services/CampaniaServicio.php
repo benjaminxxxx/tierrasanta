@@ -36,7 +36,7 @@ class CampaniaServicio
         if (!$this->campoCampania) {
             return;
         }
-
+        
         $data = [];
         $evaluacionesPoblacionPlanta = $this->campoCampania->poblacionPlantas;
         if ($evaluacionesPoblacionPlanta->count() > 0) {

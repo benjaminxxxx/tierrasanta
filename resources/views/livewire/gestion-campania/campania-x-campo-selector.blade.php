@@ -1,7 +1,7 @@
 <div>
     <x-flex class="justify-between">
         <x-h3>
-            Camapañas por Campo
+            Campañas por Campo
         </x-h3>
         <x-button @click="$wire.dispatch('registroCampania')">
             <i class="fa fa-plus"></i> Registrar Nueva Campaña
@@ -32,8 +32,9 @@
         </x-flex>
     </x-card2>
 
-    @if ($campania && $opcion == 'general')
-        @include('livewire.gestion-campania.partials.campania-x-campo-selector-informacion-general')
+    @if($campaniaSeleccionada)
+        <livewire:gestion-campania.campania-por-campo-informe-component :campania="$campaniaSeleccionada" />
     @endif
+
     <x-loading wire:loading />
 </div>

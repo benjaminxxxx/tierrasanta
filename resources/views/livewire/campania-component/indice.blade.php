@@ -2,7 +2,7 @@
     <x-loading wire:loading />
 
     <x-h3 class="mb-4">
-        Camapañas por Campo
+        Campañas por Campo
     </x-h3>
     <x-card>
         <x-spacing>

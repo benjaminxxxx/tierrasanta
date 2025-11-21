@@ -1,5 +1,5 @@
 @props(['value'])
 
-<th  scope="col" {{ $attributes->merge(['class' => 'text-left px-2 py-1 text-gray-700 dark:text-gray-200 font-bold']) }}>
+<th  scope="col" {{ $attributes->merge(['class' => 'px-6 py-4']) }}>
     {{ $value ?? $slot }}
 </th>

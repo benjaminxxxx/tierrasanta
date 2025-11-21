@@ -186,9 +186,9 @@ class CampoCampania extends Model
     {
         return $this->hasMany(ReporteCostoPlanilla::class, 'campos_campanias_id');
     }
-    public function poblacionPlantas()
+    public function evaluacionPoblacionPlantas()
     {
-        return $this->hasMany(PoblacionPlantas::class, 'campania_id');
+        return $this->hasOne(EvalPoblacionPlanta::class, 'campania_id');
     }
     public function evaluacionBrotesXPiso()
     {

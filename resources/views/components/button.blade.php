@@ -45,7 +45,7 @@
     <a
         href="{{ $href }}"
         {{ $attributes->merge(['class' => $classes]) }}
-        @if($disabled) aria-disabled="true" tabindex="-1" @endif
+        @if($disabled) aria-disabled="true" tabindex="-1" @endif @if($target) target="{{ $target }}" @endif
     >
         <div class="flex items-center justify-center gap-1">
             {{ $slot }}

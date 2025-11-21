@@ -4,6 +4,7 @@
     'error' => null,
     'disabled' => false,
     'size' => 'default', // small | default | large
+    'fullWidth' => false,
 ])
 
 @php
@@ -16,9 +17,11 @@
         'large' => 'px-4 py-3 text-base',
         default => 'p-2.5 text-sm',
     };
+
+    $fullClass = $fullWidth ? 'w-full' : 'w-full md:w-auto';
 @endphp
 
-<x-group-field>
+<x-group-field class="{{ $fullWidth ? 'w-full' : '' }}">
     @if ($label)
         <x-label for="{{ $model }}">{{ $label ?? ucfirst(str_replace('_', ' ', $model)) }}</x-label>
     @endif
@@ -27,10 +30,10 @@
         id="{{ $id }}"
         {{ $disabled ? 'disabled' : '' }}
         {!! $attributes->merge([
-            'class' => "block w-full md:w-auto bg-gray-50 border border-gray-300 text-gray-900 rounded-lg 
+            'class' => "block  bg-gray-50 border border-gray-300 text-gray-900 rounded-lg 
                         focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 
                         dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 
-                        dark:focus:border-blue-500 $sizeClasses"
+                        dark:focus:border-blue-500 $sizeClasses $fullClass"
         ]) !!}
     >
         {{ $slot }}

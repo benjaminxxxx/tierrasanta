@@ -5,6 +5,7 @@
     'label' => null,
     'help' => null,
     'size' => 'base', // xs, sm, base, lg
+    'error' => null,
 ])
 
 @php
@@ -75,6 +76,9 @@
             <p id="{{ $id }}-help" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {{ $help }}
             </p>
+        @endif
+        @if ($error && $model)
+            <x-input-error for="{{ $model }}" />
         @endif
     @endif
 </x-group-field>

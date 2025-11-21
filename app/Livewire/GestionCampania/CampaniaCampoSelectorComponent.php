@@ -42,19 +42,22 @@ class CampaniaCampoSelectorComponent extends Component
 
         $this->campanias = CampoCampania::query()
             ->where('campo', $campo)
-            ->orderBy('nombre_campania')
+            ->orderBy('nombre_campania', 'desc')
             ->pluck('nombre_campania', 'id')
             ->toArray();
+
+        $this->campaniaSeleccionada = $this->campanias ? array_key_first($this->campanias) : null;
     }
-    public function eliminarCampania($campaniaSeleccionada){
+    public function eliminarCampania($campaniaSeleccionada)
+    {
         try {
             $campania = CampoCampania::findOrFail($campaniaSeleccionada);
             $campania->delete();
             $this->campoSeleccionado = null;
             $this->listarCampanias('');
-            $this->alert('success','Campaña Eliminada Correctamente.');
+            $this->alert('success', 'Campaña Eliminada Correctamente.');
         } catch (\Throwable $th) {
-            $this->alert('error',$th->getMessage());
+            $this->alert('error', $th->getMessage());
         }
     }
     public function render()

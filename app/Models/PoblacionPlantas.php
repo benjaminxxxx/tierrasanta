@@ -60,7 +60,6 @@ class PoblacionPlantas extends Model
             }
             return 0;
         });
-
         // Retorna el promedio de los cálculos reales
         return $valores->avg();
     }

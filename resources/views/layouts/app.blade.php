@@ -13,7 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
-
+    @include('comun.handsontable')
     <style>
         /* Sidebar Styles */
         .sidebar {
