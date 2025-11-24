@@ -47,8 +47,7 @@
             </x-card>
             <div class="flex-1 overflow-auto">
             
-                @livewire('reporte-campo-poblacion-plantas-component',['campaniaId' => $campania->id,'campaniaUnica'=>true],key($campania->id))
-    
+                @Componente Eliminado
             </div>
         @endif
     </x-flex>

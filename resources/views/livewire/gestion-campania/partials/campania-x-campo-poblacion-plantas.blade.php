@@ -19,7 +19,7 @@
 </x-tr>
 <x-tr>
     <x-td>Nª de pencas madre día cero</x-td>
-    <x-td>{{ $campania->pp_dia_cero_numero_pencas_madre }}</x-td>
+    <x-td>{{ formatear_numero($campania->pp_dia_cero_numero_pencas_madre) }}</x-td>
 </x-tr>
 <x-tr>
     <x-td>Fecha de evaluación resiembra</x-td>
@@ -27,5 +27,5 @@
 </x-tr>
 <x-tr>
     <x-td>Nª de pencas madre después de resiembra</x-td>
-    <x-td>{{ $campania->pp_resiembra_numero_pencas_madre }}</x-td>
+    <x-td>{{ formatear_numero($campania->pp_resiembra_numero_pencas_madre) }}</x-td>
 </x-tr>

@@ -18,12 +18,57 @@ class PoblacionPlantaServicio
     {
         $this->campaniaServicio = $campaniaServicio;
     }
-    public function exportar($data)
+    public function exportar($filtros)
     {
-        $datos = $this->buscar($data, false)->toArray();
-        dd($datos);
-        return Excel::download(new PoblacionPlantaExport($datos), date('Y-m-d') . '_poblacion_plantas.xlsx');
+        $crudos = $this->buscar($filtros, false)->toArray();
+        $ordenado = $this->ordenarDatosExport($filtros, $crudos);
+        return Excel::download(new PoblacionPlantaExport($ordenado), date('Y-m-d') . '_poblacion_plantas.xlsx');
     }
+    public function ordenarDatosExport(array $filtros, array $datos)
+    {
+        $resultado = [];
+
+        foreach ($datos as $item) {
+            // 1. Obtener campo
+            $campo = $item['campania']['campo'] ?? 'SIN_CAMPO';
+
+            // 2. Obtener la campaña (puede ser código, nombre, id)
+            $campania = $item['campania']['nombre_campania'] ?? 'SIN_CAMPANIA';
+
+            // 3. Crear estructura base
+            $resultado[$campo][$campania] = [
+                'fecha_siembra' => $item['fecha_siembra'],
+                'evaluador' => $item['evaluador'],
+                'metros_cama_ha' => $item['metros_cama_ha'],
+                'fecha_cero' => $item['fecha_eval_cero'],
+                'fecha_resiembra' => $item['fecha_eval_resiembra'],
+                'area_lote' => $item['area_lote'],
+                'detalles' => []
+            ];
+
+            // 4. Procesar detalles
+            foreach ($item['detalles'] as $detalle) {
+                $resultado[$campo][$campania]['detalles'][] = [
+                    'numero_cama' => $detalle['numero_cama'],
+                    'longitud_cama' => $detalle['longitud_cama'],
+                    'cero' => $detalle['eval_cero_plantas_x_hilera'],
+                    'resiembra' => $detalle['eval_resiembra_plantas_x_hilera'],
+                ];
+            }
+        }
+
+        // 5. Ordenar por campo y campaña
+        ksort($resultado);
+        foreach ($resultado as $campo => $list) {
+            ksort($resultado[$campo]);
+        }
+
+        return [
+            'filtros' => $filtros,
+            'datos' => $resultado,
+        ];
+    }
+
     public static function buscar(array $filtros, $paginado = true)
     {
         $query = EvalPoblacionPlanta::query()

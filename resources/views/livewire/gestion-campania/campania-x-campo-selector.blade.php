@@ -19,12 +19,6 @@
                             <option value="{{ $campaniaId }}">{{ $campaniaNombre }}</option>
                         @endforeach
                     </x-select>
-                    @if ($campaniaSeleccionada)
-                        <x-select wire:model.live="opcion" label="Seleccionar Informe">
-                            <option value="general">Información General</option>
-                            <option value="mano_obra_costos">Mano de Obra - Costos</option>
-                        </x-select>
-                    @endif
 
                 @endif
             </x-flex>
@@ -33,7 +27,13 @@
     </x-card2>
 
     @if($campaniaSeleccionada)
-        <livewire:gestion-campania.campania-por-campo-informe-component :campania="$campaniaSeleccionada" />
+        <livewire:gestion-campania.campania-por-campo-informe-component :campania="$campaniaSeleccionada" wire:key="Camp{{ $campaniaSeleccionada }}" />
+    @else
+        <x-card2 class="mt-4">
+            <x-label>
+                Seleccionar Campaña
+            </x-label>
+        </x-card2>
     @endif
 
     <x-loading wire:loading />

@@ -12,7 +12,6 @@ class CampaniaCampoSelectorComponent extends Component
     public $campoSeleccionado;
     public $campaniaSeleccionada;
     public $campanias = [];
-    public $opcion = 'general';
     public $campania;
     protected $listeners = [
         'campaniaInsertada' => 'relistarNuevaCampania',
@@ -21,9 +20,12 @@ class CampaniaCampoSelectorComponent extends Component
     {
         $this->listarCampanias($campo);
     }
-    public function updatedCampaniaSeleccionada($campaniaiD): void
+    public function updatedCampaniaSeleccionada($campaniaId): void
     {
-        $this->campania = CampoCampania::find($campaniaiD);
+        $this->campania = CampoCampania::find($campaniaId);
+        if(!$this->campania){
+            $this->campaniaSeleccionada = null;
+        }
     }
     public function relistarNuevaCampania(array $datos): void
     {

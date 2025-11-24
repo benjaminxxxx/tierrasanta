@@ -10,7 +10,7 @@
             <div class="flex gap-5">
                 <div class="w-[10rem] space-y-2">
                     @if ($modoEdicion)
-                        <x-h3>{{ $campoSeleccionado }}</x-h3>
+                        <x-label>Campo</x-label> <x-h3>{{ $campoSeleccionado }}</x-h3>
                     @else
                         <x-select-campo wire:model.live="campoSeleccionado" />
                     @endif

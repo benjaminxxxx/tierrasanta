@@ -203,7 +203,12 @@
                     Siembras
                 </x-nav-link-child>
             </x-nav-link-parent>
-            <x-nav-link-parent name="sectorCampanias" :active="request()->routeIs(['campo.campania', 'campanias', 'campania.costos'])" logo="fa fa-flag" text="Campañas">
+            <x-nav-link-parent name="sectorCampanias" :active="request()->routeIs([
+                'campo.campania', 
+                'campanias', 
+                'campania.costos',
+                'campania.x.campo'
+                ])" logo="fa fa-flag" text="Campañas">
                 <x-nav-link-child href="{{ route('campanias') }}" :active="request()->routeIs('campanias')">
                     Todas las campañas
                 </x-nav-link-child>
@@ -212,6 +217,9 @@
                 </x-nav-link-child>
                 <x-nav-link-child href="{{ route('campo.campania') }}" :active="request()->routeIs('campo.campania')">
                     Campañas por campo
+                </x-nav-link-child>
+                <x-nav-link-child href="{{ route('campania.x.campo') }}" :active="request()->routeIs('campania.x.campo')">
+                    Campañas por campo v2
                 </x-nav-link-child>
             </x-nav-link-parent>
             @endhasanyrole
