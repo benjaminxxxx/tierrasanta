@@ -7,7 +7,6 @@ use App\Models\CampoCampania;
 use App\Models\Cuadrillero;
 use App\Models\EvalPoblacionPlanta;
 use App\Models\PlanEmpleado;
-use App\Models\PoblacionPlantas;
 use App\Services\Produccion\MateriaPrima\PoblacionPlantaServicio;
 use App\Services\Produccion\Planificacion\CampaniaServicio;
 use Exception;
@@ -24,6 +23,7 @@ class EvaluacionPoblacionPlantaFormComponent extends Component
     public $mostrarFormulario = false;
     public $poblacionPlantaId;
     public $evaluadoresNombres = [];
+    public $evaluador;
     public $campaniasDisponibles = [];
     public $idTable;
     public $detalleEvaluacionPoblacionPlanta = [];
@@ -31,7 +31,6 @@ class EvaluacionPoblacionPlantaFormComponent extends Component
     public $campaniaSeleccionada;
     public $area_lote;
     public $fecha_siembra;
-    public $evaluador;
     public $metros_cama_ha;
     public $campania;
     public $fecha_eval_cero;
@@ -152,7 +151,6 @@ class EvaluacionPoblacionPlantaFormComponent extends Component
             $this->dispatch('poblacionPlantasRegistrado');
             $this->alert('success', 'Registro exitoso de población de plantas.');
         } catch (ValidationException $ve) {
-            $this->alert('error', $ve->getMessage());
             throw $ve;
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());

@@ -10,7 +10,7 @@ class ReporteCampoController extends Controller
         return view('livewire.evaluaciones.evaluacion-poblacion-plantas');
     }
     public function evaluacion_brotes(){
-        return view('reporte_campo.evaluacion_brotes');
+        return view('livewire.evaluaciones.evaluacion_brotes');
     }
     public function evaluacion_infestacion_cosecha(){
         return view('reporte_campo.evaluacion_infestacion_cosecha');

@@ -93,10 +93,6 @@
                         </x-card2>
                     </x-tabs-content>
 
-                    <x-tabs-content value="poblacion_plantas">
-                        <livewire:poblacion-plantas-por-campania-component campaniaId="{{ $campania->id }}"
-                            wire:key="poblacion_plantas.{{ $campania->id }}" />
-                    </x-tabs-content>
 
                     <x-tabs-content value="evaluacion_brotes">
                         <livewire:evaluacion-brotes-x-piso-por-campania-component campaniaId="{{ $campania->id }}"
@@ -146,10 +142,6 @@
 
                     <x-tabs-content value="etapas">
                         @include('livewire.campania-component.grupo-etapas')
-                    </x-tabs-content>
-                    <x-tabs-content value="mano_obra_costos">
-                        <livewire:poblacion-plantas-por-campania-component campaniaId="{{ $campania->id }}"
-                            wire:key="mano_obra_costos.{{ $campania->id }}" />
                     </x-tabs-content>
                     
             </x-tabs>

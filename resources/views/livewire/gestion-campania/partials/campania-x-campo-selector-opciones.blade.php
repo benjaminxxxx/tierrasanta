@@ -18,9 +18,6 @@
 
                 <x-slot name="content">
                     <div class="w-full">
-                        <x-dropdown-link class="text-center" @click="agregarCuadrillerosEnTramo">
-                            Ver Resumen
-                        </x-dropdown-link>
                         <x-dropdown-link class="text-center"
                             @click="$wire.dispatch('editarCampania',{campaniaId:{{ $campaniaSeleccionada }}})">
                             Editar Campaña

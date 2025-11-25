@@ -3,6 +3,7 @@
 namespace App\Livewire\GestionCampania;
 
 use App\Models\CampoCampania;
+use App\Services\Produccion\Planificacion\CampaniaServicio;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
@@ -23,7 +24,7 @@ class CampaniaCampoSelectorComponent extends Component
     public function updatedCampaniaSeleccionada($campaniaId): void
     {
         $this->campania = CampoCampania::find($campaniaId);
-        if(!$this->campania){
+        if (!$this->campania) {
             $this->campaniaSeleccionada = null;
         }
     }
@@ -53,10 +54,11 @@ class CampaniaCampoSelectorComponent extends Component
     public function eliminarCampania($campaniaSeleccionada)
     {
         try {
-            $campania = CampoCampania::findOrFail($campaniaSeleccionada);
-            $campania->delete();
+            
+            app(CampaniaServicio::class)->eliminarCampania($campaniaSeleccionada);
             $this->campoSeleccionado = null;
             $this->listarCampanias('');
+
             $this->alert('success', 'Campaña Eliminada Correctamente.');
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());

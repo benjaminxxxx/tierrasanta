@@ -1,11 +1,13 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\Evaluaciones;
 
 use App\Models\CampoCampania;
+use App\Models\Cuadrillero;
 use App\Models\PlanEmpleado;
 use App\Services\CampaniaServicio;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use App\Models\EvaluacionBrotesXPisoDetalle;
@@ -16,7 +18,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use App\Models\EvaluacionBrotesXPiso;
 use Illuminate\Support\Str;
 
-class ReporteCampoEvaluacionBrotesFormComponent extends Component
+class EvaluacionBrotesFormComponent extends Component
 {
     use LivewireAlert;
     public $mostrarFormulario = false;
@@ -24,7 +26,7 @@ class ReporteCampoEvaluacionBrotesFormComponent extends Component
     public $evaluacionBrotesXPiso;
     public $idTable;
     public $campania;
-    public $evaluadorSeleccionado;
+    public $evaluadoresNombres = [];
     public $evaluador;
     public $metros_cama;
     public $fecha;
@@ -32,22 +34,14 @@ class ReporteCampoEvaluacionBrotesFormComponent extends Component
     public $listaBroteXPlantaDetalle = [];
     public $fileNameReporteBroteXPiso = "EVALUACION BROTE X PISO";
     public $campoSeleccionado;
-    public $campaniaUnica;
     protected $listeners = ["editarEvaluacionBrotesPorPiso", "agregarEvaluacionBrote", "storeTableDataBrotesXPiso"];
-    public function mount($campaniaUnica = false)
+    public function mount()
     {
-        $this->campaniaUnica = $campaniaUnica;
         $this->idTable = "table" . Str::random(15);
+        $planilla = PlanEmpleado::pluck('nombres')->toArray();
+        $cuadrilla = Cuadrillero::pluck('nombres')->toArray();
+        $this->evaluadoresNombres = array_values(array_unique(array_merge($planilla, $cuadrilla)));
 
-    }
-    public function enviarHistorialBrotes($campaniaId)
-    {
-        try {
-            $campaniaServicio = new CampaniaServicio($campaniaId);
-            $campaniaServicio->registrarHistorialBrotes();
-        } catch (\Throwable $th) {
-            throw $th;
-        }
     }
     public function updatedCampoSeleccionado()
     {
@@ -124,6 +118,29 @@ class ReporteCampoEvaluacionBrotesFormComponent extends Component
     }
     public function storeTableDataBrotesXPiso($datos)
     {
+        try {
+            $datosGenerales = [
+                'id' => $this->poblacionPlantaId, // puede ser null
+                'area_lote' => $this->area_lote,
+                'fecha_siembra' => $this->fecha_siembra,
+                'metros_cama_ha' => $this->metros_cama_ha,
+                'evaluador' => $this->evaluador,
+                'fecha_eval_cero' => $this->fecha_eval_cero,
+                'fecha_eval_resiembra' => $this->fecha_eval_resiembra,
+                'campania_id' => $this->campania->id,
+                'detalles' => $datos
+            ];
+
+            $this->poblacionPlantaId = app(PoblacionPlantaServicio::class)->registrar($datosGenerales);
+            $this->resetErrorBag();
+            $this->dispatch('poblacionPlantasRegistrado');
+            $this->alert('success', 'Registro exitoso de población de plantas.');
+        } catch (ValidationException $ve) {
+            throw $ve;
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
+        }
+        /*
         $this->validate([
             'metros_cama' => 'required|numeric|min:0|max:99999.999',
             'evaluadorSeleccionado.nombre' => 'required|string',
@@ -168,12 +185,6 @@ class ReporteCampoEvaluacionBrotesFormComponent extends Component
                 // Si existe, actualiza el registro
                 $evaluacionBrotesXPiso = EvaluacionBrotesXPiso::where('id', $this->evaluacionBrotesXPisoId)->first();
                 if ($evaluacionBrotesXPiso) {
-/*
-                    $file_anterior = $this->evaluacionBrotesXPiso->reporte_file;
-
-                    if ($file_anterior && Storage::disk('public')->exists($file_anterior)) {
-                        Storage::disk('public')->delete($file_anterior);
-                    }*/
 
                     $evaluacionBrotesXPiso->update($data);
                 }
@@ -218,12 +229,11 @@ class ReporteCampoEvaluacionBrotesFormComponent extends Component
             }
 
             $this->alert('success', $message);
-            $this->enviarHistorialBrotes($this->campania->id);
             $this->dispatch('poblacionPlantasRegistrado');
         } catch (\Throwable $th) {
             $this->dispatch('log', $th->getMessage());
             $this->alert('error', 'Ocurrió un error interno al procesar la solicitud.');
-        }
+        }*/
     }
     public function generarReporteDetalle($datos)
     {
@@ -376,7 +386,6 @@ class ReporteCampoEvaluacionBrotesFormComponent extends Component
     {
         $this->resetErrorBag();
         $this->reset([
-            'evaluadorSeleccionado',
             'evaluador',
             'metros_cama',
             'fecha',
@@ -390,36 +399,8 @@ class ReporteCampoEvaluacionBrotesFormComponent extends Component
         $this->fecha = Carbon::now()->format('Y-m-d');
         $this->enviarAtabla([]);
     }
-    public function quitarEvaluador()
-    {
-        $this->reset(['evaluadorSeleccionado']);
-    }
-    public function updatedEvaluador()
-    {
-        $this->evaluadores = PlanEmpleado::whereRaw(
-            "CONCAT(nombres, ' ', apellido_paterno, ' ', apellido_materno) LIKE ?",
-            ["%{$this->evaluador}%"]
-        )
-            ->limit(5)
-            ->get()
-            ->map(function ($evaluador) {
-                return [
-                    'id' => $evaluador->id,
-                    'nombres' => $evaluador->nombre_completo
-                ];
-            })
-            ->toArray();
-    }
-    public function seleccionarEvaluador($id, $nombre)
-    {
-        $this->reset(['evaluador', 'evaluadores']);
-        $this->evaluadorSeleccionado = [
-            'id' => $id,
-            'nombre' => $nombre,
-        ];
-    }
     public function render()
     {
-        return view('livewire.reporte-campo-evaluacion-brotes-form-component');
+        return view('livewire.evaluaciones.evaluacion-brotes-form-component');
     }
 }

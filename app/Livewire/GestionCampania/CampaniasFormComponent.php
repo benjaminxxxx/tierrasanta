@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\GestionCampania;
 
 use App\Models\Campo;
 use App\Models\CampoCampania;
@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
-class CampoCampaniaFormComponent extends Component
+class CampaniasFormComponent extends Component
 {
     use LivewireAlert;
     public $mostrarFormulario = false;
@@ -172,6 +172,6 @@ class CampoCampaniaFormComponent extends Component
 
     public function render()
     {
-        return view('livewire.campo-campania-form-component');
+        return view('livewire.gestion-campania.campanias-form-component');
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\Evaluaciones;
 
 use App\Models\EvaluacionBrotesXPiso;
 use App\Services\CampaniaServicio;
@@ -8,7 +8,7 @@ use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-class ReporteCampoEvaluacionBrotesComponent extends Component
+class EvaluacionBrotesComponent extends Component
 {
     use WithPagination;
     use LivewireAlert;
@@ -103,7 +103,7 @@ class ReporteCampoEvaluacionBrotesComponent extends Component
         }
 
         $evaluacionesBrotes = $query->paginate(20);
-        return view('livewire.reporte-campo-evaluacion-brotes-component',[
+        return view('livewire.evaluaciones.evaluacion-brotes-component',[
             'evaluacionesBrotes'=>$evaluacionesBrotes
         ]);
     }

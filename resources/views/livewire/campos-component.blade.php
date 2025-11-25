@@ -71,17 +71,14 @@
                                 @endif
                             </x-th>
                             <x-th class="text-center">
-                                <x-flex>
+                                <x-flex class="justify-center">
                                     <x-button
                                         @click="$wire.dispatch('registroCampania',{campoNombre:'{{ $campo->nombre }}'})">
                                         <i class="fa fa-plus"></i> Crear campaña
                                     </x-button>
-                                    <x-button-a href="{{ route('campo.campania', ['campo' => $campo->nombre]) }}">
-                                        <i class="fa fa-eye"></i> Ver campañas
-                                    </x-button-a>
-                                    <x-secondary-button wire:click="editarCampo('{{ $campo->nombre }}')">
+                                    <x-button variant="secondary" wire:click="editarCampo('{{ $campo->nombre }}')">
                                         <i class="fa fa-edit"></i> Editar
-                                    </x-secondary-button>
+                                    </x-button>
                                 </x-flex>
                             </x-th>
                         </x-tr>
