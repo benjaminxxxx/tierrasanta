@@ -3,9 +3,9 @@
     <x-td class="bg-gray-50 text-xs text-gray-700 uppercase  dark:bg-gray-700 dark:text-gray-400">
       
         @if ($campania)
-            {{-- -<x-button type="button" @click="$wire.dispatch('agregarEvaluacionBrote',{campaniaId:{{ $campania->id }}})">
+            <x-button type="button" @click="$wire.dispatch('agregarEvaluacionBrote',{campaniaId:{{ $campania->id }}})">
                 <i class="fa fa-plus"></i> AGREGAR EVALUACIÓN
-            </x-button> --}}
+            </x-button>
             <x-button href="{{ route('reporte_campo.evaluacion_brotes') }}" target="_blank">
                 <i class="fa fa-link"></i> VER EVALUACIONES
             </x-button>

@@ -32,10 +32,9 @@
             </x-flex>
         </x-flex>
     </x-card2>
-    <x-card class="mt-3">
-        <x-spacing>
-            <x-table>
-                <x-slot name="thead">
+    <div class="">
+            <table class="mt-3 p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                     <x-tr>
 
                         <x-th class="text-center" rowspan="2">
@@ -62,8 +61,18 @@
                         <x-th class="text-center" rowspan="2">
                             Fin de Campaña
                         </x-th>
+                        <!-- ------------------------------- -->
+                        <!-- BLOQUE: POBLACIÓN PLANTAS -->
+                        <!-- ------------------------------- -->
                         <x-th class="text-center bg-amber-600 text-white" colspan="4">
                             Población de Plantas
+                        </x-th>
+
+                        <!-- ------------------------------- -->
+                        <!-- BLOQUE: BROTES POR PISO -->
+                        <!-- ------------------------------- -->
+                        <x-th class="text-center bg-green-700 text-white" colspan="7">
+                            Brotes por Piso
                         </x-th>
                     </x-tr>
                     <x-tr>
@@ -79,9 +88,38 @@
                         <x-th class="text-center bg-amber-600 text-white">
                             Nª de pencas madre después de resiembra
                         </x-th>
+                        <!-- -------- SUBCOLUMNAS BROTES POR PISO -------- -->
+
+                        <x-th class="text-center bg-green-700 text-white">
+                            Fecha evaluación brotes por piso
+                        </x-th>
+
+                        <x-th class="text-center bg-green-700 text-white">
+                            Actual brotes aptos 2° piso
+                        </x-th>
+
+                        <x-th class="text-center bg-green-700 text-white">
+                            Brotes 2° piso después de N días
+                        </x-th>
+
+                        <x-th class="text-center bg-green-700 text-white">
+                            Actual brotes aptos 3° piso
+                        </x-th>
+
+                        <x-th class="text-center bg-green-700 text-white">
+                            Brotes 3° piso después de N días
+                        </x-th>
+
+                        <x-th class="text-center bg-green-700 text-white">
+                            Total actual brotes 2° + 3° piso
+                        </x-th>
+
+                        <x-th class="text-center bg-green-700 text-white">
+                            Total brotes 2° + 3° piso después de N días
+                        </x-th>
                     </x-tr>
-                </x-slot>
-                <x-slot name="tbody">
+                </thead>
+                <tbody>
                     @foreach ($campaniasGenerales as $indice => $campania)
                         <x-tr>
                             <x-td class="text-center">
@@ -145,13 +183,40 @@
                             <x-td class="text-center">
                                 {{$campania->pp_resiembra_numero_pencas_madre}}
                             </x-td>
+                            <x-td class="text-center">
+                                {{$campania->brotexpiso_fecha_evaluacion}}
+                            </x-td>
+
+                            <x-td class="text-center">
+                                {{$campania->brotexpiso_actual_brotes_2piso}}
+                            </x-td>
+
+                            <x-td class="text-center">
+                                {{$campania->brotexpiso_brotes_2piso_n_dias}}
+                            </x-td>
+
+                            <x-td class="text-center">
+                                {{$campania->brotexpiso_actual_brotes_3piso}}
+                            </x-td>
+
+                            <x-td class="text-center">
+                                {{$campania->brotexpiso_brotes_3piso_n_dias}}
+                            </x-td>
+
+                            <x-td class="text-center">
+                                {{$campania->brotexpiso_actual_total_brotes_2y3piso}}
+                            </x-td>
+
+                            <x-td class="text-center">
+                                {{$campania->brotexpiso_total_brotes_2y3piso_n_dias}}
+                            </x-td>
+
                         </x-tr>
                     @endforeach
-                </x-slot>
-            </x-table>
+                    </tbody>
+            </table>
             <div class="my-4">
                 {{$campaniasGenerales->links()}}
             </div>
-        </x-spacing>
-    </x-card>
+        </div>
 </div>

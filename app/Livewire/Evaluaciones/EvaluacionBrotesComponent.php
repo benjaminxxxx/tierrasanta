@@ -2,109 +2,93 @@
 
 namespace App\Livewire\Evaluaciones;
 
+use App\Models\EvalBrotesPorPiso;
 use App\Models\EvaluacionBrotesXPiso;
-use App\Services\CampaniaServicio;
+use App\Services\Produccion\MateriaPrima\BrotesPorPisoServicio;
+use App\Services\Produccion\Planificacion\CampaniaServicio;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
+use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
 
 class EvaluacionBrotesComponent extends Component
 {
-    use WithPagination;
+    use WithPagination, WithoutUrlPagination;
     use LivewireAlert;
     public $campoFiltrado;
     public $campaniaId;
-    public $campaniaUnica;
-    protected $listeners = ['poblacionPlantasRegistrado','confirmareliminarBrotesXPiso'];
+    public $campaniaFiltrada;
+    public $fechaDesde;
+    public $fechaHasta;
+    public $fechaFiltro;
+    public $evaluadorFiltro;
+    public $campaniasParaFiltro = [];
+    protected $listeners = ['brotesPorPisoRegistrado' => '$refresh','confirmareliminarBrotesXPiso'];
 
-    public function mount($campaniaId = null,$campaniaUnica=false){
-        $this->campaniaId = $campaniaId;
-        $this->campaniaUnica = $campaniaUnica;
-    }
-    public function poblacionPlantasRegistrado(){
-        $this->resetPage();
-    }
-    public function enviarHistorialBrotes($campaniaId){
-        try {
-            $campaniaServicio = new CampaniaServicio($campaniaId);
-            $campaniaServicio->registrarHistorialBrotes();
-            $this->dispatch('poblacionPlantasRegistrado');
-        } catch (\Throwable $th) {
-            throw $th;
-        }
-    }
-    public function duplicar($evaluacionBrotesXPisoId)
+    public function mount()
     {
-        try {
-            // Buscar la evaluación original
-            $evaluacionOriginal = EvaluacionBrotesXPiso::with('detalles')->find($evaluacionBrotesXPisoId);
+       
+    }
+    public function updatedCampoFiltrado()
+    {
+        $this->resetPage();
+        $this->campaniasParaFiltro = [];
+        $this->campaniaFiltrada = null;
 
-            if (!$evaluacionOriginal) {
-                return;
-            }
-
-            // Crear la nueva evaluación duplicada con la fecha actual
-            $nuevaEvaluacion = $evaluacionOriginal->replicate();
-            $nuevaEvaluacion->fecha = now(); // Asignar la fecha actual
-            $nuevaEvaluacion->save();
-
-            // Duplicar los detalles
-            foreach ($evaluacionOriginal->detalles as $detalle) {
-                $nuevoDetalle = $detalle->replicate();
-                $nuevoDetalle->brotes_x_piso_id = $nuevaEvaluacion->id; // Asignar la nueva evaluación
-                $nuevoDetalle->save();
-            }
-            
-            $this->alert('success', 'Evaluación duplicada con éxito');
-            $this->enviarHistorialBrotes($nuevaEvaluacion->campania->id);
-        } catch (\Throwable $th) {
-            $this->dispatch('log',$th->getMessage());
-            $this->alert('error', 'Ocurrió un error al intentar duplicar el registro');
+        if (!$this->campoFiltrado) {
+            return;
+        }
+        
+        $this->campaniasParaFiltro = app(CampaniaServicio::class)->buscarCampaniasPorCampo($this->campoFiltrado);
+        if ($this->campaniasParaFiltro->isNotEmpty()) {
+            $this->campaniaFiltrada = $this->campaniasParaFiltro->first()->id;
         }
     }
-
-    public function eliminarBrotesXPiso($evaluacionBrotesXPisoId)
+    public function eliminarBrotesXPiso($brotesId)
     {
         $this->confirm('¿Está seguro(a) que desea eliminar el registro?', [
             'onConfirmed' => 'confirmareliminarBrotesXPiso',
             'data' => [
-                'evaluacionBrotesXPisoId' => $evaluacionBrotesXPisoId,
+                'evaluacionBrotesXPisoId' => $brotesId,
             ],
         ]);
     }
     public function confirmareliminarBrotesXPiso($data)
     {
         try {
-            $evaluacionBrotesXPisoId = $data['evaluacionBrotesXPisoId'];
-            $evaluacionBrotesXPiso = EvaluacionBrotesXPiso::findOrFail($evaluacionBrotesXPisoId);
-            $campaniaId = $evaluacionBrotesXPiso->campania->id;
-            $evaluacionBrotesXPiso->delete();
-            $this->alert('success', 'Registro Eliminado Correctamente.');
-            $this->enviarHistorialBrotes($campaniaId);
-
+            app(BrotesPorPisoServicio::class)->eliminar($data['evaluacionBrotesXPisoId']);
+            $this->alert('success', 'Registro eliminado correctamente.');
         } catch (\Throwable $th) {
-            $this->dispatch('log', $th->getMessage());
-            return $this->alert('error', $th->getMessage());
+            $this->alert('error', $th->getMessage());
+        }
+    }
+    public function exportarReporteBrotesXPiso(){
+        try {
+            $data = [
+                'campo' => $this->campoFiltrado,
+                'campania' => $this->campaniaFiltrada,
+                'evaluador' => $this->evaluadorFiltro,
+                'fecha' => $this->fechaFiltro
+            ];
+            return app(BrotesPorPisoServicio::class)->exportar($data);
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
         }
     }
     public function render()
     {
-        
-        $query = EvaluacionBrotesXPiso::when($this->campoFiltrado,function($query)  {
 
-            $campo = $this->campoFiltrado;
-            return $query->whereHas('campania',function ($q) use($campo) {
-                return $q->where('campo',$campo);
-            });
-        });
+        $evaluaciones = BrotesPorPisoServicio::buscar([
+            'campo' => $this->campoFiltrado,
+            'campania_id' => $this->campaniaFiltrada,
+            'evaluador' => $this->evaluadorFiltro,
+            'fecha' => $this->fechaFiltro,
+            'fecha_desde' => $this->fechaDesde,
+            'fecha_hasta' => $this->fechaHasta,
+        ]);
 
-        if($this->campaniaUnica){
-            $query->where('campania_id',$this->campaniaId);
-        }
-
-        $evaluacionesBrotes = $query->paginate(20);
-        return view('livewire.evaluaciones.evaluacion-brotes-component',[
-            'evaluacionesBrotes'=>$evaluacionesBrotes
+        return view('livewire.evaluaciones.evaluacion-brotes-component', [
+            'evaluacionesBrotes' => $evaluaciones
         ]);
     }
 }

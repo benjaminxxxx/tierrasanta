@@ -192,7 +192,7 @@ class CampoCampania extends Model
     }
     public function evaluacionBrotesXPiso()
     {
-        return $this->hasMany(EvaluacionBrotesXPiso::class, 'campania_id');
+        return $this->hasOne(EvalBrotesPorPiso::class, 'campania_id');
     }
     public function proyeccionesRendimientosPoda()
     {

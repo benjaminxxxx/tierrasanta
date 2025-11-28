@@ -43,9 +43,10 @@ class CampaniaServicio
 
         return true;
     }
-    public function descargarReporteCampania($registros,$campo,$campania){
-       
-        return app(RptProduccionPlanificacionCampania::class)->descargarReporteGeneral($registros,$campo,$campania);
+    public function descargarReporteCampania($registros, $campo, $campania)
+    {
+
+        return app(RptProduccionPlanificacionCampania::class)->descargarReporteGeneral($registros, $campo, $campania);
     }
     /**
      * Recalcula los promedios de población (Día 0 y Resiembra) basándose en el historial.
@@ -76,6 +77,20 @@ class CampaniaServicio
 
         // Guardar métricas en campaña
         $campania->update($data);
+    }
+
+    /**
+     * Actualiza uno o varios campos de la campaña.
+     * 
+     * @param int   $campaniaId    ID de campaña
+     * @param array $valores       ['campo' => valor, ...]
+     */
+    public function actualizarMetricas(int $campaniaId, array $valores): void
+    {
+        $campania = Campania::findOrFail($campaniaId);
+
+        // Solo actualiza los campos enviados
+        $campania->update($valores);
     }
 
 }
