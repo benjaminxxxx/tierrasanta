@@ -1,6 +1,6 @@
 <x-tr class="">
-    <x-th colspan="2" class="bg-gray-50 text-xs text-gray-700 uppercase  dark:bg-gray-700 dark:text-gray-400">INFORMACIÓN GENERAL</x-th>
-    <x-td class="bg-gray-50 text-xs text-gray-700 uppercase  dark:bg-gray-700 dark:text-gray-400">
+    <x-th colspan="3" class="bg-gray-50 text-xs text-gray-700 uppercase  dark:bg-gray-700 dark:text-gray-400">INFORMACIÓN GENERAL</x-th>
+    <x-td class="bg-gray-100 dark:bg-gray-600 text-xs text-gray-700 uppercase">
         <x-button>
             <i class="fa fa-edit"></i> Editar
         </x-button>
@@ -9,6 +9,8 @@
 <x-tr>
     <x-td>Lote:</x-td>
     <x-td>{{ $campania->campo }}</x-td>
+    <x-td></x-td>
+    <x-td class="bg-gray-100 dark:bg-gray-600" rowspan="10"></x-td>
 </x-tr>
 
 <x-tr>

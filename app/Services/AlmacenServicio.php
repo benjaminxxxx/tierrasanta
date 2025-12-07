@@ -6,7 +6,7 @@ use App\Models\AlmacenProductoSalida;
 use App\Models\CampoCampania;
 use App\Models\CompraProducto;
 use App\Models\CompraSalidaStock;
-use App\Models\FertilizacionCampania;
+use App\Models\InsResFertilizanteCampania;
 use App\Models\KardexProducto;
 use App\Models\PesticidaCampania;
 use App\Models\ProductoNutriente;
@@ -41,47 +41,115 @@ class AlmacenServicio
             throw new Exception("Debe editar la campaña y modificar el área, debe ser diferente de vacío");
         }
 
-        // Eliminar registros anteriores para evitar duplicados
-        FertilizacionCampania::where('campo_campania_id', $campania->id)->delete();
+        // Eliminar registros anteriores
+        InsResFertilizanteCampania::where('campo_campania_id', $campania->id)->delete();
 
-        // Obtener salidas de productos relacionadas al campo
+        // Obtener salidas relacionadas al campo
         $salidas = AlmacenProductoSalida::where('campo_nombre', $campania->campo)
-            ->whereHas('producto', function ($query) {
-                $query->where('categoria', 'fertilizante');
-            })
-            ->with('producto') // Opcional, si necesitas los datos del producto cargados
+            ->with('producto')
             ->get();
-
 
         $data = [];
 
         foreach ($salidas as $salida) {
-            $kg_ha = ((float) $campania->area > 0) ? $salida->cantidad / (float) $campania->area : 0;
 
-            $nutrientes = ['n', 'p', 'k', 'ca', 'mg', 'zn', 'mn', 'fe'];
-            $nutrienteData = [];
-
-            foreach ($nutrientes as $codigo) {
-                $productoNutriente = ProductoNutriente::where('producto_id', $salida->producto_id)
-                    ->where('nutriente_codigo', $codigo)
-                    ->first();
-
-                $nutrienteData["{$codigo}_ha"] = $productoNutriente
-                    ? $productoNutriente->porcentaje * $kg_ha
-                    : null;
+            $producto = $salida->producto;
+            if (!$producto) {
+                continue;
             }
 
-            $data[] = array_merge([
-                'campo_campania_id' => $campania->id,
-                'producto_id' => $salida->producto_id,
-                'fecha' => $salida->fecha_reporte,
-                'kg' => $salida->cantidad,
-                'kg_ha' => $kg_ha,
-            ], $nutrienteData);
+            $categoria = $producto->categoria_codigo;
+
+            // -------------------------------------------------------
+            // 1) CASO ESPECIAL: CORRECTOR DE SALINIDAD
+            // -------------------------------------------------------
+            if ($categoria === 'corrector_salinidad') {
+
+                $etapa = self::determinarEtapa($campania, $salida->fecha_reporte);
+
+                $data[] = [
+                    'campo_campania_id' => $campania->id,
+                    'producto_id' => $producto->id,
+                    'fecha' => $salida->fecha_reporte,
+                    'kg' => null, // aquí no se usa kg
+                    'corrector_salinidad_cant' => $salida->cantidad,
+                    'etapa' => $etapa,
+
+                    // Nutrientes = null
+                    'n_kg' => null,
+                    'p_kg' => null,
+                    'k_kg' => null,
+                    'ca_kg' => null,
+                    'mg_kg' => null,
+                    'zn_kg' => null,
+                    'mn_kg' => null,
+                    'fe_kg' => null,
+
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+
+                continue; // Saltar cálculo normal
+            }
+
+            // -------------------------------------------------------
+            // 2) CASO NORMAL: FERTILIZANTES
+            // -------------------------------------------------------
+            if ($categoria === 'fertilizante') {
+
+                $nutrientes = ['n', 'p', 'k', 'ca', 'mg', 'zn', 'mn', 'fe'];
+                $nutrienteData = [];
+
+                foreach ($nutrientes as $codigo) {
+                    $productoNutriente = ProductoNutriente::where('producto_id', $salida->producto_id)
+                        ->where('nutriente_codigo', $codigo)
+                        ->first();
+
+                    $nutrienteData["{$codigo}_kg"] = $productoNutriente
+                        ? ($productoNutriente->porcentaje / 100) * $salida->cantidad
+                        : null;
+                }
+
+                $etapa = self::determinarEtapa($campania, $salida->fecha_reporte);
+
+                $data[] = array_merge([
+                    'campo_campania_id' => $campania->id,
+                    'producto_id' => $salida->producto_id,
+                    'fecha' => $salida->fecha_reporte,
+                    'kg' => $salida->cantidad,
+                    'corrector_salinidad_cant' => null,
+                    'etapa' => $etapa,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ], $nutrienteData);
+
+            }
         }
 
-        FertilizacionCampania::insert($data);
+        InsResFertilizanteCampania::insert($data);
     }
+    private static function determinarEtapa(CampoCampania $campania, $fecha)
+    {
+        if ($fecha < $campania->fecha_inicio) {
+            return null;
+        }
+
+        if ($campania->infestacion_fecha && $fecha < $campania->infestacion_fecha) {
+            return 'infestacion';
+        }
+
+        if (
+            $campania->reinfestacion_fecha &&
+            $fecha >= $campania->infestacion_fecha &&
+            $fecha < $campania->reinfestacion_fecha
+        ) {
+            return 'reinfestacion';
+        }
+
+        return 'cosecha';
+    }
+
+
     public static function generarPesticidasXCampania($campaniaId)
     {
         $campania = CampoCampania::find($campaniaId);
@@ -138,7 +206,7 @@ class AlmacenServicio
             12 => 'diciembre',
         ];
 
-        $fertilizaciones = FertilizacionCampania::where('campo_campania_id', $campaniaId)
+        $fertilizaciones = InsResFertilizanteCampania::where('campo_campania_id', $campaniaId)
             ->with('producto')
             ->get();
 
@@ -308,11 +376,11 @@ class AlmacenServicio
         // Filtrar por tipo
         if ($tipo === 'combustible') {
             $query->whereHas('producto', function ($q) {
-                $q->where('categoria', 'combustible');
+                $q->where('categoria_codigo', 'combustible');
             });
         } else {
             $query->whereHas('producto', function ($q) {
-                $q->where('categoria', '!=', 'combustible');
+                $q->where('categoria_codigo', '!=', 'combustible');
             });
         }
 

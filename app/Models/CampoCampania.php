@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\CalculoHelper;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -168,7 +169,7 @@ class CampoCampania extends Model
 
     public function fertilizaciones()
     {
-        return $this->hasMany(FertilizacionCampania::class, 'campo_campania_id');
+        return $this->hasMany(InsResFertilizanteCampania::class, 'campo_campania_id');
     }
     public function infestaciones()
     {
@@ -210,6 +211,20 @@ class CampoCampania extends Model
     public function campo_model()
     {
         return $this->belongsTo(Campo::class, 'campo', 'nombre');
+    }
+    public function getTipoInfestadorAttribute()
+    {
+        $tipoInfestador = '-';
+        if ($this->infestacion_cantidad_madres_por_infestador_carton > 0) {
+            $tipoInfestador = 'Cartón ';
+        }
+        if ($this->infestacion_cantidad_madres_por_infestador_tubos > 0) {
+            $tipoInfestador = 'Tubos ';
+        }
+        if ($this->infestacion_cantidad_madres_por_infestador_mallita > 0) {
+            $tipoInfestador = 'Mallita ';
+        }
+        return trim($tipoInfestador);
     }
     public function getTotalHectareaBrotesAttribute()
     {
@@ -276,6 +291,24 @@ class CampoCampania extends Model
     }
     #region Alias
     // Aliases para infestación
+    public function getNumeroInfestadoresPorPencaAttribute()
+    {
+        if ($this->infestacion_numero_pencas == 0 || $this->infestacion_numero_pencas === null) {
+            return null; // o 0 según lo que debas mostrar
+        }
+
+        return $this->numero_infestadores / $this->infestacion_numero_pencas;
+    }
+
+    public function getGramosCochinillaMamaPorInfestador()
+    {
+        if (empty($this->numero_infestadores) || $this->numero_infestadores == 0) {
+            return null; // o 0 si prefieres
+        }
+
+        return ($this->infestacion_kg_mama / $this->numero_infestadores) * 1000;
+    }
+
     public function getInfestacionCantidadMadresPorInfestadorCartonAliasAttribute()
     {
         return $this->formatearMadresPorInfestador($this->infestacion_cantidad_madres_por_infestador_carton);
@@ -446,45 +479,109 @@ class CampoCampania extends Model
 
     #endregion
     #region Nutrientes x Ha
-    public function getNutrienteNitrogenoKgXHaAttribute()
+    // KG totales
+    public function getNutrienteNitrogenoKgAttribute()
     {
-        return $this->fertilizaciones->sum('n_ha');
+        return $this->fertilizaciones->sum('n_kg'); // Aquí n_kg guarda el kg real
     }
 
-    public function getNutrienteFosforoKgXHaAttribute()
+    public function getNutrienteFosforoKgAttribute()
     {
-        return $this->fertilizaciones->sum('p_ha');
+        return $this->fertilizaciones->sum('p_kg');
     }
 
-    public function getNutrientePotasioKgXHaAttribute()
+    public function getNutrientePotasioKgAttribute()
     {
-        return $this->fertilizaciones->sum('k_ha');
+        return $this->fertilizaciones->sum('k_kg');
     }
 
-    public function getNutrienteCalcioKgXHaAttribute()
+    public function getNutrienteCalcioKgAttribute()
     {
-        return $this->fertilizaciones->sum('ca_ha');
+        return $this->fertilizaciones->sum('ca_kg');
     }
 
-    public function getNutrienteMagnesioKgXHaAttribute()
+    public function getNutrienteMagnesioKgAttribute()
     {
-        return $this->fertilizaciones->sum('mg_ha');
+        return $this->fertilizaciones->sum('mg_kg');
     }
 
-    public function getNutrienteZincKgXHaAttribute()
+    public function getNutrienteZincKgAttribute()
     {
-        return $this->fertilizaciones->sum('zn_ha');
+        return $this->fertilizaciones->sum('zn_kg');
     }
 
-    public function getNutrienteManganesoKgXHaAttribute()
+    public function getNutrienteManganesoKgAttribute()
     {
-        return $this->fertilizaciones->sum('mn_ha');
+        return $this->fertilizaciones->sum('mn_kg');
     }
 
-    public function getNutrienteFierroKgXHaAttribute()
+    public function getNutrienteFierroKgAttribute()
     {
-        return $this->fertilizaciones->sum('fe_ha');
+        return $this->fertilizaciones->sum('fe_kg');
+    }
+
+    // KG por hectárea (calculado)
+    public function getNutrienteNitrogenoKgHaAttribute()
+    {
+        return $this->area > 0 ? $this->nutriente_nitrogeno_kg / $this->area : 0;
+    }
+
+    public function getNutrienteFosforoKgHaAttribute()
+    {
+        return $this->area > 0 ? $this->nutriente_fosforo_kg / $this->area : 0;
+    }
+
+    public function getNutrientePotasioKgHaAttribute()
+    {
+        return $this->area > 0 ? $this->nutriente_potasio_kg / $this->area : 0;
+    }
+
+    public function getNutrienteCalcioKgHaAttribute()
+    {
+        return $this->area > 0 ? $this->nutriente_calcio_kg / $this->area : 0;
+    }
+
+    public function getNutrienteMagnesioKgHaAttribute()
+    {
+        return $this->area > 0 ? $this->nutriente_magnesio_kg / $this->area : 0;
+    }
+
+    public function getNutrienteZincKgHaAttribute()
+    {
+        return $this->area > 0 ? $this->nutriente_zinc_kg / $this->area : 0;
+    }
+
+    public function getNutrienteManganesoKgHaAttribute()
+    {
+        return $this->area > 0 ? $this->nutriente_manganeso_kg / $this->area : 0;
+    }
+
+    public function getNutrienteFierroKgHaAttribute()
+    {
+        return $this->area > 0 ? $this->nutriente_fierro_kg / $this->area : 0;
     }
     #endregion
+    protected static function booted()
+    {
+        static::saving(function ($campania) {
+
+            // Solo calcular si alguno cambió
+            if ($campania->isDirty('fecha_inicio') || $campania->isDirty('infestacion_fecha')) {
+
+                $fechaInicio = $campania->fecha_inicio;
+                $fechaInfestacion = $campania->infestacion_fecha;
+
+                // Si ambas fechas existen, calcular duración
+                if (!empty($fechaInicio) && !empty($fechaInfestacion)) {
+                    $campania->infestacion_duracion_desde_campania =
+                        CalculoHelper::calcularDuracionEntreFechas($fechaInicio, $fechaInfestacion);
+                } else {
+                    // Si alguna está vacía, resetear
+                    $campania->infestacion_duracion_desde_campania = null;
+                }
+
+            }
+        });
+    }
 
 }

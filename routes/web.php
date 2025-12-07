@@ -6,6 +6,7 @@ use App\Http\Controllers\CampoController;
 use App\Http\Controllers\CochinillaController;
 use App\Http\Controllers\CuadrillaController;
 use App\Http\Controllers\FdmController;
+use App\Http\Controllers\GestionInsumosController;
 use App\Http\Controllers\KardexController;
 use App\Http\Controllers\MaquinariaController;
 use App\Http\Controllers\NutrienteController;
@@ -173,6 +174,11 @@ Route::middleware([
     Route::get('/roles_y_permisos', [UsuarioController::class, 'roles_permisos'])->middleware('permission:Roles')->name('roles_permisos');
 
 
+    //INSUMOS
+    Route::get('/gestion_insumos/kardex', [GestionInsumosController::class, 'kardex'])->name('gestion_insumos.kardex');
+    Route::get('/gestion_insumos/kardex/{insumoKardexId}', [GestionInsumosController::class, 'kardexDetalle'])->name('gestion_insumos.kardex.detalle');
+    Route::get('/gestion_insumos/kardex/reportes', [GestionInsumosController::class, 'kardexReportes'])->name('gestion_insumos.kardex.reportes');
+    Route::get('/gestion_insumos/kardex/reporte/{insumoKardexReporteId}', [GestionInsumosController::class, 'kardexReporte'])->name('gestion_insumos.kardex.reporte');
     //KARDEX
     Route::get('/kardex/lista', [KardexController::class, 'lista'])->name('kardex.lista');
     Route::get('/kardex/ver/{id}', [KardexController::class, 'ver'])->name('kardex.ver');

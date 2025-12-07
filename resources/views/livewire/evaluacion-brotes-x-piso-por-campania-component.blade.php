@@ -97,8 +97,6 @@
             </x-card>
             <div class="flex-1 overflow-auto">
 
-                @livewire('reporte-campo-evaluacion-brotes-component', ['campaniaId' => $campania->id, 'campaniaUnica' => true], key($campania->id))
-
             </div>
         @endif
     </x-flex>

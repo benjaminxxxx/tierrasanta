@@ -20,7 +20,7 @@ class ProductosFormComponent extends Component
     public $productoId;
     public $nombre_comercial;
     public $ingrediente_activo;
-    public $categoria;
+    public $categoria_codigo;
     public $codigo_tipo_existencia;
     public $codigo_unidad_medida;
     public $sunatTipoExistencias;
@@ -110,7 +110,7 @@ class ProductosFormComponent extends Component
     {
         return [
             'ingrediente_activo' => 'nullable',
-            'categoria' => 'required',
+            'categoria_codigo' => 'required',
             'codigo_tipo_existencia' => 'required',
             'codigo_unidad_medida' => 'required',
             'nombre_comercial' => [
@@ -124,7 +124,7 @@ class ProductosFormComponent extends Component
     protected $messages = [
         'ingrediente_activo.required' => 'El nombre del producto es obligatorio.',
         'ingrediente_activo.unique' => 'El nombre del producto ya está en uso.',
-        'categoria.required' => 'La categoría es obligatoria.',
+        'categoria_codigo.required' => 'La categoría es obligatoria.',
         'codigo_tipo_existencia.required' => 'El tipo de asistencia es obligatorio.',
         'codigo_unidad_medida.required' => 'El código de unidad es obligatorio.',
     ];
@@ -146,7 +146,7 @@ class ProductosFormComponent extends Component
             $this->productoId = $producto->id;
             $this->nombre_comercial = $producto->nombre_comercial;
             $this->ingrediente_activo = $producto->ingrediente_activo;
-            $this->categoria = $producto->categoria;
+            $this->categoria_codigo = $producto->categoria_codigo;
             $this->codigo_tipo_existencia = $producto->codigo_tipo_existencia;
             $this->codigo_unidad_medida = $producto->codigo_unidad_medida;
             $this->categoria_pesticida = $producto->categoria_pesticida;
@@ -165,12 +165,12 @@ class ProductosFormComponent extends Component
             $data = [
                 'nombre_comercial' => mb_strtoupper(trim($this->nombre_comercial)),
                 'ingrediente_activo' => mb_strtoupper(trim($this->ingrediente_activo)),
-                'categoria' => $this->categoria,
+                'categoria_codigo' => $this->categoria_codigo,
                 'codigo_tipo_existencia' => $this->codigo_tipo_existencia,
                 'codigo_unidad_medida' => $this->codigo_unidad_medida
             ];
 
-            if ($this->categoria == 'pesticida') {
+            if ($this->categoria_codigo == 'pesticida') {
                 $data['categoria_pesticida'] = $this->categoria_pesticida ?? null;
             } else {
                 $data['categoria_pesticida'] = null;
@@ -184,7 +184,7 @@ class ProductosFormComponent extends Component
                     $productoId = $producto->id;
 
                     // Si no es fertilizante, eliminar nutrientes existentes
-                    if ($this->categoria !== 'fertilizante') {
+                    if ($this->categoria_codigo !== 'fertilizante') {
                         ProductoNutriente::where('producto_id', $productoId)->delete();
                     }
                 }
@@ -194,7 +194,7 @@ class ProductosFormComponent extends Component
             }
 
             // Si es fertilizante, registrar los nutrientes válidos
-            if ($this->categoria === 'fertilizante') {
+            if ($this->categoria_codigo === 'fertilizante') {
                 // Eliminar anteriores si existe
                 ProductoNutriente::where('producto_id', $productoId)->delete();
 

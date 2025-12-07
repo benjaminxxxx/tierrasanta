@@ -4,7 +4,7 @@ namespace App\Livewire;
 
 use App\Models\AlmacenProductoSalida;
 use App\Models\CampoCampania;
-use App\Models\FertilizacionCampania;
+use App\Models\InsResFertilizanteCampania;
 use App\Services\AlmacenServicio;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -28,7 +28,7 @@ class HistorialConsumoXCampaniaComponent extends Component
         if (!$this->campania) {
             return;
         }
-        $this->salidas = FertilizacionCampania::where('campo_campania_id', $this->campania->id)->get();
+        $this->salidas = InsResFertilizanteCampania::where('campo_campania_id', $this->campania->id)->get();
         $this->resumenSalidas = AlmacenServicio::generarResumenFertilizantePorPeriodo($this->campania->id);
         $this->campania->refresh();
     }

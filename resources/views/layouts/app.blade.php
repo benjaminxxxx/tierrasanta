@@ -143,6 +143,7 @@
             }
         }
     </style>
+    @fluxStyles
 </head>
 
 <body
@@ -175,6 +176,7 @@ $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(valu
             });
         });
     </script>
+    @fluxScripts
 </body>
 
 </html>

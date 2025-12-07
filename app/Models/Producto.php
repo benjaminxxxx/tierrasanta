@@ -14,7 +14,7 @@ class Producto extends Model
     protected $fillable = [
         'nombre_comercial',
         'ingrediente_activo',
-        'categoria',
+        'categoria_codigo',
         'codigo_tipo_existencia',
         'codigo_unidad_medida',
         'categoria_pesticida'
@@ -157,15 +157,15 @@ class Producto extends Model
     {
         // Obtener el producto y verificar si su categoría es "Combustible"
         return self::where('id', $productoId)
-            ->where('categoria', 'combustible')
+            ->where('categoria_codigo', 'combustible')
             ->exists();
     }
     public static function deTipo($tipo)
     {
         if ($tipo === 'combustible') {
-            return self::where('categoria', 'combustible')->with('compras');
+            return self::where('categoria_codigo', 'combustible')->with('compras');
         } else {
-            return self::where('categoria', '!=', 'combustible')->with('compras');
+            return self::where('categoria_codigo', '!=', 'combustible')->with('compras');
         }
     }
     public function getCategoriaConDescripcionAttribute()

@@ -35,7 +35,7 @@
                                         <template x-if="editando">
                                             <x-flex class="space-x-2 items-center">
                                                 <x-input-date wire:model="infestacion_fecha" label="" />
-                                                <x-button type="button" wire:click="registrarCambiosInfestacionFecha"
+                                                <x-button type="button" wire:click=""
                                                     @click="editando = false">
                                                     <i class="fa fa-save"></i>
                                                 </x-button>

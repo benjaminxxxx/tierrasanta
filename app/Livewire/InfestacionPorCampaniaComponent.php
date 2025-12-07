@@ -101,32 +101,6 @@ class InfestacionPorCampaniaComponent extends Component
             $this->alert('error', 'No se ha podido actualizar la fecha de recojo y vaciado de infestadores');
         }
     }
-    public function registrarCambiosInfestacionFecha()
-    {
-        if ($this->campania) {
-
-            // Validar que la fecha no esté vacía y tenga un formato válido
-            if (empty($this->infestacion_fecha) || !strtotime($this->infestacion_fecha)) {
-                $this->campania->update([
-                    'infestacion_fecha' => null,
-                    'infestacion_duracion_desde_campania' => null
-                ]);
-                $this->alert('warning', 'La fecha de infestación se ha limpiado.');
-                return;
-            }
-
-            $duracion = CalculoHelper::calcularDuracionEntreFechas($this->campania->fecha_inicio, $this->infestacion_fecha);
-
-            $this->campania->update([
-                'infestacion_fecha' => $this->infestacion_fecha,
-                'infestacion_duracion_desde_campania' => $duracion
-            ]);
-
-            $this->alert('success', 'Fecha de infestación actualizada correctamente');
-        } else {
-            $this->alert('error', 'No se ha podido actualizar la fecha de infestación');
-        }
-    }
     public function registrarCambiosReinfestacionFecha()
     {
         if ($this->campania) {

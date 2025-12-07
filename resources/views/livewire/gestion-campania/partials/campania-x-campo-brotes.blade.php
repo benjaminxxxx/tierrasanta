@@ -1,6 +1,6 @@
 <x-tr class="">
-    <x-th-header colspan="2">EVALUACIÓN DE BROTES</x-th-header>
-    <x-td class="bg-gray-50 text-xs text-gray-700 uppercase  dark:bg-gray-700 dark:text-gray-400">
+    <x-th-header colspan="3">EVALUACIÓN DE BROTES</x-th-header>
+    <x-td class=" text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-600">
       
         @if ($campania)
             <x-button type="button" @click="$wire.dispatch('agregarEvaluacionBrote',{campaniaId:{{ $campania->id }}})">
@@ -15,6 +15,8 @@
 <x-tr>
     <x-td>Fecha de evaluación</x-td>
     <x-td>{{ formatear_fecha($campania->brotexpiso_fecha_evaluacion) }}</x-td>
+    <x-td></x-td>
+    <x-td  class="bg-gray-100 dark:bg-gray-600" rowspan="7"></x-td>
 </x-tr>
 
 <x-tr>

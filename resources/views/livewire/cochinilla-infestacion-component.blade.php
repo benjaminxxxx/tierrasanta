@@ -191,19 +191,19 @@
                             </x-td>
                             {{-- CARTON --}}
                             @if ($filtrarCarton)
-                                <x-td class="text-center bg-yellow-100">
+                                <x-td class="text-center bg-yellow-100 dark:bg-amber-700">
                                     {{ $cochinillaInfestacion->carton_capacidad_envase }}
                                 </x-td>
-                                <x-td class="text-center bg-yellow-100">
+                                <x-td class="text-center bg-yellow-100 dark:bg-amber-700">
                                     {{ $cochinillaInfestacion->carton_numero_envases }}
                                 </x-td>
-                                <x-td class="text-center bg-yellow-100">
+                                <x-td class="text-center bg-yellow-100 dark:bg-amber-700">
                                     {{ $cochinillaInfestacion->carton_infestadores }}
                                 </x-td>
-                                <x-td class="text-center bg-yellow-100">
+                                <x-td class="text-center bg-yellow-100 dark:bg-amber-700">
                                     {{ $cochinillaInfestacion->carton_madres_por_infestador }}
                                 </x-td>
-                                <x-td class="text-center bg-yellow-100">
+                                <x-td class="text-center bg-yellow-100 dark:bg-amber-700">
                                     {{ $cochinillaInfestacion->carton_infestadores_por_ha }}
                                 </x-td>
                             @endif
@@ -211,19 +211,19 @@
 
                             {{-- TUBO --}}
                             @if ($filtrarTubo)
-                                <x-td class="text-center bg-purple-100">
+                                <x-td class="text-center bg-purple-100 dark:bg-purple-700">
                                     {{ $cochinillaInfestacion->tubo_capacidad_envase }}
                                 </x-td>
-                                <x-td class="text-center bg-purple-100">
+                                <x-td class="text-center bg-purple-100 dark:bg-purple-700">
                                     {{ $cochinillaInfestacion->tubo_numero_envases }}
                                 </x-td>
-                                <x-td class="text-center bg-purple-100">
+                                <x-td class="text-center bg-purple-100 dark:bg-purple-700">
                                     {{ $cochinillaInfestacion->tubo_infestadores }}
                                 </x-td>
-                                <x-td class="text-center bg-purple-100">
+                                <x-td class="text-center bg-purple-100 dark:bg-purple-700">
                                     {{ $cochinillaInfestacion->tubo_madres_por_infestador }}
                                 </x-td>
-                                <x-td class="text-center bg-purple-100">
+                                <x-td class="text-center bg-purple-100 dark:bg-purple-700">
                                     {{ $cochinillaInfestacion->tubo_infestadores_por_ha }}
                                 </x-td>
                             @endif
@@ -231,19 +231,19 @@
 
                             {{-- MALLA --}}
                             @if ($filtrarMalla)
-                                <x-td class="text-center bg-blue-100">
+                                <x-td class="text-center bg-blue-100 dark:bg-blue-700">
                                     {{ $cochinillaInfestacion->malla_capacidad_envase }}
                                 </x-td>
-                                <x-td class="text-center bg-blue-100">
+                                <x-td class="text-center bg-blue-100 dark:bg-blue-700">
                                     {{ $cochinillaInfestacion->malla_numero_envases }}
                                 </x-td>
-                                <x-td class="text-center bg-blue-100">
+                                <x-td class="text-center bg-blue-100 dark:bg-blue-700">
                                     {{ $cochinillaInfestacion->malla_infestadores }}
                                 </x-td>
-                                <x-td class="text-center bg-blue-100">
+                                <x-td class="text-center bg-blue-100 dark:bg-blue-700">
                                     {{ $cochinillaInfestacion->malla_madres_por_infestador }}
                                 </x-td>
-                                <x-td class="text-center bg-blue-100">
+                                <x-td class="text-center bg-blue-100 dark:bg-blue-700">
                                     {{ $cochinillaInfestacion->malla_infestadores_por_ha }}
                                 </x-td>
                             @endif

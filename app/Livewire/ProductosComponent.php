@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\InsCategoria;
 use App\Models\Producto;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -13,17 +14,21 @@ class ProductosComponent extends Component
     use WithPagination;
     public $productoIdEliminar;
     public $search;
-    public $categoria_id_filtro;
-    public $sortField = 'nombre_comercial'; 
+    public $categoriaSeleccionada;
+    public $sortField = 'nombre_comercial';
     public $sortDirection = 'asc';
+    public $categorias = [];
 
     protected $listeners = ['ActualizarProductos' => '$refresh', 'eliminacionConfirmada'];
-  
+    public function mount()
+    {
+        $this->categorias = InsCategoria::orderBy('descripcion')->get();
+    }
     public function updatingSearch()
     {
         $this->resetPage();
     }
-    
+
     public function confirmarEliminacion($id)
     {
         $this->productoIdEliminar = $id;
@@ -62,19 +67,19 @@ class ProductosComponent extends Component
     }
     public function render()
     {
-        $productos = Producto::where(function($query) {
+        $productos = Producto::where(function ($query) {
             // Filtrar por nombre_comercial
             $query->where('nombre_comercial', 'like', '%' . $this->search . '%')
-                  // Filtrar también por ingrediente_activo
-                  ->orWhere('ingrediente_activo', 'like', '%' . $this->search . '%');
+                // Filtrar también por ingrediente_activo
+                ->orWhere('ingrediente_activo', 'like', '%' . $this->search . '%');
         })
-        
-        ->when($this->categoria_id_filtro, function ($query) {
-            return $query->where('categoria', $this->categoria_id_filtro);
-        })
-        // Ordenar por el campo especificado y dirección
-        ->orderBy($this->sortField, $this->sortDirection)
-        ->paginate(20);
+
+            ->when($this->categoriaSeleccionada, function ($query) {
+                return $query->where('categoria_codigo', $this->categoriaSeleccionada);
+            })
+            // Ordenar por el campo especificado y dirección
+            ->orderBy($this->sortField, $this->sortDirection)
+            ->paginate(20);
 
         return view('livewire.productos-component', [
             'productos' => $productos

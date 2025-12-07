@@ -127,7 +127,7 @@ function searchableSelect(config) {
         filteredOptions: config.options || [],
         selectedOption: null,
         entangle: config.entangle,
-selectedValue: config.initialValue || '',
+        selectedValue: config.initialValue || '',
         searchTerm: '',
         isOpen: false,
         highlightedIndex: -1,

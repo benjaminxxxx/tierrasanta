@@ -169,42 +169,6 @@ class CochinillaInfestacionFormComponent extends Component
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }
-
-        /*try {
-            $data = [
-                'tipo_infestacion' => $this->tipo_infestacion,
-                'fecha' => $this->fecha,
-                'campo_nombre' => $this->campoSeleccionado,
-                'area' => $this->area,
-                'campo_campania_id' => $this->campania->id,
-                'kg_madres' => $this->kg_madres,
-                'kg_madres_por_ha' => $this->area > 0 ? ($this->kg_madres / $this->area) : null,
-                'campo_origen_nombre' => $this->campoSeleccionadoOrigen,
-                'metodo' => $this->metodo,
-                'numero_envases' => $this->numero_envases,
-                'capacidad_envase' => $this->capacidad_envase,
-                'infestadores' => $this->infestadores,
-                'madres_por_infestador' => $this->infestadores > 0 ? ($this->kg_madres / $this->infestadores) : null,
-                'infestadores_por_ha' => $this->area > 0 ? ($this->infestadores / $this->area) : null,
-            ];
-            $nuevoId = null;
-            if ($this->cochinillaInfestacionId) {
-                $cochinillaInfestacion = CochinillaInfestacion::find($this->cochinillaInfestacionId);
-                if ($cochinillaInfestacion) {
-                    $nuevoId = $this->cochinillaInfestacionId;
-                    $cochinillaInfestacion->update($data);
-                    $this->alert('success', 'Registro actualizado correctamente');
-                }
-            } else {
-                $cochinillaInfestacion = CochinillaInfestacion::create($data);
-                $nuevoId = $cochinillaInfestacion->id;
-                $this->alert('success', 'Registro creado correctamente');
-            }
-            $this->mostrarFormulario = false;
-            $this->dispatch('infestacionProcesada', ['metodo' => $this->metodo, 'id' => $nuevoId]);
-        } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
-        }*/
     }
 
     public function updatedFecha()

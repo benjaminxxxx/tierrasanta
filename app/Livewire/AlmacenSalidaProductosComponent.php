@@ -21,6 +21,7 @@ class AlmacenSalidaProductosComponent extends Component
         $this->mes = Session::get('fecha_reporte_mes', Carbon::now()->format('m'));
         $this->anio = Session::get('fecha_reporte_anio',Carbon::now()->format('Y'));
         $this->destino = $destino;
+        
         $this->obtenerReporte();
     }
     public function updatedMes($valor)

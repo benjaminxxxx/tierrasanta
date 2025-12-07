@@ -53,28 +53,26 @@
                                     $stockDisponible = $kardexProducto->stock_disponible['stock_disponible'];
                                 @endphp
                                 @if ($stockDisponible > 0)
-                                    <x-card
+                                    <x-card2
                                         wire:click="seleccionarKardexProducto({{ $kardexProducto->id }},{{ $stockDisponible }})"
-                                        class="{{ $kardexProducto->tipo_kardex == 'blanco' ? 'bg-white hover:bg-gray-200 text-gray-900' : '!bg-gray-800 text-white' }} hover:opacity-90 hover:cursor-pointer">
-                                        <x-spacing>
+                                        class="{{ $kardexProducto->tipo_kardex == 'blanco' ? 'bg-white hover:bg-gray-200 text-gray-900  dark:!bg-white' : '!bg-gray-800 text-white' }} hover:opacity-90 hover:cursor-pointer">
+                                      
                                             <p>{{ $kardexProducto->kardex->nombre }} (Tipo Kardex:
                                                 {{ $kardexProducto->tipo_kardex }})</p>
                                             <p>Stock disponible:
                                                 <b>{{ $stockDisponible }}</b>
                                             </p>
-                                        </x-spacing>
-                                    </x-card>
+                                    </x-card2>
                                 @else
-                                    <x-card
+                                    <x-card2
                                         class="{{ $kardexProducto->tipo_kardex == 'blanco' ? 'bg-white hover:bg-gray-200 text-gray-900' : '!bg-gray-800 text-white' }} hover:opacity-90 hover:cursor-pointer">
-                                        <x-spacing>
+                                  
                                             <p>{{ $kardexProducto->kardex->nombre }} (Tipo Kardex:
                                                 {{ $kardexProducto->tipo_kardex }})</p>
                                             <p>Stock disponible:
                                                 <b>{{ $stockDisponible }}</b>
                                             </p>
-                                        </x-spacing>
-                                    </x-card>
+                                    </x-card2>
                                 @endif
                             @endforeach
                         @else
@@ -164,21 +162,21 @@
                                         </tr>
                                     @endforeach
 
-                                    <x-tr class="bg-gray-50">
+                                    <x-tr class="bg-gray-50 dark:bg-gray-900">
                                         <x-th>
                                             Stock Sumado
                                         </x-th>
                                         <x-th>
-                                            <x-input type="number" readonly class="!bg-gray-100 text-right"
+                                            <x-input type="number" readonly class="text-right"
                                                 x-model="total" />
                                         </x-th>
                                     </x-tr>
-                                    <x-tr class="bg-gray-50">
+                                    <x-tr class="bg-gray-50 dark:bg-gray-900">
                                         <x-th>
                                             Stock Disponible
                                         </x-th>
                                         <x-th>
-                                            <x-input type="number" readonly class="!bg-gray-100 text-right"
+                                            <x-input type="number" readonly class="text-right"
                                                 wire:model="stockDisponibleSeleccionado" />
                                         </x-th>
                                     </x-tr>
@@ -248,12 +246,12 @@
         </x-slot>
         <x-slot name="footer">
             @if ($step > 1)
-                <x-secondary-button type="button" wire:click="retroceder" wire:loading.attr="disabled"
-                    class="mr-2">Atrás</x-secondary-button>
+                <x-button variant="secondary" type="button" wire:click="retroceder" wire:loading.attr="disabled"
+                    class="mr-2"><i class="fa fa-caret-left"></i> Atrás</x-button>
             @endif
-            <x-secondary-button type="button" wire:click="$set('mostrarFormulario',false)" wire:loading.attr="disabled"
-                class="mr-2">Cancelar</x-secondary-button>
-            <x-button type="submit" wire:click="store" wire:loading.attr="disabled" class="ml-3">Siguiente</x-button>
+            <x-button variant="secondary" type="button" wire:click="$set('mostrarFormulario',false)" wire:loading.attr="disabled"
+                class="mr-2">Cancelar</x-button>
+            <x-button type="submit" wire:click="store" wire:loading.attr="disabled" class="ml-3">Siguiente <i class="fa fa-caret-right"></i></x-button>
         </x-slot>
     </x-dialog-modal>
 </div>

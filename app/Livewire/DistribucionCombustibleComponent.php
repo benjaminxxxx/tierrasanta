@@ -312,7 +312,7 @@ class DistribucionCombustibleComponent extends Component
             ->where('maquinaria_id', $this->maquinaria->id)
             ->where('tipo_kardex', $this->tipoKardex)
             ->whereHas('producto', function ($q) {
-                $q->where('categoria', 'Combustible'); // Filtrar por categoría
+                $q->where('categoria_codigo', 'Combustible'); // Filtrar por categoría
             })
             ->where(function ($q) {
                 $q->whereNull('campo_nombre')->orWhere('campo_nombre', ''); // Detecta NULL y ''

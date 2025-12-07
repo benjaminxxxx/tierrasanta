@@ -266,7 +266,7 @@
                                 <x-tr>
                                     <x-td class="bg-gray-100">
                                         <p class="font-bold">
-                                            Fecha infestación
+                                            Fecha infestación 33
                                         </p>
                                     </x-td>
                                     <x-td class="text-center">

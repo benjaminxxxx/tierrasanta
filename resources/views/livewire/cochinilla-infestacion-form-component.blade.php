@@ -36,10 +36,20 @@
                     No hay campañas registradas en este campo y esta fecha
                 </x-warning>
             @endif
+            @if ($errors->any())
+    <div class="p-3 bg-red-100 text-red-800 rounded mb-3">
+        <ul class="list-disc ml-5">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 <x-group-field>
-                    <x-select label="Tipo" wire:model.live="tipo_infestacion" error="campoSeleccionado">
+                    <x-select label="Tipo" wire:model.live="tipo_infestacion" error="tipo_infestacion">
                         <option value="">Seleccionar tipo</option>
                         <option value="infestacion">Infestación</option>
                         <option value="reinfestacion">Reinfestación</option>
@@ -47,9 +57,9 @@
                 </x-group-field>
                 <x-group-field>
                     @if ($tipo_infestacion == 'infestacion')
-                        <x-input-date label="Fecha de infestación" wire:model.live="fecha" />
+                        <x-input-date label="Fecha de infestación" wire:model.live="fecha" error="fecha" />
                     @elseif ($tipo_infestacion == 'reinfestacion')
-                        <x-input-date label="Fecha de reinfestación" wire:model.live="fecha" />
+                        <x-input-date label="Fecha de reinfestación" wire:model.live="fecha" error="fecha" />
                     @endif
                 </x-group-field>
                 <x-group-field>
@@ -67,8 +77,8 @@
                     <x-input-number label="Kg madres" wire:model="kg_madres" x-model="kg_madres" />
                 </x-group-field>
                 <x-group-field>
-                    <x-input-number label="Kg madres x Ha." wire:model="kg_madres_por_ha" x-model="kg_madres_ha"
-                        class="!bg-gray-100" readonly />
+                    <x-input type="number" label="Kg madres x Ha." wire:model="kg_madres_por_ha" x-model="kg_madres_ha"
+                        class="!bg-gray-100 dark:!bg-gray-600" readonly />
                 </x-group-field>
                 <x-group-field>
                     <x-select label="Método de infestación" wire:model.live="metodo" error="metodo">
@@ -116,14 +126,14 @@
                 };
 
                 $fondo = match ($metodo) {
-                    'carton' => 'bg-yellow-50',
-                    'tubo' => 'bg-blue-50',
-                    'malla' => 'bg-green-50',
-                    default => 'bg-white',
+                    'carton' => 'bg-yellow-100 dark:bg-yellow-600',
+                    'tubo' => 'bg-blue-100 dark:bg-blue-600',
+                    'malla' => 'bg-green-100 dark:bg-green-600',
+                    default => 'bg-white dark:bg-gray-900 dark:!text-black',
                 };
             @endphp
 
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mt-3 {{ $fondo }}">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mt-3 {{ $fondo }} p-2 rounded-md">
                 <x-group-field>
                     <x-input-number :label="$unidad" wire:model="capacidad_envase"
                         @input="recalcularDesdeCapacidad()" />
@@ -137,14 +147,14 @@
                 </x-group-field>
                 <x-group-field>
                     <x-input-string :label="$porUnidad" wire:model="madres_por_infestador"
-                        x-bind:value="madres_por_infestador" readonly class="!bg-gray-100" />
+                        x-bind:value="madres_por_infestador" readonly class="!bg-gray-100  dark:!bg-gray-600" />
                 </x-group-field>
                 <x-group-field>
                     <x-input-string :label="$porHa" wire:model="infestadores_por_ha" x-bind:value="infestadores_por_ha"
-                        readonly class="!bg-gray-100" />
+                        readonly class="!bg-gray-100  dark:!bg-gray-600" />
                 </x-group-field>
             </div>
-            <div class="my-4 p-5 rounded overflow-hidden rounded-lg bg-gray-100">
+            <div class="my-4 p-5 rounded overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-900">
                 <x-h3>Registro de ingresos relacionados</x-h3>
                 <x-table>
                     <x-slot name="thead">

@@ -97,9 +97,6 @@
                     <x-tabs-content value="evaluacion_brotes">
                         <livewire:evaluacion-brotes-x-piso-por-campania-component campaniaId="{{ $campania->id }}"
                             wire:key="brotes_x_piso.{{ $campania->id }}" />
-
-                        <livewire:reporte-campo-evaluacion-brotes-form-component campaniaUnica="{{ true }}"
-                            wire:key="reporte_brotes_form.{{ $campania->id }}" />
                     </x-tabs-content>
 
                     <x-tabs-content value="infestacion">

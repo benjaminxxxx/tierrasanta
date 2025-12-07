@@ -312,6 +312,9 @@
         'kardex.lista',
         'almacen.salida_productos',
         'almacen.salida_combustible',
+        'gestion_insumos.kardex',
+        'gestion_insumos.kardex.reportes',
+        'gestion_insumos.kardex.reporte'
     ])" logo="fa fa-clipboard-list"
                 text="Kardex y Almacén">
                 <x-nav-link-child href="{{ route('almacen.salida_productos') }}"
@@ -321,6 +324,12 @@
                 <x-nav-link-child href="{{ route('almacen.salida_combustible') }}"
                     :active="request()->routeIs('almacen.salida_combustible')">
                     Salida de Combustible
+                </x-nav-link-child>
+                <x-nav-link-child href="{{ route('gestion_insumos.kardex') }}" :active="request()->routeIs('gestion_insumos.kardex')">
+                    Kardex de Insumos
+                </x-nav-link-child>
+                <x-nav-link-child href="{{ route('gestion_insumos.kardex.reportes') }}" :active="request()->routeIs('gestion_insumos.kardex.reportes')">
+                    Reporte de Kardex
                 </x-nav-link-child>
                 <x-nav-link-child href="{{ route('kardex.lista') }}" :active="request()->routeIs('kardex.lista')">
                     Ver Kardex

@@ -35,7 +35,7 @@
     ][$variant] ?? 'text-white bg-blue-700 hover:bg-blue-800';
 
     // Base y estado
-    $baseClasses = 'font-medium rounded-lg focus:outline-none inline-flex items-center justify-center w-full md:w-auto';
+    $baseClasses = 'font-medium rounded-lg focus:outline-none inline-flex items-center justify-center';
     $classes = collect([$baseClasses, $sizeClasses, $variantClasses])->join(' ');
     $classes .= $disabled ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer';
 @endphp

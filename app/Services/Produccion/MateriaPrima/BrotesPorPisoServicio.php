@@ -21,9 +21,6 @@ class BrotesPorPisoServicio
     public function exportar($filtros)
     {
         $crudos = EvalBrotesPorPiso::get();
-        //dd($filtros,$query);
-        //$crudos = $this->buscar($filtros, false)->toArray();
-        //dd($crudos);
         $ordenado = $this->ordenarDatosExportBrotesPorPiso($filtros, $crudos);
         return Excel::download(new BrotesPorPisoExport($ordenado), date('Y-m-d') . '_brotes_por_piso.xlsx');
     }
