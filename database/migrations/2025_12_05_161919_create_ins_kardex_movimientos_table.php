@@ -14,7 +14,9 @@ return new class extends Migration {
             $table->id();
 
             // Relación con kardex
-            $table->foreignId('kardex_id')->constrained('ins_kardexes')->onDelete('cascade');
+            $table->foreignId('kardex_id')
+                ->constrained('ins_kardexes')
+                ->onDelete('cascade');
 
             // FECHA DEL MOVIMIENTO
             $table->date('fecha');
@@ -41,8 +43,8 @@ return new class extends Migration {
             $table->decimal('salida_cantidad', 18, 3)->nullable();
 
             // SALIDAS – DOS CONTEXTOS
-            $table->string('salida_lote')->nullable();       // Para fertilizantes/pesticidas
-            $table->string('salida_maquinaria')->nullable(); // Para combustible
+            $table->string('salida_lote')->nullable();       // fertilizantes/pesticidas
+            $table->string('salida_maquinaria')->nullable(); // combustible
 
             // COSTOS (calculados al reprocesar)
             $table->decimal('salida_costo_unitario', 18, 13)->nullable();
@@ -50,6 +52,7 @@ return new class extends Migration {
 
             // EXTRA: para combustible distribuido en varios campos
             $table->json('detalle_distribucion')->nullable();
+
             /*
             Ejemplo JSON:
             [
@@ -58,7 +61,16 @@ return new class extends Migration {
             ]
             */
 
+            // -----------------------------
+            // CAMPOS DE SALDO (OBLIGATORIO)
+            // -----------------------------
+            $table->decimal('saldo_cantidad', 18, 3)->nullable();
+            $table->decimal('saldo_costo_unitario', 18, 13)->nullable();
+            $table->decimal('saldo_costo_total', 18, 13)->nullable();
+
+            // ESTADO
             $table->enum('estado', ['activo', 'anulado'])->default('activo');
+
             $table->timestamps();
 
             // INDEX PARA LISTAR SUPER RÁPIDO

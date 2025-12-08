@@ -63,26 +63,44 @@
                     <td class="border border-gray-400 px-2 py-1 text-center">{{ $mov->tipo_operacion }}</td>
 
                     {{-- ENTRADAS --}}
-                    <td class="border border-gray-400 px-2 py-1 text-right">{{ number_format($mov->entrada_cantidad, 3) }}
+                    <td class="border border-gray-400 px-2 py-1 text-right">
+                        {{ $mov->tipo_mov == 'entrada' ? number_format($mov->entrada_cantidad, 3) : '-' }}
                     </td>
                     <td class="border border-gray-400 px-2 py-1 text-right">
-                        {{ number_format($mov->entrada_costo_unitario, 6) }}</td>
+                        {{ $mov->tipo_mov == 'entrada' ? number_format($mov->entrada_costo_unitario, 2) : '-' }}
+                    </td>
                     <td class="border border-gray-400 px-2 py-1 text-right">
-                        {{ number_format($mov->entrada_costo_total, 6) }}</td>
+                        {{ $mov->tipo_mov == 'entrada' ? number_format($mov->entrada_costo_total, 2) : '-' }}
+                    </td>
 
                     {{-- SALIDAS --}}
-                    <td class="border border-gray-400 px-2 py-1 text-right">{{ number_format($mov->salida_cantidad, 3) }}
-                    </td>
-                    <td class="border border-gray-400 px-2 py-1 text-center">{{ $mov->salida_lote }}</td>
                     <td class="border border-gray-400 px-2 py-1 text-right">
-                        {{ number_format($mov->salida_costo_unitario, 6) }}</td>
-                    <td class="border border-gray-400 px-2 py-1 text-right">{{ number_format($mov->salida_costo_total, 6) }}
+                        {{ $mov->tipo_mov == 'salida' ? number_format($mov->salida_cantidad, 3) : '-' }}
+                    </td>
+                    <td class="border border-gray-400 px-2 py-1 text-center">
+                        {{ $mov->tipo_mov == 'salida' ? ($mov->salida_lote ?? '-') : '-' }}
+                    </td>
+                    <td class="border border-gray-400 px-2 py-1 text-right">
+                        {{ $mov->tipo_mov == 'salida' ? number_format($mov->salida_costo_unitario, 2) : '-' }}
+                    </td>
+                    <td class="border border-gray-400 px-2 py-1 text-right">
+                        {{ $mov->tipo_mov == 'salida' ? number_format($mov->salida_costo_total, 2) : '-' }}
                     </td>
 
-                    {{-- SALDO (tú lo calcularás luego con PEPS/Promedio) --}}
-                    <td class="border border-gray-400 px-2 py-1 text-right">-</td>
-                    <td class="border border-gray-400 px-2 py-1 text-right">-</td>
-                    <td class="border border-gray-400 px-2 py-1 text-right">-</td>
+
+                    {{-- SALDO --}}
+                    <td class="border border-gray-400 px-2 py-1 text-right">
+                        {{ number_format($mov->saldo_cantidad, 3) }}
+                    </td>
+
+                    <td class="border border-gray-400 px-2 py-1 text-right">
+                        {{ number_format($mov->saldo_costo_unitario, 2) }}
+                    </td>
+
+                    <td class="border border-gray-400 px-2 py-1 text-right">
+                        {{ number_format($mov->saldo_costo_total, 2) }}
+                    </td>
+
                 </tr>
             @empty
                 <tr>

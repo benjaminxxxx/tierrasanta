@@ -45,10 +45,16 @@ class AlmacenServicio
         InsResFertilizanteCampania::where('campo_campania_id', $campania->id)->delete();
 
         // Obtener salidas relacionadas al campo
-        $salidas = AlmacenProductoSalida::where('campo_nombre', $campania->campo)
+        $query = AlmacenProductoSalida::where('fecha_reporte','>=',$campania->fecha_inicio);
+
+        if($campania->fecha_fin){
+            $query->where('fecha_reporte','<=',$campania->fecha_fin);
+        }
+        
+        $salidas = $query->where('campo_nombre', $campania->campo)
             ->with('producto')
             ->get();
-
+            
         $data = [];
 
         foreach ($salidas as $salida) {
@@ -66,7 +72,9 @@ class AlmacenServicio
             if ($categoria === 'corrector_salinidad') {
 
                 $etapa = self::determinarEtapa($campania, $salida->fecha_reporte);
-
+if(!$etapa){
+                    dd($campania, $salida->fecha_reporte,1);
+                }
                 $data[] = [
                     'campo_campania_id' => $campania->id,
                     'producto_id' => $producto->id,
@@ -111,6 +119,9 @@ class AlmacenServicio
                 }
 
                 $etapa = self::determinarEtapa($campania, $salida->fecha_reporte);
+                if(!$etapa){
+                    dd($campania, $salida->fecha_reporte);
+                }
 
                 $data[] = array_merge([
                     'campo_campania_id' => $campania->id,
@@ -131,7 +142,8 @@ class AlmacenServicio
     private static function determinarEtapa(CampoCampania $campania, $fecha)
     {
         if ($fecha < $campania->fecha_inicio) {
-            return null;
+            throw new Exception("La fecha {$fecha} no puede ser menor a la fecha de inicio de la campaña {$campania->fecha_inicio}", 1);
+            
         }
 
         if ($campania->infestacion_fecha && $fecha < $campania->infestacion_fecha) {

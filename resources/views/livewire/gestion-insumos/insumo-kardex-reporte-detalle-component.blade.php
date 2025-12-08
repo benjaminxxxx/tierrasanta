@@ -1,6 +1,6 @@
 <div>
     <x-card>
-        <x-flex  class="justify-between">
+        <x-flex class="justify-between">
             <x-flex>
                 <x-title>
                     <a href="{{ route('gestion_insumos.kardex.reportes') }}"
@@ -34,9 +34,22 @@
         <x-table class="my-4">
             <x-slot name="thead">
                 <x-tr>
-                    <x-th colspan="2" style="background-color:#31869B"
-                        class="px-4 py-2 text-white font-bold text-lg">ÍNDICE DE
-                        FERTILIZANTES Y PESTICIDAS</x-th>
+                    <x-th colspan="2" style="background-color:#31869B" class="px-4 py-2 text-white font-bold text-lg">
+
+                        ÍNDICE DE
+
+                        @foreach ($insumoKardexReporte->categorias as $categoria)
+                            @php
+                                // Buscar categoría por código
+                                $cat = \App\Models\InsCategoria::where('codigo', $categoria->categoria_codigo)->first();
+                                $texto = $cat ? $cat->descripcion : strtoupper($categoria->categoria_codigo);
+                            @endphp
+
+                            {{ $texto }}@if(!$loop->last), @endif
+                        @endforeach
+
+                    </x-th>
+
                     <x-th class="text-center">CONDICIÓN</x-th>
                     <x-th class="text-center">UNIDAD DE MEDIDA (TABLA 6)</x-th>
                     <x-th class="text-center">TOTAL ENTRADAS UNIDADES</x-th>
@@ -58,10 +71,10 @@
                         <x-th
                             class="{{ $insumoKardexReporteDetalle->categoria_producto === 'fertilizante' ? 'bg-fertilizante' : ($insumoKardexReporteDetalle->categoria_producto === 'pesticida' ? 'bg-pesticida' : '') }}"
                             x-data="{ loading: false }">
-                            <p class="cursor-pointer hover:text-red-700 underline text-blue-600 flex insumoKardexReporteDetalles-center gap-2"
-                                @click="loading = true; $wire.dispatch('seleccionarProducto', {productoId: {{ $insumoKardexReporteDetalle->producto_id }}})"
-                                :class="{ 'pointer-events-none opacity-50': loading }">
-                                {{ $insumoKardexReporteDetalle->producto_nombre }}
+                            <a class="cursor-pointer hover:text-red-700 underline text-blue-600 flex insumoKardexReporteDetalles-center gap-2"
+                                href="{{ route('gestion_insumos.kardex.detalle', $insumoKardexReporteDetalle->ins_kardex_id) }}"
+                                target="_blank" :class="{ 'pointer-events-none opacity-50': loading }">
+                                {{ $insumoKardexReporteDetalle->nombre_producto }}
 
                                 <!-- Spinner solo visible mientras loading sea true -->
                                 <svg x-show="loading" class="animate-spin h-4 w-4 text-gray-700"
@@ -71,7 +84,7 @@
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z">
                                     </path>
                                 </svg>
-                            </p>
+                            </a>
                         </x-th>
 
                         <x-td class="text-center">{{ $insumoKardexReporteDetalle->condicion ?? '-' }}</x-td>
@@ -92,14 +105,15 @@
                 @endforeach
                 @php
                     $totales = [
-                        'entradas_unidades' => 123,
-                        'entradas_importe' => 123,
-                        'salidas_unidades' => 123,
-                        'salidas_importe' => 123,
-                        'saldo_unidades' => 123,
-                        'saldo_importe' => 123,
+                        'entradas_unidades' => $insumoKardexReporte->detalles->sum('total_entradas_unidades'),
+                        'entradas_importe' => $insumoKardexReporte->detalles->sum('total_entradas_importe'),
+                        'salidas_unidades' => $insumoKardexReporte->detalles->sum('total_salidas_unidades'),
+                        'salidas_importe' => $insumoKardexReporte->detalles->sum('total_salidas_importe'),
+                        'saldo_unidades' => $insumoKardexReporte->detalles->sum('saldo_unidades'),
+                        'saldo_importe' => $insumoKardexReporte->detalles->sum('saldo_importe'),
                     ];
                 @endphp
+
 
                 <x-tr>
                     <x-th colspan="4" class="text-right">TOTAL</x-th>

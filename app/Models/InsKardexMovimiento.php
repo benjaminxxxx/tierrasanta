@@ -13,7 +13,7 @@ class InsKardexMovimiento extends Model
         'fecha',
         'tipo_mov',
 
-        // Referencias de documentos
+        // Documentos
         'tipo_documento',
         'serie',
         'numero',
@@ -28,15 +28,19 @@ class InsKardexMovimiento extends Model
         'salida_cantidad',
         'salida_lote',
         'salida_maquinaria',
-
-        // Costos de salida
         'salida_costo_unitario',
         'salida_costo_total',
 
-        // Distribución (JSON)
+        // Distribución combustible
         'detalle_distribucion',
+
+        // Saldos
+        'saldo_cantidad',
+        'saldo_costo_unitario',
+        'saldo_costo_total',
 
         // Estado
         'estado',
     ];
+
 }

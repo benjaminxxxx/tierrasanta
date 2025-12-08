@@ -19,7 +19,7 @@ class InsumoKardexReporteDetalleComponent extends Component
     public function procesarKardexConsolidado()
     {
         try {
-            KardexServicio::procesarKardexConsolidado($this->kardexId, $this->verBlanco);
+            KardexServicio::procesarKardexConsolidado($this->insumoKardexReporte);
             $this->alert('success', 'Datos procesados correctamente.');
         } catch (\Throwable $e) {
             logger()->error("Error al procesar kardex consolidado: " . $e->getMessage());

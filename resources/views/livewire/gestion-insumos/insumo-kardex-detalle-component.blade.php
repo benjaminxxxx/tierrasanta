@@ -8,16 +8,22 @@
             </x-title>
             <x-flex>
                 <div x-data="{ openFileDialog() { $refs.fileInputNegro.click() } }">
-                    <x-button type="button" @click="openFileDialog()">
+                    <x-button type="button" @click="openFileDialog()" class="uppercase">
                         <i class="fa fa-file-excel"></i> Importar Kardex {{ $insumoKardex->tipo }}
                     </x-button>
                     <input type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         x-ref="fileInputNegro" style="display: none;" wire:model.live="archivoExcelKardex" />
                 </div>
 
-                <x-button wire:click="generarDetalleKardexInsumo">
+                <x-button wire:click="generarDetalleKardexInsumo" class="uppercase">
                     <i class="fa fa-check"></i> Generar Resumen
                 </x-button>
+
+                @if ($insumoKardex->file)
+                    <x-button href="{{ Storage::disk('public')->url($insumoKardex->file) }}">
+                        <i class="fa fa-file-excel"></i> Descargar Reporte
+                    </x-button>
+                @endif
             </x-flex>
         </x-flex>
         <div class="mt-4">

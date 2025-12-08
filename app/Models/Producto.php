@@ -160,6 +160,7 @@ class Producto extends Model
             ->where('categoria_codigo', 'combustible')
             ->exists();
     }
+   
     public static function deTipo($tipo)
     {
         if ($tipo === 'combustible') {

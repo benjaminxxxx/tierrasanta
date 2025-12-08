@@ -13,6 +13,8 @@ return new class extends Migration {
         Schema::create('ins_kardex_reporte_detalles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('reporte_id')->constrained('ins_kardex_reportes')->onDelete('cascade');
+            
+            $table->foreignId('ins_kardex_id')->nullable()->constrained('ins_kardexes')->onDelete('set null');
             $table->string('codigo_existencia', 50); // índice o código de existencia
             $table->string('nombre_producto', 255);
             $table->string('condicion')->nullable(); // puede ser tipo de producto, estado, etc.
