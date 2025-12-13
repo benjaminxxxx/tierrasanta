@@ -8,6 +8,7 @@ use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
+use Session;
 
 class CampaniasComponent extends Component
 {
@@ -16,13 +17,23 @@ class CampaniasComponent extends Component
     public $campaniaSeleccionada;
     public $campanias = [];
     protected $listeners = ['campaniaInsertada' => 'refrescar'];
+    public function mount()
+    {
+        $this->campoSeleccionado = session('campo');
+        if ($this->campoSeleccionado) {
+
+            $this->listarCampanias($this->campoSeleccionado);
+        }
+    }
     public function updatedCampoSeleccionado($campo)
     {
+        session(['campo' => $campo]);
         $this->resetPage();
         $this->listarCampanias($campo);
     }
-    public function updatedcampaniaSeleccionada()
+    public function updatedCampaniaSeleccionada($campania)
     {
+        session(['campania' => $campania]);
         $this->resetPage();
     }
     public function refrescar()
@@ -42,7 +53,15 @@ class CampaniasComponent extends Component
             ->pluck('nombre_campania', 'nombre_campania')
             ->toArray();
 
-        $this->campaniaSeleccionada = $this->campanias ? array_key_first($this->campanias) : null;
+        $campaniaSesion = session('campania');
+        //dd($campaniaSesion);
+        // Si existe en la lista actual, seleccionarla
+        if ($campaniaSesion && array_key_exists($campaniaSesion, $this->campanias)) {
+            $this->campaniaSeleccionada = $campaniaSesion;
+        } else {
+            // Si no pertenece, limpiar selección
+            $this->campaniaSeleccionada = null;
+        }
     }
     public function eliminarCampania($campaniaSeleccionada)
     {
@@ -91,7 +110,7 @@ class CampaniasComponent extends Component
             $query->where('campo', $this->campoSeleccionado);
         }
         if ($this->campaniaSeleccionada) {
-            $query->where('nombre_campania',$this->campaniaSeleccionada);
+            $query->where('nombre_campania', $this->campaniaSeleccionada);
         }
         $campanias = $query->orderBy('nombre_campania', 'desc')
             ->orderBy('campo')

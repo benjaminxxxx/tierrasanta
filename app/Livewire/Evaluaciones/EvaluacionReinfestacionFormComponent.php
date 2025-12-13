@@ -4,6 +4,7 @@ namespace App\Livewire\Evaluaciones;
 
 use App\Models\CampoCampania;
 use App\Services\Produccion\Planificacion\CampaniaServicio;
+use App\Support\CalculoHelper;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use Exception;
@@ -21,7 +22,7 @@ class EvaluacionReinfestacionFormComponent extends Component
 
     public $campania;
 
-    protected $listeners = ['editarReinfestacion','sincronizarReinformacionInfestacion'];
+    protected $listeners = ['editarReinfestacion', 'sincronizarReinformacionInfestacion'];
 
     public function mount()
     {
@@ -31,7 +32,7 @@ class EvaluacionReinfestacionFormComponent extends Component
         try {
 
             $campaniaServicio = new CampaniaServicio();
-            $campaniaServicio->registrarHistorialDeInfestaciones($campaniaId,'reinfestacion');
+            $campaniaServicio->registrarHistorialDeInfestaciones($campaniaId, 'reinfestacion');
 
             $this->dispatch('refrescarInformeCampaniaXCampo');
             $this->alert('success', 'Datos sincronizados correctamente');
@@ -62,24 +63,25 @@ class EvaluacionReinfestacionFormComponent extends Component
     public function guardarEvaluacionReinfestacion()
     {
         try {
+            $reinfestacionFecha = $this->reinfestacion_fecha !== '' ? $this->reinfestacion_fecha : null;
 
-            $this->campania->reinfestacion_fecha =
-                $this->reinfestacion_fecha !== '' ? $this->reinfestacion_fecha : null;
+            $this->campania->reinfestacion_fecha = $reinfestacionFecha;
 
             $this->campania->reinfestacion_fecha_recojo_vaciado_infestadores =
                 $this->reinfestacion_fecha_recojo_vaciado_infestadores !== ''
-                    ? $this->reinfestacion_fecha_recojo_vaciado_infestadores
-                    : null;
+                ? $this->reinfestacion_fecha_recojo_vaciado_infestadores
+                : null;
 
             $this->campania->reinfestacion_fecha_colocacion_malla =
                 $this->reinfestacion_fecha_colocacion_malla !== ''
-                    ? $this->reinfestacion_fecha_colocacion_malla
-                    : null;
+                ? $this->reinfestacion_fecha_colocacion_malla
+                : null;
 
             $this->campania->reinfestacion_fecha_retiro_malla =
                 $this->reinfestacion_fecha_retiro_malla !== ''
-                    ? $this->reinfestacion_fecha_retiro_malla
-                    : null;
+                ? $this->reinfestacion_fecha_retiro_malla
+                : null;
+
 
             $this->campania->save();
 

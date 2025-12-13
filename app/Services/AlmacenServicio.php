@@ -45,16 +45,16 @@ class AlmacenServicio
         InsResFertilizanteCampania::where('campo_campania_id', $campania->id)->delete();
 
         // Obtener salidas relacionadas al campo
-        $query = AlmacenProductoSalida::where('fecha_reporte','>=',$campania->fecha_inicio);
+        $query = AlmacenProductoSalida::where('fecha_reporte', '>=', $campania->fecha_inicio);
 
-        if($campania->fecha_fin){
-            $query->where('fecha_reporte','<=',$campania->fecha_fin);
+        if ($campania->fecha_fin) {
+            $query->where('fecha_reporte', '<=', $campania->fecha_fin);
         }
-        
+
         $salidas = $query->where('campo_nombre', $campania->campo)
             ->with('producto')
             ->get();
-            
+
         $data = [];
 
         foreach ($salidas as $salida) {
@@ -65,16 +65,14 @@ class AlmacenServicio
             }
 
             $categoria = $producto->categoria_codigo;
-
+          
             // -------------------------------------------------------
             // 1) CASO ESPECIAL: CORRECTOR DE SALINIDAD
             // -------------------------------------------------------
             if ($categoria === 'corrector_salinidad') {
 
                 $etapa = self::determinarEtapa($campania, $salida->fecha_reporte);
-if(!$etapa){
-                    dd($campania, $salida->fecha_reporte,1);
-                }
+                
                 $data[] = [
                     'campo_campania_id' => $campania->id,
                     'producto_id' => $producto->id,
@@ -119,9 +117,6 @@ if(!$etapa){
                 }
 
                 $etapa = self::determinarEtapa($campania, $salida->fecha_reporte);
-                if(!$etapa){
-                    dd($campania, $salida->fecha_reporte);
-                }
 
                 $data[] = array_merge([
                     'campo_campania_id' => $campania->id,
@@ -143,7 +138,7 @@ if(!$etapa){
     {
         if ($fecha < $campania->fecha_inicio) {
             throw new Exception("La fecha {$fecha} no puede ser menor a la fecha de inicio de la campaña {$campania->fecha_inicio}", 1);
-            
+
         }
 
         if ($campania->infestacion_fecha && $fecha < $campania->infestacion_fecha) {

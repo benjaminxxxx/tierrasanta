@@ -68,83 +68,80 @@
             @endforeach
         @endif
     </div>
-    <x-modal maxWidth="full" wire:model="mostrarFormularioAgregarRegador">
-        <div class="px-6 py-4">
-            <div class="text-lg font-medium text-gray-900 dark:text-gray-100">
-                Agregar regadores
-            </div>
+    <x-dialog-modal maxWidth="full" wire:model="mostrarFormularioAgregarRegador">
+        <x-slot name="title">
+            Agregar regadores
+        </x-slot>
 
-            <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                {{-- Contenido --}}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <x-select wire:model="tipoPersonal" label="Tipo de Personal">
-                        <option value="empleados">Empleados</option>
-                        <option value="cuadrilleros">Cuadrilleros</option>
-                    </x-select>
-                    <x-group-field x-show="tipoPersonal=='empleados'">
-                        {{-- los campos searchables esperan id name atributos --}}
-                        <x-label for="regadorSeleccionado" value="Selecciona un trabajador" />
-                        <x-searchable-select :options="$trabajadores"
-                            search-placeholder="Escriba el nombre del trabajador" wire:model="regadorSeleccionado" />
-                        <x-input-error for="regadorSeleccionado" />
-                    </x-group-field>
-                    <x-group-field x-show="tipoPersonal=='cuadrilleros'">
-                        {{-- los campos searchables esperan id name atributos --}}
-                        <x-label for="regadorSeleccionado" value="Selecciona un cuadrillero" />
-                        <x-searchable-select :options="$cuadrilleros"
-                            search-placeholder="Escriba el nombre del cuadrillero" wire:model="regadorSeleccionado" />
-                        <x-input-error for="regadorSeleccionado" />
-                    </x-group-field>
-                </div>
-                {{-- Cuadrilleros agregados --}}
-                <div class="mt-4">
-                    <x-table>
-                        <x-slot name="thead">
+        <x-slot name="content">
+            <x-flex>
+                <x-select wire:model="tipoPersonal" label="Tipo de Personal">
+                    <option value="empleados">Empleados</option>
+                    <option value="cuadrilleros">Cuadrilleros</option>
+                </x-select>
+                <x-group-field x-show="tipoPersonal=='empleados'">
+                    {{-- los campos searchables esperan id name atributos --}}
+                    <x-label for="regadorSeleccionado" value="Selecciona un trabajador" />
+                    <x-searchable-select :options="$trabajadores" search-placeholder="Escriba el nombre del trabajador"
+                        wire:model="regadorSeleccionado" />
+                    <x-input-error for="regadorSeleccionado" />
+                </x-group-field>
+                <x-group-field x-show="tipoPersonal=='cuadrilleros'">
+                    {{-- los campos searchables esperan id name atributos --}}
+                    <x-label for="regadorSeleccionado" value="Selecciona un cuadrillero" />
+                    <x-searchable-select :options="$cuadrilleros" search-placeholder="Escriba el nombre del cuadrillero"
+                        wire:model="regadorSeleccionado" />
+                    <x-input-error for="regadorSeleccionado" />
+                </x-group-field>
+            </x-flex>
+            {{-- Cuadrilleros agregados --}}
+            <div class="mt-4">
+                <x-table>
+                    <x-slot name="thead">
+                        <x-tr>
+                            <x-th class="text-center">#</x-th>
+                            <x-th class="text-center">DNI</x-th>
+                            <x-th>Nombre</x-th>
+                            <x-th class="text-center">Acciones</x-th>
+                        </x-tr>
+                    </x-slot>
+
+                    <x-slot name="tbody">
+                        <template x-for="(item, index) in trabajadoresAgregados" :key="item.dni">
                             <x-tr>
-                                <x-th>#</x-th>
-                                <x-th>DNI</x-th>
-                                <x-th>Nombre</x-th>
-                                <x-th>Acciones</x-th>
+                                <x-td x-text="index + 1" class="text-center" />
+                                <x-td x-text="item.dni"  class="text-center"/>
+                                <x-td x-text="item.nombre" />
+                                <x-td class="text-center">
+                                    <x-button variant="danger" @click="quitarTrabajador(index)" class="m-auto">
+                                        <i class="fa fa-trash"></i>
+                                    </x-button>
+                                </x-td>
                             </x-tr>
-                        </x-slot>
+                        </template>
 
-                        <x-slot name="tbody">
-                            <template x-for="(item, index) in trabajadoresAgregados" :key="item.dni">
-                                <x-tr>
-                                    <x-td x-text="index + 1" />
-                                    <x-td x-text="item.dni" />
-                                    <x-td x-text="item.nombre" />
-                                    <x-td>
-                                        <x-danger-button @click="quitarTrabajador(index)">
-                                            <i class="fa fa-trash"></i>
-                                        </x-danger-button>
-                                    </x-td>
-                                </x-tr>
-                            </template>
-
-                            <template x-if="trabajadoresAgregados.length === 0">
-                                <x-tr>
-                                    <x-td colspan="4">
-                                        Sin cuadrilleros agregados.
-                                    </x-td>
-                                </x-tr>
-                            </template>
-                        </x-slot>
-                    </x-table>
-                </div>
+                        <template x-if="trabajadoresAgregados.length === 0">
+                            <x-tr>
+                                <x-td colspan="4">
+                                    Sin cuadrilleros agregados.
+                                </x-td>
+                            </x-tr>
+                        </template>
+                    </x-slot>
+                </x-table>
             </div>
-        </div>
+        </x-slot>
 
-        <div class="flex flex-row justify-end px-6 py-4 bg-whiten dark:bg-boxdarkbase text-end gap-4">
-            <x-secondary-button wire:click="$set('mostrarFormularioAgregarRegador', false)"
+        <x-slot name="footer">
+            <x-button variant="secondary" wire:click="$set('mostrarFormularioAgregarRegador', false)"
                 wire:loading.attr="disabled">
                 Cerrar
-            </x-secondary-button>
-            <x-button wire:click="agregarRegadores" wire:loading.attr="disabled">
-                <i class="fa fa-plus"></i> Agregar regadores seleccionados
             </x-button>
-        </div>
-    </x-modal>
+            <x-button wire:click="agregarRegadores" wire:loading.attr="disabled">
+                <i class="fa fa-plus"></i> Agregar Regadores
+            </x-button>
+        </x-slot>
+    </x-dialog-modal>
 
     <x-loading wire:loading />
 
@@ -152,7 +149,7 @@
 @script
 <script>
     Alpine.data('gestion_riego', () => ({
-        tipoPersonal:@entangle('tipoPersonal'),
+        tipoPersonal: @entangle('tipoPersonal'),
         trabajadoresAgregados: @entangle('trabajadoresAgregados'),
         trabajadores: @js($trabajadores),
         cuadrilleros: @js($cuadrilleros),
@@ -173,7 +170,7 @@
             if (!this.regadorSeleccionado) return;
 
             // Buscamos en trabajadores para obtener el objeto completo
-            const seleccionado = this.tipoPersonal=='empleados'? this.trabajadores.find(c => c.id == this.regadorSeleccionado):this.cuadrilleros.find(c => c.id == this.regadorSeleccionado);
+            const seleccionado = this.tipoPersonal == 'empleados' ? this.trabajadores.find(c => c.id == this.regadorSeleccionado) : this.cuadrilleros.find(c => c.id == this.regadorSeleccionado);
             if (!seleccionado) {
                 this.regadorSeleccionado = null;
                 return;

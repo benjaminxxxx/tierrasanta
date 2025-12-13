@@ -212,6 +212,18 @@ class CampoCampania extends Model
     {
         return $this->belongsTo(Campo::class, 'campo', 'nombre');
     }
+    public function getNumeroInfestadoresAttribute()
+    {
+        return $this->infestacion_cantidad_infestadores_carton +
+            $this->infestacion_cantidad_infestadores_tubos +
+            $this->infestacion_cantidad_infestadores_mallita;
+    }
+    public function getNumeroReinfestadoresAttribute()
+    {
+        return $this->reinfestacion_cantidad_infestadores_carton +
+            $this->reinfestacion_cantidad_infestadores_tubos +
+            $this->reinfestacion_cantidad_infestadores_mallita;
+    }
     public function getTipoInfestadorAttribute()
     {
         $tipoInfestador = '-';
@@ -222,6 +234,20 @@ class CampoCampania extends Model
             $tipoInfestador = 'Tubos ';
         }
         if ($this->infestacion_cantidad_madres_por_infestador_mallita > 0) {
+            $tipoInfestador = 'Mallita ';
+        }
+        return trim($tipoInfestador);
+    }
+    public function getTipoReinfestadorAttribute()
+    {
+        $tipoInfestador = '-';
+        if ($this->reinfestacion_cantidad_madres_por_infestador_carton > 0) {
+            $tipoInfestador = 'Cartón ';
+        }
+        if ($this->reinfestacion_cantidad_madres_por_infestador_tubos > 0) {
+            $tipoInfestador = 'Tubos ';
+        }
+        if ($this->reinfestacion_cantidad_madres_por_infestador_mallita > 0) {
             $tipoInfestador = 'Mallita ';
         }
         return trim($tipoInfestador);
@@ -289,6 +315,35 @@ class CampoCampania extends Model
             );
 
     }
+    #region Infestacion
+    public function getRiegoM3IniInfestPorPencaAttribute()
+    {
+        if ($this->infestacion_numero_pencas == 0 || $this->infestacion_numero_pencas === null) {
+            return null; // o 0 según lo que debas mostrar
+        }
+        return $this->riego_m3_ini_infest / $this->infestacion_numero_pencas * 1000;
+    }
+    public function getRiegoM3InfestReinfestPorPencaAttribute()
+    {
+        if ($this->reinfestacion_numero_pencas == 0 || $this->reinfestacion_numero_pencas === null) {
+            return null; // o 0 según lo que debas mostrar
+        }
+        return $this->riego_m3_infest_reinf / $this->reinfestacion_numero_pencas * 1000;
+    }
+    public function getRiegoM3InicioAReinfestacionPorPencaAttribute()
+    {
+        $totalPencas =
+            ($this->infestacion_numero_pencas ?? 0) +
+            ($this->reinfestacion_numero_pencas ?? 0);
+
+        if ($totalPencas <= 0 || $this->riego_hrs_acumuladas <= 0) {
+            return 0;
+        }
+
+        return ($this->riego_hrs_acumuladas / $totalPencas) * 1000;
+    }
+
+    #endregion
     #region Alias
     // Aliases para infestación
     public function getNumeroInfestadoresPorPencaAttribute()
@@ -299,14 +354,30 @@ class CampoCampania extends Model
 
         return $this->numero_infestadores / $this->infestacion_numero_pencas;
     }
+    public function getNumeroReinfestadoresPorPencaAttribute()
+    {
+        if ($this->reinfestacion_numero_pencas == 0 || $this->reinfestacion_numero_pencas === null) {
+            return null; // o 0 según lo que debas mostrar
+        }
 
-    public function getGramosCochinillaMamaPorInfestador()
+        return $this->numero_reinfestadores / $this->reinfestacion_numero_pencas;
+    }
+    public function getGramosCochinillaMamaPorInfestadorAttribute()
     {
         if (empty($this->numero_infestadores) || $this->numero_infestadores == 0) {
             return null; // o 0 si prefieres
         }
 
-        return ($this->infestacion_kg_mama / $this->numero_infestadores) * 1000;
+        return ($this->infestacion_kg_totales_madre / $this->numero_infestadores) * 1000;
+    }
+
+    public function getGramosCochinillaMamaPorReinfestadorAttribute()
+    {
+        if (empty($this->numero_reinfestadores) || $this->numero_reinfestadores == 0) {
+            return null; // o 0 si prefieres
+        }
+
+        return ($this->reinfestacion_kg_totales_madre / $this->numero_reinfestadores) * 1000;
     }
 
     public function getInfestacionCantidadMadresPorInfestadorCartonAliasAttribute()
@@ -480,6 +551,93 @@ class CampoCampania extends Model
     #endregion
     #region Nutrientes x Ha
     // KG totales
+    public function getNitrogenoDesdeInicioInfestacionAttribute()
+    {
+        return $this->fertilizaciones->where('etapa', 'infestacion')->sum('n_kg');
+    }
+    public function getFosforoDesdeInicioInfestacionAttribute()
+    {
+        return $this->fertilizaciones->where('etapa', 'infestacion')->sum('p_kg');
+    }
+
+    public function getPotasioDesdeInicioInfestacionAttribute()
+    {
+        return $this->fertilizaciones->where('etapa', 'infestacion')->sum('k_kg');
+    }
+
+    public function getCalcioDesdeInicioInfestacionAttribute()
+    {
+        return $this->fertilizaciones->where('etapa', 'infestacion')->sum('ca_kg');
+    }
+
+    public function getMagnesioDesdeInicioInfestacionAttribute()
+    {
+        return $this->fertilizaciones->where('etapa', 'infestacion')->sum('mg_kg');
+    }
+
+    public function getZincDesdeInicioInfestacionAttribute()
+    {
+        return $this->fertilizaciones->where('etapa', 'infestacion')->sum('zn_kg');
+    }
+
+    public function getManganesoDesdeInicioInfestacionAttribute()
+    {
+        return $this->fertilizaciones->where('etapa', 'infestacion')->sum('mn_kg');
+    }
+
+    public function getFierroDesdeInicioInfestacionAttribute()
+    {
+        return $this->fertilizaciones->where('etapa', 'infestacion')->sum('fe_kg');
+    }
+    public function getCorrectorSalinidadDesdeInicioInfestacionAttribute()
+    {
+        return $this->fertilizaciones->where('etapa', 'infestacion')->sum('corrector_salinidad_cant');
+    }
+    public function getNitrogenoDesdeInfestacionReinfestacionAttribute()
+    {
+        return $this->fertilizaciones->where('etapa', 'reinfestacion')->sum('n_kg');
+    }
+
+    public function getFosforoDesdeInfestacionReinfestacionAttribute()
+    {
+        return $this->fertilizaciones->where('etapa', 'reinfestacion')->sum('p_kg');
+    }
+
+    public function getPotasioDesdeInfestacionReinfestacionAttribute()
+    {
+        return $this->fertilizaciones->where('etapa', 'reinfestacion')->sum('k_kg');
+    }
+
+    public function getCalcioDesdeInfestacionReinfestacionAttribute()
+    {
+        return $this->fertilizaciones->where('etapa', 'reinfestacion')->sum('ca_kg');
+    }
+
+    public function getMagnesioDesdeInfestacionReinfestacionAttribute()
+    {
+        return $this->fertilizaciones->where('etapa', 'reinfestacion')->sum('mg_kg');
+    }
+
+    public function getZincDesdeInfestacionReinfestacionAttribute()
+    {
+        return $this->fertilizaciones->where('etapa', 'reinfestacion')->sum('zn_kg');
+    }
+
+    public function getManganesoDesdeInfestacionReinfestacionAttribute()
+    {
+        return $this->fertilizaciones->where('etapa', 'reinfestacion')->sum('mn_kg');
+    }
+
+    public function getFierroDesdeInfestacionReinfestacionAttribute()
+    {
+        return $this->fertilizaciones->where('etapa', 'reinfestacion')->sum('fe_kg');
+    }
+
+    public function getCorrectorSalinidadDesdeInfestacionReinfestacionAttribute()
+    {
+        return $this->fertilizaciones->where('etapa', 'reinfestacion')->sum('corrector_salinidad_cant');
+    }
+
     public function getNutrienteNitrogenoKgAttribute()
     {
         return $this->fertilizaciones->sum('n_kg'); // Aquí n_kg guarda el kg real
@@ -518,6 +676,10 @@ class CampoCampania extends Model
     public function getNutrienteFierroKgAttribute()
     {
         return $this->fertilizaciones->sum('fe_kg');
+    }
+    public function getCorrectorSalinidadCantAttribute()
+    {
+        return $this->fertilizaciones->sum('corrector_salinidad_cant');
     }
 
     // KG por hectárea (calculado)
@@ -565,23 +727,38 @@ class CampoCampania extends Model
     {
         static::saving(function ($campania) {
 
-            // Solo calcular si alguno cambió
-            if ($campania->isDirty('fecha_inicio') || $campania->isDirty('infestacion_fecha')) {
-
+            // Recalcular si cambia inicio, infestación o re-infestación
+            if (
+                $campania->isDirty('fecha_inicio') ||
+                $campania->isDirty('infestacion_fecha') ||
+                $campania->isDirty('reinfestacion_fecha')
+            ) {
                 $fechaInicio = $campania->fecha_inicio;
                 $fechaInfestacion = $campania->infestacion_fecha;
+                $fechaReinfestacion = $campania->reinfestacion_fecha;
 
-                // Si ambas fechas existen, calcular duración
+                // ------------------------------------------------------------------
+                // 1) DURACIÓN: INICIO → INFESTACIÓN
+                // ------------------------------------------------------------------
                 if (!empty($fechaInicio) && !empty($fechaInfestacion)) {
                     $campania->infestacion_duracion_desde_campania =
                         CalculoHelper::calcularDuracionEntreFechas($fechaInicio, $fechaInfestacion);
                 } else {
-                    // Si alguna está vacía, resetear
                     $campania->infestacion_duracion_desde_campania = null;
                 }
 
+                // ------------------------------------------------------------------
+                // 2) DURACIÓN: INFESTACIÓN → RE-INFESTACIÓN
+                // ------------------------------------------------------------------
+                if (!empty($fechaInfestacion) && !empty($fechaReinfestacion)) {
+                    $campania->reinfestacion_duracion_desde_infestacion =
+                        CalculoHelper::calcularDuracionEntreFechas($fechaInfestacion, $fechaReinfestacion);
+                } else {
+                    $campania->reinfestacion_duracion_desde_infestacion = null;
+                }
             }
         });
     }
+
 
 }

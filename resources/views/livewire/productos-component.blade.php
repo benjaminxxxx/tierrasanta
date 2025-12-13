@@ -66,20 +66,50 @@
                             </x-td>
 
                             <x-td class="text-center">
-                                <div class="flex items-center justify-center gap-2">
-                                    <x-button
-                                        @click="$wire.dispatch('VerComprasProducto',{'id':{{ $producto->id }}})">
-                                        <i class="fa fa-money-bill"></i> Compras
-                                    </x-button>
-                                    <x-button @click="$wire.dispatch('EditarProducto',{'id':{{ $producto->id }}})">
-                                        <i class="fa fa-edit"></i>
-                                    </x-button>
-                                    <x-button variant="danger" wire:click="confirmarEliminacion({{ $producto->id }})">
-                                        <i class="fa fa-trash"></i>
-                                    </x-button>
-                                </div>
+                                <x-dropdown align="right" width="48">
+                                    <x-slot name="trigger">
+                                        <button type="button"
+                                            class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-100 transition">
+                                            Opciones
+                                            <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"
+                                                viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+                                    </x-slot>
 
+                                    <x-slot name="content">
+                                        @if ($producto->kardexActual)
+                                            <x-dropdown-link href="{{ route('gestion_insumos.kardex.detalle', ['insumoKardexId' => $producto->kardexActual->id]) }}">
+                                                <i class="fa fa-eye"></i>
+                                                <span class="ml-2">Ver Kardex</span>
+                                            </x-dropdown-link>
+                                        @endif
+                                        {{-- Ver compras --}}
+                                        <x-dropdown-link href="#"
+                                            @click.prevent="$wire.dispatch('VerComprasProducto',{ id: {{ $producto->id }} })">
+                                            <i class="fa fa-money-bill"></i>
+                                            <span class="ml-2">Compras</span>
+                                        </x-dropdown-link>
+
+                                        {{-- Editar --}}
+                                        <x-dropdown-link href="#"
+                                            @click.prevent="$wire.dispatch('EditarProducto',{ id: {{ $producto->id }} })">
+                                            <i class="fa fa-edit"></i>
+                                            <span class="ml-2">Editar</span>
+                                        </x-dropdown-link>
+
+                                        {{-- Eliminar --}}
+                                        <x-dropdown-link href="#"
+                                            @click.prevent=" $wire.confirmarEliminacion({{ $producto->id }}) ">
+                                            <i class="fa fa-trash text-red-600"></i>
+                                            <span class="ml-2">Eliminar</span>
+                                        </x-dropdown-link>
+
+                                    </x-slot>
+                                </x-dropdown>
                             </x-td>
+
                         </x-tr>
                     @endforeach
                 @else
@@ -93,5 +123,5 @@
             {{ $productos->links() }}
         </div>
     </x-card2>
-    <x-loading wire:loading/>
+    <x-loading wire:loading />
 </div>

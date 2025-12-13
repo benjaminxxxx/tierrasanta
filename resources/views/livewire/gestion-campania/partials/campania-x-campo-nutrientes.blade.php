@@ -1,5 +1,5 @@
 <x-tr class="">
-    <x-th-header>NUTRIENTES</x-th-header>
+    <x-th-header>DETALLE</x-th-header>
     <x-th-header class="text-right">KG</x-th-header>
     <x-th-header class="text-right">KG/HA</x-th-header>
     <x-td class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-600">

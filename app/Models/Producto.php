@@ -19,6 +19,11 @@ class Producto extends Model
         'codigo_unidad_medida',
         'categoria_pesticida'
     ];
+    public function kardexActual()
+    {
+        return $this->hasOne(InsKardex::class, 'producto_id', 'id')
+            ->where('anio', now()->year);
+    }
     public function nutrientes()
     {
         return $this->belongsToMany(Nutriente::class, 'producto_nutrientes', 'producto_id', 'nutriente_codigo')
@@ -160,7 +165,7 @@ class Producto extends Model
             ->where('categoria_codigo', 'combustible')
             ->exists();
     }
-   
+
     public static function deTipo($tipo)
     {
         if ($tipo === 'combustible') {
@@ -171,7 +176,7 @@ class Producto extends Model
     }
     public function getCategoriaConDescripcionAttribute()
     {
-        return mb_strtoupper($this->categoria . ($this->categoriaPesticida?->descripcion ? ' - ' . $this->categoriaPesticida->descripcion : ''));
+        return mb_strtoupper($this->categoria_codigo . ($this->categoriaPesticida?->descripcion ? ' - ' . $this->categoriaPesticida->descripcion : ''));
     }
     public function getListaNutrientesAttribute()
     {

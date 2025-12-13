@@ -8,6 +8,7 @@ use App\Services\RecursosHumanos\Personal\EmpleadoServicio;
 use Exception;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
+use Session;
 
 class ReporteDiarioRiegoComponent extends Component
 {
@@ -26,7 +27,7 @@ class ReporteDiarioRiegoComponent extends Component
     public function mount()
     {
 
-        $this->fecha = (new \DateTime('now'))->format('Y-m-d');
+        $this->fecha = Session::get('fecha_reporte',now()->format('Y-m-d'));
         $this->tipoPersonal = 'empleados';
         $this->obtenerRiegos();
         $this->obtenerTrabajadores();
@@ -76,14 +77,16 @@ class ReporteDiarioRiegoComponent extends Component
 
     }
     
-    public function updatedFecha()
+    public function updatedFecha($fecha)
     {
+        Session::put('fecha_reporte',$fecha);
         $this->obtenerRiegos();
     }
     public function fechaAnterior()
     {
         // Restar un día a la fecha seleccionada
         $this->fecha = \Carbon\Carbon::parse($this->fecha)->subDay()->format('Y-m-d');
+        Session::put('fecha_reporte',$this->fecha);
         $this->obtenerRiegos();
     }
 
@@ -91,6 +94,7 @@ class ReporteDiarioRiegoComponent extends Component
     {
         // Sumar un día a la fecha seleccionada
         $this->fecha = \Carbon\Carbon::parse($this->fecha)->addDay()->format('Y-m-d');
+        Session::put('fecha_reporte',$this->fecha);
         $this->obtenerRiegos();
     }
     public function descargarBackup()

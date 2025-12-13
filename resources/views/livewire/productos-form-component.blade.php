@@ -21,7 +21,7 @@
                         <option value="">SELECCIONAR CATEGORÍA</option>
                         <option value="fertilizante">FERTILIZANTE</option>
                         <option value="pesticida">PESTICIDA</option>
-                        <option value="corrector_sueldo">CORRECTOR DE SALINIDAD</option>
+                        <option value="corrector_salinidad">CORRECTOR DE SALINIDAD</option>
                         <option value="combustible">COMBUSTIBLE</option>
                     </x-select>
 
