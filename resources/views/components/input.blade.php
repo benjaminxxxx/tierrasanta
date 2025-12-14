@@ -39,27 +39,33 @@
                     dark:focus:ring-blue-500 dark:focus:border-blue-500';
 
     // 🔹 Estado readonly/disabled
-    $readonlyClasses = 'bg-gray-200 cursor-not-allowed
-                        dark:bg-gray-600 dark:text-gray-300 dark:border-gray-500';
+    $readonlyClasses = 'bg-gray-100 text-gray-700 cursor-default
+                    dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600';
+
+    $disabledClasses = 'bg-gray-200 text-gray-500 cursor-not-allowed
+                    dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600';
 
     // Construir clases finales
-    $classes = trim($baseClasses . ' ' . $sizeClasses . ($isReadOnly || $isDisabled ? ' ' . $readonlyClasses : ''));
+    $stateClasses = '';
+
+    if ($isDisabled) {
+        $stateClasses = $disabledClasses;
+    } elseif ($isReadOnly) {
+        $stateClasses = $readonlyClasses;
+    }
+
+    $classes = trim($baseClasses . ' ' . $sizeClasses . ' ' . $stateClasses);
+
 @endphp
 
 <x-group-field>
     @if ($type === 'checkbox')
         <div class="flex items-start gap-2">
-            <input
-                id="{{ $id }}"
-                type="checkbox"
-                {{ $isDisabled ? 'disabled' : '' }}
-                {!! $attributes->merge([
-                    'class' =>
-                        'w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500
-                         dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2
-                         dark:bg-gray-700 dark:border-gray-600',
-                ]) !!}
-            />
+            <input id="{{ $id }}" type="checkbox" {{ $isDisabled ? 'disabled' : '' }} {!! $attributes->merge([
+                'class' => 'w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500
+                                                 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2
+                                                 dark:bg-gray-700 dark:border-gray-600',
+            ]) !!} />
 
             <div class="flex flex-col">
                 @if ($label)
@@ -81,14 +87,9 @@
             </x-label>
         @endif
 
-        <input
-            id="{{ $id }}"
-            type="{{ $type }}"
-            {{-- Aplicar disabled/readonly según corresponda --}}
-            {{ $isDisabled ? 'disabled' : '' }}
-            {{ $isReadOnly && !$isDisabled ? 'readonly' : '' }}
-            {!! $attributes->except(['disabled', 'readonly'])->merge(['class' => $classes]) !!}
-        />
+        <input id="{{ $id }}" type="{{ $type }}" {{-- Aplicar disabled/readonly según corresponda --}}
+            {{ $isDisabled ? 'disabled' : '' }} {{ $isReadOnly && !$isDisabled ? 'readonly' : '' }}
+            {!! $attributes->except(['disabled', 'readonly'])->merge(['class' => $classes]) !!} />
 
         @if ($help)
             <p id="{{ $id }}-help" class="mt-1 text-xs text-gray-500 dark:text-gray-400">

@@ -68,6 +68,12 @@
                             ])
 
                             @include('livewire.gestion-campania.partials.accordion-section', [
+                                'id' => 'cosecha',
+                                'titulo' => 'COSECHA',
+                                'partial' => 'livewire.gestion-campania.partials.campania-x-campo-cosecha',
+                            ])
+
+                            @include('livewire.gestion-campania.partials.accordion-section', [
                                 'id' => 'riego',
                                 'titulo' => 'RIEGO',
                                 'partial' => 'livewire.gestion-campania.partials.campania-x-campo-riego',

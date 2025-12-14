@@ -7,7 +7,7 @@
     <x-td class="bg-gray-100 dark:bg-gray-600" rowspan="100%">
         @if ($campania)
             <div class="flex flex-wrap gap-4 space-y-2">
-                <x-button type="button" @click="$wire.dispatch('editarInfestacion',{campaniaId:{{ $campania->id }}})">
+                <x-button type="button" @click="$wire.dispatch('editarCampania',{campaniaId:{{ $campania->id }},tab:'infestacion'})">
                     <i class="fa fa-edit"></i> EDITAR
                 </x-button>
                 <x-button type="button"

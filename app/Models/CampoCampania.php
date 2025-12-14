@@ -10,7 +10,9 @@ use Illuminate\Database\Eloquent\Model;
 class CampoCampania extends Model
 {
     use HasFactory;
+
     protected $table = 'campos_campanias';
+
     protected $fillable = [
         'nombre_campania',
         'campo',
@@ -67,10 +69,10 @@ class CampoCampania extends Model
         'infestacion_cantidad_infestadores_tubos',
         'infestacion_cantidad_infestadores_mallita',
         'infestacion_fecha_recojo_vaciado_infestadores',
-        'infestacion_permanencia_infestadores',//dias
+        'infestacion_permanencia_infestadores', // dias
         'infestacion_fecha_colocacion_malla',
         'infestacion_fecha_retiro_malla',
-        'infestacion_permanencia_malla',//dias
+        'infestacion_permanencia_malla', // dias
 
         'reinfestacion_fecha',
         'reinfestacion_duracion_desde_infestacion',
@@ -87,10 +89,10 @@ class CampoCampania extends Model
         'reinfestacion_cantidad_infestadores_tubos',
         'reinfestacion_cantidad_infestadores_mallita',
         'reinfestacion_fecha_recojo_vaciado_infestadores',
-        'reinfestacion_permanencia_infestadores',//dias
+        'reinfestacion_permanencia_infestadores', // dias
         'reinfestacion_fecha_colocacion_malla',
         'reinfestacion_fecha_retiro_malla',
-        'reinfestacion_permanencia_malla',//dias
+        'reinfestacion_permanencia_malla', // dias
 
         'cosechamadres_fecha_cosecha',
         'cosechamadres_tiempo_infestacion_a_cosecha',
@@ -171,59 +173,72 @@ class CampoCampania extends Model
     {
         return $this->hasMany(InsResFertilizanteCampania::class, 'campo_campania_id');
     }
+
     public function infestaciones()
     {
         return $this->hasMany(CochinillaInfestacion::class, 'campo_campania_id');
     }
+
     public function evaluacionInfestaciones()
     {
         return $this->hasMany(EvaluacionInfestacion::class, 'campo_campania_id');
     }
+
     public function camposCampaniasConsumo()
     {
         return $this->hasMany(CamposCampaniasConsumo::class, 'campos_campanias_id');
     }
+
     public function reporteCostoPlanilla()
     {
         return $this->hasMany(ReporteCostoPlanilla::class, 'campos_campanias_id');
     }
+
     public function evaluacionPoblacionPlantas()
     {
         return $this->hasOne(EvalPoblacionPlanta::class, 'campania_id');
     }
+
     public function evaluacionBrotesXPiso()
     {
         return $this->hasOne(EvalBrotesPorPiso::class, 'campania_id');
     }
+
     public function proyeccionesRendimientosPoda()
     {
         return $this->hasMany(ProyeccionRendimientoPoda::class, 'campo_campania_id');
     }
-    //consumos()
+
+    // consumos()
     public function resumenConsumoProductos()
     {
         return $this->hasMany(ResumenConsumoProductos::class, 'campos_campanias_id');
     }
+
     public function cochinillaIngreso()
     {
         return $this->hasMany(CochinillaIngreso::class, 'campo_campania_id');
     }
+
     public function campo_model()
     {
         return $this->belongsTo(Campo::class, 'campo', 'nombre');
     }
+
     public function getNumeroInfestadoresAttribute()
     {
         return $this->infestacion_cantidad_infestadores_carton +
             $this->infestacion_cantidad_infestadores_tubos +
             $this->infestacion_cantidad_infestadores_mallita;
     }
+
     public function getNumeroReinfestadoresAttribute()
     {
         return $this->reinfestacion_cantidad_infestadores_carton +
             $this->reinfestacion_cantidad_infestadores_tubos +
             $this->reinfestacion_cantidad_infestadores_mallita;
     }
+
     public function getTipoInfestadorAttribute()
     {
         $tipoInfestador = '-';
@@ -236,8 +251,10 @@ class CampoCampania extends Model
         if ($this->infestacion_cantidad_madres_por_infestador_mallita > 0) {
             $tipoInfestador = 'Mallita ';
         }
+
         return trim($tipoInfestador);
     }
+
     public function getTipoReinfestadorAttribute()
     {
         $tipoInfestador = '-';
@@ -250,8 +267,10 @@ class CampoCampania extends Model
         if ($this->reinfestacion_cantidad_madres_por_infestador_mallita > 0) {
             $tipoInfestador = 'Mallita ';
         }
+
         return trim($tipoInfestador);
     }
+
     public function getTotalHectareaBrotesAttribute()
     {
         $ultimoRegistro = $this->evaluacionBrotesXPiso()
@@ -260,6 +279,7 @@ class CampoCampania extends Model
 
         return $ultimoRegistro?->total_hectarea ?? null;
     }
+
     public function getPromedioIndividuosMitadDiasAttribute()
     {
         $evaluaciones = $this->evaluacionInfestaciones()->orderByDesc('fecha')->get();
@@ -282,7 +302,8 @@ class CampoCampania extends Model
 
         return $date->translatedFormat('j \d\e F \d\e\l\ Y');
     }
-    //atributos para el detalle final de la campaña
+
+    // atributos para el detalle final de la campaña
     public function getFechaSiembraAttribute()
     {
         $date = Carbon::parse($this->fecha_inicio);
@@ -292,6 +313,7 @@ class CampoCampania extends Model
             ->latest('fecha_siembra') // Obtiene la siembra más reciente antes de fecha_inicio
             ->value('fecha_siembra') ?? null; // Devuelve solo la fecha o una cadena vacía si no hay resultados
     }
+
     public static function masProximaAntesDe($fecha, $campo)
     {
         return self::where('fecha_inicio', '<=', $fecha)
@@ -299,6 +321,7 @@ class CampoCampania extends Model
             ->orderByDesc('fecha_inicio')
             ->first();
     }
+
     public function cochinillaMadres()
     {
         return $this->cochinillaIngreso()
@@ -306,30 +329,33 @@ class CampoCampania extends Model
             ->whereHas('observacionRelacionada', fn($q) => $q->where('es_cosecha_mama', true))
             ->orWhereHas(
                 'detalles',
-                fn($q) =>
-                $q->whereHas(
+                fn($q) => $q->whereHas(
                     'observacionRelacionada',
-                    fn($q2) =>
-                    $q2->where('es_cosecha_mama', true)
+                    fn($q2) => $q2->where('es_cosecha_mama', true)
                 )
             );
 
     }
-    #region Infestacion
+
+    // region Infestacion
     public function getRiegoM3IniInfestPorPencaAttribute()
     {
         if ($this->infestacion_numero_pencas == 0 || $this->infestacion_numero_pencas === null) {
             return null; // o 0 según lo que debas mostrar
         }
+
         return $this->riego_m3_ini_infest / $this->infestacion_numero_pencas * 1000;
     }
+
     public function getRiegoM3InfestReinfestPorPencaAttribute()
     {
         if ($this->reinfestacion_numero_pencas == 0 || $this->reinfestacion_numero_pencas === null) {
             return null; // o 0 según lo que debas mostrar
         }
+
         return $this->riego_m3_infest_reinf / $this->reinfestacion_numero_pencas * 1000;
     }
+
     public function getRiegoM3InicioAReinfestacionPorPencaAttribute()
     {
         $totalPencas =
@@ -343,8 +369,8 @@ class CampoCampania extends Model
         return ($this->riego_hrs_acumuladas / $totalPencas) * 1000;
     }
 
-    #endregion
-    #region Alias
+    // endregion
+    // region Alias
     // Aliases para infestación
     public function getNumeroInfestadoresPorPencaAttribute()
     {
@@ -354,6 +380,7 @@ class CampoCampania extends Model
 
         return $this->numero_infestadores / $this->infestacion_numero_pencas;
     }
+
     public function getNumeroReinfestadoresPorPencaAttribute()
     {
         if ($this->reinfestacion_numero_pencas == 0 || $this->reinfestacion_numero_pencas === null) {
@@ -362,6 +389,7 @@ class CampoCampania extends Model
 
         return $this->numero_reinfestadores / $this->reinfestacion_numero_pencas;
     }
+
     public function getGramosCochinillaMamaPorInfestadorAttribute()
     {
         if (empty($this->numero_infestadores) || $this->numero_infestadores == 0) {
@@ -421,8 +449,8 @@ class CampoCampania extends Model
         return number_format($valor * 10000, 0) . 'gr.';
     }
 
-    #endregion
-    #region CosechaMadresCalculado
+    // endregion
+    // region CosechaMadresCalculado
     public function getProcedenciasMadresAttribute()
     {
         $valor = $this->infestacion_procedencia_madres;
@@ -441,6 +469,7 @@ class CampoCampania extends Model
 
         return [];
     }
+
     public function getProcedenciasMadresReinfestacionAttribute()
     {
         $valor = $this->reinfestacion_procedencia_madres;
@@ -493,68 +522,81 @@ class CampoCampania extends Model
     public function getCosechamadresInfestadorCartonCamposHaAttribute()
     {
         $area = optional($this->campo_model)->area;
+
         return $area > 0 ? $this->cosechamadres_infestador_carton_campos / $area : null;
     }
+
     public function getCosechamadresInfestadorTuboCamposHaAttribute()
     {
         $area = optional($this->campo_model)->area;
+
         return $area > 0 ? $this->cosechamadres_infestador_tubo_campos / $area : null;
     }
 
     public function getCosechamadresInfestadorMallitaCamposHaAttribute()
     {
         $area = optional($this->campo_model)->area;
+
         return $area > 0 ? $this->cosechamadres_infestador_mallita_campos / $area : null;
     }
 
     public function getCosechamadresParaSecadoHaAttribute()
     {
         $area = optional($this->campo_model)->area;
+
         return $area > 0 ? $this->cosechamadres_para_secado / $area : null;
     }
 
     public function getCosechamadresParaVentaFrescoHaAttribute()
     {
         $area = optional($this->campo_model)->area;
+
         return $area > 0 ? $this->cosechamadres_para_venta_fresco / $area : null;
     }
+
     public function getCosechamadresRecuperacionMadresSecoCartonHaAttribute()
     {
         $area = optional($this->campo_model)->area;
+
         return $area > 0 ? $this->cosechamadres_recuperacion_madres_seco_carton / $area : null;
     }
 
     public function getCosechamadresRecuperacionMadresSecoTuboHaAttribute()
     {
         $area = optional($this->campo_model)->area;
+
         return $area > 0 ? $this->cosechamadres_recuperacion_madres_seco_tubo / $area : null;
     }
 
     public function getCosechamadresRecuperacionMadresSecoMallitaHaAttribute()
     {
         $area = optional($this->campo_model)->area;
+
         return $area > 0 ? $this->cosechamadres_recuperacion_madres_seco_mallita / $area : null;
     }
 
     public function getCosechamadresRecuperacionMadresSecoSecadoHaAttribute()
     {
         $area = optional($this->campo_model)->area;
+
         return $area > 0 ? $this->cosechamadres_recuperacion_madres_seco_secado / $area : null;
     }
 
     public function getCosechamadresRecuperacionMadresSecoFrescoHaAttribute()
     {
         $area = optional($this->campo_model)->area;
+
         return $area > 0 ? $this->cosechamadres_recuperacion_madres_seco_fresco / $area : null;
     }
 
-    #endregion
-    #region Nutrientes x Ha
+    // endregion
+    // region Nutrientes x Ha
     // KG totales
     public function getNitrogenoDesdeInicioInfestacionAttribute()
     {
         return $this->fertilizaciones->where('etapa', 'infestacion')->sum('n_kg');
     }
+
     public function getFosforoDesdeInicioInfestacionAttribute()
     {
         return $this->fertilizaciones->where('etapa', 'infestacion')->sum('p_kg');
@@ -589,10 +631,12 @@ class CampoCampania extends Model
     {
         return $this->fertilizaciones->where('etapa', 'infestacion')->sum('fe_kg');
     }
+
     public function getCorrectorSalinidadDesdeInicioInfestacionAttribute()
     {
         return $this->fertilizaciones->where('etapa', 'infestacion')->sum('corrector_salinidad_cant');
     }
+
     public function getNitrogenoDesdeInfestacionReinfestacionAttribute()
     {
         return $this->fertilizaciones->where('etapa', 'reinfestacion')->sum('n_kg');
@@ -677,6 +721,7 @@ class CampoCampania extends Model
     {
         return $this->fertilizaciones->sum('fe_kg');
     }
+
     public function getCorrectorSalinidadCantAttribute()
     {
         return $this->fertilizaciones->sum('corrector_salinidad_cant');
@@ -722,12 +767,17 @@ class CampoCampania extends Model
     {
         return $this->area > 0 ? $this->nutriente_fierro_kg / $this->area : 0;
     }
-    #endregion
+
+    // endregion
     protected static function booted()
     {
         static::saving(function ($campania) {
 
-            // Recalcular si cambia inicio, infestación o re-infestación
+            /*
+            |--------------------------------------------------------------------------
+            | DURACIONES RELACIONADAS A INFESTACIÓN / REINFESTACIÓN
+            |--------------------------------------------------------------------------
+            */
             if (
                 $campania->isDirty('fecha_inicio') ||
                 $campania->isDirty('infestacion_fecha') ||
@@ -737,28 +787,86 @@ class CampoCampania extends Model
                 $fechaInfestacion = $campania->infestacion_fecha;
                 $fechaReinfestacion = $campania->reinfestacion_fecha;
 
-                // ------------------------------------------------------------------
-                // 1) DURACIÓN: INICIO → INFESTACIÓN
-                // ------------------------------------------------------------------
-                if (!empty($fechaInicio) && !empty($fechaInfestacion)) {
-                    $campania->infestacion_duracion_desde_campania =
-                        CalculoHelper::calcularDuracionEntreFechas($fechaInicio, $fechaInfestacion);
-                } else {
-                    $campania->infestacion_duracion_desde_campania = null;
-                }
+                // Inicio → Infestación
+                $campania->infestacion_duracion_desde_campania =
+                    ($fechaInicio && $fechaInfestacion)
+                    ? CalculoHelper::calcularDuracionEntreFechas($fechaInicio, $fechaInfestacion)
+                    : null;
 
-                // ------------------------------------------------------------------
-                // 2) DURACIÓN: INFESTACIÓN → RE-INFESTACIÓN
-                // ------------------------------------------------------------------
-                if (!empty($fechaInfestacion) && !empty($fechaReinfestacion)) {
-                    $campania->reinfestacion_duracion_desde_infestacion =
-                        CalculoHelper::calcularDuracionEntreFechas($fechaInfestacion, $fechaReinfestacion);
-                } else {
-                    $campania->reinfestacion_duracion_desde_infestacion = null;
-                }
+                // Infestación → Reinfestación
+                $campania->reinfestacion_duracion_desde_infestacion =
+                    ($fechaInfestacion && $fechaReinfestacion)
+                    ? CalculoHelper::calcularDuracionEntreFechas($fechaInfestacion, $fechaReinfestacion)
+                    : null;
             }
+
+            /*
+            |--------------------------------------------------------------------------
+            | DURACIONES RELACIONADAS A COSECHA
+            |--------------------------------------------------------------------------
+            */
+            if (
+                $campania->isDirty('cosch_fecha') ||
+                $campania->isDirty('fecha_inicio') ||
+                $campania->isDirty('infestacion_fecha') ||
+                $campania->isDirty('reinfestacion_fecha')
+            ) {
+                $fechaCosecha = $campania->cosch_fecha;
+                $fechaInicio = $campania->fecha_inicio;
+                $fechaInfestacion = $campania->infestacion_fecha;
+                $fechaReinfestacion = $campania->reinfestacion_fecha;
+
+                // Infestación → Cosecha
+                $campania->cosch_tiempo_inf_cosch =
+                    ($fechaInfestacion && $fechaCosecha)
+                    ? CalculoHelper::calcularDuracionEntreFechas($fechaInfestacion, $fechaCosecha)
+                    : null;
+
+                // Reinfestación → Cosecha
+                $campania->cosch_tiempo_reinf_cosch =
+                    ($fechaReinfestacion && $fechaCosecha)
+                    ? CalculoHelper::calcularDuracionEntreFechas($fechaReinfestacion, $fechaCosecha)
+                    : null;
+
+                // Inicio → Cosecha
+                $campania->cosch_tiempo_ini_cosch =
+                    ($fechaInicio && $fechaCosecha)
+                    ? CalculoHelper::calcularDuracionEntreFechas($fechaInicio, $fechaCosecha)
+                    : null;
+            }
+
+            /*
+        |--------------------------------------------------------------------------
+        | FACTORES FRESCA / SECA
+        |--------------------------------------------------------------------------
+        */
+            foreach (['carton', 'tubo', 'malla', 'losa'] as $tipo) {
+                $fresca = $campania->{"cosch_kg_fresca_$tipo"};
+                $seca = $campania->{"cosch_kg_seca_$tipo"};
+
+                $campania->{"cosch_factor_fs_$tipo"} =
+                    ($seca ?? 0) > 0 ? round($fresca / $seca, 2) : null;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | TOTALES
+            |--------------------------------------------------------------------------
+            */
+            $totalKgSeco =
+                ($campania->cosch_kg_seca_carton ?? 0) +
+                ($campania->cosch_kg_seca_tubo ?? 0) +
+                ($campania->cosch_kg_seca_malla ?? 0) +
+                ($campania->cosch_kg_seca_losa ?? 0) +
+                ($campania->cosch_kg_seca_venta_madre ?? 0);
+
+            $campania->cosch_total_cosecha =
+                ($campania->area ?? 0) > 0
+                ? round($totalKgSeco / $campania->area, 2)
+                : null;
+
+            $campania->cosch_total_campania =
+                $campania->cosechamadres_recuperacion_madres;
         });
     }
-
-
 }
