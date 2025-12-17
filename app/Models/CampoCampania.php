@@ -55,7 +55,6 @@ class CampoCampania extends Model
         'brotexpiso_total_brotes_2y3piso_n_dias',
 
         'infestacion_fecha',
-        'infestacion_duracion_desde_campania',
         'infestacion_numero_pencas',
         'infestacion_kg_totales_madre',
         'infestacion_kg_madre_infestador_carton',
@@ -75,7 +74,6 @@ class CampoCampania extends Model
         'infestacion_permanencia_malla', // dias
 
         'reinfestacion_fecha',
-        'reinfestacion_duracion_desde_infestacion',
         'reinfestacion_numero_pencas',
         'reinfestacion_kg_totales_madre',
         'reinfestacion_kg_madre_infestador_carton',
@@ -95,7 +93,6 @@ class CampoCampania extends Model
         'reinfestacion_permanencia_malla', // dias
 
         'cosechamadres_fecha_cosecha',
-        'cosechamadres_tiempo_infestacion_a_cosecha',
         'cosechamadres_destino_madres_fresco',
         'cosechamadres_infestador_carton_campos',
         'cosechamadres_infestador_tubo_campos',
@@ -107,29 +104,21 @@ class CampoCampania extends Model
         'cosechamadres_recuperacion_madres_seco_mallita',
         'cosechamadres_recuperacion_madres_seco_secado',
         'cosechamadres_recuperacion_madres_seco_fresco',
-        'cosechamadres_conversion_fresco_seco_carton',
-        'cosechamadres_conversion_fresco_seco_tubo',
-        'cosechamadres_conversion_fresco_seco_mallita',
-        'cosechamadres_conversion_fresco_seco_secado',
-        'cosechamadres_conversion_fresco_seco_fresco',
 
         'eval_cosch_conteo_individuos',
         'eval_cosch_proj_1',
         'eval_cosch_proj_2',
         'eval_cosch_proj_coch_x_gramo',
-        'eval_cosch_proj_gramos_x_penca',
-        'eval_cosch_proj_penca_inf',
-        'eval_cosch_proj_rdto_ha',
 
         'proj_rdto_poda_muestra',
         'proj_rdto_metros_cama_ha',
         'proj_rdto_prom_rdto_ha',
         'proj_rdto_rel_fs',
+        'eval_infest_fecha_primera',
+        'eval_infest_fecha_segunda',
+        'eval_infest_fecha_tercera',
 
         'cosch_fecha',
-        'cosch_tiempo_inf_cosch',
-        'cosch_tiempo_reinf_cosch',
-        'cosch_tiempo_ini_cosch',
         'cosch_destino_carton',
         'cosch_destino_tubo',
         'cosch_destino_malla',
@@ -142,12 +131,13 @@ class CampoCampania extends Model
         'cosch_kg_seca_malla',
         'cosch_kg_seca_losa',
         'cosch_kg_seca_venta_madre',
+        /*
         'cosch_factor_fs_carton',
         'cosch_factor_fs_tubo',
         'cosch_factor_fs_malla',
         'cosch_factor_fs_losa',
         'cosch_total_cosecha',
-        'cosch_total_campania',
+        'cosch_total_campania',*/
 
         'acid_prom',
         'acid_infest',
@@ -178,10 +168,9 @@ class CampoCampania extends Model
     {
         return $this->hasMany(CochinillaInfestacion::class, 'campo_campania_id');
     }
-
-    public function evaluacionInfestaciones()
+    public function evalInfestacionPencas()
     {
-        return $this->hasMany(EvaluacionInfestacion::class, 'campo_campania_id');
+        return $this->hasMany(EvalInfestacionPenca::class, 'campo_campania_id');
     }
 
     public function camposCampaniasConsumo()
@@ -224,7 +213,179 @@ class CampoCampania extends Model
     {
         return $this->belongsTo(Campo::class, 'campo', 'nombre');
     }
+    public function getProjDiferenciaConteoAttribute(): ?float
+    {
+        $produccionRealKg = (float) $this->cosch_produccion_total_kg_seco;
+        $proyeccionKgHa = (float) $this->eval_cosch_proj_rdto_ha;
 
+        if (
+            !is_numeric($produccionRealKg) ||
+            !is_numeric($proyeccionKgHa)
+        ) {
+            return null;
+        }
+
+        return round($produccionRealKg - $proyeccionKgHa, 2);
+    }
+    public function getProjDiferenciaPodaAttribute(): ?float
+    {
+        $produccionRealKg = $this->cosch_produccion_total_kg_seco;
+        $proyeccionPodaKg = $this->proj_rdto_prom_rdto_ha;
+
+        if (
+            !is_numeric($produccionRealKg) ||
+            !is_numeric($proyeccionPodaKg)
+        ) {
+            return null;
+        }
+
+        return round($produccionRealKg - $proyeccionPodaKg, 2);
+    }
+    public function getEvalProjGramosCochinillaXPencaAttribute(): ?float
+    {
+        $promedio = $this->promedio_individuos_tercera_eval;
+        $cochPorGramo = $this->eval_cosch_proj_coch_x_gramo;
+
+        if (
+            is_null($promedio) ||
+            is_null($cochPorGramo) ||
+            !is_numeric($cochPorGramo) ||
+            $cochPorGramo == 0
+        ) {
+            return null;
+        }
+
+        return round($promedio / $cochPorGramo, 4);
+    }
+    public function getEvalCoschProjRdtoHaAttribute(): ?float
+    {
+        $gramosPorPenca = $this->eval_proj_gramos_cochinilla_x_penca;
+        $numeroPencas = $this->eval_cosch_proj_penca_inf;
+
+        if (
+            !is_numeric($gramosPorPenca) ||
+            !is_numeric($numeroPencas)
+        ) {
+            return null;
+        }
+
+        return round(($gramosPorPenca * $numeroPencas) / 1000, 2);
+    }
+    //eval_cosch_proj_penca_inf
+    public function getEvalCoschProjPencaInfAttribute(): ?int
+    {
+        $total = $this->brotexpiso_actual_total_brotes_2y3piso;
+
+        if (is_null($total)) {
+            return null;
+        }
+
+        return (int) $total;
+    }
+    public function getPromedioIndividuosPrimeraEvalAttribute()
+    {
+        $valores = [];
+
+        foreach ($this->evalInfestacionPencas as $penca) {
+            if (is_numeric($penca->eval_primera_piso_2)) {
+                $valores[] = $penca->eval_primera_piso_2;
+            }
+            if (is_numeric($penca->eval_primera_piso_3)) {
+                $valores[] = $penca->eval_primera_piso_3;
+            }
+        }
+
+        if (count($valores) === 0) {
+            return 0;
+        }
+
+        return round(array_sum($valores) / count($valores), 2);
+    }
+    public function getPromedioIndividuosSegundaEvalAttribute()
+    {
+        $valores = [];
+
+        foreach ($this->evalInfestacionPencas as $penca) {
+            if (is_numeric($penca->eval_segunda_piso_2)) {
+                $valores[] = $penca->eval_segunda_piso_2;
+            }
+            if (is_numeric($penca->eval_segunda_piso_3)) {
+                $valores[] = $penca->eval_segunda_piso_3;
+            }
+        }
+
+        if (count($valores) === 0) {
+            return 0;
+        }
+
+        return round(array_sum($valores) / count($valores), 2);
+    }
+    public function getPromedioIndividuosTerceraEvalAttribute()
+    {
+        $valores = [];
+
+        foreach ($this->evalInfestacionPencas as $penca) {
+            if (is_numeric($penca->eval_tercera_piso_2)) {
+                $valores[] = $penca->eval_tercera_piso_2;
+            }
+            if (is_numeric($penca->eval_tercera_piso_3)) {
+                $valores[] = $penca->eval_tercera_piso_3;
+            }
+        }
+
+        if (count($valores) === 0) {
+            return 0;
+        }
+
+        return round(array_sum($valores) / count($valores), 2);
+    }
+
+    public function getCosechamadresConversionFrescoSecoCartonAttribute()
+    {
+        return $this->calcularConversion(
+            $this->cosechamadres_infestador_carton_campos,
+            $this->cosechamadres_recuperacion_madres_seco_carton
+        );
+    }
+
+    public function getCosechamadresConversionFrescoSecoTuboAttribute()
+    {
+        return $this->calcularConversion(
+            $this->cosechamadres_infestador_tubo_campos,
+            $this->cosechamadres_recuperacion_madres_seco_tubo
+        );
+    }
+
+    public function getCosechamadresConversionFrescoSecoMallitaAttribute()
+    {
+        return $this->calcularConversion(
+            $this->cosechamadres_infestador_mallita_campos,
+            $this->cosechamadres_recuperacion_madres_seco_mallita
+        );
+    }
+
+    public function getCosechamadresConversionFrescoSecoSecadoAttribute()
+    {
+        return $this->calcularConversion(
+            $this->cosechamadres_para_secado,
+            $this->cosechamadres_recuperacion_madres_seco_secado
+        );
+    }
+
+    public function getCosechamadresConversionFrescoSecoFrescoAttribute()
+    {
+        return $this->calcularConversion(
+            $this->cosechamadres_para_venta_fresco,
+            $this->cosechamadres_recuperacion_madres_seco_fresco
+        );
+    }
+    private function calcularConversion($fresco, $seco)
+    {
+        if ($seco === null || $seco == 0) {
+            return null;
+        }
+        return round($fresco / $seco, 0);
+    }
     public function getNumeroInfestadoresAttribute()
     {
         return $this->infestacion_cantidad_infestadores_carton +
@@ -278,21 +439,6 @@ class CampoCampania extends Model
             ->first();
 
         return $ultimoRegistro?->total_hectarea ?? null;
-    }
-
-    public function getPromedioIndividuosMitadDiasAttribute()
-    {
-        $evaluaciones = $this->evaluacionInfestaciones()->orderByDesc('fecha')->get();
-
-        $total = $evaluaciones->count();
-
-        if ($total === 0) {
-            return null;
-        }
-
-        $index = (int) floor($total / 2); // para impar y par toma el centro superior
-
-        return $evaluaciones[$index]?->promedio ?? null;
     }
 
     public function getFechaVigenciaAttribute()
@@ -769,104 +915,182 @@ class CampoCampania extends Model
     }
 
     // endregion
-    protected static function booted()
+    public function getCoschTiempoInfCoschAttribute()
     {
-        static::saving(function ($campania) {
+        if (!$this->infestacion_fecha || !$this->cosch_fecha) {
+            return null;
+        }
 
-            /*
-            |--------------------------------------------------------------------------
-            | DURACIONES RELACIONADAS A INFESTACIÓN / REINFESTACIÓN
-            |--------------------------------------------------------------------------
-            */
-            if (
-                $campania->isDirty('fecha_inicio') ||
-                $campania->isDirty('infestacion_fecha') ||
-                $campania->isDirty('reinfestacion_fecha')
-            ) {
-                $fechaInicio = $campania->fecha_inicio;
-                $fechaInfestacion = $campania->infestacion_fecha;
-                $fechaReinfestacion = $campania->reinfestacion_fecha;
-
-                // Inicio → Infestación
-                $campania->infestacion_duracion_desde_campania =
-                    ($fechaInicio && $fechaInfestacion)
-                    ? CalculoHelper::calcularDuracionEntreFechas($fechaInicio, $fechaInfestacion)
-                    : null;
-
-                // Infestación → Reinfestación
-                $campania->reinfestacion_duracion_desde_infestacion =
-                    ($fechaInfestacion && $fechaReinfestacion)
-                    ? CalculoHelper::calcularDuracionEntreFechas($fechaInfestacion, $fechaReinfestacion)
-                    : null;
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | DURACIONES RELACIONADAS A COSECHA
-            |--------------------------------------------------------------------------
-            */
-            if (
-                $campania->isDirty('cosch_fecha') ||
-                $campania->isDirty('fecha_inicio') ||
-                $campania->isDirty('infestacion_fecha') ||
-                $campania->isDirty('reinfestacion_fecha')
-            ) {
-                $fechaCosecha = $campania->cosch_fecha;
-                $fechaInicio = $campania->fecha_inicio;
-                $fechaInfestacion = $campania->infestacion_fecha;
-                $fechaReinfestacion = $campania->reinfestacion_fecha;
-
-                // Infestación → Cosecha
-                $campania->cosch_tiempo_inf_cosch =
-                    ($fechaInfestacion && $fechaCosecha)
-                    ? CalculoHelper::calcularDuracionEntreFechas($fechaInfestacion, $fechaCosecha)
-                    : null;
-
-                // Reinfestación → Cosecha
-                $campania->cosch_tiempo_reinf_cosch =
-                    ($fechaReinfestacion && $fechaCosecha)
-                    ? CalculoHelper::calcularDuracionEntreFechas($fechaReinfestacion, $fechaCosecha)
-                    : null;
-
-                // Inicio → Cosecha
-                $campania->cosch_tiempo_ini_cosch =
-                    ($fechaInicio && $fechaCosecha)
-                    ? CalculoHelper::calcularDuracionEntreFechas($fechaInicio, $fechaCosecha)
-                    : null;
-            }
-
-            /*
-        |--------------------------------------------------------------------------
-        | FACTORES FRESCA / SECA
-        |--------------------------------------------------------------------------
-        */
-            foreach (['carton', 'tubo', 'malla', 'losa'] as $tipo) {
-                $fresca = $campania->{"cosch_kg_fresca_$tipo"};
-                $seca = $campania->{"cosch_kg_seca_$tipo"};
-
-                $campania->{"cosch_factor_fs_$tipo"} =
-                    ($seca ?? 0) > 0 ? round($fresca / $seca, 2) : null;
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | TOTALES
-            |--------------------------------------------------------------------------
-            */
-            $totalKgSeco =
-                ($campania->cosch_kg_seca_carton ?? 0) +
-                ($campania->cosch_kg_seca_tubo ?? 0) +
-                ($campania->cosch_kg_seca_malla ?? 0) +
-                ($campania->cosch_kg_seca_losa ?? 0) +
-                ($campania->cosch_kg_seca_venta_madre ?? 0);
-
-            $campania->cosch_total_cosecha =
-                ($campania->area ?? 0) > 0
-                ? round($totalKgSeco / $campania->area, 2)
-                : null;
-
-            $campania->cosch_total_campania =
-                $campania->cosechamadres_recuperacion_madres;
-        });
+        return CalculoHelper::calcularDuracionEntreFechas(
+            $this->infestacion_fecha,
+            $this->cosch_fecha
+        );
     }
+
+    public function getCoschTiempoReinfCoschAttribute()
+    {
+        if (!$this->reinfestacion_fecha || !$this->cosch_fecha) {
+            return null;
+        }
+
+        return CalculoHelper::calcularDuracionEntreFechas(
+            $this->reinfestacion_fecha,
+            $this->cosch_fecha
+        );
+    }
+
+    public function getCoschTiempoIniCoschAttribute()
+    {
+        if (!$this->fecha_inicio || !$this->cosch_fecha) {
+            return null;
+        }
+
+        return CalculoHelper::calcularDuracionEntreFechas(
+            $this->fecha_inicio,
+            $this->cosch_fecha
+        );
+    }
+    public function getCosechamadresTiempoInfestacionACosechaAttribute()
+    {
+        if (!$this->infestacion_fecha || !$this->cosechamadres_fecha_cosecha) {
+            return null;
+        }
+
+        return CalculoHelper::calcularDuracionEntreFechas(
+            $this->infestacion_fecha,
+            $this->cosechamadres_fecha_cosecha
+        );
+    }
+
+    public function getInfestacionDuracionDesdeCampaniaAttribute()
+    {
+        if (!$this->fecha_inicio || !$this->infestacion_fecha) {
+            return null;
+        }
+
+        return CalculoHelper::calcularDuracionEntreFechas(
+            $this->fecha_inicio,
+            $this->infestacion_fecha
+        );
+    }
+
+    public function getReinfestacionDuracionDesdeInfestacionAttribute()
+    {
+        if (!$this->infestacion_fecha || !$this->reinfestacion_fecha) {
+            return null;
+        }
+
+        return CalculoHelper::calcularDuracionEntreFechas(
+            $this->infestacion_fecha,
+            $this->reinfestacion_fecha
+        );
+    }
+
+    public function getCoschTotalCosechaAttribute()
+    {
+        if (!$this->area || $this->area == 0) {
+            return null;
+        }
+
+        $totalKgSeco =
+            ($this->cosch_kg_seca_carton ?? 0) +
+            ($this->cosch_kg_seca_tubo ?? 0) +
+            ($this->cosch_kg_seca_malla ?? 0) +
+            ($this->cosch_kg_seca_losa ?? 0) +
+            ($this->cosch_kg_seca_venta_madre ?? 0);
+
+        return round($totalKgSeco / $this->area, 2);
+    }
+    public function getCosechamadresRecuperacionMadresHaAttribute()
+    {
+        if (!$this->area || $this->area == 0) {
+            return null;
+        }
+        return $this->cosechamadres_recuperacion_madres / $this->area;
+    }
+    //cosch_produccion_total_kg_seco
+    public function getCoschProduccionTotalKgSecoAttribute()
+    {
+        return
+            ($this->cosch_total_cosecha ?? 0) +
+            ($this->cosechamadres_recuperacion_madres_ha ?? 0);
+
+    }
+    public function getCoschTotalCampaniaAttribute()
+    {
+        return $this->cosechamadres_recuperacion_madres;
+    }
+    public function getCoschFactorFsCartonAttribute()
+    {
+        if (!$this->cosch_kg_seca_carton || $this->cosch_kg_seca_carton == 0) {
+            return null;
+        }
+
+        return round(
+            $this->cosch_kg_fresca_carton / $this->cosch_kg_seca_carton,
+            2
+        );
+    }
+    public function getCoschFactorFsTuboAttribute()
+    {
+        if (!$this->cosch_kg_seca_tubo || $this->cosch_kg_seca_tubo == 0) {
+            return null;
+        }
+
+        return round(
+            $this->cosch_kg_fresca_tubo / $this->cosch_kg_seca_tubo,
+            2
+        );
+    }
+    public function getCoschFactorFsMallaAttribute()
+    {
+        if (!$this->cosch_kg_seca_malla || $this->cosch_kg_seca_malla == 0) {
+            return null;
+        }
+
+        return round(
+            $this->cosch_kg_fresca_malla / $this->cosch_kg_seca_malla,
+            2
+        );
+    }
+    public function getCoschFactorFsLosaAttribute()
+    {
+        if (!$this->cosch_kg_seca_losa || $this->cosch_kg_seca_losa == 0) {
+            return null;
+        }
+
+        return round(
+            $this->cosch_kg_fresca_losa / $this->cosch_kg_seca_losa,
+            2
+        );
+    }
+    public function getCoschRendimientoPorInfestadorAttribute()
+    {
+        $produccionSeca = $this->cosch_produccion_total_kg_seco ?? 0;
+        $infestadores = $this->numero_infestadores ?? 0;
+        $reinfestadores = $this->numero_reinfestadores ?? 0;
+
+        $totalInfestadores = $infestadores + $reinfestadores;
+
+        if ($totalInfestadores === 0) {
+            return null;
+        }
+
+        return round(($produccionSeca / $totalInfestadores) * 1000, 2);
+    }
+    public function getCoschRendimientoXPencaAttribute()
+    {
+        $totalCosecha = $this->cosch_total_cosecha ?? 0;
+        $pencasInfestacion = $this->infestacion_numero_pencas ?? 0;
+        $pencasReinfestacion = $this->reinfestacion_numero_pencas ?? 0;
+
+        $totalPencas = $pencasInfestacion + $pencasReinfestacion;
+
+        if ($totalPencas === 0) {
+            return null;
+        }
+
+        return round(($totalCosecha / $totalPencas) * 1000, 2);
+    }
+
 }

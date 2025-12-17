@@ -52,3 +52,27 @@
 <x-td class="text-center">
     {{ formatear_numero($campania->riego_m3_inicio_a_reinfestacion_por_penca) }}
 </x-td>
+<x-td class="text-center">
+    {{ formatear_numero($campania->cosch_total_cosecha) }}
+</x-td>
+<x-td class="text-center">
+    {{ formatear_numero($campania->cosch_produccion_total_kg_seco) }}
+</x-td>
+<x-td class="text-center">
+    {{ formatear_numero($campania->cosch_rendimiento_por_infestador) }}
+</x-td>
+<x-td class="text-center">
+    {{ formatear_numero($campania->cosch_rendimiento_x_penca) }}
+</x-td>
+<x-td class="text-center">
+    {{ formatear_numero($campania->eval_cosch_proj_rdto_ha) }}
+</x-td>
+<x-td class="text-center">
+    {{ formatear_numero($campania->proj_rdto_prom_rdto_ha) }}
+</x-td>
+<x-td class="text-center">
+    {{ formatear_numero($campania->proj_diferencia_conteo) }}
+</x-td>
+<x-td class="text-center">
+    {{ formatear_numero($campania->proj_diferencia_poda) }}
+</x-td>

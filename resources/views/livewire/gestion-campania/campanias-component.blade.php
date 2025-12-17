@@ -38,7 +38,7 @@
 
                 [
                     'title' => 'Población de Plantas',
-                    'color' => 'bg-amber-600 text-white',
+                    'color' => 'bg-red-600 text-white',
                     'columns' => [
                         'Fecha de evaluación día cero',
                         'Nª de pencas madre día cero',
@@ -49,7 +49,7 @@
 
                 [
                     'title' => 'Brotes por Piso',
-                    'color' => 'bg-green-700 text-white',
+                    'color' => 'bg-amber-600 text-white',
                     'columns' => [
                         'Fecha evaluación brotes por piso',
                         'Actual brotes aptos 2° piso',
@@ -63,7 +63,7 @@
 
                 [
                     'title' => 'Infestación',
-                    'color' => 'bg-blue-700 text-white',
+                    'color' => 'bg-lime-600 text-white',
                     'columns' => [
                         'Fecha de infestación',
                         'Tipo de infestador',
@@ -88,7 +88,7 @@
                 ],
                 [
                     'title' => 'Re-infestación',
-                    'color' => 'bg-sky-700 text-white',
+                    'color' => 'bg-emerald-600 text-white',
                     'columns' => [
                         'Fecha de re-infestación', //
                         'Tipo de infestador',//
@@ -113,7 +113,7 @@
                 ],
                 [
                     'title' => 'Cosecha',
-                    'color' => 'bg-rose-700 text-white',
+                    'color' => 'bg-cyan-600 text-white',
                     'columns' => [
                         'Fecha de cosecha', 
                         'Tiempo de infestación a cosecha',
@@ -134,10 +134,26 @@
                         'Rendimiento total (kg)',
                         'Rendimiento por infestador (gr)',
                         'Rendimiento por penca (gr)',
-                        'Proyección cosecha',
-                        'Diferencia'
+                        
+                        'PROYECCION COSECHA CONTEO',
+                        'PROYECCION COSECHA PODA',
+                        'DIFERENCIA PROYECCION CONTEO',
+                        'DIFERENCIA PROYECCION PODA'                     			
+
                     ],
                 ],
+                [
+                    'title' => 'ANALISIS FINANCIERO',
+                    'color' => 'bg-blue-600 text-white',
+                    'columns' => [
+                        'COSTO $', 
+                        'PRECIO VENTA $',
+                        'VENTA TOTAL $',
+                        'UTILIDAD O PERDIDA $',
+                        'COSTO X KG',
+                        '% UTILIDAD',
+                    ],
+                ]
             ];
         @endphp
 

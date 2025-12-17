@@ -185,6 +185,7 @@ Route::middleware([
 
     //GASTOS
     Route::get('/contabilidad/gasto/general', [GastoController::class, 'general'])->name('gastos.general');
+    Route::get('/contabilidad/costo_mensual', [GastoController::class, 'costo_mensual'])->name('contabilidad.costo_mensual');
     Route::get('/contabilidad/costos_mensuales', [GastoController::class, 'costos_mensuales'])->name('contabilidad.costos_mensuales');
     Route::get('/contabilidad/costos_generales', [GastoController::class, 'costos_generales'])->name('contabilidad.costos_generales');
 

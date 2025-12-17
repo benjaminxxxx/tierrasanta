@@ -357,6 +357,7 @@
         'gastos.general',
         'contabilidad.costos_mensuales',
         'contabilidad.costos_generales',
+        'contabilidad.costo_mensual'
     ])" logo="fa fa-calculator"
                 text="Contabilidad">
                 <x-nav-link-child href="{{ route('gastos.general') }}" :active="request()->routeIs('gastos.general')">
@@ -365,6 +366,10 @@
                 <x-nav-link-child href="{{ route('contabilidad.costos_mensuales') }}"
                     :active="request()->routeIs('contabilidad.costos_mensuales')">
                     Costos Mensuales
+                </x-nav-link-child>
+                <x-nav-link-child href="{{ route('contabilidad.costo_mensual') }}"
+                    :active="request()->routeIs('contabilidad.costo_mensual')">
+                    Costo Mensual
                 </x-nav-link-child>
                 <x-nav-link-child href="{{ route('contabilidad.costos_generales') }}"
                     :active="request()->routeIs('contabilidad.costos_generales')">

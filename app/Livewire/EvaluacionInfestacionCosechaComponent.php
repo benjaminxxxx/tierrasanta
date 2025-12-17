@@ -4,7 +4,7 @@ namespace App\Livewire;
 
 use App\Models\CampoCampania;
 use App\Models\Configuracion;
-use App\Models\EvaluacionInfestacion;
+use App\Services\Evaluacion\EvaluacionInfestacionPencaServicio;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -21,110 +21,53 @@ class EvaluacionInfestacionCosechaComponent extends Component
     public $campania;
     public $fechaEvaluacion;
     public $idTable;
-    public $fechaExiste = false;
-    public $campaniaUnica = false;
-    public $proyeccion_cochinilla_x_gramo;
-    protected $listeners = ['storeTableDataEvaluacionInfestacion', 'confirmarEliminarEvaluacionInfestacion'];
-    public function mount($campaniaId = null, $campaniaUnica = false)
+    public $proyeccionCochinillaXGramo;
+    public $ultimaInfestacion;
+    public $primeraEvalFecha;
+    public $segundaEvalFecha;
+    public $terceraEvalFecha;
+    protected $listeners = ['confirmarEliminarEvaluacionInfestacion'];
+    public function mount($campaniaId = null)
     {
-        $configuraciones = Configuracion::get()->pluck('valor', 'codigo')->toArray();
-        $this->proyeccion_cochinilla_x_gramo = $configuraciones['equivalencia_cochinillas_x_gramo'] ?? 1;
+        //$configuraciones = Configuracion::get()->pluck('valor', 'codigo')->toArray();
         if ($campaniaId) {
             $this->campania = CampoCampania::find($campaniaId);
             if ($this->campania) {
                 $this->campoSeleccionado = $this->campania->campo;
                 $this->campaniaSeleccionada = $this->campania->id;
+                $this->proyeccionCochinillaXGramo = $this->campania->eval_cosch_proj_coch_x_gramo;
                 $this->renderizarTabla();
-                if($this->campania->eval_cosch_proj_coch_x_gramo){
-                    $this->proyeccion_cochinilla_x_gramo = $this->campania->eval_cosch_proj_coch_x_gramo;
-                }
             }
         }
-        $this->campaniaUnica = $campaniaUnica;
         $this->fechaEvaluacion = Carbon::now()->format('Y-m-d');
         $this->idTable = 'table_' . Str::random(10);
-        $this->revisarFechaExiste();
     }
-    public function crearEvaluacion()
+
+
+    public function renderizarTabla()
     {
         if (!$this->campania) {
-            return $this->alert('error', 'Debe seleccionar una campaña');
-        }
-        if (!$this->fechaEvaluacion) {
-            return $this->alert('error', 'Debe seleccionar una fecha');
-        }
-        try {
-            $revisarExistente = EvaluacionInfestacion::whereDate('fecha', $this->fechaEvaluacion)
-                ->where('campo_campania_id', $this->campania->id)
-                ->exists();
-            if ($revisarExistente) {
-                return $this->alert('warning', 'La evaluación ya existe');
-            }
-            EvaluacionInfestacion::create([
-                'fecha' => $this->fechaEvaluacion,
-                'campo_campania_id' => $this->campania->id
+            $this->dispatch('recargarEvaluacion', [
+                'table' => []
             ]);
-
-            $this->revisarFechaExiste();
-            $this->renderizarTabla();
-            $this->alert('success', 'Evaluación creada con éxito');
-        } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
-        }
-
-    }
-    public function eliminarFecha()
-    {
-        $evaluacion = EvaluacionInfestacion::withCount('detalles')
-            ->whereDate('fecha', $this->fechaEvaluacion)
-            ->where('campo_campania_id', $this->campania->id)
-            ->first();
-
-        if (!$evaluacion) {
-            $this->alert('error', 'No se encontró la evaluación para eliminar.');
             return;
         }
 
-        if ($evaluacion->detalles_count > 0) {
-            $this->confirm('¿Está seguro(a) que desea eliminar el registro? Ya existen detalles registrados.', [
-                'onConfirmed' => 'confirmarEliminarEvaluacionInfestacion',
-                'data' => [
-                    'evaluacion_id' => $evaluacion->id,
-                ],
-            ]);
-        } else {
-            $evaluacion->delete();
-            $this->revisarFechaExiste();
-            $this->renderizarTabla(); // Recargar si es necesario
-            $this->alert('success', 'Evaluación eliminada correctamente.');
-        }
+        $tabla = app(EvaluacionInfestacionPencaServicio::class)->generar($this->campania);
+
+        $this->table = $tabla;
+
+        $this->dispatch('recargarEvaluacion', [
+            'table' => $tabla,
+        ]);
     }
 
-    public function confirmarEliminarEvaluacionInfestacion($data)
-    {
-        $evaluacion = EvaluacionInfestacion::find($data['evaluacion_id']);
 
-        if ($evaluacion) {
-            $evaluacion->delete();
-            $this->alert('success', 'Evaluación eliminada correctamente.');
-            $this->revisarFechaExiste();
-            $this->renderizarTabla(); // Recargar si es necesario
-        } else {
-            $this->alert('error', 'La evaluación ya no existe.');
-        }
-    }
-    public function revisarFechaExiste()
+    public function updatedCampaniaSeleccionada($valor)
     {
-        if (!$this->campania) {
-            return;
-        }
-        $this->fechaExiste = EvaluacionInfestacion::whereDate('fecha', $this->fechaEvaluacion)
-            ->where('campo_campania_id', $this->campania->id)
-            ->exists();
-    }
-    public function updatedFechaEvaluacion()
-    {
-        $this->revisarFechaExiste();
+        $this->campania = CampoCampania::find($valor);
+        $this->renderizarTabla();
+        $this->buscarUltimaInfestacion();
     }
     public function updatedCampoSeleccionado($valor)
     {
@@ -132,103 +75,55 @@ class EvaluacionInfestacionCosechaComponent extends Component
         $this->campaniaSeleccionada = null;
         $this->campania = null;
         $this->renderizarTabla();
+        $this->buscarUltimaInfestacion();
     }
-    public function renderizarTabla()
+    public function buscarUltimaInfestacion()
+    {
+        $this->reset(['primeraEvalFecha','segundaEvalFecha','terceraEvalFecha','ultimaInfestacion','proyeccionCochinillaXGramo']);
+
+        if ($this->campania) {
+            $this->ultimaInfestacion = $this->campania->infestaciones()->latest('fecha')->first();
+            $this->primeraEvalFecha = $this->campania->eval_infest_fecha_primera;
+            $this->segundaEvalFecha = $this->campania->eval_infest_fecha_segunda;
+            $this->terceraEvalFecha = $this->campania->eval_infest_fecha_tercera;
+            $this->proyeccionCochinillaXGramo = $this->campania->eval_cosch_proj_coch_x_gramo;
+
+        }
+    }
+    public function guardarDatosEvaluacionInfestacionCosecha(array $datos)
     {
         if (!$this->campania) {
-            $this->dispatch('recargarEvaluacion', [
-                'table' => [],
-                'fechas' => []
-            ]);
             return;
         }
+        $this->campania->eval_infest_fecha_primera = $this->primeraEvalFecha;
+        $this->campania->eval_infest_fecha_segunda = $this->segundaEvalFecha;
+        $this->campania->eval_infest_fecha_tercera = $this->terceraEvalFecha;
+        $this->campania->eval_cosch_proj_coch_x_gramo = $this->proyeccionCochinillaXGramo;
+        $this->campania->save();
 
-        $evaluaciones = $this->campania->evaluacionInfestaciones()->with('detalles')->orderBy('fecha')->get();
-        $fechas = $evaluaciones->pluck('fecha')->unique()->values();
-
-        $mapa = [];
-        for ($i = 1; $i <= 20; $i++) {
-            $mapa[$i] = ['n_pencas' => $i];
-        }
-
-        foreach ($evaluaciones as $index => $evaluacion) {
-            $fechaKey = 'fecha' . ($index + 1);
-
-            foreach ($evaluacion->detalles as $detalle) {
-                $n = $detalle->numero_penca;
-                if (!isset($mapa[$n]))
-                    continue;
-
-                $mapa[$n]["{$fechaKey}_piso2"] = $detalle->piso_2;
-                $mapa[$n]["{$fechaKey}_piso3"] = $detalle->piso_3;
-            }
-
-            for ($i = 1; $i <= 20; $i++) {
-                if (!array_key_exists("{$fechaKey}_piso2", $mapa[$i])) {
-                    $mapa[$i]["{$fechaKey}_piso2"] = null;
-                }
-                if (!array_key_exists("{$fechaKey}_piso3", $mapa[$i])) {
-                    $mapa[$i]["{$fechaKey}_piso3"] = null;
-                }
-            }
-        }
-
-        $tabla = array_values($mapa);
-
-        // Fecha de infestación más reciente (puede ser null)
-        $fechaInfestacion = optional($this->campania->infestaciones)->max('fecha');
-
-        $fechasFormateadas = $fechas->map(function ($fecha, $index) use ($tabla, $fechaInfestacion) {
-            $key = 'fecha' . ($index + 1);
-
-            $suma = 0;
-            $contador = 0;
-
-            foreach ($tabla as $fila) {
-                $p2 = $fila["{$key}_piso2"] ?? null;
-                $p3 = $fila["{$key}_piso3"] ?? null;
-
-                if (is_numeric($p2)) {
-                    $suma += $p2;
-                    $contador++;
-                }
-                if (is_numeric($p3)) {
-                    $suma += $p3;
-                    $contador++;
-                }
-            }
-
-            $promedio = $contador > 0 ? round($suma / $contador, 2) : null;
-
-            $dias = $fechaInfestacion
-                ? Carbon::parse($fechaInfestacion)->diffInDays(Carbon::parse($fecha))
-                : '-';
-
-            return [
-                'fecha' => Carbon::parse($fecha)->format('d/m/Y'),
-                'promedio' => $promedio,
-                'footer' => "N° DE INDIVIDUOS A LOS {$dias} DÍAS"
-            ];
-        })->toArray();
-
-        $this->table = $tabla;
-        $this->fechas = $fechasFormateadas;
-
-        $this->dispatch('recargarEvaluacion', [
-            'table' => $tabla,
-            'fechas' => $fechasFormateadas,
-            'fechaInfestacion' => optional($fechaInfestacion)->format('d/m/Y'),
-        ]);
-    }
-
-    public function updatedCampaniaSeleccionada($valor)
-    {
-        $this->campania = CampoCampania::find($valor);
+        app(EvaluacionInfestacionPencaServicio::class)->guardar($this->campania, $datos);
         $this->renderizarTabla();
-        $this->revisarFechaExiste();
+        $this->alert('success', 'Evaluación guardada correctamente.');
     }
-    public function storeTableDataEvaluacionInfestacion($datos)
+
+    /*
+    public function guardarDatosEvaluacionInfestacionCosecha($datos)
     {
+        dd($datos);
+        array:14 [▼ // app\Livewire\EvaluacionInfestacionCosechaComponent.php:156
+  0 => array:7 [▼
+    "n_pencas" => 1
+    "eval_primera_piso_2" => 12
+    "eval_primera_piso_3" => 13
+    "eval_segunda_piso_2" => 14
+    "eval_segunda_piso_3" => 14
+    "eval_tercera_piso_2" => 141
+    "eval_tercera_piso_3" => 15
+  ]
+  1 => array:7 [▶]
+  2 => array:7 [▶]
+  3 => array:7 [▶]
+
         if (!$this->campania) {
             return;
         }
@@ -295,7 +190,7 @@ class EvaluacionInfestacionCosechaComponent extends Component
         $this->renderizarTabla();
         $this->alert('success', 'Evaluación guardada correctamente.');
 
-    }
+    }*/
     public function render()
     {
         return view('livewire.evaluacion-infestacion-cosecha-component');

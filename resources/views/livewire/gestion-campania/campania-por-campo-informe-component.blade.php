@@ -68,6 +68,12 @@
                             ])
 
                             @include('livewire.gestion-campania.partials.accordion-section', [
+                                'id' => 'cosechamadres',
+                                'titulo' => 'COSECHA DE MADRES',
+                                'partial' => 'livewire.gestion-campania.partials.campania-x-campo-cosecha-madres',
+                            ])
+
+                            @include('livewire.gestion-campania.partials.accordion-section', [
                                 'id' => 'cosecha',
                                 'titulo' => 'COSECHA',
                                 'partial' => 'livewire.gestion-campania.partials.campania-x-campo-cosecha',

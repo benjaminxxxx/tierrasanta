@@ -1,297 +1,223 @@
-<div>
-    <x-flex class="w-full justify-between mb-5">
+<div x-data="{{ $idTable }}">
+    <x-card>
         <x-h3>Evaluación de Infestación</x-h3>
-    </x-flex>
+        <x-label>Monitoreo del crecimiento de cochinilla en pencas después de la infestación</x-label>
 
-    <x-flex class="!items-start w-full">
+        <x-flex class="mt-4">
+            <x-select-campo wire:model.live="campoSeleccionado" label="Seleccionar Campo" />
+            <x-select wire:model.live="campaniaSeleccionada" label="Seleccionar Campaña">
+                <option value="">Seleccione campaña</option>
+                @foreach ($campaniasPorCampo as $campaniaPorCampo)
+                    <option value="{{ $campaniaPorCampo->id }}">
+                        {{ $campaniaPorCampo->nombre_campania }}
+                    </option>
+                @endforeach
+            </x-select>
+        </x-flex>
 
-        <x-card class="md:w-[35rem]">
-            <x-spacing>
-                <p class="mb-4">
-                    Se evalúa a partir de los 15 días después de retirar la malla raschel 01 penca por planta, 20
-                    plantas por campo, se toma fotografía de ambos lados de penca, 02 evaluaciones con intervalo de
-                    15
-                    días, 01 evaluación antes de la cosecha
-                </p>
-                @if ($campania)
-                    <x-success class="mb-3">
-                        <p>
-                            Campo
-                            {{ $campania->campo ?? '' }}
-                        </p>
-                        <p>
-                            Campaña
-                            {{ $campania->nombre_campania ?? '' }}
-                        </p>
-                        <p>
-                            Variedad
-                            {{ $campania->variedad_tuna ?? '' }}
-                        </p>
-                        <p>
-                            Fecha de Inicio
-                            {{ $campania->fecha_inicio ?? '' }}
-                        </p>
-                        <p>
-                            Fecha Siembra
-                            {{ $campania->fecha_siembra ?? '' }}
-                        </p>
-                    </x-success>
+        @if ($campania && $campoSeleccionado)
+            <div class="mt-6">
 
-                    <p class="mt-4 mb-2">
-                        <b>Infestaciones</b>
-                    </p>
-                    <x-table>
-                        <x-slot name="thead">
-                            <x-tr>
-                                <x-th class="text-center">Tipo</x-th>
-                                <x-th class="text-center">Fecha</x-th>
-                                <x-th class="text-center">Método</x-th>
-                                <x-th class="text-center">Infestadores</x-th>
-                            </x-tr>
-                        </x-slot>
-                        <x-slot name="tbody">
-                            @if ($campania->infestaciones && $campania->infestaciones->count() > 0)
-                                @foreach ($campania->infestaciones as $infestacion)
-                                    <x-tr>
-                                        <x-td class="text-center">{{ ucfirst($infestacion->tipo_infestacion) }}</x-td>
-                                        <x-td class="text-center">{{ $infestacion->fecha }}</x-td>
-                                        <x-td class="text-center">{{ ucfirst($infestacion->metodo) }}</x-td>
-                                        <x-td class="text-center">{{ number_format($infestacion->infestadores, 2) }}</x-td>
-                                    </x-tr>
-                                @endforeach
-                            @else
-                                <x-tr>
-                                    <x-td colspan="100%">No hay infestaciones aún</x-td>
-                                </x-tr>
-                            @endif
-                        </x-slot>
-                    </x-table>
-
-                    <x-h3 class="mt-4 mb-2">
-                        Crea una nueva evaluación
-                    </x-h3>
-                    @php
-                        $ultimaFecha = $campania->infestaciones->max('fecha'); // Asegúrate de que 'fecha' es el campo correcto
-                        $fechasSugeridas = [
-                            ['dias' => 60, 'fecha' => \Carbon\Carbon::parse($ultimaFecha)->addDays(60)],
-                            ['dias' => 75, 'fecha' => \Carbon\Carbon::parse($ultimaFecha)->addDays(75)],
-                            ['dias' => 100, 'fecha' => \Carbon\Carbon::parse($ultimaFecha)->addDays(100)],
-                        ];
-                    @endphp
-
-                    <p>
-                        Para crear una nueva evaluación seleccione una fecha y dé clic en Crear evaluación.
-                        @if ($campania->infestaciones && $campania->infestaciones->count() > 0)
-                                <br>
-                                <b>Fechas sugeridas considerando la fecha de infestación {{ $ultimaFecha }}:</b>
-                            <ul>
-                                @foreach ($fechasSugeridas as $sugerencia)
-                                    <li>{{ $sugerencia['fecha']->format('d/m/Y') }} ({{ $sugerencia['dias'] }}
-                                        días)
-                                    </li>
-                                @endforeach
-                            </ul>
-                        @else
-                        Como no hay infestaciones no podemos sugerir fechas de evaluación
-                    @endif
-                    </p>
-
-
-                    <x-group-field class="mt-5">
-                        <x-input-date wire:model.live="fechaEvaluacion" label="Fecha de evaluación" />
-                    </x-group-field>
-                    <x-flex class="justify-end w-full">
-                        @if ($fechaExiste)
-                            <x-danger-button type="button" wire:click="eliminarFecha">
-                                <i class="fa fa-trash"></i> Eliminar fecha
-                            </x-danger-button>
-                        @endif
-                        <x-button type="button" wire:click="crearEvaluacion">
-                            <i class="fa fa-plus"></i> Crear evaluación
-                        </x-button>
-                    </x-flex>
-                @else
+                @if (!$ultimaInfestacion)
+                    {{-- NO HAY INFESTACIÓN --}}
                     <x-warning>
-                        Seleccione el campo y la campaña para ver los resultados de la evaluación de infestacióm y
-                        poder
-                        agregar mas evaluaciones.
+                        No hay infestaciones realizadas en
+                        <b>{{ $campoSeleccionado }}</b> –
+                        <b>{{ strtoupper($campania->nombre_campania) }}</b>.
+                        No se puede realizar la evaluación.
                     </x-warning>
+
+                @else
+                    {{-- ÚLTIMA INFESTACIÓN --}}
+                    <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+                                <x-icon name="calendar" class="w-5 h-5 text-white" />
+                            </div>
+
+                            <div>
+                                <p class="font-semibold text-emerald-900">
+                                    Última infestación registrada
+                                </p>
+                                <p class="text-sm text-emerald-700">
+                                    {{ \Carbon\Carbon::parse($ultimaInfestacion->fecha)->format('d/m/Y') }}
+                                    • {{ ucfirst($ultimaInfestacion->metodo) }}
+                                    • {{ number_format($ultimaInfestacion->infestadores, 0) }} infestadores
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 @endif
-            </x-spacing>
+
+            </div>
+        @endif
+    </x-card>
+    @if ($campoSeleccionado && $campaniaSeleccionada && $ultimaInfestacion)
+        <x-alert type="info" class="mt-4">
+            Complete los datos de cochinillas por penca en cada columna.
+            Las evaluaciones se realizan a los
+            <strong>60, 75 y 100 días</strong>
+            después de la infestación.
+        </x-alert>
+    @endif
+    <x-card class="mt-4">
+        <div wire:ignore>
+            <div x-ref="tableContainer"></div>
+        </div>
+    </x-card>
+    @if ($campoSeleccionado && $campaniaSeleccionada && $ultimaInfestacion)
+        <x-card class="mt-4">
+            <x-h3>
+                Promedios Calculados
+            </x-h3>
+
+            <div class="grid md:grid-cols-3 gap-4 mt-5">
+
+                {{-- Primera evaluación --}}
+                <div class="rounded-lg border border-gray-200 dark:border-gray-700
+                        bg-white dark:bg-gray-800 p-4 space-y-3">
+
+                    <div class="text-sm font-medium text-gray-600 dark:text-gray-300">
+                        1° Evaluación
+                    </div>
+
+                    <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                        {{ $campania->promedio_individuos_primera_eval }}
+                    </div>
+
+                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                        Promedio general (2° y 3° piso)
+                    </div>
+
+                    <x-input type="date" wire:model="primeraEvalFecha" class="w-full text-sm" label="Fecha" />
+                </div>
+
+                {{-- Segunda evaluación --}}
+                <div class="rounded-lg border border-gray-200 dark:border-gray-700
+                        bg-white dark:bg-gray-800 p-4 space-y-3">
+
+                    <div class="text-sm font-medium text-gray-600 dark:text-gray-300">
+                        2° Evaluación
+                    </div>
+
+                    <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                        {{ $campania->promedio_individuos_segunda_eval }}
+                    </div>
+
+                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                        Promedio general (2° y 3° piso)
+                    </div>
+
+                    <x-input type="date" wire:model="segundaEvalFecha" class="w-full text-sm" label="Fecha" />
+                </div>
+
+                {{-- Tercera evaluación --}}
+                <div class="rounded-lg border border-gray-200 dark:border-gray-700
+                        bg-white dark:bg-gray-800 p-4 space-y-3">
+
+                    <div class="text-sm font-medium text-gray-600 dark:text-gray-300">
+                        3° Evaluación
+                    </div>
+
+                    <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                        {{ $campania->promedio_individuos_tercera_eval }}
+                    </div>
+
+                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                        Promedio general (2° y 3° piso)
+                    </div>
+
+                    <x-input type="date" wire:model="terceraEvalFecha" class="w-full text-sm" label="Fecha" />
+                </div>
+
+            </div>
+
         </x-card>
 
 
-        <div class="flex-1">
-            @if ($campania && $campaniaUnica)
-                <x-card>
-                    <x-spacing>
-                        <x-h3 class="mt-4 mb-2">
-                            Crea una nueva evaluación
-                        </x-h3>
-                        @php
-                            $ultimaFecha = $campania->infestaciones->max('fecha'); // Asegúrate de que 'fecha' es el campo correcto
-                            $fechasSugeridas = [
-                                ['dias' => 60, 'fecha' => \Carbon\Carbon::parse($ultimaFecha)->addDays(60)],
-                                ['dias' => 75, 'fecha' => \Carbon\Carbon::parse($ultimaFecha)->addDays(75)],
-                                ['dias' => 100, 'fecha' => \Carbon\Carbon::parse($ultimaFecha)->addDays(100)],
-                            ];
-                        @endphp
+        <x-card class="mt-4">
+            <x-h3>
+                Proyección de Cosecha
+            </x-h3>
 
-                        <p>
-                            Para crear una nueva evaluación seleccione una fecha y dé clic en Crear evaluación.
-                            @if ($campania->infestaciones && $campania->infestaciones->count() > 0)
-                                    <br>
-                                    <b>Fechas sugeridas considerando la fecha de infestación {{ $ultimaFecha }}:</b>
-                                <ul>
-                                    @foreach ($fechasSugeridas as $sugerencia)
-                                        <li>{{ $sugerencia['fecha']->format('d/m/Y') }} ({{ $sugerencia['dias'] }}
-                                            días)
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            @else
-                            Como no hay infestaciones no podemos sugerir fechas de evaluación
-                        @endif
-                        </p>
+            {{-- Primera fila: Cochinillas por gramo --}}
+            <div class="mb-6">
+                <x-input id="cochinillas_gramo" type="number" wire:model="proyeccionCochinillaXGramo"
+                    class="text-lg font-semibold" placeholder="Ej: 500" label="N° Cochinillas por Gramo" />
+            </div>
 
+            {{-- Segunda fila: Resultados calculados --}}
+            <div class="grid md:grid-cols-3 gap-4">
 
-                        <x-group-field class="mt-5">
-                            <x-input-date wire:model.live="fechaEvaluacion" label="Fecha de evaluación" />
-                        </x-group-field>
-                        <x-flex class="justify-end w-full">
-                            @if ($fechaExiste)
-                                <x-danger-button type="button" wire:click="eliminarFecha">
-                                    <i class="fa fa-trash"></i> Eliminar fecha
-                                </x-danger-button>
-                            @endif
-                            <x-button type="button" wire:click="crearEvaluacion">
-                                <i class="fa fa-plus"></i> Crear evaluación
-                            </x-button>
-                        </x-flex>
-                    </x-spacing>
-                </x-card>
-            @endif
-            @if (!$campaniaUnica)
-                <x-card>
-                    <x-spacing>
-                        <x-flex>
-                            <x-group-field>
-                                <x-select-campo wire:model.live="campoSeleccionado" />
-                            </x-group-field>
-                            <x-group-field>
-                                <x-select wire:model.live="campaniaSeleccionada" label="Campaña">
-                                    <option value="">Seleccione campaña</option>
-                                    @foreach ($campaniasPorCampo as $campaniaPorCampo)
-                                        <option value="{{ $campaniaPorCampo->id }}">
-                                            {{ $campaniaPorCampo->nombre_campania }}
-                                        </option>
-                                    @endforeach
-                                </x-select>
-                            </x-group-field>
-                        </x-flex>
-                    </x-spacing>
-                </x-card>
-            @endif
+                {{-- Gramos por penca --}}
+                <div class="p-4 rounded-md border border-gray-700 bg-gray-700">
+                    <p class="text-sm font-medium text-gray-300 mb-1">
+                        Gramos Cochinilla por Penca
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-100 mb-2">
+                        Promedio individuos / n° de cochinillas por gramo
+                    </p>
+                    <p class="text-2xl font-semibold text-gray-100">
+                        {{ formatear_numero($campania->eval_proj_gramos_cochinilla_x_penca ?? 0) }} g
+                    </p>
+                </div>
 
-            <x-card class="mt-4">
-                <x-spacing>
-                    <div x-data="{{ $idTable }}" wire:ignore>
-                        <div x-ref="tableContainer"></div>
-                        <x-flex class="justify-end w-full mt-4">
-                            <x-button type="button" @click="sendDataEvaluacionInfestacion">
-                                <i class="fa fa-save"></i> Registrar detalle
-                            </x-button>
-                        </x-flex>
-                    </div>
-                </x-spacing>
-            </x-card>
-            @if ($campania)
-                <x-card class="mt-4">
-                    <x-spacing>
-                        <x-h3 class="mb-4">
-                            Proyección cosecha
-                        </x-h3>
-                        <x-table>
-                            <x-slot name="thead">
+                {{-- Número de pencas infestadas --}}
+                <div class="p-4 rounded-md border border-gray-700 bg-gray-700">
+                    <p class="text-sm font-medium text-gray-300 mb-1">
+                        Número de Pencas Infestadas
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-100 mb-2">
+                        Total de pencas
+                    </p>
+                    <p class="text-2xl font-semibold text-gray-100">
+                        {{ formatear_numero($campania->eval_cosch_proj_penca_inf ?? 0) }}
+                    </p>
+                </div>
 
-                            </x-slot>
-                            <x-slot name="tbody">
-                                <x-tr>
-                                    <x-th>
-                                        N° COCHINILLAS POR GRAMO
-                                    </x-th>
-                                    <x-td>
-                                        <x-input type="number" wire:model="proyeccion_cochinilla_x_gramo" />
-                                    </x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-td>
-                                        <b>GRAMOS COCHINILLA POR PENCA</b>
-                                        <p>
-                                            N° de individuos promedio / n° de cochinillas x gramo
-                                        </p>
-                                    </x-td>
-                                    <x-td>
-                                        {{number_format($campania->eval_cosch_proj_gramos_x_penca, 0)}}
-                                    </x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-td>
-                                        <b>NUMERO DE PENCAS INFESTADAS</b>
-                                        <p>
-                                            <b>Promedio</b> total actual de brotes aptos 2° Y 3° PISO + <b>Promedio</b>
-                                            total de brotes aptos 2° Y 3° piso despues de 30 dias
-                                        </p>
-                                    </x-td>
-                                    <x-td>
-                                        {{number_format($campania->eval_cosch_proj_penca_inf, 0)}}
-                                    </x-td>
-                                </x-tr>
-                                <x-tr>
-                                    <x-td>
-                                        <b>RENDIMIENTO HECTAREA (kg)</b>
-                                        <p>
-                                            (Gr. de cochinilla x penca x N° de pencas infestadas)/1000
-                                        </p>
-                                    </x-td>
-                                    <x-td class="bg-pink-200">
-                                        {{number_format($campania->eval_cosch_proj_rdto_ha, 0)}}
-                                    </x-td>
-                                </x-tr>
-                            </x-slot>
-                        </x-table>
-                    </x-spacing>
-                </x-card>
-            @endif
+                {{-- Rendimiento por hectárea --}}
+                <div class="p-4 rounded-md border border-gray-600 bg-gray-700">
+                    <p class="text-sm font-medium text-gray-300 mb-1">
+                        Rendimiento por Hectárea
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-100 mb-2">
+                        (Gramos × Pencas) ÷ 1000
+                    </p>
+                    <p class="text-3xl font-semibold text-gray-50">
+                        {{ formatear_numero($campania->eval_cosch_proj_rdto_ha ?? 0) }} kg
+                    </p>
+                </div>
 
-        </div>
-    </x-flex>
+            </div>
+        </x-card>
+
+        <x-card class="mt-4">
+            <x-flex class="justify-end">
+                <x-button type="button" @click="sendDataEvaluacionInfestacion()">
+                    <i class="fa fa-save"></i> Guardar Evaluación
+                </x-button>
+            </x-flex>
+        </x-card>
+    @endif
+
     <x-loading wire:loading />
 </div>
 @script
 <script>
     Alpine.data('{{ $idTable }}', () => ({
-        listeners: [],
         tableData: @json($table),
-        columns: @json($fechas),
         hot: null,
         init() {
             this.initTable();
-            this.listeners.push(
-                Livewire.on('recargarEvaluacion', (data) => {
-                    this.columns = data[0].fechas;
-                    this.tableData = data[0].table;
-                    this.hot.destroy();
-                    this.initTable();
-                    this.hot.loadData(this.tableData);
-                })
-            );
-            this.listeners.push(
-
-                Livewire.on('guardadoConfirmado', () => {
-                    this.sendDataPoblacionPlanta();
-                })
-            );
+            Livewire.on('recargarEvaluacion', (data) => {
+                this.tableData = data[0].table;
+                this.hot.destroy();
+                this.initTable();
+                this.hot.loadData(this.tableData);
+            });
+            Livewire.on('guardadoConfirmado', () => {
+                this.sendDataPoblacionPlanta();
+            });
         },
         initTable() {
 
@@ -299,8 +225,7 @@
             const hot = new Handsontable(container, {
                 data: this.tableData,
                 colHeaders: true,
-                rowHeaders: true,
-                columns: this.getHotColumns(),
+                columns: this.getColumns(),
                 nestedHeaders: this.getNestedHeaders(),
                 height: 'auto',
                 manualColumnResize: false,
@@ -313,58 +238,44 @@
 
             this.hot = hot;
         },
-        getHotColumns() {
-            const cols = [{
-                data: 'n_pencas',
-                className: '!text-center',
-                title: 'N° PENCA'
-            }];
-
-            this.columns.forEach((col, index) => {
-                cols.push({
-                    data: `fecha${index + 1}_piso2`,
+        getColumns() {
+            return [
+                {
+                    data: 'n_pencas',
                     type: 'numeric',
-                    className: '!text-center',
-                    title: `2° PISO`
-                });
-                cols.push({
-                    data: `fecha${index + 1}_piso3`,
-                    type: 'numeric',
-                    className: '!text-center',
-                    title: `3° PISO`
-                });
-            });
+                    className: 'htCenter htMiddle font-semibold',
+                    readOnly: true
+                },
 
-            return cols;
-        },
-        getNestedHeaders() {
-            const headers = [
-                ['N° PENCA'], // primera columna sola
+                // Evaluación 1
+                { data: 'eval_primera_piso_2', type: 'numeric', className: 'htCenter' },
+                { data: 'eval_primera_piso_3', type: 'numeric', className: 'htCenter' },
+
+                // Evaluación 2
+                { data: 'eval_segunda_piso_2', type: 'numeric', className: 'htCenter' },
+                { data: 'eval_segunda_piso_3', type: 'numeric', className: 'htCenter' },
+
+                // Evaluación 3
+                { data: 'eval_tercera_piso_2', type: 'numeric', className: 'htCenter' },
+                { data: 'eval_tercera_piso_3', type: 'numeric', className: 'htCenter' },
             ];
+        },
 
-            // Cabeceras anidadas (nivel superior)
-            const topRow = ['']; // primer celda vacía (columna N° PENCA)
-
-            this.columns.forEach((col) => {
-                const label =
-                    `N° DE COCHINILLAS/PENCA<br>${col.fecha}<br>${col.footer}<br>Prom: ${col.promedio}`;
-                topRow.push({
-                    label,
-                    colspan: 2
-                });
-            });
-
-            headers[0] = topRow;
-
-            // Cabecera de segundo nivel
-            const secondRow = ['N° PENCA'];
-            this.columns.forEach(() => {
-                secondRow.push('2° PISO', '3° PISO');
-            });
-
-            headers.push(secondRow);
-
-            return headers;
+        getNestedHeaders() {
+            return [
+                [
+                    'N° PENCA',
+                    { label: 'Evaluación 1<br><small>60–70 días</small>', colspan: 2 },
+                    { label: 'Evaluación 2<br><small>75–85 días</small>', colspan: 2 },
+                    { label: 'Evaluación 3<br><small>100–120 días</small>', colspan: 2 },
+                ],
+                [
+                    '', // simula rowspan de "N° PENCA"
+                    '2° Piso', '3° Piso',
+                    '2° Piso', '3° Piso',
+                    '2° Piso', '3° Piso',
+                ]
+            ];
         },
         sendDataEvaluacionInfestacion() {
             let allData = [];
@@ -379,10 +290,7 @@
             const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
                 null && cell !== ''));
 
-            const data = {
-                datos: filteredData
-            };
-            $wire.dispatchSelf('storeTableDataEvaluacionInfestacion', data);
+            $wire.guardarDatosEvaluacionInfestacionCosecha(filteredData);
         }
     }));
 </script>
