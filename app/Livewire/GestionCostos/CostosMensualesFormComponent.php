@@ -10,6 +10,7 @@ class CostosMensualesFormComponent extends Component
 {
     use LivewireAlert;
     public $mostrarFormCostosMensuales = false;
+    public array $aniosDisponibles = [];
     public $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     public $paso = 1;
     public $form = [
@@ -17,13 +18,23 @@ class CostosMensualesFormComponent extends Component
         'mes' => null
     ];
     protected $listeners = ['agregarCostoMensual'];
+    public function mount()
+    {
+
+    }
     public function agregarCostoMensual()
     {
-        $this->reset(['form']);
-        $this->form = [
-            'anio' => null,
-            'mes' => null
+        $anioActual = now()->year;
+
+        $this->aniosDisponibles = [
+            $anioActual - 1,
+            $anioActual,
         ];
+        $this->reset(['form']);
+        // Opcional: seleccionar por defecto el año actual
+        $this->form['anio'] = $anioActual;
+        $this->form['mes'] = now()->month;
+        $this->paso = 1;
         $this->mostrarFormCostosMensuales = true;
     }
     public function cargarCostoMensual(): void
@@ -56,9 +67,6 @@ class CostosMensualesFormComponent extends Component
     }
     public function render()
     {
-        $filteredData = CostoMensual::paginate(20);
-        return view('livewire.gestion-costos.costos-mensuales-form-component', [
-            'filteredData' => $filteredData
-        ]);
+        return view('livewire.gestion-costos.costos-mensuales-form-component');
     }
 }

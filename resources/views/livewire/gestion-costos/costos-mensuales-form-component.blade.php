@@ -20,11 +20,11 @@
 
                 <x-flex>
                     <x-select label="Año" wire:model="form.anio" error="form.anio" placeholder="Seleccione año">
-                        <option value="2024">2024</option>
-                        <option value="2025">2025</option>
-                        <option value="2026">2026</option>
-                        <option value="2027">2027</option>
+                        @foreach ($aniosDisponibles as $anio)
+                            <option value="{{ $anio }}">{{ $anio }}</option>
+                        @endforeach
                     </x-select>
+
 
                     <x-select label="Mes" wire:model="form.mes" error="form.mes" placeholder="Seleccione mes">
                         @foreach ($meses as $i => $mes)
@@ -119,6 +119,7 @@
         </x-slot>
 
     </x-dialog-modal>
+    <x-loading wire:loading/>
 </div>
 @script
 <script>

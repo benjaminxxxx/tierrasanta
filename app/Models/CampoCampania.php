@@ -197,6 +197,10 @@ class CampoCampania extends Model
     {
         return $this->hasMany(ProyeccionRendimientoPoda::class, 'campo_campania_id');
     }
+    public function distribucionesCostosMensuales()
+    {
+        return $this->hasMany(CostoMensualDistribucion::class, 'campo_campania_id');
+    }
 
     // consumos()
     public function resumenConsumoProductos()
@@ -213,6 +217,24 @@ class CampoCampania extends Model
     {
         return $this->belongsTo(Campo::class, 'campo', 'nombre');
     }
+    public function getAnalisisFinancieroCostoAttribute(): float
+    {
+        return (float) $this->distribucionesCostosMensuales()
+            ->selectRaw('
+            COALESCE(SUM(
+                fijo_administrativo
+              + fijo_financiero
+              + fijo_gastos_oficina
+              + fijo_depreciaciones
+              + fijo_costo_terreno
+              + operativo_servicios_fundo
+              + operativo_mano_obra_indirecta
+            ), 0) as total
+        ')
+            ->value('total');
+    }
+
+
     public function getProjDiferenciaConteoAttribute(): ?float
     {
         $produccionRealKg = (float) $this->cosch_produccion_total_kg_seco;

@@ -14,7 +14,7 @@ class CostosMensualesComponent extends Component
     public $filtroAnio;
     public $filtroMes;
     public $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-    protected $listeners = ['actualizarCostosMensualesTable' => '$refresh'];
+    protected $listeners = ['actualizarCostosMensualesTable' => 'obtenerDataEstadistica'];
     public $estadisticaData = [];
     public function mount()
     {
@@ -93,8 +93,8 @@ class CostosMensualesComponent extends Component
             ->when($this->filtroMes, function ($query) {
                 $query->where('mes', $this->filtroMes);
             })
-            ->orderByDesc('anio')
-            ->orderByDesc('mes')
+            ->orderBy('anio')
+            ->orderBy('mes')
             ->paginate(20);
         return view('livewire.gestion-costos.costos-mensuales-component', [
             'filteredData' => $filteredData

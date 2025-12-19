@@ -254,6 +254,7 @@
                         @include('livewire.gestion-campania.partials.campanias-infestacion')
                         @include('livewire.gestion-campania.partials.campanias-reinfestacion')
                         @include('livewire.gestion-campania.partials.campanias-cosecha')
+                        @include('livewire.gestion-campania.partials.campanias-analisis-financiero')
                     </x-tr>
                 @endforeach
             </tbody>
