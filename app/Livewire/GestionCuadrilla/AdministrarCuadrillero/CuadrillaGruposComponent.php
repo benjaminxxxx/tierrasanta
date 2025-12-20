@@ -35,8 +35,7 @@ class CuadrillaGruposComponent extends Component
     }
     public function render()
     {
-        $query = CuaGrupo::with('fechasCuadrilleros')
-            ->orderByDesc('created_at');
+        $query = CuaGrupo::orderByDesc('created_at');
 
         // Si se deben mostrar los eliminados (soft deleted)
         if ($this->verEliminados) {

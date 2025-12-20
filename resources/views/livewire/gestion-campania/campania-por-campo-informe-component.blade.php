@@ -3,13 +3,13 @@
      @accordion-close-all.window="closeAll()">
     <x-card class="mt-4">
         <div class="flex justify-end gap-3 mb-3">
-            <flux:button size="xs" variant="primary" @click="$dispatch('accordion-open-all')">
+            <x-button size="xs" variant="primary" @click="$dispatch('accordion-open-all')">
                 Abrir todo
-            </flux:button>
+            </x-button>
 
-            <flux:button size="xs" variant="filled" @click="$dispatch('accordion-close-all')">
+            <x-button size="xs" variant="filled" @click="$dispatch('accordion-close-all')">
                 Cerrar todo
-            </flux:button>
+            </x-button>
         </div>
 
         <x-table class="!w-auto">

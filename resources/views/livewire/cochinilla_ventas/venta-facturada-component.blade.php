@@ -8,35 +8,31 @@
     </x-flex>
 
     <x-card>
-        <x-spacing>
+        <div x-data="tableVentaFacturada">
 
+            <x-flex class="mb-4">
+                <x-select-meses wire:model.live="mes" />
+                <x-select-anios wire:model.live="anio" max="current" />
+                <x-button wire:click="actualizarDesdeReporte">
+                    <i class="fa fa-sync"></i> Actualizar desde reporte
+                </x-button>
+            </x-flex>
 
-            <div x-data="tableVentaFacturada">
-
-                <x-flex class="mb-4">
-                    <x-select-meses wire:model.live="mes" />
-                    <x-select-anios wire:model.live="anio" max="current" />
-                    <x-button wire:click="actualizarDesdeReporte">
-                        <i class="fa fa-sync"></i> Actualizar desde reporte
+            <div wire:ignore>
+                <x-h3>Detalle de Venta</x-h3>
+                <div x-ref="tableReporteContainer"></div>
+                <div class="text-right mt-2 font-semibold text-lg dark:text-white">
+                    Total Venta: Kg. <span x-text="totalVenta"></span>
+                    Total US$: $. <span x-text="totalVentaDolares"></span>
+                </div>
+                <x-flex class="w-full justify-end my-3">
+                    <x-button @click="guardarRegistroVenta">
+                        <i class="fa fa-save"></i> Guardar Registro de Venta
                     </x-button>
                 </x-flex>
 
-                <div wire:ignore>
-                    <x-h3>Detalle de Venta</x-h3>
-                    <div x-ref="tableReporteContainer"></div>
-                    <div class="text-right mt-2 font-semibold text-lg dark:text-white">
-                        Total Venta: Kg. <span x-text="totalVenta"></span>
-                        Total US$: $. <span x-text="totalVentaDolares"></span>
-                    </div>
-                    <x-flex class="w-full justify-end my-3">
-                        <x-button @click="guardarRegistroVenta">
-                            <i class="fa fa-save"></i> Guardar Registro de Venta
-                        </x-button>
-                    </x-flex>
-
-                </div>
             </div>
-        </x-spacing>
+        </div>
     </x-card>
 
     <x-loading wire:loading />
@@ -86,11 +82,12 @@
                 colHeaders: true,
                 rowHeaders: true,
                 columns: [
+                    { data: 'campania', type: 'text', className: '!text-center !bg-amber-200', title: 'CAMPAÑA', readOnly: true },
                     { data: 'fecha', type: 'date', className: '!text-center', title: 'FECHA' },
                     { data: 'factura', type: 'text', className: '!text-center', title: 'N° Factura' },
                     { data: 'tipo_venta', type: 'text', className: '!text-center', title: 'Venta' },
                     { data: 'comprador', type: 'numeric', numericFormat: { pattern: '0.00' }, className: '!text-center', title: 'Comprador' },
-                    { data: 'lote', type: 'dropdown', className: '!text-center', title: 'Lote',strict: true, allowInvalid: true, source: this.campos},
+                    { data: 'lote', type: 'dropdown', className: '!text-center', title: 'Lote', strict: true, allowInvalid: true, source: this.campos },
                     { data: 'kg', type: 'numeric', numericFormat: { pattern: '0.00' }, className: '!text-center', title: 'Kg' },
                     { data: 'procedencia', type: 'date', dateFormat: 'YYYY-MM-DD', correctFormat: true, className: '!text-center', title: 'Procedencia' },
                     { data: 'precio_venta_dolares', type: 'numeric', numericFormat: { pattern: '0.00' }, className: '!text-center', title: 'P. Venta $' },
@@ -106,7 +103,6 @@
                 height: 'auto',
                 manualColumnResize: false,
                 manualRowResize: true,
-                minSpareRows: 1,
                 stretchH: 'all',
                 autoColumnSize: true,
                 fixedColumnsLeft: 2,

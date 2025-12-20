@@ -2,32 +2,23 @@
 
     <x-dialog-modal wire:model.live="mostrarFormularioGrupoCuadrilla">
         <x-slot name="title">
-            Registrar Grupo de Cuadrilla
+            <x-h3>
+                Registrar Grupo de Cuadrilla
+            </x-h3>
         </x-slot>
 
         <x-slot name="content">
-            <form class="grid grid-cols-1 md:grid-cols-2 gap-4" x-data="form_cuadrilla_grupo" id="form_cuadrilla_grupo" wire:submit="registrar">
+            <form class="grid grid-cols-1 md:grid-cols-2 gap-4" x-data="form_cuadrilla_grupo" id="form_cuadrilla_grupo"
+                wire:submit="registrar">
                 <!-- Nombre -->
-                <div>
-                    <x-label for="nombre" value="Nombre del Grupo (*)" />
-                    <x-input id="nombre" type="text" class="mt-1 uppercase" wire:model="nombre" />
-                    <x-input-error for="nombre" class="mt-2" />
-                </div>
+                <x-input id="nombre" type="text" class="w-full uppercase" label="Nombre del Grupo (*)" wire:model="nombre"
+                    error="nombre" />
 
-                <!-- Código -->
-                <div>
-                    <x-label for="codigo" value="Código del Grupo (*)" />
-                    <x-input id="codigo" type="text" class="mt-1 uppercase" wire:model="codigo" />
-                    <x-input-error for="codigo" class="mt-2" />
-                </div>
+                <x-input id="codigo" type="text" class="w-full uppercase" label="Código del Grupo (*)" wire:model="codigo"
+                    error="codigo" />
 
-                <!-- Costo Día Sugerido -->
-                <div>
-                    <x-label for="costo_dia_sugerido" value="Costo Día Sugerido (*)" />
-                    <x-input id="costo_dia_sugerido" type="number" step="0.01" class="mt-1 block w-full"
-                        wire:model="costo_dia_sugerido" />
-                    <x-input-error for="costo_dia_sugerido" class="mt-2" />
-                </div>
+                <x-input id="costo_dia_sugerido" type="number" label="Costo Día Sugerido (*)" step="0.01"
+                    class="w-full" error="costo_dia_sugerido" wire:model="costo_dia_sugerido" />
 
                 <!-- Color -->
                 <div>
@@ -72,28 +63,23 @@
                     </div>
 
                 </div>
-
-                <!-- Modalidad de Pago -->
-                <div class="col-span-2">
-                    <x-select id="modalidad_pago" wire:model="modalidad_pago" label="Modalidad de Pago" class="w-full">
-                        <option value="semanal">Semanal</option>
-                        <option value="quincenal">Quincenal</option>
-                        <option value="mensual">Mensual</option>
-                    </x-select>
-                    <x-input-error for="modalidad_pago" class="mt-2" />
-                </div>
-
-
+                <x-select id="modalidad_pago" wire:model="modalidad_pago" fullWidth="true" label="Modalidad de Pago"
+                    error="modalidad_pago" class="w-full">
+                    <option value="semanal">Semanal</option>
+                    <option value="quincenal">Quincenal</option>
+                    <option value="mensual">Mensual</option>
+                </x-select>
             </form>
         </x-slot>
 
         <x-slot name="footer">
             <div class="flex items-center gap-2">
-                <x-secondary-button wire:click="$set('mostrarFormularioGrupoCuadrilla', false)" wire:loading.attr="disabled">
+                <x-button variant="secondary" wire:click="$set('mostrarFormularioGrupoCuadrilla', false)"
+                    wire:loading.attr="disabled">
                     Cerrar
-                </x-secondary-button>
+                </x-button>
                 <x-button type="submit" form="form_cuadrilla_grupo" wire:loading.attr="disabled">
-                    <i class="fa fa-save"></i> 
+                    <i class="fa fa-save"></i>
                     @if (!$grupoId)
                         Registrar
                     @else
@@ -110,10 +96,10 @@
 <script>
     Alpine.data('form_cuadrilla_grupo', () => ({
         open: false,
-        colorSeleccionado:@entangle('color'),
-        mostrarFormularioGrupoCuadrilla:@entangle('mostrarFormularioGrupoCuadrilla'),
+        colorSeleccionado: @entangle('color'),
+        mostrarFormularioGrupoCuadrilla: @entangle('mostrarFormularioGrupoCuadrilla'),
         selected: {
-            hex:'',
+            hex: '',
             nombre: ''
         },
         colores: [
@@ -133,10 +119,10 @@
         init() {
             this.$watch('mostrarFormularioGrupoCuadrilla', () => this.resetearColor());
         },
-        resetearColor(){
+        resetearColor() {
             this.selected = {
-                hex:'',
-                nombre:''
+                hex: '',
+                nombre: ''
             }
         },
         toggle() {

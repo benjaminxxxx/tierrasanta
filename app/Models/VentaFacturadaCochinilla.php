@@ -10,6 +10,7 @@ class VentaFacturadaCochinilla extends Model
 
     protected $fillable = [
         'fecha',
+        'campo_campania_id',
         'factura',
         'tipo_venta',
         'comprador',
@@ -20,6 +21,7 @@ class VentaFacturadaCochinilla extends Model
         'punto_acido_carminico',
         'factor_saco',
         'tipo_cambio',
+        'campo_campania_id'
     ];
     protected $appends = [
         'acido_carminico',
@@ -27,6 +29,12 @@ class VentaFacturadaCochinilla extends Model
         'ingresos',
         'ingreso_contable_soles',
     ];
+
+    public function campania()
+    {
+        return $this->belongsTo(CampoCampania::class, 'campo_campania_id');
+    }
+
 
     public function getAcidoCarminicoAttribute()
     {

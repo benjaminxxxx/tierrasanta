@@ -19,11 +19,7 @@ return new class extends Migration {
             $table->foreignId('actualizado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('eliminado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
-            $table->softDeletes();
-            $table->foreign('codigo_grupo')
-                ->references('codigo')
-                ->on('cuad_grupos')
-                ->nullOnDelete();
+            $table->softDeletes();;
         });
     }
 

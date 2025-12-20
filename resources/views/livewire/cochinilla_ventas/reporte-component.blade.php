@@ -17,9 +17,9 @@
                     <x-select-meses wire:model.live="mes" />
                     <x-select-anios wire:model.live="anio" max="current" />
                     @if ($puedeVincular)
-                        <x-danger-button wire:click="cancelarGenerarReporte">
+                        <x-button variant="danger" wire:click="cancelarGenerarReporte">
                             <i class="fa fa-file"></i> Cancelar Generar Reporte
-                        </x-danger-button>
+                        </x-button>
                     @else
                         <x-button wire:click="obtenerParaReporte">
                             <i class="fa fa-file"></i> Generar Reporte

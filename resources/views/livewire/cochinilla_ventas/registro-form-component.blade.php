@@ -7,18 +7,16 @@
 
                 @if (!$registroEntregaGrupoId)
                     {{-- Filtros --}}
-                    <x-flex class="my-4">
-                        <x-input-date label="Fecha de venta" class="!w-auto" wire:model="fecha_venta" />
+                    <x-flex class="my-4 items-start">
+                        <x-input type="date" label="Fecha de venta" class="!w-auto" wire:model="fecha_venta" />
                         <x-select label="Tipo de ingreso" class="!w-auto" wire:model="tipo_ingreso">
                             <option value="">Todos los ingresos</option>
                             <option value="filtrados">Ingresos Filtrados</option>
                             <option value="sinfiltrados">Sin Filtrados (para vender fresco)</option>
                         </x-select>
-                        <x-group-field>
-                            <x-button wire:click="buscarYCargarTablaFuente">
-                                <i class="fa fa-search"></i> Buscar ingresos
-                            </x-button>
-                        </x-group-field>
+                        <x-button wire:click="buscarYCargarTablaFuente">
+                            <i class="fa fa-search"></i> Buscar ingresos
+                        </x-button>
                     </x-flex>
                 @endif
                 {{-- Estilo Vertical --}}
@@ -54,7 +52,7 @@
         </x-slot>
 
         <x-slot name="footer">
-            <x-secondary-button wire:click="$set('mostrarFormulario', false)">Cancelar</x-secondary-button>
+            <x-button variant="secondary" wire:click="$set('mostrarFormulario', false)">Cancelar</x-button>
             @if ($editable)
                 <x-button @click="$wire.dispatch('sendDataRegistroEntregaVenta')" class="ml-3">
                     @if ($registroEntregaGrupoId)

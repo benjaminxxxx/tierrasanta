@@ -158,7 +158,10 @@ class CampoCampania extends Model
         'riego_hrs_acumuladas',
         'riego_m3_acum_ha',
     ];
-
+    public function ventasFacturadas()
+    {
+        return $this->hasMany(VentaFacturadaCochinilla::class, 'campo_campania_id');
+    }
     public function fertilizaciones()
     {
         return $this->hasMany(InsResFertilizanteCampania::class, 'campo_campania_id');
@@ -217,6 +220,15 @@ class CampoCampania extends Model
     {
         return $this->belongsTo(Campo::class, 'campo', 'nombre');
     }
+    public static function obtenerCampaniaParaVenta(string $campo, Carbon $fechaVenta): ?self
+    {
+        return self::query()
+            ->where('campo', $campo)
+            ->whereNotNull('cosch_fecha')
+            ->whereDate('cosch_fecha', '<=', $fechaVenta)
+            ->orderByDesc('cosch_fecha')
+            ->first();
+    }
     public function getAnalisisFinancieroCostoAttribute(): float
     {
         return (float) $this->distribucionesCostosMensuales()
@@ -234,6 +246,59 @@ class CampoCampania extends Model
             ->value('total');
     }
 
+    public function getAnalisisFinancieroVentaTotalAttribute(): float
+    {
+        return $this->ventasFacturadas
+            ->sum(fn($venta) => $venta->ingresos ?? 0);
+    }
+
+    public function getAnalisisFinancieroUtilidadAttribute(): float
+    {
+        return round(
+            $this->analisis_financiero_venta_total
+            - $this->analisis_financiero_costo,
+            2
+        );
+    }
+    public function getAnalisisFinancieroCostoXKiloAttribute(): float
+    {
+        $kgSeco = $this->cosch_produccion_total_kg_seco;
+
+        if (empty($kgSeco) || $kgSeco <= 0) {
+            return 0;
+        }
+
+        return round(
+            $this->analisis_financiero_costo / $kgSeco,
+            4
+        );
+    }
+    public function getAnalisisFinancieroPrecioVentaAttribute(): float
+    {
+        $kgSeco = $this->cosch_produccion_total_kg_seco;
+
+        if (empty($kgSeco) || $kgSeco <= 0) {
+            return 0;
+        }
+
+        return round(
+            $this->analisis_financiero_venta_total / $kgSeco,
+            4
+        );
+    }
+    public function getAnalisisFinancieroPorcentajeUtilidadAttribute(): float
+    {
+        $costo = $this->analisis_financiero_costo;
+
+        if (empty($costo) || $costo <= 0) {
+            return 0;
+        }
+
+        return round(
+            (($this->analisis_financiero_venta_total / $costo) - 1) * 100,
+            2
+        );
+    }
 
     public function getProjDiferenciaConteoAttribute(): ?float
     {

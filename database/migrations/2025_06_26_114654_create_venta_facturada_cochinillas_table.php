@@ -23,12 +23,8 @@ return new class extends Migration {
             $table->string('procedencia')->nullable();
             $table->decimal('precio_venta_dolares', 15, 2)->nullable();  
             $table->decimal('punto_acido_carminico', 5, 2)->nullable();   
-            $table->decimal('factor_saco', 5, 2)->default(30);          
-            //$table->decimal('acido_carminico', 15, 2)->nullable();  calculado precio_venta_dolares/ punto_acido_carminico
-            //$table->integer('sacos')->nullable();  kg/factor_saco
-            //$table->decimal('ingresos', 15, 2)->nullable();  calculado  kg*precio_venta_dolares
+            $table->decimal('factor_saco', 5, 2)->default(30);    
             $table->decimal('tipo_cambio')->nullable();   
-            //$table->decimal('ingreso_contable_soles')->nullable();    calculado tipo_cambio*ingresos
             $table->timestamps();
         });
     }

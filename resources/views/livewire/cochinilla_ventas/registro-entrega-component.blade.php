@@ -45,22 +45,22 @@
                                 </b>
                             </x-td>
                             <x-td class="text-center">
-                                <x-flex>
+                                <x-flex class="justify-center">
                                     @if($venta->total_venta && !$venta->aprobado_facturacion)
 
                                         <x-button
                                             @click="$wire.dispatch('editarRegistroEntrega',{grupoVenta:'{{ $venta->grupo_venta }}'})"><i
                                                 class="fa fa-edit"></i> Editar</x-button>
-                                        <x-danger-button  wire:confirm="Está seguro de eliminar todo este grupo de ventas?" wire:click="eliminarEntrega('{{ $venta->grupo_venta }}')"> 
+                                        <x-button variant="danger" wire:confirm="Está seguro de eliminar todo este grupo de ventas?" wire:click="eliminarEntrega('{{ $venta->grupo_venta }}')"> 
                                             <i class="fa fa-trash"></i> Eliminar
-                                        </x-danger-button>
+                                        </x-button>
                                         
                                     @endif
                                     @if($venta->total_venta && $venta->aprobado_facturacion)
 
-                                        <x-secondary-button class="whitespace-nowrap"
+                                        <x-button variant="secondary"
                                             @click="$wire.dispatch('editarRegistroEntrega',{grupoVenta:'{{ $venta->grupo_venta }}','editable':false})"><i
-                                                class="fa fa-edit"></i> Ver detalle</x-secondary-button>
+                                                class="fa fa-edit"></i> Ver detalle</x-button>
 
                                     @endif
                                 </x-flex>

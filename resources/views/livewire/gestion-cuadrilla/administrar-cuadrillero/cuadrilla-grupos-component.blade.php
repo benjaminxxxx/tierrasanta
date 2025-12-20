@@ -16,7 +16,6 @@
                     <x-th value="Código" class="text-center" />
                     <x-th value="Descripción" />
                     <x-th value="Cuadrilleros activos" class="text-center" />
-                    <x-th value="Fechas trabajadas" class="text-center" />
                     <x-th value="Costo Día" class="text-center" />
                     <x-th value="Color" class="text-center" />
                     <x-th value="Creado en" class="text-center" />
@@ -35,7 +34,6 @@
                         </x-td>
                         <x-td value="{{ $grupo->nombre }}" />
                         <x-td value="{{ $grupo->cuadrilleros->count() }}" class="text-center" />
-                        <x-td value="0" class="text-center" />
                         <x-td value="{{ $grupo->costo_dia_sugerido }}" class="text-center text-black  text-lg font-bold" />
                         <x-td>
                             <div class="rounded-lg p-2 text-center text-black text-lg font-bold"
@@ -54,13 +52,13 @@
                                         <i class="fa fa-edit"></i>
                                     </x-button>
 
-                                    <x-danger-button type="button" wire:click="eliminarGrupoCuadrilla('{{ $grupo->codigo }}')">
+                                    <x-button variant="danger" type="button" wire:click="eliminarGrupoCuadrilla('{{ $grupo->codigo }}')">
                                         <i class="fa fa-trash"></i>
-                                    </x-danger-button>
+                                    </x-button>
                                 @else
-                                    <x-secondary-button wire:click="restaurar('{{ $grupo->codigo }}')">
+                                    <x-button variant="secondary" wire:click="restaurar('{{ $grupo->codigo }}')">
                                         Restaurar
-                                    </x-secondary-button>
+                                    </x-button>
                                 @endif
 
                             </x-flex>

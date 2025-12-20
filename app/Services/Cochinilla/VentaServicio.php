@@ -2,6 +2,7 @@
 
 namespace App\Services\Cochinilla;
 
+use App\Models\CampoCampania;
 use App\Models\CochinillaIngreso;
 use App\Models\VentaCochinilla;
 use App\Models\VentaCochinillaReporte;
@@ -626,6 +627,7 @@ class VentaServicio
         return $query->orderBy('fecha')->get()->map(function ($venta) {
             return [
                 'id' => $venta->id,
+                'campania' => $venta->campania?->nombre_campania ?? '-',
                 'fecha' => Carbon::parse($venta->fecha)->format('d/m/Y'),
                 'factura' => $venta->factura,
                 'tipo_venta' => $venta->tipo_venta,
@@ -708,10 +710,17 @@ class VentaServicio
 
         // Insertar datos
         foreach ($datos as $dato) {
-
+            $fechaVenta = Carbon::parse(FormatoHelper::parseFecha($dato['fecha']));
             $lote = CampoServicio::nombreRealCampo($dato['lote']);
+
+            $campania = CampoCampania::obtenerCampaniaParaVenta(
+                campo: $lote,
+                fechaVenta: $fechaVenta
+            );
+
             VentaFacturadaCochinilla::create([
                 'fecha' => FormatoHelper::parseFecha($dato['fecha']) ?? null,
+                'campo_campania_id' => $campania?->id,
                 'factura' => $dato['factura'] ?? null,
                 'tipo_venta' => $dato['tipo_venta'] ?? null,
                 'comprador' => $dato['comprador'] ?? null,
