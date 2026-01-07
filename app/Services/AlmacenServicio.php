@@ -523,15 +523,6 @@ class AlmacenServicio
     {
         return number_format((float) $valor, 3, '.', '');
     }
-
-    public static function formatArrayToKeyValueString(array $data): string
-    {
-        $formatted = '';
-        foreach ($data as $key => $value) {
-            $formatted .= "{$key}: {$value}\n";
-        }
-        return $formatted;
-    }
     public static function eliminarRegistroSalida($registroId = null)
     {
 
@@ -545,56 +536,6 @@ class AlmacenServicio
             throw new Exception('No existe el Registro');
         }
 
-        if ($registro->PerteneceAUnaCompra) {
-            $compras = $registro->compraStock()->get();
-            foreach ($compras as $regstroCompaStock) {
-                $compra = CompraProducto::find($regstroCompaStock->compra_producto_id);
-                if ($compra) {
-                    self::resetearFechaTermino($compra);
-                }
-            }
-        }
-
         $registro->delete();
-    }
-    public static function eliminarRegistrosStocksPosteriores($fecha1, $fecha2, $productoId)
-    {
-        $salidasPosteriores = AlmacenProductoSalida::whereDate('fecha_reporte', '>=', $fecha1)
-            ->whereDate('created_at', '>=', $fecha2)
-            ->where('producto_id', $productoId)
-            ->get();
-
-        foreach ($salidasPosteriores as $salida) {
-            $salida->costo_por_kg = null;
-            $salida->total_costo = null;
-            $salida->save();
-
-            $compras = $salida->compraStock()->get();
-            foreach ($compras as $regstroCompaStock) {
-                $compra = CompraProducto::find($regstroCompaStock->compra_producto_id);
-                $regstroCompaStock->delete();
-                if ($compra) {
-                    self::resetearFechaTermino($compra);
-                }
-            }
-        }
-    }
-    public static function resetearFechaTermino(CompraProducto $compra)
-    {
-        if ($compra) {
-            /**
-             * Original
-             */
-            /*
-            if ($compra->CantidadDisponible <= 0) {
-                $compra->fecha_termino = null;
-                $compra->save();
-            }*/
-            //Nuevo
-            if ($compra->CantidadDisponible > 0) {
-                $compra->fecha_termino = null;
-                $compra->save();
-            }
-        }
     }
 }

@@ -1,33 +1,37 @@
 <div>
-    <x-loading wire:loading />
+    @if (!empty($advertencias))
+        <div class="space-y-3 my-4">
+            @foreach ($advertencias as $campo)
+                @foreach ($campo['errores'] as $error)
+                    <x-warning>
+                        <strong>Campo {{ $campo['campo_nombre'] }}:</strong><br>
+                        {{ $error['mensaje'] }}
+                    </x-warning>
+                @endforeach
+            @endforeach
+        </div>
+    @endif
+
     <div class="md:flex gap-5">
         <div class="w-full md:w-[26rem]">
             <x-h3 class="my-5">
                 Campos
             </x-h3>
+            
             <x-card>
-                <x-spacing>
-                    <x-success-button type="button" wire:click="importarMesAnterior" class="mb-5 w-full">
-                        Importar Mes Anterior
-                    </x-success-button>
                     <x-table>
 
                         <x-slot name="thead">
                             <x-tr>
-                                <x-th class="text-center">Lotes en<br /> Producción</x-th>
                                 <x-th class="text-center">Lote</x-th>
                                 <x-th class="text-center">Área</x-th>
                                 <x-th class="text-center">Campaña</x-th>
+                                <x-th class="text-center">En Producción</x-th>
                             </x-tr>
                         </x-slot>
                         <x-slot name="tbody">
                             @foreach ($campos as $campo)
                                 <x-tr>
-                                    <x-td class="text-center">
-                                        <input type="checkbox"
-                                            wire:model.live="campoSeleccionado.{{ $campo['nombre'] }}"
-                                            class="form-checkbox text-primary">
-                                    </x-td>
                                     <x-td class="text-center">
                                         {{ $campo['nombre'] }}
                                     </x-td>
@@ -37,17 +41,20 @@
                                     <x-td class="text-center">
                                         {{ $campo['campania'] }}
                                     </x-td>
+                                    <x-td class="text-center">
+    @if ($campo['activo'])
+        <i class="fa-solid fa-check text-green-600" title="Activo"></i>
+    @endif
+
+    @if ($campo['warning'])
+        <i class="fa-solid fa-triangle-exclamation text-yellow-500 ml-2" title="Advertencia"></i>
+    @endif
+</x-td>
+
                                 </x-tr>
                             @endforeach
                         </x-slot>
                     </x-table>
-
-
-
-                    <x-success-button type="button" wire:click="importarMesAnterior" class="mt-5 w-full">
-                        Importar Mes Anterior
-                    </x-success-button>
-                </x-spacing>
             </x-card>
         </div>
 
@@ -193,7 +200,6 @@
             </x-card>
 
             <x-card class="my-5">
-                <x-spacing>
                     <x-flex class="w-full justify-end gap-3">
                         @if ($modoEdicion)
                             <x-secondary-button type="button" wire:click="cancelarEdicion">
@@ -206,23 +212,18 @@
                             <x-button type="button" wire:click="editarCostos">
                                 <i class="fa fa-edit"></i> Editar Costos
                             </x-button>
+                            @if ($costoMensualId)
+                               <x-button type="button" @click="$wire.dispatch('distribuirCostosMensuales',{costoMensualId:{{ $costoMensualId }}})">
+                                <i class="fa fa-list"></i> Distribuir Costos
+                            </x-button> 
+                            @endif
+                             
                         @endif
 
                     </x-flex>
-                    <x-flex class="w-full justify-end gap-3 mt-3">
-                        @if (!$modoEdicion)
-                            <x-input type="date" wire:model="fechaDistribucion" class="!w-auto cursor-not-allowed" disabled />
-                            <x-secondary-button type="button" wire:click="distribuirCostoFijo">
-                                <i class="fa fa-list"></i> Distribuir Costo Fijo
-                            </x-secondary-button>
-                            <x-secondary-button type="button" wire:click="distribuirCostoOperativo">
-                                <i class="fa fa-list"></i> Distribuir Costo Operativo
-                            </x-secondary-button>
-                        @endif
-
-                    </x-flex>
-                </x-spacing>
             </x-card>
         </div>
     </div>
+    
+    <x-loading wire:loading />
 </div>

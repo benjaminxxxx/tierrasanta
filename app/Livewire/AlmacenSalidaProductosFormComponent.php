@@ -3,7 +3,6 @@
 namespace App\Livewire;
 
 use App\Models\Campo;
-use App\Models\KardexProducto;
 use App\Models\Maquinaria;
 use App\Models\Producto;
 use App\Services\AlmacenServicio;
@@ -28,14 +27,11 @@ class AlmacenSalidaProductosFormComponent extends Component
     public $anio;
 
     public $productoSeleccionado;
-    public $kardexProducto;
     public $almacenes;
-    public $stockDisponibleSeleccionado = 0;
     public $cantidades = [];
     public $maquinariasNombres = [];
     public $destino;
     public $modoFdm = false;
-    public $maquinariaCentroDeCosto;
     protected $listeners = ['nuevoRegistro'];
     public function mount($destino = 'productos')
     {
@@ -49,12 +45,6 @@ class AlmacenSalidaProductosFormComponent extends Component
             $this->maquinarias = Maquinaria::all();
             $this->maquinariasNombres = $this->maquinarias->pluck('nombre', 'id')->toArray();
         }
-    }
-
-    public function seleccionarKardexProducto($kardexProductoId, $stockDisponible)
-    {
-        $this->kardexProducto = KardexProducto::find($kardexProductoId);
-        $this->stockDisponibleSeleccionado = $stockDisponible;
     }
     public function obtenerFechaSalida()
     {
@@ -123,19 +113,13 @@ class AlmacenSalidaProductosFormComponent extends Component
             $this->alert("error", $th->getMessage());
         }
     }
-    public function seleccionarProducto($productoId)
+    public function seleccionarProductoParaSalida($productoId)
     {
         try {
+            
             $this->productoSeleccionado = Producto::find($productoId);
             if (!$this->productoSeleccionado) {
-                return;
-            }
-
-            $this->almacenes = $this->productoSeleccionado->kardexesDisponibles($this->fecha_salida);
-
-
-            if (!$this->almacenes) {
-                $this->alert("error", "No hay Kardex disponible para este producto, debe ir a Kardex a registrar el producto primero.");
+                throw new Exception("Producto no encontrado.");
             }
         } catch (\Throwable $th) {
             $this->alert("error", $th->getMessage());
@@ -146,39 +130,29 @@ class AlmacenSalidaProductosFormComponent extends Component
     {
         if ($this->step == 2) {
             $this->productoSeleccionado = null;
-        }
-        if ($this->step == 3) {
-            $this->kardexProducto = null;
-            $this->stockDisponibleSeleccionado = 0;
+            $this->nombre_comercial = '';
+            $this->productos = [];
         }
     }
     public function store()
     {
         try {
             if (!$this->fecha_salida) {
-                return $this->alert('error', 'No ha seleccionado la fecha.');
+                throw new Exception('No ha seleccionado la fecha.');
             }
             if (!$this->productoSeleccionado) {
-                return $this->alert('error', 'No ha seleccionado el producto.');
-            }
-            if (!$this->kardexProducto) {
-                return $this->alert('error', 'No ha seleccionado el almacen.');
+                throw new Exception('No ha seleccionado el producto.');
             }
            
             if($this->destino=='combustible'){
-                if ($this->step == 3 && count($this->maquinariasAgregadas) == 0) {
+                if ($this->step == 2 && count($this->maquinariasAgregadas) == 0) {
                     return $this->alert('error', 'Debe seleccionar las maquinarias o centro de costos.');
                 }
             }else{
-                if ($this->step == 3 && count($this->camposAgregados) == 0) {
+                if ($this->step == 2 && count($this->camposAgregados) == 0) {
                     return $this->alert('error', 'Debe seleccionar los campos.');
                 }
             }
-
-            if (array_sum($this->cantidades) > $this->stockDisponibleSeleccionado) {
-                return $this->alert('error', 'No hay suficiente stock para esa cantidad de salida.');
-            }
-
             $data = [];
 
             if($this->destino=='combustible'){
@@ -195,7 +169,7 @@ class AlmacenSalidaProductosFormComponent extends Component
                                 'maquinaria_id'=>$maquinariaId,
                                 'total_costo'=>null,
                                 'indice' => $indice,
-                                'tipo_kardex' => $this->kardexProducto->tipo_kardex,
+                                'tipo_kardex' => null,
                             ];
                         }
                     }
@@ -203,8 +177,10 @@ class AlmacenSalidaProductosFormComponent extends Component
                
                 
             }else{
+                
                 foreach ($this->camposAgregados as $indice => $campo) {
-                    $cantidad = round($this->cantidades[$campo], 3);
+                    $cantidad = round($this->cantidades[$campo]??0, 3);
+                    
                     if ($cantidad > 0) {
                         $data[] = [
                             'producto_id' => $this->productoSeleccionado->id,
@@ -214,7 +190,7 @@ class AlmacenSalidaProductosFormComponent extends Component
                             'costo_por_kg' => null,
                             'total_costo' => null,
                             'indice' => $indice,
-                            'tipo_kardex' => $this->kardexProducto->tipo_kardex
+                            'tipo_kardex' => null
                         ];
                     }
                 }
@@ -233,14 +209,13 @@ class AlmacenSalidaProductosFormComponent extends Component
             $this->closeForm();
 
         } catch (\Throwable $th) {
-            $this->dispatch('log', $th->getMessage());
-            $this->alert('error', 'Ocurrió un error interno al registrar la salida.');
+            $this->alert('error', $th->getMessage());
         }
     }
     public function resetForm()
     {
         $this->cantidades = [];
-        $this->reset(['nombre_comercial', 'productoSeleccionado', 'productos', 'camposAgregados', 'kardexProducto','maquinariasAgregadas']);
+        $this->reset(['nombre_comercial', 'productoSeleccionado', 'productos', 'camposAgregados','maquinariasAgregadas']);
     }
     public function closeForm()
     {
@@ -250,12 +225,10 @@ class AlmacenSalidaProductosFormComponent extends Component
     public function render()
     {
         $this->step = 1;
-        if ($this->productoSeleccionado && !$this->kardexProducto) {
+        if ($this->productoSeleccionado) {
             $this->step = 2;
-        } else if ($this->kardexProducto) {
-            $this->step = 3;
         }
-
+        
         return view('livewire.almacen-salida-productos-form-component');
     }
 }

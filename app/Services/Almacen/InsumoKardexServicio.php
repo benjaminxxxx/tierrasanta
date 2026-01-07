@@ -129,7 +129,9 @@ class InsumoKardexServicio
         }
 
         // Aplicar Ordenamiento y Paginación
-        return $query->orderBy('created_at', 'desc') // Usamos 'created_at' como en tu render original
+        return $query->orderBy('anio', 'desc')
+            ->orderBy('producto_id')
+            ->orderBy('tipo')
             ->paginate($perPage);
     }
 }

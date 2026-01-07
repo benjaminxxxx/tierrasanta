@@ -67,7 +67,7 @@ Route::middleware([
 
 
     Route::get('/configuracion/tipos-asistencias', function () {
-        return view('configuracion.tipo_asistencia');
+        return view('livewire.gestion-asistencia.tipo-asistencia-indice');
     })->name('configuracion.tipo_asistencia');
 
 
@@ -179,6 +179,7 @@ Route::middleware([
     Route::get('/gestion_insumos/kardex/detalle/{insumoKardexId}', [GestionInsumosController::class, 'kardexDetalle'])->name('gestion_insumos.kardex.detalle');
     Route::get('/gestion_insumos/kardex/reportes', [GestionInsumosController::class, 'kardexReportes'])->name('gestion_insumos.kardex.reportes');
     Route::get('/gestion_insumos/kardex/reporte/{insumoKardexReporteId}', [GestionInsumosController::class, 'kardexReporte'])->name('gestion_insumos.kardex.reporte');
+    Route::get('/gestion_insumos/kardex/asignacion/{productoId}/{anio}', [GestionInsumosController::class, 'kardexAsignacion'])->name('gestion_insumos.kardex_asignacion');
     //KARDEX
     Route::get('/kardex/lista', [KardexController::class, 'lista'])->name('kardex.lista');
     Route::get('/kardex/ver/{id}', [KardexController::class, 'ver'])->name('kardex.ver');

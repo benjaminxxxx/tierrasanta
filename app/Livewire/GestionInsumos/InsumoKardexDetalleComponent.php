@@ -16,10 +16,18 @@ class InsumoKardexDetalleComponent extends Component
     public $insumoKardex;
     public $movimientos = [];
     public $archivoExcelKardex;
+    public $kardexOpuesto = null;
+    public $tipoOpuesto = null;
     public function mount($insumoKardexId)
     {
         $this->insumoKardex = InsKardex::findOrFail($insumoKardexId);
-
+        $this->tipoOpuesto = $this->insumoKardex->tipo === 'blanco'
+        ? 'negro'
+        : 'blanco';
+        $this->kardexOpuesto = InsKardex::where('producto_id', $this->insumoKardex->producto_id)
+        ->where('anio', $this->insumoKardex->anio)
+        ->where('tipo', $this->tipoOpuesto)
+        ->first();
         // Cargar movimientos
         $this->obtenerMovimientos();
 
@@ -39,7 +47,7 @@ class InsumoKardexDetalleComponent extends Component
                 $this->archivoExcelKardex,
                 $this->insumoKardex
             );
-            $this->alert('success','Compras y Salidas cargados desde el kardex correctamente.');
+            $this->alert('success', 'Compras y Salidas cargados desde el kardex correctamente.');
         } catch (\Throwable $th) {
             $this->alert('error', 'Error en Procesar Archivo: ' . $th->getMessage(), [
 

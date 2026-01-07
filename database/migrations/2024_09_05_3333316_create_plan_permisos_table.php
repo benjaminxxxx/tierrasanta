@@ -13,7 +13,7 @@ return new class extends Migration {
         Schema::create('plan_permisos', function (Blueprint $table) {
             $table->id();
             $table->foreignId('plan_empleado_id')->constrained('plan_empleados')->cascadeOnDelete();
-            $table->foreignId('codigo_tipo')->constrained('plan_tipo_asistencias')->restrictOnDelete();
+            $table->string('codigo_tipo',10);
             $table->date('fecha_inicio');
             $table->date('fecha_fin')->nullable();
             $table->integer('dias')->default(1);

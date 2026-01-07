@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Campo extends Model
@@ -89,10 +88,6 @@ class Campo extends Model
     public function detalleRiegos()
     {
         return $this->hasMany(ReporteDiarioRiego::class, 'campo', 'nombre');
-    }
-    public function camposActivos()
-    {
-        return $this->hasMany(CamposActivos::class, 'campo_nombre', 'nombre');
     }
 
     public function campanias()

@@ -1,5 +1,4 @@
 <div>
-    <x-loading wire:loading />
     <div class="md:flex items-center gap-5 mb-5">
         <x-h3>
             {{ $destino == 'combustible' ? 'Combustible' : 'Almacén' }}
@@ -21,12 +20,11 @@
 
     </div>
     <x-card>
-        <x-spacing>
             <div class="flex items-center justify-between">
 
-                <x-secondary-button wire:click="mesAnterior">
+                <x-button variant="secondary" wire:click="mesAnterior">
                     <i class="fa fa-chevron-left"></i> Mes Anterior
-                </x-secondary-button>
+                </x-button>
 
                 <div class="hidden md:flex items-center gap-5">
                     <!-- Selección de mes -->
@@ -56,11 +54,10 @@
 
 
                 <!-- Botón para mes posterior -->
-                <x-secondary-button wire:click="mesSiguiente" class="ml-3">
+                <x-button variant="secondary" wire:click="mesSiguiente" class="ml-3">
                     Mes Siguiente <i class="fa fa-chevron-right"></i>
-                </x-secondary-button>
+                </x-button>
             </div>
-        </x-spacing>
     </x-card>
     <livewire:almacen-salida-detalle-component :tipo="$destino" wire:key="{{ $mes }}.{{ $anio }}"
         :mes="$mes" :anio="$anio" />
@@ -147,4 +144,7 @@
             </x-spacing>
         </x-card>
     @endif
+
+    
+    <x-loading wire:loading />
 </div>

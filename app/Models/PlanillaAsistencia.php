@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PlanTipoAsistenciaServicio;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,16 +27,10 @@ class PlanillaAsistencia extends Model
     
     public static function horas($anio,$mes)
     {
-        $grupoColores = Grupo::get()->pluck("color", "codigo")->toArray();
         
-        $tipoAsistenciaArray = TipoAsistencia::get()->mapWithKeys(function ($item) {
-            return [
-                $item->codigo => [
-                    'color' => $item->color,
-                    'descripcion' => $item->descripcion
-                ]
-            ];
-        })->toArray();
+        $grupoColores = Grupo::get()->pluck("color", "codigo")->toArray();
+        $servicio = app(PlanTipoAsistenciaServicio::class);
+        $tipoAsistenciaArray = $servicio->obtenerDiccionarioConfiguracion();
         
         $ultimoDiaMes = Carbon::createFromDate($anio, $mes, 1)->endOfMonth()->day;
         $informacionAsistenciaAdicional = [];

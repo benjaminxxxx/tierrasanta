@@ -28,5 +28,6 @@ class DatabaseSeeder extends Seeder
         $this->call(GruposCuadrillaSeeder::class);
         $this->call(CochinillaObservacionSeeder::class);
         $this->call(PlanEmpleadosSeeder::class);
+        $this->call(MaquinariasSeeder::class);
     }
 }

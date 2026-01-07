@@ -7,6 +7,7 @@ use App\Models\PlanRegistroDiario;
 use App\Models\PlanResumenDiario;
 use App\Models\PlanResumenDiarioTipoAsistencia;
 use App\Models\PlanTipoAsistencia;
+use App\Services\PlanTipoAsistenciaServicio;
 use Illuminate\Support\Carbon;
 
 class PlanillaRegistroDiarioServicio
@@ -159,7 +160,8 @@ class PlanillaRegistroDiarioServicio
 
             if (!$registro) {
                 // Buscar en el catálogo base
-                $tipo = PlanTipoAsistencia::where('codigo', $codigo)->first();
+                
+                $tipo = app(PlanTipoAsistenciaServicio::class)->obtenerPorCodigo($codigo);
                 if (!$tipo) {
                     continue; // código no válido
                 }

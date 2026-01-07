@@ -19,6 +19,9 @@ class Producto extends Model
         'codigo_unidad_medida',
         'categoria_pesticida'
     ];
+    public function categoria(){
+        return $this->belongsTo(InsCategoria::class, 'categoria_codigo', 'codigo');
+    }
     public function kardexActual()
     {
         return $this->hasOne(InsKardex::class, 'producto_id', 'id')
@@ -100,31 +103,7 @@ class Producto extends Model
             'stock_disponible' => round($stockDisponible, 3) // Redondeado a 2 decimales
         ];
     }
-    /**
-     * Kardex Disponible se basa en la existencia de un kardex cuyo rango pertenece a la fecha de salida, para saberel stock disponible
-     * @param mixed $fechaSalida
-     * @throws \Exception
-     */
-    public function kardexesDisponibles($fechaSalida)
-    {
-        $productoId = $this->id;
 
-        //este productos whereHas es porque en Kardex en vez de KardexProducto puse solo productos
-        $kardex = Kardex::whereHas('productos', function ($query) use ($productoId) {
-            $query->where('producto_id', $productoId);
-        })
-            ->where('fecha_inicial', '<=', $fechaSalida)
-            ->where('fecha_final', '>=', $fechaSalida)
-            ->where('estado', 'activo')
-            ->where('eliminado', false)
-            ->first();
-
-        if ($kardex) {
-            return $kardex->productos()->where('producto_id', $productoId)->get();
-        } else {
-            throw new Exception("No hay Kardex disponible.");
-        }
-    }
     public function kardexProductos()
     {
         return $this->hasMany(KardexProducto::class, 'producto_id');
@@ -146,7 +125,7 @@ class Producto extends Model
 
     public static function buscarCombustible(string $nombre)
     {
-        return self::where('categoria', 'combustible')
+        return self::where('categoria_codigo', 'combustible')
             ->where('nombre_comercial', 'like', "%$nombre%")
             ->get();
     }

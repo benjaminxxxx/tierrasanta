@@ -7,6 +7,7 @@ use App\Models\Maquinaria;
 use App\Models\Producto;
 use App\Services\AlmacenServicio;
 use App\Services\Campo\Gestion\CampoServicio;
+use App\Services\InformacionGeneral\MaquinariaServicio;
 use App\Services\ProductoServicio;
 use DB;
 use Exception;
@@ -43,10 +44,23 @@ class InsumoKardexImportarServicio
         $filas = $hoja->toArray();
 
         $this->validarEstructuraBasica($filas);
-        
+
         $this->procesarSaldoInicial($hoja, $insumoKardex);
-        
-        $filtroCampos = $this->obtenerYValidarCampos($filas);
+
+        $filtroCampos = [];
+        $filtroMaquinarias = [];
+        if ($insumoKardex->producto->categoria_codigo === 'combustible') {
+            $nombresMaquinaria = collect($filas)
+                ->skip(self::INDICE_INICIO_DATOS)
+                ->pluck(self::COLUMNA_CAMPO_LOTE)
+                ->filter()
+                ->toArray();
+
+            $filtroMaquinarias = MaquinariaServicio::validarMaquinariasDesdeExcel($nombresMaquinaria);
+            dd($filtroMaquinarias);
+        } else {
+            $filtroCampos = $this->obtenerYValidarCampos($filas);
+        }
 
         $this->validarRangoFechas($hoja, $filas, $insumoKardex);
 
@@ -74,7 +88,7 @@ class InsumoKardexImportarServicio
         $indiceInicio = self::INDICE_INICIO_DATOS;
         $colFecha = self::COLUMNA_FECHA;
         $colTipoOperacion = self::COLUMNA_TIPO_OPERACION;
-        
+
         if (!isset($filas[$indiceInicio])) {
             throw new Exception("El archivo no tiene el formato correcto, la información debe iniciar en la fila: " . ($indiceInicio + 1));
         }
@@ -96,7 +110,7 @@ class InsumoKardexImportarServicio
     {
         $filaInicial = $hoja->toArray()[self::INDICE_INICIO_DATOS];
         $codigoTipoOperacion = (int) $filaInicial[self::COLUMNA_TIPO_OPERACION];
-        
+
         // El código '16' es para Saldo Inicial
         if ($codigoTipoOperacion !== 16) {
             return false;
@@ -105,13 +119,13 @@ class InsumoKardexImportarServicio
         $stockInicial = (float) $hoja->getCell('F17')->getCalculatedValue();
         $costoUnitario = (float) $hoja->getCell('G17')->getCalculatedValue();
         $costoTotal = (float) $hoja->getCell('H17')->getCalculatedValue();
-        
+
         $insumoKardex->update([
             'stock_inicial' => $stockInicial,
             'costo_unitario' => $costoUnitario,
             'costo_total' => $costoTotal,
         ]);
-        
+
         return true;
     }
 
@@ -153,7 +167,7 @@ class InsumoKardexImportarServicio
         $fechaMinima = Carbon::create($anio, 1, 1)->startOfDay();
         $fechaMaxima = Carbon::create($anio, 12, 31)->endOfDay();
         $indiceInicio = self::INDICE_INICIO_DATOS;
-        
+
         for ($i = $indiceInicio; $i < count($filas); $i++) {
             $numFilaExcel = $i + 1;
             $valorCeldaFecha = $hoja->getCell('A' . $numFilaExcel)->getValue();
@@ -173,7 +187,7 @@ class InsumoKardexImportarServicio
             }
         }
     }
-    
+
     /**
      * Extrae y procesa los datos de Compras (Entradas) y Salidas del Excel.
      *
@@ -190,7 +204,7 @@ class InsumoKardexImportarServicio
         $datosSalida = [];
         $indiceInicio = self::INDICE_INICIO_DATOS;
         $tieneSaldoInicial = $this->comprobarSaldoInicial($filas);
-        
+
         for ($i = $indiceInicio; $i < count($filas); $i++) {
             $numFilaExcel = $i + 1;
             $fila = $filas[$i];
@@ -204,12 +218,12 @@ class InsumoKardexImportarServicio
             $fechaPura = $this->obtenerFechaPuraDesdeCelda($valorCeldaFecha, $numFilaExcel);
 
             $datosCompra = array_merge($datosCompra, $this->procesarEntrada($fila, $hoja, $numFilaExcel, $insumoKardex, $fechaPura, $tipoOperacion));
-            $datosSalida = array_merge($datosSalida, $this->procesarSalida($fila, $hoja, $numFilaExcel, $insumoKardex, $fechaPura, $filtroCampos, $tipoOperacion));
+            $datosSalida = array_merge($datosSalida, $this->procesarSalida($hoja, $numFilaExcel, $insumoKardex, $fechaPura, $filtroCampos, $tipoOperacion));
         }
 
         return [$datosCompra, $datosSalida];
     }
-    
+
     /**
      * Determina si la primera fila de datos es un saldo inicial (código 16).
      *
@@ -254,7 +268,7 @@ class InsumoKardexImportarServicio
         $fechaString = $fechaCurrent->format('Y-m-d');
         return Carbon::parse($fechaString)->startOfDay();
     }
-    
+
     /**
      * Procesa la entrada (Compra) de una fila de Excel si aplica.
      *
@@ -302,7 +316,7 @@ class InsumoKardexImportarServicio
                 'estado' => 1
             ];
         }
-        
+
         return $datosCompra;
     }
 
@@ -319,7 +333,7 @@ class InsumoKardexImportarServicio
      * @return array
      * @throws Exception
      */
-    private function procesarSalida(array $fila, $hoja, int $numFilaExcel, InsKardex $insumoKardex, Carbon $fechaPura, array $filtroCampos, string $tipoOperacion): array
+    private function procesarSalida($hoja, int $numFilaExcel, InsKardex $insumoKardex, Carbon $fechaPura, array $filtroCampos, string $tipoOperacion): array
     {
         $datosSalida = [];
         $salidaCantidad = (float) $hoja->getCell('I' . $numFilaExcel)->getCalculatedValue();
@@ -340,7 +354,7 @@ class InsumoKardexImportarServicio
                 $maquinariaId = $this->obtenerMaquinariaId($nombreCampoFinal);
                 $nombreCampoFinal = ''; // Si es combustible, el nombre del campo se limpia.
             }
-            
+
             $datosSalida[] = [
                 'producto_id' => $insumoKardex->producto_id,
                 'campo_nombre' => $nombreCampoFinal,
@@ -353,7 +367,7 @@ class InsumoKardexImportarServicio
 
         return $datosSalida;
     }
-    
+
     /**
      * Busca el ID de maquinaria basado en el nombre o alias para productos combustible.
      *
@@ -365,7 +379,7 @@ class InsumoKardexImportarServicio
     {
         // Usar LOWER() en la base de datos para búsqueda *case-insensitive*
         $nombreLoteBajo = strtolower($nombreLote);
-        
+
         $maquinaria = Maquinaria::where(DB::raw('LOWER(nombre) COLLATE utf8mb4_general_ci'), $nombreLoteBajo)
             ->orWhere(DB::raw('LOWER(alias_blanco) COLLATE utf8mb4_general_ci'), $nombreLoteBajo)
             ->first();

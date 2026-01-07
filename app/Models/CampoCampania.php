@@ -158,6 +158,11 @@ class CampoCampania extends Model
         'riego_hrs_acumuladas',
         'riego_m3_acum_ha',
     ];
+    protected $casts = [
+        'fecha_inicio' => 'date',
+        'fecha_fin' => 'date',
+    ];
+
     public function ventasFacturadas()
     {
         return $this->hasMany(VentaFacturadaCochinilla::class, 'campo_campania_id');

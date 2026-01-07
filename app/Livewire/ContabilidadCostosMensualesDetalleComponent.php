@@ -3,9 +3,8 @@
 namespace App\Livewire;
 
 use App\Models\Campo;
-use App\Models\CampoCampania;
-use App\Models\CamposActivos;
 use App\Models\CostoMensual;
+use App\Services\Campania\ValidadorRangosCampania;
 use Illuminate\Support\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -31,59 +30,27 @@ class ContabilidadCostosMensualesDetalleComponent extends Component
     public $operativo_servicios_fundo_costo_negro;
     public $operativo_mano_obra_indirecta_costo_blanco;
     public $operativo_mano_obra_indirecta_costo_negro;
-    public $mes, $anio;
-    public $areaProduccion,$fechaDistribucion;
+    public $mes;
+    public $anio;
+    public $areaProduccion;
+    public $fechaDistribucion;
+    public $advertencias = [];
+    public $costoMensualId;
     public function mount()
     {
+        $this->advertencias = ValidadorRangosCampania::validarCampos();
         $this->listarCostos();
         $this->listarCampos();
+        $this->listarCostoMensualId();
         $this->fechaDistribucion = Carbon::createFromDate($this->anio, $this->mes, 1)->lastOfMonth()->format('Y-m-d');
 
     }
-    public function importarMesAnterior()
+    public function listarCostoMensualId()
     {
-        // Calcular el mes y año anterior de manera correcta
-        $fechaActual = Carbon::createFromDate($this->anio, $this->mes, 1);
-        $fechaAnterior = (clone $fechaActual)->subMonth();
-
-        $mesOrigen = $fechaAnterior->month;
-        $anioOrigen = $fechaAnterior->year;
-        $mesDestino = $fechaActual->month;
-        $anioDestino = $fechaActual->year;
-
-        // Obtener los campos activos en el mes anterior
-        $camposActivos = CamposActivos::where('mes', $mesOrigen)
-            ->where('anio', $anioOrigen)
-            ->pluck('campo_nombre');
-
-        if ($camposActivos->isEmpty()) {
-            return $this->alert('success', 'No hay datos por importar'); // No hay datos para importar
-        }
-
-        // Obtener los registros que ya existen en el mes destino
-        $camposExistentes = CamposActivos::where('mes', $mesDestino)
-            ->where('anio', $anioDestino)
-            ->pluck('campo_nombre')
-            ->toArray();
-
-        // Filtrar solo los campos que no están en el destino para evitar duplicados
-        $nuevosRegistros = $camposActivos->diff($camposExistentes)->map(function ($campo) use ($mesDestino, $anioDestino) {
-            return [
-                'campo_nombre' => $campo,
-                'mes' => $mesDestino,
-                'anio' => $anioDestino,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-        });
-
-        if ($nuevosRegistros->isNotEmpty()) {
-            CamposActivos::insert($nuevosRegistros->toArray());
-            $this->alert('success', count($nuevosRegistros) . ' campos activados correctamente');
-            $this->listarCampos();
-        } else {
-            $this->alert('success', 'El mes pasado contiene los mismos campos activos');
-        }
+        $this->costoMensualId = CostoMensual::where('anio', $this->anio)
+            ->where('mes', $this->mes)
+            ->first()
+                ?->id;
     }
     public function guardarCambios()
     {
@@ -123,6 +90,7 @@ class ContabilidadCostosMensualesDetalleComponent extends Component
             }
             $this->modoEdicion = false;
             $this->listarCostos();
+            $this->listarCostoMensualId();
         } catch (\Throwable $th) {
             $this->dispatch('log', $th->getMessage());
             $this->alert('error', 'Ocurrió un error al registrar los costos.');
@@ -130,71 +98,99 @@ class ContabilidadCostosMensualesDetalleComponent extends Component
     }
     public function listarCampos()
     {
-        /**
-         * Se va a realizar dos consideraciones para la campaña
-         * digamos que hay en un mes dos campañas
-         * campaña por cerrarse fecha de inicio octubre 10 del 2024 - fecha de fin febrero 20 del 2025
-         * campaña aperturada fecha de inicio febrero 23 del 2025 fecha de fin no disponible aun
-         * ya que estamos en el mes de febrero se debe considerar la ultima o sea campaña 2
-         * las campañas no se cruzan entre fechas siempre es una despues de la otra
-         * a continuacion se va a explicar la tecnica
-         */
-
         $anio = (int) $this->anio;
         $mes = (int) $this->mes;
 
+        $inicioMes = Carbon::create($anio, $mes, 1)->startOfDay();
+        $finMes = (clone $inicioMes)->endOfMonth();
+
+        // Indexar advertencias por campo + campaña
+        $advertenciasIndexadas = collect($this->advertencias)
+            ->flatMap(function ($campo) {
+                return collect($campo['errores'])->flatMap(function ($error) use ($campo) {
+                    return collect($error['campania_ids'] ?? [$error['campania_id']])
+                        ->map(function ($campaniaId) use ($campo) {
+                            return [
+                                'nombre' => $campo['campo_nombre'],
+                                'campania_id' => $campaniaId,
+                            ];
+                        });
+                });
+            });
+
         $this->campos = Campo::with([
-            'camposActivos' => function ($query) {
-                $query->where('anio', $this->anio)
-                    ->where('mes', $this->mes);
-            },
-            'campanias' => function ($query) use ($anio, $mes) {
-                $query->whereRaw("
-                     (YEAR(fecha_inicio) < ? OR (YEAR(fecha_inicio) = ? AND MONTH(fecha_inicio) <= ?))
-                     AND (
-                         fecha_fin IS NULL 
-                         OR (YEAR(fecha_fin) > ? OR (YEAR(fecha_fin) = ? AND MONTH(fecha_fin) >= ?))
-                     )
-                 ", [$anio, $anio, $mes, $anio, $anio, $mes])
-                    ->orderBy('fecha_inicio', 'desc') // Obtener la más reciente
-                    ->limit(1); // Solo una campaña
+            'campanias' => function ($query) use ($inicioMes, $finMes) {
+                $query
+                    ->where('fecha_inicio', '<=', $finMes)
+                    ->where(function ($q) use ($inicioMes) {
+                        $q->whereNull('fecha_fin')
+                            ->orWhere('fecha_fin', '>=', $inicioMes);
+                    })
+                    ->orderBy('fecha_inicio');
             }
-        ])->orderBy('orden')->get()->map(function ($campo) {
-            return [
-                'nombre' => $campo->nombre,
-                'activo' => $campo->camposActivos->isNotEmpty(),
-                'campania' => $campo->campanias->isNotEmpty() ? $campo->campanias->first()->nombre_campania : '',
-                'area' => $campo->area
-            ];
-        });
+        ])
+            ->orderBy('orden')
+            ->get()
+            ->flatMap(function ($campo) use ($inicioMes, $finMes, $advertenciasIndexadas) {
+
+                // Caso 1: campo SIN campañas → una fila inactiva
+                if ($campo->campanias->isEmpty()) {
+                    return [
+                        [
+                            'nombre' => $campo->nombre,
+                            'area' => $campo->area,
+
+                            'campania_id' => null,
+                            'campania' => null,
+                            'fecha_inicio' => null,
+                            'fecha_fin' => null,
+
+                            'activo' => false,
+                            'warning' => false,
+                        ]
+                    ];
+                }
+
+                // Caso 2: una o más campañas → clonar filas
+                return $campo->campanias->map(function ($campania) use ($campo, $inicioMes, $finMes, $advertenciasIndexadas) {
+
+                    $activo =
+                        $campania->fecha_inicio <= $finMes &&
+                        (
+                            is_null($campania->fecha_fin)
+                            || $campania->fecha_fin >= $inicioMes
+                        );
+
+                    $warning = $advertenciasIndexadas->contains(function ($item) use ($campo, $campania) {
+                        return
+                            $item['nombre'] === $campo->nombre &&
+                            $item['campania_id'] === $campania->id;
+                    });
+
+                    return [
+                        'nombre' => $campo->nombre,
+                        'area' => $campo->area,
+
+                        'campania_id' => $campania->id,
+                        'campania' => $campania->nombre_campania,
+                        'fecha_inicio' => $campania->fecha_inicio,
+                        'fecha_fin' => $campania->fecha_fin,
+
+                        'activo' => $activo,
+                        'warning' => $warning,
+                    ];
+                });
+            })
+            ->values();
 
         $this->calcularAreaProduccion();
-        $this->campoSeleccionado = $this->campos->pluck('activo', 'nombre')->toArray();
     }
+
     public function calcularAreaProduccion()
     {
         $this->areaProduccion = $this->campos
             ->where('activo', true) // Filtra solo los campos activos
             ->sum('area');
-    }
-
-    public function updatedCampoSeleccionado($activado, $campo)
-    {
-
-        $data = [
-            'anio' => $this->anio,
-            'mes' => $this->mes,
-            'campo_nombre' => $campo,
-        ];
-
-        if ($activado) {
-            CamposActivos::updateOrCreate($data, $data);
-            $this->alert('success', 'Campo agregado a la lista.');
-        } else {
-            CamposActivos::where($data)->delete();
-            $this->alert('success', 'Campo quitado de la lista.');
-        }
-        $this->listarCampos();
     }
 
     public function listarCostos()
@@ -290,43 +286,6 @@ class ContabilidadCostosMensualesDetalleComponent extends Component
         }
 
         $this->modoEdicion = true;
-    }
-    public function distribuirCostoOperativo()
-    {
-
-        if (!$this->campos instanceof \Illuminate\Support\Collection) {
-            return $this->alert('warning', 'No hay campos a trabajar');
-        }
-
-        if ($this->campos->isEmpty()) {
-            return $this->alert('warning', 'No hay campos a trabajar');
-        }
-
-        if (!$this->campos->contains('activo', true)) {
-            return $this->alert('warning', 'No hay ningún campo activo.');
-        }
-
-        $costos_operativos = [
-            ['codigo' => 'operativo_servicios_fundo', 'nombre' => 'Servicios Fundo'],
-            ['codigo' => 'operativo_mano_obra_indirecta', 'nombre' => 'Mano de Obra Indirecta'],
-        ];
-
-        $diaFinalDelMes = Carbon::parse($this->fechaDistribucion)->format('d');
-        $mes = Carbon::parse($this->fechaDistribucion)->format('m');
-        $anio = Carbon::parse($this->fechaDistribucion)->format('y');
-
-        foreach ($this->campos as $indice => $campo) {
-            $estaActivo = $campo['activo'];
-            $areaLote = $campo['area'];
-            $areaProduccion = $this->areaProduccion;
-            if(!$estaActivo){
-                continue;
-            }
-            foreach ($costos_operativos as $costos_operativo) {
-                # code...
-            }
-           
-        }
     }
 
     public function cancelarEdicion()

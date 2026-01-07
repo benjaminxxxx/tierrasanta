@@ -127,6 +127,9 @@ class CampaniaServicio
         if ($campania->evaluacionPoblacionPlantas()->exists()) {
             throw new \Exception("No se puede eliminar la campaña porque tiene evaluaciones de población de plantas registradas.");
         }
+        if ($campania->distribucionesCostosMensuales()->exists()) {
+            throw new \Exception("No se puede eliminar la campaña porque tiene distribuciones de costos mensuales registradas.");
+        }
 
         // 3. Eliminar campaña
         try {

@@ -14,33 +14,30 @@
             @endif
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <x-label for="tienda_comercial_id">Proveedor</x-label>
-                    <x-select class="uppercase" wire:model="tienda_comercial_id" id="tienda_comercial_id">
-                        <option value="">Seleccione la tienda comercial</option>
-                        @if ($proveedores)
-                            @foreach ($proveedores as $proveedor)
-                                <option value="{{ $proveedor->id }}">{{ $proveedor->nombre }}</option>
-                            @endforeach
-                        @endif
-                    </x-select>
-                    <x-input-error for="tienda_comercial_id" />
-                </div>
-                <div>
-                    <x-label for="fecha_compra">Fecha compra</x-label>
-                    <x-input type="date" wire:model="fecha_compra" id="fecha_compra" />
-                    <x-input-error for="fecha_compra" />
-                </div>
+
+                <x-select class="uppercase" label="Proveedor" wire:model="tienda_comercial_id" id="tienda_comercial_id"
+                    error="tienda_comercial_id">
+                    <option value="">Seleccione la tienda comercial</option>
+                    @if ($proveedores)
+                        @foreach ($proveedores as $proveedor)
+                            <option value="{{ $proveedor->id }}">{{ $proveedor->nombre }}</option>
+                        @endforeach
+                    @endif
+                </x-select>
+
+                <x-input type="date" label="Fecha compra" wire:model="fecha_compra" id="fecha_compra"
+                    error="fecha_compra" />
+
                 <div class="col-span=1 md:col-span-2">
-                    <div x-data="calculoTotal(@entangle('stock'), @entangle('costo_por_kg'), @entangle('total'))" class="flex items-center w-full gap-3">
+                    <div x-data="calculoTotal(@entangle('stock'), @entangle('costo_por_kg'), @entangle('total'))"
+                        class="flex items-center w-full gap-3">
                         <div>
                             <x-label for="stock">Stock en
                                 @if ($producto)
                                     <span>({{ $producto->unidad_medida }})</span>
                                 @endif
                             </x-label>
-                            <x-input type="number" step="0.001" x-model="stock" />
-                            <x-input-error for="stock" />
+                            <x-input type="number" step="0.001" x-model="stock" error="stock" />
                         </div>
                         <i class="fa fa-times text-orange-600"></i>
                         <div>
@@ -49,17 +46,15 @@
                                     <span>({{ $producto->unidad_medida }})</span>
                                 @endif
                             </x-label>
-                            <x-input type="number" readonly class="!bg-gray-100 disabled" x-model="costo_por_kg" />
+                            <x-input type="number" readonly class="disabled" x-model="costo_por_kg" />
                             <x-input-error for="costo_por_kg" />
                         </div>
                         <i class="fa fa-equals text-orange-600"></i>
                         <div>
-                            <x-label for="total">Costo Total</x-label>
-                            <x-input type="number" step="0.01" x-model="total" />
-                            <x-input-error for="total" />
+                            <x-input type="number" label="Costo Total" step="0.01" x-model="total" error="total" />
                         </div>
                     </div>
-                    
+
                     <script>
                         function calculoTotal(stockRef, costoPorKgRef, totalRef) {
                             return {
@@ -81,38 +76,29 @@
                             };
                         }
                     </script>
-                    
+
 
 
 
                 </div>
 
+                <x-input type="text" label="Serie" class="uppercase" wire:model="serie" />
+
+                <x-input type="text" label="Número" class="uppercase" wire:model="numero" />
+
+                <x-input type="text" label="Tipo de operación (Tabla 12)" readonly class="uppercase"
+                    wire:model="tabla12TipoOperacion" />
+
+                <x-select label="Tipo de comprobante (Tabla 10)" wire:model="tipoCompraSeleccionada"
+                    error="tipoCompraSeleccionada" fullWidth="true">
+                    <option value="">Seleccione</option>
+                    @foreach ($tabla10TipoComprobantePago as $tipoCompra)
+                        <option value="{{ $tipoCompra->codigo }}">{{ $tipoCompra->descripcion }}</option>
+                    @endforeach
+                </x-select>
 
                 <div>
-                    <x-label for="serie">Serie</x-label>
-                    <x-input type="text" class="uppercase" wire:model="serie" />
-                </div>
-                <div>
-                    <x-label for="numero">Número</x-label>
-                    <x-input type="text" class="uppercase" wire:model="numero" />
-                </div>
-                <div>
-                    <x-label for="serie">Tipo de operación (Tabla 12)</x-label>
-                    <x-input type="text" readonly class="uppercase !bg-gray-100" wire:model="tabla12TipoOperacion" />
-                </div>
-                <div>
-                    <x-label for="tipoCompraSeleccionada">Tipo de comprobante (Tabla 10)</x-label>
-                    <x-select wire:model="tipoCompraSeleccionada">
-                        <option value="">Seleccione</option>
-                        @foreach ($tabla10TipoComprobantePago as $tipoCompra)
-                            <option value="{{ $tipoCompra->codigo }}">{{ $tipoCompra->descripcion }}</option>
-                        @endforeach
-                    </x-select>
-                    <x-input-error for="tipoCompraSeleccionada" />
-                </div>
-                <div>
-                    <x-label for="tipoKardex">Tipo de Kardex</x-label>
-                    <x-select wire:model.live="tipoKardex">
+                    <x-select wire:model.live="tipoKardex" label="Tipo de Kardex" fullWidth="true">
                         <option value="blanco">Blanco</option>
                         <option value="negro">Negro</option>
                     </x-select>
@@ -124,14 +110,13 @@
         </x-slot>
 
         <x-slot name="footer">
-            <x-secondary-button wire:click="$set('mostrarFormulario', false)" wire:loading.attr="disabled">
+            <x-button wire:click="$set('mostrarFormulario', false)" variant="secondary" wire:loading.attr="disabled">
                 Cancelar
-            </x-secondary-button>
+            </x-button>
 
-            <x-button class="ms-3" wire:click="store" wire:loading.attr="disabled">
+            <x-button class="ms-3" wire:click="guardarCompraInsumo" wire:loading.attr="disabled">
                 Registrar compra <i class="fa fa-save"></i>
             </x-button>
         </x-slot>
     </x-dialog-modal>
 </div>
-

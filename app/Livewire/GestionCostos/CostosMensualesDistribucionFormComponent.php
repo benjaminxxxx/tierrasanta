@@ -3,6 +3,7 @@
 namespace App\Livewire\GestionCostos;
 use App\Models\CampoCampania;
 use App\Models\CostoMensual;
+use App\Services\Campania\ValidadorRangosCampania;
 use App\Services\Contabilidad\CostosMensualesServicio;
 use App\Services\Contabilidad\DistribucionCostoMensualServicio;
 use App\Support\DistribucionGastosMensuales;
@@ -25,6 +26,23 @@ class CostosMensualesDistribucionFormComponent extends Component
     {
         try {
             $costoMensual = CostoMensual::findOrFail($costoMensualId);
+            $advertencias = ValidadorRangosCampania::validarCampos();
+
+            $advertenciasPorCampania = collect($advertencias)
+                ->flatMap(function ($campo) {
+                    return collect($campo['errores'])
+                        ->flatMap(function ($error) {
+                            return collect($error['campania_ids'])->map(function ($campaniaId) use ($error) {
+                                return [
+                                    'campania_id' => $campaniaId,
+                                    'tipo' => $error['tipo'],
+                                    'mensaje' => $error['mensaje'],
+                                ];
+                            });
+                        });
+                })
+                ->groupBy('campania_id');
+
             $this->costoMensual = $costoMensual;
 
             $anio = $costoMensual->anio;
@@ -51,13 +69,45 @@ class CostosMensualesDistribucionFormComponent extends Component
                         ->orWhere('fecha_fin', '>=', $inicioMes);
                 })
                 ->get()
-                ->map(fn($c) => [
-                    'campania_id' => $c->id,
-                    'nombre_campania' => $c->nombre_campania,
-                    'fecha_inicio' => $c->fecha_inicio,
-                    'fecha_fin' => $c->fecha_fin,
-                ])
+                ->map(function ($c) use ($advertenciasPorCampania) {
+
+                    $errores = $advertenciasPorCampania->get($c->id, collect());
+
+                    return [
+                        'campania_id' => $c->id,
+                        'nombre_campania' => $c->nombre_campania,
+                        'fecha_inicio' => $c->fecha_inicio,
+                        'fecha_fin' => $c->fecha_fin,
+
+                        // flags de validación
+                        'warning' => $errores->isNotEmpty(),
+                        'errores' => $errores->values()->toArray(),
+                    ];
+                })
                 ->toArray();
+
+            $erroresCriticos = collect($campanias)
+                ->flatMap(fn($c) => $c['errores'] ?? [])
+                ->where('tipo', 'superposicion');
+
+            $erroresCriticosSinCierre = collect($campanias)
+                ->flatMap(fn($c) => $c['errores'] ?? [])
+                ->where('tipo', 'campania_sin_cierre');
+
+
+
+            if ($erroresCriticos->isNotEmpty()) {
+                throw new \Exception(
+                    'Existen campañas con superposición de fechas. ' .
+                    'Revise las advertencias antes de continuar.'
+                );
+            }
+            if ($erroresCriticosSinCierre->isNotEmpty()) {
+                throw new \Exception(
+                    'Existen campañas sin fechas de cierre. ' .
+                    'Revise las advertencias antes de continuar.'
+                );
+            }
 
             $this->distribucionCalculada =
                 DistribucionGastosMensuales::calcular(

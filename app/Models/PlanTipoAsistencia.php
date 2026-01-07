@@ -11,21 +11,17 @@ class PlanTipoAsistencia extends Model
 
     protected $table = 'plan_tipo_asistencias';
 
-    protected $primaryKey = 'codigo';   // 👈 Define el campo primario
-    public $incrementing = false;       // 👈 Indica que no es autoincremental
-    protected $keyType = 'string';      // 👈 Define que el tipo de clave es string
-
     protected $fillable = [
         'codigo',
         'descripcion',
         'horas_jornal',
         'color',
-        'tipo',                   // ASISTENCIA, LICENCIA, VACACIONES, PERMISO
-        'afecta_sueldo',          // bool
-        'porcentaje_remunerado',  // decimal o entero
-        'requiere_documento',     // bool
-        'acumula_vacaciones',     // bool
-        'acumula_asistencia',     // bool
-        'activo',                 // bool
+        'tipo',
+        'afecta_sueldo',
+        'porcentaje_remunerado',
+        'requiere_documento',
+        'acumula_vacaciones',
+        'acumula_asistencia',
+        'activo',
     ];
 }

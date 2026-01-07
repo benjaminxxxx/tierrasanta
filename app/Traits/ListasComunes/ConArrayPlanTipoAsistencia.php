@@ -3,6 +3,7 @@
 namespace App\Traits\ListasComunes;
 
 use App\Models\PlanTipoAsistencia;
+use App\Services\PlanTipoAsistenciaServicio;
 
 trait ConArrayPlanTipoAsistencia
 {
@@ -22,17 +23,10 @@ trait ConArrayPlanTipoAsistencia
     /**
      * Carga las listas de tipo de asistencia y sus atributos derivados.
      */
-    protected function obtenerListasTipoAsistencia()
+    protected function obtenerListasTipoAsistencia(PlanTipoAsistenciaServicio $servicio)
     {
-        $this->tipoAsistencias = PlanTipoAsistencia::all();
-
-        $this->tipoAsistenciasCodigos = array_merge(
-            [''],
-            $this->tipoAsistencias->pluck('codigo')->toArray()
-        );
-
-        $this->tipoAsistenciasHoras = PlanTipoAsistencia::get(['codigo', 'horas_jornal'])
-            ->pluck('horas_jornal', 'codigo')
-            ->toArray();
+        $this->tipoAsistencias = $servicio->listarTodos();
+        $this->tipoAsistenciasCodigos = $servicio->obtenerCodigosParaSelector();
+        $this->tipoAsistenciasHoras = $servicio->obtenerMapaHoras();
     }
 }

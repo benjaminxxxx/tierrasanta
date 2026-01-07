@@ -90,7 +90,7 @@ class ProductoCompraFormComponent extends Component
         $this->mostrarFormulario = true;
         $this->resetearValoresDefecto();
     }
-    public function store()
+    public function guardarCompraInsumo()
     {
         $this->validate([
             'fecha_compra' => 'required',
