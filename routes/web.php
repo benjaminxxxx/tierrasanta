@@ -170,8 +170,8 @@ Route::middleware([
     Route::get('/almacen/salida_de_combustible', [AlmacenController::class, 'salidaCombustible'])->name('almacen.salida_combustible');
 
     //USUARIOS
-    Route::get('/usuarios', [UsuarioController::class, 'index'])->middleware('permission:Usuarios Administrar')->name('usuarios');
-    Route::get('/roles_y_permisos', [UsuarioController::class, 'roles_permisos'])->middleware('permission:Roles')->name('roles_permisos');
+    Route::get('/gestion-usuario/usuarios', [UsuarioController::class, 'index'])->middleware('permission:Usuarios Administrar')->name('usuarios');
+    Route::get('/gestion-usuario/roles-y-permisos', [UsuarioController::class, 'roles_permisos'])->middleware('permission:Roles')->name('roles_permisos');
 
 
     //INSUMOS

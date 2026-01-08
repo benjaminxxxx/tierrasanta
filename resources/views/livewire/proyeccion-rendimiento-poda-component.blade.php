@@ -1,40 +1,30 @@
 <div>
-    @if (!$campaniaUnica)
-        <x-flex class="w-full justify-between mb-5">
-            <x-h3>Proyección Rendimiento Poda</x-h3>
+    <x-card>
+        <x-flex>
+            <x-title>Proyección Rendimiento Poda</x-title>
         </x-flex>
-    @endif
-
-    <x-flex class="!items-start w-full">
+        <x-flex class="!items-start w-full mt-4">
 
 
-        <div class="flex-1">
+            <div class="flex-1">
 
-            @if (!$campaniaUnica)
-                <x-card>
-                    <x-spacing>
-                        <x-flex>
-                            <x-group-field>
-                                <x-select-campo wire:model.live="campoSeleccionado" />
-                            </x-group-field>
-                            <x-group-field>
-                                <x-select wire:model.live="campaniaSeleccionada" label="Campaña">
-                                    <option value="">Seleccione campaña</option>
-                                    @foreach ($campaniasPorCampo as $campaniaPorCampo)
-                                        <option value="{{ $campaniaPorCampo->id }}">
-                                            {{ $campaniaPorCampo->nombre_campania }}
-                                        </option>
-                                    @endforeach
-                                </x-select>
-                            </x-group-field>
-                        </x-flex>
-                    </x-spacing>
-                </x-card>
-            @endif
+                @if (!$campaniaUnica)
 
-            <x-flex class="mt-4 !items-start w-full">
-                <x-card class="md:w-[35rem]">
-                    <x-spacing>
+                    <x-flex>
+                        <x-select-campo wire:model.live="campoSeleccionado" />
+                        <x-select wire:model.live="campaniaSeleccionada" label="Campaña">
+                            <option value="">Seleccione campaña</option>
+                            @foreach ($campaniasPorCampo as $campaniaPorCampo)
+                                <option value="{{ $campaniaPorCampo->id }}">
+                                    {{ $campaniaPorCampo->nombre_campania }}
+                                </option>
+                            @endforeach
+                        </x-select>
+                    </x-flex>
+                @endif
+
+                <x-flex class="mt-4 !items-start w-full">
+                    <div class="md:w-[35rem]">
                         @if ($campania)
                             <x-success class="mb-3">
                                 <p>
@@ -76,17 +66,17 @@
                                                 METROS DE CAMA/HA
                                             </x-th>
                                             <x-td>
-                                                 <x-input type="number" wire:model="metrosCamaHa" />
+                                                <x-input type="number" wire:model="metrosCamaHa" />
                                             </x-td>
                                         </x-tr>
                                         <x-tr>
                                             <x-th>
-                                               
+
                                             </x-th>
                                             <x-td class="text-right">
-                                                 <x-button type="submit">
+                                                <x-button type="submit">
                                                     <i class="fa fa-save"></i> Guardar
-                                                 </x-button>
+                                                </x-button>
                                             </x-td>
                                         </x-tr>
                                     </x-slot>
@@ -97,10 +87,8 @@
                                 Seleccione el campo y luego una campaña para editar sus valores.
                             </x-warning>
                         @endif
-                    </x-spacing>
-                </x-card>
-                <x-card class="flex-1">
-                    <x-spacing>
+                    </div>
+                    <div class="flex-1">
                         <div x-data="{{ $idTable }}" wire:ignore>
                             <div x-ref="tableContainer"></div>
                             <x-flex class="justify-end w-full mt-4">
@@ -109,11 +97,12 @@
                                 </x-button>
                             </x-flex>
                         </div>
-                    </x-spacing>
-                </x-card>
-            </x-flex>
-        </div>
-    </x-flex>
+                    </div>
+                </x-flex>
+            </div>
+        </x-flex>
+    </x-card>
+
     <x-loading wire:loading />
 </div>
 @script

@@ -23,8 +23,10 @@ trait ConArrayPlanTipoAsistencia
     /**
      * Carga las listas de tipo de asistencia y sus atributos derivados.
      */
-    protected function obtenerListasTipoAsistencia(PlanTipoAsistenciaServicio $servicio)
+    protected function obtenerListasTipoAsistencia()
     {
+        $servicio = app(PlanTipoAsistenciaServicio::class);
+
         $this->tipoAsistencias = $servicio->listarTodos();
         $this->tipoAsistenciasCodigos = $servicio->obtenerCodigosParaSelector();
         $this->tipoAsistenciasHoras = $servicio->obtenerMapaHoras();

@@ -322,8 +322,7 @@ class KardexProductoSheetExport implements FromArray, WithHeadings, WithStyles, 
         return array_map(function ($item, $index) use ($headerRows) {
             $rowIndex = $headerRows + $index + 1; // Índice real de la fila en Excel
             $rowIndexAnterior = $headerRows + $index;
-
-
+            
             return [
                 $item['fecha'] ?? '',
 
@@ -337,7 +336,7 @@ class KardexProductoSheetExport implements FromArray, WithHeadings, WithStyles, 
                 $item['entrada_costo_total'] ?? 0,
 
                 $item['salida_cantidad'] ?? 0,
-                $item['salida_lote'],
+                $item['salida_lote']??$item['salida_maquinaria']??'',
                 "=N{$rowIndexAnterior}",
                 "=I{$rowIndex}*K{$rowIndex}",
 

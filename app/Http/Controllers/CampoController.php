@@ -22,7 +22,7 @@ class CampoController extends Controller
     
     public function siembra()
     {
-        return view('campo.siembra');
+        return view('livewire.gestion-siembra.siembra-indice');
     }
     public function campania($campo = null)
     {

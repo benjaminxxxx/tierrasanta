@@ -20,14 +20,16 @@ class InsumoKardexDetalleComponent extends Component
     public $tipoOpuesto = null;
     public function mount($insumoKardexId)
     {
-        $this->insumoKardex = InsKardex::findOrFail($insumoKardexId);
+        $this->insumoKardex = InsKardex::with(['maquinaria', 'producto'])
+            ->findOrFail($insumoKardexId);
+
         $this->tipoOpuesto = $this->insumoKardex->tipo === 'blanco'
-        ? 'negro'
-        : 'blanco';
+            ? 'negro'
+            : 'blanco';
         $this->kardexOpuesto = InsKardex::where('producto_id', $this->insumoKardex->producto_id)
-        ->where('anio', $this->insumoKardex->anio)
-        ->where('tipo', $this->tipoOpuesto)
-        ->first();
+            ->where('anio', $this->insumoKardex->anio)
+            ->where('tipo', $this->tipoOpuesto)
+            ->first();
         // Cargar movimientos
         $this->obtenerMovimientos();
 

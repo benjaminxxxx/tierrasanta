@@ -78,8 +78,9 @@
                         {{ $mov->tipo_mov == 'salida' ? number_format($mov->salida_cantidad, 3) : '-' }}
                     </td>
                     <td class="border border-gray-400 px-2 py-1 text-center">
-                        {{ $mov->tipo_mov == 'salida' ? ($mov->salida_lote ?? '-') : '-' }}
+                        {{ $mov->tipo_mov == 'salida' ? $mov->salida_lote ?? ($mov->salida_maquinaria ?? '-') : '-' }}
                     </td>
+
                     <td class="border border-gray-400 px-2 py-1 text-right">
                         {{ $mov->tipo_mov == 'salida' ? number_format($mov->salida_costo_unitario, 2) : '-' }}
                     </td>

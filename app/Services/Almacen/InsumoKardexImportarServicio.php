@@ -57,7 +57,7 @@ class InsumoKardexImportarServicio
                 ->toArray();
 
             $filtroMaquinarias = MaquinariaServicio::validarMaquinariasDesdeExcel($nombresMaquinaria);
-            dd($filtroMaquinarias);
+            
         } else {
             $filtroCampos = $this->obtenerYValidarCampos($filas);
         }

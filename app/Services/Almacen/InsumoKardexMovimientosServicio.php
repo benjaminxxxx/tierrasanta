@@ -8,6 +8,7 @@ use App\Models\CompraProducto;
 use App\Models\Empresa;
 use App\Models\InsKardex;
 use App\Models\InsKardexMovimiento;
+use App\Models\Producto;
 use DB;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
@@ -38,7 +39,6 @@ class InsumoKardexMovimientosServicio
      */
     public function generarMovimientos(InsKardex $insumoKardex): void
     {
-        // ... (código inalterado) ...
         $this->inicializarAcumuladores($insumoKardex);
         $movimientosOrdenados = $this->obtenerMovimientosBase($insumoKardex);
 
@@ -135,7 +135,7 @@ class InsumoKardexMovimientosServicio
             ->get();
 
         foreach ($movimientos as $mov) {
-
+            
             $lista[] = [
                 'tipo' => $mov->tipo_mov, // entrada | salida
                 'fecha' => $mov->fecha,
@@ -150,7 +150,7 @@ class InsumoKardexMovimientosServicio
 
                 'salida_cantidad' => $mov->salida_cantidad,
                 'salida_lote' => $mov->salida_lote,
-                'salida_maquinaria' => '', // si aplica
+                'salida_maquinaria' => $mov->salida_maquinaria,
                 'salida_costo_unitario' => $mov->salida_costo_unitario,
                 'salida_costo_total' => $mov->salida_costo_total,
 
@@ -292,7 +292,7 @@ class InsumoKardexMovimientosServicio
         $cantidadSalida = (float) $salida->cantidad;
         if ($cantidadSalida <= 0)
             return;
-
+        
         // --- INICIO: CAMBIOS POR SOLICITUD ---
 
         // 1. Aplicar tolerancia (epsilon) para evitar errores de redondeo en la comparación de stock
@@ -300,12 +300,6 @@ class InsumoKardexMovimientosServicio
         if (($cantidadSalida > $this->stockAcumulado) && abs($cantidadSalida - $this->stockAcumulado) < self::EPSILON) {
             $cantidadSalida = $this->stockAcumulado;
         }
-
-        // 2. SE ELIMINA LA EXCEPCIÓN: La salida se procesa aunque el stock sea insuficiente
-        // if ($cantidadSalida > $this->stockAcumulado) {
-        //     throw new Exception("Stock insuficiente...");
-        // }
-
         // --- FIN: CAMBIOS POR SOLICITUD ---
 
         $costoUnitarioSalida = 0.0;
@@ -331,18 +325,24 @@ class InsumoKardexMovimientosServicio
             $this->stockAcumulado = 0.0;
             $this->costoTotalAcumulado = 0.0;
         }
-
-        // 3. Crear Movimiento Kardex (redondeando para la base de datos)
-        InsKardexMovimiento::create([
+        $data = [
             'kardex_id' => $kardex->id,
             'fecha' => $salida->fecha_reporte,
             'tipo_mov' => 'salida',
             'tipo_operacion' => 10, // Generalmente para Salida a Producción
             'salida_cantidad' => round($cantidadSalida, 3),
             'salida_costo_unitario' => round($costoUnitarioSalida, 13),
-            'salida_costo_total' => round($costoTotalSalida, 13),
-            'salida_lote' => $salida->campo_nombre
-        ]);
+            'salida_costo_total' => round($costoTotalSalida, 13)
+        ];
+        if(!Producto::esCombustible($kardex->producto_id)){
+            $data['salida_lote'] = $salida->campo_nombre;
+            $data['salida_maquinaria'] = null;
+        }else{
+            $data['salida_lote'] = null;
+            $data['salida_maquinaria'] = $salida->maquinaria?->nombre;
+        }
+        // 3. Crear Movimiento Kardex (redondeando para la base de datos)
+        InsKardexMovimiento::create($data);
 
         // Opcional: Actualizar el costo en la tabla de Salidas de Almacén
         $salida->update([
