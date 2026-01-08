@@ -20,7 +20,7 @@ class InsumoKardexDetalleComponent extends Component
     public $tipoOpuesto = null;
     public function mount($insumoKardexId)
     {
-        $this->insumoKardex = InsKardex::with(['maquinaria', 'producto'])
+        $this->insumoKardex = InsKardex::with(['producto'])
             ->findOrFail($insumoKardexId);
 
         $this->tipoOpuesto = $this->insumoKardex->tipo === 'blanco'
