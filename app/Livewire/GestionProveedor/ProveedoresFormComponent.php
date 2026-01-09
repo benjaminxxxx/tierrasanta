@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\GestionProveedor;
 
 use App\Models\TiendaComercial;
 use Illuminate\Database\QueryException;
@@ -11,12 +11,12 @@ use Livewire\Component;
 class ProveedoresFormComponent extends Component
 {
     use LivewireAlert;
-    public $mostrarFormulario = false;
+    public $mostrarFormularioProveedores = false;
     public $proveedorId;
     public $nombre;
     public $ruc;
     public $contacto;
-    protected $listeners = ['EditarProveedor','CrearProveedor'];
+    protected $listeners = ['editarProveedor', 'crearProveedor'];
     protected function rules()
     {
         return [
@@ -36,15 +36,15 @@ class ProveedoresFormComponent extends Component
         'ruc.digits' => 'El Ruc debe tener exactamente 11 dígitos.',
         'ruc.numeric' => 'El Ruc debe ser numérico.'
     ];
-    public function CrearProveedor()
+    public function crearProveedor()
     {
-        $this->mostrarFormulario = true;
+        $this->mostrarFormularioProveedores = true;
         $this->proveedorId = null;
         $this->nombre = null;
         $this->ruc = null;
         $this->contacto = null;
     }
-    public function EditarProveedor($id)
+    public function editarProveedor($id)
     {
         $proveedor = TiendaComercial::find($id);
         if ($proveedor) {
@@ -52,10 +52,10 @@ class ProveedoresFormComponent extends Component
             $this->nombre = $proveedor->nombre;
             $this->ruc = $proveedor->ruc;
             $this->contacto = $proveedor->contacto;
-            $this->mostrarFormulario = true;
+            $this->mostrarFormularioProveedores = true;
         }
     }
-    public function store()
+    public function guardarProveedores()
     {
         $this->validate();
 
@@ -85,17 +85,13 @@ class ProveedoresFormComponent extends Component
                 'proveedorId'
             ]);
             $this->dispatch('ActualizarProveedores');
-            $this->closeForm();
+            $this->mostrarFormularioProveedores = false;
         } catch (QueryException $e) {
             $this->alert('error', 'Ocurrió un error inesperado: ' . $e->getMessage());
         }
     }
-    public function closeForm()
-    {
-        $this->mostrarFormulario = false;
-    }
     public function render()
     {
-        return view('livewire.proveedores-form-component');
+        return view('livewire.gestion-proveedor.proveedores-form-component');
     }
 }

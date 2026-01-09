@@ -1,6 +1,5 @@
 <x-app-layout>
     
     <livewire:campos-component />
-    <livewire:gestion-campania.campanias-form-component />
     
 </x-app-layout>

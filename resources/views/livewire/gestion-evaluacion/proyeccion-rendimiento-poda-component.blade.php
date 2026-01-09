@@ -4,24 +4,18 @@
             <x-title>Proyección Rendimiento Poda</x-title>
         </x-flex>
         <x-flex class="!items-start w-full mt-4">
-
-
             <div class="flex-1">
-
-                @if (!$campaniaUnica)
-
-                    <x-flex>
-                        <x-select-campo wire:model.live="campoSeleccionado" />
-                        <x-select wire:model.live="campaniaSeleccionada" label="Campaña">
-                            <option value="">Seleccione campaña</option>
-                            @foreach ($campaniasPorCampo as $campaniaPorCampo)
-                                <option value="{{ $campaniaPorCampo->id }}">
-                                    {{ $campaniaPorCampo->nombre_campania }}
-                                </option>
-                            @endforeach
-                        </x-select>
-                    </x-flex>
-                @endif
+                <x-flex>
+                    <x-select-campo wire:model.live="campoSeleccionado" />
+                    <x-select wire:model.live="campaniaSeleccionada" label="Campaña">
+                        <option value="">Seleccione campaña</option>
+                        @foreach ($campaniasPorCampo as $campaniaPorCampo)
+                            <option value="{{ $campaniaPorCampo->id }}">
+                                {{ $campaniaPorCampo->nombre_campania }}
+                            </option>
+                        @endforeach
+                    </x-select>
+                </x-flex>
 
                 <x-flex class="mt-4 !items-start w-full">
                     <div class="md:w-[35rem]">
@@ -89,13 +83,17 @@
                         @endif
                     </div>
                     <div class="flex-1">
-                        <div x-data="{{ $idTable }}" wire:ignore>
-                            <div x-ref="tableContainer"></div>
-                            <x-flex class="justify-end w-full mt-4">
-                                <x-button type="button" @click="sendDataProyeccionPoda">
-                                    <i class="fa fa-save"></i> Registrar detalle
-                                </x-button>
-                            </x-flex>
+                        <div x-data="{{ $idTable }}">
+                            <div wire:ignore>
+                                <div x-ref="tableContainer"></div>
+                            </div>
+                            @if ($campoSeleccionado && $campaniaSeleccionada)
+                                <x-flex class="justify-end w-full mt-4">
+                                    <x-button type="button" @click="sendDataProyeccionPoda">
+                                        <i class="fa fa-save"></i> Registrar detalle
+                                    </x-button>
+                                </x-flex>
+                            @endif
                         </div>
                     </div>
                 </x-flex>

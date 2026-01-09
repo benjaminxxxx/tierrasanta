@@ -39,6 +39,7 @@ class CampaniasComponent extends Component
     public function refrescar()
     {
         $this->resetPage();
+        $this->listarCampanias($this->campoSeleccionado);
     }
     private function listarCampanias(?string $campo): void
     {

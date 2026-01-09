@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\GestionEvaluacion;
 
 use App\Models\CampoCampania;
 use Illuminate\Support\Str;
@@ -10,7 +10,6 @@ use Livewire\Component;
 class ProyeccionRendimientoPodaComponent extends Component
 {
     use LivewireAlert;
-    public $campaniaUnica;
     public $campania;
     public $campoSeleccionado;
     public $campaniaSeleccionada;
@@ -19,11 +18,10 @@ class ProyeccionRendimientoPodaComponent extends Component
     public $idTable;
     public $tamanioMuestra;
     public $metrosCamaHa;
-    protected $listeners = ['storeTableDataProyeccionPoda'];
-    public function mount($campania = null, $campaniaUnica = false)
+    protected $listeners = ['storeTableDataProyeccionPoda','campaniaInsertada'=>'obtenerCampanias'];
+    public function mount($campania = null)
     {
         $this->campania = $campania;
-        $this->campaniaUnica = $campaniaUnica;
         $this->idTable = 'table_' . Str::random(10);
     }
     public function updatedCampoSeleccionado($valor)
@@ -32,6 +30,11 @@ class ProyeccionRendimientoPodaComponent extends Component
         $this->campaniaSeleccionada = null;
         $this->campania = null;
         $this->renderizarTabla();
+    }
+    public function obtenerCampanias(){
+        if ($this->campoSeleccionado) {
+            $this->campaniasPorCampo = CampoCampania::where('campo', $this->campoSeleccionado)->get();
+        }
     }
     public function updatedCampaniaSeleccionada($valor)
     {
@@ -181,6 +184,6 @@ class ProyeccionRendimientoPodaComponent extends Component
 
     public function render()
     {
-        return view('livewire.proyeccion-rendimiento-poda-component');
+        return view('livewire.gestion-evaluacion.proyeccion-rendimiento-poda-component');
     }
 }

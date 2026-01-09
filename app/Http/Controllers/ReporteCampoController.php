@@ -16,6 +16,6 @@ class ReporteCampoController extends Controller
         return view('reporte_campo.evaluacion_infestacion_cosecha');
     }
     public function evaluacion_proyeccion_rendimiento_poda(){
-        return view('reporte_campo.evaluacion_proyeccion_rendimiento_poda');
+        return view('livewire.gestion-evaluacion.proyeccion-rendimiento-poda-indice');
     }
 }

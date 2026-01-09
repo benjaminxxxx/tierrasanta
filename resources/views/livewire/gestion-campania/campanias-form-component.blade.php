@@ -400,7 +400,7 @@
         </x-slot>
         <x-slot name="footer">
             <!--Boton cerrar y registrar, parametros action id, si el id existe se cambia el texto a actualizar-->
-            <x-form-buttons action="store" id="{{ $campaniaId }}" />
+            <x-form-buttons action="guardarCampania" id="{{ $campaniaId }}" />
         </x-slot>
     </x-dialog-modal>
 </div>

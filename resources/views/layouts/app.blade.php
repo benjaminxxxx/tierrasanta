@@ -154,11 +154,13 @@ $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(valu
     :class="{ 'dark': darkMode === true }">
     <x-preloader />
 
-    <div class="flex h-screen bg-gray-100 dark:bg-gray-900">
+    <div class="flex h-screen bg-gray-100 dark:bg-gray-900 pt-[32px]">
+        <livewire:menu-bar-component/>
         <x-sidebar />
         <main class="flex-1 p-5 overflow-auto">
             {{ $slot }}
         </main>
+        @include('comun.components')
     </div>
 
     @stack('modals')

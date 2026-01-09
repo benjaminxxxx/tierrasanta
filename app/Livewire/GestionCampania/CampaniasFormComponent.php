@@ -49,7 +49,7 @@ class CampaniasFormComponent extends Component
         $this->resetErrorBag();
         $this->reset(['campaniaId', 'campania']);
     }
-    public function store()
+    public function guardarCampania()
     {
         $this->validate([
             'campania.campo' => 'required',
@@ -81,8 +81,7 @@ class CampaniasFormComponent extends Component
 
             $this->resetForm();
             $this->mostrarFormulario = false;
-
-            $this->dispatch('refrescarInformeCampaniaXCampo');
+            $this->dispatch('campaniaInsertada');
 
         } catch (\Throwable $e) {
             $this->alert('error', $e->getMessage());
