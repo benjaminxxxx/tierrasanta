@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Services\Campo\Gestion\CampoServicio;
 use App\Support\ExcelHelper;
+use App\Support\ValidacionHelper;
 use Exception;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -30,9 +32,6 @@ class CochinillaIngresoSeeder extends Seeder
 
         // Reestructurar los datos con claves semánticas y resetear índices
         $data = collect($data)->map(fn($row) => array_combine($headers, $row))->values()->toArray();
-
-        $upserts = [];
-
         $variedadCultivos = [];
         /*
         $loteIndex = 0;
@@ -52,17 +51,8 @@ class CochinillaIngresoSeeder extends Seeder
             ->unique()
             ->values();
 
-        // Obtener campos válidos de la base de datos
-        $camposEnBD = Campo::whereIn('nombre', $camposDesdeExcel)->pluck('nombre');
-
-        // Verificar si hay campos del Excel que no existen en la BD
-        $camposFaltantes = $camposDesdeExcel->diff($camposEnBD);
-
-        if ($camposFaltantes->isNotEmpty()) {
-            throw new Exception("Los siguientes campos no existen en la base de datos: " . $camposFaltantes->join(', '));
-        }
-
-
+        $camposFiltrados = ValidacionHelper::obtenerYValidarCampos($camposDesdeExcel->toArray());
+        
         // Obtener los textos de observación desde Excel
         $observacionesDesdeExcel = collect($data)
             ->pluck("obs") // columna de nombres de campos
@@ -98,6 +88,8 @@ class CochinillaIngresoSeeder extends Seeder
                 }
 
                 $loteCodigo = $fila["lote"]??null;
+                $campo = mb_strtolower(trim($fila["campo"]));
+                $area = (float)(trim($fila["area"]));
         
                 $codigoObservacion = $this->generarCodigoSlug($fila["obs"]);
                 $loteCodigoPrincipal = $loteCodigo ?? explode('.', $fila["sub_lote"])[0];
@@ -105,8 +97,9 @@ class CochinillaIngresoSeeder extends Seeder
                 $ingreso = CochinillaIngreso::firstOrCreate(
                     ['lote' => $loteCodigoPrincipal],
                     [
-                        'campo' => $fila["campo"],
+                        'campo' => $camposFiltrados[$campo],
                         'fecha' => $fecha,
+                        'area' => $area,
                         'observacion' => $codigoObservacion,
                     ]
                 );
@@ -114,7 +107,8 @@ class CochinillaIngresoSeeder extends Seeder
                 if ($fila["lote"] || trim($fila["lote"]) != '') {
                     $ingreso->update([
                         'fecha' => $fecha,
-                        'campo' => $fila["campo"],
+                        'campo' => $camposFiltrados[$campo],
+                        'area' => $area,
                         'observacion' => $codigoObservacion,
                         'total_kilos' => $fila["total_kilos"],
                     ]);
@@ -134,7 +128,7 @@ class CochinillaIngresoSeeder extends Seeder
                     );
                 }
         
-                $key = $fila["campo"] . '|' . $fila["campana"];
+                $key = $camposFiltrados[$campo] . '|' . $fila["campana"];
                 $variedadCultivos[$key] = $fila["cultivo"];
             }
         
@@ -146,8 +140,6 @@ class CochinillaIngresoSeeder extends Seeder
         
                 if ($relacion) {
                     $relacion->update(['variedad_tuna' => $variedad]);
-                } else {
-                    //throw new Exception("No se encontró CampoCampania para campo '{$campoNombre}' y campaña '{$campania}'");
                 }
             }
         
@@ -158,7 +150,7 @@ class CochinillaIngresoSeeder extends Seeder
             $this->command->error($e->getMessage());
         }
     }
-
+    
     private function generarCodigoSlug($texto = null)
     {
         if (!$texto) {

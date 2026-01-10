@@ -15,9 +15,6 @@ class CochinillaIngresoComponent extends Component
 {
     use LivewireAlert;
     use WithPagination;
-    public $mostrarSubLote = false;
-    public $filasSeleccionadas = [];
-    public $seleccionarTodo = false;
     public $campoSeleccionado;
     public $campaniaSeleccionado;
     public $observacionSeleccionado;
@@ -62,36 +59,6 @@ class CochinillaIngresoComponent extends Component
     public function updatedFiltroFiltrado()
     {
         $this->resetPage();
-    }
-    public function sincronizarDatos()
-    {
-        foreach ($this->filasSeleccionadas as $lote) {
-            $ingreso = CochinillaIngreso::where("lote", $lote)->first();
-            if ($ingreso) {
-                $fecha = $ingreso->fecha;
-                $campo = $ingreso->campo;
-
-                //ACTUALIZAR LA CAMPAÑA
-                $campania = CampoCampania::where("campo", $campo)
-                    ->whereDate('fecha_inicio', '<=', $fecha)
-                    ->orderBy('fecha_inicio', 'desc')
-                    ->first();
-
-                if ($campania) {
-                    $ingreso->campo_campania_id = $campania->id;
-                }
-                //ACTUALIZAR EL AREA SI NO EXISTE
-                if (!$ingreso->area) {
-                    $ingreso->area = $ingreso->campoRelacionada->area;
-                }
-
-                $ingreso->save();
-            }
-        }
-
-        $this->filasSeleccionadas = [];
-        $this->seleccionarTodo = false;
-        $this->alert('success', 'Datos sincronizados correctamente.');
     }
     public function eliminarIngreso($ingresoId)
     {

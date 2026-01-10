@@ -9,6 +9,7 @@ use Illuminate\Support\Carbon;
 class CochinillaIngreso extends Model
 {
     use HasFactory;
+    protected $table = 'cochinilla_ingresos';
     #region PROPIEDADES
     protected $fillable = [
         'lote',

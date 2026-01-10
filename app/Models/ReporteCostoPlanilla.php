@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ReporteCostoPlanilla extends Model
 {
+    protected $table = 'reporte_costo_planillas';
     protected $fillable = [
         'campos_campanias_id',
         'fecha',
