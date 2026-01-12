@@ -105,7 +105,7 @@ class CochinillaIngreso extends Model
     }
     public function filtrados()
     {
-        return $this->hasMany(CochinillaFiltrado::class, 'lote', 'lote');
+        return $this->hasMany(CochinillaFiltrado::class, 'cochinilla_ingreso_id');
     }
     public function observacionRelacionada()
     {
@@ -122,6 +122,53 @@ class CochinillaIngreso extends Model
             ->whereHas('observacionRelacionada', function ($q) {
                 $q->where('es_cosecha_mama', true);
             });
+    }
+    protected $appends = [
+        'total_filtrado_kilos',
+        'total_filtrado_primera',
+        'total_filtrado_segunda',
+        'total_filtrado_tercera',
+        'total_filtrado_piedra',
+        'total_filtrado_basura',
+        'total_filtrado_total',
+    ];
+
+
+    public function getTotalFiltradoKilosAttribute()
+    {
+        return $this->filtrados->sum('kilos_ingresados');
+    }
+
+    public function getTotalFiltradoPrimeraAttribute()
+    {
+        return $this->filtrados->sum('primera');
+    }
+
+    public function getTotalFiltradoSegundaAttribute()
+    {
+        return $this->filtrados->sum('segunda');
+    }
+
+    public function getTotalFiltradoTerceraAttribute()
+    {
+        return $this->filtrados->sum('tercera');
+    }
+
+    public function getTotalFiltradoPiedraAttribute()
+    {
+        return $this->filtrados->sum('piedra');
+    }
+
+    public function getTotalFiltradoBasuraAttribute()
+    {
+        return $this->filtrados->sum('basura');
+    }
+
+    public function getTotalFiltradoTotalAttribute()
+    {
+        return $this->filtrados->sum(fn ($f) =>
+            $f->primera + $f->segunda + $f->tercera + $f->piedra + $f->basura
+        );
     }
     #endregion
 
@@ -222,18 +269,6 @@ class CochinillaIngreso extends Model
         return $this->total_kilos > 0 ? ($this->total_filtrado_kilos_ingresados / $this->total_kilos) * 100 : 0;
     }
 
-    public function getTotalFiltradoPrimeraAttribute()
-    {
-        return $this->filtrados->sum('primera');
-    }
-    public function getTotalFiltradoSegundaAttribute()
-    {
-        return $this->filtrados->sum('segunda');
-    }
-    public function getTotalFiltradoTerceraAttribute()
-    {
-        return $this->filtrados->sum('tercera');
-    }
     public function getFiltrado123Attribute()
     {
         return $this->total_filtrado_primera
@@ -245,22 +280,6 @@ class CochinillaIngreso extends Model
         return $this->area ? round($this->filtrado123 / $this->area, 2) : 0.0;
     }
 
-    public function getTotalFiltradoPiedraAttribute()
-    {
-        return $this->filtrados->sum('piedra');
-    }
-    public function getTotalFiltradoBasuraAttribute()
-    {
-        return $this->filtrados->sum('basura');
-    }
-    public function getTotalFiltradoTotalAttribute()
-    {
-        return $this->total_filtrado_primera
-            + $this->total_filtrado_segunda
-            + $this->total_filtrado_tercera
-            + $this->total_filtrado_piedra
-            + $this->total_filtrado_basura;
-    }
     private function calcularPorcentaje($totalCategoria)
     {
         return $this->total_filtrado_total > 0 ? ($totalCategoria / $this->total_filtrado_total) * 100 : 0;

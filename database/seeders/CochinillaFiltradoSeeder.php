@@ -20,14 +20,10 @@ class CochinillaFiltradoSeeder extends Seeder
                 throw new Exception("No se encontró la tabla table_filtrados.");
             }
 
-            // Obtener el rango de la tabla (ejemplo: "A1:O20")
             $tableRange = $table->getRange();
-
             $data = $sheet->rangeToArray($tableRange, null, true, false, true);
 
             $headers = array_map(fn($header) => Str::slug($header, '_'), array_shift($data));
-
-            // Reestructurar los datos con claves semánticas y resetear índices
             $data = collect($data)->map(fn($row) => array_combine($headers, $row))->values()->toArray();
 
             $upserts = [];
@@ -37,117 +33,88 @@ class CochinillaFiltradoSeeder extends Seeder
                 'segunda' => 0,
                 'tercera' => 0,
                 'piedra' => 0,
-                'basura' => 0,
             ];
 
-            $lote_actual = null;
-            $i = 0;
-
             foreach ($data as $index => $fila) {
-                $fila_numero = $index + 2; // fila real en Excel
+                $fila_numero = $index + 2;
+                $lote = (int) $fila['lote'];
 
-                if ($fila_numero<1573) {
-                    //los valores en adelante recien seran registrados
+                $es_ultima_fila_lote = !isset($data[$index + 1]) || (int) $data[$index + 1]['lote'] !== $lote;
+                $es_unica_fila_lote = $es_ultima_fila_lote &&
+                    (!isset($data[$index - 1]) || (int) $data[$index - 1]['lote'] !== $lote);
+
+                /** ───── VALIDACIÓN FILA TOTAL ───── */
+                if ($es_ultima_fila_lote && !$es_unica_fila_lote) {
+
+                    $errores = [];
+
+                    foreach (array_keys($acumulado) as $campo) {
+                        $acum = round($acumulado[$campo], 2);
+                        $actual = round((float) $fila[$campo], 2);
+
+                        if ($acum !== $actual) {
+                            $errores[] = "$campo: acumulado=$acum, total=$actual";
+                        }
+                    }
+
+                    if ($errores) {
+                        throw new Exception(
+                            "Error en fila $fila_numero (total del lote $lote): " .
+                            implode(' | ', $errores)
+                        );
+                    }
+
+                    // reset y saltar fila total
+                    $acumulado = array_map(fn() => 0, $acumulado);
                     continue;
                 }
-                //dd($fila_numero,$fila);
-                $lote = (int) $fila['lote'];
-                $es_ultima_fila_lote = false;
-                $es_unica_fila_lote = false;
 
-                // Verificar si la próxima fila tiene otro lote o no existe
-                if (!isset($data[$index + 1]) || (int) $data[$index + 1]['lote'] !== $lote) {
-                    $es_ultima_fila_lote = true;
-                    if (!isset($data[$index - 1]) || (int) $data[$index - 1]['lote'] !== $lote) {
-                        $es_unica_fila_lote = true;
-                    }
-                }
-
-                if ($es_ultima_fila_lote) {
-
-                    if (!$es_unica_fila_lote) {
-                        $hay_acumulado = array_sum($acumulado) > 0;
-
-                        if ($hay_acumulado) {
-                            // Validamos que los totales coincidan con lo acumulado
-                            $errores = [];
-
-                            foreach (['kilos_ingresados', 'primera', 'segunda', 'tercera', 'piedra', 'basura'] as $campo) {
-                                $acum = round($acumulado[$campo], 2);
-                                $actual = round((float) $fila[$campo], 2);
-
-                                if ($acum !== $actual) {
-                                    $errores[] = "$campo: acumulado = $acum, total esperado = $actual";
-                                }
-                            }
-
-                            if (!empty($errores)) {
-                                $detalle = implode(' | ', $errores);
-                                throw new Exception("Error en fila $fila_numero (total del lote $lote): no coincide la suma de los subtotales. $detalle");
-                            }
-                        }
-
-
-                        // Reset acumulado y saltar la fila total
-                        $acumulado = [
-                            'kilos_ingresados' => 0,
-                            'primera' => 0,
-                            'segunda' => 0,
-                            'tercera' => 0,
-                            'basura' => 0,
-                            'piedra' => 0
-                        ];
-                        continue;
-                    }
-
-                }
-
+                /** ───── ACUMULADO NORMAL ───── */
                 if (!$es_unica_fila_lote) {
-                    // Acumular valores de fila normal
-                    foreach (['kilos_ingresados', 'primera', 'segunda', 'tercera', 'basura', 'piedra'] as $campo) {
+                    foreach (array_keys($acumulado) as $campo) {
                         $acumulado[$campo] += (float) $fila[$campo];
                     }
                 }
 
-                // Validación interna: los componentes suman al total
-                $esperado = round((float) $fila['kilos_ingresados'], 2);
-                $suma = round(
+                /** ───── VALIDACIÓN INTERNA DE FILA ───── */
+                $kilos = round((float) $fila['kilos_ingresados'], 2);
+                $componentes = round(
                     (float) $fila['primera'] +
                     (float) $fila['segunda'] +
                     (float) $fila['tercera'] +
-                    (float) $fila['basura'] +
                     (float) $fila['piedra'],
                     2
                 );
 
-                if ($esperado !== $suma) {
-                    throw new Exception("Error en fila $fila_numero: primera + segunda + tercera + piedra = $suma, pero kilos_ingresados = $esperado");
+                $basura_calculada = round($kilos - $componentes, 2);
+
+                if ($basura_calculada < 0) {
+                    throw new Exception(
+                        "Error en fila $fila_numero: los componentes exceden kilos_ingresados"
+                    );
                 }
 
-                $fecha_de_proceso = ExcelHelper::parseFecha($fila['fecha_de_proceso'], $fila_numero);
-
+                /** ───── INSERT ───── */
                 $upserts[] = [
                     'lote' => $lote,
-                    'fecha_proceso' => $fecha_de_proceso,
-                    'kilos_ingresados' => $fila['kilos_ingresados'] ?? 0,
+                    'fecha_proceso' => ExcelHelper::parseFecha($fila['fecha_de_proceso'], $fila_numero),
+                    'kilos_ingresados' => $kilos,
                     'primera' => $fila['primera'] ?? 0,
                     'segunda' => $fila['segunda'] ?? 0,
                     'tercera' => $fila['tercera'] ?? 0,
                     'piedra' => $fila['piedra'] ?? 0,
-                    'basura' => $fila['basura'] ?? 0,
                 ];
             }
 
-
+            CochinillaFiltrado::truncate();
             CochinillaFiltrado::insert($upserts);
 
-            $this->command->info('Datos actualizados correctamentexlsx');
+            $this->command->info('Datos de filtrado importados y validados correctamente.');
 
         } catch (\Throwable $th) {
             $this->command->error($th->getMessage());
-            return;
         }
-
     }
+
 
 }

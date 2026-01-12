@@ -1,52 +1,42 @@
 <div>
     <!--MODULO COCHINILLA FILTRADO FORMULARIO PRINCIPAL-->
-    <x-loading wire:loading />
-
-    <!-- #region HEADER-->
-    <x-flex>
-        <x-h3>
-            Filtrado de Cochinilla
-        </x-h3>
-        <x-button @click="$wire.dispatch('agregarFiltrado')">
-            <i class="fa fa-plus"></i> Agregar filtrado
-        </x-button>
-    </x-flex>
-    <!-- #endregion HEADER-->
-    
-    <!-- #region FILTRO-->
-    <x-card class="mt-3">
-        <x-spacing>
-            <x-flex class="justify-between w-full">
-                <x-flex>
-                    <div>
-                        <x-input-number label="Filtrar por lote" wire:model.live="lote" />
-                    </div>
-                    <div>
-                        <x-select label="Filtrar por año" wire:model.live="anioSeleccionado">
-                            <option value="">Todos los años</option>
-                            @foreach ($aniosDisponibles as $anioDisponible)
-                                <option value="{{ $anioDisponible }}">{{ $anioDisponible }}</option>
-                            @endforeach
-                        </x-select>
-                    </div>
-                    @if (!$verLotesSinIngresos)
-                        <div>
-                            <x-select-campo label="Filtrar por Campo" wire:model.live="campoSeleccionado" />
-                        </div>
-                    @endif
-                </x-flex>
+    <x-card>
+        <x-flex>
+            <x-title>
+                Filtrado de Cochinilla
+            </x-title>
+            <x-button @click="$wire.dispatch('agregarFiltrado')">
+                <i class="fa fa-plus"></i> Agregar filtrado
+            </x-button>
+        </x-flex>
+        <x-flex class="justify-between w-full mt-4">
+            <x-flex>
                 <div>
-                    <x-toggle-switch :checked="$verLotesSinIngresos" label="Lotes sin ingresos"
-                        wire:model.live="verLotesSinIngresos" />
+                    <x-input-number label="Filtrar por lote" wire:model.live="lote" />
                 </div>
+                <div>
+                    <x-select label="Filtrar por año" wire:model.live="anioSeleccionado">
+                        <option value="">Todos los años</option>
+                        @foreach ($aniosDisponibles as $anioDisponible)
+                            <option value="{{ $anioDisponible }}">{{ $anioDisponible }}</option>
+                        @endforeach
+                    </x-select>
+                </div>
+                @if (!$verLotesSinIngresos)
+                    <div>
+                        <x-select-campo label="Filtrar por Campo" wire:model.live="campoSeleccionado" />
+                    </div>
+                @endif
             </x-flex>
-        </x-spacing>
-    </x-card>
-    <!-- #endregion FILTRO-->
-    
-    <x-card class="mt-3">
-        <x-spacing>
+            <div>
+                <x-toggle-switch :checked="$verLotesSinIngresos" label="Lotes sin ingresos" wire:model.live="verLotesSinIngresos" />
+            </div>
+        </x-flex>
+        <div class="w-full mt-5">
+
+            <!-- Table -->
             <x-table>
+                <!-- Table header -->
                 <x-slot name="thead">
                     <x-tr>
                         <x-th rowspan="2" class="text-center">
@@ -81,7 +71,7 @@
                             ACCIONES
                         </x-th>
                     </x-tr>
-                    <x-tr>
+                    <tr>
                         <x-th class="text-center">
                             Primera
                         </x-th>
@@ -115,8 +105,9 @@
                         <x-th class="text-center">
                             Basura
                         </x-th>
-                    </x-tr>
+                    </tr>
                 </x-slot>
+                <!-- Table body -->
                 <x-slot name="tbody">
                     @foreach ($cochinillaIngresos as $indice => $cochinillaIngreso)
                         @if ($cochinillaIngreso->filtrados->count() > 0)
@@ -237,7 +228,8 @@
                             <x-th class="text-center">
                                 {{ number_format($cochinillaIngreso->diferencia_filtrado, 2) }}
                             </x-th>
-                            <x-th class="text-center">
+                            <td
+                                class="px-5 py-3 border-b border-slate-200 last:border-none first:pl-3 last:pr-3 last:bg-gradient-to-r last:from-transparent last:to-white last:to-[12px] last:pl-5 last:sticky last:right-0 dark:last:to-gray-800 dark:last:from-transparent">
                                 <x-flex>
                                     <div class="ms-3 relative">
                                         <x-dropdown align="right" width="60">
@@ -269,14 +261,17 @@
                                         </x-dropdown>
                                     </div>
                                 </x-flex>
-                            </x-th>
+                            </td>
                         </x-tr>
                     @endforeach
                 </x-slot>
             </x-table>
-            <div class="my-4">
-                {{ $cochinillaIngresos->links() }}
-            </div>
-        </x-spacing>
+        </div>
+
+        <div class="my-4">
+            {{ $cochinillaIngresos->links() }}
+        </div>
     </x-card>
+
+    <x-loading wire:loading />
 </div>

@@ -14,7 +14,7 @@
             @keydown.arrow-down.prevent="navigateDown()" @keydown.arrow-up.prevent="navigateUp()"
             @keydown.enter.prevent="selectHighlighted()" @keydown.tab="closeDropdown()"
             :placeholder="selectedOption ? selectedOption.name : '{{ $searchPlaceholder }}'"
-            class="w-full rounded-lg border border-slate-400 dark:border-0 dark:text-primaryTextDark bg-transparent py-2 px-4 pr-20 outline-none focus:border-primary focus-visible:shadow-none dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary focus:ring-0"
+            class="w-full rounded-lg border border-slate-400 dark:border-0 dark:text-primaryTextDark bg-transparent py-2 px-4 pr-20 outline-none focus:border-primary focus-visible:shadow-none dark:border-form-strokedark dark:bg-gray-700 dark:focus:border-primary focus:ring-0"
             autocomplete="off">
 
         <!-- Clear Button (X) -->

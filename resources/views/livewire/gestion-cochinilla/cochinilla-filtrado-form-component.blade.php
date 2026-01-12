@@ -2,7 +2,7 @@
     <!--MODULO COCHINILLA INGRESO VENTEADO-->
     <x-dialog-modal wire:model.live="mostrarFormulario">
         <x-slot name="title">
-           Filtrado de cochinilla por lote
+           Registro de Filtrado de Cochinilla
         </x-slot>     
         
         <x-slot name="content">
@@ -55,9 +55,9 @@
 
         <x-slot name="footer">
             <x-flex class="justify-end w-full">
-                <x-secondary-button wire:click="$set('mostrarFormulario', false)" wire:loading.attr="disabled">
+                <x-button variant="secondary" wire:click="$set('mostrarFormulario', false)" wire:loading.attr="disabled">
                     Cerrar
-                </x-secondary-button>
+                </x-button>
                 <x-button type="button" @click="$wire.dispatch('guardadoConfirmadoFiltrado')">
                     <i class="fa fa-save"></i> Registrar detalle
                 </x-button>
@@ -97,6 +97,7 @@
                     data: this.tableData,
                     colHeaders: true,                    
                     rowHeaders: true,
+                    themeName: 'ht-theme-main',
                     columns: [{
                             data: 'lote',
                             className: '!text-center',

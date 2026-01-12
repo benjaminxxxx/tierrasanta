@@ -10,6 +10,7 @@ class CochinillaFiltrado extends Model
     use HasFactory;
 
     protected $fillable = [
+        'cochinilla_ingreso_id',
         'lote',
         'fecha_proceso',
         'kilos_ingresados',
@@ -17,11 +18,29 @@ class CochinillaFiltrado extends Model
         'segunda',
         'tercera',
         'piedra',
-        'basura',
     ];
+    protected $appends = ['basura'];
+
+    public function getBasuraAttribute(): float
+    {
+        return round(
+            $this->kilos_ingresados
+            - (
+                $this->primera
+                + $this->segunda
+                + $this->tercera
+                + $this->piedra
+            ),
+            2
+        );
+    }
+    public function getTotalAttribute()
+    {
+        return $this->primera + $this->segunda + $this->tercera + $this->piedra + $this->basura;
+    }
     public function ingreso()
     {
-        return $this->belongsTo(CochinillaIngreso::class, 'lote', 'lote');
+        return $this->belongsTo(CochinillaIngreso::class, 'cochinilla_ingreso_id');
     }
     public function getPorcentajePrimeraAttribute()
     {

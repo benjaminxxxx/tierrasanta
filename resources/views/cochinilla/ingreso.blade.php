@@ -9,5 +9,5 @@
     @livewire('cochinilla-ingreso-form-component')
     @livewire('cochinilla-ingreso-detalle-component')
     @livewire('cochinilla-venteado-form-component')
-    @livewire('cochinilla-filtrado-form-component')
+    <livewire:gestion-cochinilla.cochinilla-filtrado-form-component />
 </x-app-layout>

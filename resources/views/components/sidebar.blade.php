@@ -30,7 +30,7 @@
         return this.openMenus.includes(title);
     }
 }" x-on:mouseenter="handleMouseEnter" x-on:mouseleave="handleMouseLeave"
-    class="relative h-screen bg-white dark:bg-gray-800 border-r dark:border-gray-700 transition-all duration-300 ease-in-out flex flex-col"
+    class="relative h-[calc(100vh-32px)]  bg-white dark:bg-gray-800 border-r dark:border-gray-700 transition-all duration-300 ease-in-out flex flex-col"
     :class="isExpanded ? 'w-64' : 'w-16'">
 
     <!-- Header -->

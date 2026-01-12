@@ -77,9 +77,7 @@ class CochinillaIngresoSeeder extends Seeder
         
             foreach ($data as $index => $fila) {
                 $fila_numero = $index + 2;
-                if ($fila_numero <= 3678) {
-                    continue;
-                }
+               
         
                 $fecha = ExcelHelper::parseFecha($fila["fecha"], $fila_numero);
         
