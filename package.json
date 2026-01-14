@@ -16,6 +16,9 @@
         "vite": "^5.0"
     },
     "dependencies": {
+        "@fullcalendar/core": "^6.1.20",
+        "@fullcalendar/resource-timeline": "^6.1.20",
+        "@fullcalendar/timegrid": "^6.1.20",
         "alpinejs": "^3.14.1",
         "flatpickr": "^4.6.13",
         "flowbite": "^2.5.1"

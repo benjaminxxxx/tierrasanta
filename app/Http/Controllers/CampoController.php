@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Campo;
+use App\Models\CampoCampania;
 use Illuminate\Http\Request;
 
 class CampoController extends Controller
@@ -18,28 +19,37 @@ class CampoController extends Controller
     {
         return view('campo.campos');
     }
-    
-    
+
+
     public function siembra()
     {
         return view('livewire.gestion-siembra.siembra-indice');
     }
     public function campania($campo = null)
     {
-        if($campo){
+        if ($campo) {
             $campoExiste = Campo::find($campo);
-            if(!$campoExiste){
+            if (!$campoExiste) {
                 return redirect()->back();
             }
         }
-        
-        return view('campo.campania',[
-            'campo'=>$campo
+
+        return view('campo.campania', [
+            'campo' => $campo
         ]);
     }
-    public function campaniaxcampo()
+    public function campaniaxcampo($campania = null)
     {
-        return view('livewire.gestion-campania.campania-x-campo-indice');
+        if ($campania) {
+            $campaniaCampo = CampoCampania::find($campania);
+            if (!$campaniaCampo) {
+
+                return redirect()->route('campania.x.campo');
+            }
+        }
+        return view('livewire.gestion-campania.campania-x-campo-indice', [
+            'campaniaId' => $campania,
+        ]);
     }
     public function guardarPosicion(Request $request, $nombre)
     {
@@ -65,9 +75,9 @@ class CampoController extends Controller
                         ]);
 
                         $camposHijos = Campo::where('campo_parent_nombre', $campo->nombre)->count();
-                       
-                        
-                        if ($camposHijos>0) {
+
+
+                        if ($camposHijos > 0) {
                             $this->actualizarCamposHijos($campoDelGrupo, $campoDelGrupo->pos_x, $campoDelGrupo->pos_y);
                         }
                     }
@@ -105,7 +115,7 @@ class CampoController extends Controller
         // Actualizar la posición de cada campo hijo
         foreach ($camposHijos as $index => $campoHijo) {
             $campoHijo->update([
-                'pos_x' => $posXPadre + (($index+1) * 110), // Posición X ajustada
+                'pos_x' => $posXPadre + (($index + 1) * 110), // Posición X ajustada
                 'pos_y' => $posYPadre // Misma posición Y que el padre
             ]);
         }

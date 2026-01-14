@@ -84,13 +84,16 @@ Route::middleware([
     //CAMPAÑAS
     Route::get('/campanias', [CampaniaController::class, 'campanias'])->name('campanias');
     Route::get('/campo/camapania/{campo?}', [CampoController::class, 'campania'])->name('campo.campania');
-    Route::get('/campanias_x_campo', [CampoController::class, 'campaniaxcampo'])->name('campania.x.campo');
+    Route::get('/campanias_x_campo/{campania?}', [CampoController::class, 'campaniaxcampo'])->name('campania.x.campo');
     Route::get('/riego/estados', [CampoController::class, 'riego'])->name('campo.riego');
     Route::get('/campo/campos', [CampoController::class, 'campos'])->name('campo.campos');
     Route::get('/campo/siembras', [CampoController::class, 'siembra'])->name('campo.siembra');
     Route::post('/campo/mapa/guardar-posicion/{nombre}', [CampoController::class, 'guardarPosicion'])->name('campo.mapa.guardar-posicion');
 
     Route::get('/campania/costos', [CampaniaController::class, 'costos'])->name('campania.costos');
+    Route::get('/campania/calendario', function () {
+        return view('livewire.gestion-campania.campania-calendario-indice');
+    })->name('campania.calendario');
 
     //Consolidados
     Route::get('/riego/resumen-diario', function () {

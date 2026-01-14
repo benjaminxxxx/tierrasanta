@@ -18,13 +18,22 @@ class CampaniaCampoSelectorComponent extends Component
     protected $listeners = [
         'campaniaInsertada' => 'relistarNuevaCampania',
     ];
-    public function mount()
+    public function mount($campaniaId = null)
     {
-        $this->campoSeleccionado = Session::get('campo');
-        if ($this->campoSeleccionado) {
-            $this->listarCampanias($this->campoSeleccionado);
+        if(!$campaniaId){
+            $this->campoSeleccionado = Session::get('campo');
+            if ($this->campoSeleccionado) {
+                $this->listarCampanias($this->campoSeleccionado);
+            }
+        }else{
+            
+            $campania = CampoCampania::find($campaniaId);
+            if($campania){
+                $this->campoSeleccionado = $campania->campo;
+                $this->listarCampanias($this->campoSeleccionado,$campania->id);
+            }
         }
-
+        
     }
     public function updatedCampoSeleccionado($campo): void
     {
@@ -38,6 +47,8 @@ class CampaniaCampoSelectorComponent extends Component
         if (!$this->campania) {
             $this->campaniaSeleccionada = null;
         }
+        
+        $this->dispatch('campania-cambiada', id: $campaniaId);
     }
     public function relistarNuevaCampania(array $datos): void
     {
@@ -47,7 +58,7 @@ class CampaniaCampoSelectorComponent extends Component
             $this->listarCampanias($campo);
         }
     }
-    private function listarCampanias(?string $campo): void
+    private function listarCampanias(?string $campo,?int $campaniaId = null): void
     {
         if (empty($campo)) {
             $this->campanias = [];
@@ -70,6 +81,10 @@ class CampaniaCampoSelectorComponent extends Component
 
         // 1. Si existe una campaña guardada en sesión
         $campaniaSesion = Session::get('campania');
+        if($campaniaId){
+            $campaniaSesion = $campaniaId;
+        }
+        
 
         // 2. Validar si la campaña en sesión está en la lista
         if ($campaniaSesion && array_key_exists($campaniaSesion, $this->campanias)) {

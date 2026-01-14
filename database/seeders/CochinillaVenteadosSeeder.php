@@ -99,7 +99,6 @@ class CochinillaVenteadosSeeder extends Seeder
                     'fecha_proceso' => $fecha_de_proceso,
                     'kilos_ingresado' => $fila['kilos_ingresados'],
                     'limpia' => $fila['limpia'] ?? 0,
-                    'basura' => $fila['basura'] ?? 0,
                     'polvillo' => $fila['polvillo'] ?? 0,
                 ];
             }

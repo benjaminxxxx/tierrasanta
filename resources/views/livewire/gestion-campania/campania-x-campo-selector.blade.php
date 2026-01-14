@@ -1,4 +1,4 @@
-<div>
+<div x-data="campaniaXCampo">
     <x-flex class="justify-between">
         <x-h3>
             Campañas por Campo
@@ -26,8 +26,9 @@
         </x-flex>
     </x-card2>
 
-    @if($campaniaSeleccionada)
-        <livewire:gestion-campania.campania-por-campo-informe-component :campania="$campaniaSeleccionada" wire:key="Camp{{ $campaniaSeleccionada }}" />
+    @if ($campaniaSeleccionada)
+        <livewire:gestion-campania.campania-por-campo-informe-component :campania="$campaniaSeleccionada"
+            wire:key="Camp{{ $campaniaSeleccionada }}" />
     @else
         <x-card2 class="mt-4">
             <x-label>
@@ -38,3 +39,19 @@
 
     <x-loading wire:loading />
 </div>
+@script
+    <script>
+        Alpine.data('campaniaXCampo', () => ({
+            init() {
+                Livewire.on('campania-cambiada', ({
+                    id
+                }) => {
+
+                    const base = '{{ route('campania.x.campo') }}';
+                    const nuevaUrl = `${base}/${id}`;
+                    window.history.pushState({}, '', nuevaUrl);
+                })
+            }
+        }));
+    </script>
+@endscript
