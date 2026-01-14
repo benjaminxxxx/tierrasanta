@@ -39,9 +39,9 @@ class FiltradoServicio
      * Lógica CRUD: Guarda o actualiza los registros de filtrado.
      * Soporta tanto el Formulario Livewire como el Seeder (Excel).
      */
-    public function registrarFiltrados(array $datos, ?int $loteFijo = null): int
+    public function registrarFiltrados(array $datos, ?int $loteFijo = null,?int $ingresoId = null): int
     {
-        return DB::transaction(function () use ($datos, $loteFijo) {
+        return DB::transaction(function () use ($datos, $loteFijo,$ingresoId) {
 
             $rows = [];
 
@@ -54,6 +54,13 @@ class FiltradoServicio
             }
 
             if ($rows) {
+                if ($ingresoId) {
+
+                    $ingreso = CochinillaIngreso::find($ingresoId);
+                    if ($ingreso) {
+                        $ingreso->filtrados()->delete();
+                    }
+                }
                 CochinillaFiltrado::insert($rows);
             }
 

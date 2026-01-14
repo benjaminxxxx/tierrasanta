@@ -13,7 +13,9 @@ class CochinillaFiltradoSeeder extends Seeder
     public function run(): void
     {
         try {
-            $sheet = ExcelHelper::cargarHoja('public', 'informacion_general.xlsx', 'FILTRADO');
+            
+            $filename = config('system.files.informacion_general');
+            $sheet = ExcelHelper::cargarHoja('public', $filename, 'FILTRADO');
             $table = $sheet->getTableByName('table_filtrados');
 
             if (!$table) {

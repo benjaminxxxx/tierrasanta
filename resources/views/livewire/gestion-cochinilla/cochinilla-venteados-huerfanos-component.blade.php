@@ -1,12 +1,12 @@
 <div>
-    <!--MODULO COCHINILLA FILTRADO FORMULARIO PRINCIPAL-->
+    <!--MODULO COCHINILLA VENTEADO FORMULARIO PRINCIPAL-->
     <x-card>
         <x-flex>
             <x-title>
-                Filtrado de Cochinilla
+                Venteado de Cochinilla
             </x-title>
-            <x-button @click="$wire.dispatch('agregarFiltrado')">
-                <i class="fa fa-plus"></i> Agregar filtrado
+            <x-button @click="$wire.dispatch('agregarVenteado')">
+                <i class="fa fa-plus"></i> Agregar Venteado
             </x-button>
         </x-flex>
         
@@ -28,11 +28,8 @@
                         <x-th rowspan="2" class="text-center">
                             KILOS INGRESADOS
                         </x-th>
-                        <x-th colspan="6" class="text-center">
+                        <x-th colspan="4" class="text-center">
                             PROCESO DE FILTRADO
-                        </x-th>
-                        <x-th colspan="5" class="text-center">
-                            % FILTRADO
                         </x-th>
                         <x-th class="text-center" rowspan="2">
                             ACCIONES
@@ -40,89 +37,46 @@
                     </x-tr>
                     <tr>
                         <x-th class="text-center">
-                            PRIMERA
-                        </x-th>
-                        <x-th class="text-center">
-                            SEGUNDA
-                        </x-th>
-                        <x-th class="text-center">
-                            TERCERA
-                        </x-th>
-                        <x-th class="text-center">
-                            PIEDRA
+                            LIMPIA
                         </x-th>
                         <x-th class="text-center">
                             BASURA
+                        </x-th>
+                        <x-th class="text-center">
+                            POLVILLO
                         </x-th>
                         <x-th class="text-center">
                             TOTAL
-                        </x-th>
-
-                        <x-th class="text-center">
-                            PRIMERA
-                        </x-th>
-                        <x-th class="text-center">
-                            SEGUNDA
-                        </x-th>
-                        <x-th class="text-center">
-                            TERCERA
-                        </x-th>
-                        <x-th class="text-center">
-                            PIEDRA
-                        </x-th>
-                        <x-th class="text-center">
-                            BASURA
                         </x-th>
                     </tr>
                 </x-slot>
                 <!-- Table body -->
                 <x-slot name="tbody">
-                    @foreach ($cochinillaFiltrados as $indice => $cochinillaFiltrado)
+                    @foreach ($cochinillaVenteados as $indice => $cochinillaVenteado)
                         <x-tr>
                             <x-th class="text-center text-red-600">
-                                {{ $cochinillaFiltrado->lote }}
+                                {{ $cochinillaVenteado->lote }}
                             </x-th>
                             <x-td class="text-center">
-                                {{ $cochinillaFiltrado->fecha_proceso }}
+                                {{ $cochinillaVenteado->fecha_proceso }}
                             </x-td>
                              <x-td class="text-center">
-                                {{ $cochinillaFiltrado->kilos_ingresados }}
+                                {{ $cochinillaVenteado->kilos_ingresado }}
                             </x-td>
-                            <x-td class="text-center text-primary">
-                                {{ number_format($cochinillaFiltrado->primera, 2) }}
+                            <x-td class="text-center text-blue-400 dark:text-indigo-500">
+                                {{ number_format($cochinillaVenteado->limpia, 2) }}
                             </x-td>
-                            <x-td class="text-center text-primary">
-                                {{ number_format($cochinillaFiltrado->segunda, 2) }}
+                            <x-td class="text-center text-blue-400 dark:text-indigo-500">
+                                {{ number_format($cochinillaVenteado->basura, 2) }}
                             </x-td>
-                            <x-td class="text-center text-primary">
-                                {{ number_format($cochinillaFiltrado->tercera, 2) }}
+                            <x-td class="text-center text-blue-400 dark:text-indigo-500">
+                                {{ number_format($cochinillaVenteado->polvillo, 2) }}
                             </x-td>
-                            <x-td class="text-center text-primary">
-                                {{ number_format($cochinillaFiltrado->piedra, 2) }}
+                            <x-td class="text-center text-blue-400 dark:text-indigo-500">
+                                {{ number_format($cochinillaVenteado->total, 2) }}
                             </x-td>
-                            <x-td class="text-center text-primary">
-                                {{ number_format($cochinillaFiltrado->basura, 2) }}
-                            </x-td>
-                            <x-td class="text-center text-primary">
-                                {{ number_format($cochinillaFiltrado->total, 2) }}
-                            </x-td>
-                            <x-td class="text-center text-primary">
-                                {{ number_format($cochinillaFiltrado->porcentaje_primera, 2) }}%
-                            </x-td>
-                            <x-td class="text-center text-primary">
-                                {{ number_format($cochinillaFiltrado->porcentaje_segunda, 2) }}%
-                            </x-td>
-                            <x-td class="text-center text-primary">
-                                {{ number_format($cochinillaFiltrado->porcentaje_tercera, 2) }}%
-                            </x-td>
-                            <x-td class="text-center text-primary">
-                                {{ number_format($cochinillaFiltrado->porcentaje_piedra, 2) }}%
-                            </x-td>
-                            <x-td class="text-center text-primary">
-                                {{ number_format($cochinillaFiltrado->porcentaje_basura, 2) }}%
-                            </x-td>
-                            <x-td >
-                                <x-flex>
+                            <x-td class="text-center">
+                                <x-flex class="justify-center">
                                     <div class="ms-3 relative">
                                         <x-dropdown align="right" width="60">
                                             <x-slot name="trigger">
@@ -144,8 +98,8 @@
 
                                             <x-slot name="content">
                                                 <div class="w-60">
-                                                    <x-dropdown-link class="text-center" wire:click="eliminarFiltrado({{ $cochinillaFiltrado->id }})">
-                                                        <i class="fa fa-trash"></i> Eliminar filtrado
+                                                    <x-dropdown-link class="text-center" wire:click="eliminarVenteado({{ $cochinillaVenteado->id }})">
+                                                        <i class="fa fa-trash"></i> Eliminar Venteado
                                                     </x-dropdown-link>
                                                 </div>
                                             </x-slot>
@@ -160,7 +114,7 @@
         </div>
 
         <div class="my-4">
-            {{ $cochinillaFiltrados->links() }}
+            {{ $cochinillaVenteados->links() }}
         </div>
     </x-card>
 

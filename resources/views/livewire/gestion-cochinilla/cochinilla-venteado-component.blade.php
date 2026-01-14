@@ -1,50 +1,21 @@
 <div>
     <!--MODULO COCHINILLA VENTEADO FORMULARIO PRINCIPAL-->
-    <x-loading wire:loading />
+
 
     <x-flex>
-        <x-h3>
-            Venteado de Cochinilla
-        </x-h3>
-        <x-button @click="$wire.dispatch('agregarVenteado')">
-            <i class="fa fa-plus"></i> Agregar venteado
-        </x-button>
-
-    </x-flex>
-    <x-card class="mt-3">
-        <x-spacing>
-            <x-flex class="justify-between w-full">
-                <x-flex>
-                    <div>
-                        <x-input-number label="Filtrar por lote" wire:model.live="lote" />
-                    </div>
-                    <div>
-                        <x-select label="Filtrar por año" wire:model.live="anioSeleccionado">
-                            <option value="">Todos los años</option>
-                            @foreach ($aniosDisponibles as $anioDisponible)
-                                <option value="{{ $anioDisponible }}">{{ $anioDisponible }}</option>
-                            @endforeach
-                        </x-select>
-                    </div>
-                    @if (!$verLotesSinIngresos)
-                        <div>
-                            <x-select-campo label="Filtrar por Campo" wire:model.live="campoSeleccionado" />
-                        </div>
-                    @endif
-
-                </x-flex>
-                <div>
-                    <x-toggle-switch :checked="$verLotesSinIngresos" label="Lotes sin ingresos"
-                        wire:model.live="verLotesSinIngresos" />
-
-                </div>
+        <x-card>
+            <x-flex>
+                <x-title>
+                    Venteado de Cochinilla
+                </x-title>
+                <x-button @click="$wire.dispatch('agregarVenteado')">
+                    <i class="fa fa-plus"></i> Agregar venteado
+                </x-button>
             </x-flex>
 
-        </x-spacing>
-    </x-card>
-    <x-card class="mt-3">
-        <x-spacing>
-            <x-table>
+            @include('livewire.gestion-cochinilla.partials.cochinilla-filtros')
+            
+            <x-table class="mt-4">
                 <x-slot name="thead">
                     <x-tr>
 
@@ -243,6 +214,9 @@
             <div class="my-4">
                 {{ $cochinillaIngresos->links() }}
             </div>
-        </x-spacing>
-    </x-card>
+        </x-card>
+
+
+    </x-flex>
+    <x-loading wire:loading />
 </div>

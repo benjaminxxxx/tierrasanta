@@ -101,7 +101,7 @@ class CochinillaIngreso extends Model
     }
     public function venteados()
     {
-        return $this->hasMany(CochinillaVenteado::class, 'lote', 'lote');
+        return $this->hasMany(CochinillaVenteado::class, 'cochinilla_ingreso_id');
     }
     public function filtrados()
     {

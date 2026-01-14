@@ -7,7 +7,6 @@ use App\Models\CampoCampania;
 use App\Models\CochinillaInfestacion;
 use App\Services\Cochinilla\InfestacionServicio;
 use App\Services\Cochinilla\IngresoServicio;
-use App\Services\CochinillaIngresoServicio;
 use Illuminate\Support\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -99,7 +98,7 @@ class CochinillaInfestacionFormComponent extends Component
         }
     }
 
-    public function registrar()
+    public function registrarInfestacionCochinilla()
     {
         $this->validate([
             'tipo_infestacion' => 'required|string|max:255',
@@ -144,7 +143,6 @@ class CochinillaInfestacionFormComponent extends Component
                 'fecha' => $this->fecha,
                 'campo_nombre' => $this->campoSeleccionado,
                 'area' => $this->area,
-                'campo_campania_id' => $this->campania->id,
                 'kg_madres' => $this->kg_madres,
                 'kg_madres_por_ha' => $this->area > 0 ? ($this->kg_madres / $this->area) : null,
                 'campo_origen_nombre' => $this->campoSeleccionadoOrigen,

@@ -2,7 +2,7 @@
     <x-card>
         <x-flex>
             <x-title>
-                Siembras
+                Gestión de Siembras
             </x-title>
             <x-button type="button" @click="$wire.dispatch('agregarSiembra')">
                 <i class="fa fa-plus"></i> Registrar Siembra
@@ -29,6 +29,7 @@
                         <x-th class="text-center">Campo</x-th>
                         <x-th class="text-center">Fecha de Siembra</x-th>
                         <x-th class="text-center">Fecha de Renovación</x-th>
+                        <x-th class="text-center">N° de Campañas</x-th>
                         <x-th class="text-center">Acciones</x-th>
                     </x-tr>
                 </x-slot>
@@ -37,8 +38,9 @@
                         <x-tr>
                             <x-td class="text-center">{{ $index + 1 }}</x-td>
                             <x-td class="text-center">{{ $siembra->campo_nombre }}</x-td>
-                            <x-td class="text-center">{{ $siembra->fecha_siembra }}</x-td>
-                            <x-td class="text-center">{{ $siembra->fecha_renovacion ?? '-' }}</x-td>
+                            <x-td class="text-center">{{ formatear_fecha($siembra->fecha_siembra) }}</x-td>
+                            <x-td class="text-center">{{ formatear_fecha($siembra->fecha_renovacion) ?? '-' }}</x-td>
+                            <x-td class="text-center">{{ $siembra->numero_campanias }}</x-td>
 
                             <x-td class="text-center">
                                 <x-flex class="justify-center">

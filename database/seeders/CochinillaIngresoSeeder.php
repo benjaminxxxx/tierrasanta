@@ -19,7 +19,9 @@ class CochinillaIngresoSeeder extends Seeder
 {
     public function run(): void
     {
-        $sheet = ExcelHelper::cargarHoja('public', 'informacion_general.xlsx', 'INGRESOS');
+
+        $filename = config('system.files.informacion_general');
+        $sheet = ExcelHelper::cargarHoja('public', $filename, 'INGRESOS');
         $table = $sheet->getTableByName('Tabla_ingresos');
 
         if (!$table) {
@@ -52,7 +54,7 @@ class CochinillaIngresoSeeder extends Seeder
             ->values();
 
         $camposFiltrados = ValidacionHelper::obtenerYValidarCampos($camposDesdeExcel->toArray());
-        
+
         // Obtener los textos de observación desde Excel
         $observacionesDesdeExcel = collect($data)
             ->pluck("obs") // columna de nombres de campos
@@ -74,24 +76,24 @@ class CochinillaIngresoSeeder extends Seeder
 
         try {
             DB::beginTransaction();
-        
+
             foreach ($data as $index => $fila) {
                 $fila_numero = $index + 2;
-               
-        
+
+
                 $fecha = ExcelHelper::parseFecha($fila["fecha"], $fila_numero);
-        
+
                 if (!$fila["campo"]) {
                     continue;
                 }
 
-                $loteCodigo = $fila["lote"]??null;
+                $loteCodigo = $fila["lote"] ?? null;
                 $campo = mb_strtolower(trim($fila["campo"]));
-                $area = (float)(trim($fila["area"]));
-        
+                $area = (float) (trim($fila["area"]));
+
                 $codigoObservacion = $this->generarCodigoSlug($fila["obs"]);
                 $loteCodigoPrincipal = $loteCodigo ?? explode('.', $fila["sub_lote"])[0];
-        
+
                 $ingreso = CochinillaIngreso::firstOrCreate(
                     ['lote' => $loteCodigoPrincipal],
                     [
@@ -101,7 +103,7 @@ class CochinillaIngresoSeeder extends Seeder
                         'observacion' => $codigoObservacion,
                     ]
                 );
-        
+
                 if ($fila["lote"] || trim($fila["lote"]) != '') {
                     $ingreso->update([
                         'fecha' => $fecha,
@@ -111,7 +113,7 @@ class CochinillaIngresoSeeder extends Seeder
                         'total_kilos' => $fila["total_kilos"],
                     ]);
                 }
-        
+
                 if ($fila["sub_lote"] || trim($fila["sub_lote"]) != '') {
                     CochinillaIngresoDetalle::updateOrCreate(
                         [
@@ -125,22 +127,22 @@ class CochinillaIngresoSeeder extends Seeder
                         ]
                     );
                 }
-        
+
                 $key = $camposFiltrados[$campo] . '|' . $fila["campana"];
                 $variedadCultivos[$key] = $fila["cultivo"];
             }
-        
+
             foreach ($variedadCultivos as $key => $variedad) {
                 [$campoNombre, $campania] = explode('|', $key);
                 $relacion = CampoCampania::where('campo', $campoNombre)
                     ->where('nombre_campania', $campania)
                     ->first();
-        
+
                 if ($relacion) {
                     $relacion->update(['variedad_tuna' => $variedad]);
                 }
             }
-        
+
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -148,7 +150,7 @@ class CochinillaIngresoSeeder extends Seeder
             $this->command->error($e->getMessage());
         }
     }
-    
+
     private function generarCodigoSlug($texto = null)
     {
         if (!$texto) {

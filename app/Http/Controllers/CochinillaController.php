@@ -10,7 +10,7 @@ class CochinillaController extends Controller
         return view("cochinilla.ingreso");
     }
     public function venteado(){
-        return view("cochinilla.venteado");
+        return view("livewire.gestion-cochinilla.cochinilla-venteado-indice");
     }
     public function filtrado(){
         return view("livewire.gestion-cochinilla.cochinilla-filtrado-indice");

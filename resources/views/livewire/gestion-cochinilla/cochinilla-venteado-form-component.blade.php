@@ -58,9 +58,9 @@
 
         <x-slot name="footer">
             <x-flex class="justify-end w-full">
-                <x-secondary-button wire:click="$set('mostrarFormulario', false)" wire:loading.attr="disabled">
+                <x-button variant="secondary" wire:click="$set('mostrarFormulario', false)" wire:loading.attr="disabled">
                     Cerrar
-                </x-secondary-button>
+                </x-button>
                 <x-button type="button" @click="$wire.dispatch('guardadoConfirmadoVenteado')">
                     <i class="fa fa-save"></i> Registrar detalle
                 </x-button>
@@ -99,7 +99,7 @@
                 const hot = new Handsontable(container, {
                     data: this.tableData,
                     colHeaders: true,
-                    
+                    themeName:'ht-theme-main',
                     rowHeaders: true,
 
                     columns: [{

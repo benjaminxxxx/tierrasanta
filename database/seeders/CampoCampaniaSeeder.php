@@ -18,7 +18,9 @@ class CampoCampaniaSeeder extends Seeder
 
 
         try {
-            $sheet = ExcelHelper::cargarHoja('public', 'informacion_general.xlsx', 'CAMPAÑAS');
+            $filename = config('system.files.informacion_general');
+
+            $sheet = ExcelHelper::cargarHoja('public', $filename, 'CAMPAÑAS');
             $table = $sheet->getTableByName('table_campania');
 
             if (!$table) {

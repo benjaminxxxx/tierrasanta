@@ -1,6 +1,6 @@
 <div x-data="calculos">
     <!--MODULO COCHINILLA INFESTACION FORM-->
-    
+
     <x-dialog-modal wire:model="mostrarFormulario" maxWidth="full">
         <x-slot name="title">
             Registro de Infestación de Cochinilla
@@ -37,57 +37,47 @@
                 </x-warning>
             @endif
             @if ($errors->any())
-    <div class="p-3 bg-red-100 text-red-800 rounded mb-3">
-        <ul class="list-disc ml-5">
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
+                <div class="p-3 bg-red-100 text-red-800 rounded mb-3">
+                    <ul class="list-disc ml-5">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                <x-group-field>
-                    <x-select label="Tipo" wire:model.live="tipo_infestacion" error="tipo_infestacion">
-                        <option value="">Seleccionar tipo</option>
-                        <option value="infestacion">Infestación</option>
-                        <option value="reinfestacion">Reinfestación</option>
-                    </x-select>
-                </x-group-field>
-                <x-group-field>
-                    @if ($tipo_infestacion == 'infestacion')
-                        <x-input-date label="Fecha de infestación" wire:model.live="fecha" error="fecha" />
-                    @elseif ($tipo_infestacion == 'reinfestacion')
-                        <x-input-date label="Fecha de reinfestación" wire:model.live="fecha" error="fecha" />
-                    @endif
-                </x-group-field>
-                <x-group-field>
-                    <x-select-campo label="Campo destino" wire:model.live="campoSeleccionado"
-                        error="campoSeleccionado" />
-                </x-group-field>
-                <x-group-field>
-                    <x-select-campo label="Campo de origen" wire:model.live="campoSeleccionadoOrigen"
-                        error="campoSeleccionadoOrigen" />
-                </x-group-field>
-                <x-group-field>
-                    <x-input-number label="Área" wire:model="area" x-model="area" />
-                </x-group-field>
-                <x-group-field>
-                    <x-input-number label="Kg madres" wire:model="kg_madres" x-model="kg_madres" />
-                </x-group-field>
-                <x-group-field>
-                    <x-input type="number" label="Kg madres x Ha." wire:model="kg_madres_por_ha" x-model="kg_madres_ha"
-                        class="!bg-gray-100 dark:!bg-gray-600" readonly />
-                </x-group-field>
-                <x-group-field>
-                    <x-select label="Método de infestación" wire:model.live="metodo" error="metodo">
-                        <option value="">Seleccionar método</option>
-                        <option value="carton">Cartón</option>
-                        <option value="tubo">Tubo</option>
-                        <option value="malla">Malla</option>
-                    </x-select>
-                </x-group-field>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-3">
+
+                <x-select label="Tipo" wire:model.live="tipo_infestacion" error="tipo_infestacion" fullWidth="true">
+                    <option value="">Seleccionar tipo</option>
+                    <option value="infestacion">Infestación</option>
+                    <option value="reinfestacion">Reinfestación</option>
+                </x-select>
+                @if ($tipo_infestacion == 'infestacion')
+                    <x-input-date label="Fecha de infestación" wire:model.live="fecha" error="fecha" />
+                @elseif ($tipo_infestacion == 'reinfestacion')
+                    <x-input-date label="Fecha de reinfestación" wire:model.live="fecha" error="fecha" />
+                @endif
+
+                <x-select-campo label="Campo destino" wire:model.live="campoSeleccionado" error="campoSeleccionado" />
+
+                <x-select-campo label="Campo de origen" wire:model.live="campoSeleccionadoOrigen"
+                    error="campoSeleccionadoOrigen" />
+
+                <x-input-number label="Área" wire:model="area" x-model="area" />
+
+                <x-input-number label="Kg madres" wire:model="kg_madres" x-model="kg_madres" />
+
+                <x-input type="number" label="Kg madres x Ha." wire:model="kg_madres_por_ha" x-model="kg_madres_ha"
+                    class="!bg-gray-100 dark:!bg-gray-600" readonly />
+
+                <x-select label="Método de infestación" wire:model.live="metodo" error="metodo" fullWidth="true">
+                    <option value="">Seleccionar método</option>
+                    <option value="carton">Cartón</option>
+                    <option value="tubo">Tubo</option>
+                    <option value="malla">Malla</option>
+                </x-select>
             </div>
             @php
                 $unidad = match ($metodo) {
@@ -133,7 +123,7 @@
                 };
             @endphp
 
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mt-3 {{ $fondo }} p-2 rounded-md">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4 {{ $fondo }} p-2 rounded-md">
                 <x-group-field>
                     <x-input-number :label="$unidad" wire:model="capacidad_envase"
                         @input="recalcularDesdeCapacidad()" />
@@ -143,15 +133,16 @@
                         @input="recalcularDesdeNumeroEnvases()" />
                 </x-group-field>
                 <x-group-field>
-                    <x-input-number :label="$nombre" wire:model="infestadores" @input="recalcularDesdeInfestadores()" />
+                    <x-input-number :label="$nombre" wire:model="infestadores"
+                        @input="recalcularDesdeInfestadores()" />
                 </x-group-field>
                 <x-group-field>
                     <x-input-string :label="$porUnidad" wire:model="madres_por_infestador"
                         x-bind:value="madres_por_infestador" readonly class="!bg-gray-100  dark:!bg-gray-600" />
                 </x-group-field>
                 <x-group-field>
-                    <x-input-string :label="$porHa" wire:model="infestadores_por_ha" x-bind:value="infestadores_por_ha"
-                        readonly class="!bg-gray-100  dark:!bg-gray-600" />
+                    <x-input-string :label="$porHa" wire:model="infestadores_por_ha"
+                        x-bind:value="infestadores_por_ha" readonly class="!bg-gray-100  dark:!bg-gray-600" />
                 </x-group-field>
             </div>
             <div class="my-4 p-5 rounded overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-900">
@@ -199,10 +190,11 @@
                                 <x-td class="text-center">
                                     <x-flex>
                                         <input type="number" wire:model="kgAsignados.{{ $cochinilla->id }}"
-                                        class="w-20 border rounded px-2 py-1 text-right" min="0"
-                                        max="{{ $cochinilla->stock_disponible ?? $cochinilla->total_kilos }}" step="0.01" />
-                                    <input type="checkbox" wire:model="ingresosSeleccionados" value="{{ $cochinilla->id }}"
-                                        class="ml-2" />
+                                            class="w-20 border rounded px-2 py-1 text-right" min="0"
+                                            max="{{ $cochinilla->stock_disponible ?? $cochinilla->total_kilos }}"
+                                            step="0.01" />
+                                        <input type="checkbox" wire:model="ingresosSeleccionados"
+                                            value="{{ $cochinilla->id }}" class="ml-2" />
                                     </x-flex>
                                 </x-td>
                             </x-tr>
@@ -214,7 +206,7 @@
         </x-slot>
 
         <x-slot name="footer">
-            <x-form-buttons action="registrar" :id="$cochinillaInfestacionId" />
+            <x-form-buttons action="registrarInfestacionCochinilla" :id="$cochinillaInfestacionId" />
         </x-slot>
     </x-dialog-modal>
 
@@ -226,53 +218,53 @@
 
 </div>
 @script
-<script>
-    Alpine.data('calculos', () => ({
-        kg_madres_ha: @entangle('kg_madres_ha'),
-        capacidad_envase: @entangle('capacidad_envase'),
-        numero_envases: @entangle('numero_envases'),
-        infestadores: @entangle('infestadores'),
-        kg_madres: @entangle('kg_madres'),
-        area: @entangle('area'),
+    <script>
+        Alpine.data('calculos', () => ({
+            kg_madres_ha: @entangle('kg_madres_ha'),
+            capacidad_envase: @entangle('capacidad_envase'),
+            numero_envases: @entangle('numero_envases'),
+            infestadores: @entangle('infestadores'),
+            kg_madres: @entangle('kg_madres'),
+            area: @entangle('area'),
 
-        get madres_por_infestador() {
-            if (!this.infestadores || this.infestadores == 0) return '0gr.';
+            get madres_por_infestador() {
+                if (!this.infestadores || this.infestadores == 0) return '0gr.';
 
-            const valor = ((this.kg_madres / this.infestadores) * 100000);
-            const formateado = new Intl.NumberFormat('en-US').format(Math.round(valor));
+                const valor = ((this.kg_madres / this.infestadores) * 100000);
+                const formateado = new Intl.NumberFormat('en-US').format(Math.round(valor));
 
-            return `${formateado}gr.`;
-        },
+                return `${formateado}gr.`;
+            },
 
-        get infestadores_por_ha() {
-            if (!this.area || this.area === 0) return '0';
-            const valor = Math.round(this.infestadores / this.area);
-            return new Intl.NumberFormat('en-US').format(valor); // → 1,000
-        },
-        recalcularKgMadresHa() {
-            if (!this.area || this.area == 0) return 0;
-            this.kg_madres_ha = (this.kg_madres / this.area).toFixed(2);
-        },
-        recalcularDesdeCapacidad() {
-            this.infestadores = this.capacidad_envase * this.numero_envases;
-            $wire.set('infestadores', this.infestadores);
-        },
+            get infestadores_por_ha() {
+                if (!this.area || this.area === 0) return '0';
+                const valor = Math.round(this.infestadores / this.area);
+                return new Intl.NumberFormat('en-US').format(valor); // → 1,000
+            },
+            recalcularKgMadresHa() {
+                if (!this.area || this.area == 0) return 0;
+                this.kg_madres_ha = (this.kg_madres / this.area).toFixed(2);
+            },
+            recalcularDesdeCapacidad() {
+                this.infestadores = this.capacidad_envase * this.numero_envases;
+                $wire.set('infestadores', this.infestadores);
+            },
 
-        recalcularDesdeNumeroEnvases() {
-            this.infestadores = this.capacidad_envase * this.numero_envases;
-            $wire.set('infestadores', this.infestadores);
-        },
+            recalcularDesdeNumeroEnvases() {
+                this.infestadores = this.capacidad_envase * this.numero_envases;
+                $wire.set('infestadores', this.infestadores);
+            },
 
-        recalcularDesdeInfestadores() {
-            if (this.numero_envases != 0) {
-                this.capacidad_envase = (this.infestadores / this.numero_envases).toFixed(2);
-                $wire.set('capacidad_envase', this.capacidad_envase);
+            recalcularDesdeInfestadores() {
+                if (this.numero_envases != 0) {
+                    this.capacidad_envase = (this.infestadores / this.numero_envases).toFixed(2);
+                    $wire.set('capacidad_envase', this.capacidad_envase);
+                }
+            },
+            init() {
+                this.$watch('area', () => this.recalcularKgMadresHa());
+                this.$watch('kg_madres', () => this.recalcularKgMadresHa());
             }
-        },
-        init() {
-            this.$watch('area', () => this.recalcularKgMadresHa());
-            this.$watch('kg_madres', () => this.recalcularKgMadresHa());
-        }
-    }));
-</script>
+        }));
+    </script>
 @endscript

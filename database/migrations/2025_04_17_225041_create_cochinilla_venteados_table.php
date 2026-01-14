@@ -12,11 +12,14 @@ return new class extends Migration {
     {
         Schema::create('cochinilla_venteados', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('cochinilla_ingreso_id')
+                ->nullable()
+                ->constrained('cochinilla_ingresos')
+                ->nullOnDelete();
             $table->unsignedInteger('lote');
             $table->date('fecha_proceso'); 
             $table->decimal('kilos_ingresado', 10, 2);
             $table->decimal('limpia', 10, 2);
-            $table->decimal('basura', 10, 2);
             $table->decimal('polvillo', 10, 2);
             $table->timestamps();
         });

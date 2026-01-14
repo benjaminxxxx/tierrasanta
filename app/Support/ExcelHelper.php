@@ -11,7 +11,35 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 class ExcelHelper
 {
-     public static function descargar( $spreadsheet, $filename )
+    public static function parseFechaExcel($valor, $fila = null): ?string
+    {
+        if ($valor === null || $valor === '') {
+            return null;
+        }
+
+        try {
+            // Número serial Excel
+            if (is_numeric($valor)) {
+                return Carbon::instance(
+                    ExcelDate::excelToDateTimeObject($valor)
+                )->format('Y-m-d');
+            }
+
+            // Texto
+            $valor = trim($valor);
+            $valor = str_replace(['.', '/', '\\'], '-', $valor);
+
+            return Carbon::parse($valor)->format('Y-m-d');
+
+        } catch (\Throwable $e) {
+            $msg = "Error al interpretar la fecha '{$valor}'";
+            if ($fila !== null) {
+                $msg .= " en la fila #{$fila}";
+            }
+            throw new Exception($msg . ': ' . $e->getMessage());
+        }
+    }
+    public static function descargar($spreadsheet, $filename)
     {
         return new StreamedResponse(function () use ($spreadsheet) {
 

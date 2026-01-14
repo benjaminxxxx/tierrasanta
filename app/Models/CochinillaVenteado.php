@@ -15,9 +15,20 @@ class CochinillaVenteado extends Model
         'fecha_proceso',
         'kilos_ingresado',
         'limpia',
-        'basura',
         'polvillo',
     ];
+    public function getBasuraAttribute(): float
+    {
+        return round(
+            $this->kilos_ingresado
+            - (
+                $this->limpia
+                + $this->polvillo
+            ),
+            2
+        );
+    }
+
     public function ingreso()
     {
         return $this->belongsTo(CochinillaIngreso::class, 'lote', 'lote');
@@ -33,5 +44,8 @@ class CochinillaVenteado extends Model
     public function getPorcentajePolvilloAttribute()
     {
         return $this->polvillo / $this->kilos_ingresado * 100;
+    }
+    public function getTotalAttribute(){
+        return $this->polvillo + $this->basura + $this->limpia;
     }
 }

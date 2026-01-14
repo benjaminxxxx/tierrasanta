@@ -6,8 +6,6 @@ use App\Models\CochinillaVenteado;
 use App\Support\ExcelHelper;
 use Exception;
 use Illuminate\Database\Seeder;
-use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 class CochinillaVenteadosSeeder extends Seeder
@@ -15,7 +13,9 @@ class CochinillaVenteadosSeeder extends Seeder
     public function run(): void
     {
         try {
-            $sheet = ExcelHelper::cargarHoja('public', 'informacion_general.xlsx', 'VENTEADO');
+            
+            $filename = config('system.files.informacion_general');
+            $sheet = ExcelHelper::cargarHoja('public', $filename, 'VENTEADO');
             $table = $sheet->getTableByName('table_venteados');
 
             if (!$table) {
@@ -92,7 +92,7 @@ class CochinillaVenteadosSeeder extends Seeder
                     throw new Exception("Error en fila $fila_numero: limpia + basura + polvillo = $suma, pero kilos_ingresados = $esperado");
                 }
 
-                $fecha_de_proceso = $this->parseFecha($fila['fecha_de_proceso'], $fila_numero);
+                $fecha_de_proceso = ExcelHelper::parseFechaExcel($fila['fecha_de_proceso'], $fila_numero);
                
                 $upserts[] = [
                     'lote' => $lote,
@@ -104,6 +104,7 @@ class CochinillaVenteadosSeeder extends Seeder
                 ];
             }
 
+            CochinillaVenteado::truncate();
             CochinillaVenteado::insert($upserts);
 
             $this->command->info('Datos actualizados correctamentexlsx');
@@ -111,23 +112,6 @@ class CochinillaVenteadosSeeder extends Seeder
         } catch (\Throwable $th) {
             $this->command->error($th->getMessage());
             return;
-        }
-    }
-
-
-    private function parseFecha($valor, $fila)
-    {
-        if (empty($valor))
-            return null;
-
-        try {
-            if (is_numeric($valor)) {
-                return Carbon::instance(ExcelDate::excelToDateTimeObject($valor))->format('Y-m-d');
-            }
-
-            return Carbon::parse(str_replace(['.', '/', '\\'], '-', $valor))->format('Y-m-d');
-        } catch (Exception $e) {
-            throw new Exception("Error al interpretar la fecha '{$valor}' en la fila #{$fila}: " . $e->getMessage());
         }
     }
 }
