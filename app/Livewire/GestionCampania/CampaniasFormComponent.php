@@ -14,16 +14,11 @@ class CampaniasFormComponent extends Component
     public $campaniaId;
     public $tabActual;
     public $campania = [];
-    protected $listeners = ['registroCampania', 'editarCampania'];
+    protected $listeners = [ 'editarCampania'];
     public function mount(){
         $this->campania = [
             'campo'=>null
         ];
-    }
-    public function registroCampania()
-    {
-        $this->resetForm();
-        $this->mostrarFormulario = true;
     }
     public function editarCampania(int $campaniaId,?string $tab = 'general')
     {
@@ -41,6 +36,8 @@ class CampaniasFormComponent extends Component
         foreach ($campania->toArray() as $key => $value) {
             $this->campania[$key] = $value;
         }
+        $this->campania['fecha_inicio'] = $campania->fecha_inicio->format('Y-m-d');
+        $this->campania['fecha_fin'] = $campania->fecha_fin?->format('Y-m-d');
         $this->mostrarFormulario = true;
     }
 
@@ -68,8 +65,8 @@ class CampaniasFormComponent extends Component
 
             // Normalización mínima de UI
             $data['nombre_campania'] = mb_strtoupper($data['nombre_campania']);
-
-            app(CrudCampaniaServicio::class)
+            
+            $campania = app(CrudCampaniaServicio::class)
                 ->guardar($data, $this->campaniaId);
 
             $this->alert(
@@ -81,7 +78,7 @@ class CampaniasFormComponent extends Component
 
             $this->resetForm();
             $this->mostrarFormulario = false;
-            $this->dispatch('campaniaInsertada');
+            $this->dispatch('campaniaInsertada',$campania->toArray());
 
         } catch (\Throwable $e) {
             $this->alert('error', $e->getMessage());

@@ -26,7 +26,7 @@ return new class extends Migration {
             $table->foreign('campania_id')
                 ->references('id')
                 ->on('campos_campanias')
-                ->onDelete('restrict');
+                ->onDelete('cascade');
 
             // Fechas de evaluación
             $table->date('fecha_eval_cero');

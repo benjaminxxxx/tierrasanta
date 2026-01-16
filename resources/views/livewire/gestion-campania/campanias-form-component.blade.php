@@ -26,8 +26,9 @@
                 <li class="me-2">
                     <a href="#" @click.prevent="tabActual = 'general'"
                         :class="tabActual === 'general'
-                ? 'inline-block p-4 text-blue-600 bg-gray-100 rounded-t-lg active dark:bg-gray-800 dark:text-blue-500'
-                : 'inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'">
+                            ?
+                            'inline-block p-4 text-blue-600 bg-gray-100 rounded-t-lg active dark:bg-gray-800 dark:text-blue-500' :
+                            'inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'">
                         Información General
                     </a>
                 </li>
@@ -35,8 +36,9 @@
                 <li class="me-2">
                     <a href="#" @click.prevent="tabActual = 'infestacion'"
                         :class="tabActual === 'infestacion'
-                ? 'inline-block p-4 text-blue-600 bg-gray-100 rounded-t-lg active dark:bg-gray-800 dark:text-blue-500'
-                : 'inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'">
+                            ?
+                            'inline-block p-4 text-blue-600 bg-gray-100 rounded-t-lg active dark:bg-gray-800 dark:text-blue-500' :
+                            'inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'">
                         Infestación
                     </a>
                 </li>
@@ -44,8 +46,9 @@
                 <li class="me-2">
                     <a href="#" @click.prevent="tabActual = 'reinfestacion'"
                         :class="tabActual === 'reinfestacion'
-                ? 'inline-block p-4 text-blue-600 bg-gray-100 rounded-t-lg active dark:bg-gray-800 dark:text-blue-500'
-                : 'inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'">
+                            ?
+                            'inline-block p-4 text-blue-600 bg-gray-100 rounded-t-lg active dark:bg-gray-800 dark:text-blue-500' :
+                            'inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'">
                         Reinfestación
                     </a>
                 </li>
@@ -53,8 +56,9 @@
                 <li class="me-2">
                     <a href="#" @click.prevent="tabActual = 'cosecha-madres'"
                         :class="tabActual === 'cosecha-madres'
-            ? 'inline-block p-4 text-blue-600 bg-gray-100 rounded-t-lg active dark:bg-gray-800 dark:text-blue-500'
-            : 'inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'">
+                            ?
+                            'inline-block p-4 text-blue-600 bg-gray-100 rounded-t-lg active dark:bg-gray-800 dark:text-blue-500' :
+                            'inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'">
                         Cosecha de madres
                     </a>
                 </li>
@@ -63,8 +67,9 @@
                 <li class="me-2">
                     <a href="#" @click.prevent="tabActual = 'cosecha'"
                         :class="tabActual === 'cosecha'
-                ? 'inline-block p-4 text-blue-600 bg-gray-100 rounded-t-lg active dark:bg-gray-800 dark:text-blue-500'
-                : 'inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'">
+                            ?
+                            'inline-block p-4 text-blue-600 bg-gray-100 rounded-t-lg active dark:bg-gray-800 dark:text-blue-500' :
+                            'inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'">
                         Cosecha
                     </a>
                 </li>
@@ -169,7 +174,8 @@
                             <tr>
                                 <td class="p-2">Infestador tubo – campos (kg)</td>
                                 <td class="p-2 w-48">
-                                    <x-input type="number" wire:model="campania.cosechamadres_infestador_tubo_campos" />
+                                    <x-input type="number"
+                                        wire:model="campania.cosechamadres_infestador_tubo_campos" />
                                 </td>
                             </tr>
 
@@ -268,7 +274,8 @@
                             <tr>
                                 <td class="p-2">Tubo</td>
                                 <td class="p-2 w-48">
-                                    <x-input readonly wire:model="campania.cosechamadres_conversion_fresco_seco_tubo" />
+                                    <x-input readonly
+                                        wire:model="campania.cosechamadres_conversion_fresco_seco_tubo" />
                                 </td>
                             </tr>
 
@@ -308,7 +315,7 @@
                     FECHA DE COSECHA (DISPARA TODOS LOS CÁLCULOS)
                     ============================================================ --}}
                     <x-group-field>
-                        <x-input-date wire:model="campania.cosch_fecha" label="Fecha de cosecha / poda"
+                        <x-input type="date" wire:model="campania.cosch_fecha" label="Fecha de cosecha / poda"
                             error="campania.cosch_fecha" />
                         <x-label class="text-xs text-gray-500">
                             Esta fecha recalcula automáticamente todos los tiempos de cosecha.
@@ -321,8 +328,8 @@
                     <x-h3>Tiempos calculados</x-h3>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <x-input type="text" label="Infestación → Cosecha" wire:model="campania.cosch_tiempo_inf_cosch"
-                            readonly />
+                        <x-input type="text" label="Infestación → Cosecha"
+                            wire:model="campania.cosch_tiempo_inf_cosch" readonly />
 
                         <x-input type="text" label="Reinfestación → Cosecha"
                             wire:model="campania.cosch_tiempo_reinf_cosch" readonly />
@@ -336,13 +343,13 @@
                     <x-h3>Destino fresco</x-h3>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <x-input-string label="Campos para infestador cartón (separe por guiones -)"
+                        <x-input type="text" label="Campos para infestador cartón (separe por guiones -)"
                             wire:model="campania.cosch_destino_carton" placeholder="Ej: Campo1 - Campo2 - Campo3" />
 
-                        <x-input-string label="Campos para infestador tubo (separe por guiones -)"
+                        <x-input type="text" label="Campos para infestador tubo (separe por guiones -)"
                             wire:model="campania.cosch_destino_tubo" placeholder="Ej: CampoA - CampoB" />
 
-                        <x-input-string label="Campos para infestador malla (separe por guiones -)"
+                        <x-input type="text" label="Campos para infestador malla (separe por guiones -)"
                             wire:model="campania.cosch_destino_malla" placeholder="Ej: Sector Norte - Sector Sur" />
                     </div>
 
@@ -376,8 +383,8 @@
                     <x-h3>Resultados calculados</x-h3>
 
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <x-input type="string" label="Factor F/S Cartón" wire:model="campania.cosch_factor_fs_carton"
-                            readonly />
+                        <x-input type="string" label="Factor F/S Cartón"
+                            wire:model="campania.cosch_factor_fs_carton" readonly />
                         <x-input type="string" label="Factor F/S Tubo" wire:model="campania.cosch_factor_fs_tubo"
                             readonly />
                         <x-input type="string" label="Factor F/S Malla" wire:model="campania.cosch_factor_fs_malla"
@@ -387,8 +394,8 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <x-input type="string" label="Producción por hectárea" wire:model="campania.cosch_total_cosecha"
-                            readonly />
+                        <x-input type="string" label="Producción por hectárea"
+                            wire:model="campania.cosch_total_cosecha" readonly />
 
                         <x-input type="string" label="Producción total de campaña"
                             wire:model="campania.cosch_total_campania" readonly />
@@ -405,16 +412,16 @@
     </x-dialog-modal>
 </div>
 @script
-<script>
-    Alpine.data('cosechaForm', () => ({
-        tabActual: @entangle('tabActual'),
+    <script>
+        Alpine.data('cosechaForm', () => ({
+            tabActual: @entangle('tabActual'),
 
-        init() {
-            // respaldo por si llega null o vacío desde Livewire
-            if (!this.tabActual) {
-                this.tabActual = 'general'
+            init() {
+                // respaldo por si llega null o vacío desde Livewire
+                if (!this.tabActual) {
+                    this.tabActual = 'general'
+                }
             }
-        }
-    }))
-</script>
+        }))
+    </script>
 @endscript

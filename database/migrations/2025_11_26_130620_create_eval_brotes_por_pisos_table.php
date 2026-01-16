@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreign('campania_id')
                 ->references('id')
                 ->on('campos_campanias')
-                ->onDelete('restrict');
+                ->onDelete('cascade');
 
             $table->date('fecha')->nullable();
             $table->decimal('metros_cama_ha', 10, 3);

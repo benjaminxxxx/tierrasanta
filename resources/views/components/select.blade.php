@@ -8,7 +8,7 @@
 ])
 
 @php
-    $id = $id ?? md5($attributes->wire('model'));
+    $id = $id ?? 'input-' . Str::uuid();
     $model = $attributes->whereStartsWith('wire:model')->first();
 
     // Clases según el tamaño
@@ -23,7 +23,7 @@
 
 <x-group-field class="{{ $fullWidth ? 'w-full' : '' }}">
     @if ($label)
-        <x-label for="{{ $model }}">{{ $label ?? ucfirst(str_replace('_', ' ', $model)) }}</x-label>
+        <x-label for="{{ $id }}">{{ $label ?? ucfirst(str_replace('_', ' ', $model)) }}</x-label>
     @endif
 
     <select

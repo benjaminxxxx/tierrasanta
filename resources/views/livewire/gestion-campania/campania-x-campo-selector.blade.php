@@ -1,13 +1,13 @@
 <div x-data="campaniaXCampo">
     <x-flex class="justify-between">
-        <x-h3>
+        <x-title>
             Campañas por Campo
-        </x-h3>
+        </x-title>
         <x-button @click="$wire.dispatch('registroCampania')">
             <i class="fa fa-plus"></i> Registrar Nueva Campaña
         </x-button>
     </x-flex>
-    <x-card2 class="mt-4">
+    <x-card class="mt-4">
         <x-flex class="justify-between">
             <x-flex>
                 <x-select-campo wire:model.live="campoSeleccionado" class="max-w-[5rem]" label="Seleccionar Campo" />
@@ -24,17 +24,17 @@
             </x-flex>
             @include('livewire.gestion-campania.partials.campania-x-campo-selector-opciones')
         </x-flex>
-    </x-card2>
+    </x-card>
 
     @if ($campaniaSeleccionada)
         <livewire:gestion-campania.campania-por-campo-informe-component :campania="$campaniaSeleccionada"
             wire:key="Camp{{ $campaniaSeleccionada }}" />
     @else
-        <x-card2 class="mt-4">
+        <x-card class="mt-4">
             <x-label>
                 Seleccionar Campaña
             </x-label>
-        </x-card2>
+        </x-card>
     @endif
 
     <x-loading wire:loading />

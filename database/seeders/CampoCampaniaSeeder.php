@@ -2,100 +2,84 @@
 
 namespace Database\Seeders;
 
-use App\Models\Campo;
 use App\Models\CampoCampania;
 use App\Support\ExcelHelper;
-use Exception;
+use App\Support\ValidacionHelper;
 use Illuminate\Database\Seeder;
-use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Throwable;
 
 class CampoCampaniaSeeder extends Seeder
 {
     public function run(): void
     {
-
-
         try {
+            // 1. Cargar datos del Excel
             $filename = config('system.files.informacion_general');
-
             $sheet = ExcelHelper::cargarHoja('public', $filename, 'CAMPAÑAS');
             $table = $sheet->getTableByName('table_campania');
 
             if (!$table) {
-                throw new Exception("No se encontró la tabla table_campania.");
+                throw new \Exception("No se encontró la tabla 'table_campania' en el Excel.");
             }
 
-            // Obtener el rango de la tabla (ejemplo: "A1:O20")
-            $tableRange = $table->getRange();
+            // 2. Transformar rango a Array con Headers slugificados
+            $dataRaw = $sheet->rangeToArray($table->getRange(), null, true, false, true);
+            $headers = array_map(fn($h) => Str::slug($h, '_'), array_shift($dataRaw));
+            
+            $coleccionDinamica = collect($dataRaw)->map(function ($row) use ($headers) {
+                return array_combine($headers, $row);
+            });
 
-            $data = $sheet->rangeToArray($tableRange, null, true, false, true);
+            // 3. Validar y obtener IDs/Nombres de los campos involucrados
+            $nombresCampos = $coleccionDinamica->pluck('campo')->filter()->unique()->toArray();
+            $camposMapeados = ValidacionHelper::obtenerYValidarCampos($nombresCampos);
 
-            $headers = array_map(fn($header) => Str::slug($header, '_'), array_shift($data));
+            // 4. Iniciar Transacción y Procesar Upserts
+            DB::transaction(function () use ($coleccionDinamica, $camposMapeados) {
+                
+                $this->command->getOutput()->progressStart($coleccionDinamica->count());
 
-            // Reestructurar los datos con claves semánticas y resetear índices
-            $data = collect($data)->map(fn($row) => array_combine($headers, $row))->values()->toArray();
+                foreach ($coleccionDinamica as $index => $fila) {
+                    // Limpieza y preparación de datos
+                    $nombreCampo = mb_strtolower(trim($fila['campo'] ?? ''));
+                    
+                    if (empty($nombreCampo) || !isset($camposMapeados[$nombreCampo])) {
+                        $this->command->getOutput()->progressAdvance();
+                        continue;
+                    }
 
-            $camposValidos = Campo::pluck('nombre')->toArray();
-            $upserts = [];
+                    // Parseo de fechas (asumiendo que parseFecha maneja nulos para campañas abiertas)
+                    $fechaInicio = ExcelHelper::parseFecha($fila['fecha_inicio'], $index + 2);
+                    $fechaFin = !empty($fila['fecha_final']) 
+                                ? ExcelHelper::parseFecha($fila['fecha_final'], $index + 2) 
+                                : null;
 
-            // Verificamos si hay algún campo inválido en el Excel
-            $camposExcel = collect($data)->pluck('campo')->unique()->toArray();
-            $camposInvalidos = array_diff($camposExcel, $camposValidos);
+                    CampoCampania::updateOrInsert(
+                        [
+                            'campo'        => $camposMapeados[$nombreCampo], 
+                            'fecha_inicio' => $fechaInicio
+                        ],
+                        [
+                            'fecha_fin'       => $fechaFin,
+                            'tipo_cambio'     => $fila['tipo_cambio'] ?? null,
+                            'nombre_campania' => $fila['nombre_campania'] ?? null,
+                            'updated_at'      => now(),
+                        ]
+                    );
 
-            if (!empty($camposInvalidos)) {
-                throw new Exception("Los siguientes campos no existen en la base de datos: " . implode(', ', $camposInvalidos));
-            }
-            $i = 0;
-            foreach ($data as $fila) {
-                $i++;
-                $fecha_inicio = $this->parseFecha($fila['fecha_inicio'], $i + 2);
-                $fecha_final = $this->parseFecha($fila['fecha_final'] ?? null, $i + 2);
+                    $this->command->getOutput()->progressAdvance();
+                }
 
+                $this->command->getOutput()->progressFinish();
+            });
 
-                $upserts[] = [
-                    'campo' => $fila['campo'],
-                    'fecha_inicio' => $fecha_inicio,
-                    'fecha_fin' => $fecha_final,
-                    'tipo_cambio' => $fila['tipo_cambio'] ?? null,
-                    'nombre_campania' => $fila['nombre_campania'] ?? null,
-                ];
-            }
+            $this->command->info('Datos de campañas importados/actualizados correctamente.');
 
-            foreach ($upserts as $data) {
-                CampoCampania::updateOrInsert(
-                    ['campo' => $data['campo'], 'fecha_inicio' => $data['fecha_inicio']],
-                    [
-                        'fecha_fin' => $data['fecha_fin'],
-                        'tipo_cambio' => $data['tipo_cambio'],
-                        'nombre_campania' => $data['nombre_campania']
-                    ]
-                );
-            }
-
-            $this->command->info('Datos de campañas importados/actualizados correctamente desde campanias.xlsx');
-
-        } catch (\Throwable $th) {
-            $this->command->error($th->getMessage());
-            return;
-        }
-        
-    }
-
-    private function parseFecha($valor, $fila)
-    {
-        if (empty($valor))
-            return null;
-
-        try {
-            if (is_numeric($valor)) {
-                return Carbon::instance(ExcelDate::excelToDateTimeObject($valor))->format('Y-m-d');
-            }
-
-            return Carbon::parse(str_replace(['.', '/', '\\'], '-', $valor))->format('Y-m-d');
-        } catch (Exception $e) {
-            throw new Exception("Error al interpretar la fecha '{$valor}' en la fila #{$fila}: " . $e->getMessage());
+        } catch (Throwable $th) {
+            $this->command->error("Error en Seeder: " . $th->getMessage());
+            // El rollback es automático al usar DB::transaction() y lanzar una excepción
         }
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CampoCampania;
+use Exception;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -52,27 +53,6 @@ class CrudCampaniaServicio
             $campo = $data['campo'];
             $fechaInicio = Carbon::parse($data['fecha_inicio']);
 
-            // 1. Campaña anterior
-            $campaniaAnterior = CampoCampania::where('campo', $campo)
-                ->whereDate('fecha_inicio', '<', $fechaInicio)
-                ->orderByDesc('fecha_inicio')
-                ->first();
-
-            if ($campaniaAnterior) {
-                $campaniaAnterior->update([
-                    'fecha_fin' => $fechaInicio->copy()->subDay(),
-                ]);
-            }
-
-            // 2. Campaña posterior
-            $campaniaPosterior = CampoCampania::where('campo', $campo)
-                ->whereDate('fecha_inicio', '>', $fechaInicio)
-                ->orderBy('fecha_inicio')
-                ->first();
-
-            if ($campaniaPosterior) {
-                $data['fecha_fin'] = Carbon::parse($campaniaPosterior->fecha_inicio)->subDay();
-            }
 
             // 3. Evitar duplicados (solo en creación)
             if (!$campaniaId) {
@@ -81,7 +61,7 @@ class CrudCampaniaServicio
                     ->exists();
 
                 if ($existe) {
-                    throw new \Exception(
+                    throw new Exception(
                         "Ya existe una campaña para el campo {$campo} con fecha {$fechaInicio->toDateString()}."
                     );
                 }

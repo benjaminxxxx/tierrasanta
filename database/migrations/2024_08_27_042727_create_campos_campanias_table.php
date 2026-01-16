@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -24,7 +23,7 @@ return new class extends Migration
             $table->unsignedBigInteger('usuario_modificador')->nullable();
 
             $table->date('infestacion_fecha')->nullable();
-            $table->string('infestacion_duracion_desde_campania',255)->nullable();
+            $table->string('infestacion_duracion_desde_campania', 255)->nullable();
             $table->integer('infestacion_numero_pencas')->nullable();
             $table->decimal('infestacion_kg_totales_madre', 8, 2)->nullable();
             $table->decimal('infestacion_kg_madre_infestador_carton', 8, 2)->nullable();
@@ -158,7 +157,7 @@ return new class extends Migration
             $table->date('reinfestacion_fecha_retiro_malla')->nullable();
             $table->integer('reinfestacion_permanencia_malla')->nullable();
 
-             $table->string('variedad_tuna', 50)->nullable();
+            $table->string('variedad_tuna', 50)->nullable();
             $table->string('sistema_cultivo', 255)->nullable();
             $table->decimal('tipo_cambio', 12, 4)->nullable();
             $table->decimal('costo_fertilizantes', 14, 4)->nullable();
@@ -180,6 +179,7 @@ return new class extends Migration
             $table->integer('brotexpiso_brotes_3piso_n_dias')->nullable();
             $table->integer('brotexpiso_actual_total_brotes_2y3piso')->nullable();
             $table->integer('brotexpiso_total_brotes_2y3piso_n_dias')->nullable();
+            $table->unique(['campo', 'nombre_campania']);
 
             $table->foreign('campo')->references('nombre')->on('campos')->onDelete('cascade');
             $table->foreign('usuario_modificador')->references('id')->on('users')->onDelete('set null');

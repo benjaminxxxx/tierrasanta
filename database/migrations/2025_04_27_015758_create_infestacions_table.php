@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -32,7 +31,10 @@ return new class extends Migration
             // Relaciones
             $table->foreign('campo_nombre')->references('nombre')->on('campos');
             $table->foreign('campo_origen_nombre')->references('nombre')->on('campos');
-            $table->foreign('campo_campania_id')->references('id')->on('campos_campanias');
+            $table->foreign('campo_campania_id')
+                ->references('id')
+                ->on('campos_campanias')
+                ->nullOnDelete();
         });
     }
 

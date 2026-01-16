@@ -20,7 +20,7 @@ return new class extends Migration {
 
             $table->foreignId('campo_campania_id')
                 ->constrained('campos_campanias')
-                ->restrictOnDelete();
+                ->cascadeOnDelete();
 
             // Periodo
             $table->unsignedSmallInteger('anio');

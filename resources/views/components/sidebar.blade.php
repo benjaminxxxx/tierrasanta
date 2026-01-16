@@ -210,6 +210,9 @@
                 'campania.x.campo'
                 ])" logo="fa fa-flag" text="Campañas">
                 <x-nav-link-child href="{{ route('campanias') }}" :active="request()->routeIs('campanias')">
+                    Resumen General de Campañas
+                </x-nav-link-child>
+                <x-nav-link-child href="{{ route('campania.calendario') }}" :active="request()->routeIs('campania.calendario')">
                     Todas las campañas
                 </x-nav-link-child>
                 <x-nav-link-child href="{{ route('campania.costos') }}" :active="request()->routeIs('campania.costos')">

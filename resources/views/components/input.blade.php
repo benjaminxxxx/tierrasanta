@@ -10,7 +10,7 @@
 
 @php
     // Generar id por defecto a partir de wire:model si no viene
-    $id = $id ?? md5($attributes->wire('model'));
+    $id = $id ?? 'input-' . Str::uuid();
     $model = $attributes->whereStartsWith('wire:model')->first();
 
     // Si el usuario añadió disabled como atributo HTML: <x-input disabled />

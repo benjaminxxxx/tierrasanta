@@ -53,9 +53,12 @@ class CampaniaCampoSelectorComponent extends Component
     public function relistarNuevaCampania(array $datos): void
     {
         $campo = $datos['campo'] ?? null;
+        $campaniaId = $datos['id'] ?? null;
 
         if ($campo) {
-            $this->listarCampanias($campo);
+            $this->campoSeleccionado = $campo;
+            Session::put('campo', $campo);
+            $this->listarCampanias($campo,$campaniaId);
         }
     }
     private function listarCampanias(?string $campo,?int $campaniaId = null): void

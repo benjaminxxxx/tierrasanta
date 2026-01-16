@@ -16,7 +16,7 @@ return new class extends Migration {
                 ->nullable()
                 ->after('id') // ajusta la posición si deseas
                 ->constrained('campos_campanias')
-                ->restrictOnDelete();
+                ->cascadeOnDelete();
         });
     }
 

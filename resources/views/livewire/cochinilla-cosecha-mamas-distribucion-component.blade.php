@@ -57,18 +57,15 @@
                     <div class="my-4">
                          <div>
                     <x-h3 class="mb-3">Destino fresco</x-h3>
-                    <x-group-field>
-                        <x-input-string label="Campos para infestador cartón (separe por guiones - )"
+                
+                        <x-input type="text" label="Campos para infestador cartón (separe por guiones - )"
                             wire:model="cosch_destino_carton" />
-                    </x-group-field>
-                    <x-group-field>
-                        <x-input-string label="Campos para infestador tubo (separe por guiones - )"
+                   
+                        <x-input type="text" label="Campos para infestador tubo (separe por guiones - )"
                             wire:model="cosch_destino_tubo" />
-                    </x-group-field>
-                    <x-group-field>
-                        <x-input-string label="Campos para infestador malla (separe por guiones - )"
+              
+                        <x-input type="text" label="Campos para infestador malla (separe por guiones - )"
                             wire:model="cosch_destino_malla" />
-                    </x-group-field>
                 </div>
                     </div>
                 @else
