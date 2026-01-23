@@ -180,7 +180,7 @@
             @endif
             <x-button variant="secondary" type="button" wire:click="$set('mostrarFormulario',false)"
                 wire:loading.attr="disabled" class="mr-2">Cancelar</x-button>
-            <x-button type="submit" wire:click="store" wire:loading.attr="disabled" class="ml-3">Siguiente <i
+            <x-button type="submit" wire:click="storeProcesarSalidaAlmacen" wire:loading.attr="disabled" class="ml-3">Siguiente <i
                     class="fa fa-caret-right"></i></x-button>
         </x-slot>
     </x-dialog-modal>

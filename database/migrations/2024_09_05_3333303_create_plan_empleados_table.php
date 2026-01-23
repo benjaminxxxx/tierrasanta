@@ -23,7 +23,7 @@ return new class extends Migration {
             $table->string('numero')->nullable(); // Número de teléfono
             $table->date('fecha_nacimiento')->nullable(); // Fecha de nacimiento del empleado
             $table->string('direccion')->nullable(); // Dirección del empleado
-            $table->string('genero')->nullable();            
+            $table->enum('genero',['M','F'])->nullable();            
             $table->integer('orden')->nullable();
             $table->foreignId('creado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('actualizado_por')->nullable()->constrained('users')->nullOnDelete();

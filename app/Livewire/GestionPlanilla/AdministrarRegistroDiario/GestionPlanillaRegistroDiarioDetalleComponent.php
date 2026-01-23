@@ -27,6 +27,7 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
         $this->obtenerResumenDiarioPlanilla();
         $this->obtenerHandsonTableReporteDiario(false);
     }
+    
     public function obtenerResumenDiarioPlanilla()
     {
         if (!$this->fecha) {

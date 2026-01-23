@@ -25,6 +25,7 @@ class CampaniasComponent extends Component
             $this->listarCampanias($this->campoSeleccionado);
         }
     }
+   
     public function updatedCampoSeleccionado($campo)
     {
         session(['campo' => $campo]);

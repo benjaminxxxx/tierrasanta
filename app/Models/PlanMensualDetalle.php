@@ -11,6 +11,9 @@ class PlanMensualDetalle extends Model
 
     // Campos que se pueden asignar en masa
     protected $fillable = [
+        
+        'plan_mensual_id',
+        'plan_empleado_id',
         'documento',
         'nombres',
         'spp_snp',
@@ -51,8 +54,6 @@ class PlanMensualDetalle extends Model
         'negro_sueldo_final_empleado',
         'negro_diferencia_real',
         'esta_jubilado',
-        'plan_mensual_id',
-        'plan_empleado_id'
     ];
     public function empleado(){
         return $this->belongsTo(PlanEmpleado::class,'plan_empleado_id');

@@ -246,11 +246,11 @@ class DistribucionCombustibleComponent extends Component
 
         try {
             // Extraer año y mes de la fecha ingresada
-            $año = date('Y', strtotime($this->fecha));
+            $anio = date('Y', strtotime($this->fecha));
             $mes = date('m', strtotime($this->fecha));
 
-            // Buscar la última salida de almacén dentro del mismo mes y año, pero antes de la fecha dada
-            $almacenSalida = AlmacenProductoSalida::whereYear('fecha_reporte', $año)
+            // Buscar la última salida de almacén dentro del mismo mes y anio, pero antes de la fecha dada
+            $almacenSalida = AlmacenProductoSalida::whereYear('fecha_reporte', $anio)
                 ->whereMonth('fecha_reporte', $mes)
                 ->whereDate('fecha_reporte', '<=', $this->fecha)
                 ->where('maquinaria_id', $this->maquinaria->id)
@@ -279,9 +279,9 @@ class DistribucionCombustibleComponent extends Component
             // Reiniciar los valores del formulario
             $this->reset(['fecha', 'campo', 'horaInicio', 'horaFin', 'descripcion']);
             $this->alert('success', 'Distribución guardada correctamente.');
-        } catch (\Exception $th) {
+        } catch (Exception $th) {
             $this->dispatch('log', $th->getMessage());
-            $this->alert('error', 'Hubo un error al guardar la distribución.');
+            $this->alert('error', $th->getMessage());
         }
     }
 
@@ -312,7 +312,7 @@ class DistribucionCombustibleComponent extends Component
             ->where('maquinaria_id', $this->maquinaria->id)
             ->where('tipo_kardex', $this->tipoKardex)
             ->whereHas('producto', function ($q) {
-                $q->where('categoria_codigo', 'Combustible'); // Filtrar por categoría
+                $q->where('categoria_codigo', 'combustible'); // Filtrar por categoría
             })
             ->where(function ($q) {
                 $q->whereNull('campo_nombre')->orWhere('campo_nombre', ''); // Detecta NULL y ''

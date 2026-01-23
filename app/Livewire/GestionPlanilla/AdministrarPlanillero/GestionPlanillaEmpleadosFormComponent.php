@@ -57,9 +57,9 @@ class GestionPlanillaEmpleadosFormComponent extends Component
     {
         try {
             $datos = [
-                'nombres' => $this->nombres,
-                'apellido_paterno' => $this->apellido_paterno,
-                'apellido_materno' => $this->apellido_materno,
+                'nombres' => mb_strtoupper($this->nombres),
+                'apellido_paterno' => mb_strtoupper($this->apellido_paterno),
+                'apellido_materno' => mb_strtoupper($this->apellido_materno),
                 'documento' => $this->documento,
                 'email' => $this->email,
                 'direccion' => $this->direccion,

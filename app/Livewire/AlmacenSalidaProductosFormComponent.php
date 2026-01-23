@@ -134,7 +134,7 @@ class AlmacenSalidaProductosFormComponent extends Component
             $this->productos = [];
         }
     }
-    public function store()
+    public function storeProcesarSalidaAlmacen()
     {
         try {
             if (!$this->fecha_salida) {

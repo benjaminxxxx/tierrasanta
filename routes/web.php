@@ -106,6 +106,14 @@ Route::middleware([
     //REPORTE
     Route::prefix('planilla')->group(function () {
         // Pantalla principal / dashboard
+        Route::get('/importar', function () {
+            return view('livewire.gestion-planilla.importar-planilla-indice');
+        })->name('planilla.importar'); 
+
+        Route::get('/periodos', function () {
+            return view('livewire.gestion-planilla.periodos-planilla-indice');
+        })->name('planilla.periodos'); 
+
         Route::get('/gestion_planilla/reporte_general', function () {
             // Apunta a la nueva y más corta ubicación
             return view('livewire.gestion-planilla.reportes.reporte-general-index');

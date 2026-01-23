@@ -23,5 +23,8 @@ class CuadDetalleHora extends Model
     {
         return $this->belongsTo(CuadRegistroDiario::class, 'registro_diario_id');
     }
-    
+     public function labores()
+    {
+        return $this->belongsTo(Labores::class, 'codigo_labor');
+    }
 }

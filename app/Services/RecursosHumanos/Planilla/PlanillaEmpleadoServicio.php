@@ -64,6 +64,20 @@ class PlanillaEmpleadoServicio
 
         $empleado->restore();
     }
+    public function guardarPorDocumento(array $datos)
+    {
+        if (empty($datos['documento'])) {
+            throw new Exception('El documento (DNI) es obligatorio.');
+        }
+
+        $empleado = PlanEmpleado::where('documento', $datos['documento'])->first();
+
+        if ($empleado) {
+            return $this->actualizarEmpleado($datos, $empleado->id);
+        }
+
+        return $this->registrarEmpleado($datos);
+    }
 
     /**
      * Registra un nuevo empleado.
@@ -95,13 +109,45 @@ class PlanillaEmpleadoServicio
             'documento' => [
                 'required',
                 'string',
+                'digits:8',
                 Rule::unique('plan_empleados', 'documento')->ignore($empleadoId),
             ],
+            'genero' => 'nullable|in:M,F',
+            'email' => ['nullable', 'email'],
             'fecha_ingreso' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today'],
             'fecha_nacimiento' => ['nullable', 'date_format:Y-m-d', 'before:today'],
         ];
+        $messages = [
 
-        $validator = Validator::make($datos, $rules);
+            // --- Reglas generales ---
+            'required' => 'El campo :attribute es obligatorio.',
+            'string' => 'El campo :attribute debe ser un texto válido.',
+            'max' => 'El campo :attribute no debe exceder los :max caracteres.',
+            'date_format' => 'El campo :attribute debe tener el formato YYYY-MM-DD.',
+            'before' => 'El campo :attribute debe ser una fecha anterior a hoy.',
+            'before_or_equal' => 'El campo :attribute no puede ser una fecha futura.',
+            'unique' => 'El valor del campo :attribute ya existe en el sistema.',
+
+
+            // --- Campos específicos ---
+            'nombres.required' => 'Los nombres del empleado son obligatorios.',
+            'nombres.string' => 'Los nombres del empleado deben ser texto.',
+            'genero.in' => 'El género solo acepta como valores M o F',
+            'email.email' => 'El Email debe tener un formato válido',
+
+            'documento.digits' => 'El DNI debe contener exactamente 8 dígitos numéricos.',
+            'documento.required' => 'El DNI del empleado es obligatorio.',
+            'documento.string' => 'El DNI debe ser un texto válido.',
+            'documento.unique' => 'El DNI ya se encuentra registrado en otro empleado.',
+
+            'fecha_ingreso.date_format' => 'La fecha de ingreso debe tener el formato YYYY-MM-DD.',
+            'fecha_ingreso.before_or_equal' => 'La fecha de ingreso no puede ser posterior a hoy.',
+
+            'fecha_nacimiento.date_format' => 'La fecha de nacimiento debe tener el formato YYYY-MM-DD.',
+            'fecha_nacimiento.before' => 'La fecha de nacimiento debe ser anterior a la fecha actual.',
+        ];
+
+        $validator = Validator::make($datos, $rules, $messages);
 
         if ($validator->fails()) {
             throw new ValidationException($validator);
@@ -133,7 +179,20 @@ class PlanillaEmpleadoServicio
                 }
             ]);
 
-        // 🔹 Determinar si hay filtros de contrato activos
+        if (!empty($filtros['estado_contrato'])) {
+
+            if ($filtros['estado_contrato'] === 'con') {
+                $query->whereHas('contratos', function ($q) {
+                    $q->whereNull('fecha_fin')
+                        ->orWhere('fecha_fin', '>=', now());
+                });
+            }
+
+            if ($filtros['estado_contrato'] === 'sin') {
+                $query->whereDoesntHave('contratos');
+            }
+        }
+
         $filtrosContrato = collect([
             'cargo_id',
             'descuento_sp_codigo',
@@ -141,9 +200,12 @@ class PlanillaEmpleadoServicio
             'tipo_planilla',
         ])->filter(fn($key) => !empty($filtros[$key]));
 
-        // 🔹 Si hay filtros de contrato -> usar whereHas
-        if ($filtrosContrato->isNotEmpty()) {
+        if (
+            $filtrosContrato->isNotEmpty()
+            && $filtros['estado_contrato'] !== 'sin'
+        ) {
             $query->whereHas('contratos', function ($q) use ($filtros) {
+
                 if (!empty($filtros['cargo_id'])) {
                     $q->where('cargo_codigo', $filtros['cargo_id']);
                 }
@@ -163,7 +225,6 @@ class PlanillaEmpleadoServicio
                 }
             });
         }
-
         // 🔹 Filtros propios de PlanEmpleado
         if (!empty($filtros['filtro'])) {
             $query->where(function ($q) use ($filtros) {

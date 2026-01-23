@@ -1,5 +1,10 @@
 @if ($campaniaSeleccionada)
     <x-flex class="justify-center">
+        @if($campania && $campania->gasto_resumen_bdd_file)
+        <x-button href="{{ Storage::disk('public')->url($campania->gasto_resumen_bdd_file) }}">
+            <i class="fa fa-file-excel"></i> Descargar Reporte BDD
+        </x-button>
+        @endif
         <div class="relative">
             <x-dropdown align="right">
                 <x-slot name="trigger">
@@ -22,7 +27,12 @@
                             @click="$wire.dispatch('editarCampania',{campaniaId:{{ $campaniaSeleccionada }}})">
                             Editar Campaña
                         </x-dropdown-link>
-                        <x-dropdown-link class="text-center !text-red-600" wire:confirm="¿Estás seguro de eliminar esta campaña?" wire:click="eliminarCampania({{ $campaniaSeleccionada }})">
+                        <x-dropdown-link class="text-center" wire:click="generarBdd({{ $campaniaSeleccionada }})">
+                            Generar Reporte BDD
+                        </x-dropdown-link>
+                        <x-dropdown-link class="text-center !text-red-600"
+                            wire:confirm="¿Estás seguro de eliminar esta campaña?"
+                            wire:click="eliminarCampania({{ $campaniaSeleccionada }})">
                             Eliminar Campaña
                         </x-dropdown-link>
                     </div>

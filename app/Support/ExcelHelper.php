@@ -7,10 +7,76 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use Exception;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Worksheet\Table;
 class ExcelHelper
 {
+    /**
+     * Carga un archivo Excel y extrae datos de tablas específicas.
+     * * @param mixed $archivo El archivo desde Livewire (TemporaryUploadedFile)
+     * @param array $configHojas Array asociativo ['NombreHoja' => 'NombreTablaExcel']
+     * @return array Datos indexados por [hoja][fila][columna]
+     * @throws \Exception
+     */
+    public static function cargarData($archivo, array $configHojas): array
+    {
+        $path = $archivo->getRealPath();
+        $spreadsheet = IOFactory::load($path);
+        $dataExtraida = [];
+
+        foreach ($configHojas as $nombreHoja => $nombreTabla) {
+            $hoja = $spreadsheet->getSheetByName($nombreHoja);
+
+            if (!$hoja) {
+                throw new Exception("No se encontró la pestaña: {$nombreHoja}");
+            }
+
+            // Buscamos el objeto Tabla dentro de la hoja
+            $tablaExcel = null;
+            foreach ($hoja->getTableCollection() as $table) {
+                if ($table->getName() === $nombreTabla) {
+                    $tablaExcel = $table;
+                    break;
+                }
+            }
+
+            if (!$tablaExcel) {
+                throw new Exception("No se encontró la tabla '{$nombreTabla}' en la pestaña '{$nombreHoja}'");
+            }
+
+            $dataExtraida[$nombreHoja] = self::convertirTablaAArray($hoja, $tablaExcel);
+        }
+
+        return $dataExtraida;
+    }
+
+    /**
+     * Convierte el rango de una tabla en un array asociativo usando los encabezados.
+     */
+    private static function convertirTablaAArray(Worksheet $hoja, Table $tabla): array
+    {
+        $rango = $tabla->getRange(); // Ejemplo: "A1:E10"
+        $filas = $hoja->rangeToArray($rango, null, true, false, true);
+
+        if (empty($filas)) return [];
+
+        // El primer elemento son los encabezados
+        $encabezados = array_shift($filas);
+        $resultado = [];
+
+        foreach ($filas as $fila) {
+            $filaAsociativa = [];
+            foreach ($encabezados as $columna => $nombreColumna) {
+                // Indexamos el valor de la celda con el nombre de la columna
+                $filaAsociativa[mb_strtolower($nombreColumna)] = $fila[$columna] ?? null;
+            }
+            $resultado[] = $filaAsociativa;
+        }
+
+        return $resultado;
+    }
     public static function parseFechaExcel($valor, $fila = null): ?string
     {
         if ($valor === null || $valor === '') {

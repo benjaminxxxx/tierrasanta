@@ -25,6 +25,9 @@ class GestionPlanillaEmpleadosComponent extends Component
     public $empleadosOrdenados = [];
     public $mesVigencia;
     public $anioVigencia;
+    public ?string $estadoContrato = null;
+    // valores: null | 'con' | 'sin'
+
     protected $listeners = ['empleadoGuardado' => '$refresh'];
     public function mount()
     {
@@ -117,6 +120,16 @@ class GestionPlanillaEmpleadosComponent extends Component
         }
 
     }
+    public function updatedEstadoContrato($value)
+    {
+        if ($value === 'sin') {
+            $this->planCargoId = null;
+            $this->planDescuentoSpCodigo = null;
+            $this->planGrupoCodigo = null;
+            $this->planTipoPlanilla = null;
+        }
+    }
+
     public function render()
     {
         $filtros = [
@@ -127,6 +140,7 @@ class GestionPlanillaEmpleadosComponent extends Component
             'genero' => $this->planGenero,
             'estado' => $this->planEliminados,
             'tipo_planilla' => $this->planTipoPlanilla,
+            'estado_contrato' => $this->estadoContrato,
         ];
 
         $planEmpleados = app(GestionPlanillaEmpleados::class)->buscarEmpleado($filtros);

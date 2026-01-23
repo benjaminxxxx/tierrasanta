@@ -11,9 +11,25 @@
             </div>
         </x-group-field>
 
-        <x-select-planilla-cargos label="Cargo" wire:model.live="planCargoId" size="small" />
-        <x-select-planilla-descuentos label="SPP o SNP" wire:model.live="planDescuentoSpCodigo" size="small" />
-        <x-select-planilla-grupos label="Grupo" wire:model.live="planGrupoCodigo" size="small" />
+        <x-select label="Contrato" wire:model.live="estadoContrato" size="small">
+            <option value="">TODOS</option>
+            <option value="con">CON CONTRATO</option>
+            <option value="sin">SIN CONTRATO</option>
+        </x-select>
+        @if ($estadoContrato !== 'sin')
+            <x-select-planilla-cargos label="Cargo" wire:model.live="planCargoId" size="small" />
+
+            <x-select-planilla-descuentos label="SPP o SNP" wire:model.live="planDescuentoSpCodigo" size="small" />
+
+            <x-select-planilla-grupos label="Grupo" wire:model.live="planGrupoCodigo" size="small" />
+
+            <x-select label="Tipo de planilla" wire:model.live="planTipoPlanilla" size="small">
+                <option value="">TODOS</option>
+                <option value="agraria">AGRARIA</option>
+                <option value="oficina">OFICINA</option>
+            </x-select>
+        @endif
+
 
         <x-select label="Género" class="uppercase" wire:model.live="planGenero" size="small">
             <option value="">TODOS</option>
@@ -21,11 +37,6 @@
             <option value="M">HOMBRES</option>
         </x-select>
 
-        <x-select label="Tipo de planilla" class="uppercase" wire:model.live="planTipoPlanilla" size="small">
-            <option value="">TODOS</option>
-            <option value="agraria">AGRARIA</option>
-            <option value="oficina">OFICINA</option>
-        </x-select>
 
         <x-select label="Estado" class="uppercase" wire:model.live="planEliminados" size="small">
             <option value="">ACTIVOS</option>

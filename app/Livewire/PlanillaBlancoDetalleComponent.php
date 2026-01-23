@@ -226,12 +226,11 @@ class PlanillaBlancoDetalleComponent extends Component
                 'essaludEps' => $this->essaludEps,
                 'rem_basica_essalud' => $this->remBasicaEssalud,
             ];
-
             $excelPath = app(GestionPlanilla::class)->generarPlanilla($parametros);
 
             $this->planillaMensual->excel = $excelPath;
             $this->planillaMensual->save();
-         
+     
             PlanillaServicio::procesarExcelPlanillaDetalle($this->planillaMensual);
 
             $this->obtenerInformacionMensual();
@@ -257,10 +256,11 @@ class PlanillaBlancoDetalleComponent extends Component
                         'plan_mensual_id' => $this->planillaMensual->id
                     ],
                     [
-                        'bonificacion' => $data['bonificacion'] ?? 0
+                        'bonificacion' => (float) ($data['bonificacion'] ?? 0)
                     ]
                 );
             }
+            
             $this->generarPlanilla();
 
             $this->alert('success', 'Registros Actualizados Correctamente.');

@@ -77,7 +77,8 @@
         'reporte.resumen_planilla',
         'gestion_planilla.reporte_general',
         'empleados.asignacion_familiar',
-        'empleados'
+        'empleados',
+        'planilla.periodos'
     ])" logo='fa fa-table' text="Planilla">
                 
                 <x-nav-link-child href="{{ route('empleados') }}" :active="request()->routeIs('empleados')">
@@ -90,6 +91,10 @@
                 <x-nav-link-child href="{{ route('planilla.asistencia') }}"
                     :active="request()->routeIs('planilla.asistencia')">
                     Asistencia Mensual
+                </x-nav-link-child>
+                <x-nav-link-child href="{{ route('planilla.periodos') }}"
+                    :active="request()->routeIs('planilla.periodos')">
+                    Programar Permisos
                 </x-nav-link-child>
                 <x-nav-link-child href="{{ route('reporte.resumen_planilla') }}"
                     :active="request()->routeIs('reporte.resumen_planilla')">

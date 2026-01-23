@@ -12,6 +12,7 @@ use App\Models\PlanSueldo;
 use App\Models\ReporteCostoPlanilla;
 use App\Models\ReporteDiario;
 use App\Models\ReporteDiarioCampos;
+use App\Services\Reportes\RptPlanillaGeneral;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Exception;
@@ -21,6 +22,9 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class PlanillaServicio
 {
+    public function descargarPlanillaActualizada(){
+         return app(RptPlanillaGeneral::class)->descargarPlanillaActualizada();
+    }
     public function guardarSueldosMasivos($cambios, $mesVigencia, $anioVigencia)
     {
         

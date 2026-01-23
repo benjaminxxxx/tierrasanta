@@ -6,115 +6,131 @@ use App\Models\CampoCampania;
 use App\Services\Produccion\Planificacion\CampaniaServicio;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
-use Session;
+use Illuminate\Support\Facades\Session;
 
 class CampaniaCampoSelectorComponent extends Component
 {
     use LivewireAlert;
+
     public $campoSeleccionado;
-    public $campaniaSeleccionada;
+    public $campaniaSeleccionada; // El ID
     public $campanias = [];
-    public $campania;
-    protected $listeners = [
-        'campaniaInsertada' => 'relistarNuevaCampania',
-    ];
+    public $campania; // El Objeto Model
+
+    protected $listeners = ['campaniaInsertada' => 'relistarNuevaCampania'];
+
     public function mount($campaniaId = null)
     {
-        if(!$campaniaId){
+        // 1. Determinar el campo inicial
+        if ($campaniaId) {
+            $campaniaModel = CampoCampania::find($campaniaId);
+            if ($campaniaModel) {
+                $this->campoSeleccionado = $campaniaModel->campo;
+                Session::put('campo', $this->campoSeleccionado);
+            }
+        } else {
             $this->campoSeleccionado = Session::get('campo');
-            if ($this->campoSeleccionado) {
-                $this->listarCampanias($this->campoSeleccionado);
-            }
-        }else{
-            
-            $campania = CampoCampania::find($campaniaId);
-            if($campania){
-                $this->campoSeleccionado = $campania->campo;
-                $this->listarCampanias($this->campoSeleccionado,$campania->id);
-            }
-        }
-        
-    }
-    public function updatedCampoSeleccionado($campo): void
-    {
-        Session::put('campo', $campo);
-        $this->listarCampanias($campo);
-    }
-    public function updatedCampaniaSeleccionada($campaniaId): void
-    {
-        Session::put('campania', $campaniaId);
-        $this->campania = CampoCampania::find($campaniaId);
-        if (!$this->campania) {
-            $this->campaniaSeleccionada = null;
-        }
-        
-        $this->dispatch('campania-cambiada', id: $campaniaId);
-    }
-    public function relistarNuevaCampania(array $datos): void
-    {
-        $campo = $datos['campo'] ?? null;
-        $campaniaId = $datos['id'] ?? null;
-
-        if ($campo) {
-            $this->campoSeleccionado = $campo;
-            Session::put('campo', $campo);
-            $this->listarCampanias($campo,$campaniaId);
-        }
-    }
-    private function listarCampanias(?string $campo,?int $campaniaId = null): void
-    {
-        if (empty($campo)) {
-            $this->campanias = [];
-            $this->campaniaSeleccionada = null;
-            return;
         }
 
-        $this->campanias = CampoCampania::query()
-            ->where('campo', $campo)
+        // 2. Cargar lista y seleccionar campaña
+        if ($this->campoSeleccionado) {
+            $this->cargarYSeleccionar($this->campoSeleccionado, $campaniaId ?: Session::get('campania'));
+        }
+    }
+
+    /**
+     * Centraliza la carga de la lista y la selección de la campaña activa
+     */
+    private function cargarYSeleccionar($campo, $campaniaIdDeseada = null)
+    {
+        $this->campoSeleccionado = $campo;
+        
+        // Cargar lista de campañas
+        $this->campanias = CampoCampania::where('campo', $campo)
             ->orderBy('nombre_campania', 'desc')
             ->pluck('nombre_campania', 'id')
             ->toArray();
 
-        // Si no hay campañas disponibles
         if (empty($this->campanias)) {
-            $this->campaniaSeleccionada = null;
-            Session::forget('campania');
+            $this->resetearSeleccion();
             return;
         }
 
-        // 1. Si existe una campaña guardada en sesión
-        $campaniaSesion = Session::get('campania');
-        if($campaniaId){
-            $campaniaSesion = $campaniaId;
-        }
-        
-
-        // 2. Validar si la campaña en sesión está en la lista
-        if ($campaniaSesion && array_key_exists($campaniaSesion, $this->campanias)) {
-            $this->campaniaSeleccionada = $campaniaSesion;
-            return;
+        // Determinar ID a seleccionar: 1. El pedido, 2. El de sesión, 3. El primero de la lista
+        $idFinal = $campaniaIdDeseada;
+        if (!$idFinal || !array_key_exists($idFinal, $this->campanias)) {
+            $idFinal = array_key_first($this->campanias);
         }
 
-        // 3. Si no existe o no es válida, seleccionar la primera campaña
-        $this->campaniaSeleccionada = array_key_first($this->campanias);
-
-        // Actualizar sesión con la primera
-        Session::put('campania', $this->campaniaSeleccionada);
+        $this->setCampaniaActiva($idFinal);
     }
 
-    public function eliminarCampania($campaniaSeleccionada)
+    /**
+     * Esta es la ÚNICA función que debe cambiar el estado de la campaña
+     */
+    private function setCampaniaActiva($id)
+    {
+        $this->campaniaSeleccionada = $id;
+        $this->campania = CampoCampania::find($id);
+        
+        if ($this->campania) {
+            Session::put('campania', $id);
+            $this->dispatch('campania-cambiada', id: $id);
+        } else {
+            $this->resetearSeleccion();
+        }
+    }
+
+    private function resetearSeleccion()
+    {
+        $this->campaniaSeleccionada = null;
+        $this->campania = null;
+        Session::forget('campania');
+    }
+
+    // --- Eventos de UI ---
+
+    public function updatedCampoSeleccionado($campo)
+    {
+        Session::put('campo', $campo);
+        $this->cargarYSeleccionar($campo);
+    }
+
+    public function updatedCampaniaSeleccionada($id)
+    {
+        $this->setCampaniaActiva($id);
+    }
+
+    public function relistarNuevaCampania(array $datos)
+    {
+        $this->cargarYSeleccionar($datos['campo'] ?? null, $datos['id'] ?? null);
+    }
+
+    // --- Acciones ---
+
+    public function generarBdd($campaniaId)
     {
         try {
-
-            app(CampaniaServicio::class)->eliminarCampania($campaniaSeleccionada);
-            $this->campoSeleccionado = null;
-            $this->listarCampanias('');
-
-            $this->alert('success', 'Campaña Eliminada Correctamente.');
+            app(CampaniaServicio::class)->generarBddMensual($campaniaId);
+            $this->alert('success', 'Datos generados correctamente.');
+            // Refrescar el objeto por si cambió la ruta del archivo
+            $this->campania = CampoCampania::find($campaniaId);
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }
     }
+
+    public function eliminarCampania($id)
+    {
+        try {
+            app(CampaniaServicio::class)->eliminarCampania($id);
+            $this->cargarYSeleccionar($this->campoSeleccionado);
+            $this->alert('success', 'Campaña Eliminada.');
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
+        }
+    }
+
     public function render()
     {
         return view('livewire.gestion-campania.campania-x-campo-selector');

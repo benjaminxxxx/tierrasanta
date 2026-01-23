@@ -16,7 +16,7 @@
         </div>
 
         <div x-data="ordenMensualPlanilla">
-            <div class="overflow-x-auto mt-2">
+            <div class="overflow-x-auto mt-2 h-[70vh]">
                 <x-table>
                     <x-slot name="thead">
                         <tr>
@@ -32,14 +32,14 @@
                                 <x-td x-text="index + 1" class="text-center"></x-td>
                                 <x-td x-text="empleado.nombres"></x-td>
                                 <x-td class="text-center">
-                                    <x-flex>
-                                        <button type="button" @click="moverArriba(index)" :disabled="index === 0">
-                                            <i class="fa fa-arrow-up text-blue-600 hover:text-blue-800"></i>
-                                        </button>
-                                        <button type="button" @click="moverAbajo(index)"
-                                            :disabled="index === empleados.length - 1">
-                                            <i class="fa fa-arrow-down text-blue-600 hover:text-blue-800"></i>
-                                        </button>
+                                    <x-flex class="min-w-[163px]">
+                                        <x-button type="button" @click="moverArriba(index)" x-bind:disabled="index === 0">
+                                            <i class="fa fa-arrow-up"></i>
+                                        </x-button>
+                                        <x-button type="button" @click="moverAbajo(index)"
+                                            x-bind:disabled="index === empleados.length - 1">
+                                            <i class="fa fa-arrow-down"></i>
+                                        </x-button>
                                         <x-button variant="danger" type="button" @click="quitar(index)">
                                             <i class="fa fa-trash"></i> Quitar
                                         </x-button>

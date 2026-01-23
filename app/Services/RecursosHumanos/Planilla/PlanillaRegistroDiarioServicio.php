@@ -3,15 +3,51 @@
 namespace App\Services\RecursosHumanos\Planilla;
 
 use App\Models\PlanDetalleHora;
+use App\Models\PlanMensual;
+use App\Models\PlanMensualDetalle;
 use App\Models\PlanRegistroDiario;
 use App\Models\PlanResumenDiario;
 use App\Models\PlanResumenDiarioTipoAsistencia;
 use App\Models\PlanTipoAsistencia;
 use App\Services\PlanTipoAsistenciaServicio;
+use Carbon\CarbonPeriod;
 use Illuminate\Support\Carbon;
 
 class PlanillaRegistroDiarioServicio
 {
+    /**
+     * Sincroniza la asistencia diaria basada en un rango de fechas y un empleado.
+     */
+    public function actualizarAsistenciaPorRango($empleadoId, $fechaInicio, $fechaFin, $codigoAsistencia)
+    {
+        $periodo = CarbonPeriod::create($fechaInicio, $fechaFin);
+
+        foreach ($periodo as $fecha) {
+            $fechaString = $fecha->toDateString();
+
+            // Buscamos el detalle mensual directamente cruzando con la cabecera (PlanMensual)
+            // Esto es más eficiente que buscar por separado
+            $detalleMensual = PlanMensualDetalle::whereHas('planillaMensual', function ($query) use ($fecha) {
+                    $query->where('mes', $fecha->month)
+                          ->where('anio', $fecha->year);
+                })
+                ->where('plan_empleado_id', $empleadoId)
+                ->first();
+
+            if ($detalleMensual) {
+                PlanRegistroDiario::updateOrCreate(
+                    [
+                        'plan_det_men_id' => $detalleMensual->id,
+                        'fecha'           => $fechaString,
+                    ],
+                    [
+                        'asistencia'      => $codigoAsistencia,
+                        'total_horas'     => 0 // Como es un permiso/periodo, horas trabajadas usualmente es 0
+                    ]
+                );
+            }
+        }
+    }
     public function guardarRegistrosDiarios($fecha, $datos, $totalActividades)
     {
         $errores = [];
@@ -160,7 +196,7 @@ class PlanillaRegistroDiarioServicio
 
             if (!$registro) {
                 // Buscar en el catálogo base
-                
+
                 $tipo = app(PlanTipoAsistenciaServicio::class)->obtenerPorCodigo($codigo);
                 if (!$tipo) {
                     continue; // código no válido

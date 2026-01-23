@@ -4,12 +4,102 @@ namespace App\Services\Produccion\Planificacion;
 
 use App\Models\CampoCampania as Campania;
 use App\Models\CochinillaInfestacion;
+use App\Services\Campania\Data\DataCostoServicio;
+use App\Services\Campania\Data\DataInsumoServicio;
+use App\Services\Campania\Data\DataManoObraServicio;
+use App\Services\Campania\Exports\ExportCampaniaServicio;
 use App\Services\Reportes\RptProduccionPlanificacionCampania;
+use Exception;
 use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 
 class CampaniaServicio
 {
+    public function generarBddMensual(int $campaniaId)
+    {
+        $campania = Campania::find($campaniaId);
+
+        if (!$campania) {
+            throw new Exception("La campaña no existe");
+        }
+
+        // 1. Recolección de datos de múltiples fuentes
+        $informacionPlanilla = app(DataManoObraServicio::class)->generarPlanillerosPor(
+            $campania->campo,
+            $campania->fecha_inicio,
+            $campania->fecha_fin
+        );
+        $informacionCuadrilla = app(DataManoObraServicio::class)->generarCuaderillerosPor(
+            $campania->campo,
+            $campania->fecha_inicio,
+            $campania->fecha_fin
+        );
+
+        $informacionMaquinaria = app(DataInsumoServicio::class)->generarCostoMaquinariaPor(
+            $campania->campo,
+            $campania->fecha_inicio,
+            $campania->fecha_fin
+        );
+
+        $informacionFertilizante = app(DataInsumoServicio::class)->generarCostoFertilizantePor(
+            $campania->campo,
+            $campania->fecha_inicio,
+            $campania->fecha_fin
+        );
+
+        $informacionPesticida = app(DataInsumoServicio::class)->generarCostoPesticidaPor(
+            $campania->campo,
+            $campania->fecha_inicio,
+            $campania->fecha_fin
+        );
+
+        $informacionCosto = app(DataCostoServicio::class)->generarCostoPor(
+            $campania->id,
+        );
+
+        $informacionConsumo = [];   // Aquí vendrían tus otros servicios
+
+        // 2. Combinar todos los arrays
+        $informacionCombinada = array_merge(
+            $informacionPlanilla,
+            $informacionCuadrilla,
+            $informacionConsumo,
+            $informacionMaquinaria,
+            $informacionFertilizante,
+            $informacionPesticida,
+            $informacionCosto
+        );
+
+        // 3. Definir los valores comunes
+        $tipoCambioValor = $campania->tipo_cambio; // Ejemplo: podrías traerlo de un servicio o del objeto campania
+        $nombreCampaniaValor = $campania->nombre_campania;
+
+        // 4. Inyectar campos adicionales a cada elemento
+        $informacionCombinada = array_map(function ($item) use ($tipoCambioValor, $nombreCampaniaValor) {
+            $item['tipo_cambio'] = $tipoCambioValor;
+            $item['campania'] = $nombreCampaniaValor;
+            return $item;
+        }, $informacionCombinada);
+
+        // 2. Ordenamiento
+        usort($informacionCombinada, function ($a, $b) {
+            return strtotime($a['fecha']) - strtotime($b['fecha']);
+        });
+
+        // 3. Delegar generación de Excel al Servicio
+        // Pasamos un objeto simple con los datos de configuración necesarios
+        $config = (object) [
+            'campo' => $campania->campo,
+            'nombre_campania' => $campania->nombre_campania
+        ];
+
+        $filePath = app(ExportCampaniaServicio::class)->generarExcelMensual($config, $informacionCombinada);
+
+        // 4. Actualizar el modelo con la ruta retornada
+        $campania->update([
+            'gasto_resumen_bdd_file' => $filePath
+        ]);
+    }
     public function registrarHistorialDeInfestaciones(int $campaniaId, string $tipo = 'infestacion'): void
     {
         // Cargar campaña

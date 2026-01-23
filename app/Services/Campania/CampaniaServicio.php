@@ -14,6 +14,7 @@ use Illuminate\Support\Carbon;
 
 class CampaniaServicio
 {
+    
     public function obtenerCostosManoObra($campania)
     {
 
@@ -102,10 +103,10 @@ class CampaniaServicio
         }
         foreach ($planDetalleHoras as $detalleHora) {
             $registro = $detalleHora->registroDiario;
-/*
-            if (!$registro->coincide_total_horas) {
-                throw new Exception("En alguna fecha no se ha detallado las actividades y por ende el total de horas no coincide, corregir para hacer un calculo mas preciso.");
-            }*/
+            /*
+                        if (!$registro->coincide_total_horas) {
+                            throw new Exception("En alguna fecha no se ha detallado las actividades y por ende el total de horas no coincide, corregir para hacer un calculo mas preciso.");
+                        }*/
             $actividad = Actividad::where('fecha', $registro->fecha)
                 ->where('campo', $detalleHora->campo_nombre)
                 ->where('labor_id', $detalleHora->codigo_labor)->first();

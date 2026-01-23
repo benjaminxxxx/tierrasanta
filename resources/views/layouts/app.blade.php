@@ -28,7 +28,7 @@
         }
 
         .ultra-thin-scroll:hover {
-            scrollbar-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0);
+            scrollbar-color: rgba(114, 114, 114, 0.5) rgba(124, 124, 124, 0);
         }
 
         /* Webkit (Chrome, Edge, Safari) */
@@ -42,13 +42,13 @@
         }
 
         .ultra-thin-scroll::-webkit-scrollbar-thumb {
-            background-color: rgba(0, 0, 0, 0.1);
+            background-color: rgba(212, 212, 212, 0.5);
             border-radius: 9999px;
             border: none;
         }
 
         .ultra-thin-scroll::-webkit-scrollbar-thumb:hover {
-            background-color: rgba(0, 0, 0, 0.2);
+            background-color: rgba(136, 136, 136, 0.7);
         }
     </style>
 </head>

@@ -16,6 +16,9 @@
 
         <x-slot name="content">
             <div class="w-full">
+                <x-dropdown-link class="text-center" href="{{ route('planilla.importar') }}">
+                    <i class="fa fa-file-excel"></i> Importar Empleados
+                </x-dropdown-link>
                 <x-dropdown-link class="text-center" wire:click="ordenarPlanillaAgraria">
                     <i class="fa fa-list"></i> Ordenar Planilla Agraria
                 </x-dropdown-link>
