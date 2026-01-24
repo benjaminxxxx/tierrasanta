@@ -22,6 +22,7 @@
 
         {{-- Año --}}
         <x-select wire:model.live="filtros.anio" placeholder="Selecciona un año" label="Año" >
+            <option value="">Todos</option>
             @for ($year = now()->year; $year >= 2014; $year--)
                 <option value="{{ $year }}">{{ $year }}</option>
             @endfor

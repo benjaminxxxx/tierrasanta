@@ -50,7 +50,7 @@
         </x-button>
 
         <x-button type="submit" form="frmPeriodo">
-            {{ $periodoId ? 'Actualizar Período' : 'Guardar Período' }}
+            <i class="fa fa-{{ $periodoId ? 'refresh' : 'save' }}"></i> {{ $periodoId ? 'Actualizar Período' : 'Guardar Período' }}
         </x-button>
     </x-slot>
 </x-dialog-modal>

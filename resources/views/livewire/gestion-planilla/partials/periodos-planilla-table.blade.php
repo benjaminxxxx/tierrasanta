@@ -20,7 +20,7 @@
                     {{-- Empleado --}}
                     <x-td>
                         <span class="font-medium text-gray-900 dark:text-gray-100">
-                            {{ $periodo->empleado->nombres }}
+                            {{ $periodo->empleado?->nombres }}
                         </span>
                     </x-td>
 

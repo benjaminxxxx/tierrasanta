@@ -117,7 +117,7 @@ class PeriodosPlanillaComponent extends Component
 
         $this->filtros = [
             'plan_empleado_id' => null,
-            'anio' => Carbon::now()->year
+            'anio' => null
         ];
     }
     public function updatedFiltros(): void

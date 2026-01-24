@@ -47,7 +47,7 @@ class PlanillaPeriodoServicio
             return $periodo;
         });
     }
-    public function obtenerPaginacion($filtros, $page = 2)
+    public function obtenerPaginacion($filtros, $page = 20)
     {
         $query = PlanPeriodo::query()
             ->with('tipoAsistencia');
