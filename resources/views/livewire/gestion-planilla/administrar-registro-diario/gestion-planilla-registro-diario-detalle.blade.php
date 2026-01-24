@@ -96,12 +96,30 @@
                 });
             },
             timeToMinutes(time) {
-                const [hours, minutes] = time.split('.').map(Number);
-                return hours * 60 + minutes;
+                if (!time || typeof time !== 'string') return 0;
+
+                // Reemplazamos dos puntos por punto por si acaso viene en formato HH:mm
+                const limpio = time.replace(':', '.');
+                const partes = limpio.split('.');
+
+                const hours = parseInt(partes[0], 10) || 0;
+                const minutes = parseInt(partes[1], 10) || 0;
+
+                // Validamos que sean números finitos
+                if (isNaN(hours) || isNaN(minutes)) return 0;
+
+                return (hours * 60) + minutes;
             },
+
             minutesToTime(minutes) {
+                // Si por algún error llega NaN o Infinite, devolvemos 00.00
+                if (isNaN(minutes) || !isFinite(minutes) || minutes < 0) {
+                    return "00.00";
+                }
+
                 const hours = Math.floor(minutes / 60);
-                const mins = minutes % 60;
+                const mins = Math.round(minutes % 60); // Usamos round para evitar decimales en los minutos
+
                 return `${String(hours).padStart(2, '0')}.${String(mins).padStart(2, '0')}`;
             },
             initTable() {
@@ -148,10 +166,14 @@
                             source === 'timeValidator' ||
                             source === 'Autofill.fill') {
 
+
+                            //console.log(changes);
+
                             this.hasUnsavedChanges = true;
 
                             const filasMap = new Map();
                             changes.forEach(([row]) => {
+
                                 if (!filasMap.has(row)) {
                                     filasMap.set(row, this.hot.getDataAtRow(row));
                                 }
@@ -342,7 +364,7 @@
                     const horaInicio = data[i + 2];
                     const horaFin = data[i + 3];
 
-                    if (horaInicio == null || horaFin == null) {
+                    if (horaInicio == null || horaFin == null || horaInicio == '' || horaFin == '') {
                         continue;
                     }
 

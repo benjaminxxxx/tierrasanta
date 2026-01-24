@@ -2,6 +2,7 @@
 
 namespace App\Services\RecursosHumanos\Planilla;
 
+use App\Models\Labores;
 use App\Models\PlanDetalleHora;
 use App\Models\PlanMensual;
 use App\Models\PlanMensualDetalle;
@@ -9,8 +10,10 @@ use App\Models\PlanRegistroDiario;
 use App\Models\PlanResumenDiario;
 use App\Models\PlanResumenDiarioTipoAsistencia;
 use App\Models\PlanTipoAsistencia;
+use App\Services\Campo\Gestion\CampoServicio;
 use App\Services\PlanTipoAsistenciaServicio;
 use Carbon\CarbonPeriod;
+use Exception;
 use Illuminate\Support\Carbon;
 
 class PlanillaRegistroDiarioServicio
@@ -28,9 +31,9 @@ class PlanillaRegistroDiarioServicio
             // Buscamos el detalle mensual directamente cruzando con la cabecera (PlanMensual)
             // Esto es más eficiente que buscar por separado
             $detalleMensual = PlanMensualDetalle::whereHas('planillaMensual', function ($query) use ($fecha) {
-                    $query->where('mes', $fecha->month)
-                          ->where('anio', $fecha->year);
-                })
+                $query->where('mes', $fecha->month)
+                    ->where('anio', $fecha->year);
+            })
                 ->where('plan_empleado_id', $empleadoId)
                 ->first();
 
@@ -38,21 +41,153 @@ class PlanillaRegistroDiarioServicio
                 PlanRegistroDiario::updateOrCreate(
                     [
                         'plan_det_men_id' => $detalleMensual->id,
-                        'fecha'           => $fechaString,
+                        'fecha' => $fechaString,
                     ],
                     [
-                        'asistencia'      => $codigoAsistencia,
-                        'total_horas'     => 0 // Como es un permiso/periodo, horas trabajadas usualmente es 0
+                        'asistencia' => $codigoAsistencia,
+                        'total_horas' => 0 // Como es un permiso/periodo, horas trabajadas usualmente es 0
                     ]
                 );
             }
         }
     }
+    private function procesarDatos($datos, $totalActividades): array
+    {
+        $camposNormalizados = CampoServicio::obtenerMapaCamposNormalizados();
+        $labores = Labores::pluck('codigo')->toArray();
+        $datosProcesados = [];
+
+        foreach ($datos as $i => $informacion) {
+            $fila = $i + 1;
+            $planillaMensualDetalleId = $informacion['plan_men_detalle_id'] ?? null;
+
+            if (!$planillaMensualDetalleId)
+                continue;
+
+            $tramos = [];
+            $totalHoras = 0;
+
+            for ($x = 1; $x <= $totalActividades; $x++) {
+                $inicio = isset($informacion["entrada_$x"]) ? str_replace('.', ':', $informacion["entrada_$x"]) : null;
+                $fin = isset($informacion["salida_$x"]) ? str_replace('.', ':', $informacion["salida_$x"]) : null;
+                $labor = $informacion["labor_$x"] ?? null;
+                $campo = $informacion["campo_$x"] ?? null;
+
+                if (!$inicio && !$fin && !$campo && !$labor)
+                    continue;
+
+                // Validación de integridad
+                if (!$inicio || !$fin || !$campo || !$labor) {
+                    throw new Exception("Valores incompletos en fila {$fila}, tramo {$x}");
+                }
+
+                // Validación de existencia y normalización
+                $campoKey = mb_strtolower($campo);
+                if (!array_key_exists($campoKey, $camposNormalizados)) {
+                    throw new Exception("El campo '{$campo}' en fila {$fila} no existe o no tiene alias.");
+                }
+
+                if (!in_array($labor, $labores)) {
+                    throw new Exception("La labor '{$labor}' en fila {$fila} no existe.");
+                }
+
+                $hInicio = Carbon::parse($inicio);
+                $hFin = Carbon::parse($fin);
+                $horas = $hInicio->floatDiffInHours($hFin);
+
+                $totalHoras += $horas;
+                $tramos[] = [
+                    'codigo_labor' => $labor,
+                    'campo_nombre' => $camposNormalizados[$campoKey],
+                    'hora_inicio' => $hInicio->format('H:i'),
+                    'hora_fin' => $hFin->format('H:i'),
+                ];
+            }
+
+            $asistencia = trim($informacion['asistencia'] ?? '');
+            if ($asistencia === 'A' && empty($tramos)) {
+                throw new Exception("Debe agregar detalle si tiene asistencia en la fila {$fila}");
+            }
+
+            // Estructuramos el registro ya limpio para la persistencia
+            $datosProcesados[] = [
+                'plan_det_men_id' => $planillaMensualDetalleId,
+                'asistencia' => $asistencia,
+                'total_horas' => $totalHoras,
+                'tramos' => $tramos
+            ];
+        }
+
+        return $datosProcesados;
+    }
+
+    public function guardarRegistrosDiarios($fecha, $datos, $totalActividades)
+    {
+        // 1. Validar y normalizar (Si falla, lanza Exception y no guarda nada)
+        $datosLimpios = $this->procesarDatos($datos, $totalActividades);
+      
+        $totalesPorAsistencia = [];
+
+        foreach ($datosLimpios as $item) {
+            // 2. Persistir Cabecera
+            $registro = PlanRegistroDiario::updateOrCreate(
+                ['plan_det_men_id' => $item['plan_det_men_id'], 'fecha' => $fecha],
+                ['asistencia' => $item['asistencia'], 'total_horas' => $item['total_horas']]
+            );
+
+            // 3. Conteo de estadísticas
+            if ($item['asistencia'] !== '') {
+                $totalesPorAsistencia[$item['asistencia']] = ($totalesPorAsistencia[$item['asistencia']] ?? 0) + 1;
+            }
+
+            // 4. Manejo de tramos
+            if (empty($item['tramos'])) {
+                $registro->detalles()->delete();
+                if ($item['asistencia'] === '')
+                    $registro->delete();
+                continue;
+            }
+
+            // 5. Sincronización optimizada
+            $this->sincronizarTramos($registro, $item['tramos']);
+        }
+
+        if (!empty($totalesPorAsistencia)) {
+            $this->actualizarResumenAsistencia($fecha, $totalesPorAsistencia);
+        }
+    }
+
+    private function sincronizarTramos($registro, array $tramosNuevos)
+    {
+        $clave = fn($t) => "{$t['codigo_labor']}|{$t['campo_nombre']}|{$t['hora_inicio']}|{$t['hora_fin']}";
+
+        $existentes = $registro->detalles()->get();
+        $existentesMap = $existentes->keyBy(fn($e) => $clave($e->toArray()));
+        $nuevosMap = collect($tramosNuevos)->keyBy($clave);
+
+        // Eliminar los que ya no vienen
+        foreach ($existentes as $ex) {
+            if (!$nuevosMap->has($clave($ex->toArray())))
+                $ex->delete();
+        }
+
+        // Crear los que no existen
+        foreach ($nuevosMap as $key => $nuevo) {
+            if (!$existentesMap->has($key)) {
+                $registro->detalles()->create(array_merge($nuevo, ['orden' => 0])); // El orden se puede manejar por ID o index
+            }
+        }
+    }
+    /*
     public function guardarRegistrosDiarios($fecha, $datos, $totalActividades)
     {
         $errores = [];
         $totalesPorAsistencia = [];
 
+        //Validar Datos
+
+        $datos = $this->procesarDatos($datos);
+dd($datos);
         foreach ($datos as $i => $informacion) {
 
             $planillaMensualDetalleId = $informacion['plan_men_detalle_id'] ?? null;
@@ -103,7 +238,6 @@ class PlanillaRegistroDiarioServicio
             }
 
             $asistencia = $informacion['asistencia'] ?? '';
-
             $registro = PlanRegistroDiario::updateOrCreate(
                 [
                     'plan_det_men_id' => $planillaMensualDetalleId,
@@ -111,7 +245,7 @@ class PlanillaRegistroDiarioServicio
                 ],
                 [
                     'asistencia' => $asistencia,
-                    'total_horas' => $informacion['total_horas']
+                    'total_horas' => $totalHoras
                 ]
             );
             if (trim($asistencia) != '') {
@@ -175,7 +309,7 @@ class PlanillaRegistroDiarioServicio
         return empty($errores)
             ? ['status' => 'ok']
             : ['status' => 'warning', 'errores' => $errores];
-    }
+    } */
     private function actualizarResumenAsistencia($fecha, $totales)
     {
         $resumen = PlanResumenDiario::firstOrCreate(['fecha' => $fecha]);
