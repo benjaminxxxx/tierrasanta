@@ -67,13 +67,13 @@
                                             <i class="fa fa-edit"></i>
                                         </x-button>
 
-                                        <x-danger-button wire:click="eliminarCuadrillero({{ $cuadrillero->id }})">
+                                        <x-button variant="danger" wire:click="eliminarCuadrillero({{ $cuadrillero->id }})">
                                             <i class="fa fa-trash"></i>
-                                        </x-danger-button>
+                                        </x-button>
                                     @else
-                                        <x-secondary-button wire:click="restaurar({{ $cuadrillero->id }})">
+                                        <x-button variant="secondary" wire:click="restaurar({{ $cuadrillero->id }})">
                                             Restaurar
-                                        </x-secondary-button>
+                                        </x-button>
                                     @endif
                                 </x-flex>
                             </x-td>

@@ -43,8 +43,7 @@ class CuadrillaCuadrillerosComponent extends Component
         $cuadrilleros = app(CuadrilleroServicio::class)->listar(
             $this->nombreDocumentoFiltro,
             $this->grupoSeleccionado,
-            $this->verEliminados,
-            2 // Registros por página
+            $this->verEliminados
         );
 
         return view('livewire.gestion-cuadrilla.administrar-cuadrillero.cuadrilla-cuadrilleros-component', [

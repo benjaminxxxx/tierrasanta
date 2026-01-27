@@ -6,6 +6,7 @@ use App\Models\Configuracion;
 use App\Models\ConsolidadoRiego;
 use App\Models\HorasAcumuladas;
 use App\Models\ReporteDiarioRiego;
+use App\Support\CalculoHelper;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
@@ -80,7 +81,7 @@ class ConsolidarRegadoresComponent extends Component
 
         // Si existen intervalos válidos para el jornal, calculamos los minutos de jornal
         if (!empty($intervalos)) {
-            $total_minutos_jornal = $this->calcularMinutosJornalParcial($intervalos);
+            $total_minutos_jornal = CalculoHelper::calcularMinutosJornalParcial($intervalos);
         }
 
         // Conversión de horas de riego a formato HH:mm
@@ -133,6 +134,7 @@ class ConsolidarRegadoresComponent extends Component
         $minutos_restantes = $minutos % 60;
         return sprintf('%02d:%02d', $horas, $minutos_restantes);
     }
+    /*
     public function calcularMinutosJornalParcial($intervalos)
     {
         // Convertir los intervalos de tiempo a minutos
@@ -177,7 +179,7 @@ class ConsolidarRegadoresComponent extends Component
 
         return $totalMinutos; // Convertir minutos a horas
     }
-  
+  */
     private function calcularMinutosJornal($total_minutos_jornal, $total_minutos_acumulados, $fecha, $documento)
     {
         if (!is_numeric($total_minutos_jornal) || !is_numeric($total_minutos_acumulados)) {

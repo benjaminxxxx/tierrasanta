@@ -14,44 +14,6 @@
             <div x-ref="tableContainer" class="mt-5"></div>
         </div>
 
-        <div class="my-4">
-            <x-table class="max-w-lg border border-gray-400 dark:border-gray-500 rounded">
-                <x-slot name="thead">
-                </x-slot>
-                <x-slot name="tbody">
-                    @if ($resumenDiarioPlanilla && $resumenDiarioPlanilla->totales() && $resumenDiarioPlanilla->totales()->count() > 0)
-                        @foreach ($resumenDiarioPlanilla->totales as $resumenTotal)
-                            <x-tr>
-                                <x-th class="!text-left text-gray-800 dark:text-gray-200">TOTAL
-                                    {{ mb_strtoupper($resumenTotal->descripcion) }}</x-th>
-                                <x-td class="w-[10rem]">
-                                    <div x-ref="total_planillas_asistido" class="p-2">
-                                        {{ $resumenTotal->total_asistidos }}</div>
-                                </x-td>
-                            </x-tr>
-                        @endforeach
-                    @endif
-
-
-                    @if ($resumenDiarioPlanilla)
-                        <x-tr>
-                            <x-th class="!text-left  text-gray-800 dark:text-gray-200">TOTAL CUADRILLAS</x-th>
-                            <x-td>
-                                <div class="p-2">{{ $resumenDiarioPlanilla->total_cuadrillas }}</div>
-                            </x-td>
-                        </x-tr>
-                        <x-tr>
-                            <x-th class="!text-left  text-gray-800 dark:text-gray-200"><b>TOTAL PLANILLA</b></x-th>
-                            <x-td>
-                                <div x-ref="total_planilla" class="p-2">{{ $resumenDiarioPlanilla->total_planilla }}
-                                </div>
-                            </x-td>
-                        </x-tr>
-                    @endif
-
-                </x-slot>
-            </x-table>
-        </div>
         <div class="fixed bottom-6 right-6 z-40">
             <x-button @click="enviarRegistrosDiariosPlanilla" class="flex items-center gap-2 shadow-lg">
                 <i class="fa fa-save"></i>
@@ -59,6 +21,30 @@
             </x-button>
         </div>
 
+    </x-card>
+
+    <x-card class="mt-5 max-w-lg">
+        <div class="space-y-6">
+            {{-- Lista de Totales --}}
+            @if ($resumenDiarioPlanilla?->totales?->count() > 0)
+                <div class="space-y-2">
+                    @foreach ($resumenDiarioPlanilla->totales as $resumenTotal)
+                        <x-resumen-item :label="'TOTAL ' . $resumenTotal->descripcion" :value="$resumenTotal->total_asistidos" />
+                    @endforeach
+                </div>
+            @endif
+
+            {{-- Grid de Cards de Impacto --}}
+            @if ($resumenDiarioPlanilla)
+                <div class="grid grid-cols-2 gap-4 pt-4">
+
+                    <x-card-resumen variant="blue" label="Cuadrillas" :value="$resumenDiarioPlanilla->total_cuadrillas" />
+
+                    <x-card-resumen variant="emerald" label="Total Planilla" :value="$resumenDiarioPlanilla->total_planilla" x-ref="total_planilla" />
+
+                </div>
+            @endif
+        </div>
     </x-card>
     <x-loading wire:loading />
 </div>

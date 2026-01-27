@@ -8,6 +8,29 @@ use InvalidArgumentException;
 
 class FormatoHelper
 {
+    /**
+     * Normaliza formatos como "14.30", "14:30" o "14" a "14:30:00"
+     */
+    public static function normalizarHora(?string $hora): string
+    {
+        if (empty($hora))
+            return '00:00:00';
+
+        // Reemplazar punto por dos puntos para estandarizar
+        $hora = str_replace('.', ':', trim($hora));
+
+        // Si solo enviaron el número de hora (ej: "14"), completar con minutos
+        if (!str_contains($hora, ':')) {
+            $hora .= ':00';
+        }
+
+        try {
+            // Forzamos el parseo y devolvemos formato 24h
+            return Carbon::parse($hora)->format('H:i:s');
+        } catch (\Exception $e) {
+            return '00:00:00';
+        }
+    }
     public static function generarCodigoGrupo(string $fechaReferencia): string
     {
         $base = Carbon::parse($fechaReferencia)->format('Ymd');

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('campo');
             $table->time('hora_inicio');
             $table->time('hora_fin');
-            $table->time('total_horas');
+            //$table->time('total_horas');
             $table->string('documento');
             $table->string('regador');
             $table->date('fecha');

@@ -8,6 +8,94 @@ use InvalidArgumentException;
 class CalculoHelper
 {
     /**
+     * Calcula el tiempo total de jornal real eliminando solapamientos.
+     * * Casos de uso resueltos:
+     * 1. Riegos Simultáneos: Si riega 4 campos de 07:00 a 09:00, cuenta solo 120 min de jornal.
+     * 2. Solapamientos Parciales: De 07:00-09:00 y 08:00-10:00, cuenta 07:00-10:00 (180 min).
+     * 3. Intervalos Separados: De 07:00-12:00 y 13:00-16:00, suma ambos (300 + 180 = 480 min).
+     * 4. Riegos Contenidos: Un riego de 07:00-15:00 absorbe cualquier riego corto intermedio.
+     *
+     * @param array $intervalos [['hora_inicio' => 'HH:mm', 'hora_fin' => 'HH:mm'], ...]
+     * @return int Total de minutos de presencia real (jornal)
+     */
+    public static function calcularMinutosJornalParcial(array $intervalos): int
+    {
+        if (empty($intervalos)) {
+            return 0;
+        }
+        
+        // 1. Convertir a minutos desde el inicio del día (00:00 = 0)
+        $puntos = [];
+        foreach ($intervalos as $i) {
+            $puntos[] = [
+                'inicio' => self::horaAMinutos($i['hora_inicio']),
+                'fin'    => self::horaAMinutos($i['hora_fin'])
+            ];
+        }
+
+        // 2. Ordenar por hora de inicio
+        usort($puntos, fn($a, $b) => $a['inicio'] <=> $b['inicio']);
+
+        // 3. Fusión de intervalos (Merge Intervals)
+        $fusionados = [];
+        if (count($puntos) > 0) {
+            $fusionados[] = $puntos[0];
+        }
+
+        for ($i = 1; $i < count($puntos); $i++) {
+            $ultimo = &$fusionados[count($fusionados) - 1];
+            $actual = $puntos[$i];
+
+            if ($actual['inicio'] <= $ultimo['fin']) {
+                // Hay solapamiento o continuidad, extender el final si es necesario
+                $ultimo['fin'] = max($ultimo['fin'], $actual['fin']);
+            } else {
+                // No hay solapamiento, añadir nuevo intervalo
+                $fusionados[] = $actual;
+            }
+        }
+
+        // 4. Sumar duraciones de intervalos fusionados
+        $totalMinutos = 0;
+        foreach ($fusionados as $f) {
+            $totalMinutos += ($f['fin'] - $f['inicio']);
+        }
+
+        return $totalMinutos;
+    }
+
+    /**
+     * Convierte "HH:mm" o "HH.mm" a minutos totales desde las 00:00
+     */
+    private static function horaAMinutos(string $hora): int
+    {
+        $hora = str_replace('.', ':', $hora);
+        $partes = explode(':', $hora);
+        
+        $h = isset($partes[0]) ? (int)$partes[0] : 0;
+        $m = isset($partes[1]) ? (int)$partes[1] : 0;
+
+        return ($h * 60) + $m;
+    }
+     /**
+     * Calcula la diferencia en horas decimales entre dos tiempos.
+     * Ejemplo: "07:00:00" a "10:30:00" -> 3.5
+     */
+    public static function obtenerDiferenciaHoras(string $horaInicio, string $horaFin): float
+    {
+        if (!$horaInicio || !$horaFin) {
+            return 0;
+        }
+
+        $inicio = Carbon::parse($horaInicio);
+        $fin = Carbon::parse($horaFin);
+
+        // Usamos diffInMinutes para obtener precisión decimal (ej. 30 min = 0.5 horas)
+        $minutos = $inicio->diffInMinutes($fin);
+
+        return round($minutos / 60, 2);
+    }
+    /**
      * Calcula la fecha de cierre real de una campaña dentro de un mes específico.
      */
     public static function obtenerFechaFinalActiva(int $anio, int $mes, $fechaInicioCampania, $fechaFinCampania): string
@@ -35,24 +123,7 @@ class CalculoHelper
         // Si es numérico lo devuelve, si es vacío o cualquier otra cosa, devuelve 0
         return is_numeric($valor) ? (float) $valor : 0.0;
     }
-    /**
-     * Calcula la diferencia en horas decimales entre dos tiempos.
-     * Ejemplo: "07:00:00" a "10:30:00" -> 3.5
-     */
-    public static function obtenerDiferenciaHoras(string $horaInicio, string $horaFin): float
-    {
-        if (!$horaInicio || !$horaFin) {
-            return 0;
-        }
-
-        $inicio = Carbon::parse($horaInicio);
-        $fin = Carbon::parse($horaFin);
-
-        // Usamos diffInMinutes para obtener precisión decimal (ej. 30 min = 0.5 horas)
-        $minutos = $inicio->diffInMinutes($fin);
-
-        return round($minutos / 60, 2);
-    }
+   
 
     /**
      * Calcula la cantidad de jornales basados en una jornada de 8 horas.

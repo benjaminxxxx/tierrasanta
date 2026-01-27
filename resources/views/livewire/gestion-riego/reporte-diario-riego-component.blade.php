@@ -1,12 +1,12 @@
 <div x-data="gestion_riego">
 
-    <x-card2>
+    <x-card>
         <x-flex class="justify-between">
             <x-flex>
                 <x-button variant="secondary" wire:click="fechaAnterior" class="w-full lg:w-auto">
                     <i class="fa fa-chevron-left"></i> Fecha Anterior
                 </x-button>
-                <x-input type="date" wire:model.live="fecha" class="text-center w-full lg:w-auto" />
+                <x-input type="date" wire:model.live.debounce.1500ms="fecha" class="text-center w-full lg:w-auto" />
                 <x-button variant="secondary" wire:click="fechaPosterior" class="w-full lg:w-auto">
                     Fecha Posterior <i class="fa fa-chevron-right"></i>
                 </x-button>
@@ -17,7 +17,7 @@
                 </x-button>
                 <div x-data="{ open: false }" class="my-4 lg:my-0">
                     <!-- Dropdown Button -->
-                    <x-secondary-button @click="open = !open"
+                    <x-button @click="open = !open"
                         class="flex items-center justify-center w-full lg:w-auto whitespace-nowrap" type="button">
                         Opciones Adicionales
                         <svg class="w-2.5 h-2.5 ms-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
@@ -25,7 +25,7 @@
                             <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="m1 1 4 4 4-4" />
                         </svg>
-                    </x-secondary-button>
+                    </x-button>
                     <!-- Dropdown Menu -->
                     <div x-show="open" @click.outside="open = false"
                         class="z-10 text-base relative mr-5 list-none border-1 border-gray-500 bg-white divide-y divide-gray-100 rounded-lg shadow-lg w-auto dark:bg-gray-700">
@@ -59,7 +59,7 @@
                 </div>
             </x-flex>
         </x-flex>
-    </x-card2>
+    </x-card>
     <div class="my-4">
         @if ($consolidados && $consolidados->count() > 0)
             @foreach ($consolidados as $riego)

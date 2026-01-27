@@ -63,7 +63,7 @@ $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(valu
     <div class="flex min-h-screen bg-gray-100 dark:bg-gray-900 pt-[32px]">
         
         <x-sidebar />
-        <main class="flex-1 p-5 overflow-auto h-[calc(100vh-32px)] ultra-thin-scroll">
+        <main class="flex-1 p-5 overflow-visible ultra-thin-scroll">
             {{ $slot }}
         </main>
         @include('comun.components')
