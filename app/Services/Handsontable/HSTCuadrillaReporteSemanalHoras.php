@@ -40,6 +40,7 @@ class HSTCuadrillaReporteSemanalHoras
         foreach ($gruposEnTramos as $grupoEnTramo) {
             
             // Añadir la fila de cabecera para el grupo
+         
             $handsontableData[] = $this->buildGroupHeaderRow($grupoEnTramo->grupo);
 
             // Añadir las filas para cada cuadrillero del grupo
@@ -53,7 +54,6 @@ class HSTCuadrillaReporteSemanalHoras
         if (count($handsontableData) > 0) {
             $handsontableData[] = $this->buildTotalsRow($handsontableData);
         }
-
         return $handsontableData;
     }
 

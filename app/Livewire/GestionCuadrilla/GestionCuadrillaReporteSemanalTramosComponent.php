@@ -13,6 +13,7 @@ class GestionCuadrillaReporteSemanalTramosComponent extends Component
 
     // Propiedades de estado de la UI
     public bool $mostrarFormularioReporteSemanalTramo = false;
+    public bool $mostrarBuscadorDeTramos = false;
     public ?int $cambios = 1;
 
     // Propiedades para el formulario
@@ -26,6 +27,8 @@ class GestionCuadrillaReporteSemanalTramosComponent extends Component
     public $tramoActual;
     public $tramoAnterior;
     public $tramoSiguiente;
+    public $filtroBuscarTramo = [];
+    public $resultadoBuquedaTramos = [];
 
     // Servicio
     protected $listeners = ['eliminarTramo', 'confirmadoEliminarTramo', 'editarTramo'];
@@ -44,34 +47,82 @@ class GestionCuadrillaReporteSemanalTramosComponent extends Component
      */
     public function mount(): void
     {
-        
+
         $this->cargarDatosActuales();
-        
+
     }
 
-    /**
-     * Hook que se ejecuta cuando se actualiza la propiedad $fecha_inicio y fecha_fin.
-     */
-    public function updatedFechaInicio($valor): void
+    public function buscarTramo()
     {
-        if (empty($valor)) {
-            $this->reset(['titulo']);
-            return;
-        }
+        $this->filtroBuscarTramo = [
+            'mes' => now()->month,
+            'anio' => now()->year
+        ];
+        $this->mostrarBuscadorDeTramos = true;
+        $this->ejecutarBusqueda();
+    }
 
-        if ($this->fecha_fin) {
-            $this->titulo = $this->tramoLaboralServicio->generarTitulo(Carbon::parse($valor), Carbon::parse($this->fecha_fin));
+    // Se ejecuta automáticamente cuando cambian los selects
+    public function updatedFiltroBuscarTramo()
+    {
+        $this->ejecutarBusqueda();
+    }
+
+    public function mesAnterior()
+    {
+        $this->navegarMes(-1);
+    }
+
+    public function mesSiguiente()
+    {
+        $this->navegarMes(1);
+    }
+
+    private function navegarMes($cambio)
+    {
+        // Creamos una fecha Carbon con los valores actuales
+        $fecha = Carbon::createFromDate(
+            $this->filtroBuscarTramo['anio'],
+            $this->filtroBuscarTramo['mes'],
+            1
+        );
+
+        // Sumamos o restamos el mes (Carbon maneja el cambio de año automáticamente)
+        $fecha->addMonths($cambio);
+
+        // Actualizamos los filtros
+        $this->filtroBuscarTramo['mes'] = $fecha->month;
+        $this->filtroBuscarTramo['anio'] = $fecha->year;
+
+        $this->ejecutarBusqueda();
+    }
+
+    private function ejecutarBusqueda()
+    {
+        try {
+            $mes = $this->filtroBuscarTramo['mes'] ?? null;
+            $anio = $this->filtroBuscarTramo['anio'] ?? null;
+
+            // Validación robusta antes de consultar
+            if ($mes >= 1 && $mes <= 12 && strlen($anio) === 4) {
+                $this->resultadoBuquedaTramos = $this->tramoLaboralServicio
+                    ->encontrarTramoPorMesAnioLista($mes, $anio);
+            }
+        } catch (\Throwable $th) {
+            $this->alert('error', 'Error en búsqueda: ' . $th->getMessage());
         }
     }
-    public function updatedFechaFin($valor): void
+    public function seleccionarTramo($tramoLaboralId)
     {
-        if (empty($valor)) {
-            $this->reset(['titulo']);
-            return;
-        }
-
-        if ($this->fecha_inicio) {
-            $this->titulo = $this->tramoLaboralServicio->generarTitulo( Carbon::parse($this->fecha_inicio),Carbon::parse($valor));
+        $this->tramoActual = $this->tramoLaboralServicio->encontrarTramoPorId($tramoLaboralId);
+        $this->mostrarBuscadorDeTramos = false;
+        if ($this->tramoActual) {
+            session()->put('tramo_actual_id', $this->tramoActual->id);
+            $this->tramoAnterior = $this->tramoLaboralServicio->encontrarAnterior($this->tramoActual);
+            $this->tramoSiguiente = $this->tramoLaboralServicio->encontrarSiguiente($this->tramoActual);
+        } else {
+            $this->tramoAnterior = null;
+            $this->tramoSiguiente = null;
         }
     }
     /**
@@ -220,7 +271,7 @@ class GestionCuadrillaReporteSemanalTramosComponent extends Component
         $this->cargarDatosActuales();
         $this->cambios++;
     }
-    
+
     public function render()
     {
         return view('livewire.gestion-cuadrilla.gestion-cuadrilla-reporte-semanal-tramos-component');

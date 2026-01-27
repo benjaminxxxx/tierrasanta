@@ -931,68 +931,7 @@ class CuadrilleroServicio
     {
         return CuaGrupo::where('estado', true)->with(['cuadrilleros'])->get();
     }
-    public static function calcularCostosCuadrilla($inicio, $fin = null)
-    {
-        $inicioDate = Carbon::parse($inicio)->startOfDay();
-        $finDate = $fin ? Carbon::parse($fin)->endOfDay() : $inicioDate->copy()->endOfDay();
-
-
-        $registroDiarioCuadrilla = CuadRegistroDiario::whereBetween('fecha', [$inicioDate, $finDate])
-            ->with(['grupo'])
-            ->get();
-        $costosDiariosDuranteFechas = CuadCostoDiarioGrupo::whereBetween('fecha', [$inicioDate, $finDate])->get();
-
-        foreach ($registroDiarioCuadrilla as $asistenciaCuadrillero) {
-            $totalHoras = (float) $asistenciaCuadrillero->total_horas;
-            $codigoGrupo = $asistenciaCuadrillero->grupo;
-
-            if ($totalHoras <= 0) {
-                $asistenciaCuadrillero->costo_dia = 0;
-                // Actualizar también total_bono en cero
-                //$asistenciaCuadrillero->total_bono = 0; calculado en otro sitio
-                $asistenciaCuadrillero->save();
-                continue;
-            }
-
-            $fechaStr = $asistenciaCuadrillero->fecha instanceof \Carbon\Carbon
-                ? $asistenciaCuadrillero->fecha->toDateString()
-                : (string) $asistenciaCuadrillero->fecha;
-
-
-            if (!$codigoGrupo) {
-                $asistenciaCuadrillero->costo_dia = 0;
-                //$asistenciaCuadrillero->total_bono = 0;  calculado en otro sitio
-                $asistenciaCuadrillero->save();
-                continue;
-            }
-
-            $costoDiario = $costosDiariosDuranteFechas
-                ->where('fecha', $fechaStr)
-                ->where('codigo_grupo', $asistenciaCuadrillero->codigo_grupo)
-                ->first();
-
-            $costoEseDiaX8Horas = 0;
-            if ($costoDiario) {
-                $costoEseDiaX8Horas = (float) $costoDiario->jornal;
-            }
-
-            if ($asistenciaCuadrillero->costo_personalizado_dia !== null) {
-                $costoEseDiaX8Horas = (float) $asistenciaCuadrillero->costo_personalizado_dia;
-            }
-
-            if ($costoEseDiaX8Horas <= 0) {
-                $asistenciaCuadrillero->costo_dia = 0;
-                //$asistenciaCuadrillero->total_bono = 0;  calculado en otro sitio
-                $asistenciaCuadrillero->save();
-                continue;
-            }
-
-            $costo_dia = ($totalHoras / 8) * $costoEseDiaX8Horas;
-            $asistenciaCuadrillero->costo_dia = round($costo_dia, 2);
-
-            $asistenciaCuadrillero->save();
-        }
-    }
+   
 
     /**
      * registrarOrdenSemanal

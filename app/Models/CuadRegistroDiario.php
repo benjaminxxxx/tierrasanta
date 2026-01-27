@@ -17,13 +17,15 @@ class CuadRegistroDiario extends Model
         'costo_personalizado_dia',
         'total_bono',
         'total_horas',
-        'costo_dia',
+        //'costo_dia',
         'esta_pagado',
         'codigo_grupo',
         'bono_esta_pagado',
         'tramo_pagado_jornal_id',
         'tramo_pagado_bono_id',
-        'tramo_laboral_id'
+        'tramo_laboral_id',
+        //nuevo campo triggeado
+        'jornal_aplicado'
     ];
 
     protected $casts = [
@@ -36,11 +38,11 @@ class CuadRegistroDiario extends Model
     // Relaciones
     public function tramoLaboral()
     {
-        return $this->belongsTo(CuadTramoLaboral::class,'tramo_laboral_id');
+        return $this->belongsTo(CuadTramoLaboral::class, 'tramo_laboral_id');
     }
     public function grupo()
     {
-        return $this->belongsTo(CuaGrupo::class,'codigo_grupo');
+        return $this->belongsTo(CuaGrupo::class, 'codigo_grupo');
     }
     public function actividadesBonos()
     {
@@ -55,22 +57,29 @@ class CuadRegistroDiario extends Model
     {
         return $this->hasMany(CuadDetalleHora::class, 'registro_diario_id');
     }
-    
+
 
     // Accesor para total_costo calculado
     public function getTotalCostoAttribute()
     {
         return $this->total_bono + $this->costo_dia;
     }
-    
+
     public function getCoincideTotalHorasAttribute()
     {
-       
+
         $totalCalculado = $this->detalleHoras->reduce(function ($carry, $detalle) {
-                $inicio = Carbon::createFromFormat('H:i:s', $detalle->hora_inicio);
-                $fin = Carbon::createFromFormat('H:i:s', $detalle->hora_fin);
-                return $carry + ($inicio->diffInMinutes($fin) / 60);
-            }, 0);
+            $inicio = Carbon::createFromFormat('H:i:s', $detalle->hora_inicio);
+            $fin = Carbon::createFromFormat('H:i:s', $detalle->hora_fin);
+            return $carry + ($inicio->diffInMinutes($fin) / 60);
+        }, 0);
         return round($this->total_horas, 2) === round($totalCalculado, 2);
+    }
+    public function getCostoDiaAttribute()
+    {
+        // Prioridad: 1. Costo personalizado, 2. Jornal aplicado por trigger
+        $jornal = $this->costo_personalizado_dia ?: (float) $this->jornal_aplicado;
+
+        return ($this->total_horas / 8) * $jornal;
     }
 }

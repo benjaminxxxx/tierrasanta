@@ -59,7 +59,23 @@ class TramoLaboralServicio
         app(ResumenTramoServicio::class)->generarResumen($tramoId, $fechaHastaBono);
 
     }
+    public function encontrarTramoPorMesAnioLista($mes, $anio)
+    {
+        // Definimos el inicio y fin del mes objetivo
+        $inicioMes = Carbon::createFromDate($anio, $mes, 1)->startOfMonth();
+        $finMes = $inicioMes->copy()->endOfMonth();
 
+        return CuadTramoLaboral::where(function ($query) use ($inicioMes, $finMes) {
+            /* Lógica de intersección:
+               Para que un rango (A) se solape con un rango (B):
+               A_inicio <= B_fin  Y  A_fin >= B_inicio
+            */
+            $query->whereDate('fecha_inicio', '<=', $finMes)
+                ->whereDate('fecha_fin', '>=', $inicioMes);
+        })
+            ->orderBy('fecha_inicio', 'asc')
+            ->get(); // Retorna la lista (Collection)
+    }
     /**
      * Encuentra el tramo laboral actual basándose en la sesión o la fecha de hoy.
      */
@@ -184,33 +200,6 @@ class TramoLaboralServicio
         });
     }
 
-    /**
-     * Genera un título descriptivo para un rango de fechas.
-     */
-    public function generarTitulo(Carbon $inicio, Carbon $fin): string
-    {
-        Carbon::setLocale('es');
-        $mesInicio = mb_strtoupper($inicio->translatedFormat('F'), 'UTF-8');
-
-        if ($inicio->equalTo($fin)) {
-            return sprintf(
-                'CUADRILLA MENSUAL DEL %s %s DE %s',
-                mb_strtoupper($inicio->translatedFormat('l'), 'UTF-8'),
-                $inicio->day,
-                $mesInicio
-            );
-        }
-
-        $mesFin = mb_strtoupper($fin->translatedFormat('F'), 'UTF-8');
-
-        return sprintf(
-            'CUADRILLA MENSUAL DEL %s DE %s AL %s DE %s',
-            $inicio->day,
-            $mesInicio,
-            $fin->day,
-            $mesFin
-        );
-    }
 
     /**
      * Valida que no exista otro tramo con la misma fecha de inicio.

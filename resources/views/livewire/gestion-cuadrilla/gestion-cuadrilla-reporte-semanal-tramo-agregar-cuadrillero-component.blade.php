@@ -60,36 +60,35 @@
                 </div>
                 <div class="mt-5">
                     <template x-for="(c, index) in cuadrillerosAgregados" :key="index">
-                        <div
-                            class="w-full flex items-start justify-between border p-3 rounded-md bg-white text-gray-700 mb-1 items-center">
-                            <!-- Nombre del cuadrillero -->
-                            <div class="w-full break-words pr-4">
+                        <x-resumen-item>
+                            <x-slot name="label">
                                 <span x-text="index+1" class="font-bold text-red-600"></span> - <span
                                     x-text="c.nombres"></span>
-                            </div>
-
-                            <!-- Acciones -->
-                            <div class="flex space-x-1">
-                                <x-button @click="subir(index)" type="button">
-                                    <i class="fa fa-arrow-up"></i>
-                                </x-button>
-                                <x-button @click="bajar(index)" type="button">
-                                    <i class="fa fa-arrow-down"></i>
-                                </x-button>
-                                <x-danger-button @click="eliminarCuadrillero(index)" type="button">
-                                    <i class="fa fa-trash"></i>
-                                </x-danger-button>
-                            </div>
-                        </div>
+                            </x-slot>
+                            <x-slot name="value">
+                                <div class="flex space-x-1">
+                                    <x-button @click="subir(index)" type="button">
+                                        <i class="fa fa-arrow-up"></i>
+                                    </x-button>
+                                    <x-button @click="bajar(index)" type="button">
+                                        <i class="fa fa-arrow-down"></i>
+                                    </x-button>
+                                    <x-button variant="danger" @click="eliminarCuadrillero(index)" type="button">
+                                        <i class="fa fa-trash"></i>
+                                    </x-button>
+                                </div>
+                            </x-slot>
+                        </x-resumen-item>
                     </template>
                 </div>
             </div>
         </x-slot>
 
         <x-slot name="footer">
-            <x-secondary-button wire:click="$set('mostrarAgregarCuadrillero', false)" wire:loading.attr="disabled">
+            <x-button variant="secondary" wire:click="$set('mostrarAgregarCuadrillero', false)"
+                wire:loading.attr="disabled">
                 Cerrar
-            </x-secondary-button>
+            </x-button>
             <x-button wire:click="agregarListaAgregada" wire:loading.attr="disabled">
                 <i class="fa fa-plus"></i> Agregar Cuadrilleros
             </x-button>
@@ -97,81 +96,85 @@
     </x-dialog-modal>
 </div>
 @script
-<script>
-    Alpine.data('formAgregarCuadrillero', () => ({
-        codigo_grupo: @entangle('codigo_grupo'),
-        selectedIndex: 0,
-        cuadrillerosFiltrados: [],
-        cuadrillerosBuscar: @json($listaCuadrilleros),
-        search: '',
-        cuadrillerosAgregados: @entangle('cuadrillerosAgregados'),
-        get cuadrillerosFiltrados() {
-            if (!this.search.trim()) return [];
-            return this.cuadrillerosBuscar.filter(c =>
-                (c.nombres?.toLowerCase() || '').includes(this.search.toLowerCase()) ||
-                (c.dni?.toLowerCase() || '').includes(this.search.toLowerCase())
-            );
-        },
-        setSelectedIndex(index) {
-            this.selectedIndex = index;
-        },
-        agregarCuadrillero(cuadrillero) {
+    <script>
+        Alpine.data('formAgregarCuadrillero', () => ({
+            codigo_grupo: @entangle('codigo_grupo'),
+            selectedIndex: 0,
+            cuadrillerosFiltrados: [],
+            cuadrillerosBuscar: @json($listaCuadrilleros),
+            search: '',
+            cuadrillerosAgregados: @entangle('cuadrillerosAgregados'),
+            get cuadrillerosFiltrados() {
+                if (!this.search.trim()) return [];
+                return this.cuadrillerosBuscar.filter(c =>
+                    (c.nombres?.toLowerCase() || '').includes(this.search.toLowerCase()) ||
+                    (c.dni?.toLowerCase() || '').includes(this.search.toLowerCase())
+                );
+            },
+            setSelectedIndex(index) {
+                this.selectedIndex = index;
+            },
+            agregarCuadrillero(cuadrillero) {
 
-            const yaExiste = this.cuadrillerosAgregados.some(c => c.nombres.toUpperCase() === cuadrillero.nombres.toUpperCase());
-            if (yaExiste) {
-                alert('El cuadrillero ya está agregado en la tabla');
+                const yaExiste = this.cuadrillerosAgregados.some(c => c.nombres.toUpperCase() === cuadrillero
+                    .nombres.toUpperCase());
+                if (yaExiste) {
+                    alert('El cuadrillero ya está agregado en la tabla');
+                    this.search = '';
+                    this.cuadrillerosFiltrados = [];
+                    this.$refs.buscador.focus();
+                    return;
+                }
+
+                this.cuadrillerosAgregados.push({
+                    nombres: cuadrillero.nombres,
+                    id: cuadrillero.id
+                });
                 this.search = '';
                 this.cuadrillerosFiltrados = [];
                 this.$refs.buscador.focus();
-                return;
+            },
+            subir(index) {
+                if (index > 0) {
+                    [this.cuadrillerosAgregados[index - 1], this.cuadrillerosAgregados[index]] = [this
+                        .cuadrillerosAgregados[index], this.cuadrillerosAgregados[index - 1]
+                    ];
+                }
+            },
+            bajar(index) {
+                if (index < this.cuadrillerosAgregados.length - 1) {
+                    [this.cuadrillerosAgregados[index + 1], this.cuadrillerosAgregados[index]] = [this
+                        .cuadrillerosAgregados[index], this.cuadrillerosAgregados[index + 1]
+                    ];
+                }
+            },
+            eliminarCuadrillero(index) {
+                this.cuadrillerosAgregados.splice(index, 1);
+            },
+            navigateList(event) {
+                if (this.cuadrillerosFiltrados.length === 0) return;
+
+                if (event.key === 'ArrowDown') {
+                    this.selectedIndex = (this.selectedIndex + 1) % this.cuadrillerosFiltrados.length;
+                } else if (event.key === 'ArrowUp') {
+                    this.selectedIndex = (this.selectedIndex - 1 + this.cuadrillerosFiltrados.length) % this
+                        .cuadrillerosFiltrados.length;
+                } else if (event.key === 'Enter') {
+                    this.agregarCuadrillero(this.cuadrillerosFiltrados[this.selectedIndex]);
+                }
+            },
+
+
+            registrarComoNuevo() {
+                if (!this.search.trim()) return; // evita registrar vacío
+
+                const cuadrillero = {
+                    id: null, // porque no existe en la BD
+                    nombres: this.search.trim().toUpperCase()
+                };
+
+                this.agregarCuadrillero(cuadrillero);
             }
-
-            this.cuadrillerosAgregados.push({
-                nombres: cuadrillero.nombres,
-                id: cuadrillero.id
-            });
-            this.search = '';
-            this.cuadrillerosFiltrados = [];
-            this.$refs.buscador.focus();
-        },
-        subir(index) {
-            if (index > 0) {
-                [this.cuadrillerosAgregados[index - 1], this.cuadrillerosAgregados[index]] =
-                    [this.cuadrillerosAgregados[index], this.cuadrillerosAgregados[index - 1]];
-            }
-        },
-        bajar(index) {
-            if (index < this.cuadrillerosAgregados.length - 1) {
-                [this.cuadrillerosAgregados[index + 1], this.cuadrillerosAgregados[index]] =
-                    [this.cuadrillerosAgregados[index], this.cuadrillerosAgregados[index + 1]];
-            }
-        },
-        eliminarCuadrillero(index) {
-            this.cuadrillerosAgregados.splice(index, 1);
-        },
-        navigateList(event) {
-            if (this.cuadrillerosFiltrados.length === 0) return;
-
-            if (event.key === 'ArrowDown') {
-                this.selectedIndex = (this.selectedIndex + 1) % this.cuadrillerosFiltrados.length;
-            } else if (event.key === 'ArrowUp') {
-                this.selectedIndex = (this.selectedIndex - 1 + this.cuadrillerosFiltrados.length) % this.cuadrillerosFiltrados.length;
-            } else if (event.key === 'Enter') {
-                this.agregarCuadrillero(this.cuadrillerosFiltrados[this.selectedIndex]);
-            }
-        },
-      
-
-        registrarComoNuevo() {
-            if (!this.search.trim()) return; // evita registrar vacío
-
-            const cuadrillero = {
-                id: null, // porque no existe en la BD
-                nombres: this.search.trim().toUpperCase()
-            };
-
-            this.agregarCuadrillero(cuadrillero);
-        }
-    }));
-</script>
+        }));
+    </script>
 @endscript

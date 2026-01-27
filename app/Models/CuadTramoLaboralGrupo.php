@@ -16,7 +16,8 @@ class CuadTramoLaboralGrupo extends Model
     ];
     public function grupo()
     {
-        return $this->belongsTo(CuaGrupo::class, 'codigo_grupo', 'codigo');
+        return $this->belongsTo(CuaGrupo::class, 'codigo_grupo', 'codigo')
+            ->withTrashed();
     }
     public function cuadrilleros()
     {
@@ -36,5 +37,5 @@ class CuadTramoLaboralGrupo extends Model
         return $this->belongsTo(CuadTramoLaboral::class, 'cuad_tramo_laboral_id');
     }
 
-    
+
 }

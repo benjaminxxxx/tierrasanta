@@ -1,6 +1,5 @@
-<x-app-layout>
+<x-app-layout title="Reporte Diario Cuadrilla">
 
-    @include('comun.handsontable')
     <livewire:gestion-cuadrilla.gestion-cuadrilla-reporte-semanal-tramos-component/>
     
 </x-app-layout>

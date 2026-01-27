@@ -240,7 +240,7 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
             ]);
 
             EmpleadoServicio::guardarBonificaciones($this->actividad, $datos, $this->recojos);
-            //CuadrilleroServicio::calcularCostosCuadrilla($this->fecha);
+          
 
             $this->alert('success', 'Datos guardados correctamente.');
         } catch (\Throwable $th) {

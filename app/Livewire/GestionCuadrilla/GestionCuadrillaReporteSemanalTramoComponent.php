@@ -6,9 +6,11 @@ use App\Models\CuadRegistroDiario;
 use App\Models\CuadResumenPorTramo;
 use App\Models\CuadTramoLaboralGrupo;
 use App\Services\Cuadrilla\CuadrilleroServicio;
+use App\Services\Cuadrilla\RegistroDiarioServicio;
 use App\Services\Cuadrilla\TramoLaboral\ResumenTramoServicio;
 use App\Services\Cuadrilla\TramoLaboralServicio;
 use App\Services\Handsontable\HSTCuadrillaReporteSemanalHoras;
+use App\Services\RecursosHumanos\Planilla\PlanillaRegistroDiarioServicio;
 use App\Support\DateHelper;
 use Carbon\CarbonPeriod;
 use DB;
@@ -51,8 +53,9 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
         $this->listarResumenes();
 
     }
-    public function renovarListaYResumir(){
-        
+    public function renovarListaYResumir()
+    {
+
         $this->obtenerReporteTramo();
         $this->procesarCalculoListadoResumen();
     }
@@ -107,47 +110,33 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
             $this->alert('error', $th->getMessage());
         }
     }
-    public function registrarCostoPersonalizado()
+    public function registrarCostoPersonalizado(RegistroDiarioServicio $servicio)
     {
         try {
-            DB::beginTransaction();
+            DB::transaction(function () use ($servicio) {
+                foreach ($this->cuadrillerosCostosPersonalizados as $cuadrilla) {
 
-            foreach ($this->cuadrillerosCostosPersonalizados as $cuadrilla) {
-                $cuadrilleroId = $cuadrilla['cuadrillero_id'];
-
-                foreach ($cuadrilla['costos'] as $index => $costo) {
-                    $fecha = $this->diasSemana[$index];
-
-                    if (!is_null($costo)) {
-
-                        CuadRegistroDiario::updateOrCreate(
-                            [
-                                'cuadrillero_id' => $cuadrilleroId,
-                                'fecha' => $fecha,
-                            ],
-                            [
-                                'costo_personalizado_dia' => $costo,
-                            ]
+                    foreach ($cuadrilla['costos'] as $index => $costo) {
+                        $servicio->asignarCostoPersonalizado(
+                            cuadrilleroId: $cuadrilla['cuadrillero_id'],
+                            fecha: $this->diasSemana[$index],
+                            costo: $costo
                         );
                     }
                 }
-            }
+            });
 
-            CuadrilleroServicio::calcularCostosCuadrilla($this->tramoLaboral->fecha_inicio, $this->tramoLaboral->fecha_fin);
-
-            DB::commit();
             $this->obtenerReporteTramo();
-            $this->alert('success', 'Costos personalizados actualizados correctamente');
             $this->mostrarFormularioCostoHora = false;
+            $this->alert('success', 'Costos actualizados correctamente');
 
         } catch (\Throwable $th) {
-            DB::rollBack();
-            $this->alert('error', 'Error al guardar: ' . $th->getMessage());
+            $this->alert('error', 'Error: ' . $th->getMessage());
         }
     }
     public function obtenerReporteTramo($dispatched = true)
     {
-        if (!$this->tramoLaboral) 
+        if (!$this->tramoLaboral)
             return;
 
         $generator = new HSTCuadrillaReporteSemanalHoras($this->tramoLaboral);
@@ -159,7 +148,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
             $this->dispatch('recargarTablaTramos', $this->handsontableData);
         }
     }
-    
+
     public function storeTableDataGuardarHoras($datos)
     {
         try {
@@ -169,9 +158,10 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
             $fechaInicio = $this->tramoLaboral->fecha_inicio;
             $fechaFin = $this->tramoLaboral->fecha_fin;
             $tramoLaboralId = $this->tramoLaboral->id;
-            $this->guardarReporteSemanal($fechaInicio, $fechaFin, $datos,$this->resumenes,$tramoLaboralId);
+
+            $this->guardarReporteSemanal($fechaInicio, $fechaFin, $datos, $this->resumenes, $tramoLaboralId);
             CuadrilleroServicio::registrarTotalesEnResumenDiarioPlanilla($fechaInicio, $fechaFin);
-            CuadrilleroServicio::calcularCostosCuadrilla($fechaInicio, $fechaFin);
+
             $this->obtenerReporteTramo();
             $this->procesarCalculoListadoResumen();
             $this->alert('success', 'Información actualizada');
@@ -179,13 +169,13 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
             $this->alert('error', $th->getMessage());
         }
     }
-    public static function guardarReporteSemanal($inicio, $fin, $rows,$resumenes,$tramoLaboralId)
+    public static function guardarReporteSemanal($inicio, $fin, $rows, $resumenes, $tramoLaboralId)
     {
         DB::beginTransaction();
         try {
 
             /*
-            */
+             */
             foreach ($resumenes as $id => $resumenData) {
                 // Solo enviar fecha y recibo
                 $payload = [
@@ -217,16 +207,16 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
                 $cuadrilleroIdsNuevos = $filasGrupo->pluck('cuadrillero_id')->filter()->unique();
 
                 $cuadrilleroIdsActuales = CuadRegistroDiario::where('codigo_grupo', $codigoGrupo)
-                    ->where('tramo_laboral_id',$tramoLaboralId)
+                    ->where('tramo_laboral_id', $tramoLaboralId)
                     ->whereBetween('fecha', [$inicioDate, $finDate])
                     ->pluck('cuadrillero_id')
                     ->unique();
 
                 $cuadrillerosAEliminar = $cuadrilleroIdsActuales->diff($cuadrilleroIdsNuevos);
                 if ($cuadrillerosAEliminar->isNotEmpty()) {
-                    
+
                     CuadRegistroDiario::where('codigo_grupo', $codigoGrupo)
-                        ->where('tramo_laboral_id',$tramoLaboralId)
+                        ->where('tramo_laboral_id', $tramoLaboralId)
                         ->whereBetween('fecha', [$inicioDate, $finDate])
                         ->whereIn('cuadrillero_id', $cuadrillerosAEliminar)
                         ->delete();
@@ -258,7 +248,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
 
                         if (is_null($total_horas) || $total_horas <= 0) {
                             // No debe existir registro cuando no hay horas
-                           
+
                             CuadRegistroDiario::where($where)->delete();
                             continue;
                         }
@@ -282,11 +272,11 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
         }
     }
     #region Resumen por tramo
-   
+
     public function cambiarEstadoResumen($resumenId)
     {
         try {
-            
+
             app(ResumenTramoServicio::class)->cambiarCondicion($resumenId);
             $this->listarResumenes();
             $this->alert('success', 'Estado actualizado correctamente.');
@@ -310,12 +300,13 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
             $this->alert('error', $th->getMessage());
         }
     }
-    public function procesarCalculoListadoResumen(){
+    public function procesarCalculoListadoResumen()
+    {
         try {
-            app(TramoLaboralServicio::class)->generarResumen($this->tramoLaboral->id,$this->fechaHastaBono);
+            app(TramoLaboralServicio::class)->generarResumen($this->tramoLaboral->id, $this->fechaHastaBono);
             $this->listarResumenes();
         } catch (\Throwable $th) {
-            throw new Exception($th->getMessage());            
+            throw new Exception($th->getMessage());
         }
     }
     public function recalcularResumenTramo()
