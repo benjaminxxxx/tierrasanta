@@ -56,8 +56,7 @@
                                     <div class="w-full text-center">
                                         @if (!$empleado->trashed())
 
-                                            <x-dropdown-link
-                                                @click="$wire.dispatch('abrirFormularioRegistroEmpleadoContrato',{uuid:'{{ $empleado->uuid }}'})">
+                                            <x-dropdown-link href="{{ route('planilla.contratos', ['uuid' => $empleado->uuid]) }}">
                                                 <i class="fa fa-table"></i> Gestionar Contratos
                                             </x-dropdown-link>
 

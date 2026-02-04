@@ -18,6 +18,40 @@ use Illuminate\Support\Carbon;
 
 class PlanillaRegistroDiarioServicio
 {
+    public function obtenerSueldosPorMes($mes, $anio){
+
+    }
+    public function obtenerTotalHorasPorMes($mes, $anio)
+    {
+        // 1. Consultamos los registros filtrando por el mes y año de la relación planillaMensual
+        $resultados = PlanRegistroDiario::whereHas('detalleMensual.planillaMensual', function ($query) use ($mes, $anio) {
+            $query->where('mes', (int) $mes)
+                ->where('anio', (int) $anio);
+        })
+            ->with('detalleMensual') // Eager loading para evitar el problema N+1
+            ->get();
+
+        // 2. Agrupamos por el ID del empleado que está en el detalle mensual
+        return $resultados->groupBy('detalleMensual.plan_empleado_id')
+            ->map(function ($registros, $empleadoId) {
+
+                // 3. Validar si el empleado_id es nulo (Throw solicitado)
+                if (is_null($empleadoId) || $empleadoId === "") {
+                    throw new Exception(
+                        "Error crítico: Se encontró un registro diario con un empleado_id nulo. " .
+                        "Es posible que los datos del detalle mensual no estén sincronizados o el empleado haya sido eliminado. " .
+                        "Se deben recuperar los datos del mes antes de procesar el cálculo."
+                    );
+                }
+
+                // 4. Retornamos el objeto con el ID y la suma de horas
+                return [
+                    'plan_empleado_id' => $empleadoId,
+                    'total_horas_mes' => $registros->sum('total_horas'),
+                    'conteo_dias' => $registros->count(), // Dato extra útil
+                ];
+            })->values(); // Resetear índices del array para que sea una lista limpia
+    }
     /**
      * Sincroniza la asistencia diaria basada en un rango de fechas y un empleado.
      */
@@ -125,7 +159,7 @@ class PlanillaRegistroDiarioServicio
     {
         // 1. Validar y normalizar (Si falla, lanza Exception y no guarda nada)
         $datosLimpios = $this->procesarDatos($datos, $totalActividades);
-      
+
         $totalesPorAsistencia = [];
 
         foreach ($datosLimpios as $item) {

@@ -205,7 +205,7 @@ class EmpleadoServicio
                     ->get()
                     ->map(function ($empleado) {
                         return [
-                            'name' => $empleado->apellido_paterno . ' ' . $empleado->apellido_materno . ', ' . $empleado->nombres,
+                            'name' => $empleado->nombre_completo,
                             'id' => $empleado->id,
                         ];
                     })->toArray();

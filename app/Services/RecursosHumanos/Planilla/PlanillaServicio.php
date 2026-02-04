@@ -8,11 +8,26 @@ use App\Models\PlanActividadProduccion;
 use App\Models\PlanRegistroDiario;
 use App\Models\ReporteDiario;
 use App\Models\ReporteDiarioDetalle;
+use App\Services\PlanillaMensualServicio;
 use App\Support\DateHelper;
 use Exception;
 
 class PlanillaServicio
 {
+    public function listarPlanillaMensual($mes,$anio){
+        $lista = app(PlanillaMensualServicio::class)->obtenerPlanillaXMesAnio($mes,$anio,'nombres');
+        
+        return $lista->map(function ($reporte){
+            
+            return [
+                'documento'=>$reporte->documento,
+                'nombres'=>$reporte->nombres,
+                'sueldo_negro',
+                'sueldo_blanco'
+            ];
+        })
+        ->toArray();
+    }
     public static function guardarBonoPlanilla($fila, $numeroRecojos, $actividadId)
     {
 

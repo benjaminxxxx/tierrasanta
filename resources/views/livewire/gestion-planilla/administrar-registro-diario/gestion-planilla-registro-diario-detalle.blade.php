@@ -122,7 +122,6 @@
                     rowHeaders: true,
                     columns: columns,
                     width: '100%',
-                    height: 'auto',
                     manualColumnResize: false,
                     manualRowResize: true,
                     stretchH: 'all',
@@ -174,6 +173,7 @@
                 });
 
                 this.hot = hot;
+                this.hot.render();
 
                 window.addEventListener('beforeunload', (event) => {
                     if (this.hasUnsavedChanges) {

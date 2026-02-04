@@ -7,8 +7,12 @@ use App\Models\PlanDescuentoSp;
 use App\Models\PlanGrupo;
 use App\Models\PlanMensual;
 use App\Models\PlanMensualDetalle;
+use App\Models\PlanRegistroDiario;
 use App\Services\Modulos\Planilla\GestionPlanilla;
 use App\Services\PlanillaServicio;
+use App\Services\PlanSueldoServicio;
+use App\Services\RecursosHumanos\Planilla\PlanillaRegistroDiarioServicio;
+use App\Support\CalculoHelper;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\QueryException;
@@ -69,7 +73,7 @@ class PlanillaBlancoDetalleComponent extends Component
         if (!$this->mes || !$this->anio) {
             return;
         }
-  
+
         // Días del mes
         $this->diasMes = Carbon::createFromDate($this->anio, $this->mes)->daysInMonth;
 
@@ -100,9 +104,9 @@ class PlanillaBlancoDetalleComponent extends Component
         $this->porcentajeConstante = $this->planillaMensual->porcentaje_constante;
         $this->remBasicaEssalud = $this->planillaMensual->rem_basica_essalud;
         $this->planillaMensualDetalle = $this->planillaMensual->detalle;
-     
+
     }
-   
+
 
     public function guardarPlanillaDatos($option = 1)
     {
@@ -198,7 +202,7 @@ class PlanillaBlancoDetalleComponent extends Component
     public function generarPlanilla()
     {
         try {
-        
+
             $parametros = [
                 'mes' => $this->mes,
                 'anio' => $this->anio,
@@ -230,7 +234,7 @@ class PlanillaBlancoDetalleComponent extends Component
 
             $this->planillaMensual->excel = $excelPath;
             $this->planillaMensual->save();
-     
+
             PlanillaServicio::procesarExcelPlanillaDetalle($this->planillaMensual);
 
             $this->obtenerInformacionMensual();
@@ -247,8 +251,26 @@ class PlanillaBlancoDetalleComponent extends Component
             if (!$this->planillaMensual) {
                 throw new Exception("Aún no hay información");
             }
+            $totalHorasMap = app(PlanillaRegistroDiarioServicio::class)
+                ->obtenerTotalHorasPorMes($this->mes, $this->anio)
+                ->pluck('total_horas_mes', 'plan_empleado_id');
+            ;
+            $dataIds = collect($datos)->pluck('plan_empleado_id')->unique()->toArray();
+            $sueldosPactados = app(PlanSueldoServicio::class)->obtenerSueldosPorMes($dataIds, $this->mes, $this->anio);
+            $totalHorasBaseMes = $this->totalHoras;
             //guardamos las bonificaciones
             foreach ($datos as $data) {
+                $empleadoId = $data['plan_empleado_id'];
+
+                // Obtenemos datos de apoyo desde los mapas creados
+                $horasTrabajadas = $totalHorasMap[$empleadoId] ?? 0;
+                $sueldoManoMes = $sueldosPactados[$empleadoId] ?? 0;
+                $sueldoPagado = CalculoHelper::calcularSueldoManoProporcional(
+                    $sueldoManoMes,
+                    $horasTrabajadas,
+                    $totalHorasBaseMes
+                );
+                
                 PlanMensualDetalle::updateOrCreate(
                     [
                         'id' => $data['id'],
@@ -256,11 +278,14 @@ class PlanillaBlancoDetalleComponent extends Component
                         'plan_mensual_id' => $this->planillaMensual->id
                     ],
                     [
-                        'bonificacion' => (float) ($data['bonificacion'] ?? 0)
+                        'bonificacion' => (float) ($data['bonificacion'] ?? 0),
+                        'sueldo_negro_pagado' => $sueldoPagado,
+                        'sueldo_blanco_pagado' => $data['sueldo_blanco_pagado'],
+                        'total_horas' => $horasTrabajadas
                     ]
                 );
             }
-            
+
             $this->generarPlanilla();
 
             $this->alert('success', 'Registros Actualizados Correctamente.');

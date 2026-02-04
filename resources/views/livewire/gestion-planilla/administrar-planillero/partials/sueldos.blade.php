@@ -54,26 +54,8 @@
                             @php
                                 $anioActual = date('Y');
                             @endphp
-                            <x-select label="Año" wire:model="anioVigencia">
-                                <option value="{{ $anioActual }}">{{ $anioActual }}</option>
-                                <option value="{{ $anioActual + 1 }}">{{ $anioActual + 1 }}</option>
-                            </x-select>
-                            <x-select label="Mes" wire:model="mesVigencia">
-                                <option value="">Seleccione</option>
-                                <option value="01">Enero</option>
-                                <option value="02">Febrero</option>
-                                <option value="03">Marzo</option>
-                                <option value="04">Abril</option>
-                                <option value="05">Mayo</option>
-                                <option value="06">Junio</option>
-                                <option value="07">Julio</option>
-                                <option value="08">Agosto</option>
-                                <option value="09">Septiembre</option>
-                                <option value="10">Octubre</option>
-                                <option value="11">Noviembre</option>
-                                <option value="12">Diciembre</option>
-                            </x-select>
-
+                            <x-select-anios label="Año" wire:model="anioVigencia" />
+                            <x-select-meses label="Mes" wire:model="mesVigencia" />
                         </x-flex>
                     </div>
 

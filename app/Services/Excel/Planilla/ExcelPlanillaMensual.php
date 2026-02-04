@@ -11,7 +11,6 @@ use App\Services\RecursosHumanos\Planilla\PlanillaAsistenciaServicio;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Str;
 use Exception;
-use Illuminate\Support\Carbon;
 
 class ExcelPlanillaMensual
 {

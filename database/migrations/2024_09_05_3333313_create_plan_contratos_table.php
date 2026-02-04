@@ -30,6 +30,14 @@ return new class extends Migration {
             $table->foreignId('creado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('actualizado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
+
+            $table->date('fecha_fin_prueba')->nullable(); // Calculado: fecha_inicio + 3 meses
+            $table->string('motivo_cese_sunat', 2)->nullable(); // Códigos T-Registro (01, 02, etc.)
+            $table->text('comentario_cese')->nullable();
+            $table->foreignId('finalizado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->enum('estado', ['activo', 'finalizado'])->default('activo');
+            $table->foreignId('eliminado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->softDeletes();
         });
     }
 

@@ -1,5 +1,5 @@
 @props([
-    'label' => 'Año',
+    'label' => null,
     'error' => null,
     'disabled' => false,
     'max' => 'current',

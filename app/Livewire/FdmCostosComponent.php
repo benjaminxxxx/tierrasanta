@@ -115,7 +115,7 @@ class FdmCostosComponent extends Component
                     return;
             }
 
-            $this->costoManoIndirecta?->refresh();
+            $this->obtenerCostos();
             $this->alert('success', 'Datos procesados correctamente');
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());

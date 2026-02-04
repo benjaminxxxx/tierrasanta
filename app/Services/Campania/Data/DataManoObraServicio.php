@@ -7,6 +7,7 @@ use App\Models\CuadDetalleHora;
 use App\Models\PlanDetalleHora;
 use App\Support\CalculoHelper;
 use App\Support\DateHelper;
+use Exception;
 
 class DataManoObraServicio
 {
@@ -19,12 +20,17 @@ class DataManoObraServicio
             ->where('campo_nombre', $campo)
             ->get()
             ->toArray();
-
         $data = [];
-        foreach ($detalleDiarios as $detalleDiario) {
+        foreach ($detalleDiarios as $i => $detalleDiario) {
+
+            $genero = '-';
+
+            if (isset($detalleDiario['registro_diario']['detalle_mensual']['empleado'])) {
+                $genero = $detalleDiario['registro_diario']['detalle_mensual']['empleado']['genero'];
+            }
             $fecha = $detalleDiario['registro_diario']['fecha'];
             $trabajador = $detalleDiario['registro_diario']['detalle_mensual']['nombres'];
-            $genero = $detalleDiario['registro_diario']['detalle_mensual']['empleado']['genero'];
+            
             $manoObra = $detalleDiario['labores']['nombre_labor'];
             $jornalDiario = (float) $detalleDiario['registro_diario']['detalle_mensual']['jornal_diario'];
 

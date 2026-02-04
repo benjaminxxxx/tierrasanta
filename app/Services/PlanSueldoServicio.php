@@ -3,9 +3,28 @@
 namespace App\Services;
 use App\Models\PlanSueldo;
 use DB;
+use Illuminate\Support\Carbon;
 
 class PlanSueldoServicio
 {
+    /**
+     * Obtiene el último sueldo vigente para una lista de empleados.
+     */
+    public function obtenerSueldosPorMes(array $empleadoIds, $mes, $anio)
+    {
+        // Creamos una fecha de referencia (fin de mes) para validar que el sueldo haya iniciado
+        $fechaLimite = Carbon::createFromDate($anio, $mes, 1)->endOfMonth();
+
+        return PlanSueldo::whereIn('plan_empleado_id', $empleadoIds)
+            ->where('fecha_inicio', '<=', $fechaLimite)
+            ->orderBy('fecha_inicio', 'desc')
+            ->get()
+            ->groupBy('plan_empleado_id')
+            ->map(function ($historial) {
+                // De cada empleado, tomamos el primero (el más reciente por el orderBy desc)
+                return (float)$historial->first()->sueldo;
+            });
+    }
     public function listar()
     {
         return PlanSueldo::all();

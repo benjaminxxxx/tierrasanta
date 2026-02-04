@@ -22,7 +22,7 @@ class CampaniaServicio
         if (!$campania) {
             throw new Exception("La campaña no existe");
         }
-
+        
         // 1. Recolección de datos de múltiples fuentes
         $informacionPlanilla = app(DataManoObraServicio::class)->generarPlanillerosPor(
             $campania->campo,

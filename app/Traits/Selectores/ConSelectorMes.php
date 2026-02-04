@@ -25,12 +25,12 @@ trait ConSelectorMes
      */
     public function inicializarMesAnio()
     {
-        $session = Session::get($this->dateSessionKey, []);
+        $session = Session::get($this->dateSessionKey);
 
-        $this->mes = $session['mes'] ?? now()->format('m');
-        $this->anio = $session['anio'] ?? now()->format('Y');
+        // Al usar (int) o intval, '01' se convierte en 1 automáticamente
+        $this->mes = (int) ($session['mes'] ?? now()->format('m'));
+        $this->anio = (int) ($session['anio'] ?? now()->format('Y'));
 
-        // Ejecutar lógica personalizada al iniciar
         $this->despuesMesAnioModificado($this->anio, $this->mes);
     }
 
@@ -40,19 +40,19 @@ trait ConSelectorMes
     public function mesAnterior()
     {
         $fecha = Carbon::createFromDate($this->anio, $this->mes, 1)->subMonth();
-        $this->anio = $fecha->format('Y');
-        $this->mes = $fecha->format('m');
+        // En lugar de format('m'), usa format('n') que devuelve el mes sin ceros iniciales
+        $this->anio = (int) $fecha->format('Y');
+        $this->mes = (int) $fecha->format('n');
         $this->refrescarSessionMesAnio();
     }
-
     /**
      * Avanza un mes.
      */
     public function mesSiguiente()
     {
         $fecha = Carbon::createFromDate($this->anio, $this->mes, 1)->addMonth();
-        $this->anio = $fecha->format('Y');
-        $this->mes = $fecha->format('m');
+        $this->anio = (int) $fecha->format('Y');
+        $this->mes = (int) $fecha->format('m');
         $this->refrescarSessionMesAnio();
     }
 
@@ -75,8 +75,8 @@ trait ConSelectorMes
     private function refrescarSessionMesAnio()
     {
         Session::put($this->dateSessionKey, [
-            'mes' => $this->mes,
-            'anio' => $this->anio,
+            'mes' => (int) $this->mes,
+            'anio' => (int) $this->anio,
         ]);
 
         $this->despuesMesAnioModificado($this->anio, $this->mes);

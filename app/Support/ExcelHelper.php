@@ -60,7 +60,8 @@ class ExcelHelper
         $rango = $tabla->getRange(); // Ejemplo: "A1:E10"
         $filas = $hoja->rangeToArray($rango, null, true, false, true);
 
-        if (empty($filas)) return [];
+        if (empty($filas))
+            return [];
 
         // El primer elemento son los encabezados
         $encabezados = array_shift($filas);
@@ -143,6 +144,39 @@ class ExcelHelper
             return $sheet;
         } catch (Exception $e) {
             throw new Exception("Error al cargar el archivo Excel: " . $e->getMessage());
+        }
+    }
+    /**
+     * Carga un archivo Excel y devuelve un array de hojas solicitadas.
+     *
+     * @param string $disk Nombre del disco de almacenamiento
+     * @param string $filePath Ruta del archivo
+     * @param array $sheetNames Array con los nombres de las hojas (ej. ['Hoja1', 'Hoja2'])
+     * @return array<string, \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet>
+     * @throws Exception
+     */
+    public static function cargarHojasDesdePlantilla(string $filePath, array $sheetNames)
+    {
+        try {
+
+            // Cargamos el spreadsheet una sola vez
+            $spreadsheet = self::cargarPlantilla($filePath);
+            $hojasCargadas = [];
+
+            foreach ($sheetNames as $name) {
+                $sheet = $spreadsheet->getSheetByName($name);
+
+                if (!$sheet) {
+                    // Opcional: podrías decidir si lanzar excepción o simplemente marcar como null
+                    throw new Exception("No se encontró la hoja solicitada: {$name}");
+                }
+
+                $hojasCargadas[$name] = $sheet;
+            }
+
+            return $hojasCargadas;
+        } catch (Exception $e) {
+            throw new Exception("Error al cargar las hojas del Excel: " . $e->getMessage());
         }
     }
     /**

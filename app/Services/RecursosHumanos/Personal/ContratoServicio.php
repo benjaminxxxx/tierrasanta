@@ -4,6 +4,7 @@ namespace App\Services\RecursosHumanos\Personal;
 
 use App\Models\PlanContrato;
 use App\Models\PlanEmpleado;
+use App\Support\ExcelHelper;
 use Carbon\Carbon;
 use DB;
 use Exception;
@@ -12,173 +13,222 @@ use Illuminate\Validation\ValidationException;
 
 class ContratoServicio
 {
-    /**
-     * Registra un nuevo contrato para un empleado, finalizando el anterior si existe.
-     */
-    public function registrarContrato(int $empleadoId, array $data): void
+    public function importarContratos($file)
     {
-        // 🔹 Validaciones antes de iniciar la transacción
+        $dataExcel = app(ImportContratoServicio::class)->importarContratos($file);
+        ValidarContratoServicio::validarDatosExcel($dataExcel);
+        DB::transaction(function () use ($dataExcel) {
+            foreach ($dataExcel as $indice => $registro) {
+                $registroEmpleado = PlanEmpleado::where('documento', $registro['dni'])->first();
+                if (!$registroEmpleado) {
+                    continue; // O manejar el error según sea necesario
+                }
+
+                $fecha_fin = $registro['fecha_baja'] ? ExcelHelper::parseFechaExcel($registro['fecha_baja']) : null;
+                $estado = $registro['estado'] === 'BAJA' ? 'finalizado' : 'activo';
+
+                $this->guardarContrato([
+                    'plan_empleado_id' => $registroEmpleado->id,
+                    'fecha_inicio' => ExcelHelper::parseFechaExcel($registro['fecha_ingreso']),
+                    'cargo_codigo' => null,
+                    'tipo_planilla' => $registro['planilla'],
+                    'plan_sp_codigo' => $registro['sistema'],
+                    'tipo_contrato' => 'indefinido',
+                    'modalidad_pago' => 'mensual',
+                    'grupo_codigo' => null,
+                    'fecha_fin' => $fecha_fin,
+                    'estado' => $estado,
+                ], null, $indice + 1);
+            }
+        });
+    }
+    /**
+     * Guarda o actualiza un contrato con validaciones de negocio.
+     */
+    public function guardarContrato(array $data, $contratoId = null,$fila = null)
+    {
+        $tieneActivo = PlanContrato::where('plan_empleado_id', $data['plan_empleado_id'])
+            ->where('estado', 'activo')
+            ->when($contratoId, fn($q) => $q->where('id', '!=', $contratoId))
+            ->exists();
+
+        if ($tieneActivo) {
+            throw new Exception("No se puede proceder: El empleado aún tiene un contrato activo.");
+        }
 
         $validator = Validator::make($data, [
             'fecha_inicio' => [
                 'required',
-                'date',
-                function ($attribute, $value, $fail) {
-                    if (date('d', strtotime($value)) != 1) {
-                        $fail('La fecha de inicio debe ser siempre el día 1.');
-                    }
-                }
+                'date'
             ],
             'tipo_planilla' => 'required',
-            'plan_sp_codigo'=>'required',
+            'plan_sp_codigo' => 'required',
             'tipo_contrato' => 'required',
-            'modalidad_pago' => 'required'
+            'modalidad_pago' => 'required',
+            'grupo_codigo' => 'nullable',
+        ], [
+            'plan_empleado_id.required' => 'El empleado es obligatorio.',
+            'fecha_inicio.required' => 'La fecha de inicio es obligatoria.',
+            'cargo_codigo.required' => 'El cargo es obligatorio.',
+            'tipo_planilla.required' => 'El tipo de planilla es obligatorio.',
+            'plan_sp_codigo.required' => 'El plan SP es obligatorio.',
+            'tipo_contrato.required' => 'El tipo de contrato es obligatorio.',
+            'modalidad_pago.required' => 'La modalidad de pago es obligatoria.',
+
         ]);
 
         if ($validator->fails()) {
             throw new ValidationException($validator);
         }
 
-        $fechaInicio = Carbon::parse($data['fecha_inicio']);
+        $plan_empleado_id = $data['plan_empleado_id'];
+        $fecha_inicio = Carbon::parse($data['fecha_inicio']);
+        $fecha_fin = isset($data['fecha_fin']) ? Carbon::parse($data['fecha_fin']) : null;
+        $data['grupo_codigo'] = $data['grupo_codigo'] == '' ? null : $data['grupo_codigo'];
 
-        DB::beginTransaction();
+        // 1. Validar que no existan contratos "Activos" (si es nuevo)
+        if (!$contratoId) {
+            $tieneActivo = PlanContrato::where('plan_empleado_id', $plan_empleado_id)
+                ->where('estado', 'activo')
+                ->exists();
 
-        try {
-            $empleado = PlanEmpleado::findOrFail($empleadoId);
-            $ultimoContrato = $this->_obtenerUltimoContrato($empleadoId);
+            if ($tieneActivo) {
+                throw ValidationException::withMessages([
+                    'plan_empleado_id' => 'El empleado ya tiene un contrato activo. Debe finalizarlo antes de crear uno nuevo.'
+                ]);
+            }
+        }
 
-            $this->_validarFechaInicio($fechaInicio, $ultimoContrato, $empleado->nombres);
+        // 2. Validar solapamiento de fechas (Overlap)
+        $this->validarTraslapeFechas($plan_empleado_id, $fecha_inicio, $fecha_fin, $contratoId);
 
-            if ($ultimoContrato) {
-                $this->_finalizarContrato($ultimoContrato, $fechaInicio);
+        // 3. Validar consistencia de fechas
+        if ($fecha_fin && $fecha_fin->lt($fecha_inicio)) {
+            $message = $contratoId
+                ? 'La fecha de fin no puede ser anterior a la de inicio.'
+                : "Error en la fila {$fila}: La fecha de fin no puede ser anterior a la de inicio.";
+            throw ValidationException::withMessages(['fecha_fin' => $message]);
+        }
+
+        return DB::transaction(function () use ($data, $contratoId) {
+            $userId = auth()->id();
+
+            if ($contratoId) {
+                $contrato = PlanContrato::findOrFail($contratoId);
+                $contrato->update(array_merge($data, ['actualizado_por' => $userId]));
+                return $contrato;
             }
 
-            $data['plan_empleado_id'] = $empleadoId;
-            
-            PlanContrato::create($data);
-
-            DB::commit();
-
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    }
-
-
-    /**
-     * Aplica cambios masivos de sueldo, creando un nuevo contrato para cada empleado.
-     */
-    public function guardarCambiosSueldos(array $cambios, string $mesVigencia, string $anioVigencia): void
-    {
-        if (empty($cambios)) {
-            throw new Exception('No se proporcionaron cambios para procesar.');
-        }
-        if (!$mesVigencia || !$anioVigencia) {
-            throw new Exception('Debe seleccionar el mes y el año de vigencia.');
-        }
-
-        $fechaInicio = Carbon::create($anioVigencia, $mesVigencia, 1)->startOfDay();
-
-        DB::transaction(function () use ($cambios, $fechaInicio) {
-            foreach ($cambios as $cambio) {
-                $empleado = PlanEmpleado::findOrFail($cambio['empleado_id']);
-                $nuevoSueldo = $cambio['nuevo_sueldo'];
-                $ultimoContrato = $this->_obtenerUltimoContrato($empleado->id);
-
-                // 1. Validar la fecha de inicio
-                $this->_validarFechaInicio($fechaInicio, $ultimoContrato, $empleado->nombres);
-
-                // 2. Finalizar el contrato anterior si existe
-                if ($ultimoContrato) {
-                    $this->_finalizarContrato($ultimoContrato, $fechaInicio);
-                }
-
-                // 3. Preparar y crear el nuevo contrato
-                $nuevoContratoData = $this->_prepararDatosNuevoContrato($empleado, $ultimoContrato, $nuevoSueldo, $fechaInicio);
-                PlanContrato::create($nuevoContratoData);
-            }
+            return PlanContrato::create(array_merge($data, ['creado_por' => $userId]));
         });
     }
 
     /**
-     * Elimina un contrato y reajusta el historial del empleado.
+     * Finaliza un contrato exigiendo datos de cese.
      */
-    public function eliminarContratoPorId(int $contratoId): void
+    public function finalizarContrato($contratoId, array $data)
     {
-        DB::transaction(function () use ($contratoId) {
-            $contratoAEliminar = PlanContrato::findOrFail($contratoId);
-            $empleadoId = $contratoAEliminar->plan_empleado_id;
+        $contrato = PlanContrato::findOrFail($contratoId);
+        $fecha_fin = Carbon::parse($data['fecha_fin']);
 
-            // Buscamos el contrato anterior al que vamos a eliminar
-            $contratoAnterior = PlanContrato::where('plan_empleado_id', $empleadoId)
-                ->where('fecha_inicio', '<', $contratoAEliminar->fecha_inicio)
-                ->orderByDesc('fecha_inicio')
-                ->first();
-
-            // Si existe un contrato anterior, le quitamos la fecha de fin para que vuelva a ser el activo
-            if ($contratoAnterior) {
-                $contratoAnterior->update(['fecha_fin' => null]);
-            }
-
-            $contratoAEliminar->delete();
-        });
-    }
-
-    // ===================================================================
-    // MÉTODOS PRIVADOS DE AYUDA (HELPERS)
-    // ===================================================================
-
-    /**
-     * Obtiene el contrato más reciente de un empleado.
-     */
-    private function _obtenerUltimoContrato(int $empleadoId)
-    {
-        return PlanContrato::where('plan_empleado_id', $empleadoId)
-            ->orderByDesc('fecha_inicio')
-            ->first();
-    }
-
-    /**
-     * Valida que la fecha de inicio sea posterior a la del último contrato.
-     */
-    private function _validarFechaInicio(Carbon $fechaInicio, $ultimoContrato, string $nombreEmpleado): void
-    {
-        if ($ultimoContrato && $fechaInicio->lte(Carbon::parse($ultimoContrato->fecha_inicio))) {
-            throw new Exception("La fecha de inicio debe ser posterior al último contrato para el empleado {$nombreEmpleado}");
+        if ($fecha_fin->lt($contrato->fecha_inicio)) {
+            throw ValidationException::withMessages(['fecha_fin' => 'La fecha de cese no puede ser anterior al inicio del contrato.']);
         }
-    }
 
-    /**
-     * Actualiza la fecha de fin de un contrato.
-     */
-    private function _finalizarContrato($contrato, Carbon $fechaInicioNuevoContrato): void
-    {
+        if (empty($data['motivo_cese_sunat'])) {
+            throw ValidationException::withMessages(['motivo_cese_sunat' => 'El motivo de cese SUNAT es obligatorio para finalizar.']);
+        }
+
         $contrato->update([
-            'fecha_fin' => $fechaInicioNuevoContrato->copy()->subDay()->format('Y-m-d')
+            'fecha_fin' => $fecha_fin,
+            'motivo_cese_sunat' => $data['motivo_cese_sunat'],
+            'comentario_cese' => $data['comentario_cese'] ?? null,
+            'estado' => 'finalizado',
+            'finalizado_por' => auth()->id()
         ]);
+
+        return $contrato;
     }
 
     /**
-     * Prepara los datos para un nuevo contrato basándose en el anterior.
+     * Lista contratos con filtros y paginación opcional.
      */
-    private function _prepararDatosNuevoContrato(Empleado $empleado, ?Contrato $ultimoContrato, float $nuevoSueldo, Carbon $fechaInicio): array
+    public function listarContratos(array $filtros = [], $perPage = null)
     {
-        return [
-            'empleado_id' => $empleado->id,
-            'sueldo' => $nuevoSueldo,
-            'fecha_inicio' => $fechaInicio->format('Y-m-d'),
-            'fecha_fin' => null,
-            'tipo_contrato' => $ultimoContrato?->tipo_contrato ?? 'indefinido',
-            'cargo_codigo' => $ultimoContrato?->cargo_codigo ?? $empleado->cargo_id,
-            'grupo_codigo' => $ultimoContrato?->grupo_codigo ?? $empleado->grupo_codigo,
-            'tipo_planilla' => $ultimoContrato?->tipo_planilla ?? $empleado->tipo_planilla,
-            'descuento_sp_id' => $ultimoContrato?->descuento_sp_id,
-            'compensacion_vacacional' => $ultimoContrato?->compensacion_vacacional ?? 0,
-            'esta_jubilado' => $ultimoContrato?->esta_jubilado ?? 0,
-            'modalidad_pago' => $ultimoContrato?->modalidad_pago,
-            'motivo_despido' => null,
-        ];
+        $query = PlanContrato::query()
+            ->with(['empleado', 'cargo', 'grupo']);
+
+        // Filtros de relación (Empleado)
+        if (!empty($filtros['buscar'])) {
+            $buscar = $filtros['buscar'];
+            $query->whereHas('empleado', function ($q) use ($buscar) {
+                $q->where(function ($sq) use ($buscar) {
+                    $sq->where('nombres', 'like', "%$buscar%")
+                        ->orWhere('apellido_paterno', 'like', "%$buscar%")
+                        ->orWhere('apellido_materno', 'like', "%$buscar%")
+                        ->orWhere('documento', 'like', "%$buscar%");
+                });
+            });
+        }
+
+        // Filtros directos (Strings/Enums)
+        $query->when(!empty($filtros['estado']), fn($q) => $q->where('estado', $filtros['estado']))
+            ->when(!empty($filtros['tipo_planilla']), fn($q) => $q->where('tipo_planilla', $filtros['tipo_planilla']))
+            ->when(!empty($filtros['cargo_codigo']), fn($q) => $q->where('cargo_codigo', $filtros['cargo_codigo']))
+            ->when(!empty($filtros['grupo_codigo']), fn($q) => $q->where('grupo_codigo', $filtros['grupo_codigo']));
+
+        // Filtros de Rango de Fechas
+        if (!empty($filtros['fecha_desde'])) {
+            $query->where('fecha_inicio', '>=', $filtros['fecha_desde']);
+        }
+        if (!empty($filtros['fecha_hasta'])) {
+            $query->where('fecha_inicio', '<=', $filtros['fecha_hasta']);
+        }
+
+        $query->orderBy('created_at', 'desc');
+
+        return $perPage ? $query->paginate($perPage) : $query->get();
+    }
+    public function eliminarContrato($contratoId)
+    {
+        $contrato = PlanContrato::findOrFail($contratoId);
+        $contrato->update(['eliminado_por' => auth()->id()]);
+        return $contrato->delete();
+    }
+
+    /**
+     * Lógica privada para detectar cruce de fechas.
+     */
+    private function validarTraslapeFechas($empleadoId, $inicio, $fin, $contratoIdIgnore = null)
+    {
+        $query = PlanContrato::where('plan_empleado_id', $empleadoId)
+            ->where(function ($q) use ($inicio, $fin) {
+                $q->where(function ($sub) use ($inicio) {
+                    $sub->where('fecha_inicio', '<=', $inicio)
+                        ->where(function ($f) use ($inicio) {
+                            $f->whereNull('fecha_fin')->orWhere('fecha_fin', '>=', $inicio);
+                        });
+                });
+
+                if ($fin) {
+                    $q->orWhere(function ($sub) use ($fin) {
+                        $sub->where('fecha_inicio', '<=', $fin)
+                            ->where(function ($f) use ($fin) {
+                                $f->whereNull('fecha_fin')->orWhere('fecha_fin', '>=', $fin);
+                            });
+                    });
+                }
+            });
+
+        if ($contratoIdIgnore) {
+            $query->where('id', '!=', $contratoIdIgnore);
+        }
+
+        if ($query->exists()) {
+            throw ValidationException::withMessages([
+                'fecha_inicio' => 'Las fechas seleccionadas se cruzan con un contrato existente para este empleado.'
+            ]);
+        }
     }
 
 

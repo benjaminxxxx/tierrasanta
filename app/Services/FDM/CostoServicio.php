@@ -10,15 +10,13 @@ class CostoServicio
 {
     public static function calcularCostoCuadrillaFDM($mes, $anio)
     {
-        $totalCosto = CuadrillaFdmServicio::generarReportePorMes($mes, $anio);
+        $totalCosto = CuadrillaFdmServicio::calcularGastosCuadrillaMensual($mes, $anio);
         $data = [
             'negro_cuadrillero_monto' => $totalCosto['total'],
             'negro_cuadrillero_bono' => $totalCosto['bono'],
             'negro_cuadrillero_file' => $totalCosto['file'],
         ];
-
         self::guardarCostoManoIndirecta($mes, $anio, $data);
-        return 0;
     }
     public static function calcularCostoPlanillaFDM($mes, $anio)
     {

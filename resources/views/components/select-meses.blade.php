@@ -1,5 +1,5 @@
 @props([
-    'label' => 'Mes',
+    'label' => '',
     'error' => null,
     'disabled' => false,
 ])

@@ -54,6 +54,10 @@ class PlanMensualDetalle extends Model
         'negro_sueldo_final_empleado',
         'negro_diferencia_real',
         'esta_jubilado',
+
+        'sueldo_negro_pagado',
+        'sueldo_blanco_pagado',
+        'total_horas'
     ];
     public function empleado(){
         return $this->belongsTo(PlanEmpleado::class,'plan_empleado_id');

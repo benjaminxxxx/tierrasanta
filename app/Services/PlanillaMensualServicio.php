@@ -61,7 +61,7 @@ class PlanillaMensualServicio
         $carbon = Carbon::parse($fecha);
         return $this->obtenerPlanillaXMesAnio($carbon->month, $carbon->year);
     }
-    public function obtenerPlanillaXMesAnio($mes, $anio)
+    public function obtenerPlanillaXMesAnio($mes, $anio,$orden='orden')
     {
         return PlanMensualDetalle::whereHas('planillaMensual', function ($q) use ($mes, $anio) {
             $q->where('mes', $mes)
@@ -90,7 +90,7 @@ class PlanillaMensualServicio
                         ->limit(1);
                 }
             ])
-            ->orderBy('orden')
+            ->orderBy($orden)
             ->get();
     }
 }

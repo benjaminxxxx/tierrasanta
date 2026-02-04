@@ -1,40 +1,27 @@
 <div>
-    
-    <x-card2>
-        <div class="flex items-center justify-between">
+    <x-flex>
+        <x-title>
+            Planilla Mensual
+        </x-title>
+    </x-flex>
+    <x-card class="mt-4">
+        <x-flex class="justify-between">
 
-            <x-button wire:click="mesAnterior">
+            <x-button variant="secondary" wire:click="mesAnterior">
                 <i class="fa fa-chevron-left"></i> Mes Anterior
             </x-button>
 
             <x-flex>
-                <x-select wire:model.live="mes">
-                    <option value="01">Enero</option>
-                    <option value="02">Febrero</option>
-                    <option value="03">Marzo</option>
-                    <option value="04">Abril</option>
-                    <option value="05">Mayo</option>
-                    <option value="06">Junio</option>
-                    <option value="07">Julio</option>
-                    <option value="08">Agosto</option>
-                    <option value="09">Septiembre</option>
-                    <option value="10">Octubre</option>
-                    <option value="11">Noviembre</option>
-                    <option value="12">Diciembre</option>
-                </x-select>
-
-                <!-- Selección de año -->
-                <x-group-field>
-                    <x-input type="number" wire:model.live="anio" class="text-center !mt-0 !w-auto" min="1900" />
-                </x-group-field>
-                @if($sePuedeVerNegro)
+                <x-select-meses wire:model.live="mes" />
+                <x-select-anios wire:model.live="anio" />
+                @if ($sePuedeVerNegro)
                     <x-group-field>
-                        @if($componente == 'blanco')
+                        @if ($componente == 'blanco')
                             <x-button type="button" wire:click="ver('negro')">
                                 Ver Negro
                             </x-button>
                         @endif
-                        @if($componente == 'negro')
+                        @if ($componente == 'negro')
                             <x-button type="button" wire:click="ver('blanco')">
                                 Ver Blanco
                             </x-button>
@@ -45,16 +32,18 @@
 
 
             <!-- Botón para mes posterior -->
-            <x-button wire:click="mesSiguiente">
+            <x-button variant="secondary" wire:click="mesSiguiente">
                 Mes Siguiente <i class="fa fa-chevron-right"></i>
             </x-button>
-        </div>
-    </x-card2>
-    @if($componente == 'blanco')
-        <livewire:planilla-blanco-detalle-component wire:key="{{$mes}}-{{$anio}}" :mes="$mes" :anio="$anio" />
+        </x-flex>
+    </x-card>
+    @if ($componente == 'blanco')
+        <livewire:planilla-blanco-detalle-component wire:key="{{ $mes }}-{{ $anio }}" :mes="$mes"
+            :anio="$anio" />
     @endif
-    @if($componente == 'negro')
-        <livewire:planilla-negro-detalle-component wire:key="{{$mes}}-{{$anio}}-negro" :mes="$mes" :anio="$anio" />
+    @if ($componente == 'negro')
+        <livewire:planilla-negro-detalle-component wire:key="{{ $mes }}-{{ $anio }}-negro"
+            :mes="$mes" :anio="$anio" />
     @endif
 
     <x-loading wire:loading />

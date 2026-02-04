@@ -1,184 +1,178 @@
 <div>
+    <x-card class="mt-4">
+        <x-table>
+            <x-slot name="thead">
+                <x-tr>
+                    <x-th class="text-center">
+                        N°
+                    </x-th>
+                    <x-th>
+                        Descripción del costo
+                    </x-th>
+                    <x-th class="text-center">
+                        Monto Blanco
+                    </x-th>
+                    <x-th class="text-center">
+                        Monto Negro
+                    </x-th>
+                    <x-th class="text-center">
+                        Reporte Blanco
+                    </x-th>
+                    <x-th class="text-center">
+                        Reporte Negro
+                    </x-th>
+                    <x-th class="text-center">
+                        Acciones
+                    </x-th>
+                </x-tr>
+            </x-slot>
+            <x-slot name="tbody">
+                <x-tr>
+                    <x-td class="text-center">
+                        1
+                    </x-td>
+                    <x-td>
+                        Cuadrilleros FDM
+                    </x-td>
+                    <x-td class="text-center">
+                        -
+                    </x-td>
+                    <x-td class="text-center">
+                        S/ {{ formatear_numero($costoManoIndirecta?->negro_cuadrillero_monto) }}
+                    </x-td>
+                    <x-td class="text-center">
+                        -
+                    </x-td>
+                    <x-td class="text-center">
+                        @if ($costoManoIndirecta?->negro_cuadrillero_file)
+                            <x-button variant="success" href="{{ Storage::disk('public')->url($costoManoIndirecta?->negro_cuadrillero_file) }}">
+                                <i class="fa fa-file-excel" aria-hidden="true"></i> Reporte
+                            </x-button>
+                        @endif
+                    </x-td>
+                    <x-td class="text-center">
+                        <x-button type="button" wire:click="recalcularCostoFdm('cuadrilleros')">
+                            <i class="fa fa-calculator"></i> Recalcular costos
+                        </x-button>
+                    </x-td>
+                </x-tr>
+                <x-tr>
+                    <x-td class="text-center">
+                        2
+                    </x-td>
+                    <x-td>
+                        Planilleros FDM
+                    </x-td>
+                    <x-td class="text-center">
+                        -
+                    </x-td>
+                    <x-td class="text-center">
+
+                    </x-td>
+                    <x-td class="text-center">
+                        -
+                    </x-td>
+                    <x-td class="text-center">
+                        -
+                    </x-td>
+                    <x-td class="text-center">
+                        <x-button type="button" wire:click="recalcularCosto('cuadrilleros')">
+                            <i class="fa fa-calculator"></i> Recalcular costos
+                        </x-button>
+                    </x-td>
+                </x-tr>
+                <x-tr>
+                    <x-td class="text-center">
+                        3
+                    </x-td>
+                    <x-td>
+                        Maquinarias FDM
+                    </x-td>
+                    <x-td class="text-center">
+                        -
+                    </x-td>
+                    <x-td class="text-center">
+                        -
+                    </x-td>
+                    <x-td class="text-center">
+                        -
+                    </x-td>
+                    <x-td class="text-center">
+                        -
+                    </x-td>
+                    <x-td class="text-center">
+                        <x-button type="button" wire:click="recalcularCosto('cuadrilleros')">
+                            <i class="fa fa-calculator"></i> Recalcular costos
+                        </x-button>
+                    </x-td>
+                </x-tr>
+                <x-tr>
+                    <x-td class="text-center">
+                        4
+                    </x-td>
+                    <x-td>
+                        Maquinarias con salidas a FDM
+                    </x-td>
+                    <x-td class="text-center">
+                        -
+                    </x-td>
+                    <x-td class="text-center">
+                        -
+                    </x-td>
+                    <x-td class="text-center">
+                        -
+                    </x-td>
+                    <x-td class="text-center">
+                        -
+                    </x-td>
+                    <x-td class="text-center">
+                        <x-button type="button" wire:click="recalcularCosto('cuadrilleros')">
+                            <i class="fa fa-calculator"></i> Recalcular costos
+                        </x-button>
+                    </x-td>
+                </x-tr>
+                <x-tr>
+                    <x-td class="text-center">
+                        5
+                    </x-td>
+                    <x-td>
+                        Costos adicionales
+                    </x-td>
+                    <x-td class="text-center">
+                        S/ {{ number_format($blancoCostosAdicionales, 2) }}
+                    </x-td>
+                    <x-td class="text-center">
+                        S/ {{ number_format($negroCostosAdicionales, 2) }}
+                    </x-td>
+                    <x-td class="text-center">
+                        -
+                    </x-td>
+                    <x-td class="text-center">
+                        -
+                    </x-td>
+                    <x-td class="text-center">
+                        -
+                    </x-td>
+                </x-tr>
+            </x-slot>
+        </x-table>
+    </x-card>
+    <x-card class="mt-4">
+
+        <div>
+            Registre o quite los costos adicionales
+        </div>
+
+        <div x-data="{{ $idTable }}" wire:ignore>
+
+            <div x-ref="tableContainer" class="mt-5 overflow-auto"></div>
+            <x-button @click="sendDataCostos" class="mt-5">
+                <i class="fa fa-save"></i> Guardar Costos
+            </x-button>
+        </div>
+    </x-card>
+
     <x-loading wire:loading />
-    <x-h3 class="mt-4">
-        Costo de Mano Indirecta
-    </x-h3>
-    <x-label>Estos costos se suman y se envian a COSTO OPERATIVO / MANO DE OBRA INDIRECTA</x-label>
-    <x-card class="mt-4">
-        <x-spacing>
-            <x-table>
-                <x-slot name="thead">
-                    <x-tr>
-                        <x-th class="text-center">
-                            N°
-                        </x-th>
-                        <x-th>
-                            Descripción del costo
-                        </x-th>
-                        <x-th class="text-center">
-                            Monto Blanco
-                        </x-th>
-                        <x-th class="text-center">
-                            Monto Negro
-                        </x-th>
-                        <x-th class="text-center">
-                            Reporte Blanco
-                        </x-th>
-                        <x-th class="text-center">
-                            Reporte Negro
-                        </x-th>
-                        <x-th class="text-center">
-                            Acciones
-                        </x-th>
-                    </x-tr>
-                </x-slot>
-                <x-slot name="tbody">
-                    <x-tr>
-                        <x-td class="text-center">
-                            1
-                        </x-td>
-                        <x-td>
-                            Cuadrilleros FDM
-                        </x-td>
-                        <x-td class="text-center">
-                            -
-                        </x-td>
-                        <x-td class="text-center">
-                            S/ {{ formatear_numero($costoManoIndirecta?->negro_cuadrillero_monto) }}
-                        </x-td>
-                        <x-td class="text-center">
-                            -
-                        </x-td>
-                        <x-td class="text-center">
-                            @if ($costoManoIndirecta?->negro_cuadrillero_file)
-                                <x-button-a href="{{Storage::disk('public')->url($costoManoIndirecta?->negro_cuadrillero_file)}}">
-                                    <i class="fa fa-file-excel" aria-hidden="true"></i> Reporte
-                                </x-button-a>
-                            @endif
-                        </x-td>
-                        <x-td class="text-center">
-                            <x-button type="button" wire:click="recalcularCostoFdm('cuadrilleros')">
-                                <i class="fa fa-calculator"></i> Recalcular costos
-                            </x-button>
-                        </x-td>
-                    </x-tr>
-                    <x-tr>
-                        <x-td class="text-center">
-                            2
-                        </x-td>
-                        <x-td>
-                            Planilleros FDM
-                        </x-td>
-                        <x-td class="text-center">
-                            -
-                        </x-td>
-                        <x-td class="text-center">
-                            
-                        </x-td>
-                        <x-td class="text-center">
-                            -
-                        </x-td>
-                        <x-td class="text-center">
-                            -
-                        </x-td>
-                        <x-td class="text-center">
-                            <x-button type="button" wire:click="recalcularCosto('cuadrilleros')">
-                                <i class="fa fa-calculator"></i> Recalcular costos
-                            </x-button>
-                        </x-td>
-                    </x-tr>
-                    <x-tr>
-                        <x-td class="text-center">
-                            3
-                        </x-td>
-                        <x-td>
-                            Maquinarias FDM
-                        </x-td>
-                        <x-td class="text-center">
-                            -
-                        </x-td>
-                        <x-td class="text-center">
-                            -
-                        </x-td>
-                        <x-td class="text-center">
-                            -
-                        </x-td>
-                        <x-td class="text-center">
-                            -
-                        </x-td>
-                        <x-td class="text-center">
-                            <x-button type="button" wire:click="recalcularCosto('cuadrilleros')">
-                                <i class="fa fa-calculator"></i> Recalcular costos
-                            </x-button>
-                        </x-td>
-                    </x-tr>
-                    <x-tr>
-                        <x-td class="text-center">
-                            4
-                        </x-td>
-                        <x-td>
-                            Maquinarias con salidas a FDM
-                        </x-td>
-                        <x-td class="text-center">
-                            -
-                        </x-td>
-                        <x-td class="text-center">
-                            -
-                        </x-td>
-                        <x-td class="text-center">
-                            -
-                        </x-td>
-                        <x-td class="text-center">
-                            -
-                        </x-td>
-                        <x-td class="text-center">
-                            <x-button type="button" wire:click="recalcularCosto('cuadrilleros')">
-                                <i class="fa fa-calculator"></i> Recalcular costos
-                            </x-button>
-                        </x-td>
-                    </x-tr>
-                    <x-tr>
-                        <x-td class="text-center">
-                            5
-                        </x-td>
-                        <x-td>
-                            Costos adicionales
-                        </x-td>
-                        <x-td class="text-center">
-                            S/ {{ number_format($blancoCostosAdicionales, 2) }}
-                        </x-td>
-                        <x-td class="text-center">
-                            S/ {{ number_format($negroCostosAdicionales, 2) }}
-                        </x-td>
-                        <x-td class="text-center">
-                            -
-                        </x-td>
-                        <x-td class="text-center">
-                            -
-                        </x-td>
-                        <x-td class="text-center">
-                           -
-                        </x-td>
-                    </x-tr>
-                </x-slot>
-            </x-table>
-        </x-spacing>
-    </x-card>
-    <x-card class="mt-4">
-        <x-spacing>
-            <div>
-                Registre o quite los costos adicionales
-            </div>
-
-            <div x-data="{{ $idTable }}" wire:ignore>
-
-                <div x-ref="tableContainer" class="mt-5 overflow-auto"></div>
-                <x-button @click="sendDataCostos" class="mt-5" >
-                    <i class="fa fa-save"></i> Guardar Costos
-                </x-button>
-            </div>
-        </x-spacing>
-    </x-card>
 </div>
 @script
     <script>

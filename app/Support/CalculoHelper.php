@@ -8,6 +8,61 @@ use InvalidArgumentException;
 class CalculoHelper
 {
     /**
+     * Calcula el monto real que el trabajador debe recibir basado en su 
+     * sueldo pactado y las horas efectivamente trabajadas.
+     *
+     * @param float $sueldoManoMes  Sueldo total pactado (ej: 2200)
+     * @param float $horasTrabajadas Horas que asistió el trabajador (ej: 140)
+     * @param float $totalHorasMes   Horas base del mes (ej: 160)
+     * @return float
+     */
+    public static function calcularSueldoManoProporcional($sueldoManoMes, $horasTrabajadas, $totalHorasMes)
+    {
+        if ($totalHorasMes <= 0)
+            return 0;
+
+        // Calculamos cuánto vale su hora "en la mano"
+        $valorHoraMano = $sueldoManoMes / $totalHorasMes;
+
+        // Retornamos el pago proporcional a sus horas reales
+        return round($valorHoraMano * $horasTrabajadas, 2);
+    }
+    /**
+     * Calcula el costo en blanco y negro de una labor específica.
+     *
+     * @param float $horasLabor         Horas dedicadas a la labor específica (ej: 30.5)
+     * @param float $totalHorasMes      Total de horas trabajadas en el mes (ej: 160)
+     * @param float $netoRecibidoReal   Lo que el trabajador cobró en total (ej: 2200)
+     * @param float $costoTotalEmpresa  Suma de (Sueldo Bruto + Aportes Empleador) del PLAME
+     * @param float $netoBoletaPLAME    El "Neto a Pagar" que figura en la boleta legal
+     * @return array
+     */
+    public static function calcularCostoLabor($horasLabor, $totalHorasMes, $netoRecibidoReal, $costoTotalEmpresa, $netoBoletaPLAME)
+    {
+        if ($totalHorasMes <= 0) {
+            return ['blanco' => 0, 'negro' => 0, 'total' => 0];
+        }
+
+        // 1. Calculamos el "Negro" total del mes (la diferencia de lo pactado vs lo legal)
+        $totalNegroMes = $netoRecibidoReal - $netoBoletaPLAME;
+        if ($totalNegroMes < 0)
+            $totalNegroMes = 0;
+
+        // 2. Hallamos el factor de proporción de la labor respecto al tiempo total
+        $proporcion = $horasLabor / $totalHorasMes;
+
+        // 3. Distribuimos el Costo Blanco (Costo Empresa) y el Negro según la proporción
+        $costoBlancoLabor = $costoTotalEmpresa * $proporcion;
+        $costoNegroLabor = $totalNegroMes * $proporcion;
+
+        return [
+            'blanco' => round($costoBlancoLabor, 4),
+            'negro' => round($costoNegroLabor, 4),
+            'total' => round($costoBlancoLabor + $costoNegroLabor, 4),
+            'factor_proporcion' => $proporcion
+        ];
+    }
+    /**
      * Calcula el tiempo total de jornal real eliminando solapamientos.
      * * Casos de uso resueltos:
      * 1. Riegos Simultáneos: Si riega 4 campos de 07:00 a 09:00, cuenta solo 120 min de jornal.
@@ -23,13 +78,13 @@ class CalculoHelper
         if (empty($intervalos)) {
             return 0;
         }
-        
+
         // 1. Convertir a minutos desde el inicio del día (00:00 = 0)
         $puntos = [];
         foreach ($intervalos as $i) {
             $puntos[] = [
                 'inicio' => self::horaAMinutos($i['hora_inicio']),
-                'fin'    => self::horaAMinutos($i['hora_fin'])
+                'fin' => self::horaAMinutos($i['hora_fin'])
             ];
         }
 
@@ -71,13 +126,13 @@ class CalculoHelper
     {
         $hora = str_replace('.', ':', $hora);
         $partes = explode(':', $hora);
-        
-        $h = isset($partes[0]) ? (int)$partes[0] : 0;
-        $m = isset($partes[1]) ? (int)$partes[1] : 0;
+
+        $h = isset($partes[0]) ? (int) $partes[0] : 0;
+        $m = isset($partes[1]) ? (int) $partes[1] : 0;
 
         return ($h * 60) + $m;
     }
-     /**
+    /**
      * Calcula la diferencia en horas decimales entre dos tiempos.
      * Ejemplo: "07:00:00" a "10:30:00" -> 3.5
      */
@@ -123,7 +178,7 @@ class CalculoHelper
         // Si es numérico lo devuelve, si es vacío o cualquier otra cosa, devuelve 0
         return is_numeric($valor) ? (float) $valor : 0.0;
     }
-   
+
 
     /**
      * Calcula la cantidad de jornales basados en una jornada de 8 horas.

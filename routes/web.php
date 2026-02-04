@@ -110,6 +110,14 @@ Route::middleware([
             return view('livewire.gestion-planilla.importar-planilla-indice');
         })->name('planilla.importar'); 
 
+        Route::get('/costos', function () {
+            return view('livewire.gestion-planilla.costos-planilla-indice');
+        })->name('planilla.costos');
+
+        Route::get('/contratos/{uuid?}', function ($uuid = null) {
+            return view('livewire.gestion-planilla.contratos-planilla-indice', compact('uuid'));
+        })->name('planilla.contratos');
+
         Route::get('/periodos', function () {
             return view('livewire.gestion-planilla.periodos-planilla-indice');
         })->name('planilla.periodos'); 

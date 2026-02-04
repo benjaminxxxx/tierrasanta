@@ -78,7 +78,9 @@
         'gestion_planilla.reporte_general',
         'empleados.asignacion_familiar',
         'empleados',
-        'planilla.periodos'
+        'planilla.periodos',
+        'planilla.costos',
+        'planilla.contratos'
     ])" logo='fa fa-table' text="Planilla">
                 
                 <x-nav-link-child href="{{ route('empleados') }}" :active="request()->routeIs('empleados')">
@@ -107,9 +109,15 @@
                 <x-nav-link-child href="{{ route('planilla.blanco') }}" :active="request()->routeIs('planilla.blanco')">
                     Planilla B+N
                 </x-nav-link-child>
+                <x-nav-link-child href="{{ route('planilla.costos') }}" :active="request()->routeIs('planilla.costos')">
+                    Costo Mensual Planilla
+                </x-nav-link-child>
                 <x-nav-link-child href="{{ route('empleados.asignacion_familiar') }}"
                     :active="request()->routeIs('empleados.asignacion_familiar')">
                     Familiares
+                </x-nav-link-child>
+                <x-nav-link-child href="{{ route('planilla.contratos') }}" :active="request()->routeIs('planilla.contratos')">
+                    Contratos Empleados
                 </x-nav-link-child>
             </x-nav-link-parent>
             <x-nav-link-parent name="sectorCuadrilla" :active="request()->routeIs([
