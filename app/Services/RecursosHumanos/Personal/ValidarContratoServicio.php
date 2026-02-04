@@ -25,10 +25,10 @@ class ValidarContratoServicio
             // --- PRIORIDAD 1: Verificar existencia de DNI ---
             if (!$mapeoReal->has($dni)) {
                 // Guardamos DNI y datos para que sepas a quién registrar
-                $dnisFaltantes[] = "{$dni}," . 
-                           trim($fila['paterno']) . "," . 
-                           trim($fila['materno']) . "," . 
-                           trim($fila['nombres']);
+                $dnisFaltantes[] = "{$dni}," .
+                    trim($fila['paterno']) . "," .
+                    trim($fila['materno']) . "," .
+                    trim($fila['nombres']);
                 continue; // Si no existe el DNI, no tiene sentido validar lo demás en esta fila
             }
 
@@ -55,7 +55,7 @@ class ValidarContratoServicio
             $listaVertical = implode("\n", $dnisFaltantes);
             self::lanzarError(
                 "LOS SIGUIENTES DNIs NO ESTÁN REGISTRADOS EN EL SISTEMA. " .
-                "Regístrelos antes de continuar (puedes copiar esta lista):\n\n" . 
+                "Regístrelos antes de continuar (puedes copiar esta lista):\n\n" .
                 "DNI\tPATERNO\tMATERNO\tNOMBRES\n" .
                 $listaVertical
             );
@@ -84,16 +84,29 @@ class ValidarContratoServicio
             $detalles[] = "Nombres ({$filaExcel['nombres']} vs DB: {$empleadoDB->nombres})";
         }
 
-        return !empty($detalles) 
-            ? "Fila {$numeroFila} [DNI {$dni}]: " . implode(", ", $detalles) 
+        return !empty($detalles)
+            ? "Fila {$numeroFila} [DNI {$dni}]: " . implode(", ", $detalles)
             : null;
     }
 
-    private static function normalizar($texto) {
-        return mb_strtoupper(trim($texto ?? ''), 'UTF-8');
+    private static function normalizar($texto)
+    {
+        if (!$texto)
+            return '';
+
+        // 1. Quitar espacios y convertir a mayúsculas
+        $texto = mb_strtoupper(trim($texto), 'UTF-8');
+
+        // 2. Eliminar tildes y diéresis (Transforma Á -> A, É -> E, etc.)
+        // Usamos el transliterador de ICU para remover marcas de acentuación
+        $trans = \Transliterator::create('Any-Latin; Latin-ASCII');
+        $texto = $trans->transliterate($texto);
+
+        return $texto;
     }
 
-    private static function lanzarError($mensaje) {
+    private static function lanzarError($mensaje)
+    {
         throw ValidationException::withMessages(['excel' => $mensaje]);
     }
 }
