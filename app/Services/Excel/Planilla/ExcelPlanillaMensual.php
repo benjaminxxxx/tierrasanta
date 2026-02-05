@@ -17,6 +17,7 @@ class ExcelPlanillaMensual
     // Constructor
     public function generarPlanillaMensual(array $params)
     {
+        $this->validarParametros($params);
         // Extraer variables del array
         $mes = $params['mes'];
         $anio = $params['anio'];
@@ -89,9 +90,9 @@ class ExcelPlanillaMensual
         // --- ARMAR DATA FINAL ---
         $asistencias = collect($planillaDetalles)->sortBy('nombres')->values()->toArray();
         $bonos = PlanillaServicio::obtenerBonosPlanilla($anio, $mes);
-        
-        $horas = app(PlanillaAsistenciaServicio::class)->obtenerHorasCompleto($mes,$anio);
-         
+
+        $horas = app(PlanillaAsistenciaServicio::class)->obtenerHorasCompleto($mes, $anio);
+
         $data = [
             ...$params, // <<-- incluye todo el array original
             'empleados' => $asistencias,
@@ -105,6 +106,39 @@ class ExcelPlanillaMensual
         //dd($filePath);
         return $filePath;
     }
+    protected function validarParametros(array $params)
+    {
+        $numericosRequeridos = [
+            'diasLaborables',
+            'factorRemuneracionBasica',
+            'asignacionFamiliar',
+            'ctsPorcentaje',
+            'gratificacionesPorcentaje',
+            'essaludGratificacionesPorcentaje',
+            'beta30Porcentaje',
+            'essaludPorcentaje',
+            'vidaLeyPorcentaje',
+            'pensionSctrPorcentaje',
+            'essaludEpsPorcentaje',
+            'porcentajeConstante',
+            'rmv',
+            'vidaLey',
+            'pensionSctr',
+            'essaludEps',
+            'rem_basica_essalud'
+        ];
+
+        foreach ($numericosRequeridos as $campo) {
+            if (!isset($params[$campo])) {
+                throw new Exception("El parámetro '$campo' es requerido y no fue enviado.");
+            }
+
+            if (!is_numeric($params[$campo])) {
+                throw new Exception("El parámetro '$campo' debe ser numérico. Se recibió: " . var_export($params[$campo], true));
+            }
+        }
+    }
+
     function obtenerDescuentoEmpleado($empleadoData, $edad, $contrato, $descuentosAgrupados)
     {
         $empleadoEstaJubilado = $contrato->esta_jubilado;

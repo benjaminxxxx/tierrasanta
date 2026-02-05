@@ -91,15 +91,20 @@ class PlanillaServicio
         $spreadsheet = IOFactory::load($fullPath);
 
         $sheet = $spreadsheet->getSheetByName('PLANILLA');
+        
         if (!$sheet) {
             throw new Exception("El Excel no tiene una hoja llamada 'PLANILLA'");
         }
+
+        //PLANILLA!F7 -> Formula Error: Unexpected operator '*'
+
         $rows = $sheet->toArray();
 
         $indiceInicio = 6;
         $orden = 0;
-
+    
         for ($i = $indiceInicio; $i < count($rows); $i++) {
+            
             $orden++;
             $fila = $rows[$i];
             $documento = $fila[1];

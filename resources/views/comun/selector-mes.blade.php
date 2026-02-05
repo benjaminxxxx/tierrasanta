@@ -5,8 +5,8 @@
         </x-button>
 
         <x-flex>
-            <x-select-meses wire:model.live="mes"  />
-            <x-select-anios wire:model.live="anio" />
+            <x-select-meses wire:model.live="mes" class="w-auto" />
+            <x-select-anios wire:model.live="anio" class="w-auto" />
         </x-flex>
 
         <x-button variant="secondary" wire:click="mesSiguiente">

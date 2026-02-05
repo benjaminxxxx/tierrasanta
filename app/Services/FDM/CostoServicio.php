@@ -20,10 +20,11 @@ class CostoServicio
     }
     public static function calcularCostoPlanillaFDM($mes, $anio)
     {
-        $totalCosto = PlanillaFdmServicio::generarReportePorMes($mes, $anio);
+        $totalCosto = PlanillaFdmServicio::calcularGastosPlanillaMensual($mes, $anio);
         $data = [
+            'blanco_planillero_monto' => $totalCosto['total'],
             'negro_planillero_monto' => $totalCosto['total'],
-            'negro_planillero_file' => $totalCosto['file'],
+            'file' => $totalCosto['file'],
         ];
 
         self::guardarCostoManoIndirecta($mes, $anio, $data);

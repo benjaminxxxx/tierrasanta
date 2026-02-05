@@ -1,14 +1,25 @@
 <div x-data="registroDiarioActividades">
     <x-card class="mt-4">
-        <x-flex class="justify-end">
-            <div>
+
+        <x-flex class="justify-between">
+            <x-flex>
+                <x-input x-ref="filterNombre" placeholder="Buscar por nombre..." @input="aplicarFiltros" class="w-auto" />
+
+                <x-select x-ref="filterAsistencia" @change="aplicarFiltros" class="w-auto">
+                    <option value="">Todas las asistencias</option>
+                    <template x-for="cod in tipoAsistenciasCodigos">
+                        <option :value="cod" x-text="cod"></option>
+                    </template>
+                </x-select>
+            </x-flex>
+            <x-flex>
                 <x-button @click="agregarTramo">
                     <i class="fa fa-plus"></i> Agregar tramo
                 </x-button>
                 <x-button @click="quitarTramo" variant="danger">
                     <i class="fa fa-minus"></i> Quitar tramo
                 </x-button>
-            </div>
+            </x-flex>
         </x-flex>
         <div wire:ignore>
             <div x-ref="tableContainer" class="mt-5"></div>
@@ -81,33 +92,7 @@
                     });
                 });
             },
-            timeToMinutes(time) {
-                if (!time || typeof time !== 'string') return 0;
 
-                // Reemplazamos dos puntos por punto por si acaso viene en formato HH:mm
-                const limpio = time.replace(':', '.');
-                const partes = limpio.split('.');
-
-                const hours = parseInt(partes[0], 10) || 0;
-                const minutes = parseInt(partes[1], 10) || 0;
-
-                // Validamos que sean números finitos
-                if (isNaN(hours) || isNaN(minutes)) return 0;
-
-                return (hours * 60) + minutes;
-            },
-
-            minutesToTime(minutes) {
-                // Si por algún error llega NaN o Infinite, devolvemos 00.00
-                if (isNaN(minutes) || !isFinite(minutes) || minutes < 0) {
-                    return "00.00";
-                }
-
-                const hours = Math.floor(minutes / 60);
-                const mins = Math.round(minutes % 60); // Usamos round para evitar decimales en los minutos
-
-                return `${String(hours).padStart(2, '0')}.${String(mins).padStart(2, '0')}`;
-            },
             initTable() {
                 const totalActividades = this.totalActividades;
                 const columns = this.generateColumns(totalActividades);
@@ -127,6 +112,8 @@
                     stretchH: 'all',
                     autoColumnSize: true,
                     autoRowSize: true,
+                    filters: true,
+                    dropdownMenu: false,
                     fixedColumnsLeft: 3,
                     licenseKey: 'non-commercial-and-evaluation',
                     /*
@@ -183,6 +170,56 @@
                         return confirmationMessage;
                     }
                 });
+            },
+            aplicarFiltros() {
+                const nombreQuery = this.$refs.filterNombre.value.toLowerCase();
+                const asistenciaQuery = this.$refs.filterAsistencia.value;
+
+                const filtersPlugin = this.hot.getPlugin('filters');
+
+                // Limpiamos filtros previos
+                filtersPlugin.clearConditions();
+
+                // 1. Filtro de Nombre (Columna 0 usualmente)
+                if (nombreQuery) {
+                    filtersPlugin.addCondition(0, 'contains', [nombreQuery]);
+                }
+
+                // 2. Filtro de Asistencia (Ajusta el índice según tu columna de asistencia)
+                // Si 'asistencia' es la columna 2:
+                if (asistenciaQuery) {
+                    console.log(asistenciaQuery);
+                    filtersPlugin.addCondition(1, 'eq', [asistenciaQuery]);
+                }
+
+                filtersPlugin.filter();
+            },
+            timeToMinutes(time) {
+                if (!time || typeof time !== 'string') return 0;
+
+                // Reemplazamos dos puntos por punto por si acaso viene en formato HH:mm
+                const limpio = time.replace(':', '.');
+                const partes = limpio.split('.');
+
+                const hours = parseInt(partes[0], 10) || 0;
+                const minutes = parseInt(partes[1], 10) || 0;
+
+                // Validamos que sean números finitos
+                if (isNaN(hours) || isNaN(minutes)) return 0;
+
+                return (hours * 60) + minutes;
+            },
+
+            minutesToTime(minutes) {
+                // Si por algún error llega NaN o Infinite, devolvemos 00.00
+                if (isNaN(minutes) || !isFinite(minutes) || minutes < 0) {
+                    return "00.00";
+                }
+
+                const hours = Math.floor(minutes / 60);
+                const mins = Math.round(minutes % 60); // Usamos round para evitar decimales en los minutos
+
+                return `${String(hours).padStart(2, '0')}.${String(mins).padStart(2, '0')}`;
             },
             agregarTramo() {
                 this.totalActividades++;
@@ -369,23 +406,25 @@
                 this.hot.setDataAtCell(row, indiceTotal, totalHoras, 'recalculado');
             },
             enviarRegistrosDiariosPlanilla() {
-                const totalVisualRows = this.hot.countRows();
+                // getSourceData() devuelve TODO el array de datos original, 
+                // incluyendo las filas que están ocultas por el filtro.
+                const todosLosDatos = this.hot.getSourceData();
                 const resultados = [];
 
-                for (let visual = 0; visual < totalVisualRows; visual++) {
-                    const physical = this.hot.toPhysicalRow(visual);
-                    const fuente = this.hot.getSourceDataAtRow(physical); // objeto original con keys
+                todosLosDatos.forEach((fuente) => {
+                    if (!fuente) return;
 
-                    if (!fuente) continue;
-
-                    // ignorar filas vacías (ajusta según tus campos clave)
+                    // Ignorar filas vacías
+                    // Nota: Asegúrate de que 'plan_men_detalle_id' u otro campo clave 
+                    // esté presente para no enviar basura.
                     const isEmpty = Object.values(fuente).every(v => v === null || v === '');
-                    if (isEmpty) continue;
 
-                    resultados.push(fuente);
-                }
+                    if (!isEmpty) {
+                        resultados.push(fuente);
+                    }
+                });
 
-                // enviar objetos al backend
+                // Ahora enviamos el total de los datos procesados, no solo los visibles
                 $wire.guardarInformacionRegistroPlanilla(resultados);
                 this.hasUnsavedChanges = false;
             }

@@ -109,9 +109,6 @@
                 <x-nav-link-child href="{{ route('planilla.blanco') }}" :active="request()->routeIs('planilla.blanco')">
                     Planilla B+N
                 </x-nav-link-child>
-                <x-nav-link-child href="{{ route('planilla.costos') }}" :active="request()->routeIs('planilla.costos')">
-                    Costo Mensual Planilla
-                </x-nav-link-child>
                 <x-nav-link-child href="{{ route('empleados.asignacion_familiar') }}"
                     :active="request()->routeIs('empleados.asignacion_familiar')">
                     Familiares
@@ -300,16 +297,6 @@
                 </x-nav-link-child>
             </x-nav-link-parent>
 
-
-            <x-nav-link-parent name="sectorFdm" :active="request()->routeIs(['fdm.costos_generales'])"
-                logo="fa fa-coins" text="Costos">
-
-                <x-nav-link-child href="{{ route('fdm.costos_generales') }}"
-                    :active="request()->routeIs('fdm.costos_generales')">
-                    Costos Generales FDM
-                </x-nav-link-child>
-            </x-nav-link-parent>
-
             <x-nav-link-parent name="sectorProducto" :active="request()->routeIs(['productos.index', 'nutrientes.index', 'tabla_concentracion.index'])" logo="fa fa-box" text="Producto y Nutrientes">
                 <x-nav-link-child href="{{ route('productos.index') }}" :active="request()->routeIs('productos.index')">
                     Productos
@@ -373,9 +360,14 @@
         'gastos.general',
         'contabilidad.costos_mensuales',
         'contabilidad.costos_generales',
-        'contabilidad.costo_mensual'
+        'contabilidad.costo_mensual',
+        'fdm.costos_generales'
     ])" logo="fa fa-calculator"
                 text="Contabilidad">
+                <x-nav-link-child href="{{ route('fdm.costos_generales') }}"
+                    :active="request()->routeIs('fdm.costos_generales')">
+                    Costos Generales FDM
+                </x-nav-link-child>
                 <x-nav-link-child href="{{ route('gastos.general') }}" :active="request()->routeIs('gastos.general')">
                     Gasto General
                 </x-nav-link-child>

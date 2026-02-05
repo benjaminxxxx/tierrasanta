@@ -230,8 +230,9 @@ class PlanillaBlancoDetalleComponent extends Component
                 'essaludEps' => $this->essaludEps,
                 'rem_basica_essalud' => $this->remBasicaEssalud,
             ];
+            
             $excelPath = app(GestionPlanilla::class)->generarPlanilla($parametros);
-
+            
             $this->planillaMensual->excel = $excelPath;
             $this->planillaMensual->save();
 
@@ -258,6 +259,7 @@ class PlanillaBlancoDetalleComponent extends Component
             $dataIds = collect($datos)->pluck('plan_empleado_id')->unique()->toArray();
             $sueldosPactados = app(PlanSueldoServicio::class)->obtenerSueldosPorMes($dataIds, $this->mes, $this->anio);
             $totalHorasBaseMes = $this->totalHoras;
+            
             //guardamos las bonificaciones
             foreach ($datos as $data) {
                 $empleadoId = $data['plan_empleado_id'];

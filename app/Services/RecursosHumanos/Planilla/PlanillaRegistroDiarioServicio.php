@@ -18,8 +18,47 @@ use Illuminate\Support\Carbon;
 
 class PlanillaRegistroDiarioServicio
 {
-    public function obtenerSueldosPorMes($mes, $anio){
+    public static function obtenerRegistrosMensualesPorCampo($campo, $mes, $anio)
+    {
+        return PlanDetalleHora::whereHas('registroDiario', function ($q) use ($mes, $anio) {
+            $q->whereMonth('fecha', $mes)->whereYear('fecha', $anio);
+        })
+            ->where('campo_nombre', $campo)
+            ->with(['registroDiario.actividadesBonos.actividad', 'registroDiario.detalleMensual', 'labores'])
+            ->get()
+            ->map(function ($detalle) {
+                $rd = $detalle->registroDiario;
 
+                // Cálculo de duración del tramo en horas
+                $inicio = Carbon::parse($detalle->hora_inicio);
+                $fin = Carbon::parse($detalle->hora_fin);
+                $horasDetalle = $inicio->diffInMinutes($fin) / 60;
+
+                // Prorrateo del Jornal: (Costo Día / Total Horas Trabajadas) * Horas en FDM
+                //$costoHoraJornal = $rd->total_horas > 0 ? ($rd->jornal_aplicado / $rd->total_horas) : 0;
+                //$gastoProrrateado = $costoHoraJornal * $horasDetalle;
+
+                // Cálculo de Bonos específicos del campo FDM
+                $gastoBonoFdm = $rd->actividadesBonos
+                    ->where('actividad.campo', 'FDM')
+                    ->sum('total_bono');
+
+                return [
+                    'fecha' => formatear_fecha($rd->fecha),
+                    'plan_empleado_id' => $rd->detalleMensual?->plan_empleado_id,
+                    'documento' => $rd->detalleMensual?->documento ?? 'S/D',
+                    'empleado_nombre' => $rd->detalleMensual?->nombres,
+                    'labor' => $detalle->labores?->nombre_labor ?? $detalle->codigo_labor,
+                    'campo' => $detalle->campo_nombre,
+                    'horas_totales' => $rd->total_horas,
+                    'hora_inicio' => $detalle->hora_inicio,
+                    'hora_salida' => $detalle->hora_fin,
+                    'total_horas' => $horasDetalle,
+                    //'costo_dia' => $rd->jornal_aplicado,
+                    //'gasto' => round($gastoProrrateado, 2),
+                    'gasto_bono' => round($gastoBonoFdm, 2),
+                ];
+            });
     }
     public function obtenerTotalHorasPorMes($mes, $anio)
     {
@@ -94,28 +133,30 @@ class PlanillaRegistroDiarioServicio
         foreach ($datos as $i => $informacion) {
             $fila = $i + 1;
             $planillaMensualDetalleId = $informacion['plan_men_detalle_id'] ?? null;
+            $asistencia = trim($informacion['asistencia'] ?? '');
 
-            if (!$planillaMensualDetalleId)
+            if (!$planillaMensualDetalleId) {
                 continue;
+            }
 
             $tramos = [];
-            $totalHoras = 0;
+            $sumaHorasTramos = 0;
 
+            // Procesamiento de tramos/actividades
             for ($x = 1; $x <= $totalActividades; $x++) {
                 $inicio = isset($informacion["entrada_$x"]) ? str_replace('.', ':', $informacion["entrada_$x"]) : null;
                 $fin = isset($informacion["salida_$x"]) ? str_replace('.', ':', $informacion["salida_$x"]) : null;
                 $labor = $informacion["labor_$x"] ?? null;
                 $campo = $informacion["campo_$x"] ?? null;
 
-                if (!$inicio && !$fin && !$campo && !$labor)
+                if (!$inicio && !$fin && !$campo && !$labor) {
                     continue;
+                }
 
-                // Validación de integridad
                 if (!$inicio || !$fin || !$campo || !$labor) {
                     throw new Exception("Valores incompletos en fila {$fila}, tramo {$x}");
                 }
 
-                // Validación de existencia y normalización
                 $campoKey = mb_strtolower($campo);
                 if (!array_key_exists($campoKey, $camposNormalizados)) {
                     throw new Exception("El campo '{$campo}' en fila {$fila} no existe o no tiene alias.");
@@ -129,7 +170,7 @@ class PlanillaRegistroDiarioServicio
                 $hFin = Carbon::parse($fin);
                 $horas = $hInicio->floatDiffInHours($hFin);
 
-                $totalHoras += $horas;
+                $sumaHorasTramos += $horas;
                 $tramos[] = [
                     'codigo_labor' => $labor,
                     'campo_nombre' => $camposNormalizados[$campoKey],
@@ -138,16 +179,22 @@ class PlanillaRegistroDiarioServicio
                 ];
             }
 
-            $asistencia = trim($informacion['asistencia'] ?? '');
-            if ($asistencia === 'A' && empty($tramos)) {
-                throw new Exception("Debe agregar detalle si tiene asistencia en la fila {$fila}");
+            // --- Lógica de Negocio para Total Horas ---
+            if ($asistencia === 'A') {
+                if (empty($tramos)) {
+                    throw new Exception("Debe agregar detalle si tiene asistencia en la fila {$fila}");
+                }
+                // Si es Asistencia, el total es la suma de los tramos
+                $totalFinal = $sumaHorasTramos;
+            } else {
+                // Si NO es 'A', tomamos el total_horas que viene del input (o 0 si no existe)
+                $totalFinal = $informacion['total_horas'] ?? 0;
             }
 
-            // Estructuramos el registro ya limpio para la persistencia
             $datosProcesados[] = [
                 'plan_det_men_id' => $planillaMensualDetalleId,
                 'asistencia' => $asistencia,
-                'total_horas' => $totalHoras,
+                'total_horas' => $totalFinal,
                 'tramos' => $tramos
             ];
         }

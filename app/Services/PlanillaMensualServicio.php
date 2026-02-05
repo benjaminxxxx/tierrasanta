@@ -31,8 +31,7 @@ class PlanillaMensualServicio
 
         // Eliminar solo los detalles cuyos empleados ya no están en la nueva lista
         $detallesAEliminar = $detallesActuales->whereNotIn('plan_empleado_id', $nuevosIds);
-        //dd($listaPlanilla,$nuevosIds,$detallesActuales,$detallesAEliminar);
-        //dd($detallesAEliminar);
+      
         if ($detallesAEliminar->isNotEmpty()) {
             PlanMensualDetalle::whereIn('id', $detallesAEliminar->pluck('id'))->delete();
         }
