@@ -112,17 +112,7 @@ class ActividadServicio
 
         return empty($filtered) ? null : json_encode(array_values($filtered));
     }
-    public static function habilitarLabor(int $laborId, bool $estado)
-    {
-        $labor = Labores::findOrFail($laborId);
-        $labor->update(['estado' => $estado ? 1 : 0]);
-        return $labor;
-    }
-    public static function eliminarLabor(int $laborId)
-    {
-        $labor = Labores::findOrFail($laborId);
-        $labor->delete();
-    }
+   
     #endregion
     #region Actividades
     /**

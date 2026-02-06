@@ -34,7 +34,7 @@
     :class="isExpanded ? 'w-64' : 'w-16'">
 
     <!-- Header -->
-    <div class="p-4 border-b dark:border-gray-700 ">
+    <div class="p-4 border-b border-border">
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-3">
                 <!-- Logo mini -->

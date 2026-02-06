@@ -1,3 +1,4 @@
+{{-- components/input.blade.php --}}
 @props([
     'disabled' => false,
     'id' => null,
@@ -9,96 +10,60 @@
 ])
 
 @php
-    // Generar id por defecto a partir de wire:model si no viene
     $id = $id ?? 'input-' . Str::uuid();
     $model = $attributes->whereStartsWith('wire:model')->first();
 
-    // Si el usuario añadió disabled como atributo HTML: <x-input disabled />
-    $attrHasDisabled = $attributes->has('disabled');
-    // Si el usuario añadió readonly como atributo HTML: <x-input readonly />
-    $attrHasReadonly = $attributes->has('readonly');
+    $isDisabled = (bool) ($disabled || $attributes->has('disabled'));
+    $isReadOnly = $attributes->has('readonly');
 
-    // Normalizar valores definitivos
-    $isDisabled = (bool) ($disabled || $attrHasDisabled);
-    $isReadOnly = $attrHasReadonly || $attributes->has('readonly');
-
-    // 🔹 Clases de tamaño
+    // Mapeo de alturas idéntico al select
     $sizeClasses = match ($size) {
-        'xs' => 'p-2 text-xs',
-        'sm' => 'p-2 text-sm',
-        'base' => 'p-2.5 text-sm',
-        'lg' => 'px-4 py-3 text-base',
-        default => 'p-2.5 text-sm',
+        'xs'   => 'h-7 px-2 text-xs',
+        'sm'   => 'h-8 px-2 text-sm',
+        'base' => 'h-9 px-3 text-sm',
+        'lg'   => 'h-11 px-4 text-base',
+        default => 'h-9 px-3 text-sm',
     };
 
-    // 🔹 Base input
-    $baseClasses = 'w-full border border-gray-300 text-gray-900 rounded-lg
-                    focus:ring-blue-500 focus:border-blue-500
-                    bg-gray-50
-                    dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white
-                    dark:focus:ring-blue-500 dark:focus:border-blue-500';
+    // Estilo base Shadcn
+    $baseClasses = 'w-full rounded-md border border-input bg-background text-foreground shadow-xs transition-colors outline-none 
+                    file:border-0 file:bg-transparent file:text-sm file:font-medium
+                    placeholder:text-muted-foreground
+                    focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]
+                    disabled:cursor-not-allowed disabled:opacity-50';
 
-    // 🔹 Estado readonly/disabled
-    $readonlyClasses = 'bg-gray-100 text-gray-700 cursor-default
-                    dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600';
+    $errorClasses = $error ? 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20' : '';
 
-    $disabledClasses = 'bg-gray-200 text-gray-500 cursor-not-allowed
-                    dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600';
-
-    // Construir clases finales
-    $stateClasses = '';
-
-    if ($isDisabled) {
-        $stateClasses = $disabledClasses;
-    } elseif ($isReadOnly) {
-        $stateClasses = $readonlyClasses;
-    }
-
-    $classes = trim($baseClasses . ' ' . $sizeClasses . ' ' . $stateClasses);
-
+    $classes = trim("{$baseClasses} {$sizeClasses} {$errorClasses}");
 @endphp
 
 <x-group-field>
     @if ($type === 'checkbox')
-        <div class="flex items-start gap-2">
-            <input id="{{ $id }}" type="checkbox" {{ $isDisabled ? 'disabled' : '' }} {!! $attributes->merge([
-                'class' => 'w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500
-                                                 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2
-                                                 dark:bg-gray-700 dark:border-gray-600',
-            ]) !!} />
-
-            <div class="flex flex-col">
-                @if ($label)
-                    <label for="{{ $id }}" class="font-medium text-gray-900 dark:text-gray-300">
-                        {{ $label }}
-                    </label>
-                @endif
-                @if ($help)
-                    <p id="{{ $id }}-help" class="text-xs text-gray-500 dark:text-gray-400">
-                        {{ $help }}
-                    </p>
-                @endif
-            </div>
+        <div class="flex items-center gap-2">
+            <input id="{{ $id }}" type="checkbox" {{ $isDisabled ? 'disabled' : '' }} 
+                {!! $attributes->merge(['class' => 'h-4 w-4 rounded border-input bg-background text-primary focus:ring-ring/50']) !!} 
+            />
+            @if ($label)
+                <x-label for="{{ $id }}" class="cursor-pointer">{{ $label }}</x-label>
+            @endif
         </div>
     @else
         @if ($label)
-            <x-label for="{{ $id }}">
-                {{ $label }}
-            </x-label>
+            <x-label for="{{ $id }}">{{ $label }}</x-label>
         @endif
 
-        <input id="{{ $id }}" type="{{ $type }}" {{-- Aplicar disabled/readonly según corresponda --}}
-            {{ $isDisabled ? 'disabled' : '' }} {{ $isReadOnly && !$isDisabled ? 'readonly' : '' }}
-            {!! $attributes->except(['disabled', 'readonly'])->merge(['class' => $classes]) !!} />
+        <input id="{{ $id }}" type="{{ $type }}" 
+            {{ $isDisabled ? 'disabled' : '' }} 
+            {{ $isReadOnly && !$isDisabled ? 'readonly' : '' }}
+            {!! $attributes->except(['disabled', 'readonly'])->merge(['class' => $classes]) !!} 
+        />
 
         @if ($help)
-            <p id="{{ $id }}-help" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {{ $help }}
-            </p>
+            <p id="{{ $id }}-help" class="text-xs text-muted-foreground">{{ $help }}</p>
         @endif
 
         @if ($error && $model)
-            <x-input-error for="{{ $model }}" />
+            <x-input-error for="{{ $model }}" class="text-xs text-destructive" />
         @endif
     @endif
 </x-group-field>

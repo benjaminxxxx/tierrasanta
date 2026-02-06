@@ -1,5 +1,5 @@
-@props(['value'])
-
-<label {{ $attributes->merge(['class' => 'block mb-2 text-sm font-medium text-gray-900 dark:text-gray-400']) }}>
-    {{ $value ?? $slot }}
+{{-- components/label.blade.php --}}
+@props(['for' => null])
+<label {{ $attributes->merge(['for' => $for, 'class' => 'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 select-none']) }}>
+    {{ $slot }}
 </label>
