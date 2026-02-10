@@ -51,7 +51,7 @@
                         @endif
                     </x-td>
                     <x-td class="text-center">
-                        <x-button type="button" wire:click="recalcularCostoFdm('cuadrilleros')">
+                        <x-button variant="secondary"  type="button" wire:click="recalcularCostoFdm('cuadrilleros')">
                             <i class="fa fa-calculator"></i> Recalcular costos
                         </x-button>
                     </x-td>
@@ -76,7 +76,7 @@
                         -
                     </x-td>
                     <x-td class="text-center">
-                        <x-button type="button" wire:click="recalcularCostoFdm('planilleros')">
+                        <x-button type="button" variant="secondary"  wire:click="recalcularCostoFdm('planilleros')">
                             <i class="fa fa-calculator"></i> Recalcular costos
                         </x-button>
                     </x-td>
@@ -101,7 +101,7 @@
                         -
                     </x-td>
                     <x-td class="text-center">
-                        <x-button type="button" wire:click="recalcularCosto('cuadrilleros')">
+                        <x-button type="button" variant="secondary"  wire:click="recalcularCosto('cuadrilleros')">
                             <i class="fa fa-calculator"></i> Recalcular costos
                         </x-button>
                     </x-td>
@@ -126,7 +126,7 @@
                         -
                     </x-td>
                     <x-td class="text-center">
-                        <x-button type="button" wire:click="recalcularCosto('cuadrilleros')">
+                        <x-button type="button" variant="secondary"  wire:click="recalcularCosto('cuadrilleros')">
                             <i class="fa fa-calculator"></i> Recalcular costos
                         </x-button>
                     </x-td>

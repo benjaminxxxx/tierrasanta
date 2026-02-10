@@ -1,7 +1,7 @@
 <div>
     <x-dialog-modal wire:model.live="mostrarFormulario" maxWidth="lg">
         <x-slot name="title">
-            Historial de Salida por Compra
+            Tipos de Asistencia
         </x-slot>
 
         <x-slot name="content">
@@ -24,19 +24,20 @@
                 <x-input type="text" autocomplete="off" label="Horas Jornal" wire:model="horasJornal"
                     error="horasJornal" />
 
-                <div class="mb-3">
-                    <x-input id="color" label="Color" type="color" class="mt-1 block w-full"
-                        wire:model.live="color" error="color" />
-                    <div class="w-10 h-10 mt-2 border rounded border-1 border-gray-400"
-                        style="background-color:{{ $color }}"></div>
-                </div>
+                <x-select label="Cuenta Asistencia" wire:model="acumula_asistencia">
+                    <option value="0">No</option>
+                    <option value="1">Si</option>
+                </x-select>
+
+                <x-color-picker wire:model="color" />
 
             </div>
         </x-slot>
 
         <x-slot name="footer">
             <x-flex class="justify-end">
-                <x-button variant="secondary" wire:click="$set('mostrarFormulario', false)" wire:loading.attr="disabled">
+                <x-button variant="secondary" wire:click="$set('mostrarFormulario', false)"
+                    wire:loading.attr="disabled">
                     Cerrar
                 </x-button>
                 <x-button wire:click="guardarPlanTipoAsistencia" wire:loading.attr="disabled">

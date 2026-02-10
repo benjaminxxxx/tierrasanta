@@ -29,10 +29,10 @@
     $baseClasses = 'w-full rounded-md border border-input bg-background text-foreground shadow-xs transition-colors outline-none 
                     file:border-0 file:bg-transparent file:text-sm file:font-medium
                     placeholder:text-muted-foreground
-                    focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]
+                    focus-visible:border-ring focus-visible:ring-ring focus-visible:ring-[3px]
                     disabled:cursor-not-allowed disabled:opacity-50';
 
-    $errorClasses = $error ? 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20' : '';
+    $errorClasses = $error ? 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive' : '';
 
     $classes = trim("{$baseClasses} {$sizeClasses} {$errorClasses}");
 @endphp
@@ -41,7 +41,7 @@
     @if ($type === 'checkbox')
         <div class="flex items-center gap-2">
             <input id="{{ $id }}" type="checkbox" {{ $isDisabled ? 'disabled' : '' }} 
-                {!! $attributes->merge(['class' => 'h-4 w-4 rounded border-input bg-background text-primary focus:ring-ring/50']) !!} 
+                {!! $attributes->merge(['class' => 'h-4 w-4 rounded border-input bg-background text-primary focus:ring-ring']) !!} 
             />
             @if ($label)
                 <x-label for="{{ $id }}" class="cursor-pointer">{{ $label }}</x-label>

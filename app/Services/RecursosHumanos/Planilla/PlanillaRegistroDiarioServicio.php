@@ -18,6 +18,33 @@ use Illuminate\Support\Carbon;
 
 class PlanillaRegistroDiarioServicio
 {
+    public static function obtenerRegistrosMensualesConLicenciasConsiderados($mes, $anio)
+    {
+        return PlanRegistroDiario::whereMonth('fecha', $mes)
+            ->whereYear('fecha', $anio)
+            ->where('asistencia', '!=', 'A')
+            ->where('total_horas', '>', 0)
+            ->with([])
+            ->get()
+            ->map(function ($rd) {
+
+                // Cuando se tiene licencia es proque falto, y no hay forma de que tenga bonos
+                $gastoBonoFdm = 0;
+
+                return [
+                    'fecha' => formatear_fecha($rd->fecha),
+                    'plan_empleado_id' => $rd->detalleMensual?->plan_empleado_id,
+                    'documento' => $rd->detalleMensual?->documento ?? 'S/D',
+                    'empleado_nombre' => $rd->detalleMensual?->nombres,
+                    'labor' => $rd->asistencia,
+                    'campo' => '-',
+                    'hora_inicio' => null,
+                    'hora_salida' => null,
+                    'total_horas' => (float) $rd->total_horas,
+                    'gasto_bono' => round($gastoBonoFdm, 2),
+                ];
+            });
+    }
     public static function obtenerRegistrosMensualesPorCampo($campo, $mes, $anio)
     {
         return PlanDetalleHora::whereHas('registroDiario', function ($q) use ($mes, $anio) {
@@ -37,7 +64,7 @@ class PlanillaRegistroDiarioServicio
                 // Prorrateo del Jornal: (Costo Día / Total Horas Trabajadas) * Horas en FDM
                 //$costoHoraJornal = $rd->total_horas > 0 ? ($rd->jornal_aplicado / $rd->total_horas) : 0;
                 //$gastoProrrateado = $costoHoraJornal * $horasDetalle;
-
+    
                 // Cálculo de Bonos específicos del campo FDM
                 $gastoBonoFdm = $rd->actividadesBonos
                     ->where('actividad.campo', 'FDM')
@@ -50,7 +77,6 @@ class PlanillaRegistroDiarioServicio
                     'empleado_nombre' => $rd->detalleMensual?->nombres,
                     'labor' => $detalle->labores?->nombre_labor ?? $detalle->codigo_labor,
                     'campo' => $detalle->campo_nombre,
-                    'horas_totales' => $rd->total_horas,
                     'hora_inicio' => $detalle->hora_inicio,
                     'hora_salida' => $detalle->hora_fin,
                     'total_horas' => $horasDetalle,
@@ -62,35 +88,61 @@ class PlanillaRegistroDiarioServicio
     }
     public function obtenerTotalHorasPorMes($mes, $anio)
     {
-        // 1. Consultamos los registros filtrando por el mes y año de la relación planillaMensual
-        $resultados = PlanRegistroDiario::whereHas('detalleMensual.planillaMensual', function ($query) use ($mes, $anio) {
-            $query->where('mes', (int) $mes)
-                ->where('anio', (int) $anio);
+        // 1. Catálogo: { codigo => acumula_asistencia }
+        $tiposAsistencia = PlanTipoAsistencia::get()
+            ->pluck('acumula_asistencia', 'codigo')
+            ->toArray();
+
+        // 2. Traer TODOS los empleados del mes desde PlanMensualDetalle
+        $empleados = PlanMensualDetalle::whereHas('planillaMensual', function ($q) use ($mes, $anio) {
+            $q->where('mes', $mes)->where('anio', $anio);
         })
-            ->with('detalleMensual') // Eager loading para evitar el problema N+1
+            ->get(['id', 'plan_empleado_id']); // id = plan_det_men_id
+
+        // 3. Traer registros diarios del mes
+        $diarios = PlanRegistroDiario::whereHas('detalleMensual.planillaMensual', function ($q) use ($mes, $anio) {
+            $q->where('mes', $mes)->where('anio', $anio);
+        })
             ->get();
 
-        // 2. Agrupamos por el ID del empleado que está en el detalle mensual
-        return $resultados->groupBy('detalleMensual.plan_empleado_id')
-            ->map(function ($registros, $empleadoId) {
+        // Agrupar diarios por detalle mensual
+        $diariosAgrupados = $diarios->groupBy('plan_det_men_id');
 
-                // 3. Validar si el empleado_id es nulo (Throw solicitado)
-                if (is_null($empleadoId) || $empleadoId === "") {
-                    throw new Exception(
-                        "Error crítico: Se encontró un registro diario con un empleado_id nulo. " .
-                        "Es posible que los datos del detalle mensual no estén sincronizados o el empleado haya sido eliminado. " .
-                        "Se deben recuperar los datos del mes antes de procesar el cálculo."
-                    );
+        // 4. Para cada empleado calcular horas y días
+        $resultado = [];
+
+        foreach ($empleados as $emp) {
+
+            $registros = $diariosAgrupados->get($emp->id, collect());
+
+            $totalHoras = 0;
+            $conteo = 0;
+            $totalBonoProductividad = 0;
+
+            foreach ($registros as $r) {
+                // Validar existencia en el catálogo
+                if (!array_key_exists($r->asistencia, $tiposAsistencia)) {
+                    throw new Exception("El tipo de asistencia {$r->asistencia} no está registrado.");
                 }
 
-                // 4. Retornamos el objeto con el ID y la suma de horas
-                return [
-                    'plan_empleado_id' => $empleadoId,
-                    'total_horas_mes' => $registros->sum('total_horas'),
-                    'conteo_dias' => $registros->count(), // Dato extra útil
-                ];
-            })->values(); // Resetear índices del array para que sea una lista limpia
+                if ($tiposAsistencia[$r->asistencia] == 1) {
+                    $totalHoras += $r->total_horas;
+                    $totalBonoProductividad += $r->total_bono;
+                    $conteo++;
+                }
+            }
+
+            $resultado[$emp->plan_empleado_id] = [
+                'plan_empleado_id' => $emp->plan_empleado_id,
+                'horas_trabajadas' => $totalHoras,
+                'dias_trabajados' => $conteo,
+                'total_bono_productividad' => $totalBonoProductividad,
+            ];
+        }
+
+        return $resultado;
     }
+
     /**
      * Sincroniza la asistencia diaria basada en un rango de fechas y un empleado.
      */

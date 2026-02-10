@@ -22,9 +22,12 @@
 
 
 
-<body>
+<body
+    x-data="{ 'darkMode': true }" x-init="darkMode = JSON.parse(localStorage.getItem('darkMode'));
+$watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(value)))"
+    :class="{ 'dark': darkMode === true }">
     <div
-        class="font-sans text-gray-900 dark:text-gray-100 min-h-screen bg-gray-50 dark:bg-gray-950 antialiased flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
+        class="font-sans min-h-screen bg-background antialiased flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
         {{ $slot }}
     </div>
     @livewireScripts

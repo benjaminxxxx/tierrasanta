@@ -9,6 +9,7 @@ use App\Models\PlanMensual;
 use App\Models\PlanMensualDetalle;
 use App\Models\PlanRegistroDiario;
 use App\Services\Modulos\Planilla\GestionPlanilla;
+use App\Services\Planilla\GenerarPlanillaMensualProceso;
 use App\Services\PlanillaServicio;
 use App\Services\PlanSueldoServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaRegistroDiarioServicio;
@@ -198,7 +199,15 @@ class PlanillaBlancoDetalleComponent extends Component
         }
     }
 
-
+    public function refrescarPlanilla()
+    {
+        try {
+            $this->obtenerInformacionMensual();
+            $this->dispatch("renderTable", data:$this->planillaMensualDetalle);
+        } catch (QueryException $th) {
+            throw $th;
+        }
+    }
     public function generarPlanilla()
     {
         try {
@@ -246,6 +255,15 @@ class PlanillaBlancoDetalleComponent extends Component
             throw $th;
         }
     }
+    public function generarPlanillaMensual2($datos){
+        try {
+            app(GenerarPlanillaMensualProceso::class)->ejecutar($datos,$this->mes,$this->anio);
+            $this->refrescarPlanilla();
+            $this->alert('success', 'Planilla Generada Correctamente');
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
+        }
+    }
     public function generarPlanillaMensual($datos)
     {
         try {
@@ -256,6 +274,7 @@ class PlanillaBlancoDetalleComponent extends Component
                 ->obtenerTotalHorasPorMes($this->mes, $this->anio)
                 ->pluck('total_horas_mes', 'plan_empleado_id');
             ;
+            dd($totalHorasMap);
             $dataIds = collect($datos)->pluck('plan_empleado_id')->unique()->toArray();
             $sueldosPactados = app(PlanSueldoServicio::class)->obtenerSueldosPorMes($dataIds, $this->mes, $this->anio);
             $totalHorasBaseMes = $this->totalHoras;

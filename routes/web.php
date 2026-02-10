@@ -114,6 +114,14 @@ Route::middleware([
             return view('livewire.gestion-planilla.contratos-planilla-indice', compact('uuid'));
         })->name('planilla.contratos');
 
+        Route::get('/conceptos', function () {
+            return view('livewire.gestion-planilla.conceptos-planilla-indice');
+        })->name('planilla.conceptos');
+
+        Route::get('/parametros', function () {
+            return view('livewire.gestion-planilla.parametros-planilla-indice');
+        })->name('planilla.parametros');
+
         Route::get('/periodos', function () {
             return view('livewire.gestion-planilla.periodos-planilla-indice');
         })->name('planilla.periodos'); 

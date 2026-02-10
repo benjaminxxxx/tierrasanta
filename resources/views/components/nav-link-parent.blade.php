@@ -4,9 +4,9 @@
     $classes =
         $active ?? false
         ? 'rounded w-full h-10 flex items-center transition-all duration-200 
-                bg-gray-100 text-gray-900 hover:bg-gray-100'
+                bg-muted text-card-foreground'
         : 'rounded w-full h-10 flex items-center transition-all duration-200 
-                text-card-foreground hover:bg-muted';
+                text-muted-foreground hover:bg-muted';
 @endphp
 
 

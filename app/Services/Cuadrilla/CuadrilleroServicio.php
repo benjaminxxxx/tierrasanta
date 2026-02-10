@@ -123,10 +123,10 @@ class CuadrilleroServicio
         $resumen = json_encode(array_values($resultado));//para depuracion , JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
         //dd($resumen); // Para depuración
         $resumenPlanilla = PlanResumenDiario::firstOrCreate([
-            'fecha'=>$fecha
+            'fecha' => $fecha
         ]);
-     
-        $totalActividades = max($totalColumnas,$resumenPlanilla->total_actividades);
+
+        $totalActividades = max($totalColumnas, $resumenPlanilla->total_actividades);
 
         $resumenPlanilla->update([
             'resumen_cuadrilla' => $resumen,
@@ -259,6 +259,17 @@ class CuadrilleroServicio
 
         return $cuadrillero;
     }
+    private function normalizeData(array $data): array
+    {
+        // Convertir strings vacíos a NULL
+        foreach (['codigo_grupo', 'dni'] as $campo) {
+            if (array_key_exists($campo, $data) && $data[$campo] === '') {
+                $data[$campo] = null;
+            }
+        }
+
+        return $data;
+    }
 
     // --------------------------------------------------------------------------
 
@@ -272,7 +283,10 @@ class CuadrilleroServicio
      */
     public function guardar(array $data, int $cuadrilleroId = null): Cuadrillero
     {
-        // 1. Validar los datos
+        // 🔹 Normalizar antes de validar
+        $data = $this->normalizeData($data);
+
+        // 1. Validar
         $this->validateData($data, $cuadrilleroId);
 
         try {
@@ -931,7 +945,7 @@ class CuadrilleroServicio
     {
         return CuaGrupo::where('estado', true)->with(['cuadrilleros'])->get();
     }
-   
+
 
     /**
      * registrarOrdenSemanal

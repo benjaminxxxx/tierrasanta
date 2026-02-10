@@ -7,36 +7,38 @@ use App\Services\RecursosHumanos\Planilla\PlanillaMensualDetalleServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaRegistroDiarioServicio;
 use App\Support\CalculoHelper;
 use App\Support\ExcelHelper;
-
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 class PlanillaFdmServicio
 {
     public static function calcularGastosPlanillaMensual(int $mes, int $anio)
     {
         //Obtenemos registros
         $registros = PlanillaRegistroDiarioServicio::obtenerRegistrosMensualesPorCampo('fdm', $mes, $anio);
-
-        $costosPlanilla = PlanillaMensualDetalleServicio::obtenerRegistrosMensualesPorCampo($mes, $anio);
+        $registrosLicenciados = PlanillaRegistroDiarioServicio::obtenerRegistrosMensualesConLicenciasConsiderados($mes, $anio);
+        $planillaMensualYSusCostos = PlanillaMensualDetalleServicio::obtenerRegistrosMensualesPorCampo($mes, $anio);
+        $registros = $registros->merge($registrosLicenciados)->toArray();
 
         $dataProcesada = [];
 
         foreach ($registros as $registro) {
             $planEmpleadoId = $registro['plan_empleado_id'];
-            $detallePlanilla = $costosPlanilla[$planEmpleadoId] ?? null;
+            $detallePlanilla = $planillaMensualYSusCostos[$planEmpleadoId] ?? null;
 
             if (!$detallePlanilla) {
                 continue;
             }
-
+            dd($detallePlanilla);
             // --- CÁLCULO DE COSTOS USANDO EL HELPER ---
             // Sueldo pactado total = blanco + negro
             $netoRecibidoReal = (float) $detallePlanilla['sueldo_blanco_pagado'] + (float) $detallePlanilla['sueldo_negro_pagado'];
 
-            $calculo = CalculoHelper::calcularCostoLabor(
+            $calculo = CalculoHelper::calcularCostoLaborMinimal(
                 $registro['total_horas'],                 // Horas del tramo específico
                 (float) $detallePlanilla['total_horas'],   // Horas totales que el trabajador hizo en el mes
                 $netoRecibidoReal,                        // Pactado real
                 (float) $detallePlanilla['sueldo_blanco_pagado'], // Costo Blanco Empresa
-                (float) $detallePlanilla['sueldo_blanco_pagado']  // Neto Boleta (asumiendo blanco como base)
             );
 
             // Añadimos los resultados al registro para el Excel
@@ -46,11 +48,29 @@ class PlanillaFdmServicio
 
             $dataProcesada[] = $registro;
         }
+
+        /*
         dd($dataProcesada);
+          15 => array:13 [▼
+            "fecha" => "06/02/2026"
+            "plan_empleado_id" => 2175
+            "documento" => "24679335"
+            "empleado_nombre" => "CCANCHI NEIRA, JUAN LORENZO"
+            "labor" => "LCG"
+            "campo" => "-"
+            "hora_inicio" => null
+            "hora_salida" => null
+            "total_horas" => 8.0
+            "gasto_bono" => 0.0
+            "gasto_blanco" => 2100.0
+            "gasto_negro" => 62.96
+            "gasto_total_prorrateado" => 2162.96
+        ]
+        ] */
         // 3. GENERACIÓN DEL EXCEL (Actualizado con nuevas columnas)
         $gastosAdicionales = []; // Aquí cargarías tus otros gastos si existen
         $rutaArchivo = self::generarExcelReporteFdm($dataProcesada, $gastosAdicionales, $anio, $mes);
-
+        dd($rutaArchivo);
         return [
             'file' => $rutaArchivo,
             'detalle' => $dataProcesada,
@@ -94,7 +114,7 @@ class PlanillaFdmServicio
             $sheet->setCellValue("F{$fila}", $reporte['empleado_nombre']);
             $sheet->setCellValue("G{$fila}", $reporte['labor']);
             $sheet->setCellValue("H{$fila}", $reporte['campo']);
-            $sheet->setCellValue("I{$fila}", $reporte['horas_totales']);
+            $sheet->setCellValue("I{$fila}", $reporte['total_horas']);
             $sheet->setCellValue("J{$fila}", $horaInicio);
             $sheet->setCellValue("K{$fila}", $horaSalida);
             $sheet->setCellValue("L{$fila}", $reporte['total_horas']);

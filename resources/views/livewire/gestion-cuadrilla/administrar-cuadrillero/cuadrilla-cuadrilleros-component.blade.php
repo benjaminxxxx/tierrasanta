@@ -7,7 +7,7 @@
             <i class="fa fa-plus"></i> Agregar Cuadrillero
         </x-button>
     </x-flex>
-    <x-card2 class="mt-3">
+    <x-card class="mt-3">
         <x-flex class="justify-between">
             <form wire:submit="filtrarCuadrilleros">
                 <x-flex class="!items-end">
@@ -82,7 +82,7 @@
                     @endforeach
                 @else
                     <x-tr>
-                        <x-td colspan="4">No hay Cuadrilleros registrados.</x-td>
+                        <x-td colspan="100%">No hay Cuadrilleros registrados.</x-td>
                     </x-tr>
                 @endif
             </x-slot>
@@ -90,7 +90,7 @@
         <div class="mt-2">
             {{ $cuadrilleros->links() }}
         </div>
-    </x-card2>
+    </x-card>
 
     <livewire:gestion-cuadrilla.administrar-cuadrillero.cuadrilla-form-component />
 

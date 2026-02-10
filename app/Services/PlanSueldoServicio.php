@@ -1,8 +1,10 @@
 <?php
 
 namespace App\Services;
+use App\Models\PlanMensualDetalle;
 use App\Models\PlanSueldo;
 use DB;
+use Exception;
 use Illuminate\Support\Carbon;
 
 class PlanSueldoServicio
@@ -10,21 +12,48 @@ class PlanSueldoServicio
     /**
      * Obtiene el último sueldo vigente para una lista de empleados.
      */
-    public function obtenerSueldosPorMes(array $empleadoIds, $mes, $anio)
+    public function obtenerSueldosPorMes($mes, $anio)
     {
-        // Creamos una fecha de referencia (fin de mes) para validar que el sueldo haya iniciado
+        // Fecha límite para validar sueldos activos
         $fechaLimite = Carbon::createFromDate($anio, $mes, 1)->endOfMonth();
 
-        return PlanSueldo::whereIn('plan_empleado_id', $empleadoIds)
+        // 1. Traer todos los empleados del mes
+        $empleados = PlanMensualDetalle::whereHas('planillaMensual', function ($q) use ($mes, $anio) {
+            $q->where('mes', $mes)->where('anio', $anio);
+        })
+            ->get(['plan_empleado_id', 'nombres', 'documento']);
+
+        if ($empleados->isEmpty()) {
+            throw new Exception("No existen empleados registrados en la planilla mensual de {$mes}/{$anio}.");
+        }
+
+        $empleadoIds = $empleados->pluck('plan_empleado_id')->toArray();
+
+        // 2. Sueldos por empleado
+        $sueldos = PlanSueldo::whereIn('plan_empleado_id', $empleadoIds)
             ->where('fecha_inicio', '<=', $fechaLimite)
             ->orderBy('fecha_inicio', 'desc')
             ->get()
             ->groupBy('plan_empleado_id')
             ->map(function ($historial) {
-                // De cada empleado, tomamos el primero (el más reciente por el orderBy desc)
-                return (float)$historial->first()->sueldo;
+                return (float) $historial->first()->sueldo;
             });
+
+        // 3. Validación: que todos tengan sueldo
+        foreach ($empleados as $emp) {
+            if (!$sueldos->has($emp->plan_empleado_id)) {
+
+                throw new Exception(
+                    "ERROR CRÍTICO: El empleado {$emp->nombres} ({$emp->documento}) " .
+                    "no tiene un sueldo registrado vigente al {$fechaLimite->format('d/m/Y')}. " .
+                    "Debe registrar un sueldo en la tabla plan_sueldos."
+                );
+            }
+        }
+
+        return $sueldos->toArray();
     }
+
     public function listar()
     {
         return PlanSueldo::all();

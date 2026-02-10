@@ -32,6 +32,8 @@ class Sidebar extends Component
                     ['title' => 'Planilla B+N', 'route' => 'planilla.blanco'],
                     ['title' => 'Familiares', 'route' => 'empleados.asignacion_familiar'],
                     ['title' => 'Contratos Empleados', 'route' => 'planilla.contratos'],
+                    ['title' => 'Conceptos', 'route' => 'planilla.conceptos'],
+                    ['title' => 'Parámetros', 'route' => 'planilla.parametros'],
                 ]
             ],
             [

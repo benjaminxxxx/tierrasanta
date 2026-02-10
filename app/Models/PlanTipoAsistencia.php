@@ -24,4 +24,8 @@ class PlanTipoAsistencia extends Model
         'acumula_asistencia',
         'activo',
     ];
+    public function getAcumulaAsistenciaLabelAttribute()
+    {
+        return $this->acumula_asistencia ? 'SI' : 'NO';
+    }
 }

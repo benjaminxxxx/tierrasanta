@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class PlanMensualDetalle extends Model
 {
@@ -11,15 +12,18 @@ class PlanMensualDetalle extends Model
 
     // Campos que se pueden asignar en masa
     protected $fillable = [
-        
+        // Relaciones e Identificación
         'plan_mensual_id',
         'plan_empleado_id',
         'documento',
         'nombres',
-        'spp_snp',
         'orden',
         'grupo',
+        'spp_snp',
         'empleado_grupo_color',
+        'esta_jubilado',
+
+        // Conceptos en Blanco (SUNAT/Planilla)
         'remuneracion_basica',
         'bonificacion',
         'asignacion_familiar',
@@ -41,32 +45,77 @@ class PlanMensualDetalle extends Model
         'jornal_diario',
         'costo_hora',
 
-        // Nuevos campos con prefijo 'negro_'
+        // Conceptos en Negro (Cálculos Internos)
+        'negro_sueldo_por_dia_total',
+        'negro_sueldo_por_hora_total',
+        'negro_otros_bonos_acumulados',
+        'negro_sueldo_final_empleado',
         'negro_diferencia_bonificacion',
         'negro_sueldo_neto_total',
         'negro_sueldo_bruto',
         'negro_sueldo_por_dia',
-        'negro_sueldo_por_dia_total',
         'negro_sueldo_por_hora',
-        'negro_sueldo_por_hora_total',
         'negro_diferencia_por_hora',
-        'negro_otros_bonos_acumulados',
-        'negro_sueldo_final_empleado',
         'negro_diferencia_real',
-        'esta_jubilado',
 
-        'sueldo_negro_pagado',
-        'sueldo_blanco_pagado',
-        'total_horas'
+        // Nuevos Insumos y Variables de Tiempo
+        'negro_bono_asistencia',
+        'negro_bono_productividad',
+        'dias_trabajados',
+        'horas_trabajadas',
+        'blanco_neto_pagar',
     ];
-    public function empleado(){
-        return $this->belongsTo(PlanEmpleado::class,'plan_empleado_id');
+    public function empleado()
+    {
+        return $this->belongsTo(PlanEmpleado::class, 'plan_empleado_id');
     }
     public function planillaMensual()
     {
-        return $this->belongsTo(PlanMensual::class,'plan_mensual_id');
+        return $this->belongsTo(PlanMensual::class, 'plan_mensual_id');
     }
-    public function registrosDiarios(){
-        return $this->hasMany(PlanRegistroDiario::class,'plan_det_men_id');
+    public function registrosDiarios()
+    {
+        return $this->hasMany(PlanRegistroDiario::class, 'plan_det_men_id');
+    }
+    protected $appends = [
+        'sueldo_negro_subtotal',
+        'sueldo_negro_total'
+    ];
+    /**
+     * Sueldo mensual proporcional según horas trabajadas.
+     */
+    protected function sueldoNegroSubtotal(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+
+                $horasTrabajadas = (float) $this->horas_trabajadas;
+                $sueldoBase = (float) $this->negro_sueldo_bruto;
+
+                // Validar relación
+                if (!$this->relationLoaded('planillaMensual')) {
+                    $this->load('planillaMensual');
+                }
+
+                $horasMes = (float) ($this->planillaMensual->total_horas ?? 0);
+
+                if ($horasMes <= 0) {
+                    return 0; // Evita división por cero
+                }
+
+                return round($sueldoBase * ($horasTrabajadas / $horasMes), 2);
+            }
+        );
+    }
+    protected function sueldoNegroTotal(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                return
+                    floatval($this->sueldo_negro_subtotal) +
+                    floatval($this->negro_bono_asistencia) +
+                    floatval($this->negro_bono_productividad);
+            }
+        );
     }
 }

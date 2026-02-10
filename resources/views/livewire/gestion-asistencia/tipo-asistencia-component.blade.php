@@ -11,11 +11,12 @@
     <x-table>
         <x-slot name="thead">
             <x-tr>
-                <x-th class="text-center">Código</x-th>
-                <x-th>Descripción</x-th>
-                <x-th class="text-center">Horas Jornal</x-th>
-                <x-th class="text-center">Color</x-th>
-                <x-th class="text-center">Acciones</x-th>
+                <x-th>Código</x-th>
+                <x-th class="!text-left">Descripción</x-th>
+                <x-th>Horas Jornal</x-th>
+                <x-th>Acumula Asistencia</x-th>
+                <x-th>Color</x-th>
+                <x-th>Acciones</x-th>
             </x-tr>
         </x-slot>
 
@@ -34,6 +35,9 @@
                                 {{ $tipoAsistencia->horas_jornal }}
                             </span>
                         @endif
+                    </x-td>
+                    <x-td>
+                        {{ $tipoAsistencia->acumula_asistencia_label }}
                     </x-td>
                     <x-td class="text-center">
                         <div class="m-auto flex flex-col items-center">

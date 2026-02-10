@@ -1,5 +1,5 @@
 <div x-data="planilla_blanco">
-    
+
     @if (!$planillaMensual)
         <x-warning class="mt-4">
             No hay registros de empleados para generar esta planilla, registre asistencias en <a
@@ -25,6 +25,9 @@
                     </div>
                 </x-flex>
                 <x-flex>
+                    <x-button type="button" @click="enviarYGenerarPlanilla2">
+                        <i class="fa fa-refresh"></i> Generar Planilla
+                    </x-button>
                     <x-button type="button" @click="$wire.set('mostrarDescuentosBeneficiosPlanilla',true)">
                         <i class="fa fa-refresh"></i> Cambiar Parámetros
                     </x-button>
@@ -34,11 +37,13 @@
                         </x-button>
                     @endif
                 </x-flex>
-
             </x-flex>
-
         </x-card>
         <x-card class="mt-5">
+            <x-flex class="justify-end mb-4">
+                <x-button x-on:click="toggleNegro()" x-text="verNegro ? 'Ver Columnas Blanco' : 'Ver Columnas Negro'">
+                </x-button>
+            </x-flex>
             <div wire:ignore>
                 <div x-ref="tableContainer" class="overflow-auto"></div>
             </div>
@@ -54,7 +59,11 @@
 
     @include('livewire.gestion-planilla.administrar-planilla.partial.modal-descuentos-beneficios')
     <x-loading wire:loading />
-
+    <style>
+        body .handsontable .htDimmed.text-total {
+            color: #3fae03 !important;
+        }
+    </style>
 </div>
 
 
@@ -65,33 +74,54 @@
             tableData: @json($planillaMensualDetalle),
             totalHoras: @entangle('totalHoras'),
             hot: null,
+            verNegro: false,
+            negroColumns: [5, 6, 7],
             isDark: JSON.parse(localStorage.getItem('darkMode')),
             init() {
 
                 this.initTable();
-                this.listeners.push(
-                    Livewire.on('renderTable', (data) => {
-                        /*
-                        console.log(data);
-                        let empleados = data[0];
-                        this.tableData = empleados;
-                        this.hot.loadData(this.tableData);*/
-                        location.href = location.href;
-                    })
-                );
+                Livewire.on('renderTable', ({
+                    data
+                }) => {
+
+                    const columns = this.generateColumns();
+                    this.hot.updateSettings({
+                        columns: columns
+                    });
+                    this.hot.loadData(data);
+                });
+
                 $watch('darkMode', value => {
 
                     this.isDark = value;
-                    const columns = this.generateColumns(this.tareas);
+                    const columns = this.generateColumns();
                     this.hot.updateSettings({
                         themeName: value ? 'ht-theme-main-dark' : 'ht-theme-main',
                         columns: columns
                     });
+
                 });
             },
+            toggleNegro() {
+                this.verNegro = !this.verNegro;
+                this.applyColumnVisibility();
+            },
+
+            applyColumnVisibility() {
+                const plugin = this.hot.getPlugin('hiddenColumns');
+
+                if (this.verNegro) {
+                    // Mostrar todo, activar vista NEGRO
+                    plugin.showColumns(this.negroColumns);
+                } else {
+                    // Ocultar columnas negro → Vista BLANCO
+                    plugin.hideColumns(this.negroColumns);
+                }
+
+                this.hot.render();
+            },
             initTable() {
-                const tareas = this.tareas;
-                const columns = this.generateColumns(tareas);
+                const columns = this.generateColumns();
 
                 const container = this.$refs.tableContainer;
                 const hot = new Handsontable(container, {
@@ -126,7 +156,7 @@
 
                 this.hot = hot;
                 this.hot.render();
-
+                this.applyColumnVisibility();
                 //this.calcularTotales();
             },
             calcularTotalHoras(diasLaborables) {
@@ -138,15 +168,16 @@
                 const timePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
                 return timePattern.test(time);
             },
-            generateColumns(tareas) {
+            generateColumns() {
                 const isDark = this.isDark;
-                let columns = [{
-                        data: 'documento',
-                        type: 'text',
-                        title: 'DNI',
-                        className: '!text-center',
-                        readOnly: true
-                    },
+                let columns = [
+                    /*{
+                                            data: 'documento',
+                                            type: 'text',
+                                            title: 'DNI',
+                                            className: '!text-center',
+                                            readOnly: true
+                                        },*/
                     {
                         data: "nombres",
                         type: 'text',
@@ -161,8 +192,82 @@
                             return td;
                         },
                         readOnly: true
-                    }, //empleado_grupo_color
+                    },
                     {
+                        data: 'remuneracion_basica',
+                        type: 'text',
+                        title: 'SUELDO.<br/> CONTRATO',
+                        className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
+                        readOnly: true
+                    },
+                    {
+                        data: 'remuneracion_basica',
+                        type: 'text',
+                        title: 'SUELDO.<br/> BÁSICO',
+                        className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
+                        readOnly: true
+                    },
+                    {
+                        data: 'asignacion_familiar',
+                        type: 'text',
+                        title: 'ASIG.<br/> FAM.',
+                        className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
+                        readOnly: true
+                    },
+                    {
+                        data: 'dias_trabajados',
+                        type: 'numeric',
+                        title: 'DIAS<br/>TRAB.',
+                        className: '!text-center !bg-muted',
+                        readOnly: true
+                    },
+                    {
+                        data: 'horas_trabajadas',
+                        type: 'numeric',
+                        title: 'HORAS<br/>TRAB.',
+                        className: '!text-center !bg-muted',
+                        readOnly: true
+                    },
+
+                    {
+                        data: 'negro_sueldo_bruto',
+                        type: 'text',
+                        title: 'SUELDO<br/>NEGRO<br/>ESTIMADO',
+                        className: '!text-right !bg-muted',
+                        readOnly: true
+                    },
+                    {
+                        data: 'sueldo_negro_subtotal',
+                        type: 'text',
+                        title: 'SUELDO<br/>NEGRO<br/>SUBTOTAL',
+                        className: '!text-right !bg-muted',
+                        readOnly: true
+                    },
+
+                    {
+                        data: 'negro_bono_asistencia',
+                        type: 'numeric',
+                        title: 'BONIF. X<br/>100% ASIST.',
+                        className: '!text-right',
+                        correctFormat: true,
+                        allowInvalid: false
+                    },
+                    {
+                        data: 'negro_bono_productividad',
+                        type: 'numeric',
+                        title: 'BONIF. X<br/>PRODU.',
+                        className: '!text-right !bg-muted',
+                        readOnly: true
+                    },
+                    {
+                        data: 'sueldo_negro_total',
+                        type: 'numeric',
+                        title: 'SUELDO<br/>NEGRO<br/>TOTAL',
+                        className: '!text-right !bg-muted text-total !font-bold',
+                        readOnly: true
+                    }
+                    //empleado_grupo_color
+                    /*{
                         data: 'spp_snp',
                         type: 'text',
                         className: '!text-center',
@@ -194,14 +299,7 @@
                         title: 'BONIF.',
                         className: '!text-right',
                         correctFormat: true,
-                    },
-                    {
-                        data: 'asignacion_familiar',
-                        type: 'text',
-                        title: 'ASIG.<br/> FAM.',
-                        className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
-                        readOnly: true
-                    },
+                    }
                     {
                         data: 'compensacion_vacacional',
                         type: 'text',
@@ -268,7 +366,7 @@
                         className: '!text-right',
                         readOnly: true
                     },
-                    /*
+                    
                     {
                         data: 'beta_30',
                         type: 'text',
@@ -303,7 +401,7 @@
                         title: 'ESSAL<br/> EPS.',
                         className: '!text-right',
                         readOnly: true
-                    },*/
+                    },//hasta aqui
                     {
                         data: 'sueldo_neto',
                         type: 'text',
@@ -324,7 +422,7 @@
                         title: 'REM. BA.<br/> ASIGN. FA.<br/> ESSALUD<br/>CTS<br/>GRATIF.<br/>BETA',
                         className: '!text-right',
                         readOnly: true
-                    },*/
+                    },hasta aqui
                     {
                         data: 'jornal_diario',
                         type: 'text',
@@ -338,7 +436,7 @@
                         title: 'COSTO<br/>HORA',
                         className: '!text-right',
                         readOnly: true
-                    }
+                    }*/
                 ];
 
                 return columns;
@@ -357,6 +455,18 @@
                     null && cell !== ''));
 
                 $wire.generarPlanillaMensual(filteredData);
+            },
+            enviarYGenerarPlanilla2() {
+                //EXTRAE LA DATA HANDSONTABLE COMPLETA
+                let allData = [];
+                for (let row = 0; row < this.hot.countRows(); row++) {
+                    const rowData = this.hot.getSourceDataAtRow(row);
+                    allData.push(rowData);
+                }
+                const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
+                    null && cell !== ''));
+
+                $wire.generarPlanillaMensual2(filteredData);
             }
         }));
     </script>

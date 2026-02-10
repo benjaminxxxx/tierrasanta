@@ -25,7 +25,7 @@
         </x-button>
     </div>
 
-    <x-card2>
+    <x-card>
         <x-h3>
             Actividades realizadas
         </x-h3>
@@ -39,9 +39,9 @@
                 @endforeach
             </x-select>
         </x-group-field>
-    </x-card2>
+    </x-card>
 
-    <x-card2 class="mt-4">
+    <x-card class="mt-4">
         @if ($actividadSeleccionada)
             <livewire:gestion-cuadrilla.gestion-cuadrilla-bonificaciones-detalle-component 
                         :actividadSeleccionada="$actividadSeleccionada" 
@@ -51,7 +51,7 @@
                 <x-label>Ninguna actividad seleccionada</x-label>
             </div>
         @endif
-    </x-card2>
+    </x-card>
 
     <x-loading wire:loading />
 </div>

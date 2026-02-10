@@ -37,6 +37,7 @@ class CalculoHelper
      * @param float $netoBoletaPLAME    El "Neto a Pagar" que figura en la boleta legal
      * @return array
      */
+    /*
     public static function calcularCostoLabor($horasLabor, $totalHorasMes, $netoRecibidoReal, $costoTotalEmpresa, $netoBoletaPLAME)
     {
         if ($totalHorasMes <= 0) {
@@ -60,6 +61,39 @@ class CalculoHelper
             'negro' => round($costoNegroLabor, 4),
             'total' => round($costoBlancoLabor + $costoNegroLabor, 4),
             'factor_proporcion' => $proporcion
+        ];
+    }*/
+    /**
+     * Calcula el costo en blanco y negro proporcional a una labor.
+     *
+     * @param float $horasLabor           Horas dedicadas a la labor.
+     * @param float $totalHorasMes        Total de horas del mes.
+     * @param float $costoBlancoTotalMes  Costo blanco mensual completo.
+     * @param float $costoNegroTotalMes   Costo negro mensual completo.
+     * @return array
+     */
+    public static function calcularCostoLaborMinimal(
+        float $horasLabor,
+        float $totalHorasMes,
+        float $costoBlancoTotalMes,
+        float $costoNegroTotalMes
+    ) {
+        if ($totalHorasMes <= 0) {
+            return ['blanco' => 0, 'negro' => 0, 'total' => 0];
+        }
+
+        // Factor proporcional de tiempo
+        $factor = $horasLabor / $totalHorasMes;
+
+        // Distribución proporcional
+        $blanco = $costoBlancoTotalMes * $factor;
+        $negro = $costoNegroTotalMes * $factor;
+
+        return [
+            'blanco' => round($blanco, 4),
+            'negro' => round($negro, 4),
+            'total' => round($blanco + $negro, 4),
+            'factor' => $factor
         ];
     }
     /**

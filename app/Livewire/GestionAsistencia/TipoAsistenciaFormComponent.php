@@ -11,7 +11,9 @@ class TipoAsistenciaFormComponent extends Component
     use LivewireAlert;
 
     public $mostrarFormulario = false;
+    public $formData = [];
     public $codigo, $codigoOriginal, $descripcion, $horasJornal, $color, $tipoAsistenciaId;
+    public $acumula_asistencia;
 
     protected $listeners = ['nuevoTipoAsistencia', 'editarTipoAsistencia'];
 
@@ -27,13 +29,13 @@ class TipoAsistenciaFormComponent extends Component
     public function guardarPlanTipoAsistencia(PlanTipoAsistenciaServicio $servicio)
     {
         $this->validate();
-
         try {
             $datos = [
                 'codigo' => $this->codigo,
                 'descripcion' => $this->descripcion,
                 'horas_jornal' => $this->horasJornal,
                 'color' => $this->color,
+                'acumula_asistencia'=>(bool)$this->acumula_asistencia,
             ];
 
             $servicio->guardar($datos, $this->tipoAsistenciaId);
@@ -54,13 +56,14 @@ class TipoAsistenciaFormComponent extends Component
         try {
             $this->resetForm();
             $tipoAsistencia = $servicio->obtenerPorId($tipoAsistenciaId);
-
+           
             $this->tipoAsistenciaId = $tipoAsistencia->id;
             $this->codigo = $tipoAsistencia->codigo;
             $this->codigoOriginal = $tipoAsistencia->codigo;
             $this->descripcion = $tipoAsistencia->descripcion;
             $this->horasJornal = $tipoAsistencia->horas_jornal;
             $this->color = $tipoAsistencia->color;
+            $this->acumula_asistencia = $tipoAsistencia->acumula_asistencia;
             $this->mostrarFormulario = true;
         } catch (Exception $e) {
             $this->alert('error', 'No se pudo cargar el registro');
@@ -76,7 +79,7 @@ class TipoAsistenciaFormComponent extends Component
     public function resetForm()
     {
         $this->resetErrorBag();
-        $this->reset(['codigo', 'descripcion', 'tipoAsistenciaId', 'codigoOriginal']);
+        $this->reset(['codigo', 'descripcion', 'tipoAsistenciaId', 'codigoOriginal','acumula_asistencia']);
         $this->horasJornal = 0;
         $this->color = '#ffffff';
     }
