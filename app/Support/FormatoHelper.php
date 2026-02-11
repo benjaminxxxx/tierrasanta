@@ -4,7 +4,6 @@ namespace App\Support;
 
 use App\Models\VentaCochinilla;
 use Illuminate\Support\Carbon;
-use InvalidArgumentException;
 
 class FormatoHelper
 {

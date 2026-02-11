@@ -21,7 +21,7 @@ class GestionCuadrillaReporteDiarioComponent extends Component
     public $campos = [];
     public $tramos = [];
     public $tramoSeleccionadoId;
-    protected $listeners = ['storeTableDataGuardarActividadDiaria', 'registroDetalleHorasExterno'=>'refrescarTabla'];
+    protected $listeners = ['registroDetalleHorasExterno'=>'refrescarTabla'];
     protected ReporteDiarioCuadrillaServicio $reporteDiarioCuadrillaServicio;
     public function boot(ReporteDiarioCuadrillaServicio $reporteDiarioCuadrillaServicio)
     {

@@ -12,6 +12,7 @@ use App\Models\PlanResumenDiarioTipoAsistencia;
 use App\Models\PlanTipoAsistencia;
 use App\Services\Campo\Gestion\CampoServicio;
 use App\Services\PlanTipoAsistenciaServicio;
+use App\Support\FormatoHelper;
 use Carbon\CarbonPeriod;
 use Exception;
 use Illuminate\Support\Carbon;
@@ -60,7 +61,7 @@ class PlanillaRegistroDiarioServicio
                 $inicio = Carbon::parse($detalle->hora_inicio);
                 $fin = Carbon::parse($detalle->hora_fin);
                 $horasDetalle = $inicio->diffInMinutes($fin) / 60;
-    
+
                 // Cálculo de Bonos específicos del campo FDM
                 $gastoBonoFdm = $rd->actividadesBonos
                     ->where('actividad.campo', 'FDM')
@@ -213,9 +214,12 @@ class PlanillaRegistroDiarioServicio
                 if (!in_array($labor, $labores)) {
                     throw new Exception("La labor '{$labor}' en fila {$fila} no existe.");
                 }
-
+                $inicio = FormatoHelper::normalizarHora($inicio);
+                $fin = FormatoHelper::normalizarHora($fin);
                 $hInicio = Carbon::parse($inicio);
                 $hFin = Carbon::parse($fin);
+
+
                 $horas = $hInicio->floatDiffInHours($hFin);
 
                 $sumaHorasTramos += $horas;

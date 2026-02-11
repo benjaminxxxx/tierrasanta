@@ -116,6 +116,23 @@
                     dropdownMenu: false,
                     fixedColumnsLeft: 3,
                     licenseKey: 'non-commercial-and-evaluation',
+                    cells: function(row, col) {
+                        const cellProperties = {};
+                        // 'this' aquí se refiere a la instancia de Handsontable
+                        const rowData = this.instance.getSourceDataAtRow(row);
+
+                        if (rowData && rowData.numero_cuadrilleros && rowData.numero_cuadrilleros > 0) {
+                            cellProperties.readOnly = true;
+
+                            // Necesitas acceder a isDark desde el scope externo
+                            const isDark = container.closest('[x-data]')?.__x?.$data?.isDark ||
+                                false;
+
+                            cellProperties.className = '!bg-muted !text-right';
+                        }
+
+                        return cellProperties;
+                    },
                     /*
                     contextMenu: {
                         items: {
@@ -137,9 +154,6 @@
                             source === 'CopyPaste.paste' ||
                             source === 'timeValidator' ||
                             source === 'Autofill.fill') {
-
-
-                            //console.log(changes);
 
                             this.hasUnsavedChanges = true;
 
@@ -240,9 +254,7 @@
             },
             generateColumns(totalActividades) {
 
-                const bgHeader = this.isDark ?
-                    '!bg-neutral-700 text-neutral-200 cursor-not-allowed' :
-                    '!bg-gray-100 text-gray-900 cursor-not-allowed';
+                const bgHeader = '!bg-muted cursor-not-allowed';
 
 
                 let columns = [{

@@ -1380,10 +1380,11 @@ class CuadrilleroServicio
 
                 $tramos = [];
                 for ($j = 1; $j <= $maxCol; $j++) {
-                    $inicio = $fila["hora_inicio_$j"] ?? null;
-                    $fin = $fila["hora_fin_$j"] ?? null;
+                    $inicio = $fila["hora_inicio_$j"]??null;
+                    $fin = $fila["hora_fin_$j"]??null;
                     $campo = $fila["campo_$j"] ?? null;
                     $labor = $fila["labor_$j"] ?? null;
+                    
 
                     if ($labor && !array_key_exists($labor, $labores)) {
                         throw new Exception("Error en la fila {$filaOrden}, el código {$labor} no existe.");
@@ -1394,6 +1395,9 @@ class CuadrilleroServicio
                             $errores[] = "Fila " . ($i + 1) . ", tramo $j: falta hora o labor.";
                             continue;
                         }
+
+                        $inicio = FormatoHelper::normalizarHora($inicio);
+                        $fin = FormatoHelper::normalizarHora($fin);
 
                         $tramos[] = [
                             'codigo_labor' => $labor,

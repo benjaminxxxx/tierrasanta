@@ -6,7 +6,7 @@
             </x-button>
 
             <div class="lg:flex gap-4 lg:w-auto text-center">
-                <x-input type="date" wire:model.live.debounce.1000ms="fecha" class="text-center !w-auto" />
+                <x-selector-dia type="date" wire:model.live="fecha" class="text-center !w-auto"/>
                 <x-button wire:click="gestionarListaMensual">
                     <i class="fa fa-users"></i> Gestionar Lista
                 </x-button>
