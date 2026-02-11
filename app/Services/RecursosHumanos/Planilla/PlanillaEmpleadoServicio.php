@@ -3,6 +3,7 @@
 namespace App\Services\RecursosHumanos\Planilla;
 
 use App\Models\PlanEmpleado;
+use App\Services\Configuracion\ConfiguracionHistorialServicio;
 use DB;
 use Exception;
 use Illuminate\Support\Carbon;
@@ -12,6 +13,40 @@ use Illuminate\Validation\ValidationException;
 
 class PlanillaEmpleadoServicio
 {
+    public static function obtenerAsignacionesFamiliares(int $mes, int $anio)
+    {
+        // 1. Fecha de corte
+        $fechaCorte = Carbon::create($anio, $mes, 1)->endOfMonth();
+
+        // 2. Obtener valor de asignación familiar vigente ese mes
+        $valor = ConfiguracionHistorialServicio::valorVigente('asignacion_familiar', $mes, $anio);
+
+        // 3. Cargar empleados + familiares
+        $empleados = PlanEmpleado::with('asignacionFamiliar')->get();
+
+        // 4. Filtrar empleados que califican
+        $result = $empleados->filter(function ($empleado) use ($fechaCorte) {
+
+            foreach ($empleado->asignacionFamiliar as $familiar) {
+                $edad = Carbon::parse($familiar->fecha_nacimiento)->diffInYears($fechaCorte);
+
+                // Condiciones de ley
+                if ($edad < 18) {
+                    return true;
+                }
+
+                if ($edad >= 18 && $familiar->esta_estudiando) {
+                    return true;
+                }
+            }
+
+            return false; // ninguno califica
+        })
+        ->keyBy('id')
+        ->map(fn () => $valor);
+
+        return $result; 
+    }
     public function actualizarOrdenEmpleados(array $empleados): void
     {
         if (empty($empleados))

@@ -158,7 +158,7 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
                 }
 
                 $row['horarios'] = implode(',', $horariosConcatenados);
-                
+
                 $row['rango_total_horas'] = DateHelper::calcularDuracionPorTramo($row['horarios']);
                 $row['total_horas'] = DateHelper::calcularTotalHorasFloat($row['rango_total_horas']);
 
@@ -232,15 +232,16 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
                 throw new Exception("La actividad ha caducado");
             }
 
+            $estandarProduccion = $this->estandarProduccion == '' ? null : (float)$this->estandarProduccion;
             $this->actividad->update([
                 'tramos_bonificacion' => json_encode($this->tramos),
                 'unidades' => $this->unidades,
-                'estandar_produccion' => $this->estandarProduccion,
+                'estandar_produccion' => $estandarProduccion,
                 'recojos' => $this->recojos
             ]);
 
             EmpleadoServicio::guardarBonificaciones($this->actividad, $datos, $this->recojos);
-          
+
 
             $this->alert('success', 'Datos guardados correctamente.');
         } catch (\Throwable $th) {

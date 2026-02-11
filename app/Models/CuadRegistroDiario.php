@@ -8,9 +8,7 @@ use Illuminate\Support\Carbon;
 class CuadRegistroDiario extends Model
 {
     use HasFactory;
-
     protected $table = 'cuad_registros_diarios';
-
     protected $fillable = [
         'cuadrillero_id',
         'fecha',
@@ -25,16 +23,47 @@ class CuadRegistroDiario extends Model
         'tramo_pagado_bono_id',
         'tramo_laboral_id',
         //nuevo campo triggeado
-        'jornal_aplicado'
+        'jornal_aplicado',
+        'horas_destajo'
     ];
-
     protected $casts = [
         'asistencia' => 'boolean',
         'fecha' => 'date',
         'esta_pagado' => 'boolean',
         'bono_esta_pagado' => 'boolean',
     ];
+    /**
+     * Calcula el costo del jornal considerando solo horas NO a destajo.
+     * 
+     * Fórmula:
+     * - Horas jornaleadas = total_horas - horas_destajo
+     * - Costo = (horas_jornaleadas / 8) * jornal_aplicado
+     * 
+     * @return float
+     */
+    public function getCostoDiaAttribute(): float
+    {
+        $jornal = $this->costo_personalizado_dia ?: (float) $this->jornal_aplicado;
+        
+        // Solo se pagan las horas que NO son a destajo
+        $horasJornaleadas = max(0, $this->total_horas - $this->horas_destajo);
+        
+        return ($horasJornaleadas / 8) * $jornal;
+    }
 
+    /**
+     * Calcula el costo total del día.
+     * 
+     * Componentes:
+     * - Costo jornal (horas normales)
+     * - Bonos (estándar + destajo)
+     * 
+     * @return float
+     */
+    public function getTotalCostoAttribute(): float
+    {
+        return $this->costo_dia + $this->total_bono;
+    }
     // Relaciones
     public function tramoLaboral()
     {
@@ -60,10 +89,7 @@ class CuadRegistroDiario extends Model
 
 
     // Accesor para total_costo calculado
-    public function getTotalCostoAttribute()
-    {
-        return $this->total_bono + $this->costo_dia;
-    }
+
 
     public function getCoincideTotalHorasAttribute()
     {
@@ -75,11 +101,5 @@ class CuadRegistroDiario extends Model
         }, 0);
         return round($this->total_horas, 2) === round($totalCalculado, 2);
     }
-    public function getCostoDiaAttribute()
-    {
-        // Prioridad: 1. Costo personalizado, 2. Jornal aplicado por trigger
-        $jornal = $this->costo_personalizado_dia ?: (float) $this->jornal_aplicado;
 
-        return ($this->total_horas / 8) * $jornal;
-    }
 }

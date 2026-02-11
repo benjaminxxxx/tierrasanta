@@ -113,14 +113,16 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
     public function registrarCostoPersonalizado(RegistroDiarioServicio $servicio)
     {
         try {
-            DB::transaction(function () use ($servicio) {
+            $tramoLaboralId = $this->tramoLaboral->id;
+            DB::transaction(function () use ($servicio,$tramoLaboralId) {
                 foreach ($this->cuadrillerosCostosPersonalizados as $cuadrilla) {
-
+                    
                     foreach ($cuadrilla['costos'] as $index => $costo) {
-                        $servicio->asignarCostoPersonalizado(
-                            cuadrilleroId: $cuadrilla['cuadrillero_id'],
-                            fecha: $this->diasSemana[$index],
-                            costo: $costo
+                        $servicio->asignarCostoPersonalizado( 
+                            $cuadrilla['cuadrillero_id'], 
+                            $this->diasSemana[$index],
+                            $costo,
+                            $tramoLaboralId
                         );
                     }
                 }

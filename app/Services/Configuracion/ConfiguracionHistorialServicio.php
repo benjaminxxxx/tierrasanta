@@ -8,23 +8,22 @@ use Illuminate\Validation\ValidationException;
 
 class ConfiguracionHistorialServicio
 {
-    public static function rmv(int $mes, int $anio): float
+    public static function valorVigente(string $codigo, int $mes, int $anio): float
     {
         $fechaConsulta = sprintf('%04d-%02d-01', $anio, $mes);
 
-        $registro = ConfiguracionHistorial::where('configuracion_codigo', 'rmv')
+        $registro = ConfiguracionHistorial::where('configuracion_codigo', $codigo)
             ->where('fecha_inicio', '<=', $fechaConsulta)
             ->where(function ($q) use ($fechaConsulta) {
                 $q->whereNull('fecha_fin')
-                    ->orWhere('fecha_fin', '>=', $fechaConsulta);
+                  ->orWhere('fecha_fin', '>=', $fechaConsulta);
             })
-            ->orderBy('fecha_inicio', 'desc') // siempre coge el más reciente válido
+            ->orderBy('fecha_inicio', 'desc')
             ->first();
 
         if (!$registro) {
             throw new \Exception(
-                "No existe un valor RMV vigente para {$mes}/{$anio}. " .
-                "Debe registrar su historial en configuracion_historial."
+                "No existe un valor vigente para '{$codigo}' en {$mes}/{$anio}."
             );
         }
 

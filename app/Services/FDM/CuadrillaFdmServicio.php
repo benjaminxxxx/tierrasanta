@@ -75,7 +75,7 @@ class CuadrillaFdmServicio
                     'hora_inicio' => $detalle->hora_inicio,
                     'hora_salida' => $detalle->hora_fin,
                     'total_horas' => $horasDetalle,
-                    'costo_dia' => $rd->jornal_aplicado,
+                    //'costo_dia' => $rd->jornal_aplicado,
                     'gasto' => round($gastoProrrateado, 2),
                     'gasto_bono' => round($gastoBonoFdm, 2),
                 ];

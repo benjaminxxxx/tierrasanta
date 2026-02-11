@@ -246,7 +246,6 @@ class EmpleadoServicio
     }
     public static function guardarBonificaciones($actividad, $datos, $numeroRecojos)
     {
-        // 2️⃣ Para cada fila de datos
         foreach ($datos as $fila) {
 
             $tipo = $fila['tipo'] ?? null;

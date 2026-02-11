@@ -5,6 +5,7 @@ namespace App\Services\Planilla;
 use App\Models\PlanConceptosConfig;
 use App\Services\Configuracion\ConfiguracionHistorialServicio;
 use App\Services\PlanSueldoServicio;
+use App\Services\RecursosHumanos\Planilla\PlanillaEmpleadoServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaMensualDetalleServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaRegistroDiarioServicio;
 use Exception;
@@ -26,13 +27,14 @@ class GenerarPlanillaMensualProceso
      */
     private function guardarDatos(array $data, $mes, $anio): void
     {
-        $totalHorasMap = app(PlanillaRegistroDiarioServicio::class)
-            ->obtenerTotalHorasPorMes($mes, $anio);
 
-        $sueldosPactados = app(PlanSueldoServicio::class)->obtenerSueldosPorMes($mes, $anio);
-        $remuneracion_basica = $this->calcularRemuneracionBasica($mes, $anio);
+        DB::transaction(function () use ($data, $mes, $anio) {
 
-        DB::transaction(function () use ($data, $totalHorasMap, $sueldosPactados, $remuneracion_basica) {
+            $totalHorasMap = app(PlanillaRegistroDiarioServicio::class)->obtenerTotalHorasPorMes($mes, $anio);
+            $sueldosPactados = app(PlanSueldoServicio::class)->obtenerSueldosPorMes($mes, $anio);
+            $remuneracion_basica = $this->calcularRemuneracionBasica($mes, $anio);
+            $asignacionesFamiliares = PlanillaEmpleadoServicio::obtenerAsignacionesFamiliares($mes, $anio);
+
             foreach ($data as $dato) {
 
                 $empleadoId = $dato['plan_empleado_id'];
@@ -49,6 +51,7 @@ class GenerarPlanillaMensualProceso
                     'dias_trabajados' => $detalleHoras['dias_trabajados'],
                     'horas_trabajadas' => $detalleHoras['horas_trabajadas'],
                     'negro_sueldo_bruto' => $sueldosPactados[$empleadoId],
+                    'asignacion_familiar' => $asignacionesFamiliares[$empleadoId]??null,
                 ];
                 PlanillaMensualDetalleServicio::guardar($info, $dato['id']);
             }
@@ -57,7 +60,7 @@ class GenerarPlanillaMensualProceso
     public static function calcularRemuneracionBasica(int $mes, int $anio): float
     {
         // 1. Obtener la RMV vigente
-        $rmv = ConfiguracionHistorialServicio::rmv($mes, $anio);
+        $rmv = ConfiguracionHistorialServicio::valorVigente('rmv', $mes, $anio);
 
         // 2. Calcular la cantidad de días del mes
         $fecha = \Carbon\Carbon::createFromDate($anio, $mes, 1);

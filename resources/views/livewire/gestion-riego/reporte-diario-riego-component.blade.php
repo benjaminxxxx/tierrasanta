@@ -29,29 +29,26 @@
                     <!-- Dropdown Menu -->
                     <div x-show="open" @click.outside="open = false"
                         class="z-10 text-base relative mr-5 list-none border-1 border-gray-500 bg-white divide-y divide-gray-100 rounded-lg shadow-lg w-auto dark:bg-gray-700">
-                        <div class="absolute bg-white shadow-lg">
+                        <div class="absolute bg-card shadow-lg">
                             <ul class="py-2">
                                 <li>
-                                    <button @click="$wire.dispatch('guardarTodo')"
-                                        class="w-full text-left block px-4 py-2 hover:bg-bodydark1 hover:text-primary whitespace-nowrap">
+                                    <x-button @click="$wire.dispatch('guardarTodo')">
                                         Guardar Todo
-                                    </button>
+                                    </x-button>
                                 </li>
                                 <li>
-                                    <a href="#" wire:click.prevent="descargarBackup"
-                                        class="block px-4 py-2 hover:bg-bodydark1 hover:text-primary whitespace-nowrap">
+                                    <x-button href="#" wire:click.prevent="descargarBackup" >
                                         Descargar Backup {{ $fecha }}
-                                    </a>
+                                    </x-button>
                                 </li>
                                 <li>
                                     <livewire:gestion-riego.reporte-diario-riego-import-export-component
                                         :fecha="$fecha" />
                                 </li>
                                 <li>
-                                    <a href="#" wire:click.prevent="descargarBackupCompleto"
-                                        class="block px-4 py-2 hover:bg-bodydark1 hover:text-primary  whitespace-nowrap">
+                                    <x-button href="#" wire:click.prevent="descargarBackupCompleto" >
                                         Descargar Backup Completo
-                                    </a>
+                                    </x-button>
                                 </li>
                             </ul>
                         </div>

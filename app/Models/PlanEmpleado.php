@@ -30,6 +30,10 @@ class PlanEmpleado extends Model
         'actualizado_por',
         'eliminado_por',
     ];
+    public function asignacionFamiliar()
+    {
+        return $this->hasMany(PlanFamiliar::class, 'plan_empleado_id');
+    }
     public function edadContableSegun(int $mes, int $anio): ?int
     {
         if (!$this->fecha_nacimiento) {
@@ -67,10 +71,7 @@ class PlanEmpleado extends Model
         return $this->hasOne(PlanSueldo::class, 'plan_empleado_id')->latestOfMany('fecha_inicio');
     }
 
-    public function asignacionFamiliar()
-    {
-        return $this->hasMany(PlanFamiliar::class, 'plan_empleado_id');
-    }
+
     public function getNombreCompletoAttribute()
     {
         return "{$this->apellido_paterno} {$this->apellido_materno}, {$this->nombres}";

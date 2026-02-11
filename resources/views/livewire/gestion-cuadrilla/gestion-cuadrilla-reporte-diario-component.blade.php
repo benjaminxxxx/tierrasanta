@@ -1,35 +1,18 @@
 <div x-data="actividades_diarias_cuadrilleros">
-    <x-loading wire:loading />
 
     <x-flex class="w-full justify-between">
         <x-flex class="my-3">
-            <x-h3 class="mb-4 md:mb-0">
+            <a href="{{ route('cuadrilleros.gestion') }}" class="font-bold text-lg">
+                Gestión de cuadrilleros
+            </a>
+            <span>/</span>
+            <x-h3>
                 Registro Diario Cuadrilla
             </x-h3>
-            {{-- FUNCION OCULTA POR FALTA DE ACTUALIZACION PARA COMPATIBILIDAD CON EL REGISTRO POR METODO DE HANDSONTABLE --}}
-            {{-- <x-button @click="$wire.dispatch('registrarReporteDiarioCuadrilla',{fecha:'{{ $fecha }}'})">
-                <i class="fa fa-plus"></i> Registrar reporte
-            </x-button> --}}
-        
         </x-flex>
-        <x-button-a href="{{ route('cuadrilleros.gestion') }}">
-            <i class="fa fa-arrow-left"></i> Volver a gestión de cuadrilleros
-        </x-button-a>
+        <x-selector-dia wire:model.live="fecha" label="Seleccionar Fecha" class="w-auto" />
     </x-flex>
 
-    <x-flex class="flex items-center justify-between my-2">
-        <!-- Botón para fecha anterior -->
-        <x-button wire:click="fechaAnterior">
-            <i class="fa fa-chevron-left"></i> <span class="hidden md:inline-block">Fecha Anterior</span>
-        </x-button>
-
-        <x-input type="date" wire:model.live="fecha" class="text-center !w-auto" />
-
-        <!-- Botón para fecha posterior -->
-        <x-button wire:click="fechaPosterior">
-            <span class="hidden md:inline-block">Fecha Posterior</span> <i class="fa fa-chevron-right"></i>
-        </x-button>
-    </x-flex>
     <x-flex class="justify-center mb-4">
         @if($tramos && $tramos->count() > 0)
             <x-select wire:model.live="tramoSeleccionadoId" class="w-full text-center lg:w-auto">
@@ -44,7 +27,7 @@
             No se ha registrado ningún tramo en esta fecha.
         </x-warning>
     @endif
-    <x-card2>
+    <x-card>
         <div wire:ignore>
             <x-flex class="justify-between mb-4">
                 <x-h3>Detalle de trabajadores</x-h3>
@@ -66,9 +49,11 @@
                 <i class="fa fa-sync"></i> Actualizar manualmente
             </x-button>
         </x-flex>
-    </x-card2>
+    </x-card>
 
     <livewire:gestion-cuadrilla.gestion-cuadrilla-reporte-diario-form-component />
+
+    <x-loading wire:loading />
 </div>
 @script
 <script>

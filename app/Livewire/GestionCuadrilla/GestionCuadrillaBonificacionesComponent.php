@@ -9,6 +9,7 @@ use Session;
 class GestionCuadrillaBonificacionesComponent extends Component
 {
     public $fecha;
+    public $fecha1;
     public $actividades = [];
     public $actividadSeleccionada;
     public function mount()

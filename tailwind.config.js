@@ -54,16 +54,13 @@ export default {
                 border: "var(--border)",
                 input: "var(--input)",
                 ring: "var(--ring)",
+                link: "var(--link)",
 
                 current: "currentColor",
                 transparent: "transparent",
                 white: "#FFFFFF",
                 //black: "#2C2C2C",
                 "black-2": "#010101",
-                body: "#556F64", // Tonalidad oscura derivada del primary
-                bodydark: "#7A9985", // Tonalidad intermedia más suave
-                bodydark1: "#E0E0E0", // Tonalidad clara derivada del primary
-                bodydark2: "#202A37", // Tonalidad intermedia más cálida
                 //primary: "#056A70",
                 primaryText: "#f3f3f3",
                 primaryDark: "#3b3a3a",

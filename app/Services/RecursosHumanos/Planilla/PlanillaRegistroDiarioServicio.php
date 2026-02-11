@@ -60,10 +60,6 @@ class PlanillaRegistroDiarioServicio
                 $inicio = Carbon::parse($detalle->hora_inicio);
                 $fin = Carbon::parse($detalle->hora_fin);
                 $horasDetalle = $inicio->diffInMinutes($fin) / 60;
-
-                // Prorrateo del Jornal: (Costo Día / Total Horas Trabajadas) * Horas en FDM
-                //$costoHoraJornal = $rd->total_horas > 0 ? ($rd->jornal_aplicado / $rd->total_horas) : 0;
-                //$gastoProrrateado = $costoHoraJornal * $horasDetalle;
     
                 // Cálculo de Bonos específicos del campo FDM
                 $gastoBonoFdm = $rd->actividadesBonos

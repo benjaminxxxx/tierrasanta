@@ -19,3 +19,6 @@ window.FullCalendar = {
     Calendar,
     resourceTimelinePlugin
 }
+flatpickr(".datepicker", {
+  //mode: "range",
+});
