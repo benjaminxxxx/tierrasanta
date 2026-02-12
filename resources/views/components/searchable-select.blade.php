@@ -19,7 +19,7 @@
 >
     <!-- Input Field -->
     <div class="relative">
-        <input 
+        <x-input 
             type="text"
             x-model="searchTerm"
             x-ref="searchInput"
@@ -29,10 +29,10 @@
             @keydown.arrow-up.prevent="navigateUp()"
             @keydown.enter.prevent="selectHighlighted()"
             @keydown.tab="closeDropdown()"
-            :placeholder="selectedOption ? selectedOption.name : '{{ $searchPlaceholder }}'"
-            class="w-full rounded-lg border border-slate-400 dark:border-0 dark:text-primaryTextDark bg-transparent py-2 px-4 pr-20 outline-none focus:border-primary focus-visible:shadow-none dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary focus:ring-0"
+            x-bind:placeholder="selectedOption ? selectedOption.name : '{{ $searchPlaceholder }}'"
+            class=""
             autocomplete="off"
-        >
+        />
         
         <!-- Clear Button (X) -->
         <div 
@@ -85,7 +85,7 @@
         x-transition:leave="transition ease-in duration-75"
         x-transition:leave-start="transform opacity-100 scale-100"
         x-transition:leave-end="transform opacity-0 scale-95"
-        class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto"
+        class="absolute z-[999] w-full mt-1 bg-muted border border-border rounded-md shadow-lg max-h-60 overflow-auto"
         style="display: none;"
     >
         <template x-for="(option, index) in filteredOptions" :key="option.id">
@@ -94,8 +94,8 @@
                 @mouseenter="highlightedIndex = index"
                 class="px-4 py-2 cursor-pointer transition-colors duration-150"
                 :class="{
-                    'bg-primary text-white': highlightedIndex === index,
-                    'text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600': highlightedIndex !== index
+                    'bg-card text-card-foreground': highlightedIndex === index,
+                    'text-muted-foreground': highlightedIndex !== index
                 }"
                 x-text="option.name"
             ></div>

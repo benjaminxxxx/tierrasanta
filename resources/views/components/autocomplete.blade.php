@@ -25,7 +25,7 @@
         @keydown.tab="closeDropdown()" 
         @blur="handleBlur($event)"
         {{ $attributes->whereStartsWith('wire:model') }}
-        class="w-full border rounded px-3 py-2"
+        class=""
         autocomplete="off"
         placeholder="{{ $placeholder }}"
     />
@@ -33,13 +33,13 @@
     <div 
         x-show="open && filtered.length"
         @mousedown.prevent
-        class="absolute left-0 mt-1 w-full bg-white border border-gray-300 shadow-lg z-[999] rounded max-h-56 overflow-y-auto dark:bg-gray-800"
+        class="absolute left-0 mt-1 w-full bg-muted border border-border shadow-lg z-[999] rounded max-h-56 overflow-y-auto"
     >
         <template x-for="(item, index) in filtered" :key="index">
             <div 
                 @click="select(item)"
                 @mouseenter="highlight = index"
-                :class="highlight === index ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'"
+                :class="highlight === index ? 'bg-card text-card-foreground' : 'hover:bg-muted'"
                 class="px-3 py-2 cursor-pointer"
             >
                 <span x-text="item"></span>

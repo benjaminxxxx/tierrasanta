@@ -1,5 +1,5 @@
 <div>
-    <x-loading wire:loading />
+
     <x-flex>
         <x-h3>
             Evaluación de Brotes x Piso
@@ -8,10 +8,10 @@
             <i class="fa fa-plus"></i> Agregar Evaluación
         </x-button>
     </x-flex>
-    <x-card2 class="mt-4">
+    <x-card class="mt-4">
         <x-flex class="justify-between">
             <x-flex>
-                <x-input type="date" label="Fecha de evaluación" wire:model.live="fechaFiltro" />
+                <x-selector-dia label="Fecha de evaluación" wire:model.live="fechaFiltro" />
 
                 <x-select-campo wire:model.live="campoFiltrado" label="Lote" error="false" />
 
@@ -54,9 +54,9 @@
                 </x-dropdown>
             </div>
         </x-flex>
-    </x-card2>
+    </x-card>
 
-    <x-card2 class="mt-4">
+    <x-card class="mt-4">
         <x-table>
 
             {{-- =================== THEAD =================== --}}
@@ -84,7 +84,7 @@
             {{-- =================== TBODY =================== --}}
             <x-slot name="tbody">
                 @foreach ($evaluacionesBrotes as $index => $e)
-                    <tr class="border-b">
+                    <tr class="border-b border-border">
                         {{-- Número --}}
                         <x-td class="text-center">{{ $index + 1 }}</x-td>
 
@@ -111,8 +111,10 @@
                         <x-td class="text-center">{{ number_format($e->promedio_brotes_3piso_n_dias, 0) }}</x-td>
 
                         {{-- Totales --}}
-                        <x-td class="text-center">{{ number_format($e->promedio_actual_total_brotes_2y3piso, 0) }}</x-td>
-                        <x-td class="text-center">{{ number_format($e->promedio_total_brotes_2y3piso_n_dias, 0) }}</x-td>
+                        <x-td
+                            class="text-center">{{ number_format($e->promedio_actual_total_brotes_2y3piso, 0) }}</x-td>
+                        <x-td
+                            class="text-center">{{ number_format($e->promedio_total_brotes_2y3piso_n_dias, 0) }}</x-td>
 
                         {{-- Acciones --}}
                         <x-td class="text-center">
@@ -138,10 +140,10 @@
                     </tr>
 
                     {{-- =================== SUBTABLA DETALLES =================== --}}
-                    <tr class="bg-gray-50 dark:bg-gray-800">
+                    <tr class="bg-muted">
                         <td colspan="12" class="p-0">
-                            <table class="w-full text-xs border-t dark:border-gray-700">
-                                <thead class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                            <table class="w-full text-xs border-t border-border">
+                                <thead class="bg-card">
                                     <tr>
                                         <th class="p-2 text-center">Cama</th>
                                         <th class="p-2 text-center">Longitud</th>
@@ -152,7 +154,7 @@
                                         <th class="p-2 text-center" colspan="2">3° Piso Actual</th>
                                         <th class="p-2 text-center" colspan="2">3° Piso +30 días</th>
                                     </tr>
-                                    <tr class="bg-gray-50 dark:bg-gray-800">
+                                    <tr class="bg-card">
                                         <th></th>
                                         <th></th>
 
@@ -172,26 +174,30 @@
 
                                 <tbody>
                                     @foreach ($e->detalles as $d)
-                                        <tr class="border-b dark:border-gray-700">
+                                        <tr class="border-b border-border">
                                             <td class="p-2 text-center">{{ $d->numero_cama }}</td>
                                             <td class="p-2 text-center">{{ $d->longitud_cama }}</td>
 
                                             {{-- 2° Piso Actual --}}
                                             <td class="p-2 text-center">{{ $d->brotes_aptos_2p_actual }}</td>
-                                            <td class="p-2 text-center">{{ number_format($d->brotes_2p_actual_por_mt, 2) }}</td>
+                                            <td class="p-2 text-center">
+                                                {{ number_format($d->brotes_2p_actual_por_mt, 2) }}</td>
 
                                             {{-- 2° Piso +30 días --}}
                                             <td class="p-2 text-center">{{ $d->brotes_aptos_2p_despues_n_dias }}</td>
-                                            <td class="p-2 text-center">{{ number_format($d->brotes_2p_despues_por_mt, 2) }}
+                                            <td class="p-2 text-center">
+                                                {{ number_format($d->brotes_2p_despues_por_mt, 2) }}
                                             </td>
 
                                             {{-- 3° Piso Actual --}}
                                             <td class="p-2 text-center">{{ $d->brotes_aptos_3p_actual }}</td>
-                                            <td class="p-2 text-center">{{ number_format($d->brotes_3p_actual_por_mt, 2) }}</td>
+                                            <td class="p-2 text-center">
+                                                {{ number_format($d->brotes_3p_actual_por_mt, 2) }}</td>
 
                                             {{-- 3° Piso +30 días --}}
                                             <td class="p-2 text-center">{{ $d->brotes_aptos_3p_despues_n_dias }}</td>
-                                            <td class="p-2 text-center">{{ number_format($d->brotes_3p_despues_por_mt, 2) }}
+                                            <td class="p-2 text-center">
+                                                {{ number_format($d->brotes_3p_despues_por_mt, 2) }}
                                             </td>
                                         </tr>
                                     @endforeach
@@ -200,7 +206,6 @@
 
                         </td>
                     </tr>
-
                 @endforeach
             </x-slot>
 
@@ -210,6 +215,6 @@
         <div class="mt-5">
             {{ $evaluacionesBrotes->links() }}
         </div>
-    </x-card2>
-
+    </x-card>
+    <x-loading wire:loading />
 </div>

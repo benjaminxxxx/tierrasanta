@@ -12,7 +12,7 @@
         <x-label value="{{ $label }}" />
     @endif
     
-    <x-searchable
+    <x-searchable-select
         :options="$campos"
         :placeholder="$placeholder"
         {{ $attributes }}
