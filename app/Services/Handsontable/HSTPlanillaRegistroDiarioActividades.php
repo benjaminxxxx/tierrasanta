@@ -46,12 +46,13 @@ class HSTPlanillaRegistroDiarioActividades
 
         // 2️⃣ Buscar el resumen de cuadrilla guardado en PlanResumenDiario
         $resumen = PlanResumenDiario::whereDate('fecha', $fecha)->first();
-
+        
         if ($resumen && $resumen->resumen_cuadrilla) {
             $resumenCuadrilla = json_decode($resumen->resumen_cuadrilla, true);
 
             // 3️⃣ Convertir cada bloque del resumen en una fila de “empleado ficticio”
             foreach ($resumenCuadrilla as $fila) {
+                
                 $nuevo = [
                     'plan_men_detalle_id' => null,
                     'documento' => null,

@@ -128,7 +128,7 @@
                             const isDark = container.closest('[x-data]')?.__x?.$data?.isDark ||
                                 false;
 
-                            cellProperties.className = '!bg-muted !text-right';
+                            cellProperties.className = '!bg-muted !text-center';
                         }
 
                         return cellProperties;

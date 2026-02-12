@@ -35,10 +35,161 @@ class CuadrilleroServicio
      * @param int $totalColumnas El número de pares de columnas de Campo/Labor/Hora Inicio/Hora Fin.
      * @return void
      */
+    public static function generarResumenParaPlanilla($fecha)
+    {
+        // LEER DATOS REALES DESDE LA BD
+        $datos = CuadRegistroDiario::where('fecha', $fecha)
+            ->with('detalleHoras')
+            ->get()
+            ->map(function ($registro) {
+                $fila = [
+                    'codigo_grupo' => $registro->codigo_grupo,
+                    'cuadrillero_id' => $registro->cuadrillero_id,
+                    'cuadrillero_nombres' => $registro->cuadrillero->nombres ?? null,
+                    'cuadrillero_dni' => $registro->cuadrillero->dni ?? null,
+                    'asistencia' => true,
+                ];
+
+                // Construir columnas dinámicamente desde detalleHoras
+                $detalles = $registro->detalleHoras;
+                foreach ($detalles as $index => $detalle) {
+                    $col = $index + 1;
+
+                    $fila["campo_$col"] = $detalle->campo_nombre;
+                    $fila["labor_$col"] = $detalle->codigo_labor;
+                    $fila["hora_inicio_$col"] = $detalle->hora_inicio; // Ya es time de BD
+                    $fila["hora_fin_$col"] = $detalle->hora_fin; // Ya es time de BD
+                }
+
+                return $fila;
+            })
+            ->toArray();
+
+        $trabajadoresAgrupados = [];
+        $maxColumnas = 0; // Detectar automáticamente el número máximo de columnas
+
+        foreach ($datos as $registro) {
+            $labores = [];
+
+            // Detectar dinámicamente cuántas columnas tiene este registro
+            $columnasRegistro = 0;
+            foreach ($registro as $key => $value) {
+                if (preg_match('/^campo_(\d+)$/', $key, $matches)) {
+                    $columnasRegistro = max($columnasRegistro, (int) $matches[1]);
+                }
+            }
+            $maxColumnas = max($maxColumnas, $columnasRegistro);
+
+            for ($x = 1; $x <= $columnasRegistro; $x++) {
+                $campo = $registro['campo_' . $x] ?? null;
+                $labor = $registro['labor_' . $x] ?? null;
+                $inicio = $registro['hora_inicio_' . $x] ?? null;
+                $fin = $registro['hora_fin_' . $x] ?? null;
+
+                if (!$campo || !$labor || !$inicio || !$fin) {
+                    continue;
+                }
+
+                $labores[] = [
+                    'campo' => $campo,
+                    'labor' => $labor,
+                    'hora_inicio' => $inicio,
+                    'hora_fin' => $fin,
+                ];
+            }
+
+            if (empty($labores)) {
+                continue;
+            }
+
+            usort($labores, function ($a, $b) {
+                $claveA = $a['campo'] . '|' . $a['labor'] . '|' . $a['hora_inicio'] . '|' . $a['hora_fin'];
+                $claveB = $b['campo'] . '|' . $b['labor'] . '|' . $b['hora_inicio'] . '|' . $b['hora_fin'];
+                return strcmp($claveA, $claveB);
+            });
+
+            $clave_labores = '';
+            foreach ($labores as $actividad) {
+                $clave_labores .= implode('|', $actividad) . '||';
+            }
+
+            if (!isset($trabajadoresAgrupados[$clave_labores])) {
+                $trabajadoresAgrupados[$clave_labores] = [
+                    'numero_cuadrilleros' => 0,
+                    'labores' => $labores,
+                    'total_horas_unitarias' => 0.0,
+                ];
+
+                $duracion_unitaria_total = 0.0;
+                foreach ($labores as $labor) {
+                    // Ya no necesitas str_replace porque vienen como time (HH:mm:ss)
+                    $hInicio = Carbon::parse($labor['hora_inicio']);
+                    $hFin = Carbon::parse($labor['hora_fin']);
+                    $duracion_unitaria_total += $hInicio->floatDiffInHours($hFin);
+                }
+                $trabajadoresAgrupados[$clave_labores]['duracion_unitaria_total'] = $duracion_unitaria_total;
+            }
+
+            $trabajadoresAgrupados[$clave_labores]['numero_cuadrilleros']++;
+        }
+
+        $resultado = [];
+        foreach ($trabajadoresAgrupados as $grupo) {
+            $total_horas_final = $grupo['duracion_unitaria_total'] * $grupo['numero_cuadrilleros'];
+
+            $resultado[] = [
+                'numero_cuadrilleros' => $grupo['numero_cuadrilleros'],
+                'labores' => $grupo['labores'],
+                'total_horas' => round($total_horas_final, 2)
+            ];
+        }
+
+        $resumen = json_encode(array_values($resultado));
+
+        $resumenPlanilla = PlanResumenDiario::firstOrCreate([
+            'fecha' => $fecha
+        ]);
+
+        // Usar el máximo detectado automáticamente
+        $totalActividades = max($maxColumnas, $resumenPlanilla->total_actividades ?? 0);
+
+        $resumenPlanilla->update([
+            'resumen_cuadrilla' => $resumen,
+            'total_actividades' => $totalActividades
+        ]);
+    }
+    /*
     public static function generarResumenParaPlanilla($fecha, $datos, $totalColumnas = 1) // Asumo 2 columnas
     {
         $trabajadoresAgrupados = [];
 
+        /*
+        dd($fecha, $datos, $totalColumnas);
+        "2025-12-29" // app\Services\Cuadrilla\CuadrilleroServicio.php:41
+        array:4 [▼ // app\Services\Cuadrilla\CuadrilleroServicio.php:41
+        0 => array:17 [▼
+            "codigo_grupo" => "CMSR"
+            "cuadrillero_id" => 4
+            "cuadrillero_nombres" => "ANTONIO ROJAS"
+            "cuadrillero_dni" => null
+            "asistencia" => true
+            "campo_1" => "1-1"
+            "labor_1" => 34
+            "hora_inicio_1" => "7.00"
+            "hora_fin_1" => "9.00"
+            "campo_2" => "3-4"
+            "labor_2" => 34
+            "hora_inicio_2" => "9.00"
+            "hora_fin_2" => "12.00"
+            "campo_3" => "16"
+            "labor_3" => "34"
+            "hora_inicio_3" => "13.00"
+            "hora_fin_3" => "16.00"
+        ]
+        1 => array:17 [▶]
+        2 => array:17 [▶]
+        3 => array:17 [▶]
+        ]
         foreach ($datos as $registro) {
             //dd($registro);
             $labores = [];
@@ -93,8 +244,9 @@ class CuadrilleroServicio
                 // Calcular la Duración Unitaria Total para este set de labores
                 $duracion_unitaria_total = 0.0;
                 foreach ($labores as $labor) {
-                    $hInicio = Carbon::parse($labor['hora_inicio']);
-                    $hFin = Carbon::parse($labor['hora_fin']);
+
+                    $hInicio = Carbon::parse(str_replace('.', ':', $labor['hora_inicio']));
+                    $hFin = Carbon::parse(str_replace('.', ':', $labor['hora_fin']));
                     $duracion_unitaria_total += $hInicio->floatDiffInHours($hFin);
                 }
                 // Guardar la duración unitaria que será multiplicada por el número de cuadrilleros
@@ -132,7 +284,7 @@ class CuadrilleroServicio
             'resumen_cuadrilla' => $resumen,
             'total_actividades' => $totalActividades
         ]);
-    }
+    }*/
 
     public static function registrarTotalesEnResumenDiarioPlanilla($fechaInicio, $fechaFin)
     {
@@ -1380,11 +1532,11 @@ class CuadrilleroServicio
 
                 $tramos = [];
                 for ($j = 1; $j <= $maxCol; $j++) {
-                    $inicio = $fila["hora_inicio_$j"]??null;
-                    $fin = $fila["hora_fin_$j"]??null;
+                    $inicio = $fila["hora_inicio_$j"] ?? null;
+                    $fin = $fila["hora_fin_$j"] ?? null;
                     $campo = $fila["campo_$j"] ?? null;
                     $labor = $fila["labor_$j"] ?? null;
-                    
+
 
                     if ($labor && !array_key_exists($labor, $labores)) {
                         throw new Exception("Error en la fila {$filaOrden}, el código {$labor} no existe.");
