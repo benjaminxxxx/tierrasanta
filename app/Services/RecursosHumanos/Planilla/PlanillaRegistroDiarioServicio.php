@@ -12,6 +12,7 @@ use App\Models\PlanResumenDiarioTipoAsistencia;
 use App\Models\PlanTipoAsistencia;
 use App\Services\Campo\Gestion\CampoServicio;
 use App\Services\PlanTipoAsistenciaServicio;
+use App\Support\CalculoHelper;
 use App\Support\FormatoHelper;
 use Carbon\CarbonPeriod;
 use Exception;
@@ -114,6 +115,7 @@ class PlanillaRegistroDiarioServicio
 
             $totalHoras = 0;
             $conteo = 0;
+            $faltasInjustificadas = 0;
             $totalBonoProductividad = 0;
 
             foreach ($registros as $r) {
@@ -127,12 +129,14 @@ class PlanillaRegistroDiarioServicio
                     $totalBonoProductividad += $r->total_bono;
                     $conteo++;
                 }
+                $faltasInjustificadas+=CalculoHelper::faltasInjustificadas($r->total_horas);
             }
 
             $resultado[$emp->plan_empleado_id] = [
                 'plan_empleado_id' => $emp->plan_empleado_id,
                 'horas_trabajadas' => $totalHoras,
                 'dias_trabajados' => $conteo,
+                'faltas_injustificadas' => $faltasInjustificadas,
                 'total_bono_productividad' => $totalBonoProductividad,
             ];
         }

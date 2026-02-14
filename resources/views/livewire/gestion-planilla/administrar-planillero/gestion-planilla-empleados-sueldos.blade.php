@@ -1,7 +1,7 @@
 <div>
     <x-dialog-modal wire:model="mostrarFormularioEmpleadoSueldo" maxWidth="full">
         <x-slot name="title">
-            <x-h3>Historial de Sueldos del Empleado</x-h3>
+            Historial de Sueldos del Empleado
         </x-slot>
 
         <x-slot name="content">
@@ -27,7 +27,8 @@
                                 </x-td>
                                 <x-td class="text-center">{{ $sueldo->creador?->name ?? '—' }}</x-td>
                                 <x-td class="text-center">
-                                    <x-button variant="danger" size="xs" wire:click="eliminarSueldo({{ $sueldo->id }})"
+                                    <x-button variant="danger" size="xs"
+                                        wire:click="eliminarSueldo({{ $sueldo->id }})"
                                         wire:confirm="¿Desea eliminar este registro de sueldo?">
                                         <i class="fa fa-trash"></i>
                                     </x-button>
@@ -45,29 +46,23 @@
             </div>
 
             {{-- 🔹 Formulario para agregar nuevo sueldo --}}
-            <x-card class="bg-gray-50 border border-gray-300 p-4">
+            <div class="p-4">
                 <x-h4 class="mb-3">Registrar nuevo sueldo</x-h4>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    <x-group-field>
-                        <x-label for="fechaInicio">Fecha de inicio</x-label>
-                        <x-input type="date" wire:model="fechaInicio" id="fechaInicio" />
+
+                    <div>
+                        <x-selector-dia type="date" label="Fecha de inicio" wire:model="fechaInicio"
+                            id="fechaInicio" />
                         <x-input-error for="fechaInicio" />
-                    </x-group-field>
+                    </div>
 
-                    <x-group-field>
-                        <x-label for="fechaFin">Fecha de fin (opcional)</x-label>
-                        <x-input type="date" wire:model="fechaFin" id="fechaFin" />
-                        <x-input-error for="fechaFin" />
-                    </x-group-field>
+                    <x-selector-dia type="date" label="Fecha de fin (opcional)" wire:model="fechaFin" id="fechaFin"
+                        error="fechaFin" />
 
-                    <x-group-field>
-                        <x-label for="sueldo">Monto del Sueldo</x-label>
-                        <x-input type="number" step="0.01" wire:model="sueldo" id="sueldo" />
-                        <x-input-error for="sueldo" />
-                    </x-group-field>
+                    <x-input type="number" label="Monto del Sueldo" step="0.01" wire:model="sueldo" id="sueldo" error="sueldo" />
                 </div>
-            </x-card>
+            </div>
 
         </x-slot>
 

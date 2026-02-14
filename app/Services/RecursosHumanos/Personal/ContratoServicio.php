@@ -13,6 +13,23 @@ use Illuminate\Validation\ValidationException;
 
 class ContratoServicio
 {
+    /**
+     * Obtiene todos los contratos vigentes durante un mes/año.
+     */
+    public static function obtenerContratosVigentes(int $mes, int $anio)
+    {
+        $inicioMes = Carbon::createFromDate($anio, $mes, 1)->startOfMonth();
+        $finMes = Carbon::createFromDate($anio, $mes, 1)->endOfMonth();
+
+        return PlanContrato::whereDate('fecha_inicio', '<=', $finMes)
+            ->where(function ($q) use ($inicioMes) {
+                $q->whereNull('fecha_fin')
+                    ->orWhereDate('fecha_fin', '>=', $inicioMes);
+            })
+            ->get()
+            ->keyBy('plan_empleado_id');
+        // puedes keyBy('id') si prefieres, pero normalmente se usa empleado
+    }
     public function importarContratos($file)
     {
         $dataExcel = app(ImportContratoServicio::class)->importarContratos($file);
@@ -45,7 +62,7 @@ class ContratoServicio
     /**
      * Guarda o actualiza un contrato con validaciones de negocio.
      */
-    public function guardarContrato(array $data, $contratoId = null,$fila = null)
+    public function guardarContrato(array $data, $contratoId = null, $fila = null)
     {
         $tieneActivo = PlanContrato::where('plan_empleado_id', $data['plan_empleado_id'])
             ->where('estado', 'activo')

@@ -28,15 +28,6 @@ return new class extends Migration {
             $table->decimal('dscto_afp_seguro', 10, 2)->nullable();
             $table->string('dscto_afp_seguro_explicacion')->nullable();
 
-            $table->decimal('cts', 10, 2)->nullable();
-            $table->decimal('gratificaciones', 10, 2)->nullable();
-            $table->decimal('essalud_gratificaciones', 10, 2)->nullable();
-            //$table->decimal('pension', 10, 2)->nullable();            
-            $table->decimal('beta_30', 10, 2)->nullable();
-            $table->decimal('essalud', 10, 2)->nullable();
-            $table->decimal('vida_ley', 10, 2)->nullable();
-            $table->decimal('pension_sctr', 10, 2)->nullable();
-            $table->decimal('essalud_eps', 10, 2)->nullable();
             $table->decimal('sueldo_neto', 10, 2)->nullable();
             $table->decimal('rem_basica_essalud', 10, 2)->nullable();
             $table->decimal('rem_basica_asg_fam_essalud_cts_grat_beta', 10, 2)->nullable();
@@ -66,6 +57,7 @@ return new class extends Migration {
 
             // --- EL BLANCO (Lo que ya pagó la empresa por banco/planilla) ---
             $table->decimal('blanco_neto_pagar', 10, 2)->default(0);
+            $table->unsignedTinyInteger('faltas_injustificadas')->default(0);
 
             $table->unsignedBigInteger('plan_mensual_id');
 

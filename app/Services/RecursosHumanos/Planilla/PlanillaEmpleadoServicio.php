@@ -13,6 +13,64 @@ use Illuminate\Validation\ValidationException;
 
 class PlanillaEmpleadoServicio
 {
+    public static function datosPlanilla(int $mes, int $anio): array
+    {
+        // Fecha de corte de la planilla
+        $fechaCorte = Carbon::create($anio, $mes, 1)->endOfMonth();
+
+        // Valor oficial de la AF vigente ese mes
+        $valorAF = ConfiguracionHistorialServicio::valorVigente('asignacion_familiar', $mes, $anio);
+
+        // Traer todos los empleados + familiares
+        $empleados = PlanEmpleado::with('asignacionFamiliar')->get();
+
+        $resultado = [];
+
+        foreach ($empleados as $empleado) {
+
+            // 📌 Cálculo de edad: directo, sin función extra
+            $edadContable = $empleado->fecha_nacimiento
+                ? Carbon::parse($empleado->fecha_nacimiento)->diffInYears($fechaCorte)
+                : null;
+                
+            // 📌 Determinación de asignación familiar según ley
+            $calificaAF = false;
+
+            foreach ($empleado->asignacionFamiliar as $familiar) {
+
+                $edadHijo = Carbon::parse($familiar->fecha_nacimiento)
+                    ->diffInYears($fechaCorte);
+
+                if ($edadHijo < 18) {
+                    $calificaAF = true;
+                    break;
+                }
+
+                if ($edadHijo >= 18 && $familiar->esta_estudiando) {
+                    $calificaAF = true;
+                    break;
+                }
+            }
+
+            $resultado[$empleado->id] = [
+                'id' => $empleado->id,
+                'nombres' => $empleado->nombres,
+                'apellido_paterno' => $empleado->apellido_paterno,
+                'apellido_materno' => $empleado->apellido_materno,
+                'documento' => $empleado->documento,
+                'fecha_nacimiento' => $empleado->fecha_nacimiento,
+
+                // 🔹 Calculados por mes/año
+                'edad_contable' => $edadContable,
+                'asignacion_familiar' => $calificaAF ? $valorAF : 0,
+
+                // 🔹 Campos opcionales por si quieres agregarlos luego
+                'raw_tiene_asignacion_familiar' => $calificaAF,
+            ];
+        }
+
+        return $resultado;
+    }
     public static function obtenerAsignacionesFamiliares(int $mes, int $anio)
     {
         // 1. Fecha de corte
@@ -42,10 +100,10 @@ class PlanillaEmpleadoServicio
 
             return false; // ninguno califica
         })
-        ->keyBy('id')
-        ->map(fn () => $valor);
+            ->keyBy('id')
+            ->map(fn() => $valor);
 
-        return $result; 
+        return $result;
     }
     public function actualizarOrdenEmpleados(array $empleados): void
     {

@@ -1,4 +1,4 @@
-<x-card2 class="mt-4">
+<x-card class="mt-4">
     <x-flex>
         <x-group-field>
             <x-label for="cargo_id">Nombre o DNI</x-label>
@@ -44,4 +44,4 @@
         </x-select>
 
     </x-flex>
-</x-card2>
+</x-card>

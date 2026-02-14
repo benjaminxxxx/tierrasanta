@@ -3,8 +3,12 @@
 namespace App\Services\Planilla;
 
 use App\Models\PlanConceptosConfig;
+use App\Models\PlanMensual;
 use App\Services\Configuracion\ConfiguracionHistorialServicio;
+use App\Services\PlanillaMensualServicio;
 use App\Services\PlanSueldoServicio;
+use App\Services\RecursosHumanos\Personal\ContratoServicio;
+use App\Services\RecursosHumanos\Planilla\PlanillaDescuentoServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaEmpleadoServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaMensualDetalleServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaRegistroDiarioServicio;
@@ -16,61 +20,67 @@ class GenerarPlanillaMensualProceso
 {
     public function ejecutar($data, $mes, $anio)
     {
-        //Primero que nada salvamos los datos editables
-        $this->guardarDatos($data, $mes, $anio);
-
-        //siguiente paso
+        DB::transaction(function () use ($data, $mes, $anio) {
+            PlanillaMensualServicio::guardarConfiguracionDesdeParametros($mes, $anio);
+            self::guardarDatos($data, $mes, $anio);
+            //Generar Excel mas adelante
+        });
     }
-    /**
-     * Guarda los datos editables provenientes de Handsontable.
-     * Cada registro se insertará o actualizará según si trae id o no.
-     */
     private function guardarDatos(array $data, $mes, $anio): void
     {
 
-        DB::transaction(function () use ($data, $mes, $anio) {
+        $totalHorasMap = app(PlanillaRegistroDiarioServicio::class)->obtenerTotalHorasPorMes($mes, $anio);
+        $sueldosPactados = app(PlanSueldoServicio::class)->obtenerSueldosPorMes($mes, $anio);
+        $contratos = ContratoServicio::obtenerContratosVigentes($mes, $anio)->toArray();
+        $descuentoAgrupados = PlanillaDescuentoServicio::obtenerDescuentos($mes, $anio);
+        $empleados = PlanillaEmpleadoServicio::datosPlanilla($mes, $anio);
 
-            $totalHorasMap = app(PlanillaRegistroDiarioServicio::class)->obtenerTotalHorasPorMes($mes, $anio);
-            $sueldosPactados = app(PlanSueldoServicio::class)->obtenerSueldosPorMes($mes, $anio);
-            $remuneracion_basica = $this->calcularRemuneracionBasica($mes, $anio);
-            $asignacionesFamiliares = PlanillaEmpleadoServicio::obtenerAsignacionesFamiliares($mes, $anio);
+        foreach ($data as $dato) {
 
-            foreach ($data as $dato) {
+            $empleadoId = $dato['plan_empleado_id'];
+            $this->validarExistenciaIndices($empleadoId, $dato['nombres'], $totalHorasMap, $contratos, $empleados);
 
-                $empleadoId = $dato['plan_empleado_id'];
-                if (!array_key_exists($dato['plan_empleado_id'], $totalHorasMap)) {
-                    throw new Exception("Error por falta de indice");
-                }
-                $detalleHoras = $totalHorasMap[$dato['plan_empleado_id']];
+            $empleado = $empleados[$empleadoId];
+            $contrato = $contratos[$empleadoId];
+            $detalleHoras = $totalHorasMap[$empleadoId];
+            $edad = $empleado['edad_contable'];//$empleados[];
 
-                $info = [
-                    'remuneracion_basica' => $remuneracion_basica,
-                    'bonificacion' => (float) ($dato['bonificacion'] ?? 0),
-                    'negro_bono_asistencia' => (float) ($dato['negro_bono_asistencia'] ?? 0),
-                    'negro_bono_productividad' => $detalleHoras['total_bono_productividad'],
-                    'dias_trabajados' => $detalleHoras['dias_trabajados'],
-                    'horas_trabajadas' => $detalleHoras['horas_trabajadas'],
-                    'negro_sueldo_bruto' => $sueldosPactados[$empleadoId],
-                    'asignacion_familiar' => $asignacionesFamiliares[$empleadoId]??null,
-                ];
-                PlanillaMensualDetalleServicio::guardar($info, $dato['id']);
+            if (!$edad) {
+                throw new Exception("El empleado {$dato['nombres']} no tiene fecha de nacimiento registrado");
             }
-        });
+            $descuento = PlanillaDescuentoServicio::calcularDescuentoEmpleado(
+                $edad,
+                $contrato['plan_sp_codigo'],
+                $contrato['esta_jubilado'],
+                $descuentoAgrupados
+            );
+
+            $info = [
+                'negro_bono_asistencia' => (float) ($dato['negro_bono_asistencia'] ?? 0),
+                'negro_bono_productividad' => $detalleHoras['total_bono_productividad'],
+                'dias_trabajados' => $detalleHoras['dias_trabajados'],
+                'faltas_injustificadas' => $detalleHoras['faltas_injustificadas'],
+                'horas_trabajadas' => $detalleHoras['horas_trabajadas'],
+                'negro_sueldo_bruto' => $sueldosPactados[$empleadoId],
+                'asignacion_familiar' => $empleado['asignacion_familiar'] ?? null,
+                'spp_snp' => $contrato['plan_sp_codigo'],//PRO F
+                'esta_jubilado' => $contrato['esta_jubilado'],
+                'dscto_afp_seguro' => $descuento['porcentaje'], //porcentaje || porcentaje_65 || 0 
+                'dscto_afp_seguro_explicacion' => $descuento['motivo'],
+            ];
+            PlanillaMensualDetalleServicio::guardar($info, $dato['id']);
+        }
     }
-    public static function calcularRemuneracionBasica(int $mes, int $anio): float
+    /**
+     * Helper para limpiar el loop principal de IFs de error
+     */
+    private function validarExistenciaIndices($id, $nombre, $horas, $contratos, $empleados): void
     {
-        // 1. Obtener la RMV vigente
-        $rmv = ConfiguracionHistorialServicio::valorVigente('rmv', $mes, $anio);
-
-        // 2. Calcular la cantidad de días del mes
-        $fecha = \Carbon\Carbon::createFromDate($anio, $mes, 1);
-        $diasDelMes = $fecha->daysInMonth;
-
-        // 3. Fórmula vigente (RMV / 30 × días trabajables del mes)
-        $remuneracion = ($rmv / 30) * $diasDelMes;
-
-        // 4. Devolver número con precisión
-        return round($remuneracion, 2);
+        if (!isset($horas[$id]))
+            throw new Exception("Faltan horas registradas para $nombre");
+        if (!isset($contratos[$id]))
+            throw new Exception("Falta contrato vigente para $nombre");
+        if (!isset($empleados[$id]))
+            throw new Exception("Faltan datos maestros para $nombre");
     }
-
 }

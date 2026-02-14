@@ -25,9 +25,7 @@
                     </div>
                 </x-flex>
                 <x-flex>
-                    <x-button type="button" @click="enviarYGenerarPlanilla2">
-                        <i class="fa fa-refresh"></i> Generar Planilla
-                    </x-button>
+
                     <x-button type="button" @click="$wire.set('mostrarDescuentosBeneficiosPlanilla',true)">
                         <i class="fa fa-refresh"></i> Cambiar Parámetros
                     </x-button>
@@ -51,7 +49,8 @@
     @endif
     @if ($planillaMensual)
         <div class="fixed bottom-6 right-6 z-40">
-            <x-button size="lg" @click="enviarYGenerarPlanilla">
+            {{-- enviarYGenerarPlanilla --}}
+            <x-button type="button" @click="enviarYGenerarPlanilla2">
                 <i class="fa fa-save"></i> Generar Planilla
             </x-button>
         </div>
@@ -108,6 +107,7 @@
             },
 
             applyColumnVisibility() {
+                /*
                 const plugin = this.hot.getPlugin('hiddenColumns');
 
                 if (this.verNegro) {
@@ -118,7 +118,7 @@
                     plugin.hideColumns(this.negroColumns);
                 }
 
-                this.hot.render();
+                this.hot.render();*/
             },
             initTable() {
                 const columns = this.generateColumns();
@@ -134,10 +134,10 @@
                     height: 'auto',
                     manualColumnResize: false,
                     manualRowResize: true,
-                    hiddenColumns: {
+                    /*hiddenColumns: {
                         columns: [0, 9, 10, 11, 12, 16, 18],
                         indicators: true
-                    },
+                    },*/
                     stretchH: 'all',
                     autoColumnSize: true,
                     fixedColumnsLeft: 2,
@@ -170,15 +170,7 @@
             },
             generateColumns() {
                 const isDark = this.isDark;
-                let columns = [
-                    /*{
-                                            data: 'documento',
-                                            type: 'text',
-                                            title: 'DNI',
-                                            className: '!text-center',
-                                            readOnly: true
-                                        },*/
-                    {
+                let columns = [{
                         data: "nombres",
                         type: 'text',
                         title: 'APELLIDOS Y NOMBRES',
@@ -194,16 +186,30 @@
                         readOnly: true
                     },
                     {
-                        data: 'remuneracion_basica',
-                        type: 'text',
-                        title: 'SUELDO.<br/> CONTRATO',
-                        className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
+                        data: 'dias_trabajados',
+                        type: 'numeric',
+                        title: 'DIAS<br/>CONSIR.',
+                        className: '!text-center',
+                        readOnly: true
+                    },
+                    {
+                        data: 'faltas_injustificadas',
+                        type: 'numeric',
+                        title: 'FALTAS<br/>INJUST.',
+                        className: '!text-center',
+                        readOnly: true
+                    },
+                    {
+                        data: 'horas_trabajadas',
+                        type: 'numeric',
+                        title: 'HORAS<br/>TRAB.',
+                        className: '!text-center',
                         readOnly: true
                     },
                     {
                         data: 'remuneracion_basica',
                         type: 'text',
-                        title: 'SUELDO.<br/> BÁSICO',
+                        title: 'SUELDO.<br/> CONTRATO',
                         className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
                         readOnly: true
                     },
@@ -215,20 +221,187 @@
                         readOnly: true
                     },
                     {
-                        data: 'dias_trabajados',
-                        type: 'numeric',
-                        title: 'DIAS<br/>TRAB.',
-                        className: '!text-center !bg-muted',
+                        data: 'blanco_descuento_por_faltas',
+                        type: 'text',
+                        title: 'DESC.<br/> FALTAS.',
+                        className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
                         readOnly: true
                     },
                     {
-                        data: 'horas_trabajadas',
-                        type: 'numeric',
-                        title: 'HORAS<br/>TRAB.',
-                        className: '!text-center !bg-muted',
+                        data: 'blanco_remuneracion_bruta',
+                        type: 'text',
+                        title: 'REMUN.<br/> BRUTA.',
+                        className: isDark ? '!text-right !bg-[#332f2c] font-bold' :
+                            '!text-right !bg-yellow-500 font-bold',
                         readOnly: true
                     },
+                    {
+                        data: 'spp_snp',
+                        type: 'text',
+                        className: '!text-center',
+                        title: 'ONP/<br/>AFP',
+                        renderer: function(instance, td, row, col, prop, value, cellProperties) {
+                            // Cambiar el color del texto basado en el valor de la celda
+                            const descuentoColores = @json($descuentoColores);
+                            console.log(isDark);
+                            let color = descuentoColores[value] ?? '#000000';
+                            td.style.color = isDark ? '#ffffff' : color;
+                            td.style.fontWeight = 'bold';
+                            td.innerHTML = value;
+                            td.className = "!text-center";
 
+                            return td;
+                        },
+                        readOnly: true
+                    },
+                    {
+                        data: 'dscto_afp_seguro',
+                        type: 'text',
+                        title: 'DSCTO.<br/>A.F.P.<br/>PRIMA %',
+                        className: '!text-right',
+                        renderer: function(instance, td, row, col, prop, value, cellProperties) {
+                            const descuentoColores = @json($descuentoColores);
+                            const dsctoAfpSeguro = instance.getDataAtRowProp(row, 'spp_snp');
+                            const explicacion = instance.getDataAtRowProp(row,
+                                'dscto_afp_seguro_explicacion');
+
+                            // Limpiar propiedades anteriores
+                            td.classList.remove('has-explanation');
+                            td.removeAttribute('title');
+
+                            let color = descuentoColores[dsctoAfpSeguro] ?? '#000000';
+                            td.style.color = isDark ? '#ffffff' : color;
+                            td.style.fontWeight = 'bold';
+                            td.className = '!text-right';
+                            td.innerHTML = value;
+
+                            // Solo agregar clase y título si hay explicación
+                            if (explicacion && explicacion !== '') {
+                                td.classList.add('has-explanation');
+                                td.setAttribute('title', explicacion);
+                            }
+
+                            return td;
+                        },
+
+                        readOnly: true
+                    },
+                    {
+                        data: 'blanco_descuento_onp_afp_prima',
+                        type: 'text',
+                        title: 'DSCTO.<br/>A.F.P.<br/>PRIMA',
+                        className: '!text-right',
+                        renderer: function(instance, td, row, col, prop, value, cellProperties) {
+                            const descuentoColores = @json($descuentoColores);
+                            const dsctoAfpSeguro = instance.getDataAtRowProp(row, 'spp_snp');
+                            const explicacion = instance.getDataAtRowProp(row,
+                                'dscto_afp_seguro_explicacion');
+
+                            // Limpiar propiedades anteriores
+                            td.classList.remove('has-explanation');
+                            td.removeAttribute('title');
+
+                            let color = descuentoColores[dsctoAfpSeguro] ?? '#000000';
+                            td.style.color = isDark ? '#ffffff' : color;
+                            td.style.fontWeight = 'bold';
+                            td.className = '!text-right';
+                            td.innerHTML = value;
+
+                            // Solo agregar clase y título si hay explicación
+                            if (explicacion && explicacion !== '') {
+                                td.classList.add('has-explanation');
+                                td.setAttribute('title', explicacion);
+                            }
+
+                            return td;
+                        },
+
+                        readOnly: true
+                    },
+                    {
+                        data: 'beta30',
+                        type: 'text',
+                        title: 'BETA<br/> 30%',
+                        className: '!text-right',
+                        readOnly: true
+                    },
+                    {
+                        data: 'blanco_beta30',
+                        type: 'text',
+                        title: 'BETA<br/> 30% TOTAL',
+                        className: '!text-right',
+                        readOnly: true
+                    },
+                    {
+                        data: 'cts_porcentaje',
+                        type: 'text',
+                        title: 'CTS %',
+                        className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
+                        readOnly: true
+                    },
+                    {
+                        data: 'blanco_cts',
+                        type: 'text',
+                        title: 'CTS',
+                        className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
+                        readOnly: true
+                    },
+                    {
+                        data: 'gratificaciones',
+                        type: 'text',
+                        title: 'GRATIFICA<br/>CIONES %',
+                        className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
+                        readOnly: true
+                    },
+                    {
+                        data: 'blanco_gratificaciones',
+                        type: 'text',
+                        title: 'GRATIFICA<br/>CIONES',
+                        className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
+                        readOnly: true
+                    },
+                    {
+                        data: 'blanco_essalud_gratificaciones',
+                        type: 'text',
+                        title: 'ESSALUD<br/>GRATIFICA<br/>CIONES',
+                        className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
+                        readOnly: true
+                    },
+                    {
+                        data: 'blanco_essalud',
+                        type: 'text',
+                        title: '0804<br/>ESSALUD',
+                        className: isDark ? '!text-right !bg-indigo-900' : '!text-right !bg-yellow-300',
+                        readOnly: true
+                    },
+                    {
+                        data: 'blanco_vida_ley',
+                        type: 'text',
+                        title: '0803<br/>VIDA<br/> LEY',
+                        className: isDark ? '!text-right !bg-indigo-900' : '!text-right !bg-yellow-300',
+                        readOnly: true
+                    },
+                    {
+                        data: 'blanco_pension_sctr',
+                        type: 'text',
+                        title: '0805<br/>PENS.<br/> SCTR',
+                        className: isDark ? '!text-right !bg-indigo-900' : '!text-right !bg-yellow-300',
+                        readOnly: true
+                    },
+                    {
+                        data: 'blanco_essalud_eps',
+                        type: 'text',
+                        title: '0810<br/>EPS',
+                        className: isDark ? '!text-right !bg-indigo-900' : '!text-right !bg-yellow-300',
+                        readOnly: true
+                    },
+                    {
+                        data: 'blanco_sueldo_neto',
+                        type: 'text',
+                        title: 'SUELDO<br/>NETO',
+                        className: isDark ? '!text-right !bg-red-900' : '!text-right !bg-red-300',
+                        readOnly: true
+                    },
                     {
                         data: 'negro_sueldo_bruto',
                         type: 'text',
@@ -267,25 +440,7 @@
                         readOnly: true
                     }
                     //empleado_grupo_color
-                    /*{
-                        data: 'spp_snp',
-                        type: 'text',
-                        className: '!text-center',
-                        title: 'SPP/<br/>SNP',
-                        renderer: function(instance, td, row, col, prop, value, cellProperties) {
-                            // Cambiar el color del texto basado en el valor de la celda
-                            const descuentoColores = @json($descuentoColores);
-                            console.log(isDark);
-                            let color = descuentoColores[value] ?? '#000000';
-                            td.style.color = isDark ? '#ffffff' : color;
-                            td.style.fontWeight = 'bold';
-                            td.innerHTML = value;
-                            td.className = "!text-center";
-
-                            return td;
-                        },
-                        readOnly: true
-                    },
+                    /*
                     {
                         data: 'remuneracion_basica',
                         type: 'text',
@@ -314,38 +469,7 @@
                         className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-[#C4BD97]',
                         readOnly: true
                     },
-                    {
-                        data: 'dscto_afp_seguro',
-                        type: 'text',
-                        title: 'DSCTO.<br/>A.F.P.<br/>PRIMA',
-                        className: '!text-right',
-                        renderer: function(instance, td, row, col, prop, value, cellProperties) {
-                            const descuentoColores = @json($descuentoColores);
-                            const dsctoAfpSeguro = instance.getDataAtRowProp(row, 'spp_snp');
-                            const explicacion = instance.getDataAtRowProp(row,
-                                'dscto_afp_seguro_explicacion');
-
-                            // Limpiar propiedades anteriores
-                            td.classList.remove('has-explanation');
-                            td.removeAttribute('title');
-
-                            let color = descuentoColores[dsctoAfpSeguro] ?? '#000000';
-                            td.style.color = isDark ? '#ffffff' : color;
-                            td.style.fontWeight = 'bold';
-                            td.className = '!text-right';
-                            td.innerHTML = value;
-
-                            // Solo agregar clase y título si hay explicación
-                            if (explicacion && explicacion !== '') {
-                                td.classList.add('has-explanation');
-                                td.setAttribute('title', explicacion);
-                            }
-
-                            return td;
-                        },
-
-                        readOnly: true
-                    },
+                    
                     {
                         data: 'total_horas',
                         type: 'text',
@@ -367,34 +491,7 @@
                         readOnly: true
                     },
                     
-                    {
-                        data: 'beta_30',
-                        type: 'text',
-                        title: 'BETA<br/> 30%',
-                        className: '!text-right',
-                        readOnly: true
-                    },
-                    {
-                        data: 'essalud',
-                        type: 'text',
-                        title: 'ESSALUD',
-                        className: '!text-right',
-                        readOnly: true
-                    },
-                    {
-                        data: 'vida_ley',
-                        type: 'text',
-                        title: 'VIDA<br/> LEY',
-                        className: '!text-right',
-                        readOnly: true
-                    },
-                    {
-                        data: 'pension_sctr',
-                        type: 'text',
-                        title: 'PENS.<br/> SCTR',
-                        className: '!text-right',
-                        readOnly: true
-                    },
+                    
                     {
                         data: 'essalud_eps',
                         type: 'text',

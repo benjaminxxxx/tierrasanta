@@ -7,6 +7,10 @@ use InvalidArgumentException;
 
 class CalculoHelper
 {
+    public static function faltasInjustificadas($totalHoras)
+    {
+        return $totalHoras == 0 ? 1 : 0;
+    }
     /**
      * Calcula el monto real que el trabajador debe recibir basado en su 
      * sueldo pactado y las horas efectivamente trabajadas.

@@ -30,4 +30,5 @@
         class="w-auto"
         {{ $attributes->except('wire:model') }}
     />
+    
 </div>

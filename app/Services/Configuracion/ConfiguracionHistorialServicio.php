@@ -8,6 +8,35 @@ use Illuminate\Validation\ValidationException;
 
 class ConfiguracionHistorialServicio
 {
+    /**
+     * Obtiene múltiples valores vigentes en una sola consulta.
+     * Lanza excepción si falta algún código obligatorio.
+     */
+    public static function obtenerValoresVigentes(array $codigos, int $mes, int $anio): array
+    {
+        $fechaConsulta = sprintf('%04d-%02d-01', $anio, $mes);
+
+        $registros = ConfiguracionHistorial::whereIn('configuracion_codigo', $codigos)
+            ->where('fecha_inicio', '<=', $fechaConsulta)
+            ->where(function ($q) use ($fechaConsulta) {
+                $q->whereNull('fecha_fin')
+                    ->orWhere('fecha_fin', '>=', $fechaConsulta);
+            })
+            ->orderBy('fecha_inicio', 'desc')
+            ->get()
+            ->unique('configuracion_codigo') // Nos quedamos con el más reciente de cada código
+            ->pluck('valor', 'configuracion_codigo')
+            ->toArray();
+
+        // Validar que todos los códigos solicitados existan
+        foreach ($codigos as $codigo) {
+            if (!isset($registros[$codigo])) {
+                throw new \Exception("Falta configuración obligatoria: '{$codigo}' para el periodo {$mes}/{$anio}.");
+            }
+        }
+
+        return $registros;
+    }
     public static function valorVigente(string $codigo, int $mes, int $anio): float
     {
         $fechaConsulta = sprintf('%04d-%02d-01', $anio, $mes);
@@ -16,7 +45,7 @@ class ConfiguracionHistorialServicio
             ->where('fecha_inicio', '<=', $fechaConsulta)
             ->where(function ($q) use ($fechaConsulta) {
                 $q->whereNull('fecha_fin')
-                  ->orWhere('fecha_fin', '>=', $fechaConsulta);
+                    ->orWhere('fecha_fin', '>=', $fechaConsulta);
             })
             ->orderBy('fecha_inicio', 'desc')
             ->first();

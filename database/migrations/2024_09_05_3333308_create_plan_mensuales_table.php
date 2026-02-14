@@ -24,6 +24,7 @@ return new class extends Migration
             $table->decimal('cts_porcentaje', 10, 2)->nullable();
             $table->decimal('gratificaciones', 10, 2)->nullable();
             $table->decimal('essalud_gratificaciones', 10, 2)->nullable();
+            $table->decimal('cts', 10, 2)->nullable();
             $table->decimal('rmv', 10, 2)->nullable();
             $table->decimal('beta30', 10, 2)->nullable();
             $table->decimal('essalud', 10, 2)->nullable();

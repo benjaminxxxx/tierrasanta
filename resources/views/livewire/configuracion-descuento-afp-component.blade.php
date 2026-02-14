@@ -1,8 +1,7 @@
 <div>
-    <x-loading wire:loading />
     <div class="md:flex gap-5">
         <div class="flex-1">
-            <x-card2>
+            <x-card>
                 <div class="mt-6">
                     <x-h2>Descuentos de AFP y el Sistema Nacional de Pensiones</x-h2>
                     <x-label>
@@ -74,7 +73,7 @@
                         </x-button>
                     </x-flex>
                 @endif
-            </x-card2>
+            </x-card>
         </div>
         <div class="md:w-[32rem]">
             <x-h3 class="mb-3">
@@ -85,10 +84,10 @@
                     @foreach ($fechasRegistradas as $fechasRegistrada)
                         @php
 
-                            $fecha_actual_estilo = $fechasRegistrada == $fecha_inicio ? 'text-primaryText bg-primary' : ''; // Ajusta esto según tu lógica
+                            $fecha_actual_estilo = $fechasRegistrada == $fecha_inicio ? 'text-muted-foreground bg-muted' : ''; // Ajusta esto según tu lógica
                         @endphp
                         <a href="#" wire:click.prevent="cambiarFechaA('{{ $fechasRegistrada }}')" aria-current="true"
-                            class="block w-full px-4 py-3 {{$fecha_actual_estilo}} text-center font-bold border-b border-gray-200 rounded-t-lg cursor-pointer dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
+                            class="block w-full px-4 py-3 {{$fecha_actual_estilo}} text-center font-bold border border-border rounded cursor-pointer">
                             {{ $fechasRegistrada }}
                         </a>
                     @endforeach
@@ -96,4 +95,6 @@
             </x-card>
         </div>
     </div>
+    
+    <x-loading wire:loading />
 </div>

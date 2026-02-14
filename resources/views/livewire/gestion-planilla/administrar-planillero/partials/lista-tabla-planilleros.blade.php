@@ -1,4 +1,4 @@
-<x-card2 class="mt-5">
+<x-card class="mt-5">
     <x-table>
         <x-slot name="thead">
 
@@ -95,12 +95,12 @@
                 @endforeach
             @else
                 <x-tr>
-                    <x-td colspan="4">No hay Empleados registrados.</x-td>
+                    <x-td colspan="100%">No hay Empleados registrados.</x-td>
                 </x-tr>
             @endif
         </x-slot>
     </x-table>
-</x-card2>
+</x-card>
 <div class="mt-5">
     {{ $empleados->links() }}
 </div>

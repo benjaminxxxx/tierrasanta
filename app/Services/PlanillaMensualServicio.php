@@ -4,11 +4,44 @@ namespace App\Services;
 
 use App\Models\PlanMensual;
 use App\Models\PlanMensualDetalle;
+use App\Services\Configuracion\ConfiguracionHistorialServicio;
 use App\Services\Excel\Planilla\ExcelPlanillaMensual;
 use Illuminate\Support\Carbon;
 
 class PlanillaMensualServicio
 {
+    public static function guardarConfiguracionDesdeParametros($mes, $anio)
+    {
+        $codigosObligatorios = [
+            'beta30',
+            'cts_porcentaje',
+            'rmv',
+            'gratificaciones',
+            'essalud_gratificaciones',
+            'essalud',
+            'vida_ley',
+            'pension_sctr',
+            'essalud_eps'
+        ];
+
+        $config = ConfiguracionHistorialServicio::obtenerValoresVigentes($codigosObligatorios, $mes, $anio);
+
+        // 2. ACTUALIZAR O CREAR EL PADRE (PlanMensual) con los parámetros de ese mes
+        PlanMensual::updateOrCreate(
+            ['mes' => $mes, 'anio' => $anio],
+            [
+                'rmv' => $config['rmv'],
+                'beta30' => $config['beta30'],
+                'cts_porcentaje' => $config['cts_porcentaje'],
+                'gratificaciones' => $config['gratificaciones'],
+                'essalud_gratificaciones' => $config['essalud_gratificaciones'],
+                'essalud' => $config['essalud'],
+                'vida_ley' => $config['vida_ley'],
+                'pension_sctr' => $config['pension_sctr'],
+                'essalud_eps' => $config['essalud_eps'],
+            ]
+        );
+    }
     public function generarExcel($params)
     {
         return app(ExcelPlanillaMensual::class)->generarPlanillaMensual($params);
@@ -31,7 +64,7 @@ class PlanillaMensualServicio
 
         // Eliminar solo los detalles cuyos empleados ya no están en la nueva lista
         $detallesAEliminar = $detallesActuales->whereNotIn('plan_empleado_id', $nuevosIds);
-      
+
         if ($detallesAEliminar->isNotEmpty()) {
             PlanMensualDetalle::whereIn('id', $detallesAEliminar->pluck('id'))->delete();
         }
@@ -60,7 +93,7 @@ class PlanillaMensualServicio
         $carbon = Carbon::parse($fecha);
         return $this->obtenerPlanillaXMesAnio($carbon->month, $carbon->year);
     }
-    public function obtenerPlanillaXMesAnio($mes, $anio,$orden='orden')
+    public function obtenerPlanillaXMesAnio($mes, $anio, $orden = 'orden')
     {
         return PlanMensualDetalle::whereHas('planillaMensual', function ($q) use ($mes, $anio) {
             $q->where('mes', $mes)

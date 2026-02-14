@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services;
+use App\Models\PlanEmpleado;
 use App\Models\PlanMensualDetalle;
 use App\Models\PlanSueldo;
 use DB;
@@ -43,6 +44,14 @@ class PlanSueldoServicio
         foreach ($empleados as $emp) {
             if (!$sueldos->has($emp->plan_empleado_id)) {
 
+                //buscar primero si el id existe:
+                $empleado = PlanEmpleado::find($emp->plan_empleado_id);
+                if (!$empleado) {
+                    throw new Exception(
+                        "ERROR CRÍTICO: El empleado {$emp->nombres} ({$emp->documento}) " .
+                        "ya no esta registrado con el mismo identificador, debe reasignar id"
+                    );
+                }
                 throw new Exception(
                     "ERROR CRÍTICO: El empleado {$emp->nombres} ({$emp->documento}) " .
                     "no tiene un sueldo registrado vigente al {$fechaLimite->format('d/m/Y')}. " .

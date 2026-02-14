@@ -85,7 +85,6 @@ class PlanillaBlancoDetalleComponent extends Component
         if (!$this->planillaMensual) {
             return;
         }
-        $this->planillaMensualDetalle = $this->planillaMensual->detalle;
 
         $this->diasLaborables = $this->planillaMensual->dias_laborables;
         $this->totalHoras = $this->planillaMensual->total_horas;
@@ -104,94 +103,51 @@ class PlanillaBlancoDetalleComponent extends Component
         $this->essaludEps = $this->planillaMensual->essalud_eps;
         $this->porcentajeConstante = $this->planillaMensual->porcentaje_constante;
         $this->remBasicaEssalud = $this->planillaMensual->rem_basica_essalud;
-        $this->planillaMensualDetalle = $this->planillaMensual->detalle;
+        $this->planillaMensualDetalle = $this->planillaMensual->detalle()->with(['planillaMensual'])->get()->map(function ($detalle) {
+            // Convertir a array primero
+            $data = $detalle->toArray();
+            
+            // Ahora modificar el array
+            $data['remuneracion_basica'] = round($data['remuneracion_basica'], 2);
+            $data['asignacion_familiar'] = round($data['asignacion_familiar'], 2);
+            $data['blanco_descuento_por_faltas'] = round($data['blanco_descuento_por_faltas'], 2);
+            $data['blanco_remuneracion_bruta'] = round($data['blanco_remuneracion_bruta'], 2);
+            $data['blanco_descuento_onp_afp_prima'] = round($data['blanco_descuento_onp_afp_prima'], 2);
+            $data['cts_porcentaje'] = round($data['planilla_mensual']['cts_porcentaje'], 2) . '%';
+            $data['gratificaciones'] = round($data['planilla_mensual']['gratificaciones'], 2) . '%';
+            $data['beta30'] = round($data['planilla_mensual']['beta30'], 2);
+            $data['blanco_cts'] = round($data['blanco_cts'], 2);
+            $data['blanco_gratificaciones'] = round($data['blanco_gratificaciones'], 2);
+            $data['blanco_gratificaciones'] = round($data['blanco_gratificaciones'], 2);
+            $data['blanco_essalud_gratificaciones'] = round($data['blanco_essalud_gratificaciones'], 2);
+
+            //GASTOS DEL EMPLEADOR
+            $data['blanco_essalud'] = round($data['blanco_essalud'], 2);
+            $data['blanco_vida_ley'] = round($data['blanco_vida_ley'], 2);
+            $data['blanco_pension_sctr'] = round($data['blanco_pension_sctr'], 2);
+            $data['blanco_essalud_eps'] = round($data['blanco_essalud_eps'], 2);
+
+            //TOTALES
+            $data['blanco_sueldo_neto'] = round($data['blanco_sueldo_neto'], 2);
+    
+            return $data;
+        });
 
     }
 
 
-    public function guardarPlanillaDatos($option = 1)
+    public function guardarPlanillaDatos()
     {
         if (!$this->planillaMensual) {
             return;
         }
 
         try {
-            if ($option == 2) {
-                // 1️⃣ Traer datos desde configuración
-                $configuracionDatos = Configuracion::whereIn('codigo', [
-                    'asignacion_familiar',
-                    'cts_porcentaje',
-                    'gratificaciones',
-                    'essalud_gratificaciones',
-                    'rmv',
-                    'beta30',
-                    'essalud',
-                    'vida_ley',
-                    'vida_ley_porcentaje',
-                    'pension_sctr',
-                    'pension_sctr_porcentaje',
-                    'essalud_eps',
-                    'porcentaje_constante',
-                    'rem_basica_essalud'
-                ])->pluck('valor', 'codigo');
-
-                // 2️⃣ Asignar valores desde configuración a las variables locales
-                foreach ($configuracionDatos as $codigo => $valor) {
-                    $propiedad = Str::camel($codigo);
-                    if (property_exists($this, $propiedad)) {
-                        $this->$propiedad = $valor;
-                    }
-                }
-                return;
-            }
-
-            // 3️⃣ Guardar en la tabla planillas_blanco
             $this->planillaMensual->update([
                 'dias_laborables' => $this->diasLaborables,
                 'total_horas' => $this->totalHoras,
-                'factor_remuneracion_basica' => $this->factorRemuneracionBasica,
-                'asignacion_familiar' => $this->asignacionFamiliar,
-                'cts_porcentaje' => $this->ctsPorcentaje,
-                'gratificaciones' => $this->gratificaciones,
-                'essalud_gratificaciones' => $this->essaludGratificaciones,
-                'rmv' => $this->rmv,
-                'beta30' => $this->beta30,
-                'essalud' => $this->essalud,
-                'vida_ley' => $this->vidaLey,
-                'vida_ley_porcentaje' => $this->vidaLeyPorcentaje,
-                'pension_sctr' => $this->pensionSctr,
-                'pension_sctr_porcentaje' => $this->pensionSctrPorcentaje,
-                'essalud_eps' => $this->essaludEps,
-                'porcentaje_constante' => $this->porcentajeConstante,
-                'rem_basica_essalud' => $this->remBasicaEssalud,
             ]);
 
-            if ($option == 3) {
-                // 4️⃣ Guardar también en configuración como predeterminado
-                $configuracionDatos = [
-                    'asignacion_familiar' => $this->asignacionFamiliar,
-                    'cts_porcentaje' => $this->ctsPorcentaje,
-                    'gratificaciones' => $this->gratificaciones,
-                    'essalud_gratificaciones' => $this->essaludGratificaciones,
-                    'rmv' => $this->rmv,
-                    'beta30' => $this->beta30,
-                    'essalud' => $this->essalud,
-                    'vida_ley' => $this->vidaLey,
-                    'vida_ley_porcentaje' => $this->vidaLeyPorcentaje,
-                    'pension_sctr' => $this->pensionSctr,
-                    'pension_sctr_porcentaje' => $this->pensionSctrPorcentaje,
-                    'essalud_eps' => $this->essaludEps,
-                    'porcentaje_constante' => $this->porcentajeConstante,
-                    'rem_basica_essalud' => $this->remBasicaEssalud,
-                ];
-
-                foreach ($configuracionDatos as $codigo => $valor) {
-                    Configuracion::updateOrCreate(
-                        ['codigo' => $codigo],
-                        ['valor' => $valor]
-                    );
-                }
-            }
             $this->mostrarDescuentosBeneficiosPlanilla = false;
             $this->alert("success", "Información actualizada con éxito");
         } catch (\Throwable $th) {
@@ -203,13 +159,14 @@ class PlanillaBlancoDetalleComponent extends Component
     {
         try {
             $this->obtenerInformacionMensual();
-            $this->dispatch("renderTable", data:$this->planillaMensualDetalle);
+            $this->dispatch("renderTable", data: $this->planillaMensualDetalle);
         } catch (QueryException $th) {
             throw $th;
         }
     }
     public function generarPlanilla()
     {
+        /*
         try {
 
             $parametros = [
@@ -239,9 +196,9 @@ class PlanillaBlancoDetalleComponent extends Component
                 'essaludEps' => $this->essaludEps,
                 'rem_basica_essalud' => $this->remBasicaEssalud,
             ];
-            
+
             $excelPath = app(GestionPlanilla::class)->generarPlanilla($parametros);
-            
+
             $this->planillaMensual->excel = $excelPath;
             $this->planillaMensual->save();
 
@@ -253,11 +210,12 @@ class PlanillaBlancoDetalleComponent extends Component
             $this->alert('success', "Planilla generada correctamente");
         } catch (QueryException $th) {
             throw $th;
-        }
+        }*/
     }
-    public function generarPlanillaMensual2($datos){
+    public function generarPlanillaMensual2($datos)
+    {
         try {
-            app(GenerarPlanillaMensualProceso::class)->ejecutar($datos,$this->mes,$this->anio);
+            app(GenerarPlanillaMensualProceso::class)->ejecutar($datos, $this->mes, $this->anio);
             $this->refrescarPlanilla();
             $this->alert('success', 'Planilla Generada Correctamente');
         } catch (\Throwable $th) {
@@ -278,7 +236,7 @@ class PlanillaBlancoDetalleComponent extends Component
             $dataIds = collect($datos)->pluck('plan_empleado_id')->unique()->toArray();
             $sueldosPactados = app(PlanSueldoServicio::class)->obtenerSueldosPorMes($dataIds, $this->mes, $this->anio);
             $totalHorasBaseMes = $this->totalHoras;
-            
+
             //guardamos las bonificaciones
             foreach ($datos as $data) {
                 $empleadoId = $data['plan_empleado_id'];
@@ -291,7 +249,7 @@ class PlanillaBlancoDetalleComponent extends Component
                     $horasTrabajadas,
                     $totalHorasBaseMes
                 );
-                
+
                 PlanMensualDetalle::updateOrCreate(
                     [
                         'id' => $data['id'],

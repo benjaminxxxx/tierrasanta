@@ -1,9 +1,9 @@
 <div>
     <x-flex class="justify-between">
         <x-flex>
-            <x-h3>
+            <x-title>
                 Administración de empleados
-            </x-h3>
+            </x-title>
             <x-button type="button" @click="$wire.dispatch('abrirFormularioNuevoEmpleado')">
                 <i class="fa fa-plus"></i> Nuevo Empleado
             </x-button>

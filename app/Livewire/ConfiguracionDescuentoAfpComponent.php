@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Configuracion;
 use App\Models\PlanDescuentoSp;
 use App\Models\PlanDescuentoSpHistorico;
+use App\Services\Configuracion\ConfiguracionHistorialServicio;
 use Carbon\Carbon;
 use Livewire\Component;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -133,8 +134,12 @@ class ConfiguracionDescuentoAfpComponent extends Component
     }
     protected function actualizarDescuentoSNP(PlanDescuentoSp $descuento)
     {
-        $descuentoSnp = Configuracion::find('descuento_snp');
-        $valor = $descuentoSnp ? $descuentoSnp->valor : 0;
+        $anio = (int)Carbon::parse($this->fecha_inicio)->format('Y');
+        $mes = (int)Carbon::parse($this->fecha_inicio)->format('m');
+        
+        $descuentoSnp = ConfiguracionHistorialServicio::valorVigente('descuento_snp', $mes, $anio);
+        
+        
 
         // Obtener la fecha de inicio para el histórico
         $fecha = Carbon::createFromFormat('Y-m', $this->fecha_inicio)->startOfMonth()->format('Y-m-d');
@@ -146,8 +151,8 @@ class ConfiguracionDescuentoAfpComponent extends Component
                 'descuento_codigo' => $descuento->codigo,
             ],
             [
-                'porcentaje' => $valor,
-                'porcentaje_65' => $valor,
+                'porcentaje' => $descuentoSnp,
+                'porcentaje_65' => $descuentoSnp,
             ]
         );
     }

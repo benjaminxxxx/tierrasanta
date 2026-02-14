@@ -2,7 +2,7 @@
     
         <!-- Botón para abrir el diálogo de archivos -->
         <a @click.prevent="openarchivoBackupHoyDialog()" href="#"
-            class="block px-4 py-2 hover:bg-bodydark1 hover:text-primary  whitespace-nowrap">
+            class="block px-4 py-2 whitespace-nowrap">
             Restaurar Backup {{ $fecha }}
         </a>
         <input type="file"

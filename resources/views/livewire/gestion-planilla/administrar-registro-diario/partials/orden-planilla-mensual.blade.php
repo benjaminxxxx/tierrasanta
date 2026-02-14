@@ -48,7 +48,7 @@
                                                 <i class="fa fa-arrow-down"></i>
                                             </x-button>
                                             <x-button variant="danger" type="button" @click="quitar(index)">
-                                                <i class="fa fa-trash"></i> Quitar
+                                                <i class="fa fa-trash"></i>
                                             </x-button>
                                         </x-flex>
                                     </x-td>
