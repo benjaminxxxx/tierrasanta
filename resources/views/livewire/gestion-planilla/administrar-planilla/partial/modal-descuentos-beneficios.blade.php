@@ -4,10 +4,10 @@
     </x-slot>
 
     <x-slot name="content">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 space-y-2 mt-4">
-            <x-input label="Días Laborables" wire:model="diasLaborables" size="xs"
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <x-input label="Días Laborables" wire:model="diasLaborables"
                 @input="calcularTotalHoras(event.target.value)" />
-            <x-input label="Total Horas" wire:model="totalHoras" size="xs" />
+            <x-input label="Total Horas" wire:model="totalHoras" />
         </div>
     </x-slot>
 

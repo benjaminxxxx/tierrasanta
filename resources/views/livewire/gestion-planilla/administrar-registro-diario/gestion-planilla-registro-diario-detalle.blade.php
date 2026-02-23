@@ -102,8 +102,8 @@
                 const container = this.$refs.tableContainer;
                 const hot = new Handsontable(container, {
                     data: this.tableData,
-                    colHeaders: true,
                     themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
+                    colHeaders: true,
                     rowHeaders: true,
                     columns: columns,
                     width: '100%',

@@ -104,32 +104,40 @@ class PlanillaBlancoDetalleComponent extends Component
         $this->porcentajeConstante = $this->planillaMensual->porcentaje_constante;
         $this->remBasicaEssalud = $this->planillaMensual->rem_basica_essalud;
         $this->planillaMensualDetalle = $this->planillaMensual->detalle()->with(['planillaMensual'])->get()->map(function ($detalle) {
-            // Convertir a array primero
             $data = $detalle->toArray();
-            
-            // Ahora modificar el array
-            $data['remuneracion_basica'] = round($data['remuneracion_basica'], 2);
-            $data['asignacion_familiar'] = round($data['asignacion_familiar'], 2);
-            $data['blanco_descuento_por_faltas'] = round($data['blanco_descuento_por_faltas'], 2);
-            $data['blanco_remuneracion_bruta'] = round($data['blanco_remuneracion_bruta'], 2);
-            $data['blanco_descuento_onp_afp_prima'] = round($data['blanco_descuento_onp_afp_prima'], 2);
-            $data['cts_porcentaje'] = round($data['planilla_mensual']['cts_porcentaje'], 2) . '%';
-            $data['gratificaciones'] = round($data['planilla_mensual']['gratificaciones'], 2) . '%';
-            $data['beta30'] = round($data['planilla_mensual']['beta30'], 2);
-            $data['blanco_cts'] = round($data['blanco_cts'], 2);
-            $data['blanco_gratificaciones'] = round($data['blanco_gratificaciones'], 2);
-            $data['blanco_gratificaciones'] = round($data['blanco_gratificaciones'], 2);
-            $data['blanco_essalud_gratificaciones'] = round($data['blanco_essalud_gratificaciones'], 2);
+            $planilla = $detalle->planillaMensual;
 
-            //GASTOS DEL EMPLEADOR
-            $data['blanco_essalud'] = round($data['blanco_essalud'], 2);
-            $data['blanco_vida_ley'] = round($data['blanco_vida_ley'], 2);
-            $data['blanco_pension_sctr'] = round($data['blanco_pension_sctr'], 2);
-            $data['blanco_essalud_eps'] = round($data['blanco_essalud_eps'], 2);
+            // Campos simples a redondear
+            $campos = [
+                'remuneracion_basica',
+                'asignacion_familiar',
+                //'blanco_descuento_por_faltas',
+                'blanco_remuneracion_bruta',
+                'blanco_descuento_onp_afp_prima',
+                'blanco_cts',
+                'blanco_gratificaciones',
+                'blanco_essalud_gratificaciones',
+                'blanco_essalud',
+                'blanco_beta30',
+                'blanco_vida_ley',
+                'blanco_pension_sctr',
+                'blanco_essalud_eps',
+                'blanco_sueldo_neto',
 
-            //TOTALES
-            $data['blanco_sueldo_neto'] = round($data['blanco_sueldo_neto'], 2);
-    
+                'sueldo_negro_total',
+                'costo_total_blanco',
+                'costo_total_negro',
+            ];
+
+            foreach ($campos as $campo) {
+                $data[$campo] = round($data[$campo] ?? 0, 2);
+            }
+
+            // Campos con formato especial (vienen del padre)
+            $data['cts_porcentaje'] = round($planilla->cts_porcentaje, 2) . '%';
+            $data['gratificaciones'] = round($planilla->gratificaciones, 2) . '%';
+            $data['beta30'] = round($planilla->beta30, 2);
+
             return $data;
         });
 

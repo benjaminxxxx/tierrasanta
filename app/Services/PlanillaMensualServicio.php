@@ -66,6 +66,25 @@ class PlanillaMensualServicio
         $detallesAEliminar = $detallesActuales->whereNotIn('plan_empleado_id', $nuevosIds);
 
         if ($detallesAEliminar->isNotEmpty()) {
+
+            // Cargar relaciones para evitar n+1
+            $detallesAEliminar->load('registrosDiarios');
+
+            foreach ($detallesAEliminar as $detalle) {
+
+                if ($detalle->registrosDiarios->isNotEmpty()) {
+
+                    // Tomar la primera fecha con registros diarios
+                    $fecha = $detalle->registrosDiarios->first()->fecha;
+                    
+                    throw new \Exception(
+                        "El empleado {$detalle->nombres} tiene registros diarios en la fecha {$fecha}. " .
+                        "No se puede eliminar porque ya no está en la planilla."
+                    );
+                }
+            }
+
+            // Si llegamos aquí, NINGÚN detalle tiene registros → se puede eliminar
             PlanMensualDetalle::whereIn('id', $detallesAEliminar->pluck('id'))->delete();
         }
 
@@ -80,9 +99,9 @@ class PlanillaMensualServicio
                 [
                     'nombres' => $empleado['nombres'] ?? null,
                     'documento' => $empleado['documento'] ?? null,
-                    'grupo' => $empleado['grupo'] ?? null,
-                    'orden' => $indiceOrden + 1,
-                    'spp_snp' => $empleado['spp_snp'],
+                    //'grupo' => $empleado['grupo'] ?? null,
+                    'orden' => $empleado['orden'],
+                    //'spp_snp' => $empleado['spp_snp'],
                 ]
             );
         }

@@ -1,5 +1,5 @@
 <div>
-    <x-button variant="secondary" wire:click="verLabores"><i class="fa fa-eye"></i> Ver Labores</x-button>
+    
     <x-dialog-modal wire:model="mostrarFormularioLabores" maxWidth="full">
         <x-slot name="title">
             <div class="flex items-center justify-between">

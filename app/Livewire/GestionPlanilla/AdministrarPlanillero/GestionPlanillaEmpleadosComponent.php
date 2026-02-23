@@ -20,59 +20,41 @@ class GestionPlanillaEmpleadosComponent extends Component
     public $planGenero;
     public $planEliminados;
     public $planTipoPlanilla;
-    public $mostrarFormularioOrdenEmpleados = false;
     public $mostrarFormularioCambioSueldos = false;
-    public $empleadosOrdenados = [];
     public $mesVigencia;
     public $anioVigencia;
     public ?string $estadoContrato = null;
     // valores: null | 'con' | 'sin'
-
+    protected $resetOnUpdate = [
+        'filtro',
+        'planCargoId',
+        'planDescuentoSpCodigo',
+        'planGrupoCodigo',
+        'planTipoPlanilla',
+        'planGenero',
+        'planEliminados',
+    ];
     protected $listeners = ['empleadoGuardado' => '$refresh'];
     public function mount()
     {
         $this->mesVigencia = Carbon::now()->format('m');
         $this->anioVigencia = Carbon::now()->format('Y');
     }
-    public function ordenarPlanillaAgraria()
-    {
-
-        try {
-            $empleado = app(GestionPlanillaEmpleados::class)->obtenerPlanillaAgrariaActual();
-            if ($empleado->count() == 0) {
-                throw new Exception("No hay registros con contrato agrario aún");
-            }
-            $this->mostrarFormularioOrdenEmpleados = true;
-            $this->empleadosOrdenados = $empleado->toArray();
-
-        } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
-        }
-    }
-    public function guardarOrdenEmpleados()
-    {
-
-        try {
-            app(GestionPlanillaEmpleados::class)->guardarOrdenPlanilla($this->empleadosOrdenados);
-            $this->mostrarFormularioOrdenEmpleados = false;
-            $this->alert('success', 'Planilla Ordenada Correctamente');
-        } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
-        }
-    }
-    public function eliminarEmpleado($uuid)
+    public function eliminarEmpleado($id)
     {
         try {
-            app(GestionPlanillaEmpleados::class)->eliminarEmpleado($uuid);
+            app(GestionPlanillaEmpleados::class)->eliminarEmpleado($id);
+            $this->resetPage();
             $this->alert('success', 'Eliminado correctamente');
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }
     }
-    public function restaurarEmpleado($uuid)
+    public function restaurarEmpleado($id)
     {
         try {
-            app(GestionPlanillaEmpleados::class)->restaurarEmpleado($uuid);
+            app(GestionPlanillaEmpleados::class)->restaurarEmpleado($id);
+            $this->resetPage();
             $this->alert('success', 'Restaurado correctamente');
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
@@ -120,8 +102,15 @@ class GestionPlanillaEmpleadosComponent extends Component
         }
 
     }
+    public function updated($propertyName)
+    {
+        if (in_array($propertyName, $this->resetOnUpdate, true)) {
+            $this->resetPage();
+        }
+    }
     public function updatedEstadoContrato($value)
     {
+        $this->resetPage();
         if ($value === 'sin') {
             $this->planCargoId = null;
             $this->planDescuentoSpCodigo = null;

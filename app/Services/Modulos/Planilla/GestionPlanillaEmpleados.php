@@ -17,14 +17,14 @@ class GestionPlanillaEmpleados
         $anio  = Carbon::now()->format('Y');
         return app(PlanillaEmpleadoServicio::class)->obtenerPlanillaAgraria($mes,$anio);
     }
-    public function obtenerEmpleadoPorUuid($uuid){
-        return app(PlanillaEmpleadoServicio::class)->obtenerEmpleadoPorUuid($uuid);
+    public function obtenerEmpleadoPorUuid($id){
+        return app(PlanillaEmpleadoServicio::class)->obtenerEmpleadoPorUuid($id);
     }
-    public function eliminarEmpleado($uuid){
-        app(PlanillaEmpleadoServicio::class)->eliminarEmpleado($uuid);
+    public function eliminarEmpleado($id){
+        app(PlanillaEmpleadoServicio::class)->eliminarEmpleado($id);
     }
-    public function restaurarEmpleado($uuid){
-        app(PlanillaEmpleadoServicio::class)->restaurarEmpleado($uuid);
+    public function restaurarEmpleado($id){
+        app(PlanillaEmpleadoServicio::class)->restaurarEmpleado($id);
     }
     public function guardarOrdenPlanilla($empleados){
         app(PlanillaEmpleadoServicio::class)->actualizarOrdenEmpleados($empleados);

@@ -26,7 +26,7 @@ class Sidebar extends Component
                     ['title' => 'Empleados', 'route' => 'empleados'],
                     ['title' => 'Actividades Diarias', 'route' => 'reporte.reporte_diario'],
                     ['title' => 'Asistencia Mensual', 'route' => 'planilla.asistencia'],
-                    ['title' => 'Programar Permisos', 'route' => 'planilla.periodos'],
+                    ['title' => 'Permisos y Suspensiones', 'route' => 'planilla.suspensiones'],
                     ['title' => 'Resumen Mensual', 'route' => 'reporte.resumen_planilla'],
                     ['title' => 'Resumen General', 'route' => 'gestion_planilla.reporte_general'],
                     ['title' => 'Planilla B+N', 'route' => 'planilla.blanco'],

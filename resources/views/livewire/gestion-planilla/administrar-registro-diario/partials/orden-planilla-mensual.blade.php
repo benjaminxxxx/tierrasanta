@@ -4,7 +4,7 @@
             <x-flex>
                 <x-h3>Orden Mensual de Empleados</x-h3>
                 <x-button variant="success" wire:click="agregarPlanilleros">
-                    <i class="fa fa-plus"></i> Agregar Toda la Planilla Agraria
+                    <i class="fa fa-sync"></i> Actualizar desde contratos
                 </x-button>
             </x-flex>
         </x-slot>
@@ -46,9 +46,6 @@
                                             <x-button type="button" @click="moverAbajo(index)"
                                                 x-bind:disabled="index === empleados.length - 1">
                                                 <i class="fa fa-arrow-down"></i>
-                                            </x-button>
-                                            <x-button variant="danger" type="button" @click="quitar(index)">
-                                                <i class="fa fa-trash"></i>
                                             </x-button>
                                         </x-flex>
                                     </x-td>
@@ -117,13 +114,6 @@
                         .empleados[index]
                     ];
 
-                    this.empleados = [...this.empleados];
-                }
-            },
-
-            quitar(index) {
-                if (confirm('¿Está seguro de quitar a este empleado?')) {
-                    this.empleados.splice(index, 1);
                     this.empleados = [...this.empleados];
                 }
             },

@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
 
 class PlanillaRegistroDiarioServicio
 {
+  
     public static function obtenerRegistrosMensualesConLicenciasConsiderados($mes, $anio)
     {
         return PlanRegistroDiario::whereMonth('fecha', $mes)
@@ -114,27 +115,35 @@ class PlanillaRegistroDiarioServicio
             $registros = $diariosAgrupados->get($emp->id, collect());
 
             $totalHoras = 0;
+            $totalHorasReales = 0;
             $conteo = 0;
             $faltasInjustificadas = 0;
             $totalBonoProductividad = 0;
 
+
             foreach ($registros as $r) {
                 // Validar existencia en el catálogo
+
                 if (!array_key_exists($r->asistencia, $tiposAsistencia)) {
-                    throw new Exception("El tipo de asistencia {$r->asistencia} no está registrado.");
+                    dd($r);
+                    throw new Exception("El tipo de asistencia '{$r->asistencia}' no está registrado.");
                 }
 
                 if ($tiposAsistencia[$r->asistencia] == 1) {
+                    if ($r->asistencia == 'A') {
+                        $totalHorasReales += $r->total_horas;
+                    }
                     $totalHoras += $r->total_horas;
                     $totalBonoProductividad += $r->total_bono;
                     $conteo++;
                 }
-                $faltasInjustificadas+=CalculoHelper::faltasInjustificadas($r->total_horas);
+                $faltasInjustificadas += CalculoHelper::faltasInjustificadas($r->total_horas);
             }
 
             $resultado[$emp->plan_empleado_id] = [
                 'plan_empleado_id' => $emp->plan_empleado_id,
                 'horas_trabajadas' => $totalHoras,
+                'horas_trabajadas_reales' => $totalHorasReales,
                 'dias_trabajados' => $conteo,
                 'faltas_injustificadas' => $faltasInjustificadas,
                 'total_bono_productividad' => $totalBonoProductividad,
@@ -150,8 +159,14 @@ class PlanillaRegistroDiarioServicio
     public function actualizarAsistenciaPorRango($empleadoId, $fechaInicio, $fechaFin, $codigoAsistencia)
     {
         $periodo = CarbonPeriod::create($fechaInicio, $fechaFin);
+        $horasConsideradas = TipoAsistenciaServicio::obtenerHorasConsideradas($codigoAsistencia);
 
         foreach ($periodo as $fecha) {
+
+            if ($fecha->isSunday()) {
+                continue;
+            }
+
             $fechaString = $fecha->toDateString();
 
             // Buscamos el detalle mensual directamente cruzando con la cabecera (PlanMensual)
@@ -171,7 +186,7 @@ class PlanillaRegistroDiarioServicio
                     ],
                     [
                         'asistencia' => $codigoAsistencia,
-                        'total_horas' => 0 // Como es un permiso/periodo, horas trabajadas usualmente es 0
+                        'total_horas' => $horasConsideradas
                     ]
                 );
             }
@@ -235,6 +250,9 @@ class PlanillaRegistroDiarioServicio
                 ];
             }
 
+            if (!empty($tramos) && trim($asistencia) != 'A') {
+                throw new Exception("Si hay detalle, debe agregar un tipo de asistencia A.");
+            }
             // --- Lógica de Negocio para Total Horas ---
             if ($asistencia === 'A') {
                 if (empty($tramos)) {

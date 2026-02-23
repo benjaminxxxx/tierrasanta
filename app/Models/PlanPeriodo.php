@@ -33,8 +33,8 @@ class PlanPeriodo extends Model
      * Casts de tipos
      */
     protected $casts = [
-        'fecha_inicio' => 'date',
-        'fecha_fin' => 'date',
+        'fecha_inicio' => 'date:Y-m-d',
+        'fecha_fin' => 'date:Y-m-d',
         'deleted_at' => 'datetime',
     ];
 
@@ -77,8 +77,8 @@ class PlanPeriodo extends Model
     {
         return Attribute::make(
             get: fn() =>
-            $this->fecha_inicio && $this->fecha_fin
-            ? $this->fecha_inicio->diffInDays($this->fecha_fin)
+            ($this->fecha_inicio && $this->fecha_fin)
+            ? $this->fecha_inicio->diffInDays($this->fecha_fin) + 1   // ← ajuste correcto
             : 0
         );
     }

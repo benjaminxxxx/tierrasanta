@@ -19,9 +19,6 @@
                 <x-dropdown-link class="text-center" href="{{ route('planilla.importar') }}">
                     <i class="fa fa-file-excel"></i> Importar Empleados
                 </x-dropdown-link>
-                <x-dropdown-link class="text-center" wire:click="ordenarPlanillaAgraria">
-                    <i class="fa fa-list"></i> Ordenar Planilla Agraria
-                </x-dropdown-link>
                 <x-dropdown-link class="text-center" wire:click="abrirFormCambioMasivoSueldo">
                     <i class="fa fa-money-bill"></i> Cambio de Sueldo Masivo
                 </x-dropdown-link>

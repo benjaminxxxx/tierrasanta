@@ -54,12 +54,16 @@ return new class extends Migration {
             // --- VARIABLES DE TIEMPO (Insumos) ---
             $table->integer('dias_trabajados')->default(0);
             $table->decimal('horas_trabajadas', 8, 2)->default(0);
+            $table->decimal('horas_trabajadas_reales', 8, 2)->default(0);
 
             // --- EL BLANCO (Lo que ya pagó la empresa por banco/planilla) ---
             $table->decimal('blanco_neto_pagar', 10, 2)->default(0);
             $table->unsignedTinyInteger('faltas_injustificadas')->default(0);
 
             $table->unsignedBigInteger('plan_mensual_id');
+
+            $table->integer('dias_laborados')->default(0);
+            $table->integer('dias_no_laborados')->default(0);
 
             $table->timestamps();
             $table->foreign('plan_mensual_id')->references('id')->on('plan_mensuales')->onDelete('cascade');

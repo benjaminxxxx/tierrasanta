@@ -30,11 +30,11 @@ Route::middleware([
 ])->group(function () {
 
     Route::get('/', function () {
-        return view('livewire.gestion-planilla.administrar-planillero.indice-empleados');
+        return view('livewire.dashboard.indice');
     })->name('inicio');
 
     Route::get('/dashboard', function () {
-        return view('empleados');
+        return view('livewire.dashboard.indice');
     })->name('dashboard');
 
     Route::get('/planilla/asistencia/{anio?}/{mes?}', [AsistenciaPlanillaController::class, 'index'])->name('planilla.asistencia');
@@ -122,9 +122,9 @@ Route::middleware([
             return view('livewire.gestion-planilla.parametros-planilla-indice');
         })->name('planilla.parametros');
 
-        Route::get('/periodos', function () {
-            return view('livewire.gestion-planilla.periodos-planilla-indice');
-        })->name('planilla.periodos'); 
+        Route::get('/suspensiones', function () {
+            return view('livewire.gestion-planilla.suspensiones-planilla-indice');
+        })->name('planilla.suspensiones'); 
 
         Route::get('/gestion_planilla/reporte_general', function () {
             // Apunta a la nueva y más corta ubicación

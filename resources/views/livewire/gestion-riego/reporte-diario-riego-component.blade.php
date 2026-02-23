@@ -72,7 +72,7 @@
 
         <x-slot name="content">
             <x-flex>
-                <x-select wire:model="tipoPersonal" label="Tipo de Personal">
+                <x-select wire:model="tipoPersonal" label="Tipo de Personal" class="w-auto">
                     <option value="empleados">Empleados</option>
                     <option value="cuadrilleros">Cuadrilleros</option>
                 </x-select>

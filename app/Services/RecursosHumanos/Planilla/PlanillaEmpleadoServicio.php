@@ -130,26 +130,26 @@ class PlanillaEmpleadoServicio
             ");
     }
 
-    public function obtenerEmpleadoPorUuid($uuid)
+    public function obtenerEmpleadoPorUuid($id)
     {
-        $empleado = PlanEmpleado::where('uuid', $uuid)->first();
+        $empleado = PlanEmpleado::find( $id);
         if (!$empleado) {
             throw new Exception("El registro ya no existe");
         }
         return $empleado;
     }
 
-    public function eliminarEmpleado($uuid)
+    public function eliminarEmpleado($id)
     {
-        $empleado = PlanEmpleado::where('uuid', $uuid)->first();
+        $empleado = PlanEmpleado::find($id);
         if (!$empleado) {
             throw new Exception("El registro ya no existe");
         }
         $empleado->delete();
     }
-    public function restaurarEmpleado($uuid)
+    public function restaurarEmpleado($id)
     {
-        $empleado = PlanEmpleado::withTrashed()->where('uuid', $uuid)->first();
+        $empleado = PlanEmpleado::withTrashed()->where('id', $id)->first();
 
         if (!$empleado) {
             throw new Exception("El registro ya no existe");

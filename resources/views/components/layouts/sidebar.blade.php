@@ -48,7 +48,7 @@
         return match;
     }
 }" x-on:mouseenter="handleMouseEnter" x-on:mouseleave="handleMouseLeave"
-    class="relative h-[calc(100vh-32px)] bg-card border-r border-border transition-all duration-300 ease-in-out flex flex-col"
+    class="relative h-screen bg-card border-r border-border transition-all duration-300 ease-in-out flex flex-col"
     :class="isExpanded ? 'w-64' : 'w-16'">
 
     <div class="p-4 border-b border-border">

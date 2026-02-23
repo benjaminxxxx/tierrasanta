@@ -16,41 +16,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
     @include('comun.handsontable')
-    <style>
-      
 
-
-        /* Scroll ultrafino y moderno */
-        .ultra-thin-scroll {
-            scrollbar-width: thin;
-            /* Firefox */
-            scrollbar-color: transparent transparent;
-        }
-
-        .ultra-thin-scroll:hover {
-            scrollbar-color: rgba(114, 114, 114, 0.5) rgba(124, 124, 124, 0);
-        }
-
-        /* Webkit (Chrome, Edge, Safari) */
-        .ultra-thin-scroll::-webkit-scrollbar {
-            width: 4px;
-            height: 4px;
-        }
-
-        .ultra-thin-scroll::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .ultra-thin-scroll::-webkit-scrollbar-thumb {
-            background-color: rgba(212, 212, 212, 0.5);
-            border-radius: 9999px;
-            border: none;
-        }
-
-        .ultra-thin-scroll::-webkit-scrollbar-thumb:hover {
-            background-color: rgba(136, 136, 136, 0.7);
-        }
-    </style>
 </head>
 
 <body
@@ -59,11 +25,11 @@
 $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(value)))"
     :class="{ 'dark': darkMode === true }">
     <x-preloader />
-    <livewire:menu-bar-component/>
-    <div class="flex min-h-screen bg-background pt-[32px]">
+    
+    <div class="flex min-h-screen bg-background">
         
         <x-layouts.sidebar />
-        <main class="flex-1 p-5 overflow-visible ultra-thin-scroll">
+        <main class="flex-1 p-5 overflow-visible ultra-thin-scroll max-w-[calc(100vw-4rem)]">
             {{ $slot }}
         </main>
         @include('comun.components')

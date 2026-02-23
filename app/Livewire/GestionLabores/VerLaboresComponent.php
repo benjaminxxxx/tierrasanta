@@ -9,6 +9,7 @@ class VerLaboresComponent extends Component
 {
     public $mostrarFormularioLabores = false;
     public $labores;
+    protected $listeners = ['verLabores'];
     public function mount(){
         $this->labores = Labores::all();
     }

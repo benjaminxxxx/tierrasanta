@@ -13,7 +13,6 @@
 
     @include('livewire.gestion-planilla.administrar-planillero.partials.lista-filtro')
     @include('livewire.gestion-planilla.administrar-planillero.partials.lista-tabla-planilleros')
-    @include('livewire.gestion-planilla.administrar-planillero.partials.orden')
     @include('livewire.gestion-planilla.administrar-planillero.partials.sueldos')
 
     <x-loading wire:loading />

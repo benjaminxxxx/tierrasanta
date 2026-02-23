@@ -43,7 +43,7 @@
                 </x-button>
             </x-flex>
             <div wire:ignore>
-                <div x-ref="tableContainer" class="overflow-auto"></div>
+                <div x-ref="tableContainer"></div>
             </div>
         </x-card>
     @endif
@@ -131,7 +131,6 @@
                     rowHeaders: true,
                     columns: columns,
                     width: '100%',
-                    height: 'auto',
                     manualColumnResize: false,
                     manualRowResize: true,
                     /*hiddenColumns: {
@@ -186,16 +185,16 @@
                         readOnly: true
                     },
                     {
-                        data: 'dias_trabajados',
+                        data: 'dias_laborados',
                         type: 'numeric',
-                        title: 'DIAS<br/>CONSIR.',
+                        title: 'DIAS<br/>LABOR',
                         className: '!text-center',
                         readOnly: true
                     },
                     {
-                        data: 'faltas_injustificadas',
+                        data: 'dias_no_laborados',
                         type: 'numeric',
-                        title: 'FALTAS<br/>INJUST.',
+                        title: 'DIAS<br/>NO<br/>LABOR',
                         className: '!text-center',
                         readOnly: true
                     },
@@ -209,7 +208,7 @@
                     {
                         data: 'remuneracion_basica',
                         type: 'text',
-                        title: 'SUELDO.<br/> CONTRATO',
+                        title: '0121<br/>SUELDO.<br/> CONTRATO',
                         className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
                         readOnly: true
                     },
@@ -220,13 +219,13 @@
                         className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
                         readOnly: true
                     },
-                    {
+                    /*{
                         data: 'blanco_descuento_por_faltas',
                         type: 'text',
                         title: 'DESC.<br/> FALTAS.',
                         className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
                         readOnly: true
-                    },
+                    },*/
                     {
                         data: 'blanco_remuneracion_bruta',
                         type: 'text',
@@ -319,51 +318,31 @@
                         readOnly: true
                     },
                     {
-                        data: 'beta30',
-                        type: 'text',
-                        title: 'BETA<br/> 30%',
-                        className: '!text-right',
-                        readOnly: true
-                    },
-                    {
                         data: 'blanco_beta30',
                         type: 'text',
-                        title: 'BETA<br/> 30% TOTAL',
+                        title: '0314<br/>BETA<br/> 30% TOTAL',
                         className: '!text-right',
-                        readOnly: true
-                    },
-                    {
-                        data: 'cts_porcentaje',
-                        type: 'text',
-                        title: 'CTS %',
-                        className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
                         readOnly: true
                     },
                     {
                         data: 'blanco_cts',
                         type: 'text',
-                        title: 'CTS',
+                        title: '0904<br/>CTS',
                         className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
                         readOnly: true
                     },
-                    {
-                        data: 'gratificaciones',
-                        type: 'text',
-                        title: 'GRATIFICA<br/>CIONES %',
-                        className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
-                        readOnly: true
-                    },
+                    
                     {
                         data: 'blanco_gratificaciones',
                         type: 'text',
-                        title: 'GRATIFICA<br/>CIONES',
+                        title: '0406<br/>GRATIFICA<br/>CIONES',
                         className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
                         readOnly: true
                     },
                     {
                         data: 'blanco_essalud_gratificaciones',
                         type: 'text',
-                        title: 'ESSALUD<br/>GRATIFICA<br/>CIONES',
+                        title: '0312<br/>BONIF. EX.<br/>TEMP. LEY <br/>29351 y 30334',
                         className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
                         readOnly: true
                     },
@@ -438,102 +417,21 @@
                         title: 'SUELDO<br/>NEGRO<br/>TOTAL',
                         className: '!text-right !bg-muted text-total !font-bold',
                         readOnly: true
+                    },
+                    {
+                        data: 'costo_total_blanco',
+                        type: 'numeric',
+                        title: 'COSTO<br/>TOTAL<br/>BLANCO',
+                        className: '!text-right !bg-pink-700 !font-bold',
+                        readOnly: true
+                    },
+                    {
+                        data: 'costo_total_negro',
+                        type: 'numeric',
+                        title: 'COSTO<br/>TOTAL<br/>NEGRO',
+                        className: '!text-right !bg-pink-700 !font-bold',
+                        readOnly: true
                     }
-                    //empleado_grupo_color
-                    /*
-                    {
-                        data: 'remuneracion_basica',
-                        type: 'text',
-                        title: 'REMUN.<br/> BÁSICA',
-                        className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
-                        readOnly: true
-                    },
-                    {
-                        data: 'bonificacion',
-                        type: 'text',
-                        title: 'BONIF.',
-                        className: '!text-right',
-                        correctFormat: true,
-                    }
-                    {
-                        data: 'compensacion_vacacional',
-                        type: 'text',
-                        title: 'COMP.<br/>VACAC.',
-                        className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-yellow-300',
-                        readOnly: true
-                    },
-                    {
-                        data: 'sueldo_bruto',
-                        type: 'text',
-                        title: 'SUELDO<br/>BRUTO',
-                        className: isDark ? '!text-right !bg-stone-700' : '!text-right !bg-[#C4BD97]',
-                        readOnly: true
-                    },
-                    
-                    {
-                        data: 'total_horas',
-                        type: 'text',
-                        title: 'TOTAL<br/>HORAS',
-                        className: '!text-center',
-                        readOnly: true
-                    },
-                    {
-                        data: 'sueldo_blanco_pagado',
-                        type: 'text',
-                        title: 'MONTO BLANCO<br/>PAGADO',
-                        className: '!text-right !bg-stone-600',
-                    },
-                    {
-                        data: 'sueldo_negro_pagado',
-                        type: 'text',
-                        title: 'MONTO NEGRO<br/>PAGADO',
-                        className: '!text-right',
-                        readOnly: true
-                    },
-                    
-                    
-                    {
-                        data: 'essalud_eps',
-                        type: 'text',
-                        title: 'ESSAL<br/> EPS.',
-                        className: '!text-right',
-                        readOnly: true
-                    },//hasta aqui
-                    {
-                        data: 'sueldo_neto',
-                        type: 'text',
-                        title: 'SUELDO.<br/> NETO',
-                        className: '!text-right',
-                        readOnly: true
-                    },
-                    /*{
-                        data: 'rem_basica_essalud',
-                        type: 'text',
-                        title: 'REM.<br/> BAS. +<br/> ESSAL.',
-                        className: '!text-right',
-                        readOnly: true
-                    },
-                    {
-                        data: 'rem_basica_asg_fam_essalud_cts_grat_beta',
-                        type: 'text',
-                        title: 'REM. BA.<br/> ASIGN. FA.<br/> ESSALUD<br/>CTS<br/>GRATIF.<br/>BETA',
-                        className: '!text-right',
-                        readOnly: true
-                    },hasta aqui
-                    {
-                        data: 'jornal_diario',
-                        type: 'text',
-                        title: 'JORNAL<br/> DIARIO',
-                        className: '!text-right',
-                        readOnly: true
-                    },
-                    {
-                        data: 'costo_hora',
-                        type: 'text',
-                        title: 'COSTO<br/>HORA',
-                        className: '!text-right',
-                        readOnly: true
-                    }*/
                 ];
 
                 return columns;

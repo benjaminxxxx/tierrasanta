@@ -12,7 +12,9 @@ use App\Services\RecursosHumanos\Planilla\PlanillaDescuentoServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaEmpleadoServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaMensualDetalleServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaRegistroDiarioServicio;
+use App\Support\CalculoHelper;
 use Exception;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -34,6 +36,8 @@ class GenerarPlanillaMensualProceso
         $contratos = ContratoServicio::obtenerContratosVigentes($mes, $anio)->toArray();
         $descuentoAgrupados = PlanillaDescuentoServicio::obtenerDescuentos($mes, $anio);
         $empleados = PlanillaEmpleadoServicio::datosPlanilla($mes, $anio);
+        $diasSuspendidos = PlanillaSuspensionServicio::obtenerSuspensiones($mes, $anio);
+        $totalDiasMes = Carbon::create($anio, $mes, 1)->daysInMonth;
 
         foreach ($data as $dato) {
 
@@ -55,7 +59,12 @@ class GenerarPlanillaMensualProceso
                 $descuentoAgrupados
             );
 
+            $diasNoLaborados = $diasSuspendidos[$empleadoId] ?? 0;
+            $diasLaborados = $totalDiasMes - $diasNoLaborados;
+
             $info = [
+                'dias_laborados' => $diasLaborados,
+                'dias_no_laborados' => $diasNoLaborados,
                 'negro_bono_asistencia' => (float) ($dato['negro_bono_asistencia'] ?? 0),
                 'negro_bono_productividad' => $detalleHoras['total_bono_productividad'],
                 'dias_trabajados' => $detalleHoras['dias_trabajados'],
@@ -67,6 +76,10 @@ class GenerarPlanillaMensualProceso
                 'esta_jubilado' => $contrato['esta_jubilado'],
                 'dscto_afp_seguro' => $descuento['porcentaje'], //porcentaje || porcentaje_65 || 0 
                 'dscto_afp_seguro_explicacion' => $descuento['motivo'],
+                //aqui guardar el total negro y total blanco para utilizarlo al momento de calcular los costos
+
+
+
             ];
             PlanillaMensualDetalleServicio::guardar($info, $dato['id']);
         }

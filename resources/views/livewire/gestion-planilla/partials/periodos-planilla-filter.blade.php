@@ -9,23 +9,7 @@
     </div>
 
     <x-flex class="!items-end">
-
-        {{-- Empleado --}}
-        <x-group-field>
-            <x-label value="Empleado" />
-
-            <x-searchable-select :options="$empleados" search-placeholder="Buscar trabajador..."
-                wire:model.live="filtros.plan_empleado_id" />
-
-            <x-input-error for="filtros.plan_empleado_id" />
-        </x-group-field>
-
-        {{-- Año --}}
-        <x-select wire:model.live="filtros.anio" placeholder="Selecciona un año" label="Año" >
-            <option value="">Todos</option>
-            @for ($year = now()->year; $year >= 2014; $year--)
-                <option value="{{ $year }}">{{ $year }}</option>
-            @endfor
-        </x-select>
+        <x-select-anios wire:model.live="anio" class="w-auto"/>
+        <x-select-meses wire:model.live="mes" class="w-auto"/>
     </x-flex>
 </x-card>

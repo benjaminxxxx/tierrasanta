@@ -22,9 +22,9 @@ class GestionPlanillaEmpleadosSueldoComponent extends Component
     public $sueldo;
     protected $listeners = ['abrirFormularioRegistroEmpleadoSueldo'];
 
-    public function abrirFormularioRegistroEmpleadoSueldo($uuid)
+    public function abrirFormularioRegistroEmpleadoSueldo($id)
     {
-        $empleado = PlanEmpleado::where('uuid', $uuid)->first();
+        $empleado = PlanEmpleado::find( $id);
         if (!$empleado) {
             throw new Exception('El empleado ya no existe');
         }

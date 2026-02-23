@@ -7,13 +7,23 @@ use App\Models\PlanMensualDetalle;
 
 class PlanillaMensualDetalleServicio
 {
+    public static function obtenerOrden($mes, $anio)
+    {
+        return PlanMensualDetalle::whereHas(
+            'planillaMensual',
+            fn($q) =>
+            $q->where('mes', $mes)->where('anio', $anio)
+        )
+            ->pluck('orden', 'plan_empleado_id')
+            ->toArray();
+    }
     /**
      * Guarda o actualiza un registro de PlanMensualDetalle.
      *
      * @param  array  $data  Datos completos que llegan desde Handsontable.
      * @return PlanMensualDetalle
      */
-    public static function guardar(array $data,$id = null): PlanMensualDetalle
+    public static function guardar(array $data, $id = null): PlanMensualDetalle
     {
         if ($id) {
             // UPDATE

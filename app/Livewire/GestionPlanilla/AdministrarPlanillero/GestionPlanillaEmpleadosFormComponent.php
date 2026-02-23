@@ -29,15 +29,14 @@ class GestionPlanillaEmpleadosFormComponent extends Component
     public $fecha_ingreso;
     public $mostrarFormularioEmpleados = false;
     protected $listeners = ['editarEmpleado', 'abrirFormularioNuevoEmpleado'];
-    public function editarEmpleado($uuid)
+    public function editarEmpleado($id)
     {
         $this->resetForm();
-        $empleado = app(GestionPlanillaEmpleados::class)->obtenerEmpleadoPorUuid($uuid);
-        ;
+        $empleado = app(GestionPlanillaEmpleados::class)->obtenerEmpleadoPorUuid($id);
+        
         if ($empleado) {
 
             $this->empleadoId = $empleado->id;
-            $this->uuid = $empleado->uuid;
             $this->nombres = $empleado->nombres;
             $this->apellido_paterno = $empleado->apellido_paterno;
             $this->apellido_materno = $empleado->apellido_materno;

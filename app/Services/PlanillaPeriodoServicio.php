@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\PlanPeriodo;
+use App\Models\PlanSuspension;
 use App\Models\PlanTipoAsistencia;
+use App\Models\PlanTipoSuspension;
 use App\Services\RecursosHumanos\Planilla\PlanillaRegistroDiarioServicio;
 use DB;
 use Illuminate\Support\Carbon;
@@ -97,23 +99,23 @@ class PlanillaPeriodoServicio
     {
         $hoy = Carbon::today()->toDateString();
 
-        $conteos = PlanPeriodo::whereDate('fecha_inicio', '<=', $hoy)
+        $conteos = PlanSuspension::whereDate('fecha_inicio', '<=', $hoy)
             ->whereDate('fecha_fin', '>=', $hoy)
-            ->select('codigo')
+            ->select('tipo_suspension_id')
             ->selectRaw('count(*) as total')
-            ->groupBy('codigo')
+            ->groupBy('tipo_suspension_id')
             ->get();
 
-        $tiposConfig = PlanTipoAsistencia::whereIn('codigo', $conteos->pluck('codigo'))
+        $tiposConfig = PlanTipoSuspension::whereIn('id', $conteos->pluck('tipo_suspension_id'))
             ->get()
-            ->keyBy('codigo');
+            ->keyBy('tipo_suspension_id');
 
         return $conteos->map(function ($item) use ($tiposConfig) {
-            $config = $tiposConfig->get($item->codigo);
+            $config = $tiposConfig->get($item->tipo_suspension_id);
 
             return [
-                'code' => $item->codigo,
-                'label' => $config->descripcion ?? 'Sin descripción',
+                'code' => $item->tipo_suspension_id,
+                'label' => $config->observaciones ?? 'Sin descripción',
                 'count' => $item->total,
                 'color' => $config->color ?? '#D1D5DB',
             ];

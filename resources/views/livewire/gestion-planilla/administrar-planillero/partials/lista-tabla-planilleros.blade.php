@@ -56,31 +56,31 @@
                                     <div class="w-full text-center">
                                         @if (!$empleado->trashed())
 
-                                            <x-dropdown-link href="{{ route('planilla.contratos', ['uuid' => $empleado->uuid]) }}">
+                                            <x-dropdown-link href="{{ route('planilla.contratos', ['id' => $empleado->id]) }}">
                                                 <i class="fa fa-table"></i> Gestionar Contratos
                                             </x-dropdown-link>
 
                                             <x-dropdown-link
-                                                @click="$wire.dispatch('abrirFormularioRegistroEmpleadoSueldo',{uuid:'{{ $empleado->uuid }}'})">
+                                                @click="$wire.dispatch('abrirFormularioRegistroEmpleadoSueldo',{id:{{ $empleado->id }}})">
                                                 <i class="fa fa-money-bill"></i> Gestionar Sueldos
                                             </x-dropdown-link>
 
                                             <x-dropdown-link
-                                                @click="$wire.dispatch('agregarFamiliarEmpleado',{uuid:'{{ $empleado->uuid }}'})">
+                                                @click="$wire.dispatch('agregarFamiliarEmpleado',{id:{{ $empleado->id }}})">
                                                 <i class="fa-solid fa-people-roof"></i> Gestionar Familiares
                                             </x-dropdown-link>
 
                                             <x-dropdown-link
-                                                @click="$wire.dispatch('editarEmpleado',{uuid:'{{ $empleado->uuid }}'})">
+                                                @click="$wire.dispatch('editarEmpleado',{id:{{ $empleado->id }}})">
                                                 <i class="fa fa-pencil"></i> Editar Registro
                                             </x-dropdown-link>
 
-                                            <x-dropdown-link wire:click="eliminarEmpleado('{{ $empleado->uuid }}')"
+                                            <x-dropdown-link wire:click="eliminarEmpleado({{ $empleado->id }})"
                                                 class="text-red-600 hover:text-red-700">
                                                 <i class="fa fa-remove"></i> Eliminar Empleado
                                             </x-dropdown-link>
                                         @else
-                                            <x-dropdown-link wire:click="restaurarEmpleado('{{ $empleado->uuid }}')"
+                                            <x-dropdown-link wire:click="restaurarEmpleado({{ $empleado->id }})"
                                                 class="text-green-600 hover:text-green-700">
                                                 <i class="fa fa-undo"></i> Restaurar Empleado
                                             </x-dropdown-link>

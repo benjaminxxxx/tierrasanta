@@ -25,10 +25,10 @@ class FamiliaresPlanillaFormComponent extends Component
     public $asignacionId;
     protected $listeners = ['agregarFamiliarEmpleado', 'confirmarEliminarHijo'];
 
-    public function agregarFamiliarEmpleado($uuid)
+    public function agregarFamiliarEmpleado($id)
     {
         $this->resetErrorBag();
-        $empleado = PlanEmpleado::where('uuid', $uuid)->first();
+        $empleado = PlanEmpleado::find( $id);
         if ($empleado) {
             $this->empleadoId = $empleado->id;
             $this->nombre_empleado = $empleado->nombreCompleto;
