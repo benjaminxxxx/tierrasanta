@@ -153,6 +153,7 @@ class CochinillaInfestacionFormComponent extends Component
                 'madres_por_infestador' => $this->infestadores > 0 ? ($this->kg_madres / $this->infestadores) : null,
                 'infestadores_por_ha' => $this->area > 0 ? ($this->infestadores / $this->area) : null,
             ];
+            //dd($data);
 
             $id = InfestacionServicio::guardarInfestacion(
                 $data,

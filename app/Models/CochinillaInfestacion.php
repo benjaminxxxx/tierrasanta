@@ -52,13 +52,14 @@ class CochinillaInfestacion extends Model
     #region Alias
     public function getMadresPorInfestadorAliasAttribute($value)
     {
-        $madres = $this->madres_por_infestador;
+        /*$madres = $this->madres_por_infestador;
 
         if (!is_numeric($madres)) {
             return '0gr.'; // o podrías devolver 'N/A' según tu lógica
         }
 
-        return number_format($madres * 10000, 0) . 'gr.';
+        return number_format($madres * 10000, 0) . 'gr.';*/
+        return $this->madres_por_infestador;
     }
     public function getInfestadoresPorHaAliasAttribute($value)
     {

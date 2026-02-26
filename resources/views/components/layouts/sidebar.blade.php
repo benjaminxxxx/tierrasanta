@@ -53,7 +53,7 @@
 
     <div class="p-4 border-b border-border">
         <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-3">
+            <a class="flex items-center space-x-3 hover:bg-muted" href="{{ route('inicio') }}">
                 <div :class="isExpanded ? 'w-0 opacity-0' : 'w-8 opacity-100'" class="transition-all duration-300">
                     <img src="{{ asset('images/logo/logotipo.svg') }}" class="w-8 h-8" alt="Logo" />
                 </div>
@@ -64,7 +64,7 @@
                         <span class="font-semibold text-gray-700 dark:text-white">THS</span>
                     </div>
                 </div>
-            </div>
+            </a>
             <button x-show="isExpanded" x-on:click="togglePin" class="text-gray-600 dark:text-white">
                 <i class="fa" :class="isPinned ? 'fa-times-circle text-blue-500' : 'fa-thumb-tack'"></i>
             </button>

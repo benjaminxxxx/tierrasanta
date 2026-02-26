@@ -11,7 +11,7 @@
     ]) }}>
     <table class="w-full text-sm text-left rtl:text-right text-foreground">
         {{-- Encabezado --}}
-        <thead class="text-xs uppercase font-bold tracking-wider text-muted-foreground bg-muted border-b border-border">
+        <thead class="sticky top-0 z-10 text-xs uppercase font-bold tracking-wider text-muted-foreground bg-muted border-b border-border">
             {{ $thead }}
         </thead>
 

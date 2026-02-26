@@ -3,6 +3,7 @@
 namespace App\Livewire\GestionPlanilla;
 
 use App\Models\PlanContrato;
+use App\Models\PlanEmpleado;
 use App\Services\RecursosHumanos\Personal\ContratoServicio;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -32,10 +33,10 @@ class ContratosPlanillaComponent extends Component
         'fecha_hasta' => '',
     ];
     protected $listeners = ['contratoActualizado' => 'refresh', 'confirmarEliminarContrato'];
-    public function mount($uuid = null)
+    public function mount($id = null)
     {
-        if ($uuid) {
-            $empleado = \App\Models\PlanEmpleado::where('uuid', $uuid)->first();
+        if ($id) {
+            $empleado = PlanEmpleado::find( $id)->first();
             if ($empleado) {
                 $this->filtros['buscar'] = $empleado->nombres;
             }

@@ -55,9 +55,9 @@
                     <option value="reinfestacion">Reinfestación</option>
                 </x-select>
                 @if ($tipo_infestacion == 'infestacion')
-                    <x-input-date label="Fecha de infestación" wire:model.live="fecha" error="fecha" />
+                    <x-selector-dia label="Fecha de infestación" wire:model.live="fecha" error="fecha" />
                 @elseif ($tipo_infestacion == 'reinfestacion')
-                    <x-input-date label="Fecha de reinfestación" wire:model.live="fecha" error="fecha" />
+                    <x-selector-dia label="Fecha de reinfestación" wire:model.live="fecha" error="fecha" />
                 @endif
 
                 <x-select-campo label="Campo destino" wire:model.live="campoSeleccionado" error="campoSeleccionado" />
@@ -65,12 +65,11 @@
                 <x-select-campo label="Campo de origen" wire:model.live="campoSeleccionadoOrigen"
                     error="campoSeleccionadoOrigen" />
 
-                <x-input-number label="Área" wire:model="area" x-model="area" />
+                <x-input type="number" label="Área" wire:model="area" x-model="area" />
 
-                <x-input-number label="Kg madres" wire:model="kg_madres" x-model="kg_madres" />
+                <x-input type="number" label="Kg madres" wire:model="kg_madres" x-model="kg_madres" />
 
-                <x-input type="number" label="Kg madres x Ha." wire:model="kg_madres_por_ha" x-model="kg_madres_ha"
-                    class="!bg-gray-100 dark:!bg-gray-600" readonly />
+                <x-input type="number" label="Kg madres x Ha." wire:model="kg_madres_por_ha" x-model="kg_madres_ha" readonly />
 
                 <x-select label="Método de infestación" wire:model.live="metodo" error="metodo" fullWidth="true">
                     <option value="">Seleccionar método</option>
@@ -124,28 +123,19 @@
             @endphp
 
             <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4 {{ $fondo }} p-2 rounded-md">
-                <x-group-field>
-                    <x-input-number :label="$unidad" wire:model="capacidad_envase"
-                        @input="recalcularDesdeCapacidad()" />
-                </x-group-field>
-                <x-group-field>
-                    <x-input-number :label="$cantidad" wire:model="numero_envases"
-                        @input="recalcularDesdeNumeroEnvases()" />
-                </x-group-field>
-                <x-group-field>
-                    <x-input-number :label="$nombre" wire:model="infestadores"
-                        @input="recalcularDesdeInfestadores()" />
-                </x-group-field>
-                <x-group-field>
-                    <x-input-string :label="$porUnidad" wire:model="madres_por_infestador"
-                        x-bind:value="madres_por_infestador" readonly class="!bg-gray-100  dark:!bg-gray-600" />
-                </x-group-field>
-                <x-group-field>
-                    <x-input-string :label="$porHa" wire:model="infestadores_por_ha"
-                        x-bind:value="infestadores_por_ha" readonly class="!bg-gray-100  dark:!bg-gray-600" />
-                </x-group-field>
+
+                <x-input type="number" :label="$unidad" wire:model="capacidad_envase" @input="recalcularDesdeCapacidad()" />
+
+                <x-input type="number" :label="$cantidad" wire:model="numero_envases" @input="recalcularDesdeNumeroEnvases()" />
+
+                <x-input :label="$nombre" wire:model="infestadores" @input="recalcularDesdeInfestadores()" />
+
+                <x-input :label="$porUnidad" wire:model="madres_por_infestador" x-bind:value="madres_por_infestador"
+                    readonly />
+                <x-input :label="$porHa" wire:model="infestadores_por_ha" x-bind:value="infestadores_por_ha"
+                    readonly />
             </div>
-            <div class="my-4 p-5 rounded overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-900">
+            <div class="my-4 p-5 rounded overflow-hidden rounded-lg bg-muted">
                 <x-h3>Registro de ingresos relacionados</x-h3>
                 <x-table>
                     <x-slot name="thead">
@@ -230,10 +220,8 @@
             get madres_por_infestador() {
                 if (!this.infestadores || this.infestadores == 0) return '0gr.';
 
-                const valor = ((this.kg_madres / this.infestadores) * 100000);
-                const formateado = new Intl.NumberFormat('en-US').format(Math.round(valor));
-
-                return `${formateado}gr.`;
+                const valor = this.kg_madres / this.infestadores;
+                return valor;
             },
 
             get infestadores_por_ha() {

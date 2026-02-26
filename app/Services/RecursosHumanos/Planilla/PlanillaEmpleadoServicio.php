@@ -6,6 +6,8 @@ use App\Models\PlanEmpleado;
 use App\Services\Configuracion\ConfiguracionHistorialServicio;
 use DB;
 use Exception;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -13,6 +15,56 @@ use Illuminate\Validation\ValidationException;
 
 class PlanillaEmpleadoServicio
 {
+    // ─── BASE: query reutilizable por tipo de planilla ────────────────────────
+    private static function queryPlanilla(int $mes, int $anio, string $tipoPlanilla): Builder
+    {
+        $fechaInicio = Carbon::createFromDate($anio, $mes, 1)->startOfMonth();
+        $fechaFin = Carbon::createFromDate($anio, $mes, 1)->endOfMonth();
+
+        return PlanEmpleado::query()
+            ->whereNull('deleted_at')
+            ->whereHas('contratos', function ($query) use ($fechaInicio, $fechaFin, $tipoPlanilla) {
+                $query->where('tipo_planilla', $tipoPlanilla)
+                    ->where('fecha_inicio', '<=', $fechaFin)
+                    ->where(function ($q) use ($fechaInicio) {
+                        $q->whereNull('fecha_fin')
+                            ->orWhere('fecha_fin', '>=', $fechaInicio);
+                    });
+            });
+    }
+
+    // ─── LISTADO: con contratos cargados ──────────────────────────────────────
+    public static function obtenerPlanilla(
+        int $mes,
+        int $anio,
+        string $tipoPlanilla,
+        string $orden = 'orden'
+    ): Collection {
+        $fechaInicio = Carbon::createFromDate($anio, $mes, 1)->startOfMonth();
+        $fechaFin = Carbon::createFromDate($anio, $mes, 1)->endOfMonth();
+
+        return static::queryPlanilla($mes, $anio, $tipoPlanilla)
+            ->with([
+                'contratos' => function ($query) use ($fechaInicio, $fechaFin, $tipoPlanilla) {
+                    $query->where('tipo_planilla', $tipoPlanilla)
+                        ->where('fecha_inicio', '<=', $fechaFin)
+                        ->where(function ($q) use ($fechaInicio) {
+                            $q->whereNull('fecha_fin')
+                                ->orWhere('fecha_fin', '>=', $fechaInicio);
+                        })
+                        ->orderByDesc('fecha_inicio')
+                        ->limit(1);
+                }
+            ])
+            ->orderBy($orden)
+            ->get();
+    }
+
+    // ─── TOTAL ACTIVOS: solo el count, sin cargar modelos ────────────────────
+    public static function totalActivos(int $mes, int $anio, string $tipoPlanilla): int
+    {
+        return static::queryPlanilla($mes, $anio, $tipoPlanilla)->count();
+    }
     public static function datosPlanilla(int $mes, int $anio): array
     {
         // Fecha de corte de la planilla
@@ -32,7 +84,7 @@ class PlanillaEmpleadoServicio
             $edadContable = $empleado->fecha_nacimiento
                 ? Carbon::parse($empleado->fecha_nacimiento)->diffInYears($fechaCorte)
                 : null;
-                
+
             // 📌 Determinación de asignación familiar según ley
             $calificaAF = false;
 
@@ -132,7 +184,7 @@ class PlanillaEmpleadoServicio
 
     public function obtenerEmpleadoPorUuid($id)
     {
-        $empleado = PlanEmpleado::find( $id);
+        $empleado = PlanEmpleado::find($id);
         if (!$empleado) {
             throw new Exception("El registro ya no existe");
         }

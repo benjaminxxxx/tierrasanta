@@ -110,8 +110,8 @@ Route::middleware([
             return view('livewire.gestion-planilla.importar-planilla-indice');
         })->name('planilla.importar'); 
 
-        Route::get('/contratos/{uuid?}', function ($uuid = null) {
-            return view('livewire.gestion-planilla.contratos-planilla-indice', compact('uuid'));
+        Route::get('/contratos/{id?}', function ($id = null) {
+            return view('livewire.gestion-planilla.contratos-planilla-indice', compact('id'));
         })->name('planilla.contratos');
 
         Route::get('/conceptos', function () {

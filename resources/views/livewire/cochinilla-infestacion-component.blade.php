@@ -178,7 +178,7 @@
                                 {{ $cochinillaInfestacion->carton_infestadores }}
                             </x-td>
                             <x-td class="text-center bg-yellow-100 dark:bg-amber-700">
-                                {{ $cochinillaInfestacion->carton_madres_por_infestador }}
+                                {{ formatear_numero($cochinillaInfestacion->carton_madres_por_infestador,4,false) }}
                             </x-td>
                             <x-td class="text-center bg-yellow-100 dark:bg-amber-700">
                                 {{ $cochinillaInfestacion->carton_infestadores_por_ha }}
@@ -198,7 +198,7 @@
                                 {{ $cochinillaInfestacion->tubo_infestadores }}
                             </x-td>
                             <x-td class="text-center bg-purple-100 dark:bg-purple-700">
-                                {{ $cochinillaInfestacion->tubo_madres_por_infestador }}
+                                {{ formatear_numero($cochinillaInfestacion->tubo_madres_por_infestador,4,false) }}
                             </x-td>
                             <x-td class="text-center bg-purple-100 dark:bg-purple-700">
                                 {{ $cochinillaInfestacion->tubo_infestadores_por_ha }}
@@ -218,7 +218,7 @@
                                 {{ $cochinillaInfestacion->malla_infestadores }}
                             </x-td>
                             <x-td class="text-center bg-blue-100 dark:bg-blue-700">
-                                {{ $cochinillaInfestacion->malla_madres_por_infestador }}
+                                {{ formatear_numero($cochinillaInfestacion->malla_madres_por_infestador,4,false) }}
                             </x-td>
                             <x-td class="text-center bg-blue-100 dark:bg-blue-700">
                                 {{ $cochinillaInfestacion->malla_infestadores_por_ha }}

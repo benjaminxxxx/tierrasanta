@@ -33,8 +33,9 @@
                     disabled:cursor-not-allowed disabled:opacity-50';
 
     $errorClasses = $error ? 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive' : '';
+    $readOnlyClasses = $isReadOnly && !$isDisabled ? 'bg-muted text-muted-foreground cursor-default' : '';
 
-    $classes = trim("{$baseClasses} {$sizeClasses} {$errorClasses}");
+    $classes = trim("{$baseClasses} {$sizeClasses} {$errorClasses} {$readOnlyClasses}");
 @endphp
 
 <x-group-field>
