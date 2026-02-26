@@ -11,7 +11,8 @@
         </x-flex>
         <x-flex>
             <x-selector-dia wire:model.live="fecha" label="Seleccionar Fecha" class="w-auto" />
-            <x-select label="Actividades realizadas" class="w-auto" wire:model.live="actividadSeleccionada" wire:key="select_actividad_{{ $fecha }}">
+            <x-select label="Actividades realizadas" class="w-auto" wire:model.live="actividadSeleccionada"
+                wire:key="select_actividad_{{ $fecha }}">
                 <option value="">Seleccionar Actividad</option>
                 @foreach ($actividades as $actividad)
                     <option value="{{ $actividad->id }}">
@@ -22,16 +23,16 @@
         </x-flex>
     </x-flex>
 
-    <x-card class="mt-4">
-        @if ($actividadSeleccionada)
-            <livewire:gestion-cuadrilla.gestion-cuadrilla-bonificaciones-detalle-component :actividadSeleccionada="$actividadSeleccionada"
-                wire:key="actividad_{{ $actividadSeleccionada }}" />
-        @else
+    @if ($actividadSeleccionada)
+        <livewire:gestion-cuadrilla.gestion-cuadrilla-bonificaciones-detalle-component :actividadSeleccionada="$actividadSeleccionada"
+            wire:key="actividad_{{ $actividadSeleccionada }}" />
+    @else
+        <x-card class="mt-4">
             <div class="w-full text-center">
                 <x-label>Ninguna actividad seleccionada</x-label>
             </div>
-        @endif
-    </x-card>
+        </x-card>
+    @endif
 
     <x-loading wire:loading />
 </div>

@@ -41,7 +41,7 @@
             wire:key="tramo{{ $tramoActual->id }}-{{ $cambios }}" />
         <livewire:gestion-cuadrilla.gestion-cuadrilla-reporte-semanal-tramo-agregar-cuadrillero-component
             :tramoId="$tramoActual->id" wire:key="tramoAgregarCuadrillero{{ $tramoActual->id }}" />
-        <livewire:gestion-cuadrilla.gestion-cuadrilla-asignacion-costos-component />
+        
         <livewire:gestion-cuadrilla.gestion-cuadrilla-gastos-adicionales-component :tramoId="$tramoActual->id"
             wire:key="gastosAdicionales{{ $tramoActual->id }}" />
         <livewire:gestion-cuadrilla.administrar-cuadrillero.cuadrilla-grupo-form-component />

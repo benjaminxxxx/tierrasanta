@@ -247,18 +247,15 @@
             },
             recalcularDesdeCapacidad() {
                 this.infestadores = this.capacidad_envase * this.numero_envases;
-                $wire.set('infestadores', this.infestadores);
             },
 
             recalcularDesdeNumeroEnvases() {
                 this.infestadores = this.capacidad_envase * this.numero_envases;
-                $wire.set('infestadores', this.infestadores);
             },
 
             recalcularDesdeInfestadores() {
                 if (this.numero_envases != 0) {
                     this.capacidad_envase = (this.infestadores / this.numero_envases).toFixed(2);
-                    $wire.set('capacidad_envase', this.capacidad_envase);
                 }
             },
             init() {

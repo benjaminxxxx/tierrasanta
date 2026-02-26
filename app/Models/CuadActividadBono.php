@@ -14,6 +14,7 @@ class CuadActividadBono extends Model
     protected $fillable = [
         'registro_diario_id',
         'actividad_id',
+        'metodo_id',
         'total_bono'
     ];
 
@@ -21,6 +22,10 @@ class CuadActividadBono extends Model
     public function registroDiario()
     {
         return $this->belongsTo(CuadRegistroDiario::class, 'registro_diario_id');
+    }
+    public function metodo()
+    {
+        return $this->belongsTo(ActividadMetodo::class, 'metodo_id');
     }
     public function actividad()
     {

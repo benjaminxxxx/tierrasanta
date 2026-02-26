@@ -594,14 +594,17 @@ class CuadrilleroServicio
             ]);
         }
     }
-    public static function guardarBonoCuadrilla($fila, $numeroRecojos, $actividadId)
+    public static function guardarBonoCuadrilla($fila, $numeroRecojos, $actividadId, $mapaMetodos)
     {
         $registroDiarioId = $fila['registro_diario_id'] ?? null;
+        $metodoBonificacion = $fila['metodo_bonificacion'] ?? null;
 
         if (!$registroDiarioId) {
             throw new Exception("Falta el parámetro de identificación de reporte diario");
         }
 
+        $metodoId = $mapaMetodos[$metodoBonificacion] ?? null;
+        
         // Buscar o crear el registro de bono para esta actividad en este registro diario
         $actividadBono = CuadActividadBono::updateOrCreate(
             [
@@ -609,6 +612,8 @@ class CuadrilleroServicio
                 'actividad_id' => $actividadId
             ],
             [
+                
+                'metodo_id' => $metodoId,
                 'total_bono' => $fila['total_bono'] ?? 0
             ]
         );
@@ -617,7 +622,7 @@ class CuadrilleroServicio
         CuadActividadProduccion::where('actividad_bono_id', $actividadBono->id)
             ->where('numero_recojo', '>', $numeroRecojos)
             ->delete();
-
+            
         // Guardar o actualizar producciones
         for ($i = 1; $i <= $numeroRecojos; $i++) {
             $produccion = $fila['produccion_' . $i] ?? null;
@@ -638,6 +643,7 @@ class CuadrilleroServicio
                     ->delete();
             }
         }
+        //dd(5);
 
         //Recalcular total_bono del registro diario sumando todos los bonos de sus actividades
         $sumaBonos = CuadActividadBono::where('registro_diario_id', $registroDiarioId)->sum('total_bono');

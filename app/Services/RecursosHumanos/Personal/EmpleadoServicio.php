@@ -244,17 +244,17 @@ class EmpleadoServicio
         }
         return $trabajadores;
     }
-    public static function guardarBonificaciones($actividad, $datos, $numeroRecojos)
+    public static function guardarBonificaciones($actividadId, $datos, $numeroRecojos, $mapaMetodos)
     {
         foreach ($datos as $fila) {
-
+            
             $tipo = $fila['tipo'] ?? null;
 
             if ($tipo == 'CUADRILLA') {
-                CuadrilleroServicio::guardarBonoCuadrilla($fila, $numeroRecojos, $actividad->id);
+                CuadrilleroServicio::guardarBonoCuadrilla($fila, $numeroRecojos, $actividadId, $mapaMetodos);
             }
             if ($tipo == 'PLANILLA') {
-                PlanillaServicio::guardarBonoPlanilla($fila, $numeroRecojos, $actividad->id);
+                PlanillaServicio::guardarBonoPlanilla($fila, $numeroRecojos, $actividadId);
             }
         }
     }

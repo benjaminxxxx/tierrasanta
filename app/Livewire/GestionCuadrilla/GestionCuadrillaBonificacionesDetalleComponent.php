@@ -5,6 +5,7 @@ use App\Models\Actividad;
 use App\Models\CuadRegistroDiario;
 use App\Models\Labores;
 use App\Models\PlanRegistroDiario;
+use App\Services\Bonificacion\GuardarBonificacionProceso;
 use App\Services\RecursosHumanos\Personal\EmpleadoServicio;
 use App\Support\DateHelper;
 use Exception;
@@ -16,45 +17,23 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
 {
     use LivewireAlert;
     public $actividad;
-    public $tramos = [
-        ['hasta' => '', 'monto' => '']
-    ];
+    public $metodos = [];
     public $estandarProduccion = 0;
     public $unidades = 'kg.';
     public $recojos = 1;
     public $tableDataBonificados = [];
     public function mount($actividadSeleccionada)
     {
-        $this->actividad = Actividad::findOrFail($actividadSeleccionada);
+        $this->actividad = Actividad::find($actividadSeleccionada);
 
-        $this->obtenerRecojos();
-        $this->obtenerParametrosBono();
-        $this->obtenerTrabajadores();
-
-    }
-    public function obtenerRecojos()
-    {
-        // Set recojos (o numero_tramos, si así lo llamas ahora)
-        $this->recojos = $this->actividad->recojos ?? 1;
-    }
-    public function obtenerParametrosBono()
-    {
-        // Si la actividad ya tiene configurados sus tramos/producción
-        if (!empty($this->actividad->tramos_bonificacion)) {
-            $this->tramos = json_decode($this->actividad->tramos_bonificacion, true) ?? [['hasta' => '', 'monto' => '']];
-            $this->estandarProduccion = $this->actividad->estandar_produccion;
+        
+        if ($this->actividad) {
+            $this->recojos = $this->actividad->recojos;
+            $this->metodos = $this->actividad->metodos()->with(['tramos'])->get()->toArray();
             $this->unidades = $this->actividad->unidades ?? 'kg';
         }
-        // Si no, buscar la labor asociada por código
-        else {
-            $labor = Labores::where('codigo', $this->actividad->codigo_labor)->first();
-
-            if ($labor) {
-                $this->tramos = json_decode($labor->tramos_bonificacion, true) ?? [['hasta' => '', 'monto' => '']];
-                $this->estandarProduccion = $labor->estandar_produccion;
-                $this->unidades = $labor->unidades ?? 'kg';
-            }
-        }
+        //los trabajadores deben estar despues de los recojos para obtener la informacion completa de recojos
+        $this->obtenerTrabajadores();
     }
     public function obtenerTrabajadores()
     {
@@ -64,11 +43,9 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
             $fecha = $this->actividad->fecha;
 
             $registros = $this->obtenerCuadrillasPorFechaYLabor($campoNombre, $codigoLabor, $fecha, $this->actividad->id);
-
+     
             $registrosPlanilla = $this->obtenerPlanillasPorFechaYLabor($campoNombre, $codigoLabor, $fecha, $this->actividad->id);
-            //dd($registrosPlanilla);
-            //dd($registros,$registrosPlanilla);
-            //hasta aqui me quede la revision, falta planilla
+
             $dataHandsontable = [];
             $dataHandsontablePlanilla = [];
             foreach ($registros as $registro) {
@@ -76,10 +53,12 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
                 $totalBonoCalculado = $registro->actividadesBonos->sum(function ($actividadBono) {
                     return $actividadBono->total_bono ?? 0;
                 });
+                $metodo_bonificacion = $registro->actividadesBonos[0]?->metodo?->titulo;
 
                 $row = [
                     'registro_diario_id' => $registro->id,
                     'tipo' => 'CUADRILLA',
+                    'metodo_bonificacion' => $metodo_bonificacion,
                     'cuadrillero_id' => $registro->cuadrillero_id,
                     'nombre_trabajador' => optional($registro->cuadrillero)->nombres ?? '-',
                     'campo' => $campoNombre,
@@ -102,7 +81,7 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
                         ? $recojos[$numeroRecojo]->produccion
                         : '';
                 }
-
+                //dd($row,$this->recojos);
                 $horariosConcatenados = [];
                 foreach ($registro->detalleHoras as $detalle) {
                     $inicio = Carbon::parse($detalle->hora_inicio)->format('H:i');
@@ -228,20 +207,18 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
     public function guardarBonificaciones($datos)
     {
         try {
+
             if (!$this->actividad) {
                 throw new Exception("La actividad ha caducado");
             }
-
-            $estandarProduccion = $this->estandarProduccion == '' ? null : (float)$this->estandarProduccion;
-            $this->actividad->update([
-                'tramos_bonificacion' => json_encode($this->tramos),
-                'unidades' => $this->unidades,
-                'estandar_produccion' => $estandarProduccion,
-                'recojos' => $this->recojos
-            ]);
-
-            EmpleadoServicio::guardarBonificaciones($this->actividad, $datos, $this->recojos);
-
+            
+            GuardarBonificacionProceso::ejecutar(
+                $this->actividad,
+                $this->metodos,
+                $this->unidades,
+                $this->recojos,
+                $datos
+            );
 
             $this->alert('success', 'Datos guardados correctamente.');
         } catch (\Throwable $th) {

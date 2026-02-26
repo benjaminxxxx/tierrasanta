@@ -14,12 +14,11 @@ use Illuminate\Validation\ValidationException;
 
 class ActividadServicio
 {
-    public static function actualizarConfiguracionActividad($data, $actividadId = null)
+    public static function actualizar($data, $actividadId = null)
     {
         $actividad = Actividad::findOrFail($actividadId);
         $actividad->update($data);
     }
-    #region Labores
     /**
      * Crear o actualizar una labor.
      *
@@ -113,7 +112,6 @@ class ActividadServicio
         return empty($filtered) ? null : json_encode(array_values($filtered));
     }
    
-    #endregion
     #region Actividades
     /**
      * Detecta actividades únicas (campo + labor) tanto de cuadrilla como de planilla para una fecha dada.

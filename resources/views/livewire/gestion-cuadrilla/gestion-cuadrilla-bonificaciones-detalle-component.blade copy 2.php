@@ -1,113 +1,110 @@
 <div x-data="bonificacionesDual" class="space-y-5 mt-5">
-    <!-- Encabezado con Botón Agregar Método -->
     <x-card>
-        <x-flex class="justify-between">
+        <!-- Encabezado de Bonificación -->
+        <x-flex>
             <x-h3>Bonificación</x-h3>
+        </x-flex>
+
+        <!-- Estándar de Producción -->
+        <div class="space-y-2">
             <x-flex>
-                <x-input wire:model="unidades" placeholder="Unidades Ejem: Kg" label="Unidad de Producción" class="w-auto"/>
-                <x-button variant="primary" @click="agregarMetodo()" class="ml-auto">
-                    <i class="fa fa-plus"></i> Agregar Método
-                </x-button>
-
+                <x-label>Estándar de producción (por 8 horas):</x-label>
+                <x-input type="number" x-model="estandarProduccion" @input="calcularBonos" step="0.1" class="!w-32"
+                    placeholder="Producción" />
+                <x-label>{{ $unidades ?? 'KG' }}</x-label>
             </x-flex>
-        </x-flex>
+        </div>
     </x-card>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Tramos Por Sobreestandar -->
+        <x-card>
+            <x-flex class="mb-4">
+                <x-h4 class="text-blue-500">Tramos por Sobreestandar</x-h4>
+                <x-button variant="success" @click="agregarTramo('standard')" class="ml-auto">
+                    <i class="fa fa-plus"></i> Agregar
+                </x-button>
+            </x-flex>
 
-    <!-- Métodos Dinámicos -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <template x-for="(metodo, index) in metodos" :key="`metodo-${index}`">
-            <x-card>
-                <!-- Encabezado del Método -->
-                <x-flex class="justify-between items-center mb-4 pb-4 border-b border-border">
-                    <div class="flex-1">
-                        <x-h4 x-bind:class="metodo.estandar ? 'text-blue-500' : 'text-green-600'"
-                            x-text="obtenerNombreMetodo(metodo, index)">
-                        </x-h4>
-                        <x-label class="text-xs text-muted-foreground mt-1"
-                            x-text="metodo.estandar ? 'Bonificación por sobreestandar' : 'Bonificación por destajo'">
-                        </x-label>
-                    </div>
-                    <x-button variant="danger" @click="eliminarMetodo(index)">
-                        <i class="fa fa-trash"></i> Eliminar
-                    </x-button>
-                </x-flex>
+            <div class="text-xs text-muted-foreground mb-3 p-2 bg-muted rounded">
+                Aplica para trabajadores que ganan a partir del excedente sobre el estándar
+            </div>
 
-                <!-- Input Estándar -->
-                <div class="mb-6">
-                    <x-flex>
-                        <x-label>Estándar de producción (por 8 horas):</x-label>
-                        <x-input type="number" x-model.number="metodo.estandar" @input="actualizarNombreMetodo"
-                            step="0.1" class="!w-32" placeholder="Dejar vacío para destajo" />
-                        <x-label>{{ $unidades ?? 'KG' }}</x-label>
-                        <x-label class="text-xs text-muted-foreground ml-4"
-                            x-text="metodo.estandar ? '(Modo: Sobreestandar)' : '(Modo: Destajo)'">
-                        </x-label>
-                    </x-flex>
-                </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <x-tr>
+                            <x-th>Hasta (kg)</x-th>
+                            <x-th>S/. por kg</x-th>
+                            <x-th>Acción</x-th>
+                        </x-tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="(tramo, index) in tramosSobreEstandar" :key="`standard-${index}`">
+                            <tr>
+                                <td class="px-4 py-2">
+                                    <x-input type="number" class="w-full" x-model="tramo.hasta" @input="calcularBonos"
+                                        step="0.1" />
+                                </td>
+                                <td class="px-4 py-2">
+                                    <x-input type="number" class="w-full" x-model="tramo.monto" @input="calcularBonos"
+                                        step="0.1" />
+                                </td>
+                                <td class="px-4 py-2 text-center">
+                                    <x-button variant="danger" @click="removerTramo(index, 'standard')">
+                                        <i class="fa fa-trash"></i>
+                                    </x-button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </x-card>
+        <!-- Tramos Por Destajo -->
+        <x-card>
+            <x-flex class="mb-4">
+                <x-h4 class="text-green-600">Tramos por Destajo</x-h4>
+                <x-button variant="success" @click="agregarTramo('piecework')" class="ml-auto">
+                    <i class="fa fa-plus"></i> Agregar
+                </x-button>
+            </x-flex>
 
-                <!-- Tramos -->
-                <div>
-                    <x-flex class="mb-4">
-                        <x-label class="font-semibold">Tramos de Pago:</x-label>
-                        <x-button variant="success" @click="metodo.tramos.push({hasta: '', monto: ''})" class="ml-auto">
-                            <i class="fa fa-plus"></i> Agregar Tramo
-                        </x-button>
-                    </x-flex>
+            <div class="text-xs text-muted-foreground mb-3 p-2 bg-muted rounded">
+                Aplica para trabajadores que ganan por cada kg producido sin considerar estándar
+            </div>
 
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full">
-                            <thead>
-                                <x-tr>
-                                    <x-th>Hasta (kg)</x-th>
-                                    <x-th>S/. por kg</x-th>
-                                    <x-th>Acción</x-th>
-                                </x-tr>
-                            </thead>
-                            <tbody>
-                                <template x-for="(tramo, tramoIndex) in metodo.tramos"
-                                    :key="`tramo-${index}-${tramoIndex}`">
-                                    <tr>
-                                        <td class="px-4 py-2">
-                                            <x-input type="number" class="w-full" x-model.number="tramo.hasta"
-                                                step="0.1" />
-                                        </td>
-                                        <td class="px-4 py-2">
-                                            <x-input type="number" class="w-full" x-model.number="tramo.monto"
-                                                step="0.1" />
-                                        </td>
-                                        <td class="px-4 py-2 text-center">
-                                            <x-button variant="danger" @click="metodo.tramos.splice(tramoIndex, 1)">
-                                                <i class="fa fa-trash"></i>
-                                            </x-button>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </x-card>
-        </template>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <x-tr>
+                            <x-th>Hasta (kg)</x-th>
+                            <x-th>S/. por kg</x-th>
+                            <x-th>Acción</x-th>
+                        </x-tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="(tramo, index) in tramosDestajo" :key="`piecework-${index}`">
+                            <tr>
+                                <td class="px-4 py-2">
+                                    <x-input type="number" class="w-full" x-model="tramo.hasta" @input="calcularBonos"
+                                        step="0.1" />
+                                </td>
+                                <td class="px-4 py-2">
+                                    <x-input type="number" class="w-full" x-model="tramo.monto" @input="calcularBonos"
+                                        step="0.1" />
+                                </td>
+                                <td class="px-4 py-2 text-center">
+                                    <x-button variant="danger" @click="removerTramo(index, 'piecework')">
+                                        <i class="fa fa-trash"></i>
+                                    </x-button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </x-card>
     </div>
-
-
-    <!-- Información de Métodos -->
-    <x-card class="text-xs text-muted-foreground space-y-2">
-        <x-flex class="gap-2">
-            <span class="text-blue-500 font-semibold">ℹ</span>
-            <p><strong>Crear métodos:</strong> Haz clic en "Agregar Método" para crear un nuevo método de cálculo.</p>
-        </x-flex>
-        <x-flex class="gap-2">
-            <span class="text-blue-500 font-semibold">ℹ</span>
-            <p><strong>Modo automático:</strong> Si ingresas un valor en "Estándar", el método será por sobreestandar.
-                Si lo dejas vacío, será por destajo.</p>
-        </x-flex>
-        <x-flex class="gap-2">
-            <span class="text-blue-500 font-semibold">ℹ</span>
-            <p><strong>Eliminar método:</strong> Los trabajadores asignados a este método se desvincularan
-                automáticamente.</p>
-        </x-flex>
-    </x-card>
 
     <!-- Tabla Handsontable con Recojos -->
     <x-card wire:ignore class="mt-6">
@@ -137,9 +134,11 @@
     <script>
         Alpine.data('bonificacionesDual', () => ({
             hot: null,
-            metodos: @entangle('metodos'),
+            tramosSobreEstandar: @entangle('tramosSobreEstandar'),
+            tramosDestajo: @entangle('tramosDestajo'),
             recojos: @entangle('recojos'),
             tableDataBonificados: @js($tableDataBonificados),
+            estandarProduccion: @entangle('estandarProduccion'),
             isDark: JSON.parse(localStorage.getItem('darkMode')),
 
             init() {
@@ -218,7 +217,7 @@
                     data: 'metodo_bonificacion',
                     title: 'Método Bono',
                     type: 'dropdown',
-                    source: this.obtenerNombresMetodos(),
+                    source: ['Sin bonificación', 'Por sobreestandar', 'Por destajo'],
                     className: 'font-bold !text-center'
                 }, {
                     data: 'campo',
@@ -282,103 +281,61 @@
                 return cols;
             },
 
-            agregarMetodo() {
-                this.metodos.push({
-                    estandar: null,
-                    tramos: [{
+            agregarTramo(tipoTramo) {
+                if (tipoTramo === 'standard') {
+                    this.tramosSobreEstandar.push({
                         hasta: '',
                         monto: ''
-                    }]
-                });
-                this.hot.updateSettings({
-                    columns: this.generarColumnasDinamicas()
-                });
-            },
-
-            eliminarMetodo(index) {
-                // Desvincular trabajadores que usen este método
-                const nombreMetodo = this.obtenerNombreMetodo(this.metodos[index], index);
-                this.tableDataBonificados.forEach(trabajador => {
-                    if (trabajador.metodo_bonificacion === nombreMetodo) {
-                        trabajador.metodo_bonificacion = null;
-                    }
-                });
-                // Eliminar el método
-                this.metodos.splice(index, 1);
-                // Actualizar tabla
-                this.hot.updateSettings({
-                    columns: this.generarColumnasDinamicas()
-                });
+                    });
+                } else if (tipoTramo === 'piecework') {
+                    this.tramosDestajo.push({
+                        hasta: '',
+                        monto: ''
+                    });
+                }
                 this.calcularBonos();
             },
 
-            obtenerNombreMetodo(metodo, index) {
-                const numeroMetodo = index + 1;
-                if (metodo.estandar) {
-                    return `Método x Sobreestandar #${numeroMetodo}`;
-                } else {
-                    return `Método x Jornal #${numeroMetodo}`;
+            removerTramo(index, tipoTramo) {
+                if (tipoTramo === 'standard') {
+                    this.tramosSobreEstandar.splice(index, 1);
+                } else if (tipoTramo === 'piecework') {
+                    this.tramosDestajo.splice(index, 1);
                 }
-            },
-
-            obtenerNombresMetodos() {
-                const nombres = [];
-                this.metodos.forEach((metodo, index) => {
-                    nombres.push(this.obtenerNombreMetodo(metodo, index));
-                });
-                return nombres;
-            },
-
-            actualizarNombreMetodo() {
-                // Se actualiza automáticamente por Alpine
-                this.hot.updateSettings({
-                    columns: this.generarColumnasDinamicas()
-                });
                 this.calcularBonos();
             },
 
             /**
-             * Calcula los bonos para todos los trabajadores según su método asignado.
+             * Calcula los bonos para todos los trabajadores según su método de bonificación individual.
              * 
-             * Busca el método dinámico asignado al trabajador y lo aplica:
-             * - Si el método tiene estándar: Por sobreestandar
-             * - Si el método no tiene estándar: Por destajo
+             * Cada trabajador puede usar:
+             * 1. Sin bonificación: bono = 0
+             * 2. Por sobreestandar: usa tramosSobreEstandar
+             * 3. Por destajo: usa tramosDestajo
              */
             calcularBonos() {
+                const hayTramosSobreEstandar = this.tramosSobreEstandar && this.tramosSobreEstandar.length > 0;
+                const hayTramosDestajo = this.tramosDestajo && this.tramosDestajo.length > 0;
+
                 this.tableDataBonificados.forEach(trabajador => {
-                    const nombreMetodoSeleccionado = trabajador.metodo_bonificacion;
-
-                    if (!nombreMetodoSeleccionado) {
-                        trabajador.total_bono = '0.00';
-                        return;
-                    }
-
-                    // Buscar el método en la lista
-                    const metodo = this.metodos.find((m, index) =>
-                        this.obtenerNombreMetodo(m, index) === nombreMetodoSeleccionado
-                    );
-
-                    if (!metodo || !metodo.tramos || metodo.tramos.length === 0) {
-                        trabajador.total_bono = '0.00';
-                        return;
-                    }
-
+                    const metodo = trabajador.metodo_bonificacion || 'Sin bonificación';
                     const produccionTotal = this.calcularProduccionTotal(trabajador);
 
-                    // Determinar si es por estándar o destajo según si el método tiene estándar
-                    if (metodo.estandar && metodo.estandar > 0) {
-                        // Por sobreestandar
+                    if (metodo === 'Sin bonificación') {
+                        trabajador.total_bono = '0.00';
+                    } else if (metodo === 'Por sobreestandar' && hayTramosSobreEstandar) {
                         trabajador.total_bono = this.calcularBonoPorEstandar(
                             trabajador,
                             produccionTotal,
-                            metodo
+                            this.tramosSobreEstandar
                         );
-                    } else {
-                        // Por destajo
+                    } else if (metodo === 'Por destajo' && hayTramosDestajo) {
                         trabajador.total_bono = this.calcularBonoPorDestajo(
                             produccionTotal,
-                            metodo.tramos
+                            this.tramosDestajo
                         );
+                    } else {
+                        trabajador.total_bono = '0.00';
                     }
                 });
 
@@ -401,18 +358,18 @@
              * MÉTODO: Bonificación por sobreestandar.
              * 
              * Fórmula:
-             * - Estándar esperado = (metodo.estandar / 8) * horas_trabajadas
+             * - Estándar esperado = (estandarProduccion / 8) * horas_trabajadas
              * - Excedente = produccionTotal - estandarEsperado
              * - Bono = aplicar tramos progresivos sobre el excedente
              */
-            calcularBonoPorEstandar(trabajador, produccionTotal, metodo) {
+            calcularBonoPorEstandar(trabajador, produccionTotal, tramos) {
                 const totalHoras = parseFloat(trabajador.rango_total_horas || 0);
 
-                if (!metodo.estandar || metodo.estandar <= 0) {
+                if (!this.estandarProduccion || this.estandarProduccion <= 0) {
                     return '0.00';
                 }
 
-                const estandarPorHora = metodo.estandar / 8;
+                const estandarPorHora = this.estandarProduccion / 8;
                 const estandarEsperado = estandarPorHora * totalHoras;
                 const excedente = Math.max(0, produccionTotal - estandarEsperado);
 
@@ -420,7 +377,7 @@
                     return '0.00';
                 }
 
-                const bonoTotal = this.aplicarTramos(excedente, metodo.tramos);
+                const bonoTotal = this.aplicarTramos(excedente, tramos);
                 return bonoTotal.toFixed(2);
             },
 

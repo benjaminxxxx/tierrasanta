@@ -1,12 +1,12 @@
 <div x-data="reporteSemanalTramo" @keydown.window.prevent.ctrl.s="registrarHoras"
     @keydown.window.prevent.meta.s="registrarHoras" class="">
-    <x-card2 class="my-5 mb-20">
+    <x-card class="my-5 mb-20">
         @include('livewire.gestion-cuadrilla.partial.reporte-semanal-opciones')
         @include('livewire.gestion-cuadrilla.partial.reporte-semanal-tabla')
         @include('livewire.gestion-cuadrilla.partial.reporte-semanal-resumen')
         @include('livewire.gestion-cuadrilla.partial.personalizar-costo-hora-form')
         @include('livewire.gestion-cuadrilla.partial.reordenar-grupo-form')
-    </x-card2>
+    </x-card>
 
 
     <livewire:gestion-cuadrilla.gestion-cuadrilla-reporte-pago-component />

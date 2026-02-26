@@ -72,6 +72,7 @@
             tipoAsistenciasCodigos: @json($tipoAsistenciasCodigos),
             hasUnsavedChanges: false,
             isDark: JSON.parse(localStorage.getItem('darkMode')),
+            totalHorasManuales: new Set(),
             init() {
                 Livewire.on('setEmpleados', (data) => {
                     let empleados = data[0];
@@ -121,7 +122,8 @@
                         // 'this' aquí se refiere a la instancia de Handsontable
                         const rowData = this.instance.getSourceDataAtRow(row);
 
-                        if (rowData && rowData.numero_cuadrilleros && rowData.numero_cuadrilleros > 0) {
+                        if (rowData && rowData.numero_cuadrilleros && rowData.numero_cuadrilleros >
+                            0) {
                             cellProperties.readOnly = true;
 
                             // Necesitas acceder a isDark desde el scope externo
@@ -129,6 +131,22 @@
                                 false;
 
                             cellProperties.className = '!bg-muted !text-center';
+                        }
+
+                        // === NUEVA LÓGICA PARA total_horas ===
+                        // solo aplica en la columna total_horas
+                        const colProp = this.instance.colToProp(col);
+
+                        if (colProp === 'total_horas') {
+                            if (['A', 'LSG', 'F'].includes(rowData.asistencia)) {
+                                // Cuando asistencia es A, LSG o F → readonly
+                                cellProperties.readOnly = true;
+                                cellProperties.className = '!bg-muted !text-center font-bold';
+                            } else {
+                                // En los demás casos → editable
+                                cellProperties.readOnly = false;
+                                cellProperties.className = '!text-center font-bold';
+                            }
                         }
 
                         return cellProperties;
@@ -143,34 +161,66 @@
                         }
                     },
                     */
+                    /* v original
+                     afterChange: (changes, source) => {
+
+                         //console.log(source);
+                         if (source === 'recalculado' || source === 'loadData') {
+                             return; // evitar loops infinitos
+                         }
+
+                         if (source === 'edit' ||
+                             source === 'CopyPaste.paste' ||
+                             source === 'timeValidator' ||
+                             source === 'Autofill.fill') {
+
+                             this.hasUnsavedChanges = true;
+
+                             const filasMap = new Map();
+                             changes.forEach(([row]) => {
+
+                                 if (!filasMap.has(row)) {
+                                     filasMap.set(row, this.hot.getDataAtRow(row));
+                                 }
+                             });
+                             filasMap.forEach((data, row) => {
+                                 this.recalcularTotales(data, row);
+                             });
+
+                         }
+                     }
+                         */
                     afterChange: (changes, source) => {
+                        if (source === 'recalculado' || source === 'loadData') return;
 
-                        //console.log(source);
-                        if (source === 'recalculado' || source === 'loadData') {
-                            return; // evitar loops infinitos
-                        }
-
-                        if (source === 'edit' ||
-                            source === 'CopyPaste.paste' ||
-                            source === 'timeValidator' ||
-                            source === 'Autofill.fill') {
-
+                        if (['edit', 'CopyPaste.paste', 'timeValidator', 'Autofill.fill'].includes(
+                                source)) {
                             this.hasUnsavedChanges = true;
 
                             const filasMap = new Map();
-                            changes.forEach(([row]) => {
+
+                            changes.forEach(([row, prop, oldVal, newVal]) => {
+                                if (prop === 'total_horas') {
+                                    // Edición manual de total_horas → marcar fila y NO recalcular
+                                    this.totalHorasManuales.add(row);
+                                    return; // saltar recálculo para este cambio
+                                }
+
+                                if (prop === 'asistencia') {
+                                    // Cambió asistencia → limpiar marca manual para que se recalcule
+                                    this.totalHorasManuales.delete(row);
+                                }
 
                                 if (!filasMap.has(row)) {
                                     filasMap.set(row, this.hot.getDataAtRow(row));
                                 }
                             });
+
                             filasMap.forEach((data, row) => {
                                 this.recalcularTotales(data, row);
                             });
-
                         }
                     }
-
                 });
 
                 this.hot = hot;
@@ -380,6 +430,8 @@
                 return columns;
             },
             recalcularTotales(data, row) {
+
+                if (this.totalHorasManuales.has(row)) return;
 
                 const indiceTotal = data.length - 2;
                 const tipoAsistencia = data[1]; // antes era data[2]
