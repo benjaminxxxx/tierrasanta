@@ -2,17 +2,20 @@
 
 namespace App\Services\Campo\Riego;
 
+use App\Models\AcumulacionUso;
 use App\Models\ConsolidadoRiego;
+use App\Models\PlanEmpleado;
 use App\Models\ReporteDiarioRiego;
 use App\Services\Campo\Gestion\CampoServicio;
 use App\Support\FormatoHelper;
 use DB;
 use Exception;
+use Illuminate\Support\Carbon;
 
 class RiegoServicio
 {
 
-    public function procesarRegistroDiario(string $regador, string $fecha, array $data, string $nombreRegador): void
+    public function procesarRegistroDiario(ConsolidadoRiego $resumenRiego, string $fecha, array $data): void
     {
         // 1. Extraer nombres de campos del array (asumiendo que el campo es el índice 0)
         $nombresCampos = collect($data)
@@ -31,10 +34,10 @@ class RiegoServicio
         // Obtener el mapa de alias -> nombre_real
         $mapaCampos = $validacion['filtro'];
 
-        DB::transaction(function () use ($regador, $fecha, $data, $nombreRegador, $mapaCampos) {
+        DB::transaction(function () use ($resumenRiego, $fecha, $data, $mapaCampos) {
 
-            ReporteDiarioRiego::where('documento', $regador)
-                ->whereDate('fecha', $fecha)
+            $resumenRiego->registrosDiarios()
+                ->where('por_acumulacion', false)
                 ->delete();
 
             foreach ($data as $row) {
@@ -45,21 +48,22 @@ class RiegoServicio
                 // Usamos el nombre real mapeado, si no existe (tsh/negro), usamos el original
                 $nombreRealCampo = $mapaCampos[$aliasCampo] ?? $row[0];
                 $hInicio = FormatoHelper::normalizarHora($row[1] ?? '00:00');
-                $hFin    = FormatoHelper::normalizarHora($row[2] ?? '00:00');
-                
+                $hFin = FormatoHelper::normalizarHora($row[2] ?? '00:00');
+
                 ReporteDiarioRiego::create([
+                    'consolidado_id' => $resumenRiego->id,
+                    'documento' => '',
+                    'regador' => '',
                     'campo' => $nombreRealCampo,
                     'hora_inicio' => $hInicio,
                     'hora_fin' => $hFin,
-                    //'total_horas' => isset($row[3]) ? $this->formatTime($row[3]) : '00:00',
-                    'documento' => $regador,
-                    'regador' => $nombreRegador,
                     'fecha' => $fecha,
                     'sh' => isset($row[6]) ? ($row[6] ? 1 : 0) : 0,
                     'tipo_labor' => isset($row[4]) && trim($row[4]) !== '' ? $row[4] : 'Riego',
                     'descripcion' => $row[5] ?? null,
                 ]);
             }
+
         });
     }
 
@@ -72,41 +76,85 @@ class RiegoServicio
                 throw new Exception("No se encontró el registro de riego con ID {$riegoId}.");
             }
 
-            $fecha = $consolidado->fecha;
-            $documento = $consolidado->regador_documento;
+            // Verificar si este consolidado tiene minutos cedidos a otros días
+            $usosCedidos = AcumulacionUso::where('consolidado_origen_id', $consolidado->id)->get();
 
-            ReporteDiarioRiego::where('documento', $documento)
-                ->where('fecha', $fecha)
-                ->delete();
+            if ($usosCedidos->isNotEmpty()) {
+                $detalle = $usosCedidos
+                    ->load('consolidadoDestino')
+                    ->map(
+                        fn($uso) =>
+                        Carbon::parse($uso->consolidadoDestino->fecha)->format('d/m/Y') .
+                        ' (' . intdiv($uso->minutos_consumidos, 60) . 'h ' . ($uso->minutos_consumidos % 60) . 'm)'
+                    )
+                    ->join(', ');
+
+                throw new Exception(
+                    "No se puede eliminar este registro porque tiene horas acumuladas " .
+                    "que fueron usadas en: {$detalle}. Desvincula esos usos primero."
+                );
+            }
+
+            // Liberar usos donde este consolidado es el DESTINO (él usó horas de otros)
+            AcumulacionUso::where('consolidado_destino_id', $consolidado->id)
+                ->each(function ($uso) {
+                    $uso->consolidadoOrigen->decrement('minutos_utilizados', $uso->minutos_consumidos);
+                    $uso->delete();
+                });
+
+            // Borrar registros diarios
+            $consolidado->registrosDiarios()->get()->each->delete();
 
             $consolidado->delete();
         });
     }
+    private static function mapTipoToModel($tipo)
+    {
+        return match ($tipo) {
+            'empleados' => \App\Models\PlanEmpleado::class,
+            'cuadrilleros' => \App\Models\Cuadrillero::class,
+            default => null,
+        };
+    }
     public static function registrarRegadoresEnFecha($fecha, $listaRegadores)
     {
         foreach ($listaRegadores as $regador) {
-
-            if (empty($regador['dni'])) {
-                throw new Exception("Falta DNI en uno de los regadores.");
-            }
-
-            $nombre = $regador['nombre'] ?? null;
-            static::crearConsolidado($fecha, $regador['dni'], $nombre);
+            self::createOrUpdateConsolidado($fecha, $regador);
         }
     }
-    private static function crearConsolidado($fecha, $documento, $nombre_completo = '')
+    public static function createOrUpdateConsolidado($fecha, $regador)
     {
-        $existe = ConsolidadoRiego::where('regador_documento', $documento)
-            ->where('fecha', $fecha)
-            ->exists();
+        $trabajadorId = $regador['id'];
+        $trabajadorType = self::mapTipoToModel($regador['tipo']);
 
-        if ($existe) {
-            throw new Exception("Ya existe un consolidado para el regador con documento {$documento} en la fecha {$fecha}.");
+        if (!$trabajadorType) {
+            throw new Exception("Tipo de trabajador inválido: {$regador['tipo']}");
         }
 
-        ConsolidadoRiego::create([
-            'regador_documento' => $documento,
-            'regador_nombre' => $nombre_completo,
+        $documento = $regador['documento'] ?? null;
+        $nombre = $regador['nombre'] ?? '';
+
+        // Buscar por relación polimórfica real
+        $consolidado = ConsolidadoRiego::where('trabajador_id', $trabajadorId)
+            ->where('trabajador_type', $trabajadorType)
+            ->where('fecha', $fecha)
+            ->first();
+
+        if ($consolidado) {
+
+            // 🔄 Actualizar datos
+            $consolidado->update([
+                'regador_documento' => '',
+                'regador_nombre' => '',
+            ]);
+
+            return $consolidado;
+        }
+
+        // 🆕 Crear nuevo consolidado
+        return ConsolidadoRiego::create([
+            'regador_documento' => '',
+            'regador_nombre' => '',
             'fecha' => $fecha,
             'hora_inicio' => null,
             'hora_fin' => null,
@@ -115,7 +163,10 @@ class RiegoServicio
             'total_horas_acumuladas' => 0,
             'total_horas_jornal' => 0,
             'estado' => 'noconsolidado',
+
+            // Campos morph
+            'trabajador_id' => $trabajadorId,
+            'trabajador_type' => $trabajadorType,
         ]);
     }
-
 }

@@ -349,17 +349,37 @@ class CuadrilleroServicio
     private function getValidationRules($cuadrilleroId = null): array
     {
         return [
-            'nombres' => 'required|string|max:100',
+            'nombres' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('cuad_cuadrilleros', 'nombres')->ignore($cuadrilleroId),
+            ],
+
             'dni' => [
                 'nullable',
                 'string',
-                'regex:/^\d{8,12}$/', // Solo números, entre 8 y 12 dígitos
+                'regex:/^\d{8,12}$/',
                 Rule::unique('cuad_cuadrilleros', 'dni')->ignore($cuadrilleroId),
             ],
+
             'codigo_grupo' => 'nullable|string|max:50',
         ];
     }
+    private function getValidationMessages(): array
+    {
+        return [
+            'nombres.required' => 'El nombre es obligatorio.',
+            'nombres.string' => 'El nombre debe ser una cadena válida.',
+            'nombres.max' => 'El nombre no puede exceder los 100 caracteres.',
+            'nombres.unique' => 'Ya existe un cuadrillero con este nombre.',
 
+            'dni.regex' => 'El DNI debe contener solo números y tener entre 8 y 12 dígitos.',
+            'dni.unique' => 'Ya existe un cuadrillero registrado con este DNI.',
+
+            'codigo_grupo.max' => 'El código de grupo no puede exceder los 50 caracteres.',
+        ];
+    }
     /**
      * Valida los datos de entrada.
      *
@@ -369,7 +389,7 @@ class CuadrilleroServicio
      */
     private function validateData(array $data, $cuadrilleroId): void
     {
-        $validator = Validator::make($data, $this->getValidationRules($cuadrilleroId));
+        $validator = Validator::make($data, $this->getValidationRules($cuadrilleroId), $this->getValidationMessages());
 
         if ($validator->fails()) {
             // Lanza una excepción de validación que se puede manejar en el controlador
@@ -604,7 +624,7 @@ class CuadrilleroServicio
         }
 
         $metodoId = $mapaMetodos[$metodoBonificacion] ?? null;
-        
+
         // Buscar o crear el registro de bono para esta actividad en este registro diario
         $actividadBono = CuadActividadBono::updateOrCreate(
             [
@@ -612,7 +632,7 @@ class CuadrilleroServicio
                 'actividad_id' => $actividadId
             ],
             [
-                
+
                 'metodo_id' => $metodoId,
                 'total_bono' => $fila['total_bono'] ?? 0
             ]
@@ -622,7 +642,7 @@ class CuadrilleroServicio
         CuadActividadProduccion::where('actividad_bono_id', $actividadBono->id)
             ->where('numero_recojo', '>', $numeroRecojos)
             ->delete();
-            
+
         // Guardar o actualizar producciones
         for ($i = 1; $i <= $numeroRecojos; $i++) {
             $produccion = $fila['produccion_' . $i] ?? null;

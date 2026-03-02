@@ -19,10 +19,14 @@ return new class extends Migration
             $table->date('fecha');
             $table->time('hora_inicio')->nullable();
             $table->time('hora_fin')->nullable();
-            $table->time('total_horas_riego');
-            $table->time('total_horas_jornal');
+            //$table->time('total_horas_riego');
+            //$table->time('total_horas_jornal');
             $table->time('total_horas_observaciones')->nullable(); 
-            $table->time('total_horas_acumuladas')->nullable(); 
+            $table->unsignedSmallInteger('minutos_regados')->default(0); 
+            $table->unsignedSmallInteger('minutos_jornal')->default(0); 
+            $table->unsignedSmallInteger('minutos_acumulados')->default(0); 
+            $table->unsignedSmallInteger('minutos_utilizados')->default(0); 
+            
             $table->enum('estado',['consolidado','noconsolidado'])->default('consolidado');
             $table->timestamps();
             $table->index(['regador_documento', 'fecha']);

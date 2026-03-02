@@ -14,18 +14,27 @@ class ReporteDiarioRiego extends Model
     protected $table = 'reg_registro_diario';
 
     protected $fillable = [
+        'consolidado_id',
         'campo',
         'hora_inicio',
         'hora_fin',
         //'total_horas',
-        'documento',
-        'regador',
-        'fecha',
+        'documento',//obsoleto
+        'regador',//obsoleto
+        'fecha', //obsoleto si herea de consolidado
         'sh',
-        'tipo_labor',
+        'tipo_labor',//Riego, Mantenimiento, etc... Aqui podria ir Por Acumulación de Horas
         'descripcion',
         'campo_campania_id',
+        'por_acumulacion'
     ];
+    protected $casts = [
+        'por_acumulacion' => 'boolean',
+    ];
+    public function consolidado()
+    {
+        return $this->belongsTo(ConsolidadoRiego::class, 'consolidado_id');
+    }
     /**
      * Atributo virtual para obtener el total de horas en formato decimal.
      * Se accede como: $reporte->total_horas_decimal

@@ -23,6 +23,7 @@ return new class extends Migration
             $table->boolean('sh')->default(false);
             $table->string('tipo_labor');
             $table->text('descripcion')->nullable();
+            $table->boolean('por_acumulacion')->default(false);
             $table->unsignedBigInteger('campo_campania_id')->nullable(); 
             $table->foreign('campo_campania_id')->references('id')->on('campos_campanias')->onDelete('set null');
             $table->timestamps();

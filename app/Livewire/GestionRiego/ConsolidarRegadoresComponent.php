@@ -13,32 +13,31 @@ use Livewire\Component;
 class ConsolidarRegadoresComponent extends Component
 {
     use LivewireAlert;
-    protected $listeners = ['consolidarRegador', 'Desconsolidar','consolidarRegadorMasivo'];
+    protected $listeners = ['consolidarRegador', 'Desconsolidar', 'consolidarRegadorMasivo'];
     public function render()
     {
         return view('livewire.consolidar-regadores-component');
     }
-    public function consolidarRegadorMasivo($data){
-       
+    public function consolidarRegadorMasivo($data)
+    {
+
         foreach ($data as $fechaKey => $documentosArray) {
-            if(is_array($documentosArray) && count($documentosArray)>0){
+            if (is_array($documentosArray) && count($documentosArray) > 0) {
                 foreach ($documentosArray as $documentoValor => $opcional) {
                     $this->consolidarRegador($documentoValor, $fechaKey);
                 }
             }
         }
     }
-    public function consolidarRegador($documento, $fecha)
+    public function consolidarRegador($resumenId)
     {
-        $consolidadoRiego = ConsolidadoRiego::whereDate('fecha', $fecha)
-            ->where('regador_documento', $documento)
-            ->first();
+        $consolidadoRiego = ConsolidadoRiego::find($resumenId);
 
         if (!$consolidadoRiego) {
             return;
         }
 
-        $total_horas_riego = 0;
+        $minutos_regados = 0;
         $total_minutos_jornal = 0;
         $total_minutos_observaciones = 0;
         $total_minutos_acumulados = 0;
@@ -46,9 +45,7 @@ class ConsolidarRegadoresComponent extends Component
         $hora_fin = null;
         $intervalos = [];
 
-        $reporteDiarioRiego = ReporteDiarioRiego::whereDate('fecha', $fecha)
-            ->where('documento', $documento)
-            ->get();
+        $reporteDiarioRiego = $consolidadoRiego->registrosDiarios;
 
         foreach ($reporteDiarioRiego as $registro) {
             $inicio = new \DateTime($registro->hora_inicio);
@@ -72,7 +69,7 @@ class ConsolidarRegadoresComponent extends Component
             }
 
             if (mb_strtolower($registro->tipo_labor) === 'riego') {
-                $total_horas_riego += $diff->h + ($diff->i / 60);
+                $minutos_regados += $diff->h * 60 + $diff->i;
             } else {
                 // Cálculo para observaciones (no "Riego")
                 $total_minutos_observaciones += $diff->h * 60 + $diff->i;
@@ -84,20 +81,10 @@ class ConsolidarRegadoresComponent extends Component
             $total_minutos_jornal = CalculoHelper::calcularMinutosJornalParcial($intervalos);
         }
 
-        // Conversión de horas de riego a formato HH:mm
-        $total_horas_riego = gmdate('H:i', $total_horas_riego * 3600);
-
-        // Obtener las horas acumuladas si existen
-        $horasAcumuladas = HorasAcumuladas::whereDate('fecha_uso', $fecha)
-            ->where('documento', $documento)
-            ->get();
-
-        if ($horasAcumuladas->count() > 0) {
-            $total_minutos_acumulados = $horasAcumuladas->sum('minutos_acomulados');
-        }
+       
 
         // Calcular las horas totales del jornal con las observaciones y acumuladas
-        $minutos_jornal = $this->calcularMinutosJornal($total_minutos_jornal, $total_minutos_acumulados, $fecha, $documento);
+        $minutos_jornal = $this->calcularMinutosJornal($total_minutos_jornal, $total_minutos_acumulados, $consolidadoRiego);
 
         if ($minutos_jornal < 0) {
             $minutos_jornal = 0;
@@ -105,24 +92,20 @@ class ConsolidarRegadoresComponent extends Component
 
         // Máximo permitido para el jornal es de 8 horas (480 minutos)
         $horas_maxima_jornal = 480;
+        $minutos_adicionales = 0;
 
         if ($minutos_jornal > $horas_maxima_jornal) {
             $minutos_adicionales = $minutos_jornal - $horas_maxima_jornal;
             $minutos_jornal = $horas_maxima_jornal;
-            $this->procesarHorasAcumuladas($documento, $fecha, $minutos_adicionales);
-        } else {
-            HorasAcumuladas::where('documento', $documento)
-                ->whereDate('fecha_acumulacion', $fecha)
-                ->delete();
-        }
+        } 
 
         $total_horas_jornal = $this->convertirMinutosAHora($minutos_jornal);
 
         $consolidadoRiego->hora_inicio = $hora_inicio;
         $consolidadoRiego->hora_fin = $hora_fin;
-        $consolidadoRiego->total_horas_riego = $total_horas_riego;
+        $consolidadoRiego->minutos_regados = $minutos_regados;
         $consolidadoRiego->total_horas_observaciones = $this->convertirMinutosAHora($total_minutos_observaciones);
-        $consolidadoRiego->total_horas_acumuladas = $this->convertirMinutosAHora($total_minutos_acumulados);
+        $consolidadoRiego->minutos_acumulados = $minutos_adicionales;
         $consolidadoRiego->total_horas_jornal = $total_horas_jornal;
         $consolidadoRiego->estado = 'consolidado';
         $consolidadoRiego->save();
@@ -180,32 +163,20 @@ class ConsolidarRegadoresComponent extends Component
         return $totalMinutos; // Convertir minutos a horas
     }
   */
-    private function calcularMinutosJornal($total_minutos_jornal, $total_minutos_acumulados, $fecha, $documento)
+    private function calcularMinutosJornal($total_minutos_jornal, $total_minutos_acumulados, $consolidadoRiego)
     {
         if (!is_numeric($total_minutos_jornal) || !is_numeric($total_minutos_acumulados)) {
             throw new \InvalidArgumentException('Los parámetros $total_minutos_jornal y $total_minutos_acumulados deben ser numéricos.');
         }
 
-        // Verificar si el día es sábado
-        $esSabado = \Carbon\Carbon::parse($fecha)->isSaturday();
-
         // Obtener el tiempo de almuerzo desde la configuración
         $tiempo_almuerzo = Configuracion::find('tiempo_almuerzo');
         $minutos_almuerzo = $tiempo_almuerzo && is_numeric($tiempo_almuerzo->valor) ? (int) $tiempo_almuerzo->valor : 0;
 
-        if ($esSabado) {
-            // Si es sábado, no descontar el almuerzo y agregar 60 minutos
-            //$total_minutos_jornal += 60;
-        } else {
-            $consolidado = ConsolidadoRiego::where('regador_documento', $documento)
-                ->whereDate('fecha', $fecha)
-                ->first();
 
-            if ($consolidado && $consolidado->descuento_horas_almuerzo != 1) {
-                // Si el consolidado existe y no se ha descontado el almuerzo
-                $total_minutos_jornal -= $minutos_almuerzo;
-            }
-
+        if ($consolidadoRiego && $consolidadoRiego->descuento_horas_almuerzo != false) {
+            // Si el consolidado existe y no se ha descontado el almuerzo
+            $total_minutos_jornal -= $minutos_almuerzo;
         }
 
         return (int) $total_minutos_jornal + (int) $total_minutos_acumulados;

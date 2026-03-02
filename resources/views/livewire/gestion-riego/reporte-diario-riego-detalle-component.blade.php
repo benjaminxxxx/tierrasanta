@@ -1,44 +1,122 @@
 <div>
     <x-card class="mb-5">
-        @if ($riego)
-            <x-flex class="justify-between">
-                <div>
-                    <div class="flex justify-between items-center mb-3 ">
-                        <x-h3 class="text-left">REGADOR - {{ $riego->regador_nombre }}</x-h3>
-                    </div>
-                    <div class="text-left mb-5">
-                        <p class="font-2xl dark:text-primaryTextDark">
-                            Total Horas de Riego: <b>{{ $riego->total_horas_riego }}</b>
-                        </p>
-                        <p class="font-2xl dark:text-primaryTextDark">
-                            Total Horas de Jornal: <b>{{ $riego->total_horas_jornal }}</b>
-                            {{ $riego->horasAcumuladas != '00:00' ? ' (y se acumuló ' . $riego->horasAcumuladas . ')' : '' }}
-                        </p>
-                    </div>
+        <div class="lg:flex gap-5">
+            <div class="lg:w-[16rem]">
+                <div class="flex justify-between items-center mb-3 ">
+                    <x-h4 class="text-left">{{ $resumenRiego->trabajador_nombre }}</x-h4>
                 </div>
-                <div>
-                    <x-button variant="danger" wire:confirm="¿Estás seguro que desea eliminar este registro?"
-                        wire:click="eliminarRegador({{ $riego->id }})">
-                        <i class="fa fa-trash"></i> Eliminar regador
-                    </x-button>
+                <div class="text-left mb-5">
+                    <p class="text-card-foreground">
+                        Horas de Riego: <b>{{ formatear_minutos_horas($resumenRiego->minutos_regados) }}</b>
+                    </p>
+                    <p class="text-card-foreground">
+                        Horas de Jornal: <b>{{ formatear_minutos_horas($resumenRiego->minutos_jornal) }}</b>
+                        {{ $resumenRiego->minutos_acumulados > 0 ? ' (y se acumuló ' . formatear_minutos_horas($resumenRiego->minutos_acumulados) . ')' : '' }}
+                    </p>
                 </div>
-            </x-flex>
-        @endif
+                <x-label for="activar_descontar_hora_almuerzo{{ $resumenRiego->id }}" class="mt-4">
+                    <x-checkbox id="activar_descontar_hora_almuerzo{{ $resumenRiego->id }}"
+                        wire:model.live="noDescontarHoraAlmuerzo" class="mr-2" />
+                    No Descontar Hora de Almuerzo
+                </x-label>
+            </div>
+            <div class="flex-1">
+                @if ($resumenRiego)
+                    <x-flex class="justify-between">
+                        <div>
 
-        <x-label for="activar_descontar_hora_almuerzo{{ $regador }}" class="mt-4">
-            <x-checkbox id="activar_descontar_hora_almuerzo{{ $regador }}"
-                wire:model.live="noDescontarHoraAlmuerzo" class="mr-2" />
-            No Descontar Hora de Almuerzo
-        </x-label>
+                        </div>
+                        <div>
+                            @if ($resumenRiego->minutos_acumulados <= 0 && $resumenRiego->minutos_disponibles > 0)
+                                <x-button variant="info" wire:click="abrirModalHorasAcumuladas">
+                                    Usar {{ $resumenRiego->disponible_formateado }} Acumuladas
+                                </x-button>
+                            @endif
+                            <x-button variant="danger" title="Eliminar Regador"
+                                wire:confirm="¿Estás seguro que desea eliminar este registro?"
+                                wire:click="eliminarRegador({{ $resumenRiego->id }})">
+                                <i class="fa fa-trash"></i>
+                            </x-button>
+                        </div>
+                    </x-flex>
+                @endif
+                <div x-data="{{ $idTable }}">
 
-        <div x-data="{{ $idTable }}" wire:ignore>
-            <div x-ref="tableContainer" class="mt-5" ></div>
+                    <div wire:ignore>
+                        <div x-ref="tableContainer" class="mt-5"></div>
+                    </div>
 
-            <x-button-save @click="sendDataRegistroDiarioRiego" class="mt-5">
-                Guardar Cambios
-            </x-button-save>
+
+                    <x-flex class="justify-between w-full">
+                        <div>
+                            @if ($registroDiarioAcumulado)
+                                Se usaron {{ $registroDiarioAcumulado->total_horas }} hora(s) de trabajos acumulados.
+                                <x-button variant="danger"
+                                    wire:click="quitarAcumulado({{ $registroDiarioAcumulado->id }})"><i
+                                        class="fa fa-remove"></i> Quitar</x-button>
+                            @endif
+                        </div>
+
+                        <x-button-save @click="sendDataRegistroDiarioRiego" class="mt-5">
+                            Guardar Cambios
+                        </x-button-save>
+                    </x-flex>
+                </div>
+            </div>
         </div>
+
     </x-card>
+    <x-dialog-modal maxWidth="lg" wire:model="mostrarHorasAcumuladasForm">
+        <x-slot name="title">
+            Registrar Uso de Horas Acumuladas
+        </x-slot>
+
+        <x-slot name="content">
+            <div>
+                <x-title value="FDM" />
+            </div>
+            <div class="mt-5 flex gap-5 items-start" x-data="{
+                inicio: @entangle('acumulado.horaInicio'),
+                fin: @entangle('acumulado.horaFin'),
+                get total() {
+                    if (!this.inicio || !this.fin) return '';
+            
+                    const [hi, mi] = this.inicio.split(':').map(Number);
+                    const [hf, mf] = this.fin.split(':').map(Number);
+            
+                    let inicioMin = hi * 60 + mi;
+                    let finMin = hf * 60 + mf;
+            
+                    // Si la hora final es del día siguiente
+                    if (finMin < inicioMin) {
+                        finMin += 24 * 60;
+                    }
+            
+                    const diffHoras = (finMin - inicioMin) / 60;
+                    return diffHoras.toFixed(2);
+                }
+            }">
+
+                <x-input type="time" label="Hora de Inicio" x-model="inicio" class="w-auto" />
+                <div>
+                    <x-input type="time" label="Hora Final" x-model="fin" class="w-auto" />
+                    <x-input-error for="acumulado.horaFin" />
+                </div>
+                <x-input type="number" label="Total Horas" readonly x-model="total" class="w-auto" />
+            </div>
+
+        </x-slot>
+
+        <x-slot name="footer">
+            <x-button variant="secondary" wire:click="$set('mostrarHorasAcumuladasForm', false)"
+                wire:loading.attr="disabled">
+                Cerrar
+            </x-button>
+            <x-button wire:click="registrarUsoHorasAcumuladas" wire:loading.attr="disabled">
+                <i class="fa fa-save"></i> Registrar Uso de Horas Acumuladas
+            </x-button>
+        </x-slot>
+    </x-dialog-modal>
     <x-loading wire:loading />
 </div>
 
@@ -54,7 +132,7 @@
             init() {
 
                 this.initTable();
-              
+
                 Livewire.on('actualizarGrilla-{{ $idTable }}', (data) => {
 
                     console.log(data[0]);
@@ -125,7 +203,7 @@
                         data: 'sh',
                         width: 40,
                         type: 'checkbox',
-                        title: 'SIN HAB.',
+                        title: 'SIN HABERES',
                         className: '!text-center',
                         checkedTemplate: true,
                         uncheckedTemplate: false

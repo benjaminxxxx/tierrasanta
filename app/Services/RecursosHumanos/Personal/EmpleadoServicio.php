@@ -104,7 +104,7 @@ class EmpleadoServicio
 
         foreach ($limpio as $key => $value) {
             if (str_contains($key, 'documento')) {
-                $limpio[$key] = (string)$limpio[$key];
+                $limpio[$key] = (string) $limpio[$key];
             }
             // Si la columna es una fecha y viene como número de Excel
             if (str_contains($key, 'fecha') && is_numeric($value)) {
@@ -198,8 +198,35 @@ class EmpleadoServicio
             'diasMes' => $diasMes
         ];
     }
-    public static function cargarSearchableEmpleadosPlanilla(){
-        return  PlanEmpleado::orderBy('apellido_paterno')
+    public static function cargarSearchableEmpleadosPlanilla()
+    {
+        return PlanEmpleado::orderBy('apellido_paterno')
+            ->orderBy('apellido_materno')
+            ->orderBy('nombres')
+            ->get()
+            ->map(function ($empleado) {
+                return [
+                    'name' => $empleado->nombre_completo,
+                    'id' => $empleado->id,
+                ];
+            })->toArray();
+    }
+    public static function cargarSearchableEmpleados($fecha, $tipoEmpleado = null)
+    {
+        // IDs ya agregados por tipo
+
+
+
+
+        switch ($tipoEmpleado) {
+            case "empleados":
+                $empleadosUsados = ConsolidadoRiego::where('fecha', $fecha)
+                    ->where('trabajador_type', PlanEmpleado::class)
+                    ->pluck('trabajador_id')
+                    ->toArray();
+                // Excluir SOLO empleados usados
+                return PlanEmpleado::whereNotIn('id', $empleadosUsados)
+                    ->orderBy('apellido_paterno')
                     ->orderBy('apellido_materno')
                     ->orderBy('nombres')
                     ->get()
@@ -209,45 +236,28 @@ class EmpleadoServicio
                             'id' => $empleado->id,
                         ];
                     })->toArray();
-    }
-    public static function cargarSearchableEmpleados($fecha, $tipoEmpleado = null)
-    {
-        //empleado o cuadrilla o ambos
-        $documentosAgregados = array_keys(ConsolidadoRiego::where('fecha', $fecha)->pluck('regador_documento', 'regador_documento')->toArray());
-        $trabajadores = [];
-        switch ($tipoEmpleado) {
-            case "empleados":
-                $trabajadores = PlanEmpleado::whereNotIn('documento', $documentosAgregados)
-                    ->orderBy('apellido_paterno')
-                    ->orderBy('apellido_materno')
-                    ->orderBy('nombres')
-                    ->get()
-                    ->map(function ($empleado) {
-                        return [
-                            'name' => $empleado->apellido_paterno . ' ' . $empleado->apellido_materno . ', ' . $empleado->nombres,
-                            'id' => $empleado->documento,
-                        ];
-                    })->toArray();
-                break;
+
             default:
-                $trabajadores = Cuadrillero::whereNotIn('dni', $documentosAgregados)
-                    ->whereNotNull('dni')
+                // Excluir SOLO cuadrilleros usados
+                $cuadrillerosUsados = ConsolidadoRiego::where('fecha', $fecha)
+                    ->where('trabajador_type', Cuadrillero::class)
+                    ->pluck('trabajador_id')
+                    ->toArray();
+                return Cuadrillero::whereNotIn('id', $cuadrillerosUsados)
                     ->orderBy('nombres')
-                    ->get(['dni as documento', 'nombres'])
+                    ->get(['id', 'nombres'])
                     ->map(function ($cuadrillero) {
                         return [
                             'name' => $cuadrillero->nombres,
-                            'id' => $cuadrillero->documento,
+                            'id' => $cuadrillero->id,
                         ];
                     })->toArray();
-                break;
         }
-        return $trabajadores;
     }
     public static function guardarBonificaciones($actividadId, $datos, $numeroRecojos, $mapaMetodos)
     {
         foreach ($datos as $fila) {
-            
+
             $tipo = $fila['tipo'] ?? null;
 
             if ($tipo == 'CUADRILLA') {

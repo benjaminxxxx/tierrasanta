@@ -16,51 +16,90 @@ class ConsolidadoRiego extends Model
      * @var array
      */
     protected $fillable = [
-        'regador_documento',
-        'regador_nombre',
+        'regador_documento',//obsoleto
+        'regador_nombre',//obsoleto
         'descuento_horas_almuerzo',
         'fecha',
         'hora_inicio',
         'hora_fin',
         'total_horas_riego',
         'total_horas_observaciones',
-        'total_horas_acumuladas',
+        'minutos_acumulados',
+        'minutos_utilizados',
         'total_horas_jornal',
-        'estado'
+        'estado',//obsoleto
+
+        'trabajador_id',
+        'trabajador_type',
+        'minutos_regados',
+        'minutos_jornal'
     ];
-    public function getHorasAcumuladasAttribute()
+    protected $casts = [
+        'descuento_horas_almuerzo' => 'boolean',
+    ];
+    public function getTrabajadorNombreAttribute()
     {
-        $horasAcumuladas = HorasAcumuladas::where('documento', $this->regador_documento)
-            ->whereDate('fecha_acumulacion', $this->fecha) // Suponiendo que la fecha de uso es relevante
-            ->first();
-
-        // Si no hay horas acumuladas, devolver 00:00
-        if (!$horasAcumuladas) {
-            return '00:00';
-        }
-        // Convertir minutos acumulados en horas y minutos
-        $horas = floor($horasAcumuladas->minutos_acomulados / 60);
-        $minutosRestantes = $horasAcumuladas->minutos_acomulados % 60;
-        $resultado = '';
-
-        // Formatear horas
-        if ($horas > 0) {
-            $resultado .= $horas . ' ' . ($horas == 1 ? 'hora' : 'horas');
+        // Si no hay relación, retornamos el nombre base (regador_nombre)
+        if (!$this->trabajador_type || !$this->trabajador_id) {
+            return $this->regador_nombre;
         }
 
-        // Formatear minutos
-        if ($minutosRestantes > 0) {
-            if ($horas > 0) {
-                $resultado .= ' y ';
-            }
-            $resultado .= $minutosRestantes . ' ' . ($minutosRestantes == 1 ? 'minuto' : 'minutos');
+        // Instanciar el modelo desde el morph
+        $model = app($this->trabajador_type)::find($this->trabajador_id);
+
+        // Si no existe en BD, retornar el nombre base
+        if (!$model) {
+            return $this->regador_nombre;
         }
 
-        // Si no hay horas ni minutos, devolver 00:00
-        if (empty($resultado)) {
-            return '00:00';
+        // Según el tipo, devolver el atributo correcto
+        if ($this->trabajador_type === \App\Models\PlanEmpleado::class) {
+            return $model->nombre_completo; // campo PlanEmpleado
         }
 
-        return $resultado;
+        if ($this->trabajador_type === \App\Models\Cuadrillero::class) {
+            return $model->nombres; // campo Cuadrillero
+        }
+
+        // Fallback seguro
+        return $this->regador_nombre;
+    }
+    // En ConsolidadoRiego
+    public function getMinutosDisponiblesAttribute(): int
+    {
+        $acumulado = self::where('trabajador_type', $this->trabajador_type)
+            ->where('trabajador_id', $this->trabajador_id)
+            ->sum('minutos_acumulados');
+
+        $utilizado = AcumulacionUso::whereHas('consolidadoOrigen', function ($q) {
+            $q->where('trabajador_type', $this->trabajador_type)
+                ->where('trabajador_id', $this->trabajador_id);
+        })
+            ->sum('minutos_consumidos');
+
+        return max(0, $acumulado - $utilizado);
+    }
+    public function getDisponibleFormateadoAttribute(): string
+    {
+        $minutos = $this->minutos_disponibles;
+        $horas = intdiv($minutos, 60);
+        $mins = $minutos % 60;
+
+        return $horas > 0
+            ? "{$horas}h {$mins}min"
+            : "{$mins}min";
+    }
+    public function registrosDiarios()
+    {
+        return $this->hasMany(ReporteDiarioRiego::class, 'consolidado_id');
+    }
+    public function getRegistroDiarioAcumuladoAttribute()
+    {
+        return $this->registrosDiarios()->where('por_acumulacion', true)->first();
+
+    }
+    public function trabajador()
+    {
+        return $this->morphTo();
     }
 }

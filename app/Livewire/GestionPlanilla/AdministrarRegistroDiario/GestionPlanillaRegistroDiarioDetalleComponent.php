@@ -59,7 +59,7 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
             $this->resumenDiarioPlanilla->update([
                 'total_actividades'=>$this->totalActividades,
             ]);
-
+            dd($this->fecha,$datos,$this->totalActividades);
             app(GestionPlanillaReporteDiario::class)->guardarRegistrosDiarios($this->fecha,$datos,$this->totalActividades);
             $this->obtenerResumenDiarioPlanilla();
             ActividadServicio::detectarYCrearActividades($this->fecha);

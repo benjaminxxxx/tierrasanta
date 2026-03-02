@@ -45,3 +45,43 @@ if (!function_exists('formatear_numero')) {
         return rtrim(rtrim($formateado, '0'), '.');
     }
 }
+
+if (!function_exists('formatear_minutos_horas')) {
+
+    /**
+     * Convierte minutos enteros en formato legible:
+     *  - 0        → "00:00"
+     *  - 15       → "15 minutos"
+     *  - 60       → "1 hora"
+     *  - 75       → "1 hora y 15 minutos"
+     *  - 240      → "4 horas"
+     */
+    function formatear_minutos_horas($minutos)
+    {
+        $minutos = (int) $minutos;
+
+        if ($minutos <= 0) {
+            return "00:00";
+        }
+
+        $horas = intdiv($minutos, 60);
+        $restantes = $minutos % 60;
+
+        $texto = '';
+
+        // Horas
+        if ($horas > 0) {
+            $texto .= $horas . ' ' . ($horas === 1 ? 'hora' : 'horas');
+        }
+
+        // Minutos
+        if ($restantes > 0) {
+            if ($horas > 0) {
+                $texto .= ' y ';
+            }
+            $texto .= $restantes . ' ' . ($restantes === 1 ? 'minuto' : 'minutos');
+        }
+
+        return $texto;
+    }
+}
