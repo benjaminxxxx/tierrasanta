@@ -131,7 +131,6 @@ class CochinillaVentaRegistroFormComponent extends Component
                     ];
                 });
 
-                dd($this->ultimosIngresos);
             }
 
         } catch (\Throwable $th) {

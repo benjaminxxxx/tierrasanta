@@ -332,9 +332,7 @@ class ResumenTramoServicio
             // 🔹 Calcular sueldos
             $sueldos = $this->calcularSueldos($tramoLaboral, $resumenesAnterioresDelGrupo, $grupo, $codigoGrupo, $tramoAnterior);
             $dataParaUpsert = array_merge($dataParaUpsert, $sueldos);
-/*if($contadorAuxiliar==1){
-                dd($sueldos,$tramoLaboral, $resumenesAnterioresDelGrupo, $grupo, $codigoGrupo, $tramoAnterior);
-            }*/
+
             // 🔹 Calcular adicionales
             $adicionales = $this->calcularAdicionales($tramoLaboral, $resumenesAnterioresDelGrupo, $grupo, $codigoGrupo, $tramoAnterior);
             $dataParaUpsert = array_merge($dataParaUpsert, $adicionales);

@@ -80,7 +80,7 @@ class ListaAcumuladaTramos
 
             $actual = CuadResumenPorTramo::where('tramo_id', $actual->tramo_acumulado_id)
                 ->where('grupo_codigo', $actual->grupo_codigo)->first();
-                //dd($actual);
+           
         }
         return $tramos->sortBy('fecha_inicio')->values();
     }

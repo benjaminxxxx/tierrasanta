@@ -5,7 +5,7 @@
         </x-slot>
 
         <x-slot name="content">
-            <div x-data="formAgregarCuadrillero">
+            <div x-data="formAgregarCuadrillero" class="space-y-4">
                 <div class=" mt-2">
                     <x-label for="codigo_grupo"
                         value="Primero seleccione el grupo donde desea agregar cuadrilleros para esta semana" />
@@ -45,10 +45,10 @@
                                 <i class="fa fa-save"></i> Registrar como nuevo
                             </x-button>
                         </div>
-                        <ul class="mt-2 absolute border border-gray-600 shadow-2xl bg-white dark:bg-gray-700 z-[99]">
+                        <ul class="mt-2 absolute border border-border shadow-2xl bg-card z-[99]">
                             <template x-for="(cuadrillero, index) in cuadrillerosFiltrados" :key="cuadrillero.id">
-                                <li :class="{ 'bg-primary text-primaryText': selectedIndex === index }"
-                                    class="px-4 py-2 cursor-pointer hover:bg-primary hover:text-primaryText"
+                                <li :class="{ 'bg-muted text-muted-foreground': selectedIndex === index }"
+                                    class="px-4 py-2 cursor-pointer hover:bg-muted hover:text-muted-foreground"
                                     @mouseenter="setSelectedIndex(index)" @click="agregarCuadrillero(cuadrillero)">
                                     <span x-text="cuadrillero.nombres"></span> - DNI: <span
                                         x-text="cuadrillero.dni"></span>
@@ -60,7 +60,7 @@
                 </div>
                 <div class="mt-5">
                     <template x-for="(c, index) in cuadrillerosAgregados" :key="index">
-                        <x-resumen-item>
+                        <x-resumen-item class="mb-3">
                             <x-slot name="label">
                                 <span x-text="index+1" class="font-bold text-red-600"></span> - <span
                                     x-text="c.nombres"></span>

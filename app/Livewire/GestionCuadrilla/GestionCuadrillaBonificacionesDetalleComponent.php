@@ -81,7 +81,7 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
                         ? $recojos[$numeroRecojo]->produccion
                         : '';
                 }
-                //dd($row,$this->recojos);
+                
                 $horariosConcatenados = [];
                 foreach ($registro->detalleHoras as $detalle) {
                     $inicio = Carbon::parse($detalle->hora_inicio)->format('H:i');

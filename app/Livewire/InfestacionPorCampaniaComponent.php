@@ -55,7 +55,6 @@ class InfestacionPorCampaniaComponent extends Component
                 ->orderBy('fecha')
                 ->get();
             if ($this->tipo == 'infestacion') {
-                //dd($this->campaniaId,$this->infestaciones);
 
             }
         }

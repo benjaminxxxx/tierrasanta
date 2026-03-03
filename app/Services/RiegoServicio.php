@@ -103,7 +103,6 @@ class RiegoServicio
 
         $riegoHrsAcumuladas = self::sumarHorasTotales($riegos);
         $riegoM3AcumHa = $multiplicar($riegoHrsAcumuladas);
-        dd($riegoHrsReinfCosecha,$reinfestacion,$riegoHrsInfestReinf);
         return [
             'riego_inicio' => $fechaInicioRiego,
             'riego_fin' => $fechaFinRiego,

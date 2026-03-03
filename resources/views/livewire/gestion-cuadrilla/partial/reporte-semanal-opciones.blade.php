@@ -35,7 +35,7 @@
                     <x-dropdown-link class="text-center" @click="$wire.dispatch('eliminarTramo')">
                         Eliminar tramo
                     </x-dropdown-link>
-                    <hr/>
+                    
                     <x-dropdown-link class="text-center" href="{{ route('gestion_cuadrilleros.registro-diario.index') }}" target="_blank">
                         Administrar registros diarios
                     </x-dropdown-link>

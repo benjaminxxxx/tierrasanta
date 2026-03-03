@@ -24,9 +24,25 @@
         @endif
     </x-flex>
     @if ($tramos && $tramos->count() == 0)
-        <x-warning class="mb-4">
-            No se ha registrado ningún tramo en esta fecha.
-        </x-warning>
+        <x-steps-info title="No se ha registrado ningún tramo en esta fecha" class="mb-4">
+
+            <p>Antes de registrar actividades, asegúrate de completar los tramos correspondientes.</p>
+
+            <ul class="list-disc list-inside mt-2 space-y-1">
+                <li>
+                    Ir al módulo de registro semanal:
+                    <a href="{{ route('gestion_cuadrilleros.reporte-semanal.index') }}" target="_blank"
+                        class="text-blue-700 dark:text-blue-300 underline">
+                        abrir aquí
+                    </a>.
+                </li>
+
+                <li>Crear un nuevo tramo con el rango de fechas correspondiente.</li>
+                <li>Registrar grupos, cuadrilleros y sus horas trabajadas.</li>
+                <li>Guardar la información y regresar a esta pantalla.</li>
+            </ul>
+
+        </x-steps-info>
     @endif
     <x-card>
         <div wire:ignore>
@@ -207,7 +223,7 @@
                     const minutos = finMin - inicioMin;
                     totalMinutos += minutos;
                 }
-                
+
                 const totalHoras = this.minutesToTime(totalMinutos);
                 this.hot.setDataAtCell(row, indiceTotal, totalHoras, 'recalculado');
                 console.log(row, indiceTotal, totalHoras, 'recalculado');

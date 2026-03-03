@@ -103,7 +103,7 @@ class ExcelPlanillaMensual
 
         $filePath = 'planilla/' . date('Y-m') . '/planilla_' . Str::slug("{$mes}_{$anio}") . '.xlsx';
         Excel::store(new PlanillaExport($data), $filePath, 'public');
-        //dd($filePath);
+    
         return $filePath;
     }
     protected function validarParametros(array $params)

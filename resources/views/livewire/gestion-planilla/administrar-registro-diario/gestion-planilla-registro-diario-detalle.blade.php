@@ -70,9 +70,10 @@
             campos: @json($campos),
             tipoAsistenciasHoras: @json($tipoAsistenciasHoras),
             tipoAsistenciasCodigos: @json($tipoAsistenciasCodigos),
-            hasUnsavedChanges: false,
+            hasUnsavedChanges: @entangle('hasUnsavedChanges'),
             isDark: JSON.parse(localStorage.getItem('darkMode')),
             totalHorasManuales: new Set(),
+            modifiedRowIndexes: @entangle('modifiedRowIndexes'),
             init() {
                 Livewire.on('setEmpleados', (data) => {
                     let empleados = data[0];
@@ -192,6 +193,13 @@
                          */
                     afterChange: (changes, source) => {
                         if (source === 'recalculado' || source === 'loadData') return;
+
+                        changes.forEach(([row]) => {
+                            // Solo agrega, nunca elimina
+                            if (!this.modifiedRowIndexes.includes(row)) {
+                                this.modifiedRowIndexes.push(row);
+                            }
+                        });
 
                         if (['edit', 'CopyPaste.paste', 'timeValidator', 'Autofill.fill'].includes(
                                 source)) {
@@ -469,6 +477,7 @@
                 const totalHoras = this.minutesToTime(totalMinutos);
                 this.hot.setDataAtCell(row, indiceTotal, totalHoras, 'recalculado');
             },
+            /*
             enviarRegistrosDiariosPlanilla() {
                 // getSourceData() devuelve TODO el array de datos original, 
                 // incluyendo las filas que están ocultas por el filtro.
@@ -491,6 +500,19 @@
                 // Ahora enviamos el total de los datos procesados, no solo los visibles
                 $wire.guardarInformacionRegistroPlanilla(resultados);
                 this.hasUnsavedChanges = false;
+            }*/
+            enviarRegistrosDiariosPlanilla() {
+                const datos = this.hot.getSourceData();
+                const resultados = [];
+
+                this.modifiedRowIndexes.forEach((rowIndex) => {
+                    const fila = datos[rowIndex];
+                    if (fila) {
+                        resultados.push(fila);
+                    }
+                });
+
+                $wire.guardarInformacionRegistroPlanilla(resultados);
             }
 
         }))

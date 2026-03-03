@@ -70,7 +70,7 @@ class PlanillaFdmServicio
         // 3. GENERACIÓN DEL EXCEL (Actualizado con nuevas columnas)
         $gastosAdicionales = []; // Aquí cargarías tus otros gastos si existen
         $rutaArchivo = self::generarExcelReporteFdm($dataProcesada, $gastosAdicionales, $anio, $mes);
-        dd($rutaArchivo);
+       
         return [
             'file' => $rutaArchivo,
             'detalle' => $dataProcesada,

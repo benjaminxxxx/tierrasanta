@@ -56,7 +56,7 @@ class CampaniasComponent extends Component
             ->toArray();
 
         $campaniaSesion = session('campania');
-        //dd($campaniaSesion);
+      
         // Si existe en la lista actual, seleccionarla
         if ($campaniaSesion && array_key_exists($campaniaSesion, $this->campanias)) {
             $this->campaniaSeleccionada = $campaniaSesion;

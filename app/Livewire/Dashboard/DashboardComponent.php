@@ -31,7 +31,6 @@ class DashboardComponent extends Component
                 'valor_anterior' => $e->valor_anterior !== null ? (float) $e->valor_anterior : null,
             ])
             ->toArray();
-            //dd($this->estadisticas);
     }
     private function calcularTrend(string $clave): ?float
     {

@@ -23,7 +23,7 @@ class GuardarBonificacionProceso
             // 2. Sincronizar métodos y sus tramos
             $mapaMetodos = ActividadMetodoServicio::sincronizarMetodos($actividad, $metodos);
             // 3. Recalcular bonificaciones de empleados asignados
-            //dd($mapaMetodos);
+          
             EmpleadoServicio::guardarBonificaciones($actividad->id, $datos, $recojos, $mapaMetodos);
         });
     }

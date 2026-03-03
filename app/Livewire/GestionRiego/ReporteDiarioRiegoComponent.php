@@ -10,6 +10,8 @@ use App\Models\PlanEmpleado;
 use App\Models\PlanMensual;
 use App\Models\PlanMensualDetalle;
 use App\Models\ReporteDiarioRiego;
+use App\Services\Modulos\Planilla\GestionPlanillaReporteDiario;
+use App\Services\RecursosHumanos\Personal\ActividadServicio;
 use DateTime;
 use Exception;
 use Illuminate\Support\Carbon;
@@ -58,6 +60,7 @@ class ReporteDiarioRiegoComponent extends Component
 
             $fin = (clone $inicio)->modify("+{$minutos} minutes");
             $horaFinCalculada = $fin->format('H:i:s');
+            $horasDecimales = round($item->minutos_jornal / 60, 2);
 
             return [
                 'trabajador_id' => $item->trabajador_id,
@@ -65,6 +68,7 @@ class ReporteDiarioRiegoComponent extends Component
                 'tipo' => $tipo,
                 'hora_inicio' => $item->hora_inicio,
                 'hora_fin' => $horaFinCalculada,
+                'total_horas' => $horasDecimales,
                 'campo' => 'FDM',
                 'labor' => 81,
             ];
@@ -75,10 +79,11 @@ class ReporteDiarioRiegoComponent extends Component
     public function confirmarEnvio()
     {
         try {
-            throw new Exception('Trabajando en caracteristica...');
+            
             $fecha = $this->fecha;
             $registrosDiarios = $this->listaPorEnviarRegadores;
             $dataPlanilla = [];
+            $datosCuadrilla = [];
             foreach ($registrosDiarios as $registroDiario) {
                 $mes = Carbon::parse($fecha)->month;
                 $anio = Carbon::parse($fecha)->year;
@@ -93,29 +98,29 @@ class ReporteDiarioRiegoComponent extends Component
                         throw new Exception("No se ha generado el registro mensual para {$registroDiario['trabajador_name']} aun");
 
                     }
-                    dd($planillaMensual);
-                   /* $dataPlanilla[] = [
+                    
+                    $dataPlanilla[] = [
                         "plan_men_detalle_id" => $planillaMensual->id,
                         //"documento" => "29486118"
                         //"nombres" => "CALLA GASPAR, GUILLERMINA HORTENCIA"
                         "asistencia" => "A",
-                        "total_horas" => 5
-                        "total_bono" => ""
-                        "campo_1" => "FDM"
-                        "labor_1" => "81"
-                        "entrada_1" => "7.00"
-                        "salida_1" => "12.00"
-                    ];*/
-                    PlanDetalleHora::create([
-                        'plan_reg_dia_id' => '',
-                        'campo_nombre' => $registroDiario['campo'],
-                        'codigo_labor' => $registroDiario['labor'],
-                        'hora_inicio' => $registroDiario['hora_inicio'],
-                        'hora_fin' => $registroDiario['hora_fin'],
-                        'orden' => 0
-                    ]);
+                        "total_horas" => $registroDiario['total_horas'],
+                        //"total_bono" => ""
+                        "campo_1" => $registroDiario['campo'],
+                        "labor_1" => $registroDiario['labor'],
+                        "entrada_1" => $registroDiario['hora_inicio'],
+                        "salida_1" => $registroDiario['hora_fin']
+                    ];
+                }elseif ($registroDiario['tipo'] == 'cuadrilla') {
+                    //aun no desarrollado, innecesario por el momento
                 }
             }
+
+            app(GestionPlanillaReporteDiario::class)->guardarRegistrosDiarios($fecha,$dataPlanilla,1);
+            ActividadServicio::detectarYCrearActividades($fecha);
+            $this->alert('success', 'Registros Diarios Enviados Correctamente.');
+            $this->mostrarEnvioAReporteDiario = false;
+
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }

@@ -135,7 +135,7 @@ class GestionCuadrillaReporteSemanalTramosComponent extends Component
             'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
             'titulo' => 'required|string|max:255',
         ]);
-
+        
         try {
             $datos = [
                 'fecha_inicio' => $this->fecha_inicio,

@@ -21,6 +21,7 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
     public $totalesAsistenciasPlanilleros = 0;
     public $totalActividades = 1;
     public $hasUnsavedChanges = false;
+    public $modifiedRowIndexes = [];
     protected $listeners = ['actualizarListaPlanillaRegistroDiario'=>'obtenerHandsonTableReporteDiario'];
     public function mount($fecha){
         $this->fecha = $fecha;
@@ -51,19 +52,23 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
     public function guardarInformacionRegistroPlanilla($datos)
     {
         if (!$this->fecha || !$this->resumenDiarioPlanilla || !is_array($datos)) {
+           
             return;
         }
 
         try {
-            
+            if(is_array($datos) && count($datos)==0){
+                $this->alert('warning','Sin cambios realizados.');
+                return;
+            }
             $this->resumenDiarioPlanilla->update([
                 'total_actividades'=>$this->totalActividades,
             ]);
-            dd($this->fecha,$datos,$this->totalActividades);
             app(GestionPlanillaReporteDiario::class)->guardarRegistrosDiarios($this->fecha,$datos,$this->totalActividades);
             $this->obtenerResumenDiarioPlanilla();
             ActividadServicio::detectarYCrearActividades($this->fecha);
             $this->hasUnsavedChanges = false;
+            $this->modifiedRowIndexes = [];
             $this->alert('success',"Registros Guardados Correctamente.");
 
         } catch (\Throwable $th) {

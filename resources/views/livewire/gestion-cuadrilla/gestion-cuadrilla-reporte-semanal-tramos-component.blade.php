@@ -41,7 +41,7 @@
             wire:key="tramo{{ $tramoActual->id }}-{{ $cambios }}" />
         <livewire:gestion-cuadrilla.gestion-cuadrilla-reporte-semanal-tramo-agregar-cuadrillero-component
             :tramoId="$tramoActual->id" wire:key="tramoAgregarCuadrillero{{ $tramoActual->id }}" />
-        
+
         <livewire:gestion-cuadrilla.gestion-cuadrilla-gastos-adicionales-component :tramoId="$tramoActual->id"
             wire:key="gastosAdicionales{{ $tramoActual->id }}" />
         <livewire:gestion-cuadrilla.administrar-cuadrillero.cuadrilla-grupo-form-component />
@@ -63,16 +63,11 @@
 
         <x-slot name="content">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <x-group-field>
-                    <x-label>Fecha de inicio del tramo</x-label>
-                    <x-input type="date" x-model="fechaInicio" @change="actualizarTitulo"
-                        wire:model="fecha_inicio" />
-                </x-group-field>
+           
 
-                <x-group-field>
-                    <x-label>Fecha final del tramo</x-label>
-                    <x-input type="date" x-model="fechaFin" @change="actualizarTitulo" wire:model="fecha_fin" />
-                </x-group-field>
+                
+                <x-selector-dia label="Fecha de inicio del tramo" wire:model.live="fecha_inicio" />
+                <x-selector-dia label="Fecha final del tramo" wire:model.live="fecha_fin" />
 
                 <x-group-field>
                     <x-input type="checkbox" wire:model="acumula_costos" label="Acumula costos" />
@@ -150,9 +145,13 @@
 @script
     <script>
         Alpine.data('reporteSemanalTramos', () => ({
-            fechaInicio: '',
-            fechaFin: '',
+            fechaInicio: @entangle('fecha_inicio'),
+            fechaFin: @entangle('fecha_fin'),
             titulo: @entangle('titulo'),
+            init() {
+                this.$watch('fechaInicio', () => this.actualizarTitulo());
+                this.$watch('fechaFin', () => this.actualizarTitulo());
+            },
             actualizarTitulo() {
                 if (!this.fechaInicio || !this.fechaFin) {
                     this.titulo = ''

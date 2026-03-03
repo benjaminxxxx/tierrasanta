@@ -109,7 +109,6 @@ class EvaluacionInfestacionCosechaComponent extends Component
     /*
     public function guardarDatosEvaluacionInfestacionCosecha($datos)
     {
-        dd($datos);
         array:14 [▼ // app\Livewire\EvaluacionInfestacionCosechaComponent.php:156
   0 => array:7 [▼
     "n_pencas" => 1

@@ -164,7 +164,7 @@ class CuadrilleroServicio
         $trabajadoresAgrupados = [];
 
         /*
-        dd($fecha, $datos, $totalColumnas);
+        
         "2025-12-29" // app\Services\Cuadrilla\CuadrilleroServicio.php:41
         array:4 [▼ // app\Services\Cuadrilla\CuadrilleroServicio.php:41
         0 => array:17 [▼
@@ -191,7 +191,7 @@ class CuadrilleroServicio
         3 => array:17 [▶]
         ]
         foreach ($datos as $registro) {
-            //dd($registro);
+      
             $labores = [];
             // 1. Recolectar todas las actividades válidas del trabajador.
             for ($x = 1; $x <= $totalColumnas; $x++) {
@@ -285,12 +285,62 @@ class CuadrilleroServicio
             'total_actividades' => $totalActividades
         ]);
     }*/
+    /*
+        public static function registrarTotalesEnResumenDiarioPlanilla($fechaInicio, $fechaFin)
+        {
+            $periodo = CarbonPeriod::create($fechaInicio, $fechaFin);
+            foreach ($periodo as $fecha) {
 
+                $totalCuadrilleros = CuadRegistroDiario::whereDate('fecha', $fecha)->distinct('cuadrillero_id')->count();
+                if ($fecha->format('Y-m-d') == '2026-01-02') {
+                    dd($totalCuadrilleros);
+                }
+                $resumenPlanilla = PlanResumenDiario::firstOrCreate(['fecha' => $fecha]);
+                $resumenPlanilla->update([
+                    'total_cuadrillas' => $totalCuadrilleros
+                ]);
+            }
+        }*/
     public static function registrarTotalesEnResumenDiarioPlanilla($fechaInicio, $fechaFin)
     {
         $periodo = CarbonPeriod::create($fechaInicio, $fechaFin);
+
         foreach ($periodo as $fecha) {
-            $totalCuadrilleros = CuadRegistroDiario::whereDate('fecha', $fecha)->distinct('cuadrillero_id')->count();
+
+            // 1. Traer todos los registros del día
+            $registros = CuadRegistroDiario::whereDate('fecha', $fecha)->get();
+
+            // 2. Agrupar por cuadrillero_id para detectar duplicados
+            $duplicados = $registros
+                ->groupBy('cuadrillero_id')
+                ->filter(function ($items) {
+                    return $items->count() > 1; // más de 1 registro = duplicado
+                });
+
+            // 3. Si hay duplicados, lanza excepción con detalle completo
+            if ($duplicados->isNotEmpty()) {
+
+                $detalles = [];
+
+                foreach ($duplicados as $cuadrilleroId => $items) {
+                    $cuadrillero = Cuadrillero::find($cuadrilleroId);
+                    $detalles[] = [
+                        'cuadrillero_id' => $cuadrilleroId,
+                        'nombre' => $cuadrillero?->nombres,
+                        'fecha' => $fecha->format('Y-m-d'),
+                        'cantidad_registros' => $items->count(),
+                    ];
+                }
+
+                throw new Exception(
+                    "Se detectaron duplicaciones en CuadRegistroDiario:\n" .
+                    json_encode($detalles, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+                );
+            }
+
+            // 4. Si no hay duplicados → continuar flujo normal
+            $totalCuadrilleros = $registros->unique('cuadrillero_id')->count();
+
             $resumenPlanilla = PlanResumenDiario::firstOrCreate(['fecha' => $fecha]);
             $resumenPlanilla->update([
                 'total_cuadrillas' => $totalCuadrilleros

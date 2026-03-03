@@ -239,8 +239,7 @@ class PlanillaBlancoDetalleComponent extends Component
             $totalHorasMap = app(PlanillaRegistroDiarioServicio::class)
                 ->obtenerTotalHorasPorMes($this->mes, $this->anio)
                 ->pluck('total_horas_mes', 'plan_empleado_id');
-            ;
-            dd($totalHorasMap);
+          
             $dataIds = collect($datos)->pluck('plan_empleado_id')->unique()->toArray();
             $sueldosPactados = app(PlanSueldoServicio::class)->obtenerSueldosPorMes($dataIds, $this->mes, $this->anio);
             $totalHorasBaseMes = $this->totalHoras;

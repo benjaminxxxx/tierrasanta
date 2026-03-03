@@ -342,7 +342,7 @@ class PlanillaRegistroDiarioServicio
         //Validar Datos
 
         $datos = $this->procesarDatos($datos);
-dd($datos);
+
         foreach ($datos as $i => $informacion) {
 
             $planillaMensualDetalleId = $informacion['plan_men_detalle_id'] ?? null;

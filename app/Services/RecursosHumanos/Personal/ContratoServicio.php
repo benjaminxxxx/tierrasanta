@@ -242,8 +242,7 @@ class ContratoServicio
         }
         
         if ($query->exists()) {
-            //$registro = $query->get()->first();
-            //dd($registro->empleado);
+            
             throw ValidationException::withMessages([
                 'fecha_inicio' => 'Las fechas seleccionadas se cruzan con un contrato existente para este empleado.'
             ]);
