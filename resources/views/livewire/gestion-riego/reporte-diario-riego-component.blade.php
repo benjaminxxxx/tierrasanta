@@ -3,6 +3,9 @@
     <x-card>
         <x-flex class="justify-between">
             <x-flex>
+                <x-title>
+                    Registro Diario de Riego
+                </x-title>
                 <x-button variant="secondary" wire:click="fechaAnterior" class="w-full lg:w-auto">
                     <i class="fa fa-chevron-left"></i>
                 </x-button>

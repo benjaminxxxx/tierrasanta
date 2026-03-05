@@ -4,12 +4,9 @@ namespace App\Livewire\GestionRiego;
 
 use App\Models\AcumulacionUso;
 use App\Models\ConsolidadoRiego;
-use App\Models\Cuadrillero;
-use App\Models\PlanEmpleado;
 use App\Services\Campo\Riego\RiegoServicio;
 use App\Services\Riego\ConsolidadorServicio;
 use App\Services\Riego\ConsolidarJornadaRiegoProceso;
-use App\Services\Riego\RegistroDiarioRiegoProceso;
 use Exception;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -36,6 +33,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
     public $mostrarHorasAcumuladasForm = false;
     public $acumulado = [];
     public $registroDiarioAcumulado = null;
+    public $noAcumularHoras = false;
     protected $listeners = ["registroConsolidado"];
     public function mount($resumenId)
     {
@@ -224,6 +222,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
         }
 
         $this->noDescontarHoraAlmuerzo = $this->resumenRiego->descuento_horas_almuerzo;
+        $this->noAcumularHoras = $this->resumenRiego->no_acumular_horas;
 
         $this->registros = $this->resumenRiego->registrosDiarios()
             ->whereDate('fecha', $this->fecha)
@@ -253,11 +252,16 @@ class ReporteDiarioRiegoDetalleComponent extends Component
         app(ConsolidadorServicio::class)->consolidar($this->resumenRiego);
        
     }
+    public function updatedNoAcumularHoras($valor)
+    {
+        $this->resumenRiego->update([
+            'no_acumular_horas' => $valor
+        ]);
+        app(ConsolidadorServicio::class)->consolidar($this->resumenRiego);
+    }
    
     public function storeTableDataRegistroDiarioRiego($data)
     {
-        //$data = is_array($data) ? $data : [];
-
         try {
             /*
             $riegoService = app(RiegoServicio::class);
@@ -267,7 +271,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
                 $data
             );*/
             app(ConsolidarJornadaRiegoProceso::class)
-                ->ejecutarGuardadoRegistros($this->resumenRiego, $this->fecha, $data);
+                ->ejecutarGuardadoRegistros($this->resumenRiego, $this->fecha, $data,$this->noAcumularHoras);
             $this->sincronizarAcumulado();
             //$this->dispatch('consolidarRegador', $this->resumenRiego->id);
             $this->alert("success", "Registro Guardado");

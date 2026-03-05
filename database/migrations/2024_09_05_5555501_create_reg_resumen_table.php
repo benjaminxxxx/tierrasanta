@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('regador_documento');
             $table->string('regador_nombre');
-            $table->integer('descuento_horas_almuerzo')->default(0);
+            $table->boolean('descuento_horas_almuerzo')->default(false);
+            $table->boolean('no_acumular_horas')->default(false);
             $table->date('fecha');
             $table->time('hora_inicio')->nullable();
             $table->time('hora_fin')->nullable();

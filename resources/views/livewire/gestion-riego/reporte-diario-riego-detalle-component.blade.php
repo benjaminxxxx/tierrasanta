@@ -2,7 +2,8 @@
     <x-card class="mb-5">
         <div class="lg:flex gap-5">
             <div class="lg:w-[16rem]">
-                <div class="flex justify-between items-center mb-3 ">
+                <div class="mb-3 ">
+                    <x-badge>{{ $resumenRiego->alias_origen }}</x-badge>
                     <x-h4 class="text-left">{{ $resumenRiego->trabajador_nombre }}</x-h4>
                 </div>
                 <div class="text-left mb-5">
@@ -14,11 +15,11 @@
                         {{ $resumenRiego->minutos_acumulados > 0 ? ' (y se acumuló ' . formatear_minutos_horas($resumenRiego->minutos_acumulados) . ')' : '' }}
                     </p>
                 </div>
-                <x-label for="activar_descontar_hora_almuerzo{{ $resumenRiego->id }}" class="mt-4">
-                    <x-checkbox id="activar_descontar_hora_almuerzo{{ $resumenRiego->id }}"
-                        wire:model.live="noDescontarHoraAlmuerzo" class="mr-2" />
-                    No Descontar Hora de Almuerzo
-                </x-label>
+                <div class="space-y-3">
+                    <x-input type="checkbox" label="No Descontar Hora de Almuerzo"
+                        wire:model.live="noDescontarHoraAlmuerzo" />
+                    <x-input type="checkbox" label="No Acumular Horas" wire:model.live="noAcumularHoras" />
+                </div>
             </div>
             <div class="flex-1">
                 @if ($resumenRiego)

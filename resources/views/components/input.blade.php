@@ -42,7 +42,7 @@
     @if ($type === 'checkbox')
         <div class="flex items-center gap-2">
             <input id="{{ $id }}" type="checkbox" {{ $isDisabled ? 'disabled' : '' }} 
-                {!! $attributes->merge(['class' => 'h-4 w-4 rounded border-input bg-background text-primary focus:ring-ring']) !!} 
+                {!! $attributes->merge(['class' => 'h-4 w-4 rounded border-muted-foreground bg-muted focus:ring-ring']) !!} 
             />
             @if ($label)
                 <x-label for="{{ $id }}" class="cursor-pointer">{{ $label }}</x-label>

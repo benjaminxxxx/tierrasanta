@@ -19,6 +19,7 @@ class ConsolidadoRiego extends Model
         'regador_documento',//obsoleto
         'regador_nombre',//obsoleto
         'descuento_horas_almuerzo',
+        'no_acumular_horas',
         'fecha',
         'hora_inicio',
         'hora_fin',
@@ -36,7 +37,19 @@ class ConsolidadoRiego extends Model
     ];
     protected $casts = [
         'descuento_horas_almuerzo' => 'boolean',
+        'no_acumular_horas' => 'boolean'
     ];
+    protected $appends = [
+        'alias_origen'
+    ];
+    public function getAliasOrigenAttribute(): ?string
+    {
+        return match ($this->trabajador_type) {
+            'App\Models\PlanEmpleado' => 'PLANILLA',
+            'App\Models\Cuadrillero' => 'CUADRILLA',
+            default => null,
+        };
+    }
     public function getTrabajadorNombreAttribute()
     {
         // Si no hay relación, retornamos el nombre base (regador_nombre)

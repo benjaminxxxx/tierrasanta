@@ -64,7 +64,7 @@ class ConsolidadorServicio
 
         // Lo que supera 480 se acumula para el futuro
         $minutosAcumuladosNuevos = 0;
-        if ($minutosJornalTotal > 480) {
+        if ($minutosJornalTotal > 480 && !$resumen->no_acumular_horas) {
             $minutosAcumuladosNuevos = $minutosJornalTotal - 480;
             $minutosJornalTotal = 480;
         }

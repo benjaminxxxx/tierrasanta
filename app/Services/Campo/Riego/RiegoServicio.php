@@ -130,9 +130,8 @@ class RiegoServicio
         if (!$trabajadorType) {
             throw new Exception("Tipo de trabajador inválido: {$regador['tipo']}");
         }
-
-        $documento = $regador['documento'] ?? null;
-        $nombre = $regador['nombre'] ?? '';
+        
+        $esCuadrilla = $regador['tipo'] === 'cuadrilleros';
 
         // Buscar por relación polimórfica real
         $consolidado = ConsolidadoRiego::where('trabajador_id', $trabajadorId)
@@ -150,7 +149,7 @@ class RiegoServicio
 
             return $consolidado;
         }
-
+        
         // 🆕 Crear nuevo consolidado
         return ConsolidadoRiego::create([
             'regador_documento' => '',
@@ -163,7 +162,7 @@ class RiegoServicio
             'total_horas_acumuladas' => 0,
             'total_horas_jornal' => 0,
             'estado' => 'noconsolidado',
-
+            'no_acumular_horas' => $esCuadrilla,
             // Campos morph
             'trabajador_id' => $trabajadorId,
             'trabajador_type' => $trabajadorType,
