@@ -306,7 +306,7 @@ class PlanillaRegistroDiarioServicio
             // 5. Sincronización optimizada
             $this->sincronizarTramos($registro, $item['tramos']);
         }
-
+        
         if (!empty($totalesPorAsistencia)) {
             $this->actualizarResumenAsistencia($fecha, $totalesPorAsistencia);
         }

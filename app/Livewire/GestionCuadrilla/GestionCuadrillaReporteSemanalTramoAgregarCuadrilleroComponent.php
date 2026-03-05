@@ -100,6 +100,7 @@ class GestionCuadrillaReporteSemanalTramoAgregarCuadrilleroComponent extends Com
 
             //verificar si existe el grupo en el tramoLaboral
             $grupo = $this->registrarGrupoEnTramoLaboral($this->tramoLaboral, $this->codigo_grupo);
+            
             $orden = 0;
             foreach ($this->cuadrillerosAgregados as $cuadrillero) {
                 $nombres = trim($cuadrillero['nombres'] ?? '');
@@ -117,14 +118,15 @@ class GestionCuadrillaReporteSemanalTramoAgregarCuadrilleroComponent extends Com
 
                 // Guardamos el id en la lista de nuevos
                 $idsNuevos[] = $cuadrilleroId;
-
+                
                 CuadTramoLaboralCuadrillero::updateOrCreate(
                     [
                         'cuadrillero_id' => $cuadrilleroId,
                         'cuad_tramo_laboral_grupo_id' => $grupo->id,
-                        'nombres' => $nombres
+                        
                     ],
                     [
+                        'nombres' => $nombres,
                         'orden' => $orden,
                     ]
                 );

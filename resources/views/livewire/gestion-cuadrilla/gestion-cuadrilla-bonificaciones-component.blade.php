@@ -24,6 +24,7 @@
     </x-flex>
 
     @if ($actividadSeleccionada)
+    
         <livewire:gestion-cuadrilla.gestion-cuadrilla-bonificaciones-detalle-component :actividadSeleccionada="$actividadSeleccionada"
             wire:key="actividad_{{ $actividadSeleccionada }}" />
     @else

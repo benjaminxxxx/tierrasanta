@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('color', 10)->nullable(); // formato corto tipo #FFFFFF
             $table->enum('tipo', ['adicional','sueldo','bono']);
             $table->string('descripcion', 255);
+            $table->string('descripcion_alias')->nullable();
             $table->enum('condicion', ['Pendiente', 'Pagado'])->default('Pendiente');
             $table->date('fecha')->nullable();
             $table->string('recibo')->nullable();

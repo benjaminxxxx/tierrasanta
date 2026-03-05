@@ -76,7 +76,6 @@
                     rowHeaders: true,
                     columns: this.generarColumnasDinamicas(),
                     width: '100%',
-                    height: 'auto',
                     stretchH: 'all',
                     filters: true,
                     rowHeaders: false,

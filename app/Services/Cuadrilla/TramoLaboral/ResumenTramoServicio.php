@@ -307,6 +307,7 @@ class ResumenTramoServicio
             ->with('grupo')
             ->orderBy('orden')
             ->get();
+
         // 3. (CORRECCIÓN CLAVE #1) Unificamos los códigos de grupo: tanto los que tienen
         // actividad actual como los que solo tienen deudas pendientes. Esto resuelve el problema
         // de que no se arrastraban deudas si no había actividad nueva.
@@ -317,7 +318,9 @@ class ResumenTramoServicio
         $dataParaUpsert = [];
         $contadorAuxiliar = 0;
         // 4. Iteramos sobre la lista unificada de códigos de grupo.
+
         foreach ($todosLosCodigos as $codigoGrupo) {
+
             $contadorAuxiliar++;
             $grupoEnTramo = $gruposEnTramoActual->firstWhere('codigo_grupo', $codigoGrupo);
             $grupo = $grupoEnTramo ? $grupoEnTramo->grupo : CuaGrupo::where('codigo', $codigoGrupo)->first();
@@ -325,14 +328,15 @@ class ResumenTramoServicio
             if (!$grupo) {
                 throw new Exception("Un grupo ya no existe no se puede genrar el resumen");
             }
-            
+
 
             $resumenesAnterioresDelGrupo = $resumenesAnteriores->where('grupo_codigo', $codigoGrupo);
-
+           
             // 🔹 Calcular sueldos
             $sueldos = $this->calcularSueldos($tramoLaboral, $resumenesAnterioresDelGrupo, $grupo, $codigoGrupo, $tramoAnterior);
-            $dataParaUpsert = array_merge($dataParaUpsert, $sueldos);
 
+            $dataParaUpsert = array_merge($dataParaUpsert, $sueldos);
+      
             // 🔹 Calcular adicionales
             $adicionales = $this->calcularAdicionales($tramoLaboral, $resumenesAnterioresDelGrupo, $grupo, $codigoGrupo, $tramoAnterior);
             $dataParaUpsert = array_merge($dataParaUpsert, $adicionales);
@@ -340,6 +344,7 @@ class ResumenTramoServicio
             // 🔹 Calcular bonos
             $bonos = $this->calcularBonos($tramoLaboral, $resumenesAnterioresDelGrupo, $grupo, $codigoGrupo, $tramoAnterior);
             $dataParaUpsert = array_merge($dataParaUpsert, $bonos);
+
         }
         // 1. Obtenemos las "claves únicas" de los registros que acabamos de calcular.
         // Una clave puede ser: "COD01-sueldo-ANDRES (septiembre)"
@@ -364,7 +369,6 @@ class ResumenTramoServicio
         if ($idsParaEliminar->isNotEmpty()) {
             CuadResumenPorTramo::destroy($idsParaEliminar);
         }
-
         $this->upsertResumenes($dataParaUpsert, $tramoLaboral->id);
     }
 
@@ -373,6 +377,9 @@ class ResumenTramoServicio
      */
     private function calcularSueldos($tramoLaboral, $resumenesAnteriores, $grupo, $codigoGrupo, $tramoAnterior = null)
     {
+        if ($codigoGrupo == 'CSJOYA') {
+
+        }
         $costosQuery = CuadRegistroDiario::where('codigo_grupo', $codigoGrupo)
             ->whereBetween('fecha', [$tramoLaboral->fecha_inicio, $tramoLaboral->fecha_fin]);
 
@@ -380,7 +387,10 @@ class ResumenTramoServicio
             return $this->calcularSueldosMensuales($tramoLaboral, $resumenesAnteriores, $grupo, $codigoGrupo, $tramoAnterior, $costosQuery);
         }
 
-        $totalCostosActual = $costosQuery->sum('costo_dia');
+        $totalCostosActual = $costosQuery->get()->sum(function ($item) {
+            return $item->costo_dia; // atributo calculado
+        });
+        
         //dd($totalCostosActual);
         $descripcion = $grupo->nombre;
 
@@ -395,6 +405,7 @@ class ResumenTramoServicio
             return [];
         }
         $fechaAcumulada = $registroAnterior->fecha_acumulada ?? $tramoLaboral->fecha_inicio;
+
         return [
             [
                 'grupo_codigo' => $codigoGrupo,
@@ -548,6 +559,7 @@ class ResumenTramoServicio
         $resultados = [];
 
         foreach ($todasLasDescripciones as $descripcion) {
+           
             $montoActual = $gastosActuales->where('descripcion', $descripcion)->sum('monto');
             $registroAnterior = $adicionalesAnteriores->firstWhere('descripcion', $descripcion);
 
@@ -562,11 +574,14 @@ class ResumenTramoServicio
             if ($deudaAcumuladaFinal == 0)
                 continue; // No generar registros en cero.
 
+            $descripcionAlias = $descripcion . ' ' . $grupo->nombre;
+            
             $resultados[] = [
                 'grupo_codigo' => $codigoGrupo,
                 'color' => $grupo->color,
                 'tipo' => 'adicional',
                 'descripcion' => $descripcion,
+                'descripcion_alias' => $descripcionAlias,
                 'condicion' => 'Pendiente',
                 'fecha_acumulada' => $fechaAcumulada,
                 'deuda_actual' => $montoActual,

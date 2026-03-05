@@ -139,7 +139,7 @@
                         const colProp = this.instance.colToProp(col);
 
                         if (colProp === 'total_horas') {
-                            if (['A', 'LSG', 'F'].includes(rowData.asistencia)) {
+                            if (['A', 'LSG', 'F'].includes(rowData.asistencia) || rowData.nombres == 'CUADRILLA') {
                                 // Cuando asistencia es A, LSG o F → readonly
                                 cellProperties.readOnly = true;
                                 cellProperties.className = '!bg-muted !text-center font-bold';

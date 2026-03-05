@@ -26,6 +26,9 @@ class CuadRegistroDiario extends Model
         'jornal_aplicado',
         'horas_destajo'
     ];
+    protected $append = [
+        'costo_dia'
+    ];
     protected $casts = [
         'asistencia' => 'boolean',
         'fecha' => 'date',

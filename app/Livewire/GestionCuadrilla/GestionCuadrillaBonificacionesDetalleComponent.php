@@ -26,14 +26,16 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
     {
         $this->actividad = Actividad::find($actividadSeleccionada);
 
-        
+
         if ($this->actividad) {
             $this->recojos = $this->actividad->recojos;
             $this->metodos = $this->actividad->metodos()->with(['tramos'])->get()->toArray();
             $this->unidades = $this->actividad->unidades ?? 'kg';
         }
+
         //los trabajadores deben estar despues de los recojos para obtener la informacion completa de recojos
         $this->obtenerTrabajadores();
+
     }
     public function obtenerTrabajadores()
     {
@@ -43,18 +45,18 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
             $fecha = $this->actividad->fecha;
 
             $registros = $this->obtenerCuadrillasPorFechaYLabor($campoNombre, $codigoLabor, $fecha, $this->actividad->id);
-     
+
             $registrosPlanilla = $this->obtenerPlanillasPorFechaYLabor($campoNombre, $codigoLabor, $fecha, $this->actividad->id);
 
             $dataHandsontable = [];
             $dataHandsontablePlanilla = [];
+
             foreach ($registros as $registro) {
 
                 $totalBonoCalculado = $registro->actividadesBonos->sum(function ($actividadBono) {
                     return $actividadBono->total_bono ?? 0;
                 });
-                $metodo_bonificacion = $registro->actividadesBonos[0]?->metodo?->titulo;
-
+                $metodo_bonificacion = optional(optional($registro->actividadesBonos->first())->metodo)->titulo;
                 $row = [
                     'registro_diario_id' => $registro->id,
                     'tipo' => 'CUADRILLA',
@@ -81,7 +83,7 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
                         ? $recojos[$numeroRecojo]->produccion
                         : '';
                 }
-                
+
                 $horariosConcatenados = [];
                 foreach ($registro->detalleHoras as $detalle) {
                     $inicio = Carbon::parse($detalle->hora_inicio)->format('H:i');
@@ -145,6 +147,7 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
             }
             $this->tableDataBonificados = $dataHandsontable;
         } catch (\Throwable $th) {
+
             $this->alert('error', $th->getMessage());
         }
     }
@@ -211,7 +214,7 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
             if (!$this->actividad) {
                 throw new Exception("La actividad ha caducado");
             }
-            
+
             GuardarBonificacionProceso::ejecutar(
                 $this->actividad,
                 $this->metodos,

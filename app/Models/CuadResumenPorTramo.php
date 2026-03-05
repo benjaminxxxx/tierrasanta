@@ -19,6 +19,7 @@ class CuadResumenPorTramo extends Model
         'fecha_fin',
         'tipo',
         'descripcion',
+        'descripcion_alias',
         'condicion',
         'fecha',
         'fecha_acumulada',

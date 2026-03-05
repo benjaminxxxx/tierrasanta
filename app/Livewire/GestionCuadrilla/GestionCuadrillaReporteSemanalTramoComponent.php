@@ -298,6 +298,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
                 ->get()
                 ->keyBy('id')
                 ->toArray();
+                
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }

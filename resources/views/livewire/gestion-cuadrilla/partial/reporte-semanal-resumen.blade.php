@@ -39,10 +39,10 @@
                     @endphp
 
                     <x-tr>
-                        <x-td class="uppercase font-bold text-black dark:!text-black"
-                            style="background-color:{{ $resumen['color'] }}">{{ $resumen['descripcion'] }}</x-td>
-                        <x-td class="text-right">{{ formatear_numero($resumen['deuda_actual']) }}</x-td>
-                        <x-td class="text-center">
+                        <x-td class="!py-1 uppercase font-bold text-black dark:!text-black"
+                            style="background-color:{{ $resumen['color'] }}">{{ $resumen['descripcion_alias']??$resumen['descripcion'] }}</x-td>
+                        <x-td class="!py-1 text-right">{{ formatear_numero($resumen['deuda_actual']) }}</x-td>
+                        <x-td class="!py-1 text-center">
                             @if ($resumen['tipo'] == 'sueldo')
                                 <x-button variant="light" size="xs" class=""
                                     @click="$wire.dispatch('abrirReportePagoPorTramo',{tramoResumenId:{{ $resumen['id'] }}})">
@@ -55,7 +55,7 @@
                             @endif
 
                         </x-td>
-                        <x-td class="text-center">
+                        <x-td class="!py-1 text-center">
                             @if ($resumen['condicion'] == 'Pagado')
 
                                 <x-input type="date" size="xs" wire:model="resumenes.{{ $resumen['id'] }}.fecha" />
@@ -63,7 +63,7 @@
                                 {{ formatear_fecha($resumen['fecha']) }}
                             @endif
                         </x-td>
-                        <x-td class="text-center">
+                        <x-td class="!py-1 text-center">
                             @if ($resumen['condicion'] == 'Pagado')
                                 <x-input type="text" size="xs" @focus="$el.select()" class="text-center uppercase"
                                     wire:model="resumenes.{{ $resumen['id'] }}.recibo" />
@@ -71,7 +71,7 @@
                                 {{ $resumen['recibo'] ?? '-' }}
                             @endif
                         </x-td>
-                        <x-td class="text-right">{{ formatear_numero($resumen['deuda_acumulada']) }}</x-td>
+                        <x-td class="!py-1 text-right">{{ formatear_numero($resumen['deuda_acumulada']) }}</x-td>
                     </x-tr>
                 @empty
                     <x-tr>
