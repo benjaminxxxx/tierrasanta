@@ -20,7 +20,7 @@ use Illuminate\Support\Carbon;
 
 class PlanillaRegistroDiarioServicio
 {
-  
+
     public static function obtenerRegistrosMensualesConLicenciasConsiderados($mes, $anio)
     {
         return PlanRegistroDiario::whereMonth('fecha', $mes)
@@ -281,19 +281,12 @@ class PlanillaRegistroDiarioServicio
         // 1. Validar y normalizar (Si falla, lanza Exception y no guarda nada)
         $datosLimpios = $this->procesarDatos($datos, $totalActividades);
 
-        $totalesPorAsistencia = [];
-
         foreach ($datosLimpios as $item) {
             // 2. Persistir Cabecera
             $registro = PlanRegistroDiario::updateOrCreate(
                 ['plan_det_men_id' => $item['plan_det_men_id'], 'fecha' => $fecha],
                 ['asistencia' => $item['asistencia'], 'total_horas' => $item['total_horas']]
             );
-
-            // 3. Conteo de estadísticas
-            if ($item['asistencia'] !== '') {
-                $totalesPorAsistencia[$item['asistencia']] = ($totalesPorAsistencia[$item['asistencia']] ?? 0) + 1;
-            }
 
             // 4. Manejo de tramos
             if (empty($item['tramos'])) {
@@ -306,10 +299,8 @@ class PlanillaRegistroDiarioServicio
             // 5. Sincronización optimizada
             $this->sincronizarTramos($registro, $item['tramos']);
         }
-        
-        if (!empty($totalesPorAsistencia)) {
-            $this->actualizarResumenAsistencia($fecha, $totalesPorAsistencia);
-        }
+
+        $this->actualizarResumenAsistencia($fecha);
     }
 
     private function sincronizarTramos($registro, array $tramosNuevos)
@@ -465,18 +456,79 @@ class PlanillaRegistroDiarioServicio
             ? ['status' => 'ok']
             : ['status' => 'warning', 'errores' => $errores];
     } */
-    private function actualizarResumenAsistencia($fecha, $totales)
+    /*
+     private function actualizarResumenAsistencia($fecha, $totales)
+     {
+         $resumen = PlanResumenDiario::firstOrCreate(['fecha' => $fecha]);
+         $total = 0;
+         $codigosNuevos = array_keys($totales);
+
+         PlanResumenDiarioTipoAsistencia::where('plan_res_dia_id', $resumen->id)
+             ->whereNotIn('codigo', $codigosNuevos)
+             ->delete();
+
+         foreach ($totales as $codigo => $cantidad) {
+             $total += $cantidad;
+             $registro = PlanResumenDiarioTipoAsistencia::where([
+                 'plan_res_dia_id' => $resumen->id,
+                 'codigo' => $codigo,
+                 'fecha' => $fecha,
+             ])->first();
+
+             if (!$registro) {
+                 // Buscar en el catálogo base
+
+                 $tipo = app(PlanTipoAsistenciaServicio::class)->obtenerPorCodigo($codigo);
+                 if (!$tipo) {
+                     continue; // código no válido
+                 }
+
+                 PlanResumenDiarioTipoAsistencia::create([
+                     'plan_res_dia_id' => $resumen->id,
+                     'codigo' => $tipo->codigo,
+                     'color' => $tipo->color,
+                     'descripcion' => $tipo->descripcion,
+                     'horas_jornal' => $tipo->horas_jornal,
+                     'tipo' => $tipo->tipo,
+                     'afecta_sueldo' => $tipo->afecta_sueldo,
+                     'porcentaje_remunerado' => $tipo->porcentaje_remunerado,
+                     'requiere_documento' => $tipo->requiere_documento,
+                     'acumula_asistencia' => $tipo->acumula_asistencia,
+                     'fecha' => $fecha,
+                     'total_asistidos' => $cantidad,
+                 ]);
+             } else {
+                 // Si ya existe, solo actualizar el total
+                 $registro->update(['total_asistidos' => $cantidad]);
+             }
+         }
+         $resumen->update([
+             'total_planilla' => $total,
+         ]);
+     }*/
+    private function actualizarResumenAsistencia($fecha)
     {
         $resumen = PlanResumenDiario::firstOrCreate(['fecha' => $fecha]);
-        $total = 0;
+
+        // 1️⃣ Recalcular desde BD (fuente real)
+        $totales = PlanRegistroDiario::whereDate('fecha', $fecha)
+            ->where('asistencia', '!=', '')
+            ->selectRaw('asistencia, COUNT(*) as total')
+            ->groupBy('asistencia')
+            ->pluck('total', 'asistencia')
+            ->toArray();
+
+        $totalPlanilla = array_sum($totales);
+
         $codigosNuevos = array_keys($totales);
 
+        // 2️⃣ eliminar los que ya no existen
         PlanResumenDiarioTipoAsistencia::where('plan_res_dia_id', $resumen->id)
             ->whereNotIn('codigo', $codigosNuevos)
             ->delete();
 
         foreach ($totales as $codigo => $cantidad) {
-            $total += $cantidad;
+
             $registro = PlanResumenDiarioTipoAsistencia::where([
                 'plan_res_dia_id' => $resumen->id,
                 'codigo' => $codigo,
@@ -484,11 +536,10 @@ class PlanillaRegistroDiarioServicio
             ])->first();
 
             if (!$registro) {
-                // Buscar en el catálogo base
 
                 $tipo = app(PlanTipoAsistenciaServicio::class)->obtenerPorCodigo($codigo);
                 if (!$tipo) {
-                    continue; // código no válido
+                    continue;
                 }
 
                 PlanResumenDiarioTipoAsistencia::create([
@@ -505,13 +556,17 @@ class PlanillaRegistroDiarioServicio
                     'fecha' => $fecha,
                     'total_asistidos' => $cantidad,
                 ]);
+
             } else {
-                // Si ya existe, solo actualizar el total
-                $registro->update(['total_asistidos' => $cantidad]);
+
+                $registro->update([
+                    'total_asistidos' => $cantidad
+                ]);
             }
         }
+
         $resumen->update([
-            'total_planilla' => $total,
+            'total_planilla' => $totalPlanilla
         ]);
     }
 }

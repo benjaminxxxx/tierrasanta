@@ -5,7 +5,6 @@ namespace App\Services\Handsontable;
 use App\Models\PlanMensualDetalle;
 use App\Models\PlanRegistroDiario;
 use App\Models\PlanResumenDiario;
-use App\Models\PlanResumenDiarioTipoAsistencia;
 use App\Services\PlanillaMensualServicio;
 use Illuminate\Support\Carbon;
 class HSTPlanillaAsistencia

@@ -10,6 +10,37 @@ use App\Services\RecursosHumanos\Planilla\PlanillaRegistroDiarioServicio;
 class GestionPlanillaReporteDiario
 {
     public function guardarRegistrosDiarios($fecha,$datos,$totalActividades){
+        
+        /*
+        dd($datos);
+        array:1 [▼ // app\Services\Modulos\Planilla\GestionPlanillaReporteDiario.php:13
+  0 => array:6 [▼
+    "plan_men_detalle_id" => 250
+    "documento" => "29644292"
+    "nombres" => "MAMANI MAMANI, ALEJANDRO"
+    "asistencia" => "DM"
+    "total_horas" => 8
+    "total_bono" => ""
+  ]
+] 
+  
+dd($datos);
+0 => array:14 [▼
+    "plan_men_detalle_id" => 242
+    "documento" => "29485873"
+    "nombres" => "LOPE CHOQUEHUANCA, CIRILO"
+    "asistencia" => "A"
+    "total_horas" => 6
+    "total_bono" => ""
+    "campo_1" => "A2"
+    "labor_1" => 69
+    "entrada_1" => "6.00"
+    "salida_1" => "10.00"
+    "campo_2" => "FDM"
+    "labor_2" => 143
+    "entrada_2" => "10.00"
+    "salida_2" => "12.00"
+  ]*/
         return app(PlanillaRegistroDiarioServicio::class)->guardarRegistrosDiarios($fecha,$datos,$totalActividades);
         
     }

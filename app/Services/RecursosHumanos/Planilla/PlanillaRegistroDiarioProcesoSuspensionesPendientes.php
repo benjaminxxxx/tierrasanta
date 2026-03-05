@@ -8,7 +8,6 @@ use App\Models\PlanMensual;
 use App\Models\PlanMensualDetalle;
 use App\Models\PlanRegistroDiario;
 use App\Models\PlanResumenDiario;
-use App\Models\PlanResumenDiarioTipoAsistencia;
 use App\Models\PlanSuspension;
 use App\Models\PlanTipoAsistencia;
 use App\Services\Campo\Gestion\CampoServicio;
