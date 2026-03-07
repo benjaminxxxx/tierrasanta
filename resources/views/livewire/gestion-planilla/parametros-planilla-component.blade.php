@@ -40,6 +40,14 @@
                         columns: columns
                     });
                 });
+                Livewire.on('refrescarTablaParametros', ({
+                    parametros
+                }) => {
+                    this.tableData = parametros;
+                    this.hot.destroy();
+                    this.initTable();
+                    this.hot.loadData(this.tableData);
+                });
                 this.initTable();
             },
             initTable() {

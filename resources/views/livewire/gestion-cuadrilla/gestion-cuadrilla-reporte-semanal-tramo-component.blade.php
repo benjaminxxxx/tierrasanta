@@ -6,8 +6,10 @@
         @include('livewire.gestion-cuadrilla.partial.reporte-semanal-resumen')
         @include('livewire.gestion-cuadrilla.partial.personalizar-costo-hora-form')
         @include('livewire.gestion-cuadrilla.partial.reordenar-grupo-form')
+        @include('livewire.gestion-cuadrilla.partial.reemplazar-cuadrillero')
     </x-card>
-
+<x-select-buscador wire:options="cuadrilleros" search-placeholder="Escriba el nombre del cuadrillero"
+                        wire:model="cuadrilleroARemplazarSeleccionado" />
 
     <livewire:gestion-cuadrilla.gestion-cuadrilla-reporte-pago-component />
 
@@ -85,6 +87,10 @@
                             "customize_quadrillero": {
                                 name: 'Personalizar costo por día',
                                 callback: () => this.customizeCuadrillero()
+                            },
+                            "reemplazar_cuadrillero": {
+                                name: 'Reemplazar Cuadrillero',
+                                callback: () => this.reemplazarCuadrillero()
                             }
                         }
                     },
@@ -103,7 +109,7 @@
                             });
 
                             this.ocurrioModificaciones =
-                            true; // Solo se activa si viene de fuente válida
+                                true; // Solo se activa si viene de fuente válida
                         }
                     },
 
@@ -143,12 +149,29 @@
                         const [startRow, , endRow] = range;
                         for (let row = startRow; row <= endRow; row++) {
                             const cuadrillero = this.hot.getSourceDataAtRow(row);
+                            console.log(cuadrillero);
                             preciosamodificar.push(cuadrillero);
                         }
                     });
 
                     $wire.abrirPrecioPersonalizado(preciosamodificar);
                 }
+            },
+            reemplazarCuadrillero() {
+
+                const selected = this.hot.getSelected();
+
+                if (!selected || selected.length === 0) return;
+
+                const [startRow] = selected[0]; // primera fila del primer rango
+
+                const registro = this.hot.getSourceDataAtRow(startRow);
+
+                const cuadrillero_id = registro?.cuadrillero_id;
+
+                if (!cuadrillero_id) return;
+
+                $wire.reemplazarCuadrillero(cuadrillero_id);
             },
             toLocalDate(dateLike) {
                 if (dateLike instanceof Date) {

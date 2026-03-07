@@ -29,6 +29,7 @@ class ConsolidarRegadoresComponent extends Component
             }
         }
     }
+    /*
     public function consolidarRegador($resumenId)
     {
         $consolidadoRiego = ConsolidadoRiego::find($resumenId);
@@ -110,7 +111,7 @@ class ConsolidarRegadoresComponent extends Component
         $consolidadoRiego->estado = 'consolidado';
         $consolidadoRiego->save();
         $this->dispatch('registroConsolidado');
-    }
+    }*/
     private function convertirMinutosAHora($minutos)
     {
         $horas = floor($minutos / 60);

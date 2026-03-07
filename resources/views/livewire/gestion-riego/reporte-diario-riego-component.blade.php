@@ -6,13 +6,16 @@
                 <x-title>
                     Registro Diario de Riego
                 </x-title>
-                <x-button variant="secondary" wire:click="fechaAnterior" class="w-full lg:w-auto">
-                    <i class="fa fa-chevron-left"></i>
-                </x-button>
-                <x-selector-dia wire:model.live="fecha" />
-                <x-button variant="secondary" wire:click="fechaPosterior" class="w-full lg:w-auto">
-                    <i class="fa fa-chevron-right"></i>
-                </x-button>
+                <x-flex class="!items-end">
+                    <x-button variant="secondary" wire:click="fechaAnterior" class="w-full lg:w-auto">
+                        <i class="fa fa-chevron-left"></i>
+                    </x-button>
+                    <x-selector-dia wire:model.live="fecha" label="Fecha Seleccionada" />
+                    <x-button variant="secondary" wire:click="fechaPosterior" class="w-full lg:w-auto">
+                        <i class="fa fa-chevron-right"></i>
+                    </x-button>
+                    <x-input type="number" wire:model.live="limiteHorasDiarias" label="Limite de Horas" />
+                </x-flex>
             </x-flex>
             <x-flex>
                 <x-button @click="$wire.dispatch('abrirAgregarRegador')">

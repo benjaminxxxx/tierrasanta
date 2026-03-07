@@ -40,8 +40,25 @@ class ConsolidadoRiego extends Model
         'no_acumular_horas' => 'boolean'
     ];
     protected $appends = [
-        'alias_origen'
+        'alias_origen',
+        'trabajador_nombre',
+        'horas_jornal',
+        'horas_acumuladas',
+        'horas_regados'
     ];
+    public function getHorasJornalAttribute(): ?string
+    {
+        return $this->minutos_jornal/60;
+    }
+    public function getHorasAcumuladasAttribute(): ?string
+    {
+        return $this->minutos_acumulados/60;
+    }
+    public function getHorasRegadosAttribute(): ?string
+    {
+        return $this->minutos_regados/60;
+    }
+    
     public function getAliasOrigenAttribute(): ?string
     {
         return match ($this->trabajador_type) {

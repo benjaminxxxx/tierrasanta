@@ -4,6 +4,7 @@ namespace App\Livewire\GestionRiego;
 
 use App\Models\AcumulacionUso;
 use App\Models\ConsolidadoRiego;
+use App\Models\ParametroTemporal;
 use App\Services\Campo\Riego\RiegoServicio;
 use App\Services\Riego\ConsolidadorServicio;
 use App\Services\Riego\ConsolidarJornadaRiegoProceso;
@@ -94,7 +95,10 @@ class ReporteDiarioRiegoDetalleComponent extends Component
             }
             $minutosJornal = $this->resumenRiego->minutos_jornal;
 
-            $limite = 480; // 8 horas
+            //$limite = 480; // 8 horas
+            $limite = ParametroTemporal::limiteMinutosDiarios(
+                $this->resumenRiego->fecha
+            );
             $total = $minutosJornal + $minutosAUsar;
 
             if ($total > $limite) {

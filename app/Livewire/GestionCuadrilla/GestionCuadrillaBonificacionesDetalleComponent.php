@@ -106,9 +106,13 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
                     return $actividadBono->total_bono ?? 0;
                 });
 
+                
+                $metodo_bonificacion = optional(optional($registroPlanilla->actividadesBonos->first())->metodo)->titulo;
+
                 $row = [
                     'registro_diario_id' => $registroPlanilla->id,
                     'tipo' => 'PLANILLA',
+                    'metodo_bonificacion' => $metodo_bonificacion,
                     'nombre_trabajador' => $registroPlanilla->detalleMensual->nombres,
                     'campo' => $campoNombre,
                     'labor' => $codigoLabor,
@@ -214,7 +218,7 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
             if (!$this->actividad) {
                 throw new Exception("La actividad ha caducado");
             }
-
+            
             GuardarBonificacionProceso::ejecutar(
                 $this->actividad,
                 $this->metodos,

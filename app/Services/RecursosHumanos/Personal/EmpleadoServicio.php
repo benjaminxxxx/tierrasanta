@@ -264,7 +264,7 @@ class EmpleadoServicio
                 CuadrilleroServicio::guardarBonoCuadrilla($fila, $numeroRecojos, $actividadId, $mapaMetodos);
             }
             if ($tipo == 'PLANILLA') {
-                PlanillaServicio::guardarBonoPlanilla($fila, $numeroRecojos, $actividadId);
+                PlanillaServicio::guardarBonoPlanilla($fila, $numeroRecojos, $actividadId,$mapaMetodos);
             }
         }
     }

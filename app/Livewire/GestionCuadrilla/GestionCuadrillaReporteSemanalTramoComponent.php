@@ -4,12 +4,14 @@ namespace App\Livewire\GestionCuadrilla;
 
 use App\Models\CuadRegistroDiario;
 use App\Models\CuadResumenPorTramo;
+use App\Models\Cuadrillero;
 use App\Models\CuadTramoLaboralGrupo;
 use App\Services\Cuadrilla\CuadrilleroServicio;
 use App\Services\Cuadrilla\RegistroDiarioServicio;
 use App\Services\Cuadrilla\TramoLaboral\ResumenTramoServicio;
 use App\Services\Cuadrilla\TramoLaboralServicio;
 use App\Services\Handsontable\HSTCuadrillaReporteSemanalHoras;
+use App\Services\RecursosHumanos\Personal\EmpleadoServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaRegistroDiarioServicio;
 use App\Support\DateHelper;
 use Carbon\CarbonPeriod;
@@ -38,12 +40,24 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
     public $resumenes = [];
     #endregion
     public $fechaHastaBono;
+    public $mostrarReemplazarCuadrilleroForm = false;
+    public array $cuadrilleros = [];
+    public $cuadrilleroARemplazarSeleccionado;
     protected $listeners = [
         'cuadrillerosAgregadosEnTramo' => 'renovarListaYResumir',
         'costosSemanalesModificados' => 'renovarListaYResumir'
     ];
     public function mount($tramoId)
     {
+        $this->cuadrilleros = Cuadrillero::orderBy('nombres')
+            ->get(['id', 'nombres'])
+            ->map(function ($cuadrillero) {
+                return [
+                    'name' => $cuadrillero->nombres,
+                    'id' => $cuadrillero->id,
+                ];
+            })->toArray();
+            
         $this->tramoLaboral = app(TramoLaboralServicio::class)->encontrarTramoPorId($tramoId);
         if ($this->tramoLaboral) {
             $this->fechaHastaBono = $this->tramoLaboral->fecha_hasta_bono;
@@ -52,6 +66,33 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
         $this->obtenerReporteTramo(false);
         $this->listarResumenes();
 
+    }
+    public function reemplazarCuadrillero($cuadrilleroId)
+    {
+
+        $this->cuadrilleros = Cuadrillero::orderBy('nombres')
+            ->get(['id', 'nombres'])
+            ->map(function ($cuadrillero) {
+                return [
+                    'name' => $cuadrillero->nombres,
+                    'id' => $cuadrillero->id,
+                ];
+            })->toArray();
+
+        /*
+        dd($this->cuadrilleros);
+        array:384 [▼ // app\Livewire\GestionCuadrilla\GestionCuadrillaReporteSemanalTramoComponent.php:72
+            0 => array:2 [▼
+            "name" => "ABAD OMAYA"
+            "id" => 142
+            ]
+            1 => array:2 [▼
+            "name" => "ABEL PUMA"
+            "id" => 133
+            ]
+            2 => array:2 [▶]
+            3 => array:2 [▶] */
+        $this->mostrarReemplazarCuadrilleroForm = true;
     }
     public function renovarListaYResumir()
     {
@@ -114,12 +155,12 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
     {
         try {
             $tramoLaboralId = $this->tramoLaboral->id;
-            DB::transaction(function () use ($servicio,$tramoLaboralId) {
+            DB::transaction(function () use ($servicio, $tramoLaboralId) {
                 foreach ($this->cuadrillerosCostosPersonalizados as $cuadrilla) {
-                    
+
                     foreach ($cuadrilla['costos'] as $index => $costo) {
-                        $servicio->asignarCostoPersonalizado( 
-                            $cuadrilla['cuadrillero_id'], 
+                        $servicio->asignarCostoPersonalizado(
+                            $cuadrilla['cuadrillero_id'],
                             $this->diasSemana[$index],
                             $costo,
                             $tramoLaboralId
@@ -273,7 +314,6 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
             throw $e;
         }
     }
-    #region Resumen por tramo
 
     public function cambiarEstadoResumen($resumenId)
     {
@@ -298,7 +338,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
                 ->get()
                 ->keyBy('id')
                 ->toArray();
-                
+
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }
@@ -321,8 +361,6 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
             $this->alert('error', $th->getMessage());
         }
     }
-    #endregion
-    #region Reordenar Grupos
     public function abrirReordenarGruposForm()
     {
         try {
@@ -344,7 +382,6 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
         $this->obtenerReporteTramo();
         $this->alert('success', 'Orden actualizado correctamente');
     }
-    #endregion
     public function render()
     {
         return view('livewire.gestion-cuadrilla.gestion-cuadrilla-reporte-semanal-tramo-component');

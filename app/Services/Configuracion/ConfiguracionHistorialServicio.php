@@ -68,14 +68,17 @@ class ConfiguracionHistorialServicio
             ->get();
     }
 
-    public static function guardar(array $data, ?int $id = null)
+    public static function guardar(array $data, ?int $id = null, $indice)
     {
-        return $id ? self::actualizar($id, $data) : self::crear($data);
+
+        return $id ? self::actualizar($id, $data) : self::crear($data, $indice);
     }
 
-    public static function crear(array $data)
+    public static function crear(array $data, $indice)
     {
-        $validados = self::validar($data);
+        $validados = self::validar($data, null);
+        
+
         return ConfiguracionHistorial::create($validados);
     }
 
@@ -95,71 +98,163 @@ class ConfiguracionHistorialServicio
     }
 
     // ----------------------------------------------------------------------
-
     protected static function validar(array $data, ?int $id = null)
     {
+        // Filtrar solo campos válidos
+        $data = collect($data)->only([
+            'configuracion_codigo',
+            'valor',
+            'fecha_inicio',
+            'fecha_fin',
+            'activo'
+        ])->toArray();
+
         $validator = Validator::make($data, [
-            'configuracion_codigo' => 'required|string|max:50',
-            'valor' => 'required|numeric|min:0',
-            'fecha_inicio' => 'required|date',
-            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+            'configuracion_codigo' => [
+                'required',
+                'string',
+                'max:50',
+                'exists:configuracion,codigo'
+            ],
+            'valor' => [
+                'required',
+                'numeric',
+                'min:0'
+            ],
+            'fecha_inicio' => [
+                'required',
+                'date'
+            ],
+            'fecha_fin' => [
+                'nullable',
+                'date',
+                'after_or_equal:fecha_inicio'
+            ],
         ]);
-
-        $validator->after(function ($validator) use ($data, $id) {
-            if ($validator->errors()->any()) {
-                return;
-            }
-
-            $codigo = $data['configuracion_codigo'];
-            $inicio = $data['fecha_inicio'];
-            $fin = $data['fecha_fin'] ?? null;
-
-            // ---------------------------
-            // 1. Validar único registro con fecha_fin NULL
-            // ---------------------------
-            if (is_null($fin)) {
-                $existeNull = ConfiguracionHistorial::where('configuracion_codigo', $codigo)
-                    ->whereNull('fecha_fin')
-                    ->when($id, fn($q) => $q->where('id', '!=', $id))
-                    ->exists();
-
-                if ($existeNull) {
-                    $validator->errors()->add(
-                        'fecha_fin',
-                        "Ya existe una vigencia abierta para la configuración {$codigo}. Solo uno puede estar sin fecha_fin."
-                    );
-                }
-            }
-
-            // ---------------------------
-            // 2. Validar intersección de fechas (NO solapamientos)
-            // ---------------------------
-            $traslape = ConfiguracionHistorial::where('configuracion_codigo', $codigo)
-                ->when($id, fn($q) => $q->where('id', '!=', $id))
-                ->where(function ($query) use ($inicio, $fin) {
-                    $query->where(function ($q) use ($inicio, $fin) {
-                        $q->whereNotNull('fecha_fin')
-                            ->where('fecha_inicio', '<=', $fin ?? '9999-12-31')
-                            ->where('fecha_fin', '>=', $inicio);
-                    })->orWhere(function ($q) use ($inicio, $fin) {
-                        $q->whereNull('fecha_fin')
-                            ->where('fecha_inicio', '<=', $fin ?? '9999-12-31');
-                    });
-                })
-                ->exists();
-
-            if ($traslape) {
-                $validator->errors()->add(
-                    'fecha_inicio',
-                    "Las fechas se solapan con un registro existente para {$codigo}."
-                );
-            }
-        });
 
         if ($validator->fails()) {
             throw new ValidationException($validator);
         }
 
+        $codigo = $data['configuracion_codigo'];
+        $inicio = $data['fecha_inicio'];
+        $fin = $data['fecha_fin'] ?? null;
+
+        $query = ConfiguracionHistorial::where('configuracion_codigo', $codigo);
+
+        // Excluir el registro actual si estamos editando
+        if ($id !== null) {
+            $query->where('id', '!=', $id);
+        }
+
+        // -------------------------
+        // 1. Solo una vigencia abierta
+        // -------------------------
+        if ($fin === null) {
+
+            $existeAbierto = (clone $query)
+                ->whereNull('fecha_fin')
+                ->exists();
+
+            if ($existeAbierto) {
+                throw ValidationException::withMessages([
+                    'fecha_fin' => "Ya existe una vigencia abierta para {$codigo}."
+                ]);
+            }
+        }
+
+        // -------------------------
+        // 2. Validar solapamiento
+        // -------------------------
+        $traslape = (clone $query)
+            ->where(function ($q) use ($inicio, $fin) {
+
+                $q->where(function ($sub) use ($inicio, $fin) {
+                    $sub->whereNotNull('fecha_fin')
+                        ->where('fecha_inicio', '<=', $fin ?? '9999-12-31')
+                        ->where('fecha_fin', '>=', $inicio);
+                })
+                    ->orWhere(function ($sub) use ($inicio) {
+                        $sub->whereNull('fecha_fin')
+                            ->where('fecha_inicio', '<=', $inicio);
+                    });
+
+            })
+            ->exists();
+
+        if ($traslape) {
+            throw ValidationException::withMessages([
+                'fecha_inicio' => "El rango de fechas se solapa con otra vigencia de {$codigo}."
+            ]);
+        }
+
         return $validator->validated();
     }
+    /*
+        protected static function validar(array $data, ?int $id = null)
+        {
+            $validator = Validator::make($data, [
+                'configuracion_codigo' => 'required|string|max:50',
+                'valor' => 'required|numeric|min:0',
+                'fecha_inicio' => 'required|date',
+                'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+            ]);
+
+            $validator->after(function ($validator) use ($data, $id) {
+                if ($validator->errors()->any()) {
+                    return;
+                }
+
+                $codigo = $data['configuracion_codigo'];
+                $inicio = $data['fecha_inicio'];
+                $fin = $data['fecha_fin'] ?? null;
+
+                // ---------------------------
+                // 1. Validar único registro con fecha_fin NULL
+                // ---------------------------
+                if (is_null($fin)) {
+                    $existeNull = ConfiguracionHistorial::where('configuracion_codigo', $codigo)
+                        ->whereNull('fecha_fin')
+                        ->when($id, fn($q) => $q->where('id', '!=', $id))
+                        ->exists();
+
+                    if ($existeNull) {
+                        $validator->errors()->add(
+                            'fecha_fin',
+                            "Ya existe una vigencia abierta para la configuración {$codigo}. Solo uno puede estar sin fecha_fin."
+                        );
+                    }
+                }
+
+                // ---------------------------
+                // 2. Validar intersección de fechas (NO solapamientos)
+                // ---------------------------
+                $traslape = ConfiguracionHistorial::where('configuracion_codigo', $codigo)
+                    ->when($id, fn($q) => $q->where('id', '!=', $id))
+                    ->where(function ($query) use ($inicio, $fin) {
+                        $query->where(function ($q) use ($inicio, $fin) {
+                            $q->whereNotNull('fecha_fin')
+                                ->where('fecha_inicio', '<=', $fin ?? '9999-12-31')
+                                ->where('fecha_fin', '>=', $inicio);
+                        })->orWhere(function ($q) use ($inicio, $fin) {
+                            $q->whereNull('fecha_fin')
+                                ->where('fecha_inicio', '<=', $fin ?? '9999-12-31');
+                        });
+                    })
+                    ->exists();
+
+                if ($traslape) {
+                    $validator->errors()->add(
+                        'fecha_inicio',
+                        "Las fechas se solapan con un registro existente para {$codigo}."
+                    );
+                }
+            });
+
+            if ($validator->fails()) {
+                throw new ValidationException($validator);
+            }
+
+            return $validator->validated();
+        }*/
 }

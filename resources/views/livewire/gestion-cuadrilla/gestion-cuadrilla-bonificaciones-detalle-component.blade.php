@@ -4,7 +4,8 @@
         <x-flex class="justify-between">
             <x-h3>Bonificación</x-h3>
             <x-flex>
-                <x-input wire:model="unidades" placeholder="Unidades Ejem: Kg" label="Unidad de Producción" class="w-auto"/>
+                <x-input wire:model="unidades" placeholder="Unidades Ejem: Kg" label="Unidad de Producción"
+                    class="w-auto" />
                 <x-button variant="primary" @click="agregarMetodo()" class="ml-auto">
                     <i class="fa fa-plus"></i> Agregar Método
                 </x-button>
@@ -396,7 +397,28 @@
                 }
                 return suma;
             },
+            //Esta funcion esta hecha de forma axuliar para resolver un error critico, total_horas no viene como float, sino viene como time desde la tabla, en redondeo iba a fallar
+            convertirHorasDecimal(valor) {
 
+                if (valor === null || valor === undefined) return 0;
+
+                // si ya es número
+                if (typeof valor === 'number') {
+                    return valor;
+                }
+
+                const str = String(valor).trim();
+
+                // formato HH:MM
+                if (str.includes(':')) {
+                    const [h, m] = str.split(':').map(Number);
+                    const horas = (h || 0) + ((m || 0) / 60);
+                    return horas;
+                }
+
+                // formato decimal normal
+                return parseFloat(str) || 0;
+            },
             /**
              * MÉTODO: Bonificación por sobreestandar.
              * 
@@ -406,8 +428,8 @@
              * - Bono = aplicar tramos progresivos sobre el excedente
              */
             calcularBonoPorEstandar(trabajador, produccionTotal, metodo) {
-                const totalHoras = parseFloat(trabajador.rango_total_horas || 0);
-
+                const totalHoras = this.convertirHorasDecimal(trabajador.rango_total_horas);
+                console.log(totalHoras);
                 if (!metodo.estandar || metodo.estandar <= 0) {
                     return '0.00';
                 }
@@ -447,6 +469,7 @@
              * - Segundo tramo: desde tramo[0].hasta hasta tramo[1].hasta
              * - Si queda excedente, se aplica la tarifa del último tramo
              */
+
             aplicarTramos(cantidad, tramos) {
                 if (!tramos || tramos.length === 0) {
                     return 0;

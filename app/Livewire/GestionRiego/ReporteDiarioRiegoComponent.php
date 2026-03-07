@@ -12,6 +12,7 @@ use App\Models\PlanMensualDetalle;
 use App\Models\ReporteDiarioRiego;
 use App\Services\Modulos\Planilla\GestionPlanillaReporteDiario;
 use App\Services\RecursosHumanos\Personal\ActividadServicio;
+use App\Traits\TieneParametrosTemporales;
 use DateTime;
 use Exception;
 use Illuminate\Support\Carbon;
@@ -21,16 +22,21 @@ use Session;
 
 class ReporteDiarioRiegoComponent extends Component
 {
-    use LivewireAlert, ConFechaReporteDia;
+    use LivewireAlert, ConFechaReporteDia, TieneParametrosTemporales;
     public $consolidados;
     public $archivoBackupHoy;
     public $tipoLabores;
     public $listaPorEnviarRegadores = [];
     public $mostrarEnvioAReporteDiario = false;
+    protected array $parametros = [
+        'limiteHorasDiarias' => ['tipo' => 'limite_horas_riego', 'default' => 8]
+    ];
+    public int $limiteHorasDiarias = 8;
     protected $listeners = ["generalActualizado", 'obtenerRiegos', 'registroRiegoEliminado', 'nuevosRegadoresHanSidoAgregados'];
     public function mount()
     {
         $this->inicializarFecha();
+        $this->cargarParametros();
 
         // 🔧 PARCHE TEMPORAL — eliminar cuando todos los registros estén migrados
         $this->parcheMigrarTrabajadores();
@@ -38,6 +44,12 @@ class ReporteDiarioRiegoComponent extends Component
 
         $this->obtenerRiegos();
         //$this->obtenerTrabajadores();
+    }
+    public function updated(string $propiedad): void
+    {
+        if (array_key_exists($propiedad, $this->parametros)) {
+            $this->guardarParametro($propiedad);
+        }
     }
     public function enviarRegistroDiarioRegadores()
     {
@@ -79,7 +91,7 @@ class ReporteDiarioRiegoComponent extends Component
     public function confirmarEnvio()
     {
         try {
-            
+
             $fecha = $this->fecha;
             $registrosDiarios = $this->listaPorEnviarRegadores;
             $dataPlanilla = [];
@@ -98,7 +110,7 @@ class ReporteDiarioRiegoComponent extends Component
                         throw new Exception("No se ha generado el registro mensual para {$registroDiario['trabajador_name']} aun");
 
                     }
-                    
+
                     $dataPlanilla[] = [
                         "plan_men_detalle_id" => $planillaMensual->id,
                         //"documento" => "29486118"
@@ -111,12 +123,12 @@ class ReporteDiarioRiegoComponent extends Component
                         "entrada_1" => $registroDiario['hora_inicio'],
                         "salida_1" => $registroDiario['hora_fin']
                     ];
-                }elseif ($registroDiario['tipo'] == 'cuadrilla') {
+                } elseif ($registroDiario['tipo'] == 'cuadrilla') {
                     //aun no desarrollado, innecesario por el momento
                 }
             }
 
-            app(GestionPlanillaReporteDiario::class)->guardarRegistrosDiarios($fecha,$dataPlanilla,1);
+            app(GestionPlanillaReporteDiario::class)->guardarRegistrosDiarios($fecha, $dataPlanilla, 1);
             ActividadServicio::detectarYCrearActividades($fecha);
             $this->alert('success', 'Registros Diarios Enviados Correctamente.');
             $this->mostrarEnvioAReporteDiario = false;
@@ -127,8 +139,8 @@ class ReporteDiarioRiegoComponent extends Component
     }
     protected function despuesFechaModificada($fecha)
     {
+        $this->cargarParametros();
         $this->obtenerRiegos();
-        //$this->obtenerTrabajadores();
     }
     public function nuevosRegadoresHanSidoAgregados()
     {

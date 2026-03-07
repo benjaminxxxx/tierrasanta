@@ -14,6 +14,7 @@ class PlanActividadBono extends Model
     protected $fillable = [
         'registro_diario_id',
         'actividad_id',
+        'metodo_id',
         'total_bono',
     ];
 
@@ -22,7 +23,10 @@ class PlanActividadBono extends Model
     {
         return $this->belongsTo(PlanRegistroDiario::class, 'plan_registros_diarios');
     }
-
+    public function metodo()
+    {
+        return $this->belongsTo(ActividadMetodo::class, 'metodo_id');
+    }
     public function actividad()
     {
         return $this->belongsTo(Actividad::class, 'actividad_id');

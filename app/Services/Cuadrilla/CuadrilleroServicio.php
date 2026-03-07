@@ -273,7 +273,7 @@ class CuadrilleroServicio
         }
 
         $resumen = json_encode(array_values($resultado));//para depuracion , JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
-        //dd($resumen); // Para depuración
+       
         $resumenPlanilla = PlanResumenDiario::firstOrCreate([
             'fecha' => $fecha
         ]);
@@ -293,7 +293,7 @@ class CuadrilleroServicio
 
                 $totalCuadrilleros = CuadRegistroDiario::whereDate('fecha', $fecha)->distinct('cuadrillero_id')->count();
                 if ($fecha->format('Y-m-d') == '2026-01-02') {
-                    dd($totalCuadrilleros);
+                  
                 }
                 $resumenPlanilla = PlanResumenDiario::firstOrCreate(['fecha' => $fecha]);
                 $resumenPlanilla->update([
@@ -682,7 +682,6 @@ class CuadrilleroServicio
                 'actividad_id' => $actividadId
             ],
             [
-
                 'metodo_id' => $metodoId,
                 'total_bono' => $fila['total_bono'] ?? 0
             ]
@@ -713,7 +712,6 @@ class CuadrilleroServicio
                     ->delete();
             }
         }
-        //dd(5);
 
         //Recalcular total_bono del registro diario sumando todos los bonos de sus actividades
         $sumaBonos = CuadActividadBono::where('registro_diario_id', $registroDiarioId)->sum('total_bono');
@@ -1675,7 +1673,6 @@ class CuadrilleroServicio
                     $k = $clave($existente->toArray());
 
                     if (!$nuevosMap->has($k)) {
-                        // dd($existentes,$tramos,$nuevosMap,$k,$existente);
                         $existente->delete();
                     }
                 }

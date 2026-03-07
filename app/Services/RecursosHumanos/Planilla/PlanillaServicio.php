@@ -28,14 +28,17 @@ class PlanillaServicio
         })
         ->toArray();
     }
-    public static function guardarBonoPlanilla($fila, $numeroRecojos, $actividadId)
+    public static function guardarBonoPlanilla($fila, $numeroRecojos, $actividadId,$mapaMetodos)
     {
 
         $registroDiarioId = $fila['registro_diario_id'] ?? null;
+        $metodoBonificacion = $fila['metodo_bonificacion'] ?? null;
 
         if (!$registroDiarioId) {
             throw new Exception("Falta el parámetro de identificación de reporte diario");
         }
+
+        $metodoId = $mapaMetodos[$metodoBonificacion] ?? null;
 
         $actividadBono = PlanActividadBono::updateOrCreate(
             [
@@ -43,6 +46,7 @@ class PlanillaServicio
                 'actividad_id' => $actividadId
             ],
             [
+                'metodo_id' => $metodoId,
                 'total_bono' => $fila['total_bono'] ?? 0
             ]
         );

@@ -14,6 +14,7 @@ class ConfiguracionHistorialProceso
             $errores = [];
 
             foreach ($filas as $index => $fila) {
+
                 try {
                     // --- NORMALIZACIÓN DE DATOS ---
                     foreach ($fila as $key => $value) {
@@ -24,18 +25,21 @@ class ConfiguracionHistorialProceso
 
                     // Normalizar numérico
                     if (isset($fila['valor'])) {
-                        $fila['valor'] = is_numeric($fila['valor']) ? (float)$fila['valor'] : null;
+                        $fila['valor'] = is_numeric($fila['valor']) ? (float) $fila['valor'] : null;
                     }
 
                     // Asegurar formato final del ID
-                    $id = !empty($fila['id']) ? (int)$fila['id'] : null;
+                    $id = !empty($fila['id']) ? (int) $fila['id'] : null;
 
                     // --- PROCESO DE GUARDADO ---
-                    $registro = ConfiguracionHistorialServicio::guardar($fila, $id);
-
+                    $registro = ConfiguracionHistorialServicio::guardar($fila, $id, $index);
+                    if ($index == 2) {
+                        //   dd($fila, $id);
+                    }
                     if ($registro && $registro->id) {
                         $idsParaMantener[] = $registro->id;
                     }
+
 
                 } catch (ValidationException $e) {
                     $errores["Fila " . ($index + 1)] = $e->errors();
@@ -44,7 +48,19 @@ class ConfiguracionHistorialProceso
 
             // Si hay errores, se aborta
             if (!empty($errores)) {
-                throw ValidationException::withMessages(['importacion' => $errores]);
+                $mensajes = [];
+
+                foreach ($errores as $fila => $campos) {
+                    foreach ($campos as $campo => $lista) {
+                        foreach ($lista as $mensaje) {
+                            $mensajes[] = "{$fila}: {$mensaje}";
+                        }
+                    }
+                }
+
+                throw ValidationException::withMessages([
+                    'tabla' => $mensajes
+                ]);
             }
 
             // Eliminar los registros no enviados
