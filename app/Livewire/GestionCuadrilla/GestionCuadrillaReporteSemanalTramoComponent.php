@@ -6,6 +6,7 @@ use App\Models\CuadRegistroDiario;
 use App\Models\CuadResumenPorTramo;
 use App\Models\Cuadrillero;
 use App\Models\CuadTramoLaboralGrupo;
+use App\Procesos\Cuadrillas\ReemplazarCuadrillero;
 use App\Services\Cuadrilla\CuadrilleroServicio;
 use App\Services\Cuadrilla\RegistroDiarioServicio;
 use App\Services\Cuadrilla\TramoLaboral\ResumenTramoServicio;
@@ -43,21 +44,15 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
     public $mostrarReemplazarCuadrilleroForm = false;
     public array $cuadrilleros = [];
     public $cuadrilleroARemplazarSeleccionado;
+    public $cuadrilleroPorReemplazar;
     protected $listeners = [
         'cuadrillerosAgregadosEnTramo' => 'renovarListaYResumir',
         'costosSemanalesModificados' => 'renovarListaYResumir'
     ];
     public function mount($tramoId)
     {
-        $this->cuadrilleros = Cuadrillero::orderBy('nombres')
-            ->get(['id', 'nombres'])
-            ->map(function ($cuadrillero) {
-                return [
-                    'name' => $cuadrillero->nombres,
-                    'id' => $cuadrillero->id,
-                ];
-            })->toArray();
-            
+
+
         $this->tramoLaboral = app(TramoLaboralServicio::class)->encontrarTramoPorId($tramoId);
         if ($this->tramoLaboral) {
             $this->fechaHastaBono = $this->tramoLaboral->fecha_hasta_bono;
@@ -67,32 +62,44 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
         $this->listarResumenes();
 
     }
+    public function getCuadrillero($search)
+    {
+        $query = Cuadrillero::orderBy('nombres');
+
+        // Si hay búsqueda, filtrar
+        if ($search) {
+            $query->where('nombres', 'like', "%{$search}%");
+        }
+
+        return $query
+            ->limit(10)
+            ->get(['id', 'nombres'])
+            ->map(fn($c) => [
+                'id' => $c->id,
+                'name' => $c->nombres
+            ])
+            ->toArray();
+    }
     public function reemplazarCuadrillero($cuadrilleroId)
     {
-
-        $this->cuadrilleros = Cuadrillero::orderBy('nombres')
-            ->get(['id', 'nombres'])
-            ->map(function ($cuadrillero) {
-                return [
-                    'name' => $cuadrillero->nombres,
-                    'id' => $cuadrillero->id,
-                ];
-            })->toArray();
-
-        /*
-        dd($this->cuadrilleros);
-        array:384 [▼ // app\Livewire\GestionCuadrilla\GestionCuadrillaReporteSemanalTramoComponent.php:72
-            0 => array:2 [▼
-            "name" => "ABAD OMAYA"
-            "id" => 142
-            ]
-            1 => array:2 [▼
-            "name" => "ABEL PUMA"
-            "id" => 133
-            ]
-            2 => array:2 [▶]
-            3 => array:2 [▶] */
+        $this->cuadrilleroARemplazarSeleccionado = null;
+        $this->cuadrilleroPorReemplazar = Cuadrillero::find($cuadrilleroId);
         $this->mostrarReemplazarCuadrilleroForm = true;
+    }
+    public function confirmarReemplazo()
+    {
+        try {
+            app(ReemplazarCuadrillero::class)->ejecutar(
+                tramoLaboralId: $this->tramoLaboral->id,
+                anteriorId: $this->cuadrilleroPorReemplazar->id,
+                nuevoId: (int) $this->cuadrilleroARemplazarSeleccionado,
+            );
+            $this->obtenerReporteTramo();
+            $this->mostrarReemplazarCuadrilleroForm = false;
+            $this->alert('success', 'Reemplazo de cuadrillero exitoso');
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
+        }
     }
     public function renovarListaYResumir()
     {

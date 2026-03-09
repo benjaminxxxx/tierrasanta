@@ -8,8 +8,7 @@
         @include('livewire.gestion-cuadrilla.partial.reordenar-grupo-form')
         @include('livewire.gestion-cuadrilla.partial.reemplazar-cuadrillero')
     </x-card>
-<x-select-buscador wire:options="cuadrilleros" search-placeholder="Escriba el nombre del cuadrillero"
-                        wire:model="cuadrilleroARemplazarSeleccionado" />
+
 
     <livewire:gestion-cuadrilla.gestion-cuadrilla-reporte-pago-component />
 

@@ -124,30 +124,7 @@
                     }
                 });
             },
-            /*init() { VERSION FUNCIONAL EN CASO EL CODIGO NUEVO DE PROBLEMAS
-                this.$watch('options', (value) => {
-                   
-                    this.selectedOption = null;
-                    this.selectedValue = '';
-                    this.searchTerm = '';
-                    this.entangle = null;
-                });
-                this.$watch('entangle', (value) => {
-                    if (!value) {
-                        this.selectedOption = null;
-                        this.selectedValue = '';
-                        this.searchTerm = '';
-                    } else {
-                        // Si tienes opciones cargadas, intenta establecer automáticamente el seleccionado
-                        const match = this.options.find(opt => opt.id == value);
-                        if (match) {
-                            this.selectedOption = match;
-                            this.selectedValue = match.id;
-                            this.searchTerm = match.name;
-                        }
-                    }
-                });
-            },*/
+           
             filterOptions() {
                 if (!this.searchTerm || this.searchTerm.trim() === '') {
                     this.filteredOptions = this.options;

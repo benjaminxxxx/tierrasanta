@@ -22,3 +22,4 @@ window.FullCalendar = {
 flatpickr(".datepicker", {
   //mode: "range",
 });
+

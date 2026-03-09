@@ -131,7 +131,7 @@ class HSTCuadrillaReporteSemanalHoras
             'cuadrillero_id' => $cuadrilleroEnTramo->cuadrillero_id,
             'codigo_grupo'   => $grupo->codigo,
             'header'         => false,
-            'nombres'        => $cuadrilleroEnTramo->nombres,
+            'nombres'        => $cuadrilleroEnTramo->cuadrillero->nombres,
             'color'          => $grupo->color,
         ];
 
