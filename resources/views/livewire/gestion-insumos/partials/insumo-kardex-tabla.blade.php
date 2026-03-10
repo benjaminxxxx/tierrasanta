@@ -20,6 +20,9 @@
         </x-slot>
 
         <x-slot name="tbody">
+            @php
+                $disk = Storage::disk('public');
+            @endphp
             @forelse($kardexes as $kardex)
                 <x-tr>
                     {{-- Producto --}}
@@ -73,9 +76,8 @@
 
                     {{-- Archivo --}}
                     <x-td class="text-center">
-                        @if ($kardex->file)
-                            <a href="{{ asset('storage/' . $kardex->file) }}" class="text-blue-600 underline"
-                                target="_blank">
+                        @if ($kardex->file && $disk->exists($kardex->file))
+                            <a href="{{ $disk->url($kardex->file) }}" class="text-blue-600 underline" target="_blank">
                                 Ver
                             </a>
                         @else
@@ -111,9 +113,11 @@
                                             href="{{ route('gestion_insumos.kardex.detalle', $kardex->id) }}">
                                             Ver Kardex
                                         </x-dropdown-link>
-                                        <x-dropdown-link href="{{ route('gestion_insumos.kardex_asignacion',['productoId' => $kardex->producto_id, 'anio' => $kardex->anio]) }}" target="_blank">
-                                Asignar Salidas
-                            </x-dropdown-link>
+                                        <x-dropdown-link
+                                            href="{{ route('gestion_insumos.kardex_asignacion', ['productoId' => $kardex->producto_id, 'anio' => $kardex->anio]) }}"
+                                            target="_blank">
+                                            Asignar Entradas y Salidas (paso 2)
+                                        </x-dropdown-link>
                                         <x-dropdown-link wire:click="eliminarInsumoKardex({{ $kardex->id }})">
                                             Eliminar Kardex
                                         </x-dropdown-link>

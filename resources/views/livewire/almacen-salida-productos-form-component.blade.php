@@ -11,7 +11,7 @@
             @if ($step == 1)
 
                 <div class="grid grid-cols-2 gap-4">
-                    <x-input type="date" wire:model.live="fecha_salida" label="Fecha de Salida"
+                    <x-selector-dia wire:model.live="fecha_salida" label="Fecha de Salida"
                         placeholder="Escriba la fecha de salida..." autocomplete="nope" class="uppercase"
                         id="fecha_salida" />
                     @if ($fecha_salida)
@@ -26,7 +26,7 @@
                                 <div class="absolute z-10 bg-white border border-gray-300 mt-1 w-full rounded-lg shadow-lg dark:bg-gray-800">
                                     <ul>
                                         @foreach ($productos as $producto)
-                                            <li class="p-2 hover:bg-gray-100 cursor-pointer"
+                                            <li class="p-2 hover:bg-muted cursor-pointer"
                                                 wire:click="seleccionarProductoParaSalida({{ $producto->id }})">
                                                 {{ $producto->nombre_completo }}
                                             </li>

@@ -1,4 +1,11 @@
 <div>
+    @php
+        $disk = Storage::disk('public');
+        $linkEntradasYSalidas = route('gestion_insumos.kardex_asignacion', [
+            'productoId' => $insumoKardex->producto_id,
+            'anio' => $insumoKardex->anio,
+        ]);
+    @endphp
     <x-card>
         <x-flex class="justify-between">
             <x-title>
@@ -41,29 +48,33 @@
                                     x-ref="fileInputNegro" style="display: none;"
                                     wire:model.live="archivoExcelKardex" />
                             </div>
-                            <x-dropdown-link
-                                href="{{ route('gestion_insumos.kardex_asignacion', ['productoId' => $insumoKardex->producto_id, 'anio' => $insumoKardex->anio]) }}"
-                                target="_blank">
-                                Asignar Salidas
+                            <x-dropdown-link href="{{ $linkEntradasYSalidas }}" target="_blank">
+                                Asignar Entradas y Salidas
                             </x-dropdown-link>
                             <x-dropdown-link wire:click="generarDetalleKardexInsumo">
                                 Generar Resumen
                             </x-dropdown-link>
-                            @if ($insumoKardex->file)
-                                <x-dropdown-link href="{{ Storage::disk('public')->url($insumoKardex->file) }}">
+                            @if ($insumoKardex->file && $disk->exists($insumoKardex->file))
+                                <x-dropdown-link href="{{ $disk->url($insumoKardex->file) }}">
                                     Descargar Reporte
                                 </x-dropdown-link>
                             @endif
-
                         </div>
                     </x-slot>
                 </x-dropdown>
             </div>
         </x-flex>
+        <div class="mt-5">
+            <x-kardex-proceso :pasoActivo="3" :linkEntradasYSalidas="$linkEntradasYSalidas" accionGenerarResumen="generarDetalleKardexInsumo" />
+        </div>
+
         <div class="mt-4">
             {{-- -TABLA --}}
             @include('livewire.gestion-insumos.partials.insumo-kardex-detalle-tabla')
         </div>
+
+
     </x-card>
+
     <x-loading wire:loading />
 </div>

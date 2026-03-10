@@ -13,6 +13,18 @@ if (!function_exists('formatear_fecha')) {
         }
     }
 }
+if (!function_exists('formatear_tiempo')) {
+    function formatear_tiempo($tiempo, $formato = 'H:i')
+    {
+        if (!$tiempo) return null;
+
+        try {
+            return Carbon::parse($tiempo)->format($formato);
+        } catch (\Exception $e) {
+            return $tiempo; // Por si no es un tiempo válido
+        }
+    }
+}
 if (!function_exists('formatear_numero')) {
     /**
      * Formatea un número redondeando a X decimales.

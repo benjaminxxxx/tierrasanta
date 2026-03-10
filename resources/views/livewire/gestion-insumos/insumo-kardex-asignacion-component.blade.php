@@ -1,5 +1,14 @@
 <div x-data="asignacionKardex">
+    @php
+        $linkResumenBlanco = $kardexBlanco ? route('gestion_insumos.kardex.detalle', $kardexBlanco->id) : null;
+        $linkResumenNegro = $kardexNegro ? route('gestion_insumos.kardex.detalle', $kardexNegro->id) : null;
+    @endphp
     @include('livewire.gestion-insumos.partials.insumo-kardex-asignacion-header')
+
+    <div class="mt-5">
+        <x-kardex-proceso :pasoActivo="2" :linkResumenBlanco="$linkResumenBlanco" :linkResumenNegro="$linkResumenNegro" />
+    </div>
+
     <div class="container mx-auto space-y-6 mt-6">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -17,6 +26,7 @@
         {{-- Botones contextuales --}}
         @include('livewire.gestion-insumos.partials.insumo-kardex-asignacion-contextual-buttons')
     </div>
+
 
 
 </div>
@@ -47,12 +57,12 @@
                     return original.tipo_kardex !== compra.tipo_kardex
                 })
             },
-            
+
             // Getter para obtener el Kardex Blanco ordenado
             get kardexBlancoItems() {
                 return this.filtrarYOrdenar('blanco');
             },
-            
+
 
             // Getter para obtener el Kardex Negro ordenado
             get kardexNegroItems() {
@@ -319,7 +329,7 @@
             },
             confirmarCambios() {
 
-                
+
                 const payload = {
                     salidas: Array.from(this.changes.entries()).map(([id, tipo]) => ({
                         id,

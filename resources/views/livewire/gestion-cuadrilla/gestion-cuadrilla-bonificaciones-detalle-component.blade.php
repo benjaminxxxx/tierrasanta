@@ -70,14 +70,14 @@
                                     <tr>
                                         <td class="px-4 py-2">
                                             <x-input type="number" class="w-full" x-model.number="tramo.hasta"
-                                                step="0.1" />
+                                                step="0.1" @input="recalcularTodo" />
                                         </td>
                                         <td class="px-4 py-2">
                                             <x-input type="number" class="w-full" x-model.number="tramo.monto"
-                                                step="0.1" />
+                                                step="0.1" @input="recalcularTodo" />
                                         </td>
                                         <td class="px-4 py-2 text-center">
-                                            <x-button variant="danger" @click="metodo.tramos.splice(tramoIndex, 1)">
+                                            <x-button variant="danger" @click="removeTramo(metodo, tramoIndex)">
                                                 <i class="fa fa-trash"></i>
                                             </x-button>
                                         </td>
@@ -181,7 +181,16 @@
                     licenseKey: 'non-commercial-and-evaluation',
                 });
             },
+            recalcularTodo() {
+                this.calcularBonos();
+            },
+            removeTramo(metodo, tramoIndex) {
 
+                metodo.tramos.splice(tramoIndex, 1)
+
+                this.recalcularTodo()
+
+            },
             agregarRecojo() {
                 this.recojos++;
                 const columns = this.generarColumnasDinamicas();

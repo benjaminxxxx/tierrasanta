@@ -1,52 +1,52 @@
 <div class="my-5 overflow-x-auto">
-    <table class="min-w-full border border-gray-400 dark:border-gray-600 text-xs dark:text-white">
+    <table class="min-w-full border border-border text-xs text-muted-foreground">
         <thead>
             {{-- FILA 1 --}}
-            <tr class="bg-gray-200 dark:bg-gray-700 font-semibold">
-                <th colspan="4" class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">
+            <tr class="bg-muted font-semibold">
+                <th colspan="4" class="border border-border px-2 py-1 text-center">
                     DOCUMENTO DE TRASLADO, COMPROBANTE DE PAGO, DOCUMENTO INTERNO O SIMILAR
                 </th>
 
-                <th rowspan="2" class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center w-32">
+                <th rowspan="2" class="border border-border px-2 py-1 text-center w-32">
                     TIPO DE OPERACIÓN (TABLA 12)
                 </th>
 
-                <th colspan="3" class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">
+                <th colspan="3" class="border border-border px-2 py-1 text-center">
                     ENTRADAS
                 </th>
 
-                <th colspan="4" class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">
+                <th colspan="4" class="border border-border px-2 py-1 text-center">
                     SALIDAS
                 </th>
 
-                <th colspan="3" class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">
+                <th colspan="3" class="border border-border px-2 py-1 text-center">
                     SALDO FINAL
                 </th>
             </tr>
 
             {{-- FILA 2 --}}
-            <tr class="bg-gray-200 dark:bg-gray-700 font-semibold">
+            <tr class="bg-muted font-semibold">
                 {{-- DOCUMENTO --}}
-                <th class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">FECHA</th>
-                <th class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">TIPO (TABLA 10)</th>
-                <th class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">SERIE</th>
-                <th class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">NÚMERO</th>
+                <th class="border border-border px-2 py-1 text-center">FECHA</th>
+                <th class="border border-border px-2 py-1 text-center">TIPO (TABLA 10)</th>
+                <th class="border border-border px-2 py-1 text-center">SERIE</th>
+                <th class="border border-border px-2 py-1 text-center">NÚMERO</th>
 
                 {{-- ENTRADAS --}}
-                <th class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">CANTIDAD</th>
-                <th class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">COSTO UNITARIO</th>
-                <th class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">COSTO TOTAL</th>
+                <th class="border border-border px-2 py-1 text-center">CANTIDAD</th>
+                <th class="border border-border px-2 py-1 text-center">COSTO UNITARIO</th>
+                <th class="border border-border px-2 py-1 text-center">COSTO TOTAL</th>
 
                 {{-- SALIDAS --}}
-                <th class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">CANTIDAD</th>
-                <th class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">LOTE</th>
-                <th class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">COSTO UNITARIO</th>
-                <th class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">COSTO TOTAL</th>
+                <th class="border border-border px-2 py-1 text-center">CANTIDAD</th>
+                <th class="border border-border px-2 py-1 text-center">LOTE</th>
+                <th class="border border-border px-2 py-1 text-center">COSTO UNITARIO</th>
+                <th class="border border-border px-2 py-1 text-center">COSTO TOTAL</th>
 
                 {{-- SALDO FINAL --}}
-                <th class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">CANTIDAD</th>
-                <th class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">COSTO UNITARIO</th>
-                <th class="border border-gray-400 dark:border-gray-600 px-2 py-1 text-center">COSTO TOTAL</th>
+                <th class="border border-border px-2 py-1 text-center">CANTIDAD</th>
+                <th class="border border-border px-2 py-1 text-center">COSTO UNITARIO</th>
+                <th class="border border-border px-2 py-1 text-center">COSTO TOTAL</th>
             </tr>
         </thead>
 

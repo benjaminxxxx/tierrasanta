@@ -231,7 +231,7 @@ class DistribucionCombustibleComponent extends Component
             'campo' => 'required|string',
             'horaInicio' => 'required|date_format:H:i',
             'horaFin' => 'required|date_format:H:i|after:horaInicio',
-            'descripcion' => 'nullable|string|max:255',
+            'descripcion' => 'required|string|max:255',
         ], [
             'fecha.required' => 'La fecha es obligatoria.',
             'fecha.date' => 'Ingrese una fecha válida.',
@@ -241,6 +241,7 @@ class DistribucionCombustibleComponent extends Component
             'horaFin.required' => 'La hora de fin es obligatoria.',
             'horaFin.date_format' => 'El formato de la hora de fin no es válido.',
             'horaFin.after' => 'La hora de fin debe ser posterior a la de inicio.',
+            'descripcion.required' => 'La descripción es obligatoria',
             'descripcion.max' => 'La descripción no debe exceder los 255 caracteres.',
         ]);
 
@@ -280,11 +281,23 @@ class DistribucionCombustibleComponent extends Component
             $this->reset(['fecha', 'campo', 'horaInicio', 'horaFin', 'descripcion']);
             $this->alert('success', 'Distribución guardada correctamente.');
         } catch (Exception $th) {
-            $this->dispatch('log', $th->getMessage());
             $this->alert('error', $th->getMessage());
         }
     }
-
+    public function eliminarDistribucion($distribucionId)
+    {
+        try {
+            $distribucionCombustible = DistribucionCombustible::find($distribucionId);
+            if($distribucionCombustible){
+                $distribucionCombustible->delete();
+            }
+            // Llamar función para obtener la lista actualizada
+            $this->generarDistribucion();
+            $this->alert('success', 'Distribución eliminada correctamente.');
+        } catch (Exception $th) {
+            $this->alert('error', $th->getMessage());
+        }
+    }
     public function verDistribucionCombustublble($salidaId, $mes, $anio)
     {
         $this->reset(['fecha', 'campo', 'horaInicio', 'horaFin', 'descripcion']);

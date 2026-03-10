@@ -90,7 +90,7 @@ class InsumoKardexMovimientosServicio
             Str::slug($insumoKardex->producto->nombre_completo) .
             '.xlsx';
         Excel::store(new KardexProductoExport($data), $filePath, 'public');
-
+     
         $insumoKardex->file = $filePath;
         $insumoKardex->save();
     }

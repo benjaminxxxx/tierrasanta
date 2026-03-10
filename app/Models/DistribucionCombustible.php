@@ -89,13 +89,21 @@ class DistribucionCombustible extends Model
     /**
      * Valor Costo: Cantidad Calculada * Precio Unitario de la Salida
      */
-    public function getValorCostoAttribute()
+    public function getCostoMaquinariaAttribute()
     {
         $salida = $this->salidaCombustible;
         if (!$salida)
             return 0;
 
         $precioUnitario = $salida->costo_por_kg ?? 0;
-        return round($this->cantidad_combustible * $precioUnitario, 2);
+        return $this->cantidad_combustible * $precioUnitario;
+    }
+
+    public function getValorCostoAttribute()
+    {
+        if ($this->horas==0)
+            return 0;
+
+        return $this->costo_maquinaria / $this->horas;
     }
 }

@@ -56,7 +56,7 @@
                             <x-td value="{{ $registro->total_costo }}" class="text-center" />
                             <x-td class="text-center">
 
-                                <x-flex class="justify-end w-full">
+                                <x-flex class="justify-end w-full min-w-[12rem]">
                                     @if ($registro->perteneceAUnaCompra)
                                         <x-button type="button" class="whitespace-nowrap" title="Ver historial de compra."
                                             @click="$wire.dispatch('verHistorialSalidaPorCompra',{salidaId:{{ $registro->id }}})">
