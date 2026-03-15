@@ -1,5 +1,5 @@
-<div>
-    <x-card>
+<div class="space-y-4">
+    <x-flex class="w-full justify-between">
         <x-flex>
             <x-title>
                 Infestación de Cochinilla
@@ -8,6 +8,13 @@
                 <i class="fa fa-plus"></i> Agregar registro
             </x-button>
         </x-flex>
+        <x-button href="{{ route('cochinilla.infestacion.masivo') }}">
+            <i class="fa fa-plus"></i> Agregar Masivo
+        </x-button>
+    </x-flex>
+
+    <x-card>
+
         <x-flex class="justify-between w-full mt-4">
             <x-flex>
                 <div>
@@ -18,7 +25,7 @@
                     </x-select>
                 </div>
                 <div>
-                    <x-select-anios label="Filtrar por año" wire:model.live="anioSeleccionado"/>
+                    <x-select-anios label="Filtrar por año" wire:model.live="anioSeleccionado" />
                 </div>
                 <div>
                     <x-select-campo label="Filtrar por campo de destino" wire:model.live="campoSeleccionado" />
@@ -141,7 +148,8 @@
             </x-slot>
             <x-slot name="tbody">
                 @foreach ($cochinillaInfestaciones as $indice => $cochinillaInfestacion)
-                    <x-tr class="{{ $nuevoRegistro == $cochinillaInfestacion->id ? '!bg-blue-200 dark:!bg-blue-600' : '' }}">
+                    <x-tr
+                        class="{{ $nuevoRegistro == $cochinillaInfestacion->id ? '!bg-blue-200 dark:!bg-blue-600' : '' }}">
                         <x-th class="text-center text-red-600">
                             {{ $cochinillaInfestacion->tipo_infestacion }}
                         </x-th>
@@ -178,7 +186,7 @@
                                 {{ $cochinillaInfestacion->carton_infestadores }}
                             </x-td>
                             <x-td class="text-center bg-yellow-100 dark:bg-amber-700">
-                                {{ formatear_numero($cochinillaInfestacion->carton_madres_por_infestador,4,false) }}
+                                {{ formatear_numero($cochinillaInfestacion->carton_madres_por_infestador, 4, false) }}
                             </x-td>
                             <x-td class="text-center bg-yellow-100 dark:bg-amber-700">
                                 {{ $cochinillaInfestacion->carton_infestadores_por_ha }}
@@ -198,7 +206,7 @@
                                 {{ $cochinillaInfestacion->tubo_infestadores }}
                             </x-td>
                             <x-td class="text-center bg-purple-100 dark:bg-purple-700">
-                                {{ formatear_numero($cochinillaInfestacion->tubo_madres_por_infestador,4,false) }}
+                                {{ formatear_numero($cochinillaInfestacion->tubo_madres_por_infestador, 4, false) }}
                             </x-td>
                             <x-td class="text-center bg-purple-100 dark:bg-purple-700">
                                 {{ $cochinillaInfestacion->tubo_infestadores_por_ha }}
@@ -218,7 +226,7 @@
                                 {{ $cochinillaInfestacion->malla_infestadores }}
                             </x-td>
                             <x-td class="text-center bg-blue-100 dark:bg-blue-700">
-                                {{ formatear_numero($cochinillaInfestacion->malla_madres_por_infestador,4,false) }}
+                                {{ formatear_numero($cochinillaInfestacion->malla_madres_por_infestador, 4, false) }}
                             </x-td>
                             <x-td class="text-center bg-blue-100 dark:bg-blue-700">
                                 {{ $cochinillaInfestacion->malla_infestadores_por_ha }}
@@ -232,8 +240,7 @@
                                     <x-dropdown align="right" width="60">
                                         <x-slot name="trigger">
                                             <span class="inline-flex rounded-md">
-                                                <x-button type="button"
-                                                    class="font-medium">
+                                                <x-button type="button" class="font-medium">
                                                     Acciones
 
                                                     <svg class="ms-2 -me-0.5 h-4 w-4"

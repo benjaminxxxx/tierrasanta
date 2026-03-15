@@ -8,42 +8,38 @@ use Illuminate\Support\Carbon;
 class FormatoHelper
 {
     /**
-     * Normaliza formatos como "14.30", "14:30" o "14" a "14:30:00"
+     * Convierte texto de número (con comas/puntos como separadores) a float.
+     * Soporta: "1,334.50" | "1.334,50" | "1334.50" | "1334,50"
      */
-    public static function normalizarHora(?string $hora): string
+    public static function parseNumero(?string $valor): ?float
     {
-        if (empty($hora))
-            return '00:00:00';
-
-        // Reemplazar punto por dos puntos para estandarizar
-        $hora = str_replace('.', ':', trim($hora));
-
-        // Si solo enviaron el número de hora (ej: "14"), completar con minutos
-        if (!str_contains($hora, ':')) {
-            $hora .= ':00';
+        if (is_null($valor) || trim($valor) === '') {
+            return null;
         }
 
-        try {
-            // Forzamos el parseo y devolvemos formato 24h
-            return Carbon::parse($hora)->format('H:i:s');
-        } catch (\Exception $e) {
-            return '00:00:00';
+        $valor = trim($valor);
+
+        // Si tiene coma Y punto, el último separador es el decimal
+        if (str_contains($valor, ',') && str_contains($valor, '.')) {
+            $ultimaComa = strrpos($valor, ',');
+            $ultimoPunto = strrpos($valor, '.');
+
+            if ($ultimaComa > $ultimoPunto) {
+                // formato europeo: 1.334,50
+                $valor = str_replace('.', '', $valor);
+                $valor = str_replace(',', '.', $valor);
+            } else {
+                // formato anglosajón: 1,334.50
+                $valor = str_replace(',', '', $valor);
+            }
+        } elseif (str_contains($valor, ',')) {
+            // Solo coma → decimal europeo: "1334,50"
+            $valor = str_replace(',', '.', $valor);
         }
+        // Solo punto → ya es válido: "1334.50"
+
+        return is_numeric($valor) ? (float) $valor : null;
     }
-    public static function generarCodigoGrupo(string $fechaReferencia): string
-    {
-        $base = Carbon::parse($fechaReferencia)->format('Ymd');
-        $indice = 1;
-
-        do {
-            $codigo = "{$base}_{$indice}";
-            $existe = VentaCochinilla::where('grupo_venta', $codigo)->exists();
-            $indice++;
-        } while ($existe);
-
-        return $codigo;
-    }
-
     /**
      * Convierte cualquier fecha textual en un formato válido de MySQL (Y-m-d o Y-m-d H:i:s).
      *
@@ -88,6 +84,44 @@ class FormatoHelper
         // Ningún patrón coincide
         return null;
     }
+    /**
+     * Normaliza formatos como "14.30", "14:30" o "14" a "14:30:00"
+     */
+    public static function normalizarHora(?string $hora): string
+    {
+        if (empty($hora))
+            return '00:00:00';
+
+        // Reemplazar punto por dos puntos para estandarizar
+        $hora = str_replace('.', ':', trim($hora));
+
+        // Si solo enviaron el número de hora (ej: "14"), completar con minutos
+        if (!str_contains($hora, ':')) {
+            $hora .= ':00';
+        }
+
+        try {
+            // Forzamos el parseo y devolvemos formato 24h
+            return Carbon::parse($hora)->format('H:i:s');
+        } catch (\Exception $e) {
+            return '00:00:00';
+        }
+    }
+    public static function generarCodigoGrupo(string $fechaReferencia): string
+    {
+        $base = Carbon::parse($fechaReferencia)->format('Ymd');
+        $indice = 1;
+
+        do {
+            $codigo = "{$base}_{$indice}";
+            $existe = VentaCochinilla::where('grupo_venta', $codigo)->exists();
+            $indice++;
+        } while ($existe);
+
+        return $codigo;
+    }
+
+
     public static function parseNumeroDesdeFuenteExterna(?string $texto): ?float
     {
         if (is_null($texto)) {

@@ -18,15 +18,61 @@ class CochinillaInfestacion extends Model
         'area',
         'campo_campania_id',
         'kg_madres',
-        'kg_madres_por_ha',
+        //'kg_madres_por_ha',
         'campo_origen_nombre',
         'metodo',
         'numero_envases',
         'capacidad_envase',
+        //'infestadores',
+        //'madres_por_infestador',
+        //'infestadores_por_ha',
+    ];
+
+    protected $appends = [
+        'kg_madres_por_ha',
         'infestadores',
         'madres_por_infestador',
         'infestadores_por_ha',
     ];
+    public function campoCampania()
+    {
+        return $this->belongsTo(CampoCampania::class, 'campo_campania_id');
+    }
+    // G = F / D
+    public function getKgMadresPorHaAttribute(): ?float
+    {
+        $area = (float) $this->area;
+        $kgMadres = (float) $this->kg_madres;
+
+        return $area > 0 ? $kgMadres / $area : null;
+    }
+
+    // L = J * K
+    public function getInfestadoresAttribute(): ?float
+    {
+        $capacidad = (float) $this->capacidad_envase;
+        $envases = (float) $this->numero_envases;
+
+        return ($capacidad > 0 && $envases > 0) ? $capacidad * $envases : null;
+    }
+
+    // M = F / L
+    public function getMadresPorInfestadorAttribute(): ?float
+    {
+        $kgMadres = (float) $this->kg_madres;
+        $infestadores = $this->infestadores; // usa el accessor anterior
+
+        return ($infestadores && $infestadores > 0) ? $kgMadres / $infestadores : null;
+    }
+
+    // N = L / D
+    public function getInfestadoresPorHaAttribute(): ?float
+    {
+        $area = (float) $this->area;
+        $infestadores = $this->infestadores; // usa el accessor anterior
+
+        return ($area > 0 && $infestadores) ? $infestadores / $area : null;
+    }
 
     // Relaciones
     public function ingresos()
@@ -45,10 +91,7 @@ class CochinillaInfestacion extends Model
         return $this->belongsTo(Campo::class, 'campo_origen_nombre', 'nombre');
     }
 
-    public function campoCampania()
-    {
-        return $this->belongsTo(CampoCampania::class, 'campo_campania_id');
-    }
+
     #region Alias
     public function getMadresPorInfestadorAliasAttribute($value)
     {

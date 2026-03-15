@@ -1,92 +1,10 @@
-<div>
-    <x-card class="mt-5">
-        <x-table class="mt-5">
-            <x-slot name="thead">
-                <tr>
-                    <x-th value="N°" class="text-center" />
-                    <x-th class="text-center">
-                        <x-warning-button type="text" wire:click="generarItemCodigoForm">
-                            ITEM
-                        </x-warning-button>
-                    </x-th>
-                    <x-th value="FECHA SALIDA" class="text-center" />
-                    @if ($tipo == 'combustible')
-                        <x-th value="CENTRO DE COSTO" class="text-center" />
-                        <x-th value="CAMPO" class="text-center" />
-                    @else
-                        <x-th value="CAMPO" class="text-center" />
-                    @endif
-
-                    <x-th value="DESCRIPCION" />
-                    <x-th value="UND. MEDIDA" class="text-center" />
-                    <x-th value="CANTIDAD" class="text-center" />
-                    <x-th value="CATEGORIA" class="text-center" />
-                    <x-th value="COSTO X UNIDAD" class="text-center" />
-                    <x-th value="TOTAL COSTO" class="text-center" />
-                    <x-th value="ACCIONES" class="text-center" />
-                </tr>
-            </x-slot>
-            <x-slot name="tbody">
-                @if ($registros && $registros->count() > 0)
-
-                    @foreach ($registros as $indice => $registro)
-                        <x-tr>
-                            <x-th value="{{ $indice + 1 }}" class="text-center" />
-                            <x-th value="{{ $registro->item }}" class="text-center" />
-                            <x-td value="{{ $registro->fecha_reporte }}" class="text-center" />
-                            @if ($tipo == 'combustible')
-                                <x-td value="{{ $registro->maquina_nombre }}" class="text-center" />
-                                <x-td value="{{ $registro->campo_nombre }}" class="text-center" />
-                            @else
-                                <x-td value="{{ $registro->campo_nombre }}" class="text-center" />
-                            @endif
-
-                            <x-td>
-                                <div @click="$wire.dispatch('EditarProducto',{'id':{{ $registro->producto->id }}})"
-                                    class="cursor-pointer underline text-indigo-600 dark:text-blue-200">
-                                    {{ $registro->producto->nombre_comercial }}
-                                </div>
-                            </x-td>
-                            <x-td value="{{ $registro->producto->unidad_medida }}" class="text-center" />
-                            <x-td value="{{ $registro->cantidad }}" class="text-center"  />
-                            <x-td value="{{ mb_strtoupper($registro->producto->categoria->descripcion) }}" class="text-center" />
-                            <x-td class="text-center">
-                                {{ $registro->costo_por_kg }}
-                            </x-td>
-                            <x-td value="{{ $registro->total_costo }}" class="text-center" />
-                            <x-td class="text-center">
-
-                                <x-flex class="justify-end w-full min-w-[12rem]">
-                                    @if ($registro->perteneceAUnaCompra)
-                                        <x-button type="button" class="whitespace-nowrap" title="Ver historial de compra."
-                                            @click="$wire.dispatch('verHistorialSalidaPorCompra',{salidaId:{{ $registro->id }}})">
-                                            <i class="fa fa-money-bill"></i> Ver Compra
-                                        </x-button>
-                                    @endif
-                                    @if ($registro->campo_nombre == '' || $registro->campo_nombre == null)
-                                        <x-button type="button"
-                                            @click="$wire.dispatch('verDistribucionCombustublble',{salidaId:{{ $registro->id }},mes:{{ $mes }},anio:{{ $anio }}})"
-                                            class="whitespace-nowrap">
-                                            <i class="fa fa-list"></i> Distribución
-                                        </x-button>
-                                    @endif
-
-                                    <x-button type="button" variant="danger" wire:click="confirmarEliminacionSalida({{ $registro->id }})">
-                                        <i class="fa fa-trash"></i>
-                                    </x-button>
-                                </x-flex>
-
-                            </x-td>
-                        </x-tr>
-                    @endforeach
-                @else
-                    <x-tr>
-                        <x-td colspan="4">No hay registrados para este mes.</x-td>
-                    </x-tr>
-                @endif
-            </x-slot>
-        </x-table>
+<div x-data="gestionSalidaAlmacen">
+    <x-card>
+        <div wire:ignore>
+            <div x-ref="tableContainer"></div>
+        </div>
     </x-card>
+
 
     <x-dialog-modal wire:model.live="mostrarGenerarItem">
         <x-slot name="title">
@@ -112,3 +30,152 @@
 
     <x-loading wire:loading />
 </div>
+@script
+    <script>
+        Alpine.data('gestionSalidaAlmacen', () => ({
+            filasModificadas: @entangle('filasModificadas'),
+            isDark: JSON.parse(localStorage.getItem('darkMode')),
+            tableDataSalidas:@js($registros),
+            init() {
+                this.initTable(this.tableDataSalidas);
+                $watch('darkMode', value => {
+
+                    this.isDark = value;
+                    const columns = this.getColumns();
+                    this.hot.updateSettings({
+                        themeName: value ? 'ht-theme-main-dark' : 'ht-theme-main',
+                        columns: columns
+                    });
+
+                });
+                Livewire.on('cargarDataSlidaAlmacen', ({
+                    data
+                }) => {
+                    this.initTable(data);
+                })
+            },
+            initTable(tableData) {
+                if (this.hot) {
+                    this.hot.destroy();
+                }
+                const container = this.$refs.tableContainer;
+                const hot = new Handsontable(container, {
+                    data: tableData,
+                    themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
+                    colHeaders: true,
+                    rowHeaders: true,
+                    columns: this.getColumns(),
+                    manualColumnResize: false,
+                    manualRowResize: true,
+                    stretchH: 'all',
+                    minSpareRows: 1,
+                    autoColumnSize: false,
+                    licenseKey: 'non-commercial-and-evaluation',
+                    afterChange: (changes, source) => {
+                        // Corta el bucle: si nosotros mismos disparamos el cambio, ignorar
+                        if (source === 'recalculado' || source === 'loadData') return;
+
+                        changes.forEach(([row]) => {
+                            if (!this.filasModificadas.includes(row)) {
+                                this.filasModificadas = [...this.filasModificadas, row];
+                            }
+                        });
+
+                        if (!['edit', 'CopyPaste.paste', 'Autofill.fill'].includes(source)) return;
+
+                       
+                    }
+
+                });
+
+                this.hot = hot;
+                this.hot.render();
+            },
+            getColumns() {
+                return [
+
+                    {
+                        data: 'item',
+                        type: 'numeric',
+                        title: 'ITEM',
+                        readOnly: true,
+                    },
+
+                    {
+                        data: 'fecha_reporte',
+                        type: 'date',
+                        dateFormat: 'YYYY-MM-DD',
+                        title: 'FECHA INFESTACION',
+                        width: 70
+                    },
+
+                    {
+                        data: 'campo_nombre',
+                        type: 'text',
+                        title: 'CAMPO'
+                    },
+
+                    {
+                        data: 'nombre_producto',
+                        type: 'text',
+                        title: 'PRODUCTO'
+                    },
+
+                    {
+                        data: 'unidad_medida',
+                        type: 'text',
+                        title: 'UND. MEDIDA',
+                        readOnly: true,
+                        className: '!bg-muted !text-center'
+                    },
+
+                    {
+                        data: 'cantidad',
+                        type: 'numeric',
+                        numericFormat: {
+                            pattern: '0.00'
+                        },
+                        title: 'CANTIDAD'
+                    },
+
+                    {
+                        data: 'categoria',
+                        type: 'numeric',
+                        readOnly: true,
+                        title: 'CATEGORIA',
+                        className: '!bg-muted'
+                    },
+
+                    {
+                        data: 'costo_por_kg',
+                        type: 'text',
+                        title: 'COSTO X UNIDAD'
+                    },
+
+                    {
+                        data: 'total_costo',
+                        type: 'dropdown',
+                        source: ['carton', 'tubo', 'malla'],
+                        title: 'TOTAL COSTO',
+                        className: 'uppercase',
+                        width: 55
+                    }
+
+                ];
+            },
+            guardarSalidaAlmacen() {
+                if (this.filasModificadas.length === 0) {
+                    alert('Niguna fila modificada');
+                    return;
+                };
+
+                const data = [...this.filasModificadas]
+                    .map(i => this.hot.getSourceDataAtRow(i))
+                    .filter(fila => fila && Object.values(fila).some(v => v !== null && v !== ''));
+
+                $wire.guardarSalidaAlmacen(data);
+            },
+        }))
+    </script>
+@endscript
+

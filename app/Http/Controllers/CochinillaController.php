@@ -21,6 +21,10 @@ class CochinillaController extends Controller
     public function infestacion(){
         return view("cochinilla.infestacion");
     }
+    public function infestacion_masivo(){
+        return view("livewire.gestion-cochinilla.cochinilla-infestacion-masivo-indice");
+    }
+    
     public function ventas(){
         return view("cochinilla.ventas");
     }

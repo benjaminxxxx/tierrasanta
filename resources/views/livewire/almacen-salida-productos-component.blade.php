@@ -1,13 +1,15 @@
-<div>
-    <div class="md:flex items-center gap-5 mb-5">
-        <x-h3>
-            {{ $destino == 'combustible' ? 'Combustible' : 'Almacén' }}
-        </x-h3>
-        <x-button type="button"
-            @click="$wire.dispatch('nuevoRegistro',{mes:{{ $mes }},anio:{{ $anio }}})"
-            class="w-full md:w-auto ">
-            <i class="fa fa-plus"></i> Nuevo Registro de Salida
-        </x-button>
+<div class="space-y-4">
+    <x-flex class="w-full justify-between">
+        <x-flex>
+            <x-title>
+                Gestión de Almacén - Salida de {{ $destino == 'combustible' ? 'combustible' : 'insumos' }}
+            </x-title>
+            <x-button type="button"
+                @click="$wire.dispatch('nuevoRegistro',{mes:{{ $mes }},anio:{{ $anio }}})"
+                class="w-full md:w-auto ">
+                <i class="fa fa-plus"></i> Nueva Salida
+            </x-button>
+        </x-flex>
         @if ($destino == 'combustible')
             <x-button type="button" @click="$wire.dispatch('verStock',{tipo:'combustible'})" class="w-full md:w-auto ">
                 <i class="fa fa-eye"></i> Ver Stock de Combustible
@@ -17,11 +19,13 @@
                 <i class="fa fa-eye"></i> Ver Stock de Productos
             </x-button>
         @endif
+    </x-flex>
 
-    </div>
     @include('comun.selector-mes')
+
     <livewire:almacen-salida-detalle-component :tipo="$destino" wire:key="{{ $mes }}.{{ $anio }}"
         :mes="$mes" :anio="$anio" />
+
     @if ($destino == 'combustible')
         <x-card class="mt-5">
             <x-spacing>
@@ -106,6 +110,6 @@
         </x-card>
     @endif
 
-    
+
     <x-loading wire:loading />
 </div>

@@ -2,6 +2,10 @@
     <x-title>
         Panel Principal
     </x-title>
+
+    {{-- En dashboard, encima del selector mes/año --}}
+    <livewire:gestion-cochinilla.cochinilla-infestacion-resumen-general-component />
+
     <x-card>
         <x-flex class="w-full justify-between">
 
@@ -30,5 +34,10 @@
             description="Empleados activos en la empresa" :trend="$this->calcularTrend('total_empleados_oficina')" trendLabel="vs mes anterior" />
 
     </div>
+
+    {{-- Sección cochinilla: su propio bloque por la diferencia de contexto --}}
+    <livewire:gestion-cochinilla.cochinilla-infestacion-stats-component :mes="$mes" :anio="$anio"
+        wire:key="cst_{{ $anio }}_{{ $mes }}_{{ $reload }}" />
+
     <x-loading wire:loading />
 </div>

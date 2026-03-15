@@ -228,6 +228,7 @@ Route::middleware([
     Route::get('/cochinilla/filtrado', [CochinillaController::class, 'filtrado'])->name('cochinilla.filtrado');
     Route::get('/cochinilla/cosechamamas', [CochinillaController::class, 'cosecha_mamas'])->name('cochinilla.cosecha_mamas');
     Route::get('/cochinilla/infestacion', [CochinillaController::class, 'infestacion'])->name('cochinilla.infestacion');
+    Route::get('/cochinilla/infestacion/masivo', [CochinillaController::class, 'infestacion_masivo'])->name('cochinilla.infestacion.masivo');
     Route::get('/cochinilla/ventas', [CochinillaController::class, 'ventas'])->name('cochinilla.ventas');
 
     Route::get('/test/costos', [TestController::class, 'mano_obra']);

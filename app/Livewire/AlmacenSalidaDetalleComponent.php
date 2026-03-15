@@ -21,10 +21,11 @@ class AlmacenSalidaDetalleComponent extends Component
     protected $listeners = ['actualizarAlmacen' => '$refresh', 'ActualizarProductos' => '$refresh', 'eliminacionConfirmar'];
     public function mount($mes = null, $anio = null)
     {
-        $this->mes = $mes ? $mes : Carbon::now()->format('m');
-        $this->anio = $anio ? $anio : Carbon::now()->format('Y');
-    }   
-
+        $this->mes = $mes;
+        $this->anio = $anio;
+        $this->cargarSalidaInsumos();
+    }
+    /*
     public function confirmarEliminacionSalida($id)
     {
         $this->confirm('¿Está seguro que desea eliminar el registro?', [
@@ -69,10 +70,10 @@ class AlmacenSalidaDetalleComponent extends Component
     {
         $this->procesarRegistros();
         $this->cerrarMostrarGenerarItem();
-    }
+    }*/
     public function procesarRegistros()
     {
-        
+
         if ($this->registros && $this->inicioItem) {
             $correlativo = $this->inicioItem;
 
@@ -82,7 +83,7 @@ class AlmacenSalidaDetalleComponent extends Component
                     $correlativo++;
                     $registro->save();
 
-                   
+
                 } else {
                     $registro->item = null;
                     $registro->save();
@@ -96,13 +97,26 @@ class AlmacenSalidaDetalleComponent extends Component
         $this->mostrarGenerarItem = false;
         $this->inicioItem = null;
     }
-
-    public function render()
+    public function cargarSalidaInsumos()
     {
-        if ($this->mes && $this->anio) {
-            $this->registros = AlmacenServicio::obtenerRegistrosPorFecha($this->mes, $this->anio, $this->tipo);
-            $this->cantidad = $this->registros->pluck('cantidad', 'id')->toArray();
-        }
+        $this->registros = AlmacenServicio::obtenerRegistrosPorFecha($this->mes, $this->anio, $this->tipo)
+            ->map(function ($salida) {
+                return array_merge($salida->toArray(), [
+                    'campo_nombre' => $this->tipo == 'combustible' ? $salida->maquina_nombre : $salida->campo_nombre,
+                    'nombre_producto' => $salida->producto?->nombre_comercial,
+                    'unidad_medida' => $salida->producto?->unidad_medida,
+                    'categoria' => $salida->producto?->categoria?->descripcion,
+                ]);
+            })
+            ->toArray();
+    }
+    public function render()
+    {/*
+      if ($this->mes && $this->anio) {
+          $this->registros = AlmacenServicio::obtenerRegistrosPorFecha($this->mes, $this->anio, $this->tipo);
+          dd($this->registros);
+          $this->cantidad = $this->registros->pluck('cantidad', 'id')->toArray();
+      }*/
         return view('livewire.almacen-salida-detalle-component');
     }
 }
