@@ -4,11 +4,6 @@
             <x-title>
                 Gestión de Almacén - Salida de {{ $destino == 'combustible' ? 'combustible' : 'insumos' }}
             </x-title>
-        {{-- -<x-button type="button"
-                @click="$wire.dispatch('nuevoRegistro',{mes:{{ $mes }},anio:{{ $anio }}})"
-                class="w-full md:w-auto ">
-                <i class="fa fa-plus"></i> Nueva Salida
-            </x-button> --}}
         </x-flex>
         @if ($destino == 'combustible')
             <x-button type="button" @click="$wire.dispatch('verStock',{tipo:'combustible'})" class="w-full md:w-auto ">

@@ -30,7 +30,7 @@ class AlmacenSalidaDetalleComponent extends Component
     {
         $this->mes = $mes;
         $this->anio = $anio;
-        $this->cargarSalidaInsumos();
+        $this->cargarSalidaInsumos(false);
         $this->tipo = $tipo;
         $this->cargarListas();
     }
@@ -123,7 +123,7 @@ class AlmacenSalidaDetalleComponent extends Component
         $this->mostrarGenerarItem = false;
         $this->inicioItem = null;
     }
-    public function cargarSalidaInsumos()
+    public function cargarSalidaInsumos($dispatch = true)
     {
         $this->registros = AlmacenServicio::obtenerRegistrosPorFecha($this->mes, $this->anio, $this->tipo)
             ->map(function ($salida) {
@@ -135,7 +135,10 @@ class AlmacenSalidaDetalleComponent extends Component
                 ]);
             })
             ->toArray();
-        $this->dispatch('cargarDataSlidaAlmacen', data: $this->registros);
+        if ($dispatch) {
+            $this->dispatch('cargarDataSlidaAlmacen', data: $this->registros);
+        }
+
     }
     public function guardarSalidaAlmacen(array $data)
     {
@@ -159,11 +162,11 @@ class AlmacenSalidaDetalleComponent extends Component
     }
     public function render()
     {/*
- if ($this->mes && $this->anio) {
-     $this->registros = AlmacenServicio::obtenerRegistrosPorFecha($this->mes, $this->anio, $this->tipo);
-     dd($this->registros);
-     $this->cantidad = $this->registros->pluck('cantidad', 'id')->toArray();
- }*/
+if ($this->mes && $this->anio) {
+    $this->registros = AlmacenServicio::obtenerRegistrosPorFecha($this->mes, $this->anio, $this->tipo);
+    dd($this->registros);
+    $this->cantidad = $this->registros->pluck('cantidad', 'id')->toArray();
+}*/
         return view('livewire.almacen-salida-detalle-component');
     }
 }

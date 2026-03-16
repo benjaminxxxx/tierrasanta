@@ -22,8 +22,8 @@
             listaProductos: @js($listaProductos),
             listaMaquinarias: @js($listaMaquinarias),
             listaCampos: @js($listaCampos),
-            mes:@js($mes),
-            anio:@js($anio),
+            mes: @js($mes),
+            anio: @js($anio),
             init() {
                 this.initTable(this.tableDataSalidas);
                 $watch('darkMode', value => {
@@ -39,14 +39,24 @@
                 Livewire.on('cargarDataSlidaAlmacen', ({
                     data
                 }) => {
-                    this.initTable(data);
+                    if (!this.$refs.tableContainer) return;
+
+                    this.$nextTick(() => {
+                        if (!this.$refs.tableContainer) return; // doble check tras nextTick
+                        this.tableDataSalidas = data;
+                        this.initTable(data);
+                    });
                 })
             },
             initTable(tableData) {
                 if (this.hot) {
-                    this.hot.destroy();
+                    try {
+                        this.hot.destroy();
+                    } catch (e) {}
+                    this.hot = null;
                 }
                 const container = this.$refs.tableContainer;
+                if (!container) return;
                 const esCombustible = this.tipo === 'combustible';
 
                 const hot = new Handsontable(container, {
@@ -76,7 +86,7 @@
                                     if (!fila?.id) {
                                         alert(
                                             'Guarda el registro antes de ver la distribución.'
-                                            );
+                                        );
                                         return;
                                     }
 
