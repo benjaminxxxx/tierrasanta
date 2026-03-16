@@ -11,11 +11,85 @@ use App\Models\KardexProducto;
 use App\Models\PesticidaCampania;
 use App\Models\ProductoNutriente;
 use Carbon\Carbon;
+use DB;
 use Exception;
 use Illuminate\Support\Str;
 
 class AlmacenServicio
 {
+    public static function guardarSalidaMasiva(array $filas, string $tipo): array
+    {
+        $resultados = ['creados' => 0, 'actualizados' => 0, 'eliminados' => 0];
+
+        DB::transaction(function () use ($filas, $tipo, &$resultados) {
+            foreach ($filas as $fila) {
+                $id = $fila['id'] ?? null;
+
+                $esCombustible = $tipo === 'combustible';
+
+                // Campos obligatorios según tipo
+                $camposBase = ['fecha_reporte', 'producto_id', 'cantidad'];
+                $campoDestino = $esCombustible ? 'maquinaria_id' : 'campo_nombre';
+
+                // Detectar fila vacía: todos los campos clave son null/vacío
+                $camposParaVacioCheck = array_merge($camposBase, [$campoDestino]);
+                $filaVacia = collect($camposParaVacioCheck)
+                    ->every(fn($campo) => is_null($fila[$campo] ?? null) || ($fila[$campo] ?? '') === '');
+
+                if ($filaVacia) {
+                    if ($id) {
+                        AlmacenProductoSalida::findOrFail($id)->delete();
+                        $resultados['eliminados']++;
+                    }
+                    continue;
+                }
+
+                // Validar campos requeridos
+                $etiquetas = [
+                    'fecha_reporte' => 'Fecha',
+                    'producto_id' => 'Producto',
+                    'cantidad' => 'Cantidad',
+                    'campo_nombre' => 'Campo',
+                    'maquinaria_id' => 'Maquinaria',
+                ];
+
+                foreach ($camposBase as $campo) {
+                    if (is_null($fila[$campo] ?? null) || ($fila[$campo] ?? '') === '') {
+                        throw new Exception("El campo \"{$etiquetas[$campo]}\" es obligatorio."
+                            . ($id ? " (ID: {$id})" : ''));
+                    }
+                }
+
+                if (is_null($fila[$campoDestino] ?? null) || ($fila[$campoDestino] ?? '') === '') {
+                    throw new Exception("El campo \"{$etiquetas[$campoDestino]}\" es obligatorio."
+                        . ($id ? " (ID: {$id})" : ''));
+                }
+
+                // Preparar datos a guardar
+                $datos = [
+                    'fecha_reporte' => $fila['fecha_reporte'],
+                    'producto_id' => $fila['producto_id'],
+                    'cantidad' => $fila['cantidad'],
+                    'campo_nombre' => $esCombustible ? '' : ($fila['campo_nombre'] ?? ''),
+                    'maquinaria_id' => $esCombustible ? ($fila['maquinaria_id'] ?? null) : null,
+                    'costo_por_kg' => $fila['costo_por_kg'] ?? null,
+                    'total_costo' => $fila['total_costo'] ?? null,
+                    'indice' => $fila['indice'] ?? null,
+                    'tipo_kardex' => $fila['tipo_kardex'] ?? null,
+                ];
+
+                if ($id) {
+                    AlmacenProductoSalida::findOrFail($id)->update($datos);
+                    $resultados['actualizados']++;
+                } else {
+                    AlmacenProductoSalida::create($datos);
+                    $resultados['creados']++;
+                }
+            }
+        });
+
+        return $resultados;
+    }
     /**
      * Genera un resumen histórico de fertilización por campaña.
      *
@@ -65,14 +139,14 @@ class AlmacenServicio
             }
 
             $categoria = $producto->categoria_codigo;
-          
+
             // -------------------------------------------------------
             // 1) CASO ESPECIAL: CORRECTOR DE SALINIDAD
             // -------------------------------------------------------
             if ($categoria === 'corrector_salinidad') {
 
                 $etapa = self::determinarEtapa($campania, $salida->fecha_reporte);
-                
+
                 $data[] = [
                     'campo_campania_id' => $campania->id,
                     'producto_id' => $producto->id,

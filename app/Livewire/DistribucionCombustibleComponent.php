@@ -34,7 +34,7 @@ class DistribucionCombustibleComponent extends Component
     public $almacenProductoSalidaId;
     public $maquinaria;
     public $tipoKardex;
-    protected $listeners = ['verDistribucionCombustublble', 'calcularDistribucion'];
+    protected $listeners = ['verDistribucionCombustible', 'calcularDistribucion'];
 
     public function mount()
     {
@@ -298,7 +298,7 @@ class DistribucionCombustibleComponent extends Component
             $this->alert('error', $th->getMessage());
         }
     }
-    public function verDistribucionCombustublble($salidaId, $mes, $anio)
+    public function verDistribucionCombustible($salidaId, $mes, $anio)
     {
         $this->reset(['fecha', 'campo', 'horaInicio', 'horaFin', 'descripcion']);
         $this->mes = $mes;

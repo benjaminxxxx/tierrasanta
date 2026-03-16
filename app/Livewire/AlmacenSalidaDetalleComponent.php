@@ -3,6 +3,9 @@
 namespace App\Livewire;
 
 use App\Models\AlmacenProductoSalida;
+use App\Models\Campo;
+use App\Models\Maquinaria;
+use App\Models\Producto;
 use App\Services\AlmacenServicio;
 use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -18,12 +21,35 @@ class AlmacenSalidaDetalleComponent extends Component
     public $inicioItem;
     public $cantidad = [];
     public $tipo;
+    public $filasModificadas = [];
+    public array $listaProductos = [];
+    public array $listaMaquinarias = [];
+    public array $listaCampos = [];
     protected $listeners = ['actualizarAlmacen' => '$refresh', 'ActualizarProductos' => '$refresh', 'eliminacionConfirmar'];
-    public function mount($mes = null, $anio = null)
+    public function mount($mes = null, $anio = null, string $tipo)
     {
         $this->mes = $mes;
         $this->anio = $anio;
         $this->cargarSalidaInsumos();
+        $this->tipo = $tipo;
+        $this->cargarListas();
+    }
+    public function cargarListas(): void
+    {
+        $this->listaCampos = Campo::get()
+            ->map(fn($p) => ['id' => $p->nombre, 'label' => $p->nombre])
+            ->toArray();
+        $this->listaProductos = Producto::deTipo($this->tipo)
+            ->get()
+            ->map(fn($p) => ['id' => $p->id, 'label' => $p->nombre_comercial])
+            ->toArray();
+
+        if ($this->tipo === 'combustible') {
+            $this->listaMaquinarias = Maquinaria::orderBy('nombre')
+                ->get()
+                ->map(fn($m) => ['id' => $m->id, 'label' => $m->nombre])
+                ->toArray();
+        }
     }
     /*
     public function confirmarEliminacionSalida($id)
@@ -109,14 +135,35 @@ class AlmacenSalidaDetalleComponent extends Component
                 ]);
             })
             ->toArray();
+        $this->dispatch('cargarDataSlidaAlmacen', data: $this->registros);
+    }
+    public function guardarSalidaAlmacen(array $data)
+    {
+        try {
+            $resultados = AlmacenServicio::guardarSalidaMasiva($data, $this->tipo);
+
+            $partes = [];
+            if ($resultados['creados'] > 0)
+                $partes[] = "{$resultados['creados']} creados";
+            if ($resultados['actualizados'] > 0)
+                $partes[] = "{$resultados['actualizados']} actualizados";
+            if ($resultados['eliminados'] > 0)
+                $partes[] = "{$resultados['eliminados']} eliminados";
+
+            $this->alert('success', count($partes) ? implode(', ', $partes) : 'Sin cambios');
+            $this->filasModificadas = [];
+            $this->cargarSalidaInsumos(); // refresca la tabla
+        } catch (\Exception $e) {
+            $this->alert('error', $e->getMessage());
+        }
     }
     public function render()
     {/*
-      if ($this->mes && $this->anio) {
-          $this->registros = AlmacenServicio::obtenerRegistrosPorFecha($this->mes, $this->anio, $this->tipo);
-          dd($this->registros);
-          $this->cantidad = $this->registros->pluck('cantidad', 'id')->toArray();
-      }*/
+ if ($this->mes && $this->anio) {
+     $this->registros = AlmacenServicio::obtenerRegistrosPorFecha($this->mes, $this->anio, $this->tipo);
+     dd($this->registros);
+     $this->cantidad = $this->registros->pluck('cantidad', 'id')->toArray();
+ }*/
         return view('livewire.almacen-salida-detalle-component');
     }
 }
