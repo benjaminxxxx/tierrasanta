@@ -4,8 +4,10 @@ namespace App\Livewire;
 
 use App\Models\CostoFdmMensual;
 use App\Models\CostoManoIndirecta;
+use App\Models\ParametroMensual;
 use App\Services\CostoFdmServicio;
 use App\Services\FDM\CostoServicio;
+use App\Services\FDM\MaquinariaFdmServicio;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use Illuminate\Support\Str;
@@ -21,6 +23,7 @@ class FdmCostosComponent extends Component
     public $negroCostosAdicionales;
     public $negro_planillero_monto;
     public $costoManoIndirecta;
+    public $parametros = [];
     protected $listeners = ['storeTableDataCosto'];
     public function mount()
     {
@@ -32,6 +35,17 @@ class FdmCostosComponent extends Component
 
         $this->obtenerCostos();
 
+        $this->obtenerParametros();
+
+    }
+    public function obtenerParametros(){
+        $this->parametros = ParametroMensual::obtenerMes($this->mes, $this->anio, [
+            'combustible_fdm_monto_blanco',
+            'combustible_fdm_monto_negro',
+            'combustible_fdm_paso1',
+            'combustible_fdm_paso2',
+            'combustible_fdm_paso3',
+        ]);
     }
     public function obtenerCostos()
     {
@@ -80,7 +94,18 @@ class FdmCostosComponent extends Component
         }
 
     }
+    public function recalcularMaquinaria()
+    {
+        try {
+            $maquinariaServicio = new MaquinariaFdmServicio($this->mes, $this->anio);
+            $maquinariaServicio->calcularCosto();
+            $this->alert('success', 'Costos de Maquinaria calculados correctamente.');
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
+        }
 
+        $this->obtenerParametros();
+    }
     public function recalcularCostoFdm($tipoCosto)
     {
         try {

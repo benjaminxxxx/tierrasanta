@@ -42,5 +42,8 @@ class InsKardexMovimiento extends Model
         // Estado
         'estado',
     ];
-
+    public function kardex()
+    {
+        return $this->belongsTo(InsKardex::class, 'kardex_id');
+    }
 }

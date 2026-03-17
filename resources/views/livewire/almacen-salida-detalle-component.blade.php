@@ -136,7 +136,7 @@
                 const destinoMap = Object.fromEntries(destinoLista.map(d => [d.label, d.id ?? d.label]));
                 const destinoRevMap = Object.fromEntries(destinoLista.map(d => [(d.id ?? d.label), d.label]));
 
-                const autocompleteCol = (labels, map, revMap, prop, title) => ({
+                const autocompleteCol = (labels, map, revMap, prop, title, width) => ({
                     data: prop,
                     title,
                     type: 'autocomplete',
@@ -144,6 +144,7 @@
                     strict: false,
                     allowInvalid: false,
                     filter: true,
+                    width: width,
                     renderer(instance, td, row, col, prop, value) {
                         td.classList.remove('text-gray-400', 'italic', 'text-red-500');
                         if (value === null || value === undefined || value === '') {
@@ -173,7 +174,7 @@
                     }
                 });
 
-                return [{
+                const columns = [{
                         data: 'item',
                         type: 'numeric',
                         title: 'ITEM',
@@ -188,7 +189,7 @@
                     },
                     // Columna PRODUCTO (autocomplete con id interno)
                     autocompleteCol(productosLabels, productosMap, productosRevMap, 'producto_id',
-                        'PRODUCTO'),
+                        'PRODUCTO', 120),
                     {
                         data: 'unidad_medida',
                         type: 'text',
@@ -207,8 +208,8 @@
                     // Columna DESTINO dinámica: campo o maquinaria
                     esCombustible ?
                     autocompleteCol(destinoLabels, destinoMap, destinoRevMap, 'maquinaria_id',
-                        'MAQUINARIA') :
-                    autocompleteCol(destinoLabels, destinoMap, destinoRevMap, 'campo_nombre', 'CAMPO'),
+                        'MAQUINARIA', 120) :
+                    autocompleteCol(destinoLabels, destinoMap, destinoRevMap, 'campo_nombre', 'CAMPO', 40),
                     {
                         data: 'categoria',
                         type: 'text',
@@ -231,6 +232,19 @@
                         className: '!bg-muted',
                     },
                 ];
+
+                if (esCombustible) {
+                    columns.push({
+                        data: 'distribuciones_count',
+                        type: 'numeric',
+                        title: 'DISTRIB.',
+                        readOnly: true,
+                        width: 70,
+                        className: 'text-center !bg-muted',
+                    });
+                }
+
+                return columns;
             },
             guardarSalidaAlmacen() {
                 if (this.filasModificadas.length === 0) {

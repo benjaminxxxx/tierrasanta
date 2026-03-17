@@ -127,11 +127,13 @@ class AlmacenSalidaDetalleComponent extends Component
     {
         $this->registros = AlmacenServicio::obtenerRegistrosPorFecha($this->mes, $this->anio, $this->tipo)
             ->map(function ($salida) {
+                $distribuciones = $salida->distribuciones ?? [];
                 return array_merge($salida->toArray(), [
                     'campo_nombre' => $this->tipo == 'combustible' ? $salida->maquina_nombre : $salida->campo_nombre,
                     'nombre_producto' => $salida->producto?->nombre_comercial,
                     'unidad_medida' => $salida->producto?->unidad_medida,
                     'categoria' => $salida->producto?->categoria?->descripcion,
+                    'distribuciones_count' => count($distribuciones),
                 ]);
             })
             ->toArray();

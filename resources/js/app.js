@@ -1,6 +1,7 @@
 import './bootstrap';
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
+import 'flowbite'
 
 import { Spanish } from "flatpickr/dist/l10n/es.js"; // ✅ importa el idioma
 import { Calendar } from '@fullcalendar/core'

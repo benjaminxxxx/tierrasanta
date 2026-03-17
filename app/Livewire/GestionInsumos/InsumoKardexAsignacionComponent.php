@@ -83,6 +83,8 @@ class InsumoKardexAsignacionComponent extends Component
         DB::beginTransaction();
 
         try {
+            $productoId = null;
+            $aniosAfectados = [];
 
             /** ============================
              * 1. SALIDAS (solo changes)
@@ -101,6 +103,10 @@ class InsumoKardexAsignacionComponent extends Component
                 // 'blanco' | 'negro' | null
                 $salida->tipo_kardex = $cambio['tipo_kardex'];
                 $salida->save();
+
+                // Capturar producto y años afectados
+                $productoId = $salida->producto_id;
+                $aniosAfectados[] = (int) date('Y', strtotime($salida->fecha_reporte));
             }
 
             /** ============================
@@ -121,6 +127,33 @@ class InsumoKardexAsignacionComponent extends Component
                 if ($compra->tipo_kardex !== $data['tipo_kardex']) {
                     $compra->tipo_kardex = $data['tipo_kardex'];
                     $compra->save();
+
+                    $productoId = $compra->producto_id;
+                    $aniosAfectados[] = (int) date('Y', strtotime($compra->fecha_compra));
+                }
+            }
+
+            /** ============================
+             * 3. Limpiar kardex afectados
+             * ============================ */
+            if ($productoId && !empty($aniosAfectados)) {
+                $aniosAfectados = array_unique($aniosAfectados);
+
+                $kardexAfectados = InsKardex::where('producto_id', $productoId)
+                    ->whereIn('anio', $aniosAfectados)
+                    ->get();
+
+                foreach ($kardexAfectados as $kardex) {
+                    // Nullear movimiento_id en salidas vinculadas a este kardex
+                    // (las que aún no se tocaron en el paso 1)
+                    AlmacenProductoSalida::whereHas(
+                        'kardexMovimiento',
+                        fn($q) =>
+                        $q->where('kardex_id', $kardex->id)
+                    )->update(['movimiento_id' => null]);
+
+                    // Eliminar todos los movimientos del kardex
+                    $kardex->movimientos()->delete();
                 }
             }
 
@@ -140,7 +173,7 @@ class InsumoKardexAsignacionComponent extends Component
 
             $this->alert(
                 'error',
-                'Ocurrió un error al confirmar las asignaciones.'
+                $th->getMessage()
             );
         }
     }

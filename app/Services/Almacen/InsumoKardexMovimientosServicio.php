@@ -342,12 +342,13 @@ class InsumoKardexMovimientosServicio
             $data['salida_maquinaria'] = $salida->maquinaria?->nombre;
         }
         // 3. Crear Movimiento Kardex (redondeando para la base de datos)
-        InsKardexMovimiento::create($data);
+        $movimiento = InsKardexMovimiento::create($data);
 
         // Opcional: Actualizar el costo en la tabla de Salidas de Almacén
         $salida->update([
             'costo_por_kg' => round($costoUnitarioSalida, 13),
             'total_costo' => round($costoTotalSalida, 13),
+            'movimiento_id'  => $movimiento->id,
         ]);
     }
 

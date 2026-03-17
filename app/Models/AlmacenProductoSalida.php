@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class AlmacenProductoSalida extends Model
 {
     use HasFactory;
+    protected $table = 'almacen_producto_salidas';
 
     protected $fillable = [
         'item',
@@ -24,7 +25,12 @@ class AlmacenProductoSalida extends Model
         'indice', //cuando se agregan mas de un registro a la vez, es importante saber el orden para que el kardex lo haga igual
         'tipo_kardex',
         'registro_carga',
+        'movimiento_id'
     ];
+    public function kardexMovimiento()
+    {
+        return $this->belongsTo(InsKardexMovimiento::class, 'movimiento_id');
+    }
     public function distribuciones()
     {
         return $this->hasMany(DistribucionCombustible::class, 'almacen_producto_salida_id');

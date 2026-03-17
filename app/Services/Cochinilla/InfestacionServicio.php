@@ -2,6 +2,7 @@
 
 namespace App\Services\Cochinilla;
 
+use App\Models\Campo;
 use App\Models\CochinillaInfestacion;
 use App\Models\CochinillaIngreso;
 use DB;
@@ -22,7 +23,7 @@ class InfestacionServicio
                     'tipo_infestacion' => 'Tipo de infestación',
                     'fecha' => 'Fecha',
                     'campo_nombre' => 'Campo',
-                    'area' => 'Área',
+                    //'area' => 'Área',
                     'kg_madres' => 'KG Madres',
                     'campo_origen_nombre' => 'Origen campo',
                     'metodo' => 'Método',
@@ -54,6 +55,25 @@ class InfestacionServicio
                 if (($fila['numero_envases'] ?? 0) <= 0) {
                     throw new \Exception("El campo \"Envases\" debe ser mayor a cero." . ($id ? " (registro ID: {$id})" : ''));
                 }
+
+                $areaEntrante = $fila['area'] ?? null;
+                $areaFinal = (is_null($areaEntrante) || $areaEntrante === '') ? null : $areaEntrante;
+
+                if (is_null($areaFinal) && !empty($fila['campo_nombre'])) {
+                    // Intentar obtener area desde la BD
+                    $areaFinal = Campo::where('nombre', $fila['campo_nombre'])->value('area');
+                }
+
+                if (is_null($areaFinal)) {
+                    throw new \Exception(
+                        "No se pudo determinar el área para el campo \"{$fila['campo_nombre']}\"."
+                        . ($id ? " (registro ID: {$id})" : '')
+                        . " Ingrésala manualmente."
+                    );
+                }
+
+                $fila['area'] = $areaFinal;
+
 
                 self::guardarInfestacion($fila, [], $id);
                 $id ? $resultados['actualizados']++ : $resultados['creados']++;

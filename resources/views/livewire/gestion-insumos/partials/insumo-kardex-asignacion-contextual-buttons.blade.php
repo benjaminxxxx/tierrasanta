@@ -12,7 +12,7 @@
     </x-button>
 
     <x-button
-        @click="confirmarCambios"
+        @click="confirmarCambiosAsignacionKardex"
         variant="success"
         size="lg"
     >

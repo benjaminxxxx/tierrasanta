@@ -327,7 +327,7 @@
                     if (compra) compra.tipo_kardex = original.tipo_kardex
                 })
             },
-            confirmarCambios() {
+            confirmarCambiosAsignacionKardex() {
 
 
                 const payload = {
