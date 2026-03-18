@@ -28,6 +28,12 @@ class InsKardex extends Model
         'estado',
         'metodo_valuacion',
         'file',
+        'stock_actual',
+        'costo_unitario_promedio',
+    ];
+    protected $casts = [
+        'stock_actual'           => 'float',
+        'costo_unitario_promedio' => 'float',
     ];
     public function producto()
     {

@@ -4,10 +4,13 @@ namespace App\Livewire;
 
 use App\Models\AlmacenProductoSalida;
 use App\Models\Campo;
+use App\Models\CompraProducto;
+use App\Models\InsKardex;
 use App\Models\Maquinaria;
 use App\Models\Producto;
 use App\Services\AlmacenServicio;
 use Carbon\Carbon;
+use DB;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
@@ -25,6 +28,7 @@ class AlmacenSalidaDetalleComponent extends Component
     public array $listaProductos = [];
     public array $listaMaquinarias = [];
     public array $listaCampos = [];
+    public array $stocksProductos = [];
     protected $listeners = ['actualizarAlmacen' => '$refresh', 'ActualizarProductos' => '$refresh', 'eliminacionConfirmar'];
     public function mount($mes = null, $anio = null, string $tipo)
     {
@@ -33,6 +37,76 @@ class AlmacenSalidaDetalleComponent extends Component
         $this->cargarSalidaInsumos(false);
         $this->tipo = $tipo;
         $this->cargarListas();
+    }
+    public function preguntarStock(int $productoId): void
+    {
+        // Si ya está cargado, no repetir
+        if (isset($this->stocksProductos[$productoId]))
+            return;
+
+        $anio = $this->anio;
+
+        $kardexBlanco = InsKardex::where('producto_id', $productoId)
+            ->where('anio', $anio)
+            ->where('tipo', 'blanco')
+            ->first(['stock_actual', 'producto_id']);
+
+        $kardexNegro = InsKardex::where('producto_id', $productoId)
+            ->where('anio', $anio)
+            ->where('tipo', 'negro')
+            ->first(['stock_actual', 'producto_id']);
+
+        $producto = Producto::find($productoId, ['id', 'nombre_comercial', 'codigo_unidad_medida']);
+
+        $this->stocksProductos[$productoId] = [
+            'producto_id' => $productoId,
+            'nombre' => $producto?->nombre_comercial ?? "Producto {$productoId}",
+            'unidad' => $producto?->unidad_medida ?? '',
+            'blanco' => $kardexBlanco?->stock_actual ?? null,
+            'negro' => $kardexNegro?->stock_actual ?? null,
+        ];
+    }
+    public function actualizarStockInsumo(int $productoId): void
+    {
+        $anio = $this->anio;
+
+        foreach (['blanco', 'negro'] as $tipo) {
+            $kardex = InsKardex::where('producto_id', $productoId)
+                ->where('anio', $anio)
+                ->where('tipo', $tipo)
+                ->first();
+
+            if (!$kardex)
+                continue;
+
+            $compras = CompraProducto::where('producto_id', $productoId)
+                ->where('tipo_kardex', $tipo)
+                ->whereYear('fecha_compra', $anio)
+                ->sum('stock');
+
+            $salidas = AlmacenProductoSalida::where('producto_id', $productoId)
+                ->where('tipo_kardex', $tipo)
+                ->whereYear('fecha_reporte', $anio)
+                ->sum('cantidad');
+
+            $stockReal = max(0, $kardex->stock_inicial + $compras - $salidas);
+
+            // DB::table para no disparar eventos Eloquent
+            DB::table('ins_kardexes')
+                ->where('id', $kardex->id)
+                ->update(['stock_actual' => $stockReal]);
+
+            // Actualizar el array en memoria para refrescar la vista
+            if (isset($this->stocksProductos[$productoId])) {
+                $this->stocksProductos[$productoId][$tipo] = $stockReal;
+            }
+        }
+    }
+    public function limpiarStocksHuerfanos(array $productoIdsActivos): void
+    {
+        $this->stocksProductos = collect($this->stocksProductos)
+            ->filter(fn($s) => in_array($s['producto_id'], $productoIdsActivos))
+            ->toArray();
     }
     public function cargarListas(): void
     {
@@ -163,12 +237,7 @@ class AlmacenSalidaDetalleComponent extends Component
         }
     }
     public function render()
-    {/*
-if ($this->mes && $this->anio) {
-    $this->registros = AlmacenServicio::obtenerRegistrosPorFecha($this->mes, $this->anio, $this->tipo);
-    dd($this->registros);
-    $this->cantidad = $this->registros->pluck('cantidad', 'id')->toArray();
-}*/
+    {
         return view('livewire.almacen-salida-detalle-component');
     }
 }

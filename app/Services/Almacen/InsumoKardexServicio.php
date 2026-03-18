@@ -2,8 +2,11 @@
 
 namespace App\Services\Almacen;
 
+use App\Models\AlmacenProductoSalida;
+use App\Models\CompraProducto;
 use App\Models\InsKardex;
 use App\Models\Producto;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\Eloquent\Collection;
@@ -15,25 +18,34 @@ class InsumoKardexServicio
  */
     protected function getBaseValidationRules(?int $kardexId = null, array $data): array
     {
-        // NOTA: Para la regla unique, necesitamos que 'anio' y 'tipo' estén presentes en $data
         $anio = $data['anio'] ?? null;
         $tipo = $data['tipo'] ?? null;
 
-        // Regla de unicidad CLAVE: codigo_existencia debe ser único
-        // dentro de la combinación de anio y tipo.
-        // Ignora el registro actual si se está editando ($kardexId es distinto de null).
-        $uniqueRule = 'unique:ins_kardexes,codigo_existencia,' . ($kardexId ?? 'NULL') . ',id,anio,' . $anio . ',tipo,' . $tipo;
-
         return [
-            'producto_id' => 'required|exists:productos,id',
-            'codigo_existencia' => ['required', 'string', 'max:10', $uniqueRule],
+            'producto_id' => [
+                'required',
+                'exists:productos,id',
+                Rule::unique('ins_kardexes')
+                    ->where(
+                        fn($query) => $query
+                            ->where('anio', $anio)
+                            ->where('tipo', $tipo)
+                    )
+                    ->ignore($kardexId)
+            ],
+
+            'codigo_existencia' => 'required|string|max:10',
+
             'anio' => 'required|integer|min:2000|max:2100',
+
             'tipo' => 'required|in:blanco,negro',
+
             'stock_inicial' => 'required|numeric|min:0',
-            // Usamos una precisión alta para el costo unitario/total
+
             'costo_unitario' => 'required|numeric|min:0',
+
             'costo_total' => 'required|numeric|min:0',
-            // Campos internos o adicionales que pueden ser enviados
+
             'metodo_valuacion' => 'nullable|in:promedio,peps',
         ];
     }
@@ -51,7 +63,40 @@ class InsumoKardexServicio
     {
         // 1. Validar los datos de entrada
         $rules = $this->getBaseValidationRules($kardexId, $data);
-        $validatedData = Validator::make($data, $rules)->validate();
+
+        $messages = [
+            'producto_id.required' => 'Debe seleccionar un producto.',
+            'producto_id.exists' => 'El producto seleccionado no existe.',
+            'producto_id.unique' => 'Ya existe un kardex para este producto en el año y tipo seleccionados.',
+
+            'codigo_existencia.required' => 'El código de existencia es obligatorio.',
+            'codigo_existencia.string' => 'El código de existencia debe ser texto.',
+            'codigo_existencia.max' => 'El código de existencia no puede superar los 10 caracteres.',
+
+            'anio.required' => 'El año es obligatorio.',
+            'anio.integer' => 'El año debe ser un número entero.',
+            'anio.min' => 'El año debe ser mayor o igual a 2000.',
+            'anio.max' => 'El año no puede ser mayor a 2100.',
+
+            'tipo.required' => 'Debe indicar el tipo de kardex.',
+            'tipo.in' => 'El tipo de kardex debe ser blanco o negro.',
+
+            'stock_inicial.required' => 'El stock inicial es obligatorio.',
+            'stock_inicial.numeric' => 'El stock inicial debe ser un número.',
+            'stock_inicial.min' => 'El stock inicial no puede ser negativo.',
+
+            'costo_unitario.required' => 'El costo unitario es obligatorio.',
+            'costo_unitario.numeric' => 'El costo unitario debe ser un número.',
+            'costo_unitario.min' => 'El costo unitario no puede ser negativo.',
+
+            'costo_total.required' => 'El costo total es obligatorio.',
+            'costo_total.numeric' => 'El costo total debe ser un número.',
+            'costo_total.min' => 'El costo total no puede ser negativo.',
+
+            'metodo_valuacion.in' => 'El método de valuación debe ser promedio o peps.',
+        ];
+
+        $validatedData = Validator::make($data, $rules, $messages)->validate();
 
         // 2. Establecer campos internos/por defecto si no están presentes
         // Estos campos no se validan, pero se aseguran de estar en el modelo
@@ -60,22 +105,48 @@ class InsumoKardexServicio
         $validatedData['codigo_existencia'] = mb_strtoupper($validatedData['codigo_existencia']);
 
         if ($kardexId) {
-            // **EDICIÓN**
+
             $kardex = InsKardex::findOrFail($kardexId);
-
-            // **IMPORTANTE**: Aquí deberías implementar una regla de negocio
-            // para prevenir la edición de campos clave (stock_inicial, anio, tipo, etc.)
-            // si el Kárdex ya tiene movimientos registrados.
-
             $kardex->update($validatedData);
-            return $kardex;
 
         } else {
-            // **CREACIÓN**
-            return InsKardex::create($validatedData);
-        }
-    }
 
+            $kardex = InsKardex::create($validatedData);
+        }
+
+        // recalcular stock
+        //remplazado por un trigger $this->sincronizarStockActual($kardex->id);
+
+        return $kardex;
+    }
+    /*
+    public function sincronizarStockActual(int $kardexId): void
+    {
+        $kardex = InsKardex::findOrFail($kardexId);
+
+        $productoId = $kardex->producto_id;
+        $anio = $kardex->anio;
+        $tipo = $kardex->tipo;
+
+        // Total compras del año
+        $compras = CompraProducto::where('producto_id', $productoId)
+            ->where('tipo_kardex', $tipo)
+            ->whereYear('fecha_compra', $anio)
+            ->sum('stock');
+
+        // Total salidas del año
+        $salidas = AlmacenProductoSalida::where('producto_id', $productoId)
+            ->where('tipo_kardex', $tipo)
+            ->whereYear('fecha_reporte', $anio)
+            ->sum('cantidad');
+
+        $stockActual = $kardex->stock_inicial + $compras - $salidas;
+
+        $kardex->update([
+            'stock_actual' => $stockActual
+        ]);
+    }
+*/
     /**
      * Elimina un registro de Kárdex.
      *

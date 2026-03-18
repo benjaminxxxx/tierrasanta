@@ -10,13 +10,13 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        
+
         Schema::create('ins_kardexes', function (Blueprint $table) {
             $table->id();
             //campos al crear el kardex
             $table->foreignId('producto_id')->nullable()->constrained('productos')->onDelete('set null');
             $table->string('descripcion');
-            $table->string('codigo_existencia',10)->nullable();
+            $table->string('codigo_existencia', 10)->nullable();
             $table->unsignedSmallInteger('anio'); // Año del kardex
             $table->enum('tipo', ['blanco', 'negro'])->default('blanco'); // Tipo de kardex
             $table->decimal('stock_inicial', 18, 3);
@@ -28,10 +28,12 @@ return new class extends Migration {
             $table->enum('estado', ['activo', 'cerrado'])->default('activo');
             $table->enum('metodo_valuacion', ['promedio', 'peps'])->default('promedio');
             $table->string('file', 255)->nullable();
+            $table->decimal('stock_actual', 15, 4)->default(0);
+            $table->decimal('costo_unitario_promedio', 15, 4)->nullable();
             $table->timestamps();
 
             // Restricción única: un producto solo puede tener un kardex por año y tipo
-            $table->unique(['codigo_existencia', 'anio', 'tipo'], 'unique_producto_anio_tipo');
+            $table->unique(['producto_id', 'anio', 'tipo'], 'unique_producto_anio_tipo');
         });
 
     }

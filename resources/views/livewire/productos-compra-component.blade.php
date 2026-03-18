@@ -97,13 +97,13 @@
                                 <x-td class="text-center">
                                     <div class="flex items-center justify-center gap-2">
 
-                                        <x-secondary-button
+                                        <x-button variant="secondary"
                                             @click="$wire.dispatch('editarCompra',{productoId:{{ $productoId }},compraId:{{ $producto->id }}})">
                                             <i class="fa fa-edit"></i>
-                                        </x-secondary-button>
-                                        <x-danger-button wire:click="confirmarEliminacion({{ $producto->id }})">
+                                        </x-button>
+                                        <x-button variant="danger" wire:click="confirmarEliminacion({{ $producto->id }})">
                                             <i class="fa fa-trash"></i>
-                                        </x-danger-button>
+                                        </x-button>
 
                                     </div>
 
@@ -127,7 +127,7 @@
             <div class="flex w-full items-center justify-end gap-4">
 
                 
-                <x-secondary-button type="button" wire:click="closeForm">Cerrar</x-secondary-button>
+                <x-button variant="secondary" type="button" wire:click="closeForm">Cerrar</x-button>
                 @if ($producto)
                 <livewire:compra-producto-import-export-component :productoid="$producto->producto_id"
                 wire:key="registroCompraForCompra{{ $producto->id }}-{{ $producto->producto_id }}" />

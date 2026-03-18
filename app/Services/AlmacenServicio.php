@@ -6,9 +6,11 @@ use App\Models\AlmacenProductoSalida;
 use App\Models\CampoCampania;
 use App\Models\CompraProducto;
 use App\Models\CompraSalidaStock;
+use App\Models\InsKardex;
 use App\Models\InsResFertilizanteCampania;
 use App\Models\KardexProducto;
 use App\Models\PesticidaCampania;
+use App\Models\Producto;
 use App\Models\ProductoNutriente;
 use Carbon\Carbon;
 use DB;
@@ -20,6 +22,63 @@ class AlmacenServicio
     public static function guardarSalidaMasiva(array $filas, string $tipo): array
     {
         $resultados = ['creados' => 0, 'actualizados' => 0, 'eliminados' => 0];
+
+        // ── PRE-VALIDACIÓN DE STOCK (fuera del transaction) ──────────────
+        foreach ($filas as $fila) {
+            $id = $fila['id'] ?? null;
+            $tipoKardex = $fila['tipo_kardex'] ?? null;
+            $productoId = $fila['producto_id'] ?? null;
+            $cantidad = (float) ($fila['cantidad'] ?? 0);
+            $fechaReporte = $fila['fecha_reporte'] ?? null;
+
+            // Sin tipo_kardex → sin validación, el trigger dejará null
+            if (!$tipoKardex || !$productoId || $cantidad <= 0)
+                continue;
+
+            $anio = (int) date('Y', strtotime($fechaReporte));
+
+            $kardex = InsKardex::where('producto_id', $productoId)
+                ->where('anio', $anio)
+                ->where('tipo', $tipoKardex)
+                ->first(['id', 'stock_actual']);
+
+            if (!$kardex) {
+                throw new Exception(
+                    "No existe kardex {$tipoKardex} para el producto ID {$productoId} en {$anio}. "
+                    . "Registra una compra primero."
+                );
+            }
+
+            // Si es update, devolver la cantidad anterior al stock para la comparación
+            $stockDisponible = $kardex->stock_actual;
+
+            if ($id) {
+                $salidaAnterior = AlmacenProductoSalida::find($id);
+
+                if ($salidaAnterior) {
+                    $productoAnterior = (int) $salidaAnterior->producto_id;
+                    $tipoAnterior = $salidaAnterior->tipo_kardex;
+                    $cantidadAnterior = (float) $salidaAnterior->cantidad;
+                    $mismoProducto = $productoAnterior === (int) $productoId;
+                    $mismoTipo = $tipoAnterior === $tipoKardex;
+
+                    if ($mismoProducto && $mismoTipo) {
+                        // Mismo producto, mismo tipo → el stock disponible incluye lo que ya descontó
+                        $stockDisponible += $cantidadAnterior;
+                    }
+                    // Si cambió producto o tipo → no ajustar, el stock del nuevo producto/tipo
+                    // es exactamente lo que hay disponible sin considerar la salida anterior
+                }
+            }
+
+            if ($stockDisponible < $cantidad) {
+                $nombreProducto = Producto::find($productoId)?->nombre_comercial ?? "ID {$productoId}";
+                throw new Exception(
+                    "Stock {$tipoKardex} insuficiente para \"{$nombreProducto}\". "
+                    . "Disponible: {$stockDisponible}, solicitado: {$cantidad}."
+                );
+            }
+        }
 
         DB::transaction(function () use ($filas, $tipo, &$resultados) {
             foreach ($filas as $fila) {

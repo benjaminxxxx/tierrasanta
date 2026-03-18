@@ -9,7 +9,7 @@
             <x-th class="text-center">Stock Inicial</x-th>
             <x-th class="text-center">Costo Unitario</x-th>
             <x-th class="text-center">Costo Total</x-th>
-
+            <x-th class="text-center">Stock Actual</x-th>
             <x-th class="text-center">Stock Final</x-th>
             <x-th class="text-center">Costo Final</x-th>
 
@@ -50,6 +50,10 @@
                     {{-- Costo total --}}
                     <x-td class="text-center">
                         {{ number_format($kardex->costo_total, 3) }}
+                    </x-td>
+
+                    <x-td class="text-center">
+                        {{ $kardex->stock_actual }}
                     </x-td>
 
                     {{-- Stock final --}}
