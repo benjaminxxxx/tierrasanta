@@ -90,7 +90,7 @@ class InsumoKardexMovimientosServicio
             Str::slug($insumoKardex->producto->nombre_completo) .
             '.xlsx';
         Excel::store(new KardexProductoExport($data), $filePath, 'public');
-     
+
         $insumoKardex->file = $filePath;
         $insumoKardex->save();
     }
@@ -135,7 +135,7 @@ class InsumoKardexMovimientosServicio
             ->get();
 
         foreach ($movimientos as $mov) {
-            
+
             $lista[] = [
                 'tipo' => $mov->tipo_mov, // entrada | salida
                 'fecha' => $mov->fecha,
@@ -228,11 +228,14 @@ class InsumoKardexMovimientosServicio
     private function crearMovimientoSaldoInicial(InsKardex $insumoKardex): void
     {
         if ($insumoKardex->stock_inicial > 0) {
+            
             InsKardexMovimiento::create([
                 'kardex_id' => $insumoKardex->id,
                 'fecha' => Carbon::createFromFormat('Y', $insumoKardex->anio)->startOfYear()->format('Y-m-d'),
                 'tipo_mov' => 'entrada',
-                'tipo_documento' => '16', // Saldo Inicial, Código SUNAT Tabla 12
+                'tipo_documento' => $insumoKardex->tipo_compra_codigo_inicial,
+                'serie' => $insumoKardex->serie_inicial,
+                'numero' => $insumoKardex->numero_inicial,
                 'tipo_operacion' => 16,
                 'entrada_cantidad' => $this->stockAcumulado,
                 'entrada_costo_unitario' => round($this->costoTotalAcumulado / $this->stockAcumulado, 13),
@@ -292,7 +295,7 @@ class InsumoKardexMovimientosServicio
         $cantidadSalida = (float) $salida->cantidad;
         if ($cantidadSalida <= 0)
             return;
-        
+
         // --- INICIO: CAMBIOS POR SOLICITUD ---
 
         // 1. Aplicar tolerancia (epsilon) para evitar errores de redondeo en la comparación de stock
@@ -334,10 +337,10 @@ class InsumoKardexMovimientosServicio
             'salida_costo_unitario' => round($costoUnitarioSalida, 13),
             'salida_costo_total' => round($costoTotalSalida, 13)
         ];
-        if(!Producto::esCombustible($kardex->producto_id)){
+        if (!Producto::esCombustible($kardex->producto_id)) {
             $data['salida_lote'] = $salida->campo_nombre;
             $data['salida_maquinaria'] = null;
-        }else{
+        } else {
             $data['salida_lote'] = null;
             $data['salida_maquinaria'] = $salida->maquinaria?->nombre;
         }
@@ -348,7 +351,7 @@ class InsumoKardexMovimientosServicio
         $salida->update([
             'costo_por_kg' => round($costoUnitarioSalida, 13),
             'total_costo' => round($costoTotalSalida, 13),
-            'movimiento_id'  => $movimiento->id,
+            'movimiento_id' => $movimiento->id,
         ]);
     }
 
