@@ -2,9 +2,11 @@
     <x-table>
         <x-slot name="thead">
             <x-th>Producto</x-th>
-            <x-th class="text-center">Código</x-th>
+            <x-th value="Código" sortable="codigo_existencia" :active="$sortField === 'codigo_existencia'" :direction="$sortDirection" />
+
             <x-th class="text-center">Año</x-th>
-            <x-th class="text-center">Tipo</x-th>
+            <x-th value="Tipo" sortable="tipo" :active="$sortField === 'tipo'" :direction="$sortDirection" />
+
 
             <x-th class="text-center">Stock Inicial</x-th>
             <x-th class="text-center">Costo Unitario</x-th>
@@ -39,7 +41,14 @@
 
                     {{-- Stock inicial --}}
                     <x-td class="text-center">
-                        {{ number_format($kardex->stock_inicial, 3) }}
+                        <div>
+                            {{ number_format($kardex->stock_inicial, 3) }}
+                        </div>
+                        @if ($kardex->comprobante_texto)
+                            <div class="text-xs text-gray-500">
+                                {{ $kardex->comprobante_texto }}
+                            </div>
+                        @endif
                     </x-td>
 
                     {{-- Costo unitario --}}

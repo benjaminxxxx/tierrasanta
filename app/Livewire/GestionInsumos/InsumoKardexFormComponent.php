@@ -4,6 +4,7 @@ namespace App\Livewire\GestionInsumos;
 
 use App\Models\InsKardex;
 use App\Models\Producto;
+use App\Models\SunatTabla10TipoComprobantePago;
 use App\Services\Almacen\InsumoKardexServicio;
 use App\Services\KardexServicio;
 use Livewire\Component;
@@ -18,17 +19,21 @@ class InsumoKardexFormComponent extends Component
     public $insumoKardexId;
     // ARRAY COMPUESTO
     public $kardex = [
-        'producto_id' => null,
-        'descripcion' => '',
-        'codigo_existencia' => '',
-        'anio' => '',
-        'tipo' => '',
-        'stock_inicial' => '',
-        'costo_unitario' => '',
-        'costo_total' => '',
-    ];
+            'producto_id' => null,
+            'descripcion' => '',
+            'codigo_existencia' => '',
+            'anio' => '',
+            'tipo' => '',
+            'stock_inicial' => '',
+            'costo_unitario' => '',
+            'costo_total' => '',
+            'tipo_compra_codigo_inicial' => '',
+            'serie_inicial' => '',
+            'numero_inicial' => '',
+        ];
 
     public $productos = [];
+    public $tabla10TipoComprobantePago = [];
 
     #[On('nuevoInsumoKardex')]
     public function nuevoInsumoKardex()
@@ -39,6 +44,7 @@ class InsumoKardexFormComponent extends Component
 
     public function mount()
     {
+        $this->tabla10TipoComprobantePago = SunatTabla10TipoComprobantePago::all();
         // Cargar productos para el <select>
         $this->productos = Producto::orderBy('nombre_comercial')->get()->map(function ($producto){
             return [
@@ -77,6 +83,9 @@ class InsumoKardexFormComponent extends Component
             'stock_inicial' => '',
             'costo_unitario' => '',
             'costo_total' => '',
+            'tipo_compra_codigo_inicial' => '',
+            'serie_inicial' => '',
+            'numero_inicial' => '',
         ];
     }
 

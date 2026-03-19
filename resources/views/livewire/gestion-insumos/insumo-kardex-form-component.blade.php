@@ -16,8 +16,8 @@
                 </x-group-field>
 
                 {{-- CÓDIGO EXISTENCIA --}}
-                <x-input type="text" label="Código de Existencia" class="uppercase" wire:model="kardex.codigo_existencia" maxlength="10"
-                    error="kardex.codigo_existencia" />
+                <x-input type="text" label="Código de Existencia" class="uppercase"
+                    wire:model="kardex.codigo_existencia" maxlength="10" error="kardex.codigo_existencia" />
 
                 {{-- AÑO --}}
                 <x-input type="number" label="Año" wire:model="kardex.anio" error="kardex.anio" />
@@ -40,6 +40,17 @@
                 {{-- COSTO TOTAL --}}
                 <x-input type="number" label="Costo Total" wire:model="kardex.costo_total" step="0.000000000001"
                     error="kardex.costo_total" />
+                <x-select label="Tipo de comprobante (Tabla 10)" wire:model="kardex.tipo_compra_codigo_inicial"
+                    error="kardex.tipo_compra_codigo_inicial" fullWidth="true">
+                    <option value="">Seleccione</option>
+                    @foreach ($tabla10TipoComprobantePago as $tipoCompra)
+                        <option value="{{ $tipoCompra->codigo }}">{{ $tipoCompra->descripcion }}</option>
+                    @endforeach
+                </x-select>
+                <x-input type="text" label="Serie de Stock Inicial" wire:model="kardex.serie_inicial"
+                    error="kardex.serie_inicial" />
+                <x-input type="text" label="Numero de Stock Inicial" wire:model="kardex.numero_inicial"
+                    error="kardex.numero_inicial" />
 
             </div>
         </x-slot>

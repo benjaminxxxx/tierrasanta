@@ -30,11 +30,19 @@ class InsKardex extends Model
         'file',
         'stock_actual',
         'costo_unitario_promedio',
+
+        'tipo_compra_codigo_inicial',
+        'serie_inicial',
+        'numero_inicial'
     ];
     protected $casts = [
-        'stock_actual'           => 'float',
+        'stock_actual' => 'float',
         'costo_unitario_promedio' => 'float',
     ];
+    public function comprobante()
+    {
+        return $this->belongsTo(SunatTabla10TipoComprobantePago::class, 'tipo_compra_codigo_inicial');
+    }
     public function producto()
     {
         return $this->belongsTo(Producto::class, 'producto_id');
@@ -44,5 +52,15 @@ class InsKardex extends Model
         return $this->hasMany(InsKardexMovimiento::class, 'kardex_id')
             ->orderBy('fecha')
             ->orderBy('id'); // asegura orden cronológico
+    }
+    public function getComprobanteTextoAttribute()
+    {
+        if (!$this->tipo_compra_codigo_inicial || !$this->serie_inicial || !$this->numero_inicial) {
+            return null;
+        }
+
+        $descripcion = $this->comprobante->descripcion ?? 'Comprobante';
+
+        return "{$descripcion}: {$this->serie_inicial}-{$this->numero_inicial}";
     }
 }

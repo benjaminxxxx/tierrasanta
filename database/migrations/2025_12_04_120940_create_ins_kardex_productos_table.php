@@ -30,6 +30,13 @@ return new class extends Migration {
             $table->string('file', 255)->nullable();
             $table->decimal('stock_actual', 15, 4)->default(0);
             $table->decimal('costo_unitario_promedio', 15, 4)->nullable();
+
+            $table->string('tipo_compra_codigo_inicial', 4)->nullable();
+            $table->string('serie_inicial')->nullable();
+            $table->string('numero_inicial')->nullable();            
+            $table->foreign('tipo_compra_codigo_inicial')->references('codigo')->on('sunat_tabla10_tipo_comprobantes_pago')->onDelete('set null');
+
+
             $table->timestamps();
 
             // Restricción única: un producto solo puede tener un kardex por año y tipo

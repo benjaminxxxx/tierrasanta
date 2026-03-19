@@ -1,4 +1,4 @@
-<div>
+<div x-data="insumoKardexComponent">
     <x-card>
         <x-flex class="justify-between">
             <div>
@@ -16,7 +16,7 @@
             </div>
         </x-flex>
     </x-card>
-    <div class="mt-5">
+    <div class="mt-5" x-show="ayudaActivada">
         <x-kardex-proceso :pasoActivo="1" accionCrearKardex="nuevoInsumoKardex" />
     </div>
     <x-card class="mt-5">
@@ -29,3 +29,10 @@
 
     <x-loading wire:loading />
 </div>
+@script
+<script>
+    Alpine.data('insumoKardexComponent',()=>({
+        ayudaActivada:false,
+    }))
+</script>
+@endscript

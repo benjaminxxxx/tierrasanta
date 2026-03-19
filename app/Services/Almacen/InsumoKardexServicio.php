@@ -47,6 +47,25 @@ class InsumoKardexServicio
             'costo_total' => 'required|numeric|min:0',
 
             'metodo_valuacion' => 'nullable|in:promedio,peps',
+            'tipo_compra_codigo_inicial' => [
+                'nullable',
+                'string',
+                'exists:sunat_tabla10_tipo_comprobantes_pago,codigo'
+            ],
+
+            'serie_inicial' => [
+                'nullable',
+                'string',
+                'max:10',
+                'regex:/^[A-Za-z0-9\-]+$/'
+            ],
+
+            'numero_inicial' => [
+                'nullable',
+                'string',
+                'max:20',
+                'regex:/^[0-9]+$/'
+            ],
         ];
     }
 
@@ -94,12 +113,33 @@ class InsumoKardexServicio
             'costo_total.min' => 'El costo total no puede ser negativo.',
 
             'metodo_valuacion.in' => 'El método de valuación debe ser promedio o peps.',
+
+            // tipo_compra_codigo_inicial
+            'tipo_compra_codigo_inicial.string' => 'El tipo de comprobante debe ser texto.',
+            'tipo_compra_codigo_inicial.exists' => 'El tipo de comprobante seleccionado no es válido.',
+            'tipo_compra_codigo_inicial.required_with' => 'Debe completar el tipo de comprobante si ingresa serie o número.',
+
+            // serie_inicial
+            'serie_inicial.string' => 'La serie debe ser texto.',
+            'serie_inicial.max' => 'La serie no puede tener más de 10 caracteres.',
+            'serie_inicial.regex' => 'La serie solo puede contener letras, números y guiones.',
+            'serie_inicial.required_with' => 'Debe ingresar la serie si completa el tipo o el número.',
+
+            // numero_inicial
+            'numero_inicial.string' => 'El número debe ser texto.',
+            'numero_inicial.max' => 'El número no puede tener más de 20 caracteres.',
+            'numero_inicial.regex' => 'El número solo debe contener dígitos.',
+            'numero_inicial.required_with' => 'Debe ingresar el número si completa el tipo o la serie.',
         ];
 
         $validatedData = Validator::make($data, $rules, $messages)->validate();
 
         // 2. Establecer campos internos/por defecto si no están presentes
         // Estos campos no se validan, pero se aseguran de estar en el modelo
+        $validatedData['tipo_compra_codigo_inicial'] =
+            !empty(trim($validatedData['tipo_compra_codigo_inicial'] ?? ''))
+            ? $validatedData['tipo_compra_codigo_inicial']
+            : null;
         $validatedData['metodo_valuacion'] = $validatedData['metodo_valuacion'] ?? 'promedio';
         $validatedData['descripcion'] = Producto::find($validatedData['producto_id'])->nombre_comercial;
         $validatedData['codigo_existencia'] = mb_strtoupper($validatedData['codigo_existencia']);
@@ -173,36 +213,57 @@ class InsumoKardexServicio
      * @param int $perPage Número de elementos por página.
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    public function obtenerKardexes(array $filters = [], int $perPage = 15)
-    {
+    public function obtenerKardexes(
+        array $filters = [],
+        int $perPage = 15,
+        ?string $sortField = null,
+        ?string $sortDirection = 'asc'
+    ) {
         $query = InsKardex::with('producto');
 
-        // Aplicar Filtros
+        // filtros...
+        if (!empty($filters['filtroProducto'])) {
+            $buscar = $filters['filtroProducto'];
 
-        // 1. Filtro por Año
+            $query->whereHas('producto', function ($q) use ($buscar) {
+                $q->whereRaw("
+            CONCAT(
+                TRIM(nombre_comercial),
+                IF(ingrediente_activo IS NOT NULL AND ingrediente_activo != '',
+                    CONCAT(' - ', TRIM(ingrediente_activo)),
+                    ''
+                )
+            ) LIKE ?
+        ", ["%{$buscar}%"]);
+            });
+        }
+
         if (!empty($filters['filtroAnio'])) {
             $query->where('anio', $filters['filtroAnio']);
         }
 
-        // 2. Filtro por Tipo
         if (!empty($filters['filtroTipo'])) {
             $query->where('tipo', $filters['filtroTipo']);
         }
 
-        // 3. Filtro por Estado
         if (!empty($filters['filtroEstado'])) {
             $query->where('estado', $filters['filtroEstado']);
         }
 
-        // 4. Filtro por Método de Valuación
         if (!empty($filters['filtroMetodo'])) {
             $query->where('metodo_valuacion', $filters['filtroMetodo']);
         }
 
-        // Aplicar Ordenamiento y Paginación
-        return $query->orderBy('anio', 'desc')
-            ->orderBy('producto_id')
-            ->orderBy('tipo')
-            ->paginate($perPage);
+        // ORDENAMIENTO
+        if ($sortField) {
+            $query->orderBy($sortField, $sortDirection);
+        } else {
+            // default
+            $query->orderBy('anio', 'desc')
+                ->orderBy('producto_id')
+                ->orderBy('tipo');
+        }
+
+        return $query->paginate($perPage);
     }
 }
