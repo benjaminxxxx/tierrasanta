@@ -16,25 +16,34 @@ return new class extends Migration {
             $table->unsignedBigInteger('tienda_comercial_id')->nullable(); // Clave foránea a tienda_comercial, nullable
             $table->date('fecha_compra'); // Fecha de la compra
             $table->string('orden_compra')->nullable(); // Orden de compra, nullable
-            $table->string('factura')->nullable(); // Factura, nullable
+            //$table->string('factura')->nullable(); // Factura, nullable
             $table->decimal('costo_por_kg', 10, 2); // Costo por unidad de medida
-            $table->boolean('estado')->default(true); // Estado de la compra
+            //$table->boolean('estado')->default(true); // Estado de la compra
             $table->decimal('total', 10, 2)->default(0); // Reemplaza 'existing_column' por el nombre de una columna existente si quieres un orden específico
             $table->decimal('stock', 10, 3)->default(0);
             $table->date('fecha_termino')->nullable();
             $table->string('tipo_compra_codigo', 4)->nullable();
             $table->string('serie')->nullable();
-            $table->string('numero')->nullable();            
+            $table->string('numero')->nullable();
             $table->foreign('tipo_compra_codigo')->references('codigo')->on('sunat_tabla10_tipo_comprobantes_pago')->onDelete('set null');
 
             $table->string('tabla12_tipo_operacion')->nullable();
             $table->enum('tipo_kardex', ['blanco', 'negro']); // Blanco: Facturas, Negro: Boletas
-            // Establecer las claves foráneas
+            // 🔹 Auditoría
+            $table->unsignedBigInteger('creado_por')->nullable();
+            $table->unsignedBigInteger('editado_por')->nullable();
+            $table->unsignedBigInteger('eliminado_por')->nullable();
+
+            // 🔹 Laravel timestamps + soft delete
             $table->timestamps();
+            $table->softDeletes(); // deleted_at
 
             // Claves foráneas
             $table->foreign('producto_id')->references('id')->on('productos')->onDelete('cascade');
             $table->foreign('tienda_comercial_id')->references('id')->on('tienda_comercials')->onDelete('set null');
+            $table->foreign('creado_por')->references('id')->on('users')->onDelete('set null');
+            $table->foreign('editado_por')->references('id')->on('users')->onDelete('set null');
+            $table->foreign('eliminado_por')->references('id')->on('users')->onDelete('set null');
         });
     }
 

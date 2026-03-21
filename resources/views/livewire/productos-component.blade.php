@@ -87,7 +87,7 @@
                                         @endif
                                         {{-- Ver compras --}}
                                         <x-dropdown-link href="#"
-                                            @click.prevent="$wire.dispatch('VerComprasProducto',{ id: {{ $producto->id }} })">
+                                            href="{{ route('almacen.compras',['producto_id'=>$producto->id]) }}">
                                             <i class="fa fa-money-bill"></i>
                                             <span class="ml-2">Compras</span>
                                         </x-dropdown-link>

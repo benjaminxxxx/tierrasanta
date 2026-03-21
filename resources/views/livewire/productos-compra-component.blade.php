@@ -63,9 +63,7 @@
                             STOCK
                         </x-th>
                         <x-th class="text-center">
-                            <button wire:click="sortBy('costo_por_kg')" class="focus:outline-none">
-                                COSTO POR UNIDAD <i class="fa fa-sort"></i>
-                            </button>
+                            COSTO POR UNIDAD
                         </x-th>
                         <x-th class="text-center">
                             TOTAL
@@ -86,7 +84,7 @@
                             <x-tr>
                                 <x-th value="{{ $indice + 1 }}" class="text-center" />
                                 <x-td
-                                    value="{{ $producto->tiendaComercial ? $producto->tiendaComercial->nombre : 'Sin tienda' }}" />
+                                    value="{{ $producto->proveedor ? $producto->proveedor->nombre : 'Sin tienda' }}" />
                                 <x-td value="{{ $producto->fecha_compra }}" class="text-center" />
                                 <x-td value="{{ $producto->stock }}" class="text-center" />
                                 <x-td value="{{ $producto->costo_por_unidad }}" class="text-center" />

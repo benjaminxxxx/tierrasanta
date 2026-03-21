@@ -7,6 +7,5 @@
     <livewire:productos-form-component/>
     <livewire:productos-stock-component/>
     <livewire:productos-compra-component/>
-    <livewire:producto-compra-form-component/>
     
 </x-app-layout>

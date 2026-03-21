@@ -37,7 +37,7 @@ class InsumoKardexAsignacionComponent extends Component
                         'numero' => $compra->numero,
                         'unidad_medida' => $compra->producto->unidad_medida,
                         'tipo_kardex' => $compra->tipo_kardex,
-                        'costo_unitario' => (float) $compra->costo_por_kg,
+                        'costo_unitario' => (float) $compra->costo_por_unidad,
                         'tipo' => 'entrada'
                     ];
                 })->toArray();

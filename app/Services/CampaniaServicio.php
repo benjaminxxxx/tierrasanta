@@ -505,7 +505,7 @@ class CampaniaServicio
                 if ($registro->compraSalida->count() > 0) {
                     $compraVinculaa = $registro->compraSalida->first();
 
-                    $tienda_comercial = $compraVinculaa->tiendaComercial ? $compraVinculaa->tiendaComercial->nombre : '-';
+                    $tienda_comercial = $compraVinculaa->proveedor ? $compraVinculaa->proveedor->nombre : '-';
                     $factura = $compraVinculaa->serie . '-' . $compraVinculaa->numero;
                 }
 

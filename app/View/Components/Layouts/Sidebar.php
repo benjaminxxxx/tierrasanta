@@ -124,6 +124,7 @@ class Sidebar extends Component
                 'icon' => 'fa fa-clipboard-list',
                 'roles' => ['Administrador', 'Super Admin'],
                 'children' => [
+                    ['title' => 'Entradas (compras)', 'route' => 'almacen.compras'],
                     ['title' => 'Salida de Almacén Pesticidas y Fertilizantes', 'route' => 'almacen.salida_productos'],
                     ['title' => 'Salida de Combustible', 'route' => 'almacen.salida_combustible'],
                     ['title' => 'Kardex de Insumos', 'route' => 'gestion_insumos.kardex'],

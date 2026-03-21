@@ -34,7 +34,8 @@
         <x-table class="my-4">
             <x-slot name="thead">
                 <x-tr>
-                    <x-th colspan="2" style="background-color:#31869B" class="px-4 py-2 text-white font-bold text-lg">
+                    <x-th colspan="2" style="background-color:#31869B"
+                        class="px-4 py-2 text-white font-bold text-lg">
 
                         ÍNDICE DE
 
@@ -45,7 +46,9 @@
                                 $texto = $cat ? $cat->descripcion : strtoupper($categoria->categoria_codigo);
                             @endphp
 
-                            {{ $texto }}@if(!$loop->last), @endif
+                            {{ $texto }}@if (!$loop->last)
+                                ,
+                            @endif
                         @endforeach
 
                     </x-th>
@@ -79,9 +82,10 @@
                                 <!-- Spinner solo visible mientras loading sea true -->
                                 <svg x-show="loading" class="animate-spin h-4 w-4 text-gray-700"
                                     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                        stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                        stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor"
+                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z">
                                     </path>
                                 </svg>
                             </a>
@@ -97,10 +101,13 @@
                             class="text-right">{{ formatear_numero($insumoKardexReporteDetalle->total_salidas_unidades) }}</x-td>
                         <x-td
                             class="text-right">{{ formatear_numero($insumoKardexReporteDetalle->total_salidas_importe) }}</x-td>
-                        <x-th style="background-color:#DAEEF3"
-                            class="text-right">{{ formatear_numero($insumoKardexReporteDetalle->saldo_unidades) }}</x-th>
-                        <x-th style="background-color:#DAEEF3"
-                            class="text-right">{{ formatear_numero($insumoKardexReporteDetalle->saldo_importe) }}</x-th>
+                        <x-th class="text-right bg-[#DAEEF3] dark:bg-[#1e293b] dark:text-gray-100">
+                            {{ formatear_numero($insumoKardexReporteDetalle->saldo_unidades) }}
+                        </x-th>
+
+                        <x-th class="text-right bg-[#DAEEF3] dark:bg-[#1e293b] dark:text-gray-100">
+                            {{ formatear_numero($insumoKardexReporteDetalle->saldo_importe) }}
+                        </x-th>
                     </x-tr>
                 @endforeach
                 @php
@@ -121,10 +128,13 @@
                     <x-th class="text-right">{{ formatear_numero($totales['entradas_importe']) }}</x-th>
                     <x-th class="text-right">{{ formatear_numero($totales['salidas_unidades']) }}</x-th>
                     <x-th class="text-right">{{ formatear_numero($totales['salidas_importe']) }}</x-th>
-                    <x-th class="text-right"
-                        style="background-color:#DAEEF3">{{ formatear_numero($totales['saldo_unidades']) }}</x-th>
-                    <x-th class="text-right"
-                        style="background-color:#DAEEF3">{{ formatear_numero($totales['saldo_importe']) }}</x-th>
+                    <x-th class="text-right bg-[#DAEEF3] dark:bg-[#1e293b] dark:text-gray-100">
+                        {{ formatear_numero($totales['saldo_unidades']) }}
+                    </x-th>
+
+                    <x-th class="text-right bg-[#DAEEF3] dark:bg-[#1e293b] dark:text-gray-100">
+                        {{ formatear_numero($totales['saldo_importe']) }}
+                    </x-th>
                 </x-tr>
 
             </x-slot>

@@ -50,7 +50,7 @@ class DataInsumoServicio
             ->get();
 
         return $insumos->map(function ($insumo) {
-            $ultimaCompra = CompraProducto::with(['tiendaComercial'])
+            $ultimaCompra = CompraProducto::with(['proveedor'])
                 ->where('producto_id', $insumo->producto_id)
                 ->whereDate('fecha_compra', '<=', $insumo->fecha_reporte)
                 ->orderBy('fecha_compra', 'desc')
@@ -61,8 +61,8 @@ class DataInsumoServicio
                 'cantidad' => $insumo->cantidad,
                 'nombre' => $insumo->producto->nombre_comercial,
                 'orden' => $ultimaCompra?->orden_compra,
-                'tienda' => $ultimaCompra?->tiendaComercial?->nombre,
-                'factura' => $ultimaCompra?->factura,
+                'tienda' => $ultimaCompra?->proveedor?->nombre,
+                'factura' => $ultimaCompra?->codigo_comprobante,
                 'costo' => $insumo->total_costo,
             ];
         });

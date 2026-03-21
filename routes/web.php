@@ -189,6 +189,7 @@ Route::middleware([
     Route::get('/maquinarias', [MaquinariaController::class, 'index'])->name('maquinarias.index');
 
     //ALMACEN
+    Route::get('/almacen/compras/{producto_id?}', [AlmacenController::class, 'compraProductos'])->name('almacen.compras');
     Route::get('/almacen/salida_de_productos', [AlmacenController::class, 'salidaProductos'])->name('almacen.salida_productos');
     Route::get('/almacen/salida_de_combustible', [AlmacenController::class, 'salidaCombustible'])->name('almacen.salida_combustible');
 
