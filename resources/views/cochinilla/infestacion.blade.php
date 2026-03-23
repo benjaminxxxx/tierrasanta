@@ -1,6 +1,6 @@
-<x-app-layout>
+<x-app-layout title="Infestación de Cochinilla">
 
+    
+    <livewire:gestion-cochinilla.cochinilla-infestacion-masivo-component />
     <!--MODULO COCHINILLA INFESTACION-->
-    <livewire:cochinilla-infestacion-component />
-    <livewire:cochinilla-infestacion-form-component />
 </x-app-layout>

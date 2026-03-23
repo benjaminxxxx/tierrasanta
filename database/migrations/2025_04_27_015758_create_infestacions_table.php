@@ -22,7 +22,7 @@ return new class extends Migration {
             $table->string('campo_origen_nombre');
             $table->enum('metodo', ['carton', 'tubo', 'malla']);
             $table->integer('numero_envases');
-            $table->integer('capacidad_envase');
+            $table->decimal('capacidad_envase',10,3);
             $table->integer('infestadores')->nullable();
             $table->double('madres_por_infestador')->nullable();
             $table->double('infestadores_por_ha')->nullable();

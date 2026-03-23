@@ -1,4 +1,4 @@
-<div class="space-y-4">
+<div class="space-y-4" x-data="{{ $idTable }}">
     <x-card>
         <x-table>
             <x-slot name="thead">
@@ -102,12 +102,12 @@
 
                     {{-- MONTO BLANCO --}}
                     <x-td class="text-center">
-                        {{ $parametros['combustible_fdm_monto_blanco']->valor ?? '-' }}
+                        S/. {{ formatear_numero($parametros['combustible_fdm_monto_blanco']->valor) ?? '-' }}
                     </x-td>
 
                     {{-- MONTO NEGRO --}}
                     <x-td class="text-center">
-                        {{ $parametros['combustible_fdm_monto_negro']->valor ?? '-' }}
+                        S/. {{ formatear_numero($parametros['combustible_fdm_monto_negro']->valor) ?? '-' }}
                     </x-td>
 
                     {{-- INFORME BLANCO --}}
@@ -195,10 +195,10 @@
                         Costos adicionales
                     </x-td>
                     <x-td class="text-center">
-                        S/ {{ number_format($blancoCostosAdicionales, 2) }}
+                        S/. {{ formatear_numero($parametros['adicionales_fdm_monto_blanco']->valor) ?? '-' }}
                     </x-td>
                     <x-td class="text-center">
-                        S/ {{ number_format($negroCostosAdicionales, 2) }}
+                        S/. {{ formatear_numero($parametros['adicionales_fdm_monto_negro']->valor) ?? '-' }}
                     </x-td>
                     <x-td class="text-center">
                         -
@@ -219,13 +219,16 @@
             Registre o quite los costos adicionales
         </div>
 
-        <div x-data="{{ $idTable }}" wire:ignore>
+        <div wire:ignore>
 
             <div x-ref="tableContainer" class="mt-5 overflow-auto"></div>
+
+        </div>
+        <x-flex class="justify-end w-full">
             <x-button @click="sendDataCostos" class="mt-5">
                 <i class="fa fa-save"></i> Guardar Costos
             </x-button>
-        </div>
+        </x-flex>
     </x-card>
 
     <x-loading wire:loading />
@@ -236,20 +239,51 @@
             listeners: [],
             tableData: @json($costosAdicionalesMensuales),
             hot: null,
+            isDark: JSON.parse(localStorage.getItem('darkMode')),
             init() {
                 this.initTable();
-                this.listeners.push(
-                    Livewire.on('actualizarGrilla-{{ $idTable }}', (data) => {
+                Livewire.on('actualizarGrilla-{{ $idTable }}', (data) => {
 
-                        console.log(data[0]);
-                        this.tableData = data[0];
-                        this.hot.loadData(this.tableData);
-                    })
-                );
+                    console.log(data[0]);
+                    this.tableData = data[0];
+                    this.hot.loadData(this.tableData);
+                });
+                $watch('darkMode', value => {
+
+                    this.isDark = value;
+                    const columns = this.generateColumns();
+                    this.hot.updateSettings({
+                        themeName: value ? 'ht-theme-main-dark' : 'ht-theme-main',
+                        columns: columns
+                    });
+
+                });
             },
             initTable() {
 
-                let columns = [{
+                const container = this.$refs.tableContainer;
+                const hot = new Handsontable(container, {
+                    data: this.tableData,
+                    colHeaders: true,
+                    themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
+                    rowHeaders: true,
+                    columns: this.generateColumns(),
+                    width: '100%',
+                    height: 'auto',
+                    manualColumnResize: false,
+                    manualRowResize: true,
+                    minSpareRows: 1,
+                    stretchH: 'all',
+                    autoColumnSize: true,
+                    licenseKey: 'non-commercial-and-evaluation',
+
+                });
+
+                this.hot = hot;
+                this.hot.render();
+            },
+            generateColumns() {
+                return [{
                         data: 'fecha',
                         type: 'date',
                         dateFormat: 'YYYY-MM-DD',
@@ -286,25 +320,6 @@
                         title: `Monto Negro`
                     }
                 ];
-
-                const container = this.$refs.tableContainer;
-                const hot = new Handsontable(container, {
-                    data: this.tableData,
-                    colHeaders: true,
-                    rowHeaders: true,
-                    columns: columns,
-                    width: '100%',
-                    height: 'auto',
-                    manualColumnResize: false,
-                    manualRowResize: true,
-                    minSpareRows: 1,
-                    stretchH: 'all',
-                    autoColumnSize: true,
-                    licenseKey: 'non-commercial-and-evaluation',
-
-                });
-
-                this.hot = hot;
             },
             sendDataCostos() {
                 let allData = [];

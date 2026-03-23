@@ -38,14 +38,20 @@ class FdmCostosComponent extends Component
         $this->obtenerParametros();
 
     }
-    public function obtenerParametros(){
+    public function obtenerParametros()
+    {
         $this->parametros = ParametroMensual::obtenerMes($this->mes, $this->anio, [
             'combustible_fdm_monto_blanco',
             'combustible_fdm_monto_negro',
+            'adicionales_fdm_monto_blanco',
+            'adicionales_fdm_monto_negro',
             'combustible_fdm_paso1',
             'combustible_fdm_paso2',
             'combustible_fdm_paso3',
         ]);
+
+        $this->blancoCostosAdicionales = $this->parametros['adicionales_fdm_monto_blanco']->valor ?? '-';
+        $this->negroCostosAdicionales = $this->parametros['adicionales_fdm_monto_negro']->valor ?? '-';
     }
     public function obtenerCostos()
     {
@@ -81,13 +87,14 @@ class FdmCostosComponent extends Component
                 $dato['monto_blanco'] = $dato['monto_blanco'] ?? 0;
                 $dato['monto_negro'] = $dato['monto_negro'] ?? 0;
             }
+
             unset($dato); // Evitar problemas con la referencia en foreach
 
             // Guardar los datos filtrados
             $costosAdicionales = CostoFdmServicio::guardar($this->mes, $this->anio, $datosFiltrados);
-            $this->blancoCostosAdicionales = $costosAdicionales['costo_adicional_blanco'];
-            $this->negroCostosAdicionales = $costosAdicionales['costo_adicional_negro'];
-
+            //$this->blancoCostosAdicionales = $costosAdicionales['costo_adicional_blanco'];
+            //$this->negroCostosAdicionales = $costosAdicionales['costo_adicional_negro'];
+            $this->obtenerParametros();
             $this->alert('success', 'Costos guardados correctamente.');
         } catch (\Exception $e) {
             $this->alert('error', 'Error al guardar los costos: ' . $e->getMessage());

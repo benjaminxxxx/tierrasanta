@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\CostoFdmMensual;
 use App\Models\CostoManoIndirecta;
 use App\Models\CostoMensual;
+use App\Models\ParametroMensual;
 use Illuminate\Support\Facades\DB;
 use Exception;
 
@@ -65,8 +66,11 @@ class CostoFdmServicio
             // Inserta los datos en un solo query para mejor rendimiento
             CostoFdmMensual::insert($nuevosCostos);
 
-            self::guardarCostoManoIndirecta($mes, $anio, 'blanco_costos_adicionales_monto', $montoTotalBlanco);
-            self::guardarCostoManoIndirecta($mes, $anio, 'negro_costos_adicionales_monto', $montoTotalNegro);
+            ParametroMensual::establecer($mes,$anio,'adicionales_fdm_monto_blanco',$montoTotalBlanco);
+            ParametroMensual::establecer($mes,$anio,'adicionales_fdm_monto_negro',$montoTotalNegro);
+
+            //self::guardarCostoManoIndirecta($mes, $anio, 'blanco_costos_adicionales_monto', $montoTotalBlanco);
+            //self::guardarCostoManoIndirecta($mes, $anio, 'negro_costos_adicionales_monto', $montoTotalNegro);
 
 
             DB::commit();

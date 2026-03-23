@@ -6,6 +6,7 @@ use App\Models\CochinillaInfestacion;
 use App\Services\Cochinilla\InfestacionServicio;
 use App\Support\FormatoHelper;
 use App\Traits\Selectores\ConSelectorMes;
+use Illuminate\Support\Str;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
@@ -14,6 +15,7 @@ class CochinillaInfestacionMasivoComponent extends Component
     use LivewireAlert, ConSelectorMes;
     public $breadcrumb = [];
     public array $filasModificadas = [];
+    public $codigoActualizacion = '';
     public function mount()
     {
         $this->breadcrumb = [
@@ -45,6 +47,25 @@ class CochinillaInfestacionMasivoComponent extends Component
     {
         $this->listarInfestaciones();
     }
+    public function vincularConCampanias(): void
+    {
+        try {
+            $sincronizados = InfestacionServicio::sincronizarCampaniasPorMes(
+                (int) $this->mes,
+                (int) $this->anio
+            );
+
+            $mensaje = $sincronizados > 0
+                ? "{$sincronizados} infestaciones vinculadas con su campaña"
+                : 'Todas las infestaciones ya tienen campaña asignada';
+
+            $this->alert('success', $mensaje);
+            $this->listarInfestaciones();
+
+        } catch (\Exception $e) {
+            $this->alert('error', $e->getMessage());
+        }
+    }
     // En Livewire, solo limpiar si todo fue bien
     public function guardarInfestacionMasivo(array $data)
     {
@@ -59,7 +80,7 @@ class CochinillaInfestacionMasivoComponent extends Component
                     'kg_madres' => FormatoHelper::parseNumero((string) ($fila['kg_madres'] ?? '')),
                     'campo_origen_nombre' => $fila['campo_origen_nombre'] ?? null,
                     'metodo' => $fila['metodo'] ?? null,
-                    'numero_envases' => (int) ($fila['numero_envases'] ?? 0),
+                    'numero_envases' => (float) ($fila['numero_envases'] ?? 0),
                     'capacidad_envase' => FormatoHelper::parseNumero((string) ($fila['capacidad_envase'] ?? '')),
                 ];
             })->toArray();
@@ -77,6 +98,8 @@ class CochinillaInfestacionMasivoComponent extends Component
                 : 'Sin cambios';
 
             $this->alert('success', $mensaje);
+            //permite forzar la actualizacion del componente de resumen en caso se guarde
+            $this->codigoActualizacion = Str::random(5);
             $this->listarInfestaciones();
             $this->filasModificadas = []; // solo aquí se limpia
         } catch (\Exception $e) {

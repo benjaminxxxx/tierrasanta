@@ -10,6 +10,63 @@ use Illuminate\Support\Carbon;
 
 class InfestacionServicio
 {
+    /**
+     * Sincroniza campo_campania_id para infestaciones del mes/año indicado
+     * que aún no tienen campaña asignada (campo_campania_id IS NULL).
+     *
+     * Se usa para corregir registros existentes que no pasaron por el trigger
+     * porque sus datos no cambiaron durante el guardado masivo.
+     */
+    public static function sincronizarCampaniasPorMes(int $mes, int $anio): int
+    {
+        $inicio = Carbon::createFromDate($anio, $mes, 1)->startOfMonth();
+        $fin = $inicio->copy()->endOfMonth();
+
+        // Traer solo las huérfanas del período
+        $infestaciones = CochinillaInfestacion::whereNull('campo_campania_id')
+            ->whereBetween('fecha', [$inicio->toDateString(), $fin->toDateString()])
+            ->get(['id', 'campo_nombre', 'fecha']);
+
+        if ($infestaciones->isEmpty()) {
+            return 0;
+        }
+
+        // Agrupar por campo para reducir queries: 1 consulta por campo único
+        $porCampo = $infestaciones->groupBy('campo_nombre');
+
+        $actualizados = 0;
+
+        DB::transaction(function () use ($porCampo, &$actualizados) {
+            foreach ($porCampo as $campoNombre => $registros) {
+
+                // Traer todas las campañas del campo de una sola vez
+                $campanias = DB::table('campos_campanias')
+                    ->where('campo', $campoNombre)
+                    ->orderByDesc('fecha_inicio')
+                    ->get(['id', 'fecha_inicio', 'fecha_fin']);
+
+                foreach ($registros as $infestacion) {
+                    $fecha = Carbon::parse($infestacion->fecha);
+
+                    // Buscar la campaña cuyo rango cubre la fecha
+                    $campania = $campanias->first(function ($c) use ($fecha) {
+                        $inicio = Carbon::parse($c->fecha_inicio);
+                        $fin = $c->fecha_fin ? Carbon::parse($c->fecha_fin) : null;
+
+                        return $fecha->gte($inicio) && ($fin === null || $fecha->lte($fin));
+                    });
+
+                    if ($campania) {
+                        CochinillaInfestacion::where('id', $infestacion->id)
+                            ->update(['campo_campania_id' => $campania->id]);
+                        $actualizados++;
+                    }
+                }
+            }
+        });
+
+        return $actualizados;
+    }
     public static function guardarInfestacionMasivo(array $filas): array
     {
         $resultados = ['creados' => 0, 'actualizados' => 0, 'eliminados' => 0, 'errores' => []];

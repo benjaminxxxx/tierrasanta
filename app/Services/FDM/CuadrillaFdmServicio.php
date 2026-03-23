@@ -75,12 +75,12 @@ class CuadrillaFdmServicio
                     'hora_inicio' => $detalle->hora_inicio,
                     'hora_salida' => $detalle->hora_fin,
                     'total_horas' => $horasDetalle,
-                    //'costo_dia' => $rd->jornal_aplicado,
+                    'costo_dia' => $rd->jornal_aplicado,
                     'gasto' => round($gastoProrrateado, 2),
                     'gasto_bono' => round($gastoBonoFdm, 2),
                 ];
             });
-
+        //dd($registros->toArray(),$gastosAdicionales,$anio,$mes);
         // 3. GENERACIÓN DEL ARCHIVO EXCEL
         $rutaArchivo = self::generarExcelReporteFdm(
             $registros->toArray(),
@@ -119,57 +119,67 @@ class CuadrillaFdmServicio
         ['GASTO_CUADRILLA_FDM' => $sheet, 'GASTO_CUADRILLA_FDM_ADICIONAL' => $sheetAdicional] = $hojas;
 
         // --- Procesamiento Hoja Principal (Actividades) ---
-        $fila = $sheet->getHighestDataRow();
-        $index = $fila - 1;
+        if (!empty($actividades)) {
+            $fila = $sheet->getHighestDataRow();
+            $index = $fila - 1;
 
+            foreach ($actividades as $reporte) {
+                $horaInicio = Carbon::parse($reporte['hora_inicio'])->format('H:i');
+                $horaSalida = Carbon::parse($reporte['hora_salida'])->format('H:i');
 
+                $sheet->setCellValue("A{$fila}", $index);
+                $sheet->setCellValue("B{$fila}", $anio);
+                $sheet->setCellValue("C{$fila}", $mes);
+                $sheet->setCellValue("D{$fila}", $reporte['fecha']);
+                $sheet->setCellValue("E{$fila}", $reporte['documento']);
+                $sheet->setCellValue("F{$fila}", $reporte['empleado_nombre']);
+                $sheet->setCellValue("G{$fila}", $reporte['labor']);
+                $sheet->setCellValue("H{$fila}", $reporte['campo']);
+                $sheet->setCellValue("I{$fila}", $reporte['horas_totales']);
+                $sheet->setCellValue("J{$fila}", $horaInicio);
+                $sheet->setCellValue("K{$fila}", $horaSalida);
+                $sheet->setCellValue("L{$fila}", $reporte['total_horas']);
+                $sheet->setCellValue("M{$fila}", $reporte['costo_dia']);
+                $sheet->setCellValue("N{$fila}", $reporte['gasto']);
+                $sheet->setCellValue("O{$fila}", $reporte['gasto_bono']);
+                $sheet->setCellValue("P{$fila}", "=N{$fila}+O{$fila}");
+                $fila++;
+                $index++;
+            }
 
-        foreach ($actividades as $reporte) {
+            $filaInicioDatos = 2;
+            $ultimaFilaDatos = $fila - 1;
 
-            $horaInicio = Carbon::parse($reporte['hora_inicio'])->format('H:i');
-            $horaSalida = Carbon::parse($reporte['hora_salida'])->format('H:i');
+            $sheet->setCellValue("A{$fila}", 'TOTALES');
+            $sheet->setCellValue("N{$fila}", "=SUM(N{$filaInicioDatos}:N{$ultimaFilaDatos})");
+            $sheet->setCellValue("O{$fila}", "=SUM(O{$filaInicioDatos}:O{$ultimaFilaDatos})");
+            $sheet->setCellValue("P{$fila}", "=SUM(P{$filaInicioDatos}:P{$ultimaFilaDatos})");
 
-            $sheet->setCellValue("A{$fila}", $index);
-            $sheet->setCellValue("B{$fila}", $anio);
-            $sheet->setCellValue("C{$fila}", $mes);
-            $sheet->setCellValue("D{$fila}", $reporte['fecha']);
-            $sheet->setCellValue("E{$fila}", $reporte['documento']);
-            $sheet->setCellValue("F{$fila}", $reporte['empleado_nombre']);
-            $sheet->setCellValue("G{$fila}", $reporte['labor']);
-            $sheet->setCellValue("H{$fila}", $reporte['campo']);
-            $sheet->setCellValue("I{$fila}", $reporte['horas_totales']);
-            $sheet->setCellValue("J{$fila}", $horaInicio);
-            $sheet->setCellValue("K{$fila}", $horaSalida);
-            $sheet->setCellValue("L{$fila}", $reporte['total_horas']);
-            $sheet->setCellValue("M{$fila}", $reporte['costo_dia']);
-            $sheet->setCellValue("N{$fila}", $reporte['gasto']);
-            $sheet->setCellValue("O{$fila}", $reporte['gasto_bono']);
-            $sheet->setCellValue("P{$fila}", "=N{$fila}+O{$fila}");
-            $fila++;
-            $index++;
+            $sheet->getTableByName('GASTO_CUADRILLA_FDM')->setRange("A1:P{$ultimaFilaDatos}");
         }
-
-        $sheet->setCellValue("A{$fila}", 'TOTALES');
-        $sheet->setCellValue("N{$fila}", "=SUM(GASTO_CUADRILLA_FDM[Gasto])");
-        $sheet->setCellValue("O{$fila}", "=SUM(GASTO_CUADRILLA_FDM[Gasto bono])");
-        $sheet->setCellValue("P{$fila}", "=SUM(GASTO_CUADRILLA_FDM[Gasto total])");
-        $sheet->getTableByName('GASTO_CUADRILLA_FDM')->setRange("A1:P" . ($fila - 1));
 
         // --- Procesamiento Hoja Gastos Adicionales ---
-        $filaAdicional = max(2, $sheetAdicional->getHighestDataRow() + 1);
-        foreach ($gastosAdicionales as $gasto) {
-            $sheetAdicional->setCellValue("A{$filaAdicional}", $gasto['orden']);
-            $sheetAdicional->setCellValue("B{$filaAdicional}", $gasto['grupo']);
-            $sheetAdicional->setCellValue("C{$filaAdicional}", $gasto['descripcion']);
-            $sheetAdicional->setCellValue("D{$filaAdicional}", $gasto['monto']);
-            $sheetAdicional->setCellValue("E{$filaAdicional}", $gasto['fecha_gasto']);
-            $sheetAdicional->setCellValue("F{$filaAdicional}", $gasto['fecha_contable']);
-            $filaAdicional++;
-        }
+        if (!empty($gastosAdicionales)) {
+            $filaAdicional = $sheetAdicional->getHighestDataRow() + 1;
 
-        $sheetAdicional->setCellValue("A{$filaAdicional}", 'TOTALES');
-        $sheetAdicional->setCellValue("D{$filaAdicional}", "=SUM(GASTO_CUADRILLA_FDM_ADICIONAL[Monto])");
-        $sheetAdicional->getTableByName('GASTO_CUADRILLA_FDM_ADICIONAL')->setRange("A1:F" . ($filaAdicional - 1));
+            foreach ($gastosAdicionales as $gasto) {
+                $sheetAdicional->setCellValue("A{$filaAdicional}", $gasto['orden']);
+                $sheetAdicional->setCellValue("B{$filaAdicional}", $gasto['grupo']);
+                $sheetAdicional->setCellValue("C{$filaAdicional}", $gasto['descripcion']);
+                $sheetAdicional->setCellValue("D{$filaAdicional}", $gasto['monto']);
+                $sheetAdicional->setCellValue("E{$filaAdicional}", $gasto['fecha_gasto']);
+                $sheetAdicional->setCellValue("F{$filaAdicional}", $gasto['fecha_contable']);
+                $filaAdicional++;
+            }
+
+            $filaInicioDatos = 2;
+            $ultimaFilaAdicional = $filaAdicional - 1;
+
+            $sheetAdicional->setCellValue("A{$filaAdicional}", 'TOTALES');
+            $sheetAdicional->setCellValue("D{$filaAdicional}", "=SUM(D{$filaInicioDatos}:D{$ultimaFilaAdicional})");
+
+            $sheetAdicional->getTableByName('GASTO_CUADRILLA_FDM_ADICIONAL')->setRange("A1:F{$ultimaFilaAdicional}");
+        }
 
         // --- Guardado del Archivo ---
         $folderPath = "gastos_cuadrilla_fdm/{$anio}";
