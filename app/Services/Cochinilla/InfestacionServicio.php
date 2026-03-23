@@ -5,6 +5,7 @@ namespace App\Services\Cochinilla;
 use App\Models\Campo;
 use App\Models\CochinillaInfestacion;
 use App\Models\CochinillaIngreso;
+use App\Services\AuditoriaServicio;
 use DB;
 use Illuminate\Support\Carbon;
 
@@ -143,6 +144,7 @@ class InfestacionServicio
     public static function eliminarInfestacion(int $id): void
     {
         $infestacion = CochinillaInfestacion::with('ingresos')->findOrFail($id);
+        $snapshot = $infestacion->withoutRelations()->toArray();
 
         // Revertir stock si tiene ingresos asociados
         foreach ($infestacion->ingresos as $ingreso) {
@@ -152,25 +154,54 @@ class InfestacionServicio
 
         $infestacion->ingresos()->detach();
         $infestacion->delete();
+
+        AuditoriaServicio::registrar(
+            modelo: CochinillaInfestacion::class,
+            modeloId: $id,
+            accion: 'eliminar',
+            antes: $snapshot,
+            observacion: 'Registro eliminado en guardado masivo',
+        );
     }
     public static function guardarInfestacion(array $datosInfestacion, array $ingresosRelacionados, ?int $infestacionId = null): int
     {
         return DB::transaction(function () use ($datosInfestacion, $ingresosRelacionados, $infestacionId) {
+
+            $usuarioId = auth()->id();
+
             if ($infestacionId) {
                 $infestacion = CochinillaInfestacion::with('ingresos')->findOrFail($infestacionId);
+                $antesData = $infestacion->withoutRelations()->toArray();
+                $datosInfestacion['editado_por'] = $usuarioId;
                 $infestacion->update($datosInfestacion);
 
                 // ✅ Revertir stock de ingresos previamente asignados
                 foreach ($infestacion->ingresos as $ingresoAnterior) {
-                    $kgPrevios = $ingresoAnterior->pivot->kg_asignados;
-                    $ingresoAnterior->stock_disponible += $kgPrevios;
+                    $ingresoAnterior->stock_disponible += $ingresoAnterior->pivot->kg_asignados;
                     $ingresoAnterior->save();
                 }
 
                 // ✅ Detach después de restaurar stock
                 $infestacion->ingresos()->detach();
+                
+                AuditoriaServicio::registrar(
+                    modelo: CochinillaInfestacion::class,
+                    modeloId: $infestacion->id,
+                    accion: 'editar',
+                    antes: $antesData,
+                    despues: $infestacion->fresh()->withoutRelations()->toArray(),
+                    camposIgnorados: ['creado_por', 'editado_por', 'campo_campania_id', 'updated_at', 'created_at'],
+                );
             } else {
+                $datosInfestacion['creado_por'] = $usuarioId;
                 $infestacion = CochinillaInfestacion::create($datosInfestacion);
+
+                AuditoriaServicio::registrar(
+                    modelo: CochinillaInfestacion::class,
+                    modeloId: $infestacion->id,
+                    accion: 'crear',
+                    despues: $infestacion->toArray(),
+                );
             }
 
             // ✅ Vincular ingresos nuevos y descontar stock

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\GestionCochinilla;
 
+use App\Models\Auditoria;
 use App\Models\CochinillaInfestacion;
 use App\Services\Cochinilla\InfestacionServicio;
 use App\Support\FormatoHelper;
@@ -16,6 +17,9 @@ class CochinillaInfestacionMasivoComponent extends Component
     public $breadcrumb = [];
     public array $filasModificadas = [];
     public $codigoActualizacion = '';
+    public ?int $auditoriaModeloId = null;
+    public array $auditoriaHistorial = [];
+    public bool $modalAuditoria = false;
     public function mount()
     {
         $this->breadcrumb = [
@@ -23,6 +27,17 @@ class CochinillaInfestacionMasivoComponent extends Component
             ['label' => 'Carga Masiva']
         ];
         $this->inicializarMesAnio();
+    }
+    public function verAuditoria(int $id): void
+    {
+        $this->auditoriaModeloId = $id;
+        $this->auditoriaHistorial = Auditoria::where('modelo', CochinillaInfestacion::class)
+            ->where('modelo_id', $id)
+            ->orderByDesc('fecha_accion')
+            ->get()
+            ->toArray();
+
+        $this->modalAuditoria = true;
     }
     public function listarInfestaciones()
     {

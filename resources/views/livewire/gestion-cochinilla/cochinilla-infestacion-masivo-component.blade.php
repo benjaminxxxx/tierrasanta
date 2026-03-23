@@ -56,6 +56,101 @@
         </x-button>
     </x-inferior-derecha>
 
+    <x-dialog-modal wire:model.live="modalAuditoria">
+        <x-slot name="title">Historial de auditoría</x-slot>
+
+        <x-slot name="content">
+
+            {{-- Resumen: creado por / última edición --}}
+            @php
+                $entradaCreacion = collect($auditoriaHistorial)->firstWhere('accion', 'crear');
+                $ultimaEdicion = collect($auditoriaHistorial)
+                    ->where('accion', 'editar')
+                    ->sortByDesc('fecha_accion')
+                    ->first();
+            @endphp
+
+            <div class="flex gap-6 mb-4 text-xs text-muted-foreground border-b border-border pb-3">
+                <div>
+                    <span class="font-semibold text-card-foreground">Creado por:</span>
+                    {{ $entradaCreacion['usuario_nombre'] ?? '—' }}
+                    @if ($entradaCreacion)
+                        <span class="ml-1 text-gray-400">
+                            {{ \Carbon\Carbon::parse($entradaCreacion['fecha_accion'])->format('d/m/Y H:i') }}
+                        </span>
+                    @endif
+                </div>
+                <div>
+                    <span class="font-semibold text-card-foreground">Última edición:</span>
+                    {{ $ultimaEdicion['usuario_nombre'] ?? '—' }}
+                    @if ($ultimaEdicion)
+                        <span class="ml-1 text-gray-400">
+                            {{ \Carbon\Carbon::parse($ultimaEdicion['fecha_accion'])->format('d/m/Y H:i') }}
+                        </span>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Historial completo --}}
+            @forelse($auditoriaHistorial as $entrada)
+                <div class="mb-4 border-b border-border pb-3">
+                    <div class="flex items-center justify-between text-sm">
+                        <span
+                            class="font-semibold uppercase
+                        {{ $entrada['accion'] === 'crear'
+                            ? 'text-green-600'
+                            : ($entrada['accion'] === 'eliminar'
+                                ? 'text-red-600'
+                                : 'text-yellow-600') }}">
+                            {{ $entrada['accion'] }}
+                        </span>
+                        <span class="text-gray-400 text-xs">
+                            {{ \Carbon\Carbon::parse($entrada['fecha_accion'])->format('d/m/Y H:i') }}
+                            — {{ $entrada['usuario_nombre'] ?? 'Sistema' }}
+                        </span>
+                    </div>
+
+                    @if (!empty($entrada['cambios']))
+                        @if ($entrada['accion'] === 'editar')
+                            <table class="mt-2 w-full text-xs text-gray-700">
+                                <thead>
+                                    <tr class="text-left text-gray-400">
+                                        <th class="pr-4">Campo</th>
+                                        <th class="pr-4">Antes</th>
+                                        <th>Después</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($entrada['cambios']['antes'] ?? [] as $campo => $valorAntes)
+                                        <tr>
+                                            <td class="pr-4 font-medium text-muted-foreground">{{ $campo }}</td>
+                                            <td class="pr-4 text-red-500">{{ $valorAntes ?? '—' }}</td>
+                                            <td class="text-green-600">
+                                                {{ $entrada['cambios']['despues'][$campo] ?? '—' }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        @else
+                            <pre class="mt-2 text-xs bg-muted rounded p-2 overflow-auto max-h-40">{{ json_encode(array_values($entrada['cambios'])[0] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                        @endif
+                    @endif
+
+                    @if ($entrada['observacion'])
+                        <p class="mt-1 text-xs text-card-foreground italic">{{ $entrada['observacion'] }}</p>
+                    @endif
+                </div>
+            @empty
+                <p class="text-sm text-card-foreground">Sin historial de cambios.</p>
+            @endforelse
+
+        </x-slot>
+
+        <x-slot name="footer">
+            <x-button variant="secondary" wire:click="$set('modalAuditoria', false)">Cerrar</x-button>
+        </x-slot>
+    </x-dialog-modal>
+
     <x-loading wire:loading />
 </div>
 @script
@@ -181,8 +276,28 @@
                                 hot.setDataAtRowProp(updates, null, null, 'recalculado');
                             }
                         });
-                    }
+                    },
+                    contextMenu: {
+                        items: {
+                            'ver_auditoria': {
+                                name: 'Ver historial de cambios',
+                                callback: (key, selection) => {
+                                    const row = selection[0].start.row;
+                                    const rowData = hot.getSourceDataAtRow(row);
+                                    const id = rowData?.id ?? null;
 
+                                    if (!id) {
+                                        alert(
+                                            'Debes guardar los cambios antes de ver el historial.'
+                                        );
+                                        return;
+                                    }
+
+                                    $wire.verAuditoria(id);
+                                }
+                            }
+                        }
+                    },
                 });
 
                 this.hot = hot;

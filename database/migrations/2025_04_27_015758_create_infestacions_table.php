@@ -18,15 +18,22 @@ return new class extends Migration {
             $table->double('area')->nullable();
             $table->unsignedBigInteger('campo_campania_id')->nullable();
             $table->double('kg_madres');
-            $table->double('kg_madres_por_ha')->nullable();
+            //$table->double('kg_madres_por_ha')->nullable();
             $table->string('campo_origen_nombre');
             $table->enum('metodo', ['carton', 'tubo', 'malla']);
             $table->integer('numero_envases');
-            $table->decimal('capacidad_envase',10,3);
-            $table->integer('infestadores')->nullable();
-            $table->double('madres_por_infestador')->nullable();
-            $table->double('infestadores_por_ha')->nullable();
+            $table->decimal('capacidad_envase', 10, 3);
+            //$table->integer('infestadores')->nullable();
+            //$table->double('madres_por_infestador')->nullable();
+            //$table->double('infestadores_por_ha')->nullable();
             $table->timestamps();
+
+            // Auditoría
+            $table->unsignedBigInteger('creado_por')->nullable();
+            $table->unsignedBigInteger('editado_por')->nullable();
+            $table->foreign('creado_por')->references('id')->on('users')->nullOnDelete();
+            $table->foreign('editado_por')->references('id')->on('users')->nullOnDelete();
+
 
             // Relaciones
             $table->foreign('campo_nombre')->references('nombre')->on('campos');
