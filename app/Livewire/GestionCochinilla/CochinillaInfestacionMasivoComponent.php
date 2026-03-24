@@ -6,6 +6,7 @@ use App\Models\Auditoria;
 use App\Models\CochinillaInfestacion;
 use App\Services\Cochinilla\InfestacionServicio;
 use App\Support\FormatoHelper;
+use App\Traits\ListasComunes\HstListas;
 use App\Traits\Selectores\ConSelectorMes;
 use Illuminate\Support\Str;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -13,13 +14,14 @@ use Livewire\Component;
 
 class CochinillaInfestacionMasivoComponent extends Component
 {
-    use LivewireAlert, ConSelectorMes;
+    use LivewireAlert, ConSelectorMes, HstListas;
     public $breadcrumb = [];
     public array $filasModificadas = [];
     public $codigoActualizacion = '';
     public ?int $auditoriaModeloId = null;
     public array $auditoriaHistorial = [];
     public bool $modalAuditoria = false;
+    public array $listaCampos = [];
     public function mount()
     {
         $this->breadcrumb = [
@@ -27,6 +29,7 @@ class CochinillaInfestacionMasivoComponent extends Component
             ['label' => 'Carga Masiva']
         ];
         $this->inicializarMesAnio();
+        $this->listaCampos = $this->cargarListaHstCampos();
     }
     public function verAuditoria(int $id): void
     {

@@ -158,6 +158,7 @@
         Alpine.data('infestacionesMasivaCochinilla', () => ({
             filasModificadas: @entangle('filasModificadas'),
             isDark: JSON.parse(localStorage.getItem('darkMode')),
+            listaCampos: @js($listaCampos),
             init() {
                 this.initTable([]);
                 $watch('darkMode', value => {
@@ -304,6 +305,51 @@
                 this.hot.render();
             },
             getColumns() {
+
+                const destinoLabels = this.listaCampos.map(d => d.label);
+                const destinoMap = Object.fromEntries(this.listaCampos.map(d => [d.label, d.id ?? d.label]));
+                const destinoRevMap = Object.fromEntries(this.listaCampos.map(d => [(d.id ?? d.label), d
+                    .label
+                ]));
+
+                const autocompleteCol = (labels, map, revMap, prop, title, width) => ({
+                    data: prop,
+                    title,
+                    type: 'autocomplete',
+                    source: labels,
+                    strict: false,
+                    allowInvalid: false,
+                    filter: true,
+                    width: width,
+                    renderer(instance, td, row, col, prop, value) {
+                        td.classList.remove('text-gray-400', 'italic', 'text-red-500');
+                        if (value === null || value === undefined || value === '') {
+                            td.classList.add('text-gray-400', 'italic');
+                            td.innerText = 'Buscar...';
+                            return;
+                        }
+                        const label = revMap[value] ?? revMap[String(value)];
+                        if (label) {
+                            td.innerText = label;
+                        } else {
+                            td.classList.add('text-red-500');
+                            td.innerText = '⚠️ ' + value;
+                        }
+                    },
+                    validator(value, callback) {
+                        if (!value || value === '') return callback(true);
+                        if (revMap[value] || revMap[String(value)]) return callback(true);
+                        if (typeof value === 'string' && map[value]) {
+                            setTimeout(() => {
+                                this.instance.setDataAtCell(this.row, this.col, map[value],
+                                    'validator');
+                            }, 0);
+                            return callback(true);
+                        }
+                        callback(false);
+                    }
+                });
+
                 return [
 
                     {
@@ -321,12 +367,8 @@
                         title: 'FECHA INFESTACION',
                         width: 70
                     },
-
-                    {
-                        data: 'campo_nombre',
-                        type: 'text',
-                        title: 'CAMPO'
-                    },
+                    autocompleteCol(destinoLabels, destinoMap, destinoRevMap, 'campo_nombre',
+                        'CAMPO', 60),
 
                     {
                         data: 'area',
@@ -362,12 +404,8 @@
                         title: 'KG MADRES/HA',
                         className: '!bg-muted'
                     },
-
-                    {
-                        data: 'campo_origen_nombre',
-                        type: 'text',
-                        title: 'ORIGEN CAMPO'
-                    },
+                    autocompleteCol(destinoLabels, destinoMap, destinoRevMap, 'campo_origen_nombre',
+                        'ORIGEN CAMPO', 60),
 
                     {
                         data: 'metodo',

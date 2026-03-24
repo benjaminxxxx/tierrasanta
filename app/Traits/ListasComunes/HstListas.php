@@ -2,6 +2,7 @@
 
 namespace App\Traits\ListasComunes;
 
+use App\Models\Campo;
 use App\Models\Producto;
 use App\Models\SunatTabla10TipoComprobantePago;
 use App\Models\TiendaComercial;
@@ -12,6 +13,11 @@ trait HstListas
      * Lista de productos
      * @return array
      */
+    public function cargarListaHstCampos(){
+        return Campo::get()
+            ->map(fn($p) => ['id' => $p->nombre, 'label' => $p->nombre])
+            ->toArray();
+    }
     public function cargarListaHstProductos(){
         return Producto::get()
             ->map(fn($p) => ['id' => $p->id, 'label' => $p->nombre_comercial])
