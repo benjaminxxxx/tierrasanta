@@ -24,7 +24,7 @@
     </div>
 
     <ul x-show="isOpen && results.length"
-        class="border border-border mt-1 bg-muted absolute w-full z-10 max-h-60 overflow-auto">
+        class="border border-border mt-1 bg-muted absolute w-full z-[999] max-h-60 overflow-auto">
 
         <template x-for="(item,index) in results" :key="item.id">
 

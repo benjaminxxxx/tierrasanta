@@ -124,6 +124,7 @@
                 const esCombustible = this.tipo === 'combustible';
 
                 const hot = new Handsontable(container, {
+                    ...window.HstConfig,
                     data: tableData,
                     themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
                     colHeaders: true,

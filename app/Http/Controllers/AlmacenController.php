@@ -11,6 +11,9 @@ class AlmacenController extends Controller
             'producto_id' => $producto_id
         ]);
     }
+    public function distribucionCombustible(){
+        return view('livewire.gestion-almacen.distribucion-combustible');
+    }
     public function salidaProductos(){
         return view('almacen.salida_productos');
     }

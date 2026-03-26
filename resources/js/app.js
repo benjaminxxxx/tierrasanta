@@ -24,3 +24,23 @@ flatpickr(".datepicker", {
   //mode: "range",
 });
 
+window.HstConfig = {
+    datePickerConfig: {
+        i18n: {
+            previousMonth: 'Mes anterior',
+            nextMonth:     'Mes siguiente',
+            months:        ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                            'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
+            weekdays:      ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'],
+            weekdaysShort: ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],
+        },
+        firstDay: 1,
+    },
+    language: 'es-MX',
+    licenseKey: 'non-commercial-and-evaluation',
+    manualColumnResize: false,
+    manualRowResize: true,
+    stretchH: 'all',
+    minSpareRows: 1,
+    autoColumnSize: false,
+};

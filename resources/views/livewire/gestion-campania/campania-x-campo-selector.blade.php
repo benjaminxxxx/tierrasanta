@@ -10,10 +10,10 @@
     <x-card class="mt-4">
         <x-flex class="justify-between">
             <x-flex>
-                <x-select-campo wire:model.live="campoSeleccionado" class="max-w-[5rem]" label="Seleccionar Campo" />
+                <x-select-campo wire:model.live="campoSeleccionado" class="w-auto" label="Seleccionar Campo" />
 
                 @if (is_array($campanias) && count($campanias) > 0)
-                    <x-select wire:model.live="campaniaSeleccionada" label="Seleccionar Campaña">
+                    <x-select wire:model.live="campaniaSeleccionada" label="Seleccionar Campaña" class="w-auto">
                         <option value="">Elegir Campaña</option>
                         @foreach ($campanias as $campaniaId => $campaniaNombre)
                             <option value="{{ $campaniaId }}">{{ $campaniaNombre }}</option>

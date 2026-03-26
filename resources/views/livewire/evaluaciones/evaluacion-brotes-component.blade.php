@@ -16,7 +16,7 @@
                 <x-select-campo wire:model.live="campoFiltrado" label="Lote" error="false" />
 
                 @if ($campoFiltrado)
-                    <x-select label="Campaña" wire:model.live="campaniaFiltrada">
+                    <x-select label="Campaña" wire:model.live="campaniaFiltrada" class="w-auto">
                         <option value="">-- Todas las campañas --</option>
                         @foreach ($campaniasParaFiltro as $campaniaOption)
                             <option value="{{ $campaniaOption->id }}">
@@ -56,7 +56,7 @@
         </x-flex>
     </x-card>
 
-    <x-card class="mt-4">
+    <x-card class="mt-4" x-data="{ abiertos: {} }">
         <x-table>
 
             {{-- =================== THEAD =================== --}}
@@ -82,7 +82,7 @@
             </x-slot>
 
             {{-- =================== TBODY =================== --}}
-            <x-slot name="tbody">
+            <x-slot name="tbody" >
                 @foreach ($evaluacionesBrotes as $index => $e)
                     <tr class="border-b border-border">
                         {{-- Número --}}
@@ -119,19 +119,24 @@
                         {{-- Acciones --}}
                         <x-td class="text-center">
                             <x-flex class="justify-center gap-2">
+
+                                <x-button variant="ghost"
+                                    @click="abiertos[{{ $e->id }}] = !abiertos[{{ $e->id }}]">
+                                    <i class="fa fa-chevron-down transition-transform duration-200"
+                                        :class="abiertos[{{ $e->id }}] ? 'rotate-180' : ''"></i>
+                                </x-button>
+
                                 @if ($e->reporte_file)
-                                    <x-secondary-button-a href="{{ Storage::disk('public')->url($e->reporte_file) }}">
+                                    <x-button href="{{ Storage::disk('public')->url($e->reporte_file) }}">
                                         <i class="fa fa-file-excel"></i>
-                                    </x-secondary-button-a>
+                                    </x-button>
                                 @endif
 
-                                {{-- Editar --}}
                                 <x-button variant="secondary"
                                     @click="$wire.dispatch('editarEvaluacionBrotesPorPiso',{evaluacionBrotesXPisoId:{{ $e->id }}})">
                                     <i class="fa fa-edit"></i>
                                 </x-button>
 
-                                {{-- Eliminar --}}
                                 <x-button variant="danger" wire:click="eliminarBrotesXPiso({{ $e->id }})">
                                     <i class="fa fa-trash"></i>
                                 </x-button>
@@ -139,71 +144,57 @@
                         </x-td>
                     </tr>
 
-                    {{-- =================== SUBTABLA DETALLES =================== --}}
-                    <tr class="bg-muted">
+                    {{-- SUBTABLA DETALLES --}}
+                    <tr class="bg-muted" x-show="abiertos[{{ $e->id }}]"
+                        x-transition:enter="transition-all duration-200 ease-out" x-transition:enter-start="opacity-0"
+                        x-transition:enter-end="opacity-100" x-transition:leave="transition-all duration-150 ease-in"
+                        x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                        style="display: none;">
                         <td colspan="12" class="p-0">
                             <table class="w-full text-xs border-t border-border">
                                 <thead class="bg-card">
                                     <tr>
                                         <th class="p-2 text-center">Cama</th>
                                         <th class="p-2 text-center">Longitud</th>
-
                                         <th class="p-2 text-center" colspan="2">N° ACTUAL 2° PISO</th>
                                         <th class="p-2 text-center" colspan="2">2° Piso +30 días</th>
-
                                         <th class="p-2 text-center" colspan="2">3° Piso Actual</th>
                                         <th class="p-2 text-center" colspan="2">3° Piso +30 días</th>
                                     </tr>
                                     <tr class="bg-card">
                                         <th></th>
                                         <th></th>
-
                                         <th class="p-1 text-center">Total</th>
                                         <th class="p-1 text-center">/ Metro</th>
-
                                         <th class="p-1 text-center">Total</th>
                                         <th class="p-1 text-center">/ Metro</th>
-
                                         <th class="p-1 text-center">Total</th>
                                         <th class="p-1 text-center">/ Metro</th>
-
                                         <th class="p-1 text-center">Total</th>
                                         <th class="p-1 text-center">/ Metro</th>
                                     </tr>
                                 </thead>
-
                                 <tbody>
                                     @foreach ($e->detalles as $d)
                                         <tr class="border-b border-border">
                                             <td class="p-2 text-center">{{ $d->numero_cama }}</td>
                                             <td class="p-2 text-center">{{ $d->longitud_cama }}</td>
-
-                                            {{-- 2° Piso Actual --}}
                                             <td class="p-2 text-center">{{ $d->brotes_aptos_2p_actual }}</td>
                                             <td class="p-2 text-center">
                                                 {{ number_format($d->brotes_2p_actual_por_mt, 2) }}</td>
-
-                                            {{-- 2° Piso +30 días --}}
                                             <td class="p-2 text-center">{{ $d->brotes_aptos_2p_despues_n_dias }}</td>
                                             <td class="p-2 text-center">
-                                                {{ number_format($d->brotes_2p_despues_por_mt, 2) }}
-                                            </td>
-
-                                            {{-- 3° Piso Actual --}}
+                                                {{ number_format($d->brotes_2p_despues_por_mt, 2) }}</td>
                                             <td class="p-2 text-center">{{ $d->brotes_aptos_3p_actual }}</td>
                                             <td class="p-2 text-center">
                                                 {{ number_format($d->brotes_3p_actual_por_mt, 2) }}</td>
-
-                                            {{-- 3° Piso +30 días --}}
                                             <td class="p-2 text-center">{{ $d->brotes_aptos_3p_despues_n_dias }}</td>
                                             <td class="p-2 text-center">
-                                                {{ number_format($d->brotes_3p_despues_por_mt, 2) }}
-                                            </td>
+                                                {{ number_format($d->brotes_3p_despues_por_mt, 2) }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
                             </table>
-
                         </td>
                     </tr>
                 @endforeach

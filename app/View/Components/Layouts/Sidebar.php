@@ -115,6 +115,7 @@ class Sidebar extends Component
                 'roles' => ['Administrador', 'Super Admin'],
                 'children' => [
                     ['title' => 'Productos', 'route' => 'productos.index'],
+                    ['title' => 'Usos', 'route' => 'producto.usos'],
                     ['title' => 'Nutrientes', 'route' => 'nutrientes.index'],
                     ['title' => 'Tabla de concentración', 'route' => 'tabla_concentracion.index'],
                 ]
@@ -127,6 +128,7 @@ class Sidebar extends Component
                     ['title' => 'Entradas (compras)', 'route' => 'almacen.compras'],
                     ['title' => 'Salida de Almacén Pesticidas y Fertilizantes', 'route' => 'almacen.salida_productos'],
                     ['title' => 'Salida de Combustible', 'route' => 'almacen.salida_combustible'],
+                    ['title' => 'Distribución de Combustible', 'route' => 'almacen.distribucion_combustible'],
                     ['title' => 'Kardex de Insumos', 'route' => 'gestion_insumos.kardex'],
                     ['title' => 'Reporte de Kardex', 'route' => 'gestion_insumos.kardex.reportes'],
                     ['title' => 'Ver Kardex', 'route' => 'kardex.lista'],

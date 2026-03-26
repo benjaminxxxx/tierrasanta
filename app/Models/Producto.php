@@ -19,7 +19,12 @@ class Producto extends Model
         'codigo_unidad_medida',
         'categoria_pesticida'
     ];
-    public function categoria(){
+    public function usos()
+    {
+        return $this->belongsToMany(InsUso::class, 'ins_producto_usos', 'producto_id', 'uso_id');
+    }
+    public function categoria()
+    {
         return $this->belongsTo(InsCategoria::class, 'categoria_codigo', 'codigo');
     }
     public function kardexActual()
@@ -65,7 +70,29 @@ class Producto extends Model
             ? "{$nombreComercial} - {$ingredienteActivo}"
             : $nombreComercial;
     }
+    // Reemplazar o modificar nombre_completo
+    public function getNombreCompletoKgAttribute(): string
+    {
+        $sub = $this->ingrediente_activo
+            ? '<br><span class="text-xs text-muted-foreground font-normal">' . $this->ingrediente_activo . '</span>'
+            : '';
 
+        return $this->nombre_comercial . " (" .$this->unidad_medida. ") " . $sub;
+    }
+
+    // Agregar accessor de usos
+    public function getListaUsosAttribute(): string
+    {
+        return $this->usos->pluck('nombre')->implode(', ') ?: '—';
+    }
+
+    // Agregar accessor kardex año actual
+    public function getTieneKardexActualAttribute(): bool
+    {
+        return $this->kardexes()
+            ->whereYear('created_at', now()->year)
+            ->exists();
+    }
     public function getStockDisponibleAttribute()
     {
         //Verificar si hay kardex con el producto

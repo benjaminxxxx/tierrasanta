@@ -179,6 +179,7 @@ Route::middleware([
 
     //PRODUCTOS
     Route::get('/productos', [ProductoController::class, 'index'])->name('productos.index');
+    Route::get('/producto/usos', [ProductoController::class, 'usos'])->name('producto.usos');
 
     //Nutrientes
     Route::get('/nutrientes', [NutrienteController::class, 'index'])->name('nutrientes.index');
@@ -192,6 +193,7 @@ Route::middleware([
     Route::get('/almacen/compras/{producto_id?}', [AlmacenController::class, 'compraProductos'])->name('almacen.compras');
     Route::get('/almacen/salida_de_productos', [AlmacenController::class, 'salidaProductos'])->name('almacen.salida_productos');
     Route::get('/almacen/salida_de_combustible', [AlmacenController::class, 'salidaCombustible'])->name('almacen.salida_combustible');
+    Route::get('/almacen/distribucion_combustible', [AlmacenController::class, 'distribucionCombustible'])->name('almacen.distribucion_combustible');
 
     //USUARIOS
     Route::get('/gestion-usuario/usuarios', [UsuarioController::class, 'index'])->middleware('permission:Usuarios Administrar')->name('usuarios');

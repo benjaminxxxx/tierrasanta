@@ -8,7 +8,7 @@
             <i class="fa fa-plus"></i> Nuevo Producto
         </x-button>
     </div>
-    <x-card2 class="mt-4">
+    <x-card class="mt-4">
         <form class="flex items-center gap-5">
             <div class="">
                 <x-label>Busca por Nombre</x-label>
@@ -47,8 +47,8 @@
                         </button>
                     </x-th>
                     <x-th value="TIPO DE EXISTENCIA (TABLA 5)" class="text-center" />
-                    <x-th value="UNIDAD DE MEDIDA (TABLA 6)" class="text-center" />
                     <x-th value="NUTRIENTES" class="text-center" />
+                    <x-th value="USOS" class="text-center" />
                     <x-th value="ACCIONES" class="text-center" />
                 </tr>
             </x-slot>
@@ -57,12 +57,53 @@
                     @foreach ($productos as $indice => $producto)
                         <x-tr>
                             <x-th value="{{ $indice + 1 }}" class="text-center" />
-                            <x-td value="{{ $producto->nombre_completo }}" />
-                            <x-td value="{{ $producto->categoria_con_descripcion }}" class="text-center" />
+                            {{-- Nombre + ingrediente activo como sub --}}
+                            <x-td class="text-left">
+                                {!! $producto->nombre_completo_kg !!}
+                            </x-td>
+
+                            {{-- Categoría --}}
+                            <x-td class="text-center">
+                                <div class="flex flex-col items-center gap-1">
+                                    <span>{{ $producto->categoria_con_descripcion }}</span>
+                                    {{-- Indicador kardex año actual --}}
+                                    @if ($producto->kardexActual)
+                                        <span class="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
+                                            <i class="fa fa-check-circle"></i>
+                                            Kardex {{ now()->year }}
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                                            <i class="fa fa-circle-xmark"></i>
+                                            Sin kardex
+                                        </span>
+                                    @endif
+                                </div>
+                            </x-td>
+
+                            {{-- Tipo existencia --}}
                             <x-td value="{{ $producto->tipo_existencia }}" class="text-center" />
-                            <x-td value="{{ $producto->unidad_medida }}" class="text-center" />
+
+                            {{-- Nutrientes --}}
                             <x-td class="text-left">
                                 {!! $producto->lista_nutrientes !!}
+                            </x-td>
+
+                            {{-- Usos --}}
+                            <x-td class="text-left">
+                                @if ($producto->usos->isNotEmpty())
+                                    <div class="flex flex-wrap gap-1">
+                                        @foreach ($producto->usos->unique('id') as $uso)
+                                            <span
+                                                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs
+                             font-medium bg-primary/10 text-primary border border-primary/20">
+                                                {{ $uso->nombre }}
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <span class="text-xs text-muted-foreground">—</span>
+                                @endif
                             </x-td>
 
                             <x-td class="text-center">
@@ -71,8 +112,9 @@
                                         <button type="button"
                                             class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-100 transition">
                                             Opciones
-                                            <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"
-                                                viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                                            <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor"
+                                                stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
+                                                stroke-linejoin="round">
                                                 <path d="M19 9l-7 7-7-7" />
                                             </svg>
                                         </button>
@@ -80,14 +122,15 @@
 
                                     <x-slot name="content">
                                         @if ($producto->kardexActual)
-                                            <x-dropdown-link href="{{ route('gestion_insumos.kardex.detalle', ['insumoKardexId' => $producto->kardexActual->id]) }}">
+                                            <x-dropdown-link
+                                                href="{{ route('gestion_insumos.kardex.detalle', ['insumoKardexId' => $producto->kardexActual->id]) }}">
                                                 <i class="fa fa-eye"></i>
                                                 <span class="ml-2">Ver Kardex</span>
                                             </x-dropdown-link>
                                         @endif
                                         {{-- Ver compras --}}
                                         <x-dropdown-link href="#"
-                                            href="{{ route('almacen.compras',['producto_id'=>$producto->id]) }}">
+                                            href="{{ route('almacen.compras', ['producto_id' => $producto->id]) }}">
                                             <i class="fa fa-money-bill"></i>
                                             <span class="ml-2">Compras</span>
                                         </x-dropdown-link>
@@ -122,6 +165,6 @@
         <div class="mt-5">
             {{ $productos->links() }}
         </div>
-    </x-card2>
+    </x-card>
     <x-loading wire:loading />
 </div>

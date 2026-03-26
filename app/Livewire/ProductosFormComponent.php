@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\CategoriaPesticida;
+use App\Models\InsUso;
 use App\Models\Producto;
 use App\Models\ProductoNutriente;
 use App\Models\SunatTabla5TipoExistencia;
@@ -37,13 +38,19 @@ class ProductosFormComponent extends Component
 
     public $categoria_pesticida;
     public $listaCategoriasPesticida = [];
+    public array $usos = [];           // IDs seleccionados — @entangle
+    public array $listaUsos = [];
     protected $listeners = ['EditarProducto', 'CrearProducto'];
+
     public function mount()
     {
         $this->sunatTipoExistencias = SunatTabla5TipoExistencia::all();
         $this->sunatCodigoUnidadMedidas = SunatTabla6CodigoUnidadMedida::all();
         $this->listaCategoriasPesticida = CategoriaPesticida::all();
         $this->resetearValoresDefecto();
+        $this->listaUsos = InsUso::orderBy('nombre')->get()
+            ->map(fn($u) => ['id' => $u->id, 'nombre' => $u->nombre])
+            ->toArray();
     }
 
     public function updatedCategoria($valor)
@@ -105,6 +112,7 @@ class ProductosFormComponent extends Component
             $sunatCodigoUnidadMedida = $this->sunatCodigoUnidadMedidas->first();
             $this->codigo_unidad_medida = $sunatCodigoUnidadMedida->codigo;
         }
+        $this->usos = [];
     }
     protected function rules()
     {
@@ -136,6 +144,7 @@ class ProductosFormComponent extends Component
             'nombre_comercial',
             'ingrediente_activo'
         ]);
+
         $this->resetearValoresDefecto();
         $this->mostrarFormulario = true;
     }
@@ -150,6 +159,7 @@ class ProductosFormComponent extends Component
             $this->codigo_tipo_existencia = $producto->codigo_tipo_existencia;
             $this->codigo_unidad_medida = $producto->codigo_unidad_medida;
             $this->categoria_pesticida = $producto->categoria_pesticida;
+            $this->usos = $producto->usos()->pluck('ins_usos.id')->toArray();
             $this->mostrarFormulario = true;
 
             $this->listarPorcentajes();
@@ -193,6 +203,8 @@ class ProductosFormComponent extends Component
                 $productoId = $producto->id;
             }
 
+            $producto->usos()->sync($this->usos);
+
             // Si es fertilizante, registrar los nutrientes válidos
             if ($this->categoria_codigo === 'fertilizante') {
                 // Eliminar anteriores si existe
@@ -219,6 +231,9 @@ class ProductosFormComponent extends Component
                     }
                 }
             }
+
+
+            
 
             DB::commit();
 

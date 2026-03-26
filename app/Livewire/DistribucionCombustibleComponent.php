@@ -284,6 +284,23 @@ class DistribucionCombustibleComponent extends Component
             $this->alert('error', $th->getMessage());
         }
     }
+    public function generarDistribucion()
+    {
+
+        $this->listaSalidas = AlmacenProductoSalida::with(['distribuciones', 'maquinaria', 'producto'])
+            ->whereMonth('fecha_reporte', $this->mes)
+            ->whereYear('fecha_reporte', $this->anio)
+            ->where('maquinaria_id', $this->maquinaria->id)
+            ->where('tipo_kardex', $this->tipoKardex)
+            ->whereHas('producto', function ($q) {
+                $q->where('categoria_codigo', 'combustible'); // Filtrar por categoría
+            })
+            ->where(function ($q) {
+                $q->whereNull('campo_nombre')->orWhere('campo_nombre', ''); // Detecta NULL y ''
+            })
+            ->get();
+
+    }
     public function eliminarDistribucion($distribucionId)
     {
         try {
@@ -316,23 +333,7 @@ class DistribucionCombustibleComponent extends Component
         $this->generarDistribucion();
         $this->mostrarFormulario = true;
     }
-    public function generarDistribucion()
-    {
-
-        $this->listaSalidas = AlmacenProductoSalida::with(['distribuciones', 'maquinaria', 'producto'])
-            ->whereMonth('fecha_reporte', $this->mes)
-            ->whereYear('fecha_reporte', $this->anio)
-            ->where('maquinaria_id', $this->maquinaria->id)
-            ->where('tipo_kardex', $this->tipoKardex)
-            ->whereHas('producto', function ($q) {
-                $q->where('categoria_codigo', 'combustible'); // Filtrar por categoría
-            })
-            ->where(function ($q) {
-                $q->whereNull('campo_nombre')->orWhere('campo_nombre', ''); // Detecta NULL y ''
-            })
-            ->get();
-
-    }
+    
     public function render()
     {
         return view('livewire.distribucion-combustible-component');

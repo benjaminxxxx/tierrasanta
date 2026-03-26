@@ -67,7 +67,7 @@ class ProductosComponent extends Component
     }
     public function render()
     {
-        $productos = Producto::where(function ($query) {
+        $productos = Producto::with(['usos'])->where(function ($query) {
             // Filtrar por nombre_comercial
             $query->where('nombre_comercial', 'like', '%' . $this->search . '%')
                 // Filtrar también por ingrediente_activo

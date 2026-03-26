@@ -9,4 +9,7 @@ class ProductoController extends Controller
     public function index(){
         return view('productos.index');
     }
+    public function usos(){
+        return view('livewire.gestion-insumos.usos');
+    }
 }
