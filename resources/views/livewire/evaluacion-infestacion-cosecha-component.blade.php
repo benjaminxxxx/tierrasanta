@@ -1,11 +1,14 @@
-<div x-data="{{ $idTable }}">
+<div x-data="{{ $idTable }}" class="space-y-4">
+    <div>
+        <x-title>Evaluación de Infestación</x-title>
+        <x-subtitle>Monitoreo del crecimiento de cochinilla en pencas después de la infestación</x-subtitle>
+    </div>
     <x-card>
-        <x-h3>Evaluación de Infestación</x-h3>
-        <x-label>Monitoreo del crecimiento de cochinilla en pencas después de la infestación</x-label>
+
 
         <x-flex class="mt-4">
-            <x-select-campo wire:model.live="campoSeleccionado" label="Seleccionar Campo" />
-            <x-select wire:model.live="campaniaSeleccionada" label="Seleccionar Campaña">
+            <x-select-campo wire:model.live="campoSeleccionado" label="Seleccionar Campo" class="w-auto" />
+            <x-select wire:model.live="campaniaSeleccionada" label="Seleccionar Campaña" class="w-auto">
                 <option value="">Seleccione campaña</option>
                 @foreach ($campaniasPorCampo as $campaniaPorCampo)
                     <option value="{{ $campaniaPorCampo->id }}">
@@ -26,13 +29,13 @@
                         <b>{{ strtoupper($campania->nombre_campania) }}</b>.
                         No se puede realizar la evaluación.
                     </x-warning>
-
                 @else
                     {{-- ÚLTIMA INFESTACIÓN --}}
                     <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
-                                <x-icon name="calendar" class="w-5 h-5 text-white" />
+                            <div
+                                class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+                                <i class="w-5 h-5 text-white fa fa-calendar"></i>
                             </div>
 
                             <div>
@@ -74,18 +77,18 @@
             <div class="grid md:grid-cols-3 gap-4 mt-5">
 
                 {{-- Primera evaluación --}}
-                <div class="rounded-lg border border-gray-200 dark:border-gray-700
-                        bg-white dark:bg-gray-800 p-4 space-y-3">
+                <div
+                    class="rounded-lg border border-border bg-muted text-muted-foreground p-4 space-y-3">
 
-                    <div class="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    <div class="text-sm font-medium">
                         1° Evaluación
                     </div>
 
-                    <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                    <div class="text-2xl font-semibold">
                         {{ $campania->promedio_individuos_primera_eval }}
                     </div>
 
-                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                    <div class="text-xs">
                         Promedio general (2° y 3° piso)
                     </div>
 
@@ -93,18 +96,18 @@
                 </div>
 
                 {{-- Segunda evaluación --}}
-                <div class="rounded-lg border border-gray-200 dark:border-gray-700
-                        bg-white dark:bg-gray-800 p-4 space-y-3">
+                <div
+                    class="rounded-lg border border-border bg-muted text-muted-foreground p-4 space-y-3">
 
-                    <div class="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    <div class="text-sm font-medium">
                         2° Evaluación
                     </div>
 
-                    <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                    <div class="text-2xl font-semibold">
                         {{ $campania->promedio_individuos_segunda_eval }}
                     </div>
 
-                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                    <div class="text-xs">
                         Promedio general (2° y 3° piso)
                     </div>
 
@@ -112,18 +115,18 @@
                 </div>
 
                 {{-- Tercera evaluación --}}
-                <div class="rounded-lg border border-gray-200 dark:border-gray-700
-                        bg-white dark:bg-gray-800 p-4 space-y-3">
+                <div
+                    class="rounded-lg border border-border bg-muted text-muted-foreground p-4 space-y-3">
 
-                    <div class="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    <div class="text-sm font-medium">
                         3° Evaluación
                     </div>
 
-                    <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                    <div class="text-2xl font-semibold">
                         {{ $campania->promedio_individuos_tercera_eval }}
                     </div>
 
-                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                    <div class="text-xs">
                         Promedio general (2° y 3° piso)
                     </div>
 
@@ -150,40 +153,40 @@
             <div class="grid md:grid-cols-3 gap-4">
 
                 {{-- Gramos por penca --}}
-                <div class="p-4 rounded-md border border-gray-700 bg-gray-700">
-                    <p class="text-sm font-medium text-gray-300 mb-1">
+                <div class="p-4 rounded-md border border-border bg-muted text-muted-foreground">
+                    <p class="text-sm font-medium  mb-1">
                         Gramos Cochinilla por Penca
                     </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-100 mb-2">
+                    <p class="text-xs mb-2">
                         Promedio individuos / n° de cochinillas por gramo
                     </p>
-                    <p class="text-2xl font-semibold text-gray-100">
+                    <p class="text-2xl font-semibold">
                         {{ formatear_numero($campania->eval_proj_gramos_cochinilla_x_penca ?? 0) }} g
                     </p>
                 </div>
 
                 {{-- Número de pencas infestadas --}}
-                <div class="p-4 rounded-md border border-gray-700 bg-gray-700">
-                    <p class="text-sm font-medium text-gray-300 mb-1">
+                <div class="p-4 rounded-md border border-border bg-muted text-muted-foreground">
+                    <p class="text-sm font-medium  mb-1">
                         Número de Pencas Infestadas
                     </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-100 mb-2">
+                    <p class="text-xs mb-2">
                         Total de pencas
                     </p>
-                    <p class="text-2xl font-semibold text-gray-100">
+                    <p class="text-2xl font-semibold">
                         {{ formatear_numero($campania->eval_cosch_proj_penca_inf ?? 0) }}
                     </p>
                 </div>
 
                 {{-- Rendimiento por hectárea --}}
-                <div class="p-4 rounded-md border border-gray-600 bg-gray-700">
-                    <p class="text-sm font-medium text-gray-300 mb-1">
+                <div class="p-4 rounded-md border border-border bg-muted text-muted-foreground">
+                    <p class="text-sm font-medium mb-1">
                         Rendimiento por Hectárea
                     </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-100 mb-2">
+                    <p class="text-xs mb-2">
                         (Gramos × Pencas) ÷ 1000
                     </p>
-                    <p class="text-3xl font-semibold text-gray-50">
+                    <p class="text-3xl font-semibold">
                         {{ formatear_numero($campania->eval_cosch_proj_rdto_ha ?? 0) }} kg
                     </p>
                 </div>
@@ -191,107 +194,150 @@
             </div>
         </x-card>
 
-        <x-card class="mt-4">
-            <x-flex class="justify-end">
-                <x-button type="button" @click="sendDataEvaluacionInfestacion()">
-                    <i class="fa fa-save"></i> Guardar Evaluación
-                </x-button>
-            </x-flex>
-        </x-card>
+        <x-inferior-derecha>
+            <x-button type="button" @click="sendDataEvaluacionInfestacion()">
+                <i class="fa fa-save"></i> Guardar Evaluación
+            </x-button>
+        </x-inferior-derecha>
     @endif
 
     <x-loading wire:loading />
 </div>
 @script
-<script>
-    Alpine.data('{{ $idTable }}', () => ({
-        tableData: @json($table),
-        hot: null,
-        init() {
-            this.initTable();
-            Livewire.on('recargarEvaluacion', (data) => {
-                this.tableData = data[0].table;
-                this.hot.destroy();
+    <script>
+        Alpine.data('{{ $idTable }}', () => ({
+            tableData: @json($table),
+            isDark: JSON.parse(localStorage.getItem('darkMode')),
+            hot: null,
+            init() {
                 this.initTable();
-                this.hot.loadData(this.tableData);
-            });
-            Livewire.on('guardadoConfirmado', () => {
-                this.sendDataPoblacionPlanta();
-            });
-        },
-        initTable() {
+                $watch('darkMode', value => {
 
-            const container = this.$refs.tableContainer;
-            const hot = new Handsontable(container, {
-                data: this.tableData,
-                colHeaders: true,
-                columns: this.getColumns(),
-                nestedHeaders: this.getNestedHeaders(),
-                height: 'auto',
-                manualColumnResize: false,
-                manualRowResize: true,
-                stretchH: 'all',
-                autoColumnSize: false,
-                licenseKey: 'non-commercial-and-evaluation',
+                    this.isDark = value;
+                    const columns = this.getColumns();
+                    this.hot.updateSettings({
+                        themeName: value ? 'ht-theme-main-dark' : 'ht-theme-main',
+                        columns: columns
+                    });
 
-            });
+                });
+                Livewire.on('recargarEvaluacion', (data) => {
+                    this.tableData = data[0].table;
+                    this.hot.destroy();
+                    this.initTable();
+                    this.hot.loadData(this.tableData);
+                });
+                Livewire.on('guardadoConfirmado', () => {
+                    this.sendDataPoblacionPlanta();
+                });
+            },
+            initTable() {
 
-            this.hot = hot;
-        },
-        getColumns() {
-            return [
-                {
-                    data: 'n_pencas',
-                    type: 'numeric',
-                    className: 'htCenter htMiddle font-semibold',
-                    readOnly: true
-                },
+                const container = this.$refs.tableContainer;
+                const hot = new Handsontable(container, {
+                    ...window.HstConfig,
+                    data: this.tableData,
+                    colHeaders: true,
+                    themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
+                    columns: this.getColumns(),
+                    nestedHeaders: this.getNestedHeaders(),
+                    height: 'auto',
+                    manualColumnResize: false,
+                    manualRowResize: true,
+                    stretchH: 'all',
+                    autoColumnSize: false,
+                    licenseKey: 'non-commercial-and-evaluation',
 
-                // Evaluación 1
-                { data: 'eval_primera_piso_2', type: 'numeric', className: 'htCenter' },
-                { data: 'eval_primera_piso_3', type: 'numeric', className: 'htCenter' },
+                });
 
-                // Evaluación 2
-                { data: 'eval_segunda_piso_2', type: 'numeric', className: 'htCenter' },
-                { data: 'eval_segunda_piso_3', type: 'numeric', className: 'htCenter' },
+                this.hot = hot;
+            },
+            getColumns() {
+                return [{
+                        data: 'n_pencas',
+                        type: 'numeric',
+                        className: 'htCenter htMiddle font-semibold',
+                        readOnly: true
+                    },
 
-                // Evaluación 3
-                { data: 'eval_tercera_piso_2', type: 'numeric', className: 'htCenter' },
-                { data: 'eval_tercera_piso_3', type: 'numeric', className: 'htCenter' },
-            ];
-        },
+                    // Evaluación 1
+                    {
+                        data: 'eval_primera_piso_2',
+                        type: 'numeric',
+                        className: 'htCenter'
+                    },
+                    {
+                        data: 'eval_primera_piso_3',
+                        type: 'numeric',
+                        className: 'htCenter'
+                    },
 
-        getNestedHeaders() {
-            return [
-                [
-                    'N° PENCA',
-                    { label: 'Evaluación 1<br><small>60–70 días</small>', colspan: 2 },
-                    { label: 'Evaluación 2<br><small>75–85 días</small>', colspan: 2 },
-                    { label: 'Evaluación 3<br><small>100–120 días</small>', colspan: 2 },
-                ],
-                [
-                    '', // simula rowspan de "N° PENCA"
-                    '2° Piso', '3° Piso',
-                    '2° Piso', '3° Piso',
-                    '2° Piso', '3° Piso',
-                ]
-            ];
-        },
-        sendDataEvaluacionInfestacion() {
-            let allData = [];
+                    // Evaluación 2
+                    {
+                        data: 'eval_segunda_piso_2',
+                        type: 'numeric',
+                        className: 'htCenter'
+                    },
+                    {
+                        data: 'eval_segunda_piso_3',
+                        type: 'numeric',
+                        className: 'htCenter'
+                    },
 
-            // Recorre todas las filas de la tabla y obtiene los datos completos
-            for (let row = 0; row < this.hot.countRows(); row++) {
-                const rowData = this.hot.getSourceDataAtRow(row);
-                allData.push(rowData);
+                    // Evaluación 3
+                    {
+                        data: 'eval_tercera_piso_2',
+                        type: 'numeric',
+                        className: 'htCenter'
+                    },
+                    {
+                        data: 'eval_tercera_piso_3',
+                        type: 'numeric',
+                        className: 'htCenter'
+                    },
+                ];
+            },
+
+            getNestedHeaders() {
+                return [
+                    [
+                        'N° PENCA',
+                        {
+                            label: 'Evaluación 1<br><small>60–70 días</small>',
+                            colspan: 2
+                        },
+                        {
+                            label: 'Evaluación 2<br><small>75–85 días</small>',
+                            colspan: 2
+                        },
+                        {
+                            label: 'Evaluación 3<br><small>100–120 días</small>',
+                            colspan: 2
+                        },
+                    ],
+                    [
+                        '', // simula rowspan de "N° PENCA"
+                        '2° Piso', '3° Piso',
+                        '2° Piso', '3° Piso',
+                        '2° Piso', '3° Piso',
+                    ]
+                ];
+            },
+            sendDataEvaluacionInfestacion() {
+                let allData = [];
+
+                // Recorre todas las filas de la tabla y obtiene los datos completos
+                for (let row = 0; row < this.hot.countRows(); row++) {
+                    const rowData = this.hot.getSourceDataAtRow(row);
+                    allData.push(rowData);
+                }
+
+                // Filtra las filas vacías
+                const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
+                    null && cell !== ''));
+
+                $wire.guardarDatosEvaluacionInfestacionCosecha(filteredData);
             }
-
-            // Filtra las filas vacías
-            const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
-                null && cell !== ''));
-
-            $wire.guardarDatosEvaluacionInfestacionCosecha(filteredData);
-        }
-    }));
-</script>
+        }));
+    </script>
 @endscript
