@@ -32,6 +32,9 @@ return new class extends Migration {
             // Resiembra
             $table->integer('eval_resiembra_plantas_x_hilera')->nullable();
 
+            $table->unsignedSmallInteger('brazos2_piso_x_hilera_cero')->nullable();
+            $table->unsignedSmallInteger('brazos3_piso_x_hilera_cero')->nullable();
+
             $table->timestamps();
 
             // Evita duplicar la cama en esta evaluación → nombre corto para evitar errores

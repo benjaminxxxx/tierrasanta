@@ -14,9 +14,10 @@
                     @else
                         <x-select-campo wire:model.live="campoSeleccionado" />
                     @endif
-                    
+
                     @if ($campoSeleccionado)
-                        <x-select label="Campañas" wire:model.live="campaniaSeleccionada" :disabled="$modoEdicion" fullWidth="true">
+                        <x-select label="Campañas" wire:model.live="campaniaSeleccionada" :disabled="$modoEdicion"
+                            fullWidth="true">
                             <option value="">-- Seleccione --</option>
                             @foreach ($campaniasDisponibles as $campaniaItem)
                                 <option value="{{ $campaniaItem->id }}">
@@ -28,13 +29,11 @@
                     @endif
 
                     @if ($campaniaSeleccionada)
-
                         <x-input type="date" wire:model.live="fecha_siembra" label="Fecha de Siembra" readonly />
 
-                        <x-input type="date" wire:model.live="fecha_eval_cero" error="fecha_eval_cero"
-                            label="Evaluación Cero" />
+                        <x-selector-dia wire:model.live="fecha_eval_cero" error="fecha_eval_cero" label="Evaluación Cero" />
 
-                        <x-input type="date" wire:model.live="fecha_eval_resiembra" error="fecha_eval_resiembra"
+                        <x-selector-dia wire:model.live="fecha_eval_resiembra" error="fecha_eval_resiembra"
                             label="Evaluación Resiembra" />
 
                         <x-input-number wire:model="area_lote" label="Área" placeholder="1.5" />
@@ -53,78 +52,93 @@
                     <div x-data="{{ $idTable }}" wire:ignore class="my-4">
                         <div x-ref="tableContainer"></div>
                     </div>
+                    <x-validation-errors />
                     <div>
                         <x-input-error for="detalles" />
                         <x-input-error for="detalle" />
                     </div>
 
-                    @if($campania && $poblacionPlantaId)
+                    @if ($campania && $poblacionPlantaId)
                         @php
                             $eval = $campania->evaluacionPoblacionPlantas;
                         @endphp
 
-                        <div class="grid grid-cols-2 gap-4 mt-4">
+                        <div class="mt-4 border border-border rounded-lg overflow-hidden text-xs">
 
-                            {{-- CARD: Evaluación Cero --}}
-                            <div class="border rounded-lg p-4 bg-white shadow-sm dark:bg-gray-800 dark:border-gray-700">
-                                <h3 class="font-semibold text-sm text-gray-700 text-center mb-2 dark:text-gray-300">
-                                    EVALUACIÓN CERO
-                                </h3>
-
-                                <div class="grid grid-cols-2 text-sm">
-                                    <div class="p-2 border-r text-center dark:border-gray-600">
-                                        <div class="text-xs text-gray-500 dark:text-gray-200">Plantas/cama</div>
-                                        <div class="font-bold">
-                                            {{ round($eval->promedio_dia_cero, 2) }}
-                                        </div>
-                                    </div>
-
-                                    <div class="p-2 text-center">
-                                        <div class="text-xs text-gray-500 dark:text-gray-200">Plantas/metro</div>
-                                        <div class="font-bold">
-                                            {{ round($eval->promedio_plantas_metro_cero, 2) }}
-                                        </div>
-                                    </div>
-
-                                    <div class="col-span-2 p-2 mt-1 bg-gray-50 rounded text-center dark:bg-gray-700">
-                                        <div class="text-xs text-gray-500 dark:text-gray-200">Plantas por ha</div>
-                                        <div class="font-bold text-blue-600 dark:text-white">
-                                            {{ round($eval->promedio_plantas_ha_cero, 2) }}
-                                        </div>
-                                    </div>
+                            {{-- HEADER PRINCIPAL --}}
+                            <div class="grid grid-cols-2 divide-x divide-border">
+                                <div
+                                    class="p-2 text-center font-semibold bg-muted text-muted-foreground uppercase tracking-wide">
+                                    Día Cero
+                                </div>
+                                <div
+                                    class="p-2 text-center font-semibold bg-muted text-muted-foreground uppercase tracking-wide">
+                                    Resiembra
                                 </div>
                             </div>
 
-                            {{-- CARD: Resiembra --}}
-                            <div class="border rounded-lg p-4 bg-white shadow-sm dark:bg-gray-800 dark:border-gray-700">
-                                <h3 class="font-semibold text-sm text-gray-700 text-center mb-2 dark:text-gray-300">
-                                    EVALUACIÓN RESIEMBRA
-                                </h3>
-
-                                <div class="grid grid-cols-2 text-sm">
-                                    <div class="p-2 border-r text-center dark:border-gray-600">
-                                        <div class="text-xs text-gray-500 dark:text-gray-200">Plantas/cama</div>
-                                        <div class="font-bold">
-                                            {{ round($eval->promedio_resiembra, 2) }}
-                                        </div>
-                                    </div>
-
-                                    <div class="p-2 text-center">
-                                        <div class="text-xs text-gray-500 dark:text-gray-200">Plantas/metro</div>
-                                        <div class="font-bold">
-                                            {{ round($eval->promedio_plantas_metro_resiembra, 2) }}
-                                        </div>
-                                    </div>
-
-                                    <div class="col-span-2 p-2 mt-1 bg-gray-50 rounded text-center dark:bg-gray-700">
-                                        <div class="text-xs text-gray-500 dark:text-gray-200">Plantas por ha</div>
-                                        <div class="font-bold text-blue-600 dark:text-white">
-                                            {{ round($eval->promedio_plantas_ha_resiembra, 2) }}
-                                        </div>
-                                    </div>
-                                </div>
+                            {{-- SUBHEADERS --}}
+                            <div class="grid divide-x divide-border border-t border-border"
+                                style="grid-template-columns: repeat(6, 1fr) repeat(2, 1fr)">
+                                {{-- Día Cero: 6 subcolumnas --}}
+                                <div class="p-1 text-center bg-card text-muted-foreground border-b border-border">
+                                    Plantas<br>x Hilera</div>
+                                <div class="p-1 text-center bg-card text-muted-foreground border-b border-border">
+                                    Plantas<br>x Metro</div>
+                                <div class="p-1 text-center bg-card text-muted-foreground border-b border-border">B2°<br>x
+                                    Hilera</div>
+                                <div class="p-1 text-center bg-card text-muted-foreground border-b border-border">B2°<br>x
+                                    Metro</div>
+                                <div class="p-1 text-center bg-card text-muted-foreground border-b border-border">B3°<br>x
+                                    Hilera</div>
+                                <div class="p-1 text-center bg-card text-muted-foreground border-b border-border border-r">
+                                    B3°<br>x Metro</div>
+                                {{-- Resiembra: 2 subcolumnas --}}
+                                <div class="p-1 text-center bg-card text-muted-foreground border-b border-border">
+                                    Plantas<br>x Hilera</div>
+                                <div class="p-1 text-center bg-card text-muted-foreground border-b border-border">
+                                    Plantas<br>x Metro</div>
                             </div>
 
+                            {{-- FILA 1: Promedios --}}
+                            <div class="grid divide-x divide-border border-t border-border"
+                                style="grid-template-columns: repeat(6, 1fr) repeat(2, 1fr)">
+                                <div class="p-2 text-center font-bold">{{ round($eval->promedio_dia_cero, 0) }}</div>
+                                <div class="p-2 text-center font-bold">{{ round($eval->promedio_plantas_metro_cero, 0) }}
+                                </div>
+                                <div class="p-2 text-center font-bold">{{ round($eval->promedio_brazos2_hilera_cero, 0) }}
+                                </div>
+                                <div class="p-2 text-center font-bold">{{ round($eval->promedio_brazos2_metro_cero, 0) }}
+                                </div>
+                                <div class="p-2 text-center font-bold">{{ round($eval->promedio_brazos3_hilera_cero, 0) }}
+                                </div>
+                                <div class="p-2 text-center font-bold border-r border-border">
+                                    {{ round($eval->promedio_brazos3_metro_cero, 0) }}</div>
+                                <div class="p-2 text-center font-bold">{{ round($eval->promedio_resiembra, 0) }}</div>
+                                <div class="p-2 text-center font-bold">
+                                    {{ round($eval->promedio_plantas_metro_resiembra, 0) }}</div>
+                            </div>
+
+                            {{-- FILA 2: x Ha --}}
+<div class="grid divide-x divide-border border-t border-border bg-muted/50"
+     style="grid-template-columns: repeat(6, 1fr) repeat(2, 1fr)">
+    <div class="col-span-2 p-1 text-center border-r border-border">
+        <span class="text-muted-foreground">Plantas/ha:</span>
+        <span class="font-bold ml-1">{{ round($eval->promedio_plantas_ha_cero, 0) }}</span>
+    </div>
+    <div class="col-span-2 p-1 text-center border-r border-border">
+        <span class="text-muted-foreground">B2°/ha:</span>
+        <span class="font-bold ml-1">{{ round($eval->total_brazos2_ha_cero, 0) }}</span>
+    </div>
+    <div class="col-span-2 p-1 text-center border-r border-border">
+        <span class="text-muted-foreground">B3°/ha:</span>
+        <span class="font-bold ml-1">{{ round($eval->total_brazos3_ha_cero, 0) }}</span>
+    </div>
+    <div class="col-span-2 p-1 text-center">
+        <span class="text-muted-foreground">Plantas/ha:</span>
+        <span class="font-bold ml-1">{{ round($eval->promedio_plantas_ha_resiembra, 0) }}</span>
+    </div>
+</div>
 
                         </div>
                     @endif
@@ -154,29 +168,30 @@
     </x-dialog-modal>
 
     <x-loading wire:loading />
+    <style>
+        .dark .handsontable .htDimmed {
+            color: #ffffff !important;
+        }
+    </style>
 </div>
 @script
 <script>
     Alpine.data('{{ $idTable }}', () => ({
         listeners: [],
         tableData: @json($detalleEvaluacionPoblacionPlanta),
+        isDark: JSON.parse(localStorage.getItem('darkMode')),
         hot: null,
         init() {
             this.initTable();
-            this.listeners.push(
-                Livewire.on('cargarData', (data) => {
-                    this.tableData = data[0];
-                    this.hot.destroy();
-                    this.initTable();
-                    this.hot.loadData(this.tableData);
-                })
-            );
-            this.listeners.push(
-
-                Livewire.on('guardadoConfirmadoPoblacionPlanta', () => {
-                    this.sendDataPoblacionPlanta();
-                })
-            );
+            Livewire.on('cargarData', (data) => {
+                this.tableData = data[0];
+                this.hot.destroy();
+                this.initTable();
+                this.hot.loadData(this.tableData);
+            });
+            Livewire.on('guardadoConfirmadoPoblacionPlanta', () => {
+                this.sendDataPoblacionPlanta();
+            });
         },
         initTable() {
 
@@ -186,17 +201,16 @@
                 data: this.tableData,
                 colHeaders: true,
                 rowHeaders: true,
-
+                /*{
+                                            data: 'numero_cama',
+                                            type: 'numeric',
+                                            className: '!text-center',
+                                            numericFormat: {
+                                                pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                                                culture: 'en-US'
+                                            }
+                                        }*/
                 columns: [{
-                    data: 'numero_cama',
-                    type: 'numeric',
-                    className: '!text-center',
-                    numericFormat: {
-                        pattern: '0,0', // esto muestra 1,000 en lugar de 1000
-                        culture: 'en-US'
-                    }
-                },
-                {
                     data: 'longitud_cama',
                     type: 'numeric',
                     className: '!text-center',
@@ -217,7 +231,45 @@
                 {
                     data: 'plantas_x_metro_cero',
                     type: 'numeric',
-                    className: '!text-center !bg-[#D8E4BC]',
+                    className: '!text-center !bg-[#D8E4BC] dark:!bg-green-600 !text-foreground',
+                    numericFormat: {
+                        pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                        culture: 'en-US'
+                    },
+                    readOnly: true
+                },
+                {
+                    data: 'brazos2_piso_x_hilera_cero',
+                    type: 'numeric',
+                    className: '!text-center',
+                    numericFormat: {
+                        pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                        culture: 'en-US'
+                    }
+                },
+                {
+                    data: 'brazos2_piso_x_metro_cero',
+                    type: 'numeric',
+                    className: '!text-center !bg-[#D8E4BC] dark:!bg-green-600 !text-foreground',
+                    numericFormat: {
+                        pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                        culture: 'en-US'
+                    },
+                    readOnly: true
+                },
+                {
+                    data: 'brazos3_piso_x_hilera_cero',
+                    type: 'numeric',
+                    className: '!text-center',
+                    numericFormat: {
+                        pattern: '0,0', // esto muestra 1,000 en lugar de 1000
+                        culture: 'en-US'
+                    }
+                },
+                {
+                    data: 'brazos3_piso_x_metro_cero',
+                    type: 'numeric',
+                    className: '!text-center !bg-[#D8E4BC] dark:!bg-green-600 !text-foreground',
                     numericFormat: {
                         pattern: '0,0', // esto muestra 1,000 en lugar de 1000
                         culture: 'en-US'
@@ -236,7 +288,7 @@
                 {
                     data: 'plantas_x_metro_resiembra',
                     type: 'numeric',
-                    className: '!text-center !bg-[#D8E4BC]',
+                    className: '!text-center !bg-[#D8E4BC] dark:!bg-green-600 !text-foreground',
                     numericFormat: {
                         pattern: '0,0', // esto muestra 1,000 en lugar de 1000
                         culture: 'en-US'
@@ -246,22 +298,32 @@
                 ],
                 nestedHeaders: [
                     [{
-                        label: 'Cama Info',
-                        colspan: 2
+                        label: '',
+                        colspan: 1
                     },
                     {
-                        label: 'Evaluación Cero',
-                        colspan: 2
+                        label: 'DIA CERO',
+                        colspan: 6
                     },
                     {
-                        label: 'Evaluación Resiembra',
+                        label: 'RESIEMBRA',
                         colspan: 2
                     }
                     ],
-                    ['N° Cama', 'Longitud Cama', 'Plantas por Hilera', 'Plantas por Metro', 'Plantas por Hilera', 'Plantas por Metro']
+                    [
+                        'LONGITUD<br/>CAMA<br/>(metros)',
+                        'PLANTAS<br/>POR<br/>HILERA',
+                        'PLANTAS<br/>POR<br/>METRO',
+                        'BRAZOS 2°<br/>PISO POR<br/>HILERA',
+                        'BRAZOS 2°<br/>PISO POR<br/>METRO',
+                        'BRAZOS 3°<br/>PISO POR<br/>HILERA',
+                        'BRAZOS 3°<br/>PISO POR<br/>METRO',
+                        'PLANTAS<br/>POR<br/>HILERA',
+                        'PLANTAS<br/>POR<br/>METRO'
+                    ]
                 ],
                 width: '100%',
-                themeName: 'ht-theme-main',
+                themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
                 height: 'auto',
                 manualColumnResize: false,
                 manualRowResize: true,
@@ -274,21 +336,45 @@
 
                     changes.forEach(([row, prop, oldValue, newValue]) => {
 
-                        const rowData = hot.getDataAtRow(row);
-                        const longitud = parseFloat(rowData[1]) || 0; // columna longitud_cama
-                        const ceroHilera = parseFloat(rowData[2]) || 0;
-                        const resiembraHilera = parseFloat(rowData[4]) || 0;
+                        // Leer valores por nombre de columna (independiente del orden)
+                        const longitud = parseFloat(hot.getDataAtRowProp(row, 'longitud_cama')) || 0;
+                        const plantasHilera = parseFloat(hot.getDataAtRowProp(row, 'eval_cero_plantas_x_hilera')) || 0;
+                        const reHilera = parseFloat(hot.getDataAtRowProp(row, 'eval_resiembra_plantas_x_hilera')) || 0;
+                        const b2Hilera = parseFloat(hot.getDataAtRowProp(row, 'brazos2_piso_x_hilera_cero')) || 0;
+                        const b3Hilera = parseFloat(hot.getDataAtRowProp(row, 'brazos3_piso_x_hilera_cero')) || 0;
 
-                        // --- Recalcular plantas_x_metro_cero ---
-                        if (['eval_cero_plantas_x_hilera', 'longitud_cama'].includes(prop)) {
-                            const calculoCero = longitud > 0 ? (ceroHilera / longitud) : 0;
-                            hot.setDataAtCell(row, 3, parseFloat(calculoCero.toFixed(3))); // plantas_x_metro_cero
+                        const COLS_QUE_AFECTAN = [
+                            'longitud_cama',
+                            'eval_cero_plantas_x_hilera',
+                            'eval_resiembra_plantas_x_hilera',
+                            'brazos2_piso_x_hilera_cero',
+                            'brazos3_piso_x_hilera_cero',
+                        ];
+
+                        if (!COLS_QUE_AFECTAN.includes(prop)) return;
+
+                        // Función helper para evitar NaN / Infinity
+                        const calc = (hilera) =>
+                            longitud > 0 ? parseFloat((hilera / longitud).toFixed(0)) : 0;
+
+                        // Recalcular plantas por metro — día cero
+                        if (['longitud_cama', 'eval_cero_plantas_x_hilera'].includes(prop)) {
+                            hot.setDataAtRowProp(row, 'plantas_x_metro_cero', calc(plantasHilera));
                         }
 
-                        // --- Recalcular plantas_x_metro_resiembra ---
-                        if (['eval_resiembra_plantas_x_hilera', 'longitud_cama'].includes(prop)) {
-                            const calculoResiembra = longitud > 0 ? (resiembraHilera / longitud) : 0;
-                            hot.setDataAtCell(row, 5, parseFloat(calculoResiembra.toFixed(3))); // plantas_x_metro_resiembra
+                        // Recalcular plantas por metro — resiembra
+                        if (['longitud_cama', 'eval_resiembra_plantas_x_hilera'].includes(prop)) {
+                            hot.setDataAtRowProp(row, 'plantas_x_metro_resiembra', calc(reHilera));
+                        }
+
+                        // Recalcular brazos 2° piso por metro
+                        if (['longitud_cama', 'brazos2_piso_x_hilera_cero'].includes(prop)) {
+                            hot.setDataAtRowProp(row, 'brazos2_piso_x_metro_cero', calc(b2Hilera));
+                        }
+
+                        // Recalcular brazos 3° piso por metro
+                        if (['longitud_cama', 'brazos3_piso_x_hilera_cero'].includes(prop)) {
+                            hot.setDataAtRowProp(row, 'brazos3_piso_x_metro_cero', calc(b3Hilera));
                         }
 
                     });
@@ -310,10 +396,7 @@
             const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
                 null && cell !== ''));
 
-            const data = {
-                datos: filteredData
-            };
-            $wire.dispatchSelf('storeTableDataPoblacionPlanta', data);
+            $wire.storeTableDataPoblacionPlanta(filteredData);
         }
     }));
 </script>

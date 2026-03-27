@@ -16,9 +16,7 @@ return new class extends Migration {
             // Datos generales
             $table->date('fecha_siembra')->nullable();
             $table->decimal('area_lote', 10, 4);
-
             $table->string('evaluador', 255)->nullable();
-
             $table->decimal('metros_cama_ha', 10, 3)->nullable(); // 5000 por ejemplo
 
             // Relación con campaña (una evaluación por campaña)

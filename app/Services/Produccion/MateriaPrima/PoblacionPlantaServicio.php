@@ -179,10 +179,11 @@ class PoblacionPlantaServicio
         // -------------------------------
         // B. Validación de filas (detalles)
         // -------------------------------
+
         foreach ($datos['detalles'] as $i => $fila) {
 
             $filaValidator = Validator::make($fila, [
-                'numero_cama' => 'required|integer|min:1',
+                //'numero_cama' => 'required|integer|min:1',
                 'longitud_cama' => 'required|numeric|min:0.01|max:999999.99',
                 'eval_cero_plantas_x_hilera' => 'required|integer|min:0',
                 'eval_resiembra_plantas_x_hilera' => 'nullable|integer|min:0',
@@ -248,7 +249,7 @@ class PoblacionPlantaServicio
         $evaluacion->detalles()->delete();
 
         // 2. Insertar nuevos detalles con cálculos
-        $detallesInsert = collect($detalles)->map(function ($fila) use ($evaluacion) {
+        $detallesInsert = collect($detalles)->map(function ($fila, $indice) use ($evaluacion) {
 
             $longitud = floatval($fila['longitud_cama']);
             $cero = intval($fila['eval_cero_plantas_x_hilera']);
@@ -256,12 +257,24 @@ class PoblacionPlantaServicio
                 ? intval($fila['eval_resiembra_plantas_x_hilera'])
                 : null;
 
+            // NUEVOS CAMPOS
+            $brazos2 = isset($fila['brazos2_piso_x_hilera_cero'])
+                ? intval($fila['brazos2_piso_x_hilera_cero'])
+                : null;
+
+            $brazos3 = isset($fila['brazos3_piso_x_hilera_cero'])
+                ? intval($fila['brazos3_piso_x_hilera_cero'])
+                : null;
+
             return [
                 'eval_poblacion_planta_id' => $evaluacion->id,
-                'numero_cama' => intval($fila['numero_cama']),
+                'numero_cama' => $indice + 1,
                 'longitud_cama' => $longitud,
                 'eval_cero_plantas_x_hilera' => $cero,
                 'eval_resiembra_plantas_x_hilera' => $resiem,
+                // GUARDAR NUEVOS
+                'brazos2_piso_x_hilera_cero' => $brazos2,
+                'brazos3_piso_x_hilera_cero' => $brazos3,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];

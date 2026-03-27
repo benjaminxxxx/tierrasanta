@@ -36,7 +36,7 @@ class EvaluacionPoblacionPlantaFormComponent extends Component
     public $fecha_eval_cero;
     public $fecha_eval_resiembra;
     public $modoEdicion = false;
-    protected $listeners = ['agregarEvaluacion', 'editarPoblacionPlanta', 'storeTableDataPoblacionPlanta'];
+    protected $listeners = ['agregarEvaluacion', 'editarPoblacionPlanta'];
     public function mount()
     {
         $this->idTable = "table" . Str::random(15);
@@ -55,21 +55,20 @@ class EvaluacionPoblacionPlantaFormComponent extends Component
         try {
             $this->campania = CampoCampania::findOrFail($this->campaniaSeleccionada);
             $this->buscarArea();
-            $this->fecha_siembra = $this->campania->fecha_siembra;
+            $this->fecha_siembra = $this->campania->fecha_siembra->format('Y-m-d');
             $evaluacionPoblacion = EvalPoblacionPlanta::where('campania_id', $this->campania->id)
                 ->first();
 
             $this->poblacionPlantaId = null;
-            $this->area_lote = null;
+            //$this->area_lote = null;
             $this->metros_cama_ha = null;
             $this->fecha_eval_cero = null;
             $this->fecha_eval_resiembra = null;
             $this->evaluador = null;
-            $this->fecha_siembra = $this->campania->fecha_siembra;
 
             if ($evaluacionPoblacion) {
                 $this->poblacionPlantaId = $evaluacionPoblacion->id;
-                $this->area_lote = $evaluacionPoblacion->area_lote;
+                $this->area_lote = (!is_null($evaluacionPoblacion->area_lote)) ? $evaluacionPoblacion->area_lote : $this->area_lote;
                 $this->metros_cama_ha = $evaluacionPoblacion->metros_cama_ha;
                 $this->fecha_eval_cero = $evaluacionPoblacion->fecha_eval_cero;
                 $this->fecha_eval_resiembra = $evaluacionPoblacion->fecha_eval_resiembra;
@@ -80,12 +79,23 @@ class EvaluacionPoblacionPlantaFormComponent extends Component
                 if ($evaluacionPoblacion->detalles->count() > 0) {
                     $this->detalleEvaluacionPoblacionPlanta = $evaluacionPoblacion->detalles->map(function ($detalle) {
                         return [
-                            'numero_cama' => $detalle->numero_cama,
+                            //'numero_cama' => $detalle->numero_cama, ya no es visible
                             'longitud_cama' => $detalle->longitud_cama,
+
+                            // PLANTAS
                             'eval_cero_plantas_x_hilera' => $detalle->eval_cero_plantas_x_hilera,
                             'plantas_x_metro_cero' => round($detalle->plantas_por_metro_cero, 0),
+
                             'eval_resiembra_plantas_x_hilera' => $detalle->eval_resiembra_plantas_x_hilera,
-                            'plantas_x_metro_resiembra' => round($detalle->plantas_por_metro_resiembra, 0)
+                            'plantas_x_metro_resiembra' => round($detalle->plantas_por_metro_resiembra, 0),
+
+                            // BRAZOS 2° PISO
+                            'brazos2_piso_x_hilera_cero' => $detalle->brazos2_piso_x_hilera_cero,
+                            'brazos2_piso_x_metro_cero' => round($detalle->brazos2_piso_x_metro_cero, 0),
+
+                            // BRAZOS 3° PISO
+                            'brazos3_piso_x_hilera_cero' => $detalle->brazos3_piso_x_hilera_cero,
+                            'brazos3_piso_x_metro_cero' => round($detalle->brazos3_piso_x_metro_cero, 0),
                         ];
                     })->toArray();
                 }
@@ -106,9 +116,10 @@ class EvaluacionPoblacionPlantaFormComponent extends Component
     {
         $this->area_lote = null;
 
-        if ($this->campoSeleccionado) {
+        if (empty($this->campoSeleccionado)) {
             return;
         }
+
 
         $campo = Campo::find($this->campoSeleccionado);
         if ($campo) {

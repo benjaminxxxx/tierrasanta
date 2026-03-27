@@ -15,9 +15,17 @@ class EvalPoblacionPlanta extends Model
         'metros_cama_ha',
         'campania_id',
         'fecha_eval_cero',
-        'fecha_eval_resiembra'
-    ];
+        'fecha_eval_resiembra',
 
+    ];
+    protected $appends = [
+        'promedio_brazos2_hilera_cero',
+        'promedio_brazos2_metro_cero',
+        'promedio_brazos3_hilera_cero',
+        'promedio_brazos3_metro_cero',
+        'total_brazos2_ha_cero',
+        'total_brazos3_ha_cero',
+    ];
     // -----------------------
     //     RELACIONES
     // -----------------------
@@ -63,16 +71,61 @@ class EvalPoblacionPlanta extends Model
     /** Promedio plantas por ha — Día cero */
     public function getPromedioPlantasHaCeroAttribute()
     {
-        if (!$this->metros_cama_ha) return null;
+        if (!$this->metros_cama_ha)
+            return null;
 
         return $this->promedio_plantas_metro_cero * $this->metros_cama_ha;
+    }
+
+    /** Total brazos 2° piso por ha — Día Cero */
+    public function getTotalBrazos2HaCeroAttribute()
+    {
+        if (!$this->metros_cama_ha)
+            return null;
+
+        return $this->promedio_brazos2_metro_cero * $this->metros_cama_ha;
+    }
+
+    /** Total brazos 3° piso por ha — Día Cero */
+    public function getTotalBrazos3HaCeroAttribute()
+    {
+        if (!$this->metros_cama_ha)
+            return null;
+
+        return $this->promedio_brazos3_metro_cero * $this->metros_cama_ha;
     }
 
     /** Promedio plantas por ha — Resiembra */
     public function getPromedioPlantasHaResiembraAttribute()
     {
-        if (!$this->metros_cama_ha) return null;
+        if (!$this->metros_cama_ha)
+            return null;
 
         return $this->promedio_plantas_metro_resiembra * $this->metros_cama_ha;
     }
+
+    // Promedio de brazos2_piso_x_hilera_cero entre todos los detalles
+    public function getPromedioBrazos2HileraCeroAttribute(): float
+    {
+        return $this->detalles->avg('brazos2_piso_x_hilera_cero') ?? 0;
+    }
+
+    // Promedio de brazos2_piso_x_metro_cero (accessor del detalle)
+    public function getPromedioBrazos2MetroCeroAttribute(): float
+    {
+        return $this->detalles->avg('brazos2_piso_x_metro_cero') ?? 0;
+    }
+
+    // Promedio de brazos3_piso_x_hilera_cero
+    public function getPromedioBrazos3HileraCeroAttribute(): float
+    {
+        return $this->detalles->avg('brazos3_piso_x_hilera_cero') ?? 0;
+    }
+
+    // Promedio de brazos3_piso_x_metro_cero (accessor del detalle)
+    public function getPromedioBrazos3MetroCeroAttribute(): float
+    {
+        return $this->detalles->avg('brazos3_piso_x_metro_cero') ?? 0;
+    }
+
 }

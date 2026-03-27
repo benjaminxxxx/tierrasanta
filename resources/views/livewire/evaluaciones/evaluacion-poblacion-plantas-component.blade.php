@@ -1,19 +1,19 @@
-<div>
+<div class="space-y-4">
     <x-flex>
-        <x-h3>
+        <x-title>
             Población de Plantas
-        </x-h3>
+        </x-title>
         <x-button type="button" @click="$wire.dispatch('agregarEvaluacion')">
             <i class="fa fa-plus"></i> Agregar Evaluación
         </x-button>
     </x-flex>
-    <x-card2 class="my-4">
+    <x-card class="my-4">
         <x-flex class="justify-between">
             <x-flex>
-                <x-input type="date" label="Fecha de evaluación" wire:model.live="fechaFiltro" />
-                <x-select-campo wire:model.live="campoFiltrado" label="Lote" error="false" />
+                <x-selector-dia label="Fecha de evaluación" wire:model.live="fechaFiltro" class="w-auto" />
+                <x-select-campo wire:model.live="campoFiltrado" label="Lote" error="false" class="w-auto" />
                 @if ($campoFiltrado)
-                    <x-select label="Campaña" wire:model.live="campaniaFiltrada">
+                    <x-select label="Campaña" wire:model.live="campaniaFiltrada" class="w-auto">
                         <option value="">-- Todas las campañas --</option>
                         @foreach ($campaniasParaFiltro as $campaniaOption)
                             <option value="{{ $campaniaOption->id }}">
@@ -22,7 +22,8 @@
                         @endforeach
                     </x-select>
                 @endif
-                <x-input type="search" label="Evaluador" wire:model.live.debounce.600ms="evaluadorFiltro" />
+                <x-input type="search" label="Evaluador" wire:model.live.debounce.600ms="evaluadorFiltro"
+                    class="w-auto" />
             </x-flex>
             <div class="relative">
                 <x-dropdown width="60">
@@ -50,9 +51,9 @@
         </x-flex>
 
 
-    </x-card2>
+    </x-card>
 
-    <x-card2 class="mt-4">
+    <x-card class="mt-4" x-data="{ abiertos: {} }">
         <x-table>
             <x-slot name="thead">
                 <x-tr>
@@ -71,7 +72,7 @@
 
             <x-slot name="tbody">
                 @foreach ($poblacionPlantas as $indice => $p)
-                    <tr class="border-b">
+                    <tr class="border-b border-border">
                         <x-td class="text-center">
                             {{ $indice + 1 }}
                         </x-td>
@@ -99,22 +100,40 @@
                         </x-td>
 
                         {{-- PROMEDIOS DÍA CERO --}}
-                        <x-td class="text-center">
-                            <div><b class="text-gray-700 dark:text-gray-200">Cama:</b> {{ round($p->promedio_dia_cero, 2) }}</div>
-                            <div><b class="text-gray-700 dark:text-gray-200">Metro:</b> {{ round($p->promedio_plantas_metro_cero, 2) }}</div>
-                            <div><b class="text-gray-700 dark:text-gray-200">Ha:</b> {{ round($p->promedio_plantas_ha_cero, 2) }}</div>
+                        <x-td class="text-center text-xs">
+                            <div class="grid grid-cols-3 gap-x-2 text-muted-foreground">
+                                <span>Plt</span><span>B2°</span><span>B3°</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-x-2 font-bold">
+                                <span>{{ round($p->promedio_plantas_metro_cero, 0) }}</span>
+                                <span>{{ round($p->promedio_brazos2_metro_cero, 0) }}</span>
+                                <span>{{ round($p->promedio_brazos3_metro_cero, 0) }}</span>
+                            </div>
+                            <div class="border-t border-border mt-1 pt-1 grid grid-cols-3 gap-x-2 text-muted-foreground">
+                                <span>{{ round($p->promedio_plantas_ha_cero, 0) }}</span>
+                                <span>{{ round($p->total_brazos2_ha_cero, 0) }}</span>
+                                <span>{{ round($p->total_brazos3_ha_cero, 0) }}</span>
+                            </div>
                         </x-td>
 
                         {{-- PROMEDIOS RESIEMBRA --}}
-                        <x-td class="text-center">
-                            <div><b class="text-gray-700 dark:text-gray-200">Cama:</b> {{ round($p->promedio_resiembra, 2) }}</div>
-                            <div><b class="text-gray-700 dark:text-gray-200">Metro:</b> {{ round($p->promedio_plantas_metro_resiembra, 2) }}</div>
-                            <div><b class="text-gray-700 dark:text-gray-200">Ha:</b> {{ round($p->promedio_plantas_ha_resiembra, 2) }}</div>
+                        <x-td class="text-center text-xs">
+                            <div class="text-muted-foreground">Plt</div>
+                            <div class="font-bold">{{ round($p->promedio_plantas_metro_resiembra, 0) }}</div>
+                            <div class="border-t border-border mt-1 pt-1 text-muted-foreground">
+                                {{ round($p->promedio_plantas_ha_resiembra, 0) }}
+                            </div>
                         </x-td>
 
                         {{-- ACCIONES --}}
                         <x-td class="text-center">
                             <x-flex class="justify-center gap-2">
+                                {{-- Toggle detalles --}}
+                                <x-button variant="ghost" @click="abiertos[{{ $p->id }}] = !abiertos[{{ $p->id }}]">
+                                    <i class="fa fa-chevron-down transition-transform duration-200"
+                                        :class="abiertos[{{ $p->id }}] ? 'rotate-180' : ''"></i>
+                                </x-button>
+
                                 <x-button variant="secondary"
                                     @click="$wire.dispatch('editarPoblacionPlanta', { poblacionId: {{ $p->id }} })">
                                     <i class="fa fa-edit"></i>
@@ -127,32 +146,96 @@
                         </x-td>
                     </tr>
 
-                    {{-- SUBTABLA DE DETALLES ---}}
-                    <tr class="bg-gray-50 dark:bg-gray-800">
+                    {{-- SUBTABLA DETALLES (colapsable) --}}
+                    <tr class="bg-muted" x-show="abiertos[{{ $p->id }}]"
+                        x-transition:enter="transition-all duration-200 ease-out" x-transition:enter-start="opacity-0"
+                        x-transition:enter-end="opacity-100" x-transition:leave="transition-all duration-150 ease-in"
+                        x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" style="display: none;">
                         <td colspan="10" class="p-0">
-                            <table class="w-full text-xs border-t dark:border-gray-700">
-                                <thead class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                            <table class="w-full text-xs border-t border-border">
+
+                                <thead class="bg-card">
                                     <tr>
-                                        <th class="p-2 text-center">Cama</th>
-                                        <th class="p-2 text-center">Longitud</th>
-                                        <th class="p-2 text-center">Cero: Plantas x Hilera</th>
-                                        <th class="p-2 text-center">Cero: Plantas x Metro</th>
-                                        <th class="p-2 text-center">Resiembra: Plantas x Hilera</th>
-                                        <th class="p-2 text-center">Resiembra: Plantas x Metro</th>
+                                        {{-- Info cama --}}
+                                        <th class="p-2 text-center border-b border-border" rowspan="2">Cama</th>
+                                        <th class="p-2 text-center border-b border-border" rowspan="2">Longitud</th>
+
+                                        {{-- Grupo Día Cero --}}
+                                        <th class="p-2 text-center border-b border-l border-border bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+                                            colspan="6">
+                                            Día Cero
+                                        </th>
+
+                                        {{-- Grupo Resiembra --}}
+                                        <th class="p-2 text-center border-b border-l border-border bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                                            colspan="2">
+                                            Resiembra
+                                        </th>
+                                    </tr>
+                                    <tr>
+                                        {{-- Subheaders Día Cero --}}
+                                        <th
+                                            class="p-2 text-center border-b border-l border-border bg-green-50 dark:bg-green-900/20">
+                                            Plantas x Hilera</th>
+                                        <th class="p-2 text-center border-b border-border bg-green-50 dark:bg-green-900/20">
+                                            Plantas x Metro</th>
+                                        <th
+                                            class="p-2 text-center border-b border-l border-border bg-green-50 dark:bg-green-900/20">
+                                            Brazos 2° x Hilera</th>
+                                        <th class="p-2 text-center border-b border-border bg-green-50 dark:bg-green-900/20">
+                                            Brazos 2° x Metro</th>
+                                        <th
+                                            class="p-2 text-center border-b border-l border-border bg-green-50 dark:bg-green-900/20">
+                                            Brazos 3° x Hilera</th>
+                                        <th class="p-2 text-center border-b border-border bg-green-50 dark:bg-green-900/20">
+                                            Brazos 3° x Metro</th>
+
+                                        {{-- Subheaders Resiembra --}}
+                                        <th
+                                            class="p-2 text-center border-b border-l border-border bg-blue-50 dark:bg-blue-900/20">
+                                            Plantas x Hilera</th>
+                                        <th class="p-2 text-center border-b border-border bg-blue-50 dark:bg-blue-900/20">
+                                            Plantas x Metro</th>
                                     </tr>
                                 </thead>
+
                                 <tbody>
                                     @foreach ($p->detalles as $d)
-                                        <tr class="border-b dark:border-gray-700">
+                                        <tr class="border-b border-border hover:bg-card/60 transition-colors">
                                             <td class="p-2 text-center">{{ $d->numero_cama }}</td>
                                             <td class="p-2 text-center">{{ $d->longitud_cama }}</td>
-                                            <td class="p-2 text-center">{{ $d->eval_cero_plantas_x_hilera }}</td>
-                                            <td class="p-2 text-center">{{ round($d->plantas_por_metro_cero, 2) }}</td>
-                                            <td class="p-2 text-center">{{ $d->eval_resiembra_plantas_x_hilera }}</td>
-                                            <td class="p-2 text-center">{{ round($d->plantas_por_metro_resiembra, 2) }}</td>
+
+                                            {{-- Día Cero --}}
+                                            <td class="p-2 text-center border-l border-border">
+                                                {{ $d->eval_cero_plantas_x_hilera }}
+                                            </td>
+                                            <td class="p-2 text-center">
+                                                {{ $d->plantas_por_metro_cero !== null ? round($d->plantas_por_metro_cero, 0) : '-' }}
+                                            </td>
+                                            <td class="p-2 text-center border-l border-border">
+                                                {{ $d->brazos2_piso_x_hilera_cero }}
+                                            </td>
+                                            <td class="p-2 text-center">
+                                                {{ $d->brazos2_piso_x_metro_cero !== null ? round($d->brazos2_piso_x_metro_cero, 0) : '-' }}
+                                            </td>
+                                            <td class="p-2 text-center border-l border-border">
+                                                {{ $d->brazos3_piso_x_hilera_cero }}
+                                            </td>
+                                            <td class="p-2 text-center">
+                                                {{ $d->brazos3_piso_x_metro_cero !== null ? round($d->brazos3_piso_x_metro_cero, 0) : '-' }}
+                                            </td>
+
+                                            {{-- Resiembra --}}
+                                            <td class="p-2 text-center border-l border-border">
+                                                {{ $d->eval_resiembra_plantas_x_hilera }}
+                                            </td>
+                                            <td class="p-2 text-center">
+                                                {{ $d->plantas_por_metro_resiembra !== null ? round($d->plantas_por_metro_resiembra, 0) : '-' }}
+                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
+
                             </table>
                         </td>
                     </tr>
@@ -164,7 +247,7 @@
         <div class="mt-5">
             {{ $poblacionPlantas->links() }}
         </div>
-    </x-card2>
+    </x-card>
 
 
     <x-loading wire:loading />
