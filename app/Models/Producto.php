@@ -6,10 +6,11 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Producto extends Model
 {
-    use HasFactory;
+    use HasFactory,SoftDeletes;
 
     protected $fillable = [
         'nombre_comercial',
@@ -17,8 +18,30 @@ class Producto extends Model
         'categoria_codigo',
         'codigo_tipo_existencia',
         'codigo_unidad_medida',
-        'categoria_pesticida'
+        'categoria_pesticida',
+        'creado_por',
+        'editado_por',
+        'eliminado_por',
     ];
+
+    // -----------------------
+    // RELACIONES AUDITORÍA
+    // -----------------------
+
+    public function creador()
+    {
+        return $this->belongsTo(User::class, 'creado_por');
+    }
+
+    public function editor()
+    {
+        return $this->belongsTo(User::class, 'editado_por');
+    }
+
+    public function eliminador()
+    {
+        return $this->belongsTo(User::class, 'eliminado_por');
+    }
     public function usos()
     {
         return $this->belongsToMany(InsUso::class, 'ins_producto_usos', 'producto_id', 'uso_id');
@@ -77,7 +100,7 @@ class Producto extends Model
             ? '<br><span class="text-xs text-muted-foreground font-normal">' . $this->ingrediente_activo . '</span>'
             : '';
 
-        return $this->nombre_comercial . " (" .$this->unidad_medida. ") " . $sub;
+        return $this->nombre_comercial . " (" . $this->unidad_medida . ") " . $sub;
     }
 
     // Agregar accessor de usos

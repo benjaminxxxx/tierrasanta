@@ -2,8 +2,12 @@
 
 namespace App\Livewire;
 
+use App\Models\CategoriaPesticida;
 use App\Models\InsCategoria;
+use App\Models\InsUso;
+use App\Models\Nutriente;
 use App\Models\Producto;
+use App\Services\Insumo\InsumoServicio;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -12,17 +16,41 @@ class ProductosComponent extends Component
 {
     use LivewireAlert;
     use WithPagination;
-    public $productoIdEliminar;
-    public $search;
+    public $search = '';
     public $categoriaSeleccionada;
     public $sortField = 'nombre_comercial';
     public $sortDirection = 'asc';
     public $categorias = [];
 
-    protected $listeners = ['ActualizarProductos' => '$refresh', 'eliminacionConfirmada'];
+    public bool $modalAuditoria = false;
+    public array $auditoriaHistorial = [];
+    public ?int $productoIdEliminar = null;
+
+    // Propiedades nuevas
+    public string $categoriaPesticida = '';
+    public string $usoSeleccionado = '';
+    public array $nutrientesSeleccionados = [];
+
+    // En mount() cargar catálogos para los filtros
+    public array $listaUsosFiltro = [];
+    public array $listaNutrientesFiltro = [];
+    public array $listaCategoriasPesticidaFiltro = [];
+
+    protected $listeners = ['ActualizarProductos' => '$refresh', 'confirmarEliminarProducto'];
     public function mount()
     {
         $this->categorias = InsCategoria::orderBy('descripcion')->get();
+        $this->listaUsosFiltro = InsUso::orderBy('nombre')
+            ->get(['id', 'nombre'])
+            ->toArray();
+
+        $this->listaNutrientesFiltro = Nutriente::orderBy('nombre')
+            ->get(['codigo', 'nombre'])
+            ->toArray();
+
+        $this->listaCategoriasPesticidaFiltro = CategoriaPesticida::orderBy('descripcion')
+            ->get(['codigo', 'descripcion'])
+            ->toArray();
     }
     public function updatingSearch()
     {
@@ -31,29 +59,19 @@ class ProductosComponent extends Component
 
     public function confirmarEliminacion($id)
     {
-        $this->productoIdEliminar = $id;
-
-        $this->alert('question', '¿Está seguro que desea eliminar al Producto?', [
-            'showConfirmButton' => true,
-            'confirmButtonText' => 'Si, Eliminar',
-            'onConfirmed' => 'eliminacionConfirmada',
-            'showCancelButton' => true,
-            'position' => 'center',
-            'toast' => false,
-            'timer' => null,
-            'confirmButtonColor' => '#056A70', // Esto sobrescribiría la configuración global
-            'cancelButtonColor' => '#2C2C2C',
+        $this->confirm('¿Está seguro(a) que desea eliminar el producto?', [
+            'onConfirmed' => 'confirmarEliminarProducto',
+            'data' => ['id' => $id],
         ]);
     }
-    public function eliminacionConfirmada()
+    public function confirmarEliminarProducto(array $data): void
     {
-        if ($this->productoIdEliminar) {
-            $producto = Producto::find($this->productoIdEliminar);
-            if ($producto) {
-                $producto->delete();
-                $this->productoIdEliminar = null;
-                $this->alert('success', 'Producto Eliminado');
-            }
+        try {
+            InsumoServicio::eliminar($data['id']);
+            $this->alert('success', 'Producto eliminado correctamente.');
+            $this->dispatch('ActualizarProductos');
+        } catch (\Throwable $e) {
+            $this->alert('error', $e->getMessage());
         }
     }
     public function sortBy($field)
@@ -65,24 +83,33 @@ class ProductosComponent extends Component
             $this->sortDirection = 'asc';
         }
     }
+    public function verAuditoriaProducto(int $id): void
+    {
+        $this->auditoriaHistorial = InsumoServicio::getAuditoria($id);
+        $this->modalAuditoria = true;
+    }
+    public function limpiarFiltros(): void
+    {
+        $this->reset([
+            'search',
+            'categoriaSeleccionada',
+            'categoriaPesticida',
+            'usoSeleccionado',
+            'nutrientesSeleccionados',
+        ]);
+    }
     public function render()
     {
-        $productos = Producto::with(['usos'])->where(function ($query) {
-            // Filtrar por nombre_comercial
-            $query->where('nombre_comercial', 'like', '%' . $this->search . '%')
-                // Filtrar también por ingrediente_activo
-                ->orWhere('ingrediente_activo', 'like', '%' . $this->search . '%');
-        })
+        $productos = InsumoServicio::listarProductos(
+            search: $this->search,
+            categoriaCodigo: $this->categoriaSeleccionada,
+            categoriaPesticida: $this->categoriaPesticida,
+            usoId: $this->usoSeleccionado,
+            nutrientes: $this->nutrientesSeleccionados,
+            sortField: $this->sortField,
+            sortDirection: $this->sortDirection,
+        );
 
-            ->when($this->categoriaSeleccionada, function ($query) {
-                return $query->where('categoria_codigo', $this->categoriaSeleccionada);
-            })
-            // Ordenar por el campo especificado y dirección
-            ->orderBy($this->sortField, $this->sortDirection)
-            ->paginate(20);
-
-        return view('livewire.productos-component', [
-            'productos' => $productos
-        ]);
+        return view('livewire.productos-component', compact('productos'));
     }
 }

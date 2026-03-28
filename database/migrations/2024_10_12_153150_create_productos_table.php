@@ -14,10 +14,9 @@ return new class extends Migration {
             $table->id();
             $table->string('nombre_comercial');
             $table->string('ingrediente_activo')->nullable();
-            $table->enum('categoria', ['fertilizante', 'pesticida', 'combustible'])->default('fertilizante');
             $table->string('categoria_pesticida')->nullable();
-            $table->string('codigo_tipo_existencia', 4)->nullable(); 
-            $table->string('codigo_unidad_medida', 4)->nullable(); 
+            $table->string('codigo_tipo_existencia', 4)->nullable();
+            $table->string('codigo_unidad_medida', 4)->nullable();
 
             // Establecer las claves foráneas
             $table->foreign('codigo_tipo_existencia')->references('codigo')->on('sunat_tabla5_tipo_existencias')->onDelete('set null');
@@ -26,7 +25,26 @@ return new class extends Migration {
                 ->references('codigo')
                 ->on('categoria_pesticidas')
                 ->nullOnDelete();
+
+            $table->string('categoria_codigo', 50)->nullable();
+
+            // 3. Agregar la clave foránea
+            $table->foreign('categoria_codigo')
+                ->references('codigo')
+                ->on('ins_categorias')
+                ->nullOnDelete();
+            // -----------------------
+            // AUDITORÍA
+            // -----------------------
+            $table->foreignId('creado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('editado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('eliminado_por')->nullable()->constrained('users')->nullOnDelete();
+
+            // -----------------------
+            // TIMESTAMPS + SOFT DELETE
+            // -----------------------
             $table->timestamps();
+            $table->softDeletes(); // deleted_at
         });
     }
 

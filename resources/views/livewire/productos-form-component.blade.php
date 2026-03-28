@@ -8,13 +8,13 @@
             </div>
         </x-slot>
         <x-slot name="content">
-            <form wire:submit.prevent="store" class="space-y-4">
+            <form wire:submit.prevent="guardarProducto" class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
 
-                    <x-input label="Nombre del Producto" wire:keydown.enter="store" wire:model="nombre_comercial"
+                    <x-input label="Nombre del Producto" wire:keydown.enter="guardarProducto" wire:model="nombre_comercial"
                         class="uppercase" id="nombre_comercial" error="nombre_comercial" />
 
-                    <x-input label="Ingrediente Activo" wire:keydown.enter="store" wire:model="ingrediente_activo"
+                    <x-input label="Ingrediente Activo" wire:keydown.enter="guardarProducto" wire:model="ingrediente_activo"
                         class="uppercase" id="ingrediente_activo" error="ingrediente_activo" />
 
                     <x-select class="uppercase" label="Categoría" wire:model.live="categoria_codigo"
@@ -121,34 +121,34 @@
                         <label class="block text-sm font-bold text-foreground mb-3">Porcentajes</label>
                         <div class="mt-2 grid grid-cols-1 md:grid-cols-4 gap-4">
 
-                            <x-input type="number" label="% Nitrógeno" wire:keydown.enter="store"
+                            <x-input type="number" label="% Nitrógeno" wire:keydown.enter="guardarProducto"
                                 wire:model="porcentaje_nitrogeno" wire:key="porcentaje_nitrogeno"
                                 error="porcentaje_nitrogeno" />
 
-                            <x-input type="number" label="% Fósforo" wire:keydown.enter="store"
+                            <x-input type="number" label="% Fósforo" wire:keydown.enter="guardarProducto"
                                 wire:model="porcentaje_fosforo" wire:key="porcentaje_fosforo"
                                 error="porcentaje_fosforo" />
 
-                            <x-input type="number" label="% Potasio" wire:keydown.enter="store"
+                            <x-input type="number" label="% Potasio" wire:keydown.enter="guardarProducto"
                                 wire:model="porcentaje_potasio" wire:key="porcentaje_potasio"
                                 error="porcentaje_potasio" />
 
-                            <x-input type="number" label="% Calcio" wire:keydown.enter="store"
+                            <x-input type="number" label="% Calcio" wire:keydown.enter="guardarProducto"
                                 wire:model="porcentaje_calcio" wire:key="porcentaje_calcio"
                                 error="porcentaje_calcio" />
 
-                            <x-input type="number" label="% Magnesio" wire:keydown.enter="store"
+                            <x-input type="number" label="% Magnesio" wire:keydown.enter="guardarProducto"
                                 wire:model="porcentaje_magnesio" wire:key="porcentaje_magnesio"
                                 error="porcentaje_magnesio" />
 
-                            <x-input type="number" label="% Zinc" wire:keydown.enter="store"
+                            <x-input type="number" label="% Zinc" wire:keydown.enter="guardarProducto"
                                 wire:model="porcentaje_zinc" wire:key="porcentaje_zinc" error="porcentaje_zinc" />
 
-                            <x-input type="number" label="% Manganeso" wire:keydown.enter="store"
+                            <x-input type="number" label="% Manganeso" wire:keydown.enter="guardarProducto"
                                 wire:model="porcentaje_manganeso" wire:key="porcentaje_manganeso"
                                 error="porcentaje_manganeso" />
 
-                            <x-input type="number" label="% Hierro" wire:keydown.enter="store"
+                            <x-input type="number" label="% Hierro" wire:keydown.enter="guardarProducto"
                                 wire:model="porcentaje_hierro" wire:key="porcentaje_hierro"
                                 error="porcentaje_hierro" />
                         </div>
@@ -170,7 +170,7 @@
                         wire:key="registroCompra{{ $productoId }}" />
                 @endif
 
-                <x-button type="submit" wire:click="store" class="ml-3">
+                <x-button type="submit" wire:click="guardarProducto" class="ml-3">
                     <i class="fa fa-save"></i> Guardar
                 </x-button>
             </x-flex>

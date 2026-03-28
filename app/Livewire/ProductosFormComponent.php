@@ -8,6 +8,7 @@ use App\Models\Producto;
 use App\Models\ProductoNutriente;
 use App\Models\SunatTabla5TipoExistencia;
 use App\Models\SunatTabla6CodigoUnidadMedida;
+use App\Services\Insumo\InsumoServicio;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -165,88 +166,47 @@ class ProductosFormComponent extends Component
             $this->listarPorcentajes();
         }
     }
-    public function store()
+    public function guardarProducto(): void
     {
         $this->validate();
 
         try {
-            DB::beginTransaction();
-
             $data = [
                 'nombre_comercial' => mb_strtoupper(trim($this->nombre_comercial)),
-                'ingrediente_activo' => mb_strtoupper(trim($this->ingrediente_activo)),
+                'ingrediente_activo' => mb_strtoupper(trim($this->ingrediente_activo ?? '')),
                 'categoria_codigo' => $this->categoria_codigo,
                 'codigo_tipo_existencia' => $this->codigo_tipo_existencia,
-                'codigo_unidad_medida' => $this->codigo_unidad_medida
+                'codigo_unidad_medida' => $this->codigo_unidad_medida,
+                'categoria_pesticida' => $this->categoria_codigo === 'pesticida'
+                    ? ($this->categoria_pesticida ?? null)
+                    : null,
             ];
 
-            if ($this->categoria_codigo == 'pesticida') {
-                $data['categoria_pesticida'] = $this->categoria_pesticida ?? null;
-            } else {
-                $data['categoria_pesticida'] = null;
-            }
+            $nutrientes = [
+                'N' => $this->porcentaje_nitrogeno,
+                'P' => $this->porcentaje_fosforo,
+                'K' => $this->porcentaje_potasio,
+                'Ca' => $this->porcentaje_calcio,
+                'Mg' => $this->porcentaje_magnesio,
+                'Zn' => $this->porcentaje_zinc,
+                'Mn' => $this->porcentaje_manganeso,
+                'Fe' => $this->porcentaje_hierro,
+            ];
 
-            if ($this->productoId) {
-                $producto = Producto::find($this->productoId);
+            InsumoServicio::guardar($data, $nutrientes, $this->usos, $this->productoId);
 
-                if ($producto) {
-                    $producto->update($data);
-                    $productoId = $producto->id;
-
-                    // Si no es fertilizante, eliminar nutrientes existentes
-                    if ($this->categoria_codigo !== 'fertilizante') {
-                        ProductoNutriente::where('producto_id', $productoId)->delete();
-                    }
-                }
-            } else {
-                $producto = Producto::create($data);
-                $productoId = $producto->id;
-            }
-
-            $producto->usos()->sync($this->usos);
-
-            // Si es fertilizante, registrar los nutrientes válidos
-            if ($this->categoria_codigo === 'fertilizante') {
-                // Eliminar anteriores si existe
-                ProductoNutriente::where('producto_id', $productoId)->delete();
-
-                $nutrientes = [
-                    'N' => $this->porcentaje_nitrogeno,
-                    'P' => $this->porcentaje_fosforo,
-                    'K' => $this->porcentaje_potasio,
-                    'Ca' => $this->porcentaje_calcio,
-                    'Mg' => $this->porcentaje_magnesio,
-                    'Zn' => $this->porcentaje_zinc,
-                    'Mn' => $this->porcentaje_manganeso,
-                    'Fe' => $this->porcentaje_hierro,
-                ];
-
-                foreach ($nutrientes as $codigo => $valor) {
-                    if (!is_null($valor) && $valor != 0 && trim($valor) != '') {
-                        ProductoNutriente::create([
-                            'producto_id' => $productoId,
-                            'nutriente_codigo' => $codigo,
-                            'porcentaje' => $valor,
-                        ]);
-                    }
-                }
-            }
-
-
-            
-
-            DB::commit();
-
-            $this->alert('success', $this->productoId ? 'Registro actualizado exitosamente.' : 'Registro creado exitosamente.');
-
-
+            $this->alert(
+                'success',
+                $this->productoId
+                ? 'Registro actualizado exitosamente.'
+                : 'Registro creado exitosamente.'
+            );
 
             $this->resetearValoresDefecto();
             $this->dispatch('ActualizarProductos');
             $this->closeForm();
 
-        } catch (QueryException $e) {
-            DB::rollBack();
+        } catch (\Throwable $e) {
             $this->alert('error', 'Ocurrió un error inesperado: ' . $e->getMessage());
         }
     }
