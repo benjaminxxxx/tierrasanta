@@ -78,7 +78,7 @@
     <x-proceso-paso numero="3" titulo="Generar Resumen"
         descripcion="Consolida los movimientos asignados y calcula el costo por unidad (PEPS o Promedio). Se ejecuta automáticamente al guardar asignaciones.">
         @if ($accionGenerarResumen)
-            <p class="proceso-paso__descripcion" style="font-size:0.78rem; font-style:italic; margin-bottom:0.5rem;">
+            <p style="font-size:0.78rem; font-style:italic; margin-bottom:0.5rem;">
                 Se ejecuta automáticamente al guardar.
             </p>
             <x-button x-on:click="$wire.call('{{ $accionGenerarResumen }}')">

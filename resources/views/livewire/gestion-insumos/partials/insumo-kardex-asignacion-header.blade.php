@@ -32,8 +32,7 @@
                     <x-slot name="content">
                         <div class="w-60">
                             @if ($kardexBlanco)
-                                <x-dropdown-link
-                                    href="{{ route('gestion_insumos.kardex.detalle', $kardexBlanco->id) }}">
+                                <x-dropdown-link href="{{ route('gestion_insumos.kardex.detalle', $kardexBlanco->id) }}">
                                     Ver Kardex Blanco
                                 </x-dropdown-link>
                             @endif
@@ -46,8 +45,11 @@
                     </x-slot>
                 </x-dropdown>
             </div>
+            <x-button title="Activar Ayuda" @click="ayudaActivada = !ayudaActivada">
+                <i class="fa fa-question"></i>
+            </x-button>
         </div>
     </x-flex>
 
-    
+
 </x-card>

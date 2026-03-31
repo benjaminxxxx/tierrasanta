@@ -6,6 +6,23 @@ use App\Models\Auditoria;
 
 class AuditoriaServicio
 {
+    public static function getAuditoria(string $modelo, int $id): array
+    {
+        return Auditoria::where('modelo', $modelo)
+            ->where('modelo_id', $id)
+            ->orderByDesc('fecha_accion')
+            ->get()
+            ->map(fn($a) => [
+                'accion' => $a->accion,
+                'cambios' => is_string($a->cambios)
+                    ? json_decode($a->cambios, true)
+                    : $a->cambios,
+                'observacion' => $a->observacion,
+                'usuario_nombre' => $a->usuario_nombre,
+                'fecha_accion' => $a->fecha_accion,
+            ])
+            ->toArray();
+    }
     public static function registrar(
         string $modelo,
         int $modeloId,
@@ -31,8 +48,8 @@ class AuditoriaServicio
         } elseif ($accion === 'eliminar' && $antes) {
             $cambios = ['eliminado' => self::filtrar($antes, $camposIgnorados)];
         }
-//array to string convertion si lo coloco aqui
-         
+        //array to string convertion si lo coloco aqui
+
 
         Auditoria::create([
             'modelo' => $modelo,

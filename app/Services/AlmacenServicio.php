@@ -12,6 +12,7 @@ use App\Models\KardexProducto;
 use App\Models\PesticidaCampania;
 use App\Models\Producto;
 use App\Models\ProductoNutriente;
+use Auth;
 use Carbon\Carbon;
 use DB;
 use Exception;
@@ -19,6 +20,12 @@ use Illuminate\Support\Str;
 
 class AlmacenServicio
 {
+    private const CAMPOS_IGNORADOS = [
+        'creado_por',
+        'editado_por',
+        'created_at',
+        'updated_at',
+    ];
     public static function guardarSalidaMasiva(array $filas, string $tipo): array
     {
         $resultados = ['creados' => 0, 'actualizados' => 0, 'eliminados' => 0];
@@ -31,12 +38,10 @@ class AlmacenServicio
             $cantidad = (float) ($fila['cantidad'] ?? 0);
             $fechaReporte = $fila['fecha_reporte'] ?? null;
 
-            // Sin tipo_kardex → sin validación, el trigger dejará null
             if (!$tipoKardex || !$productoId || $cantidad <= 0)
                 continue;
 
             $anio = (int) date('Y', strtotime($fechaReporte));
-
             $kardex = InsKardex::where('producto_id', $productoId)
                 ->where('anio', $anio)
                 ->where('tipo', $tipoKardex)
@@ -49,25 +54,16 @@ class AlmacenServicio
                 );
             }
 
-            // Si es update, devolver la cantidad anterior al stock para la comparación
             $stockDisponible = $kardex->stock_actual;
 
             if ($id) {
                 $salidaAnterior = AlmacenProductoSalida::find($id);
-
                 if ($salidaAnterior) {
-                    $productoAnterior = (int) $salidaAnterior->producto_id;
-                    $tipoAnterior = $salidaAnterior->tipo_kardex;
-                    $cantidadAnterior = (float) $salidaAnterior->cantidad;
-                    $mismoProducto = $productoAnterior === (int) $productoId;
-                    $mismoTipo = $tipoAnterior === $tipoKardex;
-
+                    $mismoProducto = (int) $salidaAnterior->producto_id === (int) $productoId;
+                    $mismoTipo = $salidaAnterior->tipo_kardex === $tipoKardex;
                     if ($mismoProducto && $mismoTipo) {
-                        // Mismo producto, mismo tipo → el stock disponible incluye lo que ya descontó
-                        $stockDisponible += $cantidadAnterior;
+                        $stockDisponible += (float) $salidaAnterior->cantidad;
                     }
-                    // Si cambió producto o tipo → no ajustar, el stock del nuevo producto/tipo
-                    // es exactamente lo que hay disponible sin considerar la salida anterior
                 }
             }
 
@@ -81,29 +77,37 @@ class AlmacenServicio
         }
 
         DB::transaction(function () use ($filas, $tipo, &$resultados) {
+            $usuarioId = Auth::id();
+
             foreach ($filas as $fila) {
                 $id = $fila['id'] ?? null;
-
                 $esCombustible = $tipo === 'combustible';
 
-                // Campos obligatorios según tipo
                 $camposBase = ['fecha_reporte', 'producto_id', 'cantidad'];
                 $campoDestino = $esCombustible ? 'maquinaria_id' : 'campo_nombre';
 
-                // Detectar fila vacía: todos los campos clave son null/vacío
                 $camposParaVacioCheck = array_merge($camposBase, [$campoDestino]);
                 $filaVacia = collect($camposParaVacioCheck)
                     ->every(fn($campo) => is_null($fila[$campo] ?? null) || ($fila[$campo] ?? '') === '');
 
                 if ($filaVacia) {
                     if ($id) {
-                        AlmacenProductoSalida::findOrFail($id)->delete();
+                        $salida = AlmacenProductoSalida::findOrFail($id);
+
+                        AuditoriaServicio::registrar(
+                            modelo: AlmacenProductoSalida::class,
+                            modeloId: $salida->id,
+                            accion: 'eliminar',
+                            antes: $salida->toArray(),
+                            camposIgnorados: self::CAMPOS_IGNORADOS,
+                        );
+
+                        $salida->delete();
                         $resultados['eliminados']++;
                     }
                     continue;
                 }
 
-                // Validar campos requeridos
                 $etiquetas = [
                     'fecha_reporte' => 'Fecha',
                     'producto_id' => 'Producto',
@@ -114,17 +118,20 @@ class AlmacenServicio
 
                 foreach ($camposBase as $campo) {
                     if (is_null($fila[$campo] ?? null) || ($fila[$campo] ?? '') === '') {
-                        throw new Exception("El campo \"{$etiquetas[$campo]}\" es obligatorio."
-                            . ($id ? " (ID: {$id})" : ''));
+                        throw new Exception(
+                            "El campo \"{$etiquetas[$campo]}\" es obligatorio."
+                            . ($id ? " (ID: {$id})" : '')
+                        );
                     }
                 }
 
                 if (is_null($fila[$campoDestino] ?? null) || ($fila[$campoDestino] ?? '') === '') {
-                    throw new Exception("El campo \"{$etiquetas[$campoDestino]}\" es obligatorio."
-                        . ($id ? " (ID: {$id})" : ''));
+                    throw new Exception(
+                        "El campo \"{$etiquetas[$campoDestino]}\" es obligatorio."
+                        . ($id ? " (ID: {$id})" : '')
+                    );
                 }
 
-                // Preparar datos a guardar
                 $datos = [
                     'fecha_reporte' => $fila['fecha_reporte'],
                     'producto_id' => $fila['producto_id'],
@@ -138,10 +145,34 @@ class AlmacenServicio
                 ];
 
                 if ($id) {
-                    AlmacenProductoSalida::findOrFail($id)->update($datos);
+                    $salida = AlmacenProductoSalida::findOrFail($id);
+                    $antes = $salida->toArray();
+
+                    $salida->update(array_merge($datos, ['editado_por' => $usuarioId]));
+
+                    AuditoriaServicio::registrar(
+                        modelo: AlmacenProductoSalida::class,
+                        modeloId: $salida->id,
+                        accion: 'editar',
+                        antes: $antes,
+                        despues: $salida->fresh()->toArray(),
+                        camposIgnorados: self::CAMPOS_IGNORADOS,
+                    );
+
                     $resultados['actualizados']++;
                 } else {
-                    AlmacenProductoSalida::create($datos);
+                    $salida = AlmacenProductoSalida::create(
+                        array_merge($datos, ['creado_por' => $usuarioId])
+                    );
+
+                    AuditoriaServicio::registrar(
+                        modelo: AlmacenProductoSalida::class,
+                        modeloId: $salida->id,
+                        accion: 'crear',
+                        despues: $salida->toArray(),
+                        camposIgnorados: self::CAMPOS_IGNORADOS,
+                    );
+
                     $resultados['creados']++;
                 }
             }
@@ -149,6 +180,137 @@ class AlmacenServicio
 
         return $resultados;
     }
+    /*
+        public static function guardarSalidaMasiva(array $filas, string $tipo): array
+        {
+            $resultados = ['creados' => 0, 'actualizados' => 0, 'eliminados' => 0];
+
+            // ── PRE-VALIDACIÓN DE STOCK (fuera del transaction) ──────────────
+            foreach ($filas as $fila) {
+                $id = $fila['id'] ?? null;
+                $tipoKardex = $fila['tipo_kardex'] ?? null;
+                $productoId = $fila['producto_id'] ?? null;
+                $cantidad = (float) ($fila['cantidad'] ?? 0);
+                $fechaReporte = $fila['fecha_reporte'] ?? null;
+
+                // Sin tipo_kardex → sin validación, el trigger dejará null
+                if (!$tipoKardex || !$productoId || $cantidad <= 0)
+                    continue;
+
+                $anio = (int) date('Y', strtotime($fechaReporte));
+
+                $kardex = InsKardex::where('producto_id', $productoId)
+                    ->where('anio', $anio)
+                    ->where('tipo', $tipoKardex)
+                    ->first(['id', 'stock_actual']);
+
+                if (!$kardex) {
+                    throw new Exception(
+                        "No existe kardex {$tipoKardex} para el producto ID {$productoId} en {$anio}. "
+                        . "Registra una compra primero."
+                    );
+                }
+
+                // Si es update, devolver la cantidad anterior al stock para la comparación
+                $stockDisponible = $kardex->stock_actual;
+
+                if ($id) {
+                    $salidaAnterior = AlmacenProductoSalida::find($id);
+
+                    if ($salidaAnterior) {
+                        $productoAnterior = (int) $salidaAnterior->producto_id;
+                        $tipoAnterior = $salidaAnterior->tipo_kardex;
+                        $cantidadAnterior = (float) $salidaAnterior->cantidad;
+                        $mismoProducto = $productoAnterior === (int) $productoId;
+                        $mismoTipo = $tipoAnterior === $tipoKardex;
+
+                        if ($mismoProducto && $mismoTipo) {
+                            // Mismo producto, mismo tipo → el stock disponible incluye lo que ya descontó
+                            $stockDisponible += $cantidadAnterior;
+                        }
+                        // Si cambió producto o tipo → no ajustar, el stock del nuevo producto/tipo
+                        // es exactamente lo que hay disponible sin considerar la salida anterior
+                    }
+                }
+
+                if ($stockDisponible < $cantidad) {
+                    $nombreProducto = Producto::find($productoId)?->nombre_comercial ?? "ID {$productoId}";
+                    throw new Exception(
+                        "Stock {$tipoKardex} insuficiente para \"{$nombreProducto}\". "
+                        . "Disponible: {$stockDisponible}, solicitado: {$cantidad}."
+                    );
+                }
+            }
+
+            DB::transaction(function () use ($filas, $tipo, &$resultados) {
+                foreach ($filas as $fila) {
+                    $id = $fila['id'] ?? null;
+
+                    $esCombustible = $tipo === 'combustible';
+
+                    // Campos obligatorios según tipo
+                    $camposBase = ['fecha_reporte', 'producto_id', 'cantidad'];
+                    $campoDestino = $esCombustible ? 'maquinaria_id' : 'campo_nombre';
+
+                    // Detectar fila vacía: todos los campos clave son null/vacío
+                    $camposParaVacioCheck = array_merge($camposBase, [$campoDestino]);
+                    $filaVacia = collect($camposParaVacioCheck)
+                        ->every(fn($campo) => is_null($fila[$campo] ?? null) || ($fila[$campo] ?? '') === '');
+
+                    if ($filaVacia) {
+                        if ($id) {
+                            AlmacenProductoSalida::findOrFail($id)->delete();
+                            $resultados['eliminados']++;
+                        }
+                        continue;
+                    }
+
+                    // Validar campos requeridos
+                    $etiquetas = [
+                        'fecha_reporte' => 'Fecha',
+                        'producto_id' => 'Producto',
+                        'cantidad' => 'Cantidad',
+                        'campo_nombre' => 'Campo',
+                        'maquinaria_id' => 'Maquinaria',
+                    ];
+
+                    foreach ($camposBase as $campo) {
+                        if (is_null($fila[$campo] ?? null) || ($fila[$campo] ?? '') === '') {
+                            throw new Exception("El campo \"{$etiquetas[$campo]}\" es obligatorio."
+                                . ($id ? " (ID: {$id})" : ''));
+                        }
+                    }
+
+                    if (is_null($fila[$campoDestino] ?? null) || ($fila[$campoDestino] ?? '') === '') {
+                        throw new Exception("El campo \"{$etiquetas[$campoDestino]}\" es obligatorio."
+                            . ($id ? " (ID: {$id})" : ''));
+                    }
+
+                    // Preparar datos a guardar
+                    $datos = [
+                        'fecha_reporte' => $fila['fecha_reporte'],
+                        'producto_id' => $fila['producto_id'],
+                        'cantidad' => $fila['cantidad'],
+                        'campo_nombre' => $esCombustible ? '' : ($fila['campo_nombre'] ?? ''),
+                        'maquinaria_id' => $esCombustible ? ($fila['maquinaria_id'] ?? null) : null,
+                        'costo_por_kg' => $fila['costo_por_kg'] ?? null,
+                        'total_costo' => $fila['total_costo'] ?? null,
+                        'indice' => $fila['indice'] ?? null,
+                        'tipo_kardex' => $fila['tipo_kardex'] ?? null,
+                    ];
+
+                    if ($id) {
+                        AlmacenProductoSalida::findOrFail($id)->update($datos);
+                        $resultados['actualizados']++;
+                    } else {
+                        AlmacenProductoSalida::create($datos);
+                        $resultados['creados']++;
+                    }
+                }
+            });
+
+            return $resultados;
+        }*/
     /**
      * Genera un resumen histórico de fertilización por campaña.
      *

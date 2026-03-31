@@ -38,8 +38,20 @@ return new class extends Migration {
                 ->onDelete('set null');
 
             $table->integer('indice')->nullable();
-            $table->string('tipo_kardex', 20)->nullable();
+            $table->enum('tipo_kardex', ['blanco', 'negro'])->nullable();
             $table->string('registro_carga', 20)->nullable();
+
+            $table->unsignedBigInteger('creado_por')->nullable();
+            $table->unsignedBigInteger('editado_por')->nullable();
+
+            $table->foreign('creado_por')
+                ->references('id')->on('users')
+                ->nullOnDelete();
+
+            $table->foreign('editado_por')
+                ->references('id')->on('users')
+                ->nullOnDelete();
+
             $table->timestamps();
         });
     }

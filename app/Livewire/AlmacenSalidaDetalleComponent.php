@@ -9,6 +9,7 @@ use App\Models\InsKardex;
 use App\Models\Maquinaria;
 use App\Models\Producto;
 use App\Services\AlmacenServicio;
+use App\Services\AuditoriaServicio;
 use Carbon\Carbon;
 use DB;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -29,7 +30,40 @@ class AlmacenSalidaDetalleComponent extends Component
     public array $listaMaquinarias = [];
     public array $listaCampos = [];
     public array $stocksProductos = [];
+    // ─── Auditoría ─────────────────────────────────────────────
+    public bool $modalAuditoriaSalida = false;
+    public array $auditoriaHistorialSalida = [];
     protected $listeners = ['actualizarAlmacen' => '$refresh', 'ActualizarProductos' => '$refresh', 'eliminacionConfirmar'];
+    public function verHistorialSalida(int $id): void
+    {
+        $this->auditoriaHistorialSalida = AuditoriaServicio::getAuditoria(
+            AlmacenProductoSalida::class,
+            $id
+        );
+        $this->modalAuditoriaSalida = true;
+    }
+
+    public function eliminarSalida(int $id): void
+    {
+        try {
+            $salida = AlmacenProductoSalida::findOrFail($id);
+
+            AuditoriaServicio::registrar(
+                modelo: AlmacenProductoSalida::class,
+                modeloId: $salida->id,
+                accion: 'eliminar',
+                antes: $salida->toArray(),
+                camposIgnorados: ['creado_por', 'editado_por', 'created_at', 'updated_at'],
+            );
+
+            $salida->delete();
+
+            $this->cargarSalidaInsumos();
+            $this->alert('success', 'Salida eliminada.');
+        } catch (\Exception $e) {
+            $this->alert('error', $e->getMessage());
+        }
+    }
     public function mount($mes = null, $anio = null, string $tipo)
     {
         $this->mes = $mes;
