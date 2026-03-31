@@ -78,8 +78,6 @@ class CompraProductoImportExportComponent extends Component
                     'almacen' => $filasAfectadasAlmacen
 
                 ]);
-                //$this->alert("success", "Registros Importados Correctamente, ($filasAfectadasCompras) compras y {$filasAfectadasAlmacen} registros de salida.");
-
             } catch (Exception $th) {
 
                 $this->alert('error', 'Error en Procesar Archivo:' . $th->getMessage(), [

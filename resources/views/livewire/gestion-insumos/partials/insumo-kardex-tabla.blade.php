@@ -1,8 +1,8 @@
 <div class="my-5">
     <x-table>
         <x-slot name="thead">
-            <x-th>Producto</x-th>
-            <x-th value="Código" sortable="codigo_existencia" :active="$sortField === 'codigo_existencia'" :direction="$sortDirection" />
+            <x-th value="Producto" sortable="codigo_existencia" :active="$sortField === 'codigo_existencia'"
+                :direction="$sortDirection" />
 
             <x-th class="text-center">Año</x-th>
             <x-th value="Tipo" sortable="tipo" :active="$sortField === 'tipo'" :direction="$sortDirection" />
@@ -28,10 +28,11 @@
             @forelse($kardexes as $kardex)
                 <x-tr>
                     {{-- Producto --}}
-                    <x-td>{{ $kardex->descripcion }}</x-td>
-
-                    {{-- Código existencia --}}
-                    <x-td class="text-center">{{ $kardex->codigo_existencia ?? '—' }}</x-td>
+                    <x-td class="!text-left">
+                        <a href="{{ route('gestion_insumos.kardex.detalle', $kardex->id) }}">
+                            {{ $kardex->codigo_existencia ?? '—' }} - {{ $kardex->descripcion }}
+                        </a>
+                    </x-td>
 
                     {{-- Año --}}
                     <x-td class="text-center">{{ $kardex->anio }}</x-td>
@@ -108,9 +109,8 @@
                                             class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none focus:bg-gray-50 dark:focus:bg-gray-700 active:bg-gray-50 dark:active:bg-gray-700 transition ease-in-out duration-150">
                                             Opciones
 
-                                            <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
-                                                fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                                                stroke="currentColor">
+                                            <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round"
                                                     d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
                                             </svg>
@@ -122,8 +122,7 @@
                                     <div class="w-60">
 
                                         <!-- Team Settings -->
-                                        <x-dropdown-link
-                                            href="{{ route('gestion_insumos.kardex.detalle', $kardex->id) }}">
+                                        <x-dropdown-link href="{{ route('gestion_insumos.kardex.detalle', $kardex->id) }}">
                                             Ver Kardex
                                         </x-dropdown-link>
                                         <x-dropdown-link
