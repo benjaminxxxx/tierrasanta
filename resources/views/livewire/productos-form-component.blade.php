@@ -1,5 +1,5 @@
 <div>
-    <x-dialog-modal wire:model="mostrarFormulario" maxWidth="full">
+    <x-dialog-modal wire:model="mostrarFormulario" maxWidth="lg">
         <x-slot name="title">
             <div class="flex items-center justify-between">
                 <x-h3>
@@ -9,7 +9,7 @@
         </x-slot>
         <x-slot name="content">
             <form wire:submit.prevent="guardarProducto" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                     <x-input label="Nombre del Producto" wire:keydown.enter="guardarProducto" wire:model="nombre_comercial"
                         class="uppercase" id="nombre_comercial" error="nombre_comercial" />
@@ -19,12 +19,24 @@
 
                     <x-select class="uppercase" label="Categoría" wire:model.live="categoria_codigo"
                         error="categoria_codigo" fullWidth="true">
+
                         <option value="">SELECCIONAR CATEGORÍA</option>
-                        <option value="fertilizante">FERTILIZANTE</option>
-                        <option value="pesticida">PESTICIDA</option>
-                        <option value="corrector_salinidad">CORRECTOR DE SALINIDAD</option>
-                        <option value="combustible">COMBUSTIBLE</option>
+                        @foreach ($listaCategorias as $listaCategoria)
+                            <option value="{{ $listaCategoria->codigo }}">
+                                {{ $listaCategoria->descripcion }}
+                            </option>
+                            
+                        @endforeach
                     </x-select>
+                    <x-select class="uppercase" label="Tipo de pesticida" wire:model="subcategoria_id"
+                            error="subcategoria_id">
+                            <option value="">SELECCIONAR CATEGORÍA DE PESTICIDA</option>
+                            @foreach ($listaSubCategorias as $listaSubCategoria)
+                                <option value="{{ $listaSubCategoria->id }}">
+                                    {{ $listaSubCategoria->nombre }}
+                                </option>
+                            @endforeach
+                        </x-select>
 
                     <x-select class="uppercase" label="Tipo Existencias (Tabla 5)" wire:model="codigo_tipo_existencia"
                         error="codigo_tipo_existencia" fullWidth="true">
@@ -50,18 +62,7 @@
                             @endforeach
                         @endif
                     </x-select>
-                    @if ($categoria_codigo == 'pesticida')
-
-                        <x-select class="uppercase" label="Tipo de pesticida" wire:model="categoria_pesticida"
-                            error="categoria_pesticida" fullWidth="true">
-                            <option value="">SELECCIONAR CATEGORÍA DE PESTICIDA</option>
-                            @foreach ($listaCategoriasPesticida as $listaCategoriaPesticida)
-                                <option value="{{ $listaCategoriaPesticida->codigo }}">
-                                    {{ $listaCategoriaPesticida->descripcion }}
-                                </option>
-                            @endforeach
-                        </x-select>
-                    @endif
+                 
                 </div>
                 {{-- Selector de usos --}}
                 <div class="mt-4" x-data="selectorUsos" wire:ignore>

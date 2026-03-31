@@ -2,8 +2,8 @@
 
 namespace App\Livewire;
 
-use App\Models\CategoriaPesticida;
 use App\Models\InsCategoria;
+use App\Models\InsSubcategoria;
 use App\Models\InsUso;
 use App\Models\Nutriente;
 use App\Models\Producto;
@@ -27,7 +27,7 @@ class ProductosComponent extends Component
     public ?int $productoIdEliminar = null;
 
     // Propiedades nuevas
-    public string $categoriaPesticida = '';
+    public string $subcategoria_id = '';
     public string $usoSeleccionado = '';
     public array $nutrientesSeleccionados = [];
 
@@ -35,6 +35,7 @@ class ProductosComponent extends Component
     public array $listaUsosFiltro = [];
     public array $listaNutrientesFiltro = [];
     public array $listaCategoriasPesticidaFiltro = [];
+    public $listaSubCategorias = [];
 
     protected $listeners = ['ActualizarProductos' => '$refresh', 'confirmarEliminarProducto'];
     public function mount()
@@ -47,10 +48,19 @@ class ProductosComponent extends Component
         $this->listaNutrientesFiltro = Nutriente::orderBy('nombre')
             ->get(['codigo', 'nombre'])
             ->toArray();
-
-        $this->listaCategoriasPesticidaFiltro = CategoriaPesticida::orderBy('descripcion')
-            ->get(['codigo', 'descripcion'])
-            ->toArray();
+    }
+    public function cargarSubcategorias()
+    {
+        if ($this->categoriaSeleccionada) {
+            $this->listaSubCategorias = InsSubcategoria::where('categoria_codigo', $this->categoriaSeleccionada)->get();
+        } else {
+            $this->listaSubCategorias = collect();
+        }
+    }
+    public function updatedCategoriaSeleccionada()
+    {
+        $this->subcategoria_id = '';
+        $this->cargarSubcategorias();
     }
     public function updatingSearch()
     {
@@ -93,7 +103,7 @@ class ProductosComponent extends Component
         $this->reset([
             'search',
             'categoriaSeleccionada',
-            'categoriaPesticida',
+            'subcategoria_id',
             'usoSeleccionado',
             'nutrientesSeleccionados',
         ]);
@@ -103,7 +113,7 @@ class ProductosComponent extends Component
         $productos = InsumoServicio::listarProductos(
             search: $this->search,
             categoriaCodigo: $this->categoriaSeleccionada,
-            categoriaPesticida: $this->categoriaPesticida,
+            subcategoria_id: $this->subcategoria_id,
             usoId: $this->usoSeleccionado,
             nutrientes: $this->nutrientesSeleccionados,
             sortField: $this->sortField,

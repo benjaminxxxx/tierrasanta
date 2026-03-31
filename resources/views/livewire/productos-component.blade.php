@@ -34,12 +34,12 @@
             </div>
 
             {{-- Tipo pesticida — solo si categoria = pesticida --}}
-            @if($categoriaSeleccionada === 'pesticida')
+            @if($listaSubCategorias)
                 <div>
-                    <x-select label="Tipo pesticida" wire:model.live="categoriaPesticida" class="uppercase">
+                    <x-select label="Subcategoria" wire:model.live="subcategoria_id" class="uppercase">
                         <option value="">TODOS LOS TIPOS</option>
-                        @foreach ($listaCategoriasPesticidaFiltro as $cp)
-                            <option value="{{ $cp['codigo'] }}">{{ strtoupper($cp['descripcion']) }}</option>
+                        @foreach ($listaSubCategorias as $subcat)
+                            <option value="{{ $subcat->id }}">{{ strtoupper($subcat->nombre) }}</option>
                         @endforeach
                     </x-select>
                 </div>
@@ -78,7 +78,7 @@
         @endif
 
         {{-- Indicadores de filtros activos --}}
-        @if($search || $categoriaPesticida || $usoSeleccionado || !empty($nutrientesSeleccionados))
+        @if($search || $subcategoria_id || $usoSeleccionado || !empty($nutrientesSeleccionados))
             <div class="flex flex-wrap gap-2 text-xs">
                 @if($search)
                     <span

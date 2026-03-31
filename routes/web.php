@@ -3,6 +3,7 @@
 use App\Http\Controllers\AlmacenController;
 use App\Http\Controllers\CampaniaController;
 use App\Http\Controllers\CampoController;
+use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\CochinillaController;
 use App\Http\Controllers\CuadrillaController;
 use App\Http\Controllers\FdmController;
@@ -180,7 +181,8 @@ Route::middleware([
     //PRODUCTOS
     Route::get('/productos', [ProductoController::class, 'index'])->name('productos.index');
     Route::get('/producto/usos', [ProductoController::class, 'usos'])->name('producto.usos');
-
+    Route::get('/categorias/subcategorias', [CategoriaController::class, 'subcategorias'])->name('subcategorias.index');
+    
     //Nutrientes
     Route::get('/nutrientes', [NutrienteController::class, 'index'])->name('nutrientes.index');
     Route::get('/nutrientes/tabla-concentracion', [NutrienteController::class, 'tabla_concentracion'])->name('tabla_concentracion.index');

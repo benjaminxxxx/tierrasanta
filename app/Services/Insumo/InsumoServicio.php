@@ -17,8 +17,9 @@ class InsumoServicio
     {
         return DB::transaction(function () use ($data, $nutrientes, $usos, $productoId) {
             $usuarioId = Auth::id();
-
+            
             if ($productoId) {
+                
                 $producto = Producto::findOrFail($productoId);
                 $antes = $producto->toArray();
 
@@ -102,7 +103,7 @@ class InsumoServicio
     public static function listarProductos(
         string $search = null,
         string $categoriaCodigo = null,
-        string $categoriaPesticida = null,
+        string $subcategoria_id = null,
         string $usoId = null,
         array $nutrientes = [],
         string $sortField = 'nombre_comercial',
@@ -115,7 +116,7 @@ class InsumoServicio
                     ->orWhere('ingrediente_activo', 'like', "%{$search}%");
             })
             ->when($categoriaCodigo, fn($q) => $q->where('categoria_codigo', $categoriaCodigo))
-            ->when($categoriaPesticida, fn($q) => $q->where('categoria_pesticida', $categoriaPesticida))
+            ->when($subcategoria_id, fn($q) => $q->where('subcategoria_id', $subcategoria_id))
             ->when($usoId, fn($q) => $q->whereHas('usos', fn($q2) => $q2->where('ins_usos.id', $usoId)))
             ->when(!empty($nutrientes), function ($q) use ($nutrientes) {
                 foreach ($nutrientes as $codigo) {

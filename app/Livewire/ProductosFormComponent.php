@@ -2,15 +2,14 @@
 
 namespace App\Livewire;
 
-use App\Models\CategoriaPesticida;
+use App\Models\InsCategoria;
+use App\Models\InsSubcategoria;
 use App\Models\InsUso;
 use App\Models\Producto;
 use App\Models\ProductoNutriente;
 use App\Models\SunatTabla5TipoExistencia;
 use App\Models\SunatTabla6CodigoUnidadMedida;
 use App\Services\Insumo\InsumoServicio;
-use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -36,9 +35,9 @@ class ProductosFormComponent extends Component
     public $porcentaje_zinc;
     public $porcentaje_manganeso;
     public $porcentaje_hierro;
-
-    public $categoria_pesticida;
-    public $listaCategoriasPesticida = [];
+    public $listaCategorias = [];
+    public $listaSubCategorias = [];
+    public $subcategoria_id; // Nueva propiedad para almacenar la subcategoría seleccionada
     public array $usos = [];           // IDs seleccionados — @entangle
     public array $listaUsos = [];
     protected $listeners = ['EditarProducto', 'CrearProducto'];
@@ -47,15 +46,17 @@ class ProductosFormComponent extends Component
     {
         $this->sunatTipoExistencias = SunatTabla5TipoExistencia::all();
         $this->sunatCodigoUnidadMedidas = SunatTabla6CodigoUnidadMedida::all();
-        $this->listaCategoriasPesticida = CategoriaPesticida::all();
+        $this->listaCategorias = InsCategoria::all();
         $this->resetearValoresDefecto();
         $this->listaUsos = InsUso::orderBy('nombre')->get()
             ->map(fn($u) => ['id' => $u->id, 'nombre' => $u->nombre])
             ->toArray();
     }
 
-    public function updatedCategoria($valor)
+    public function updatedCategoriaCodigo($valor)
     {
+        $this->subcategoria_id = null; // Resetear categoría al cambiar la categoría principal
+        $this->cargarSubcategorias();
         if ($valor !== 'fertilizante') {
             // Resetear los porcentajes si no es fertilizante
             $this->reset([
@@ -104,6 +105,7 @@ class ProductosFormComponent extends Component
             'porcentaje_zinc',
             'porcentaje_manganeso',
             'porcentaje_hierro',
+            'subcategoria_id',
         ]);
         if ($this->sunatTipoExistencias->count() > 0) {
             $sunatTipoExistencia = $this->sunatTipoExistencias->first();
@@ -159,11 +161,21 @@ class ProductosFormComponent extends Component
             $this->categoria_codigo = $producto->categoria_codigo;
             $this->codigo_tipo_existencia = $producto->codigo_tipo_existencia;
             $this->codigo_unidad_medida = $producto->codigo_unidad_medida;
-            $this->categoria_pesticida = $producto->categoria_pesticida;
+            
             $this->usos = $producto->usos()->pluck('ins_usos.id')->toArray();
             $this->mostrarFormulario = true;
 
             $this->listarPorcentajes();
+            $this->cargarSubcategorias();
+            $this->subcategoria_id = $producto->subcategoria_id;
+        }
+    }
+    public function cargarSubcategorias()
+    {
+        if ($this->categoria_codigo) {
+            $this->listaSubCategorias = InsSubcategoria::where('categoria_codigo', $this->categoria_codigo)->get();
+        } else {
+            $this->listaSubCategorias = collect();
         }
     }
     public function guardarProducto(): void
@@ -177,9 +189,7 @@ class ProductosFormComponent extends Component
                 'categoria_codigo' => $this->categoria_codigo,
                 'codigo_tipo_existencia' => $this->codigo_tipo_existencia,
                 'codigo_unidad_medida' => $this->codigo_unidad_medida,
-                'categoria_pesticida' => $this->categoria_codigo === 'pesticida'
-                    ? ($this->categoria_pesticida ?? null)
-                    : null,
+                'subcategoria_id' => $this->subcategoria_id,
             ];
 
             $nutrientes = [
