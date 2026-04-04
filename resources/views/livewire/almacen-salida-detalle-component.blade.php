@@ -1,5 +1,53 @@
 <div x-data="gestionSalidaAlmacen" class="space-y-4">
-    <x-card>
+    <x-card class="space-y-4">
+        {{-- FILTROS --}}
+        <x-flex>
+
+            {{-- Día --}}
+            <x-input type="number" x-model="filtros.dia" @input="aplicarFiltros()" min="1" max="31" label="Día"
+                placeholder="Día" />
+
+            {{-- Producto --}}
+            <x-input type="text" x-model="filtros.productoTexto" @input="aplicarFiltros()" label="Producto"
+                placeholder="Buscar producto..." />
+
+            {{-- Campo / Maquinaria (según tipo) --}}
+            <x-group-field>
+                <label class="text-xs font-medium text-muted-foreground uppercase tracking-wide"
+                    x-text="tipo === 'combustible' ? 'Maquinaria' : 'Campo'">
+                </label>
+                <x-select x-model="filtros.destinoId" @change="aplicarFiltros()">
+                    <option value="">Todos</option>
+                    <template x-for="d in (tipo === 'combustible' ? listaMaquinarias : listaCampos)"
+                        :key="d.id ?? d.label">
+                        <option :value="d.id ?? d.label" x-text="d.label"></option>
+                    </template>
+                </x-select>
+            </x-group-field>
+
+            {{-- Categoría --}}
+            <x-group-field>
+                <label class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Categoría</label>
+                <x-select x-model="filtros.categoria" @change="aplicarFiltros()">
+                    <option value="">Todas</option>
+                    <template x-for="cat in categoriasDisponibles" :key="cat">
+                        <option :value="cat" x-text="cat"></option>
+                    </template>
+                </x-select>
+            </x-group-field>
+
+            {{-- Botón limpiar --}}
+            <button @click="limpiarFiltros()"
+                class="h-8 px-3 text-sm rounded border border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-1.5">
+                <i class="fa fa-times text-xs"></i>
+                Limpiar
+            </button>
+
+            {{-- Contador de resultados --}}
+            <span class="text-xs text-muted-foreground ml-auto self-end pb-1">
+                <span x-text="filasFiltradas"></span> resultado<span x-text="filasFiltradas !== 1 ? 's' : ''"></span>
+            </span>
+        </x-flex>
         <div wire:ignore>
             <div x-ref="tableContainer"></div>
         </div>
@@ -103,7 +151,7 @@
                     <div class="mb-4 border-b border-border pb-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="font-semibold uppercase
-                                                {{ $entrada['accion'] === 'crear' ? 'text-green-600' :
+                                                                                                                                        {{ $entrada['accion'] === 'crear' ? 'text-green-600' :
                 ($entrada['accion'] === 'eliminar' ? 'text-red-600' : 'text-yellow-600') }}">
                                 {{ $entrada['accion'] }}
                             </span>
@@ -173,8 +221,17 @@
         listaCampos: @js($listaCampos),
         mes: @js($mes),
         anio: @js($anio),
+        filtros: {
+            dia: '',
+            productoTexto: '',
+            destinoId: '',
+            categoria: '',
+        },
+        filasFiltradas: 0,
         init() {
             this.initTable(this.tableDataSalidas);
+
+            this.filasFiltradas = this.tableDataSalidas.length;
             $watch('darkMode', value => {
 
                 this.isDark = value;
@@ -193,7 +250,7 @@
                 this.$nextTick(() => {
                     if (!this.$refs.tableContainer) return; // doble check tras nextTick
                     this.tableDataSalidas = data;
-                    this.initTable(data);
+                    this.aplicarFiltros();
                 });
             })
         },
@@ -320,26 +377,68 @@
                         await $wire.preguntarStock(pid);
                     }
                 },
-                /*
-                afterChange: (changes, source) => {
-                    // Corta el bucle: si nosotros mismos disparamos el cambio, ignorar
-                    if (source === 'recalculado' || source === 'loadData') return;
-
-                    changes.forEach(([row]) => {
-                        if (!this.filasModificadas.includes(row)) {
-                            this.filasModificadas = [...this.filasModificadas, row];
-                        }
-                    });
-
-                    if (!['edit', 'CopyPaste.paste', 'Autofill.fill'].includes(source)) return;
-
-
-                }*/
 
             });
 
             this.hot = hot;
             this.hot.render();
+        },
+        get categoriasDisponibles() {
+            const cats = new Set(
+                this.tableDataSalidas
+                    .map(r => r.categoria)
+                    .filter(Boolean)
+            );
+            return [...cats].sort();
+        },
+        aplicarFiltros() {
+            if (!this.hot) return;
+
+            const { dia, productoTexto, destinoId, categoria } = this.filtros;
+            const hayFiltro = dia || productoTexto || destinoId || categoria;
+
+            // Sin filtro activo → mostrar todos los datos originales
+            if (!hayFiltro) {
+                this.hot.loadData(this.tableDataSalidas);
+                this.filasFiltradas = this.tableDataSalidas.length;
+                return;
+            }
+
+            const datos = this.tableDataSalidas.filter(fila => {
+                // Fecha
+                if (dia && fila.fecha_reporte) {
+                    const diaDato = parseInt(fila.fecha_reporte.split('-')[2], 10);
+                    if (diaDato !== parseInt(dia, 10)) return false;
+                }
+
+                // Producto (columna guarda ID interno)
+                if (productoTexto) {
+                    const label = this.productosRevMap[fila.producto_id] ?? this.productosRevMap[String(fila.producto_id)] ?? '';
+                    if (!label.toLowerCase().includes(productoTexto.toLowerCase())) return false;
+                }
+
+                // Destino: campo o maquinaria según tipo
+                if (destinoId) {
+                    const prop = this.tipo === 'combustible' ? 'maquinaria_id' : 'campo_nombre';
+                    if (String(fila[prop]) !== String(destinoId)) return false;
+                }
+
+                // Categoría (texto plano)
+                if (categoria && fila.categoria !== categoria) return false;
+
+                return true;
+            });
+
+            this.hot.loadData(datos);
+            this.filasFiltradas = datos.length;
+        },
+
+        limpiarFiltros() {
+            this.filtros = { dia: '', productoId: '', destinoId: '', categoria: '' };
+            this.aplicarFiltros();
+        },
+        get productosRevMap() {
+            return Object.fromEntries(this.listaProductos.map(p => [p.id, p.label]));
         },
         getColumns() {
             const esCombustible = this.tipo === 'combustible';

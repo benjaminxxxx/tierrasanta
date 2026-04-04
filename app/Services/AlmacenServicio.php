@@ -671,18 +671,26 @@ class AlmacenServicio
 
     public static function obtenerRegistrosPorFecha($mes, $anio, $tipo, $tipoKardex = null)
     {
-        $query = AlmacenProductoSalida::with(['distribuciones', 'maquinaria', 'producto']) // Incluir 'producto'
+        $query = AlmacenProductoSalida::with([
+            'distribuciones',
+            'maquinaria',
+            'producto' => function ($q) {
+                $q->withTrashed(); // 🔥 clave
+            }
+        ]) // Incluir 'producto'
             ->whereMonth('fecha_reporte', $mes)
             ->whereYear('fecha_reporte', $anio);
 
         // Filtrar por tipo
         if ($tipo === 'combustible') {
             $query->whereHas('producto', function ($q) {
-                $q->where('categoria_codigo', 'combustible');
+                $q->withTrashed()
+                    ->where('categoria_codigo', 'combustible');
             });
         } else {
             $query->whereHas('producto', function ($q) {
-                $q->where('categoria_codigo', '!=', 'combustible');
+                $q->withTrashed()
+                    ->where('categoria_codigo', '!=', 'combustible');
             });
         }
 
