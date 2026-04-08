@@ -182,7 +182,8 @@ Route::middleware([
     Route::get('/productos', [ProductoController::class, 'index'])->name('productos.index');
     Route::get('/producto/usos', [ProductoController::class, 'usos'])->name('producto.usos');
     Route::get('/categorias/subcategorias', [CategoriaController::class, 'subcategorias'])->name('subcategorias.index');
-    
+    Route::get('/categorias/categorias', [CategoriaController::class, 'categorias'])->name('categorias.index');
+
     //Nutrientes
     Route::get('/nutrientes', [NutrienteController::class, 'index'])->name('nutrientes.index');
     Route::get('/nutrientes/tabla-concentracion', [NutrienteController::class, 'tabla_concentracion'])->name('tabla_concentracion.index');

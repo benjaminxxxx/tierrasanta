@@ -16,7 +16,15 @@ class InsCategoria extends Model
     protected $fillable = [
         'codigo',
         'descripcion',
+        'definicion',
+        'criterio_uso',
+        'grupo_operativo'
+
     ];
+    public function subcategorias()
+    {
+        return $this->hasMany(InsSubcategoria::class, 'categoria_codigo', 'codigo');
+    }
 
     // Relación: Una categoría tiene muchos insumos
     public function insumos()

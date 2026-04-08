@@ -1,6 +1,10 @@
 <div x-data="gestionSubcategorias" class="space-y-4">
+ 
     <x-flex>
         <x-title>Gestión de Subcategorías</x-title>
+        <x-button href="{{ route('categorias.index') }}">
+            Administrar categorías ↗
+        </x-button>
     </x-flex>
     <x-card>
         <div wire:ignore>

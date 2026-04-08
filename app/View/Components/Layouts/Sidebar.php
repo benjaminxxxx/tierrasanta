@@ -115,6 +115,7 @@ class Sidebar extends Component
                 'roles' => ['Administrador', 'Super Admin'],
                 'children' => [
                     ['title' => 'Productos', 'route' => 'productos.index'],
+                    ['title' => 'Categorias', 'route' => 'categorias.index'],
                     ['title' => 'Subcategorias', 'route' => 'subcategorias.index'],
                     ['title' => 'Usos', 'route' => 'producto.usos'],
                     ['title' => 'Nutrientes', 'route' => 'nutrientes.index'],

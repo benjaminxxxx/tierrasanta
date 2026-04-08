@@ -13,6 +13,9 @@ return new class extends Migration {
         Schema::create('ins_categorias', function (Blueprint $table) {
             $table->string('codigo', 50)->primary();  // códigos estables tipo: fertilizante, pesticida, etc.
             $table->string('descripcion', 255);
+            $table->text('definicion')->nullable();
+            $table->text('criterio_uso')->nullable();
+            $table->string('grupo_operativo', 50)->nullable();
             $table->timestamps();
         });
     }

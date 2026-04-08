@@ -4,6 +4,7 @@ namespace App\Services\Categoria;
 
 use App\Models\InsSubcategoria;
 use App\Models\Auditoria;
+use App\Models\Producto;
 use App\Services\AuditoriaServicio;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -58,8 +59,15 @@ class SubcategoriaServicio
             if ($subcategoriaId) {
                 $subcategoria = InsSubcategoria::findOrFail($subcategoriaId);
                 $antes = $subcategoria->toArray();
+                $categoriaAnterior = $subcategoria->categoria_codigo;
 
                 $subcategoria->update(array_merge($data, ['editado_por' => $usuarioId]));
+
+                // propagar solo si cambió la categoría
+                if ($categoriaAnterior !== $data['categoria_codigo']) {
+                    Producto::where('subcategoria_id', $subcategoriaId)
+                        ->update(['categoria_codigo' => $data['categoria_codigo']]);
+                }
 
                 AuditoriaServicio::registrar(
                     modelo: InsSubcategoria::class,
