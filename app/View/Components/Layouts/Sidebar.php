@@ -131,6 +131,7 @@ class Sidebar extends Component
                     ['title' => 'Salida de Combustible', 'route' => 'almacen.salida_combustible'],
                     ['title' => 'Distribución de Combustible', 'route' => 'almacen.distribucion_combustible'],
                     ['title' => 'Kardex de Insumos', 'route' => 'gestion_insumos.kardex'],
+                    ['title' => 'Kardexes por Producto', 'route' => 'gestion_insumos.kardex.crear'],
                     ['title' => 'Reporte de Kardex', 'route' => 'gestion_insumos.kardex.reportes'],
                     ['title' => 'Ver Kardex', 'route' => 'kardex.lista'],
                 ]

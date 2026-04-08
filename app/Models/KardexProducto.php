@@ -18,7 +18,7 @@ class KardexProducto extends Model
         'metodo_valuacion',  // Método de valuación (promedio o peps)
         'file',
         'codigo_existencia',
-        'tipo_kardex'
+        'tipo_kardex' //enum blanco negro
     ];
     /**
      * Obtiene el Stock en Base al rango de fecha del Kardex sumando el stock inicial mas el stock comprado menos las salidas

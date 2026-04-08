@@ -60,7 +60,7 @@
             highlightedIndex: -1,
             init() {
                 this.$watch(
-                    () => this.$wire[this.model],
+                    () => this.getModelValue(),
                     (value) => {
                         console.log(value);
                         if (value === null || value === undefined) {
@@ -71,6 +71,11 @@
                     }
                 )
             },
+            getModelValue() {
+    // Soporta dot notation: 'kardex.producto_id'
+    return this.model.split('.').reduce((obj, key) => obj?.[key], this.$wire)
+},
+
 
             async buscar() {
 

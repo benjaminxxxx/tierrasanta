@@ -12,6 +12,10 @@ class GestionInsumosController extends Controller
     {
         return view('livewire.gestion-insumos.kardex-index');
     }
+    public function kardexCrear()
+    {
+        return view('livewire.gestion-insumos.kardex-crear-index');
+    }
     public function kardexAsignacion($productoId,$anio)
     {
         return view('livewire.gestion-insumos.kardex-asignacion-index', ['productoId'=>$productoId,'anio'=>$anio]);

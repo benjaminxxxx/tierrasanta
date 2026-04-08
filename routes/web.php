@@ -204,6 +204,7 @@ Route::middleware([
 
     //INSUMOS
     Route::get('/gestion_insumos/kardex', [GestionInsumosController::class, 'kardex'])->name('gestion_insumos.kardex');
+    Route::get('/gestion_insumos/kardex/crear', [GestionInsumosController::class, 'kardexCrear'])->name('gestion_insumos.kardex.crear');
     Route::get('/gestion_insumos/kardex/detalle/{insumoKardexId}', [GestionInsumosController::class, 'kardexDetalle'])->name('gestion_insumos.kardex.detalle');
     Route::get('/gestion_insumos/kardex/reportes', [GestionInsumosController::class, 'kardexReportes'])->name('gestion_insumos.kardex.reportes');
     Route::get('/gestion_insumos/kardex/reporte/{insumoKardexReporteId}', [GestionInsumosController::class, 'kardexReporte'])->name('gestion_insumos.kardex.reporte');

@@ -203,7 +203,7 @@ class ProductosFormComponent extends Component
                 'Fe' => $this->porcentaje_hierro,
             ];
 
-            InsumoServicio::guardar($data, $nutrientes, $this->usos, $this->productoId);
+            $producto = InsumoServicio::guardar($data, $nutrientes, $this->usos, $this->productoId);
 
             $this->alert(
                 'success',
@@ -213,7 +213,7 @@ class ProductosFormComponent extends Component
             );
 
             $this->resetearValoresDefecto();
-            $this->dispatch('ActualizarProductos');
+            $this->dispatch('ActualizarProductos',productoId: $producto->id);
             $this->closeForm();
 
         } catch (\Throwable $e) {

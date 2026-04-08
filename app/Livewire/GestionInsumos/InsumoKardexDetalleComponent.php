@@ -49,6 +49,7 @@ class InsumoKardexDetalleComponent extends Component
                 $this->archivoExcelKardex,
                 $this->insumoKardex
             );
+            $this->generarDetalleKardexInsumo();
             $this->alert('success', 'Compras y Salidas cargados desde el kardex correctamente.');
         } catch (\Throwable $th) {
             $this->alert('error', 'Error en Procesar Archivo: ' . $th->getMessage(), [

@@ -23,6 +23,15 @@ class InsumoKardexImportarServicio
     private const COLUMNA_TIPO_OPERACION = 4; // Columna E (Tabla 12)
     private const COLUMNA_CAMPO_LOTE = 9; // Columna J (Campo/Lote en la cabecera)
 
+    private function validarHojaExiste(string $ruta, string $codigoExistencia): void
+    {
+        $reader = IOFactory::createReaderForFile($ruta);
+        $hojas = $reader->listWorksheetNames($ruta);
+
+        if (!in_array($codigoExistencia, $hojas)) {
+            throw new Exception("No se encontró la hoja con el nombre: **$codigoExistencia**");
+        }
+    }
     /**
      * Procesa el archivo Excel del Kardex para importar las compras y salidas.
      *
@@ -34,12 +43,18 @@ class InsumoKardexImportarServicio
     public function procesar($archivoExcelKardex, InsKardex $insumoKardex): array
     {
         $codigoExistencia = $insumoKardex->codigo_existencia;
-        $spreadsheet = IOFactory::load($archivoExcelKardex->getRealPath());
-        $hoja = $spreadsheet->getSheetByName($codigoExistencia);
+        $ruta = $archivoExcelKardex->getRealPath();
 
-        if (!$hoja) {
-            throw new Exception("No se encontró la hoja con el nombre: **$codigoExistencia**");
-        }
+        // Valida hoja sin cargar celdas (~instantáneo)
+        $this->validarHojaExiste($ruta, $codigoExistencia);
+
+        // Carga SOLO la hoja necesaria
+        $reader = IOFactory::createReaderForFile($ruta);
+        $reader->setReadDataOnly(true);
+        $reader->setLoadSheetsOnly([$codigoExistencia]);
+        $spreadsheet = $reader->load($ruta);
+
+        $hoja = $spreadsheet->getActiveSheet();
 
         $filas = $hoja->toArray();
 
@@ -57,7 +72,7 @@ class InsumoKardexImportarServicio
                 ->toArray();
 
             $filtroMaquinarias = MaquinariaServicio::validarMaquinariasDesdeExcel($nombresMaquinaria);
-            
+
         } else {
             $filtroCampos = $this->obtenerYValidarCampos($filas);
         }

@@ -3,10 +3,58 @@
 namespace App\Services;
 
 use App\Models\CompraProducto;
+use App\Models\InsKardex;
+use App\Models\Producto;
 use Exception;
 
 class ProductoServicio
 {
+    public function buscar(string $search = '', int $limite = 10): array
+    {
+        return Producto::withTrashed()
+            ->orderBy('nombre_comercial')
+            ->when(
+                $search,
+                fn($q) => $q
+                    ->where('nombre_comercial', 'like', "%{$search}%")
+                    ->orWhere('ingrediente_activo', 'like', "%{$search}%")
+            )
+            ->limit($limite)
+            ->get(['id', 'nombre_comercial', 'ingrediente_activo', 'deleted_at'])
+            ->map(fn($p) => [
+                'id' => $p->id,
+                'name' => $p->nombre_comercial
+                    . ($p->ingrediente_activo ? " ({$p->ingrediente_activo})" : '')
+                    . ($p->trashed() ? ' ⚠ eliminado' : ''),
+            ])
+            ->toArray();
+    }
+
+    public function encontrar(int $id): ?Producto
+    {
+        return Producto::withTrashed()
+            ->with(['categoria', 'subcategoria', 'usos', 'tabla6', 'eliminador', 'nutrientes'])
+            ->find($id);
+    }
+
+    /**
+     * Retorna los InsKardex del producto agrupados por año.
+     * Resultado: [ ['anio' => 2024, 'blanco' => InsKardex|null, 'negro' => InsKardex|null], ... ]
+     */
+    public function kardexAgrupadosPorAnio(Producto $producto): array
+    {
+        return InsKardex::where('producto_id', $producto->id)
+            ->orderByDesc('anio')
+            ->get(['id', 'producto_id', 'anio', 'tipo', 'estado'])
+            ->groupBy('anio')
+            ->map(fn($grupo, $anio) => [
+                'anio' => $anio,
+                'blanco' => $grupo->firstWhere('tipo', 'blanco'),
+                'negro' => $grupo->firstWhere('tipo', 'negro'),
+            ])
+            ->values()
+            ->toArray();
+    }
 
     protected $productoId;
     protected $producto;
@@ -22,20 +70,20 @@ class ProductoServicio
          */
 
         $salidaStocks = $compra->almacenSalida;
-        if($salidaStocks){
+        if ($salidaStocks) {
             foreach ($salidaStocks as $salidaStock) {
                 $salidaAlmacen = $salidaStock->salida;
-                if($salidaAlmacen){
+                if ($salidaAlmacen) {
                     $salidaAlmacen->update([
-                        'tipo_kardex'=>$data['tipo_kardex'],
-                        'costo_por_kg'=>null,
-                        'total_costo'=>null,
+                        'tipo_kardex' => $data['tipo_kardex'],
+                        'costo_por_kg' => null,
+                        'total_costo' => null,
                     ]);
                     $salidaAlmacen->compraStock()->delete();
                 }
             }
         }
-        
+
         $compra->update($data);
     }
     /**
@@ -45,7 +93,7 @@ class ProductoServicio
      * @throws \Exception
      * @return int
      */
-    public static function registrarCompraProducto($comprasArray,$conFiltracionDeDuplicados = true)
+    public static function registrarCompraProducto($comprasArray, $conFiltracionDeDuplicados = true)
     {
         if (!is_array($comprasArray) || empty($comprasArray)) {
             throw new Exception("No hay información por guardar");
@@ -53,16 +101,16 @@ class ProductoServicio
 
         // Limpiar y estructurar los datos antes de la inserción
         $registros = self::sanearArray($comprasArray);
-        
+
         // Filtrar registros duplicados antes de insertar
-        if($conFiltracionDeDuplicados){
+        if ($conFiltracionDeDuplicados) {
             $registros = self::filtrarDuplicados($registros);
         }
-        
+
         if (!empty($registros)) {
             CompraProducto::insert($registros);
             return count($registros);
-        }else{
+        } else {
             return 0;
         }
     }
@@ -97,7 +145,7 @@ class ProductoServicio
         }
 
         return $registros;
-    }    
+    }
     public static function filtrarDuplicados($registros)
     {
         if (empty($registros)) {

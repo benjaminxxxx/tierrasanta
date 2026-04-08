@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Producto extends Model
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'nombre_comercial',
@@ -19,12 +19,11 @@ class Producto extends Model
         'subcategoria_id',
         'codigo_tipo_existencia',
         'codigo_unidad_medida',
-        //'categoria_pesticida',
         'creado_por',
         'editado_por',
         'eliminado_por',
     ];
-
+    //deprecado kardexProductos
     // -----------------------
     // RELACIONES AUDITORÍA
     // -----------------------
@@ -50,6 +49,10 @@ class Producto extends Model
     public function categoria()
     {
         return $this->belongsTo(InsCategoria::class, 'categoria_codigo', 'codigo');
+    }
+    public function subcategoria()
+    {
+        return $this->belongsTo(InsSubcategoria::class, 'subcategoria_id', 'id');
     }
     public function kardexActual()
     {
@@ -155,10 +158,7 @@ class Producto extends Model
         ];
     }
 
-    public function kardexProductos()
-    {
-        return $this->hasMany(KardexProducto::class, 'producto_id');
-    }
+
 
 
     public function tabla5()
