@@ -81,9 +81,17 @@ class InsumoKardexImportarServicio
 
         [$datosCompra, $datosSalida] = $this->extraerDatosTransacciones($hoja, $filas, $insumoKardex, $filtroCampos);
 
+        $filasAfectadasCompras = 0;
+        $filasAfectadasAlmacen = 0;
         $filasAfectadasCompras = ProductoServicio::registrarCompraProducto($datosCompra);
-        $filasAfectadasAlmacen = AlmacenServicio::registrarSalida($datosSalida);
+        if (is_array($datosCompra) && count($datosCompra)>0) {
+            $filasAfectadasCompras = ProductoServicio::registrarCompraProducto($datosCompra);
+        }
 
+        if (is_array($datosSalida) && count($datosSalida)>0) {
+            $filasAfectadasAlmacen = AlmacenServicio::registrarSalida($datosSalida);
+        }
+        
         return [
             'filasAfectadasCompras' => $filasAfectadasCompras,
             'filasAfectadasAlmacen' => $filasAfectadasAlmacen,

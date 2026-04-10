@@ -729,7 +729,7 @@ class AlmacenServicio
     public static function registrarSalida($data)
     {
         if (!is_array($data) || empty($data)) {
-            throw new Exception("No hay información por guardar");
+            throw new Exception("No hay información por guardar en salidas");
         }
 
         // Limpiar y estructurar los datos antes de la inserción

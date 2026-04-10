@@ -92,6 +92,7 @@ class CompraProductoImportExportComponent extends Component
     //Formato de codigo oficial
     protected function procesarKardexSheet($spreadsheet, $tipoKardex,KardexProducto $kardexProducto, $kardexId = null, $codigoExistencia = null)
     {
+        
         $sheet = null;
 
         if ($codigoExistencia !== null) {
