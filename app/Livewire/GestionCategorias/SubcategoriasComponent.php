@@ -34,6 +34,7 @@ class SubcategoriasComponent extends Component
     private function cargarRegistros(): void
     {
         $this->registros = InsSubcategoria::with('categoria')
+            ->withCount('productos')
             ->orderBy('categoria_codigo')
             ->orderBy('nombre')
             ->get()
@@ -42,6 +43,8 @@ class SubcategoriasComponent extends Component
                 'categoria_codigo' => $s->categoria_codigo,
                 'nombre' => $s->nombre,
                 'descripcion' => $s->descripcion,
+
+                'cantidad_productos' => $s->productos_count,
             ])
             ->toArray();
     }

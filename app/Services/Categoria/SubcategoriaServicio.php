@@ -98,6 +98,16 @@ class SubcategoriaServicio
     public static function eliminar(int $id): void
     {
         $subcategoria = InsSubcategoria::findOrFail($id);
+
+        $productosCount = Producto::where('subcategoria_id', $id)->count();
+
+        if ($productosCount > 0) {
+            throw new \Exception(
+                "No se puede eliminar la subcategoría \"{$subcategoria->nombre}\" porque tiene {$productosCount} " .
+                ($productosCount === 1 ? 'producto asociado.' : 'productos asociados.')
+            );
+        }
+        
         $usuarioId = Auth::id();
 
         $subcategoria->update(['eliminado_por' => $usuarioId]);

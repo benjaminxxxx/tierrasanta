@@ -164,34 +164,34 @@
                     });
                 },
                 afterRenderer: (TD, row, col, prop, value, cellProperties) => {
-    if (col !== 3) return;
+                    if (col !== 4) return;
 
-    const hot = cellProperties.instance; // 👈 clave
-    const sourceRow = hot.getSourceDataAtRow(row);
+                    const hot = cellProperties.instance; // 👈 clave
+                    const sourceRow = hot.getSourceDataAtRow(row);
 
-    if (!sourceRow?.id) return;
+                    if (!sourceRow?.id) return;
 
-    TD.innerHTML = '';
-    TD.classList.add('htCenter');
+                    TD.innerHTML = '';
+                    TD.classList.add('htCenter');
 
-    const btnAudit = document.createElement('button');
-    btnAudit.innerHTML = '<i class="fa fa-history"></i>';
-    btnAudit.title = 'Ver auditoría';
-    btnAudit.className = 'px-2 py-0.5 text-xs text-blue-600 hover:text-blue-800';
-    btnAudit.onclick = () => $wire.verAuditoria(sourceRow.id);
+                    const btnAudit = document.createElement('button');
+                    btnAudit.innerHTML = '<i class="fa fa-history"></i>';
+                    btnAudit.title = 'Ver auditoría';
+                    btnAudit.className = 'px-2 py-0.5 text-xs text-blue-600 hover:text-blue-800';
+                    btnAudit.onclick = () => $wire.verAuditoria(sourceRow.id);
 
-    const btnDel = document.createElement('button');
-    btnDel.innerHTML = '<i class="fa fa-trash"></i>';
-    btnDel.title = 'Eliminar';
-    btnDel.className = 'px-2 py-0.5 text-xs text-red-500 hover:text-red-700';
-    btnDel.onclick = () => {
-        if (confirm(`¿Eliminar "${sourceRow.nombre}"?`)) {
-            $wire.eliminar(sourceRow.id);
-        }
-    };
+                    const btnDel = document.createElement('button');
+                    btnDel.innerHTML = '<i class="fa fa-trash"></i>';
+                    btnDel.title = 'Eliminar';
+                    btnDel.className = 'px-2 py-0.5 text-xs text-red-500 hover:text-red-700';
+                    btnDel.onclick = () => {
+                        if (confirm(`¿Eliminar "${sourceRow.nombre}"?`)) {
+                            $wire.eliminar(sourceRow.id);
+                        }
+                    };
 
-    TD.append(btnAudit, btnDel);
-}
+                    TD.append(btnAudit, btnDel);
+                }
             });
         },
 
@@ -228,6 +228,14 @@
                     type: 'text',
                     width: 300,
                 },
+                {
+                    data: 'cantidad_productos',
+                    title: 'CANT.<br/>PRODUCTOS',
+                    type: 'text',
+                    readOnly: true,
+                    className: '!bg-muted !text-center',
+                },
+                
                 {
                     // Columna de acciones — no editable, renderizada por afterRenderer
                     data: null,
