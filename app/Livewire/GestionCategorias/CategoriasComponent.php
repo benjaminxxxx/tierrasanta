@@ -40,12 +40,15 @@ class CategoriasComponent extends Component
 
         $this->productosCategoriaSel = Producto::with('subcategoria')
             ->where('categoria_codigo', $categoriaCodigo)
-            ->orderBy('nombre_comercial')
+            // 1. Los que tienen subcategoría van primero (IS NULL devuelve 1 si es nulo, 0 si no lo es)
+            ->orderByRaw('subcategoria_id IS NULL ASC')
+            // 2. Orden alfabético por nombre comercial
+            ->orderBy('nombre_comercial', 'ASC')
             ->get(['id', 'nombre_comercial', 'categoria_codigo', 'subcategoria_id'])
             ->map(fn($p) => [
                 'nombre' => $p->nombre_comercial,
                 'categoria' => $p->categoria_codigo,
-                'subcategoria' => $p->subcategoria?->nombre,
+                'subcategoria' => $p->subcategoria?->nombre ?? 'Sin subcategoría',
             ])->toArray();
 
         $this->modalProductosCategoria = true;
