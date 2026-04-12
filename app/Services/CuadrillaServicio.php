@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Actividad;
 use App\Models\CampoCampania;
 use App\Models\CuadDetalleHora;
+use App\Models\CuaGrupo;
 use App\Support\ExcelHelper;
 use Exception;
 use Illuminate\Support\Carbon;
@@ -13,6 +14,10 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class CuadrillaServicio
 {
+    public static function obtenerGruposCuadrilla()
+    {
+        return CuaGrupo::pluck('nombre')->toArray();
+    }
     public static function calcularGastoCuadrilla($campoCampaniaId)
     {
         $campoCampania = CampoCampania::find($campoCampaniaId);
@@ -55,7 +60,6 @@ class CuadrillaServicio
         $total = 0;
         foreach ($registros as $registroData) {
 
-            dd($registroData);
             $factor = 1;
           
             

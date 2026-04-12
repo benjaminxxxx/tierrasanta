@@ -105,7 +105,7 @@ class InsumoKardexMovimientosServicio
         }
 
         $periodo = Carbon::parse($insumoKardex->anio)->format('Y');
-        //dd($listaKardex);
+      
         return [
             /*'kardexId' => $this->kardexId,
             'productoId' => $this->kardexProductoId,*/

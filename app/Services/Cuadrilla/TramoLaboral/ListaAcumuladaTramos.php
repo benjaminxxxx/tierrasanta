@@ -54,7 +54,7 @@ class ListaAcumuladaTramos
     {
         // 1. Obtener todos los tramos acumulados (recursivamente hacia atrás)
         $tramos = $this->obtenerTramosAcumulados($resumenTramo);
-        //dd($tramos);
+       
         // 2. Unificar cuadrilleros
         $listaCuadrilleros = $tramos
             ->flatMap(fn($tramo) => $tramo->cuadrilleros())

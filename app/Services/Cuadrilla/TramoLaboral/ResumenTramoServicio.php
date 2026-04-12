@@ -59,7 +59,6 @@ class ResumenTramoServicio
     {
         $registroTramoFuturo = CuadResumenPorTramo::where('tramo_acumulado_id', $resumenPorTramo->tramo_id)
             ->where('grupo_codigo', $resumenPorTramo->grupo_codigo)->first();
-        //dd($resumenPorTramo->tramo_id, $resumenPorTramo->grupo_codigo,$registroTramoFuturo);
         //quitar los pagos en los registros diarios
         CuadRegistroDiario::where('tramo_pagado_jornal_id', $resumenPorTramo->tramo_id)
             ->where('codigo_grupo', [$resumenPorTramo->grupo_codigo])
@@ -369,6 +368,7 @@ class ResumenTramoServicio
         if ($idsParaEliminar->isNotEmpty()) {
             CuadResumenPorTramo::destroy($idsParaEliminar);
         }
+        
         $this->upsertResumenes($dataParaUpsert, $tramoLaboral->id);
     }
 

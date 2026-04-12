@@ -18,7 +18,7 @@
             <x-slot name="content">
                 <div class="w-full">
                     <x-dropdown-link class="text-center" @click="agregarCuadrillerosEnTramo">
-                        Agregar cuadrilleros
+                        Agregar Grupo y cuadrilleros
                     </x-dropdown-link>
                     <x-dropdown-link class="text-center" @click="$wire.dispatch('asignarCostosPorFecha',{tramoId: {{ $tramoLaboral->id}}})">
                         Asignar costos por jornal

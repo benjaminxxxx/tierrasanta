@@ -83,7 +83,7 @@ class InsumoKardexImportarServicio
 
         $filasAfectadasCompras = 0;
         $filasAfectadasAlmacen = 0;
-        $filasAfectadasCompras = ProductoServicio::registrarCompraProducto($datosCompra);
+        
         if (is_array($datosCompra) && count($datosCompra)>0) {
             $filasAfectadasCompras = ProductoServicio::registrarCompraProducto($datosCompra);
         }

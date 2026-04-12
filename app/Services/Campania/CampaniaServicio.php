@@ -167,7 +167,7 @@ class CampaniaServicio
                 'jornal_dia' => $registro->costo_dia,
             ];
         }
-        dd($data);
+        
 
         return $registrosDiarios;
     }

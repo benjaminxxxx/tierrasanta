@@ -3,6 +3,7 @@
 namespace App\Livewire\GestionCuadrilla;
 use App\Services\Cuadrilla\CuadrilleroServicio;
 use App\Services\Cuadrilla\TramoLaboralServicio;
+use App\Services\CuadrillaServicio;
 use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -25,6 +26,7 @@ class GestionCuadrillaGastosAdicionalesComponent extends Component
     }
     public function obtenerGrupos(){
         $this->grupos = $this->tramoLaboral->grupos()->get()->pluck('nombre')->toArray();
+        //$this->grupos = CuadrillaServicio::obtenerGruposCuadrilla();
     }
     public function abrirGastosAdicionales()
     {

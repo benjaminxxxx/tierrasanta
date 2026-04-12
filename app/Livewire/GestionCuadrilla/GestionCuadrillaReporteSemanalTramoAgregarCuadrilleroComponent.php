@@ -88,9 +88,7 @@ class GestionCuadrillaReporteSemanalTramoAgregarCuadrilleroComponent extends Com
     public function agregarListaAgregada()
     {
         try {
-            if (empty($this->cuadrillerosAgregados)) {
-                throw new Exception("No ha agregado ningún cuadrillero");
-            }
+            
             if (!$this->codigo_grupo) {
                 throw new Exception("No ha elegido ningún grupo");
             }
@@ -100,6 +98,8 @@ class GestionCuadrillaReporteSemanalTramoAgregarCuadrilleroComponent extends Com
 
             //verificar si existe el grupo en el tramoLaboral
             $grupo = $this->registrarGrupoEnTramoLaboral($this->tramoLaboral, $this->codigo_grupo);
+
+           
             
             $orden = 0;
             foreach ($this->cuadrillerosAgregados as $cuadrillero) {
