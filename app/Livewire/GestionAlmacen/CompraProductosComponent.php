@@ -3,6 +3,7 @@
 namespace App\Livewire\GestionAlmacen;
 use App\Models\CompraProducto;
 use App\Models\Producto;
+use App\Services\AuditoriaServicio;
 use App\Services\Insumo\CompraInsumoServicio;
 use App\Services\ProductoServicio;
 use App\Traits\ListasComunes\HstListas;
@@ -47,7 +48,6 @@ class CompraProductosComponent extends Component
     // ── Ver detalle completo ──────────────────────────────────────────────────────
     public function verInformacionSeleccionados(array $ids): void
     {
-        // Filtrar solo ids válidos (registros en BD)
         $ids = array_filter($ids, fn($id) => !is_null($id) && $id !== '');
 
         if (empty($ids)) {
@@ -55,7 +55,7 @@ class CompraProductosComponent extends Component
             return;
         }
 
-        $this->comprasDetalle = CompraProducto::with(['producto', 'proveedor','creador','editor','eliminador'])
+        $this->comprasDetalle = CompraProducto::with(['producto', 'proveedor', 'creador', 'editor', 'eliminador'])
             ->whereIn('id', $ids)
             ->get()
             ->map(fn($c) => [
@@ -76,12 +76,13 @@ class CompraProductosComponent extends Component
                 'created_at' => $c->created_at?->format('d/m/Y H:i'),
                 'updated_at' => $c->updated_at?->format('d/m/Y H:i'),
                 'deleted_at' => $c->deleted_at?->format('d/m/Y H:i'),
+                // ✅ Historial de auditoría
+                'auditoria' => AuditoriaServicio::getAuditoria(CompraProducto::class, $c->id),
             ])
             ->toArray();
 
         $this->mostrarDetalleCompras = true;
     }
-
     // ── Eliminar seleccionados ────────────────────────────────────────────────────
     public function eliminarSeleccionados(array $ids): void
     {

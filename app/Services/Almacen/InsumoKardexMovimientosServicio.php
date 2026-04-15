@@ -41,7 +41,7 @@ class InsumoKardexMovimientosServicio
     {
         $this->inicializarAcumuladores($insumoKardex);
         $movimientosOrdenados = $this->obtenerMovimientosBase($insumoKardex);
-
+        
         if ($movimientosOrdenados->isEmpty()) {
             throw new Exception("No hay movimientos de Compra ni Salida para generar el Kardex.");
         }
@@ -267,6 +267,7 @@ class InsumoKardexMovimientosServicio
                 'costo_unitario' => $costoUnitario,
             ];
         }
+        //dd($compra->tabla12_tipo_operacion);
 
         // 3. Crear Movimiento Kardex (redondeando para la base de datos)
         InsKardexMovimiento::create([

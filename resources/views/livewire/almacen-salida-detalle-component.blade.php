@@ -292,11 +292,15 @@
                                         alert('Guarda el registro antes de ver la distribución.');
                                         return;
                                     }
+                                    $wire.dispatch('abrirModalDistribucion', {
+                                        salidaId: fila.id
+                                    });
+                                    /*
                                     $wire.dispatch('verDistribucionCombustible', {
                                         salidaId: fila.id,
                                         mes: this.mes,
                                         anio: this.anio,
-                                    });
+                                    });*/
                                 },
                             },
                             'sep1': '---------',

@@ -8,19 +8,21 @@ use DB;
 
 class DistribucionCombustibleServicio
 {
-    public static function guardarDistribuciones(array $filas): array
+    /**
+     * $salidaId: la salida a la que pertenecen TODAS las filas del modal.
+     * Ya no necesitamos buscar la salida — viene fija desde el botón.
+     */
+    public static function guardarDistribuciones(array $filas, int $salidaId): array
     {
         $resultados = ['creados' => 0, 'actualizados' => 0, 'eliminados' => 0];
 
-        DB::transaction(function () use ($filas, &$resultados) {
+        $salida = AlmacenProductoSalida::findOrFail($salidaId);
+
+        DB::transaction(function () use ($filas, $salida, &$resultados) {
             foreach ($filas as $fila) {
-
-                // Ignorar filas de cabecera de salida
-                if ($fila['es_salida'] ?? false) continue;
-
                 $id = $fila['id'] ?? null;
 
-                // Detectar fila vacía → eliminar si tenía id
+                // ── FILA VACÍA → ELIMINAR ─────────────────────────────
                 $vacia = empty($fila['fecha'])
                     && empty($fila['campo_nombre'])
                     && empty($fila['labor_diaria'])
@@ -34,42 +36,48 @@ class DistribucionCombustibleServicio
                     }
                     continue;
                 }
-
-                // Validar campos mínimos
-                foreach (['fecha', 'campo_nombre', 'hora_inicio', 'hora_fin', 'labor_diaria', 'maquinaria_id'] as $campo) {
+                
+                // ── VALIDACIÓN CAMPOS REQUERIDOS ──────────────────────
+                foreach (['fecha', 'campo_nombre', 'hora_inicio', 'hora_fin', 'labor_diaria'] as $campo) {
                     if (empty($fila[$campo])) {
                         throw new \Exception("El campo \"{$campo}\" es obligatorio." . ($id ? " (ID: {$id})" : ''));
                     }
                 }
 
                 if ($fila['hora_fin'] <= $fila['hora_inicio']) {
-                    throw new \Exception("La hora de fin debe ser posterior a la de inicio." . ($id ? " (ID: {$id})" : ''));
+                    throw new \Exception("La hora de fin debe ser mayor a la de inicio." . ($id ? " (ID: {$id})" : ''));
                 }
 
-                // Buscar la salida correspondiente:
-                // La más reciente con fecha_reporte <= fecha de la distribución
-                // Si hay salida el mismo día, esa tiene prioridad (desc limit 1 la trae primero)
-                $salida = AlmacenProductoSalida::whereDate('fecha_reporte', '<=', $fila['fecha'])
-                    ->where('maquinaria_id', $fila['maquinaria_id'])
+                // ── RESTRICCIÓN: no debe existir salida entre la salida
+                //    elegida y la fecha de la distribución ───────────────
+                // Caso: salida es 01/06, distribución es 05/06
+                // Si existe otra salida el 03/06 para la misma maquinaria,
+                // esa distribución debería ir en la salida del 03/06, no 01/06.
+                $salidaIntermedia = AlmacenProductoSalida::where('maquinaria_id', $salida->maquinaria_id)
                     ->whereHas('producto', fn($q) => $q->where('categoria_codigo', 'combustible'))
                     ->where(fn($q) => $q->whereNull('campo_nombre')->orWhere('campo_nombre', ''))
-                    ->orderBy('fecha_reporte', 'desc')
-                    ->first();
+                    ->where('id', '!=', $salida->id)
+                    // Posterior a la salida elegida pero anterior o igual a la fecha de la distribución
+                    ->whereDate('fecha_reporte', '>', $salida->fecha_reporte)
+                    ->whereDate('fecha_reporte', '<', $fila['fecha'])
+                    ->exists();
 
-                if (!$salida) {
+                if ($salidaIntermedia) {
                     throw new \Exception(
-                        "No se encontró una salida de combustible para la maquinaria ID {$fila['maquinaria_id']} "
-                        . "en o antes de la fecha {$fila['fecha']}."
+                        "La distribución del {$fila['fecha']} no puede asignarse a esta salida "
+                        . "({$salida->fecha_reporte}) porque existe una salida de combustible posterior "
+                        . "para esta maquinaria que la cubre."
                     );
                 }
 
+                // ── GUARDAR ───────────────────────────────────────────
                 $datos = [
-                    'fecha'                      => $fila['fecha'],
-                    'campo'                      => $fila['campo_nombre'],
-                    'hora_inicio'                => $fila['hora_inicio'],
-                    'hora_salida'                => $fila['hora_fin'],
-                    'actividad'                  => $fila['labor_diaria'],
-                    'maquinaria_id'              => $fila['maquinaria_id'],
+                    'fecha' => $fila['fecha'],
+                    'campo' => $fila['campo_nombre'],
+                    'hora_inicio' => $fila['hora_inicio'],
+                    'hora_salida' => $fila['hora_fin'],
+                    'actividad' => $fila['labor_diaria'],
+                    'maquinaria_id' => $salida->maquinaria_id,
                     'almacen_producto_salida_id' => $salida->id,
                 ];
 

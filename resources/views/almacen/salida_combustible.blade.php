@@ -11,5 +11,6 @@
     <livewire:productos-stock-component/>
     <livewire:productos-compra-component/>
     <livewire:distribucion-combustible-component/>
+    <livewire:gestion-almacen.distribucion-combustible-form-component />
     
 </x-app-layout>

@@ -250,6 +250,16 @@ class DistribucionCombustibleComponent extends Component
             $anio = date('Y', strtotime($this->fecha));
             $mes = date('m', strtotime($this->fecha));
 
+            
+
+            $almacenProductoSalida = AlmacenProductoSalida::find($this->almacenProductoSalidaId);
+            if (!$almacenProductoSalida) {
+                return $this->alert('error', 'La salida y no existe.');
+            }
+
+            dd($almacenProductoSalida);
+
+
             // Buscar la última salida de almacén dentro del mismo mes y anio, pero antes de la fecha dada
             $almacenSalida = AlmacenProductoSalida::whereYear('fecha_reporte', $anio)
                 ->whereMonth('fecha_reporte', $mes)
@@ -305,7 +315,7 @@ class DistribucionCombustibleComponent extends Component
     {
         try {
             $distribucionCombustible = DistribucionCombustible::find($distribucionId);
-            if($distribucionCombustible){
+            if ($distribucionCombustible) {
                 $distribucionCombustible->delete();
             }
             // Llamar función para obtener la lista actualizada
@@ -333,7 +343,7 @@ class DistribucionCombustibleComponent extends Component
         $this->generarDistribucion();
         $this->mostrarFormulario = true;
     }
-    
+
     public function render()
     {
         return view('livewire.distribucion-combustible-component');
