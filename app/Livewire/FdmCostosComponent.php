@@ -24,6 +24,10 @@ class FdmCostosComponent extends Component
     public $negro_planillero_monto;
     public $costoManoIndirecta;
     public $parametros = [];
+    public $combustible_fdm_monto_blanco;
+    public $combustible_fdm_monto_negro;
+    public $adicionales_fdm_monto_blanco;
+    public $adicionales_fdm_monto_negro;
     protected $listeners = ['storeTableDataCosto'];
     public function mount()
     {
@@ -49,6 +53,11 @@ class FdmCostosComponent extends Component
             'combustible_fdm_paso2',
             'combustible_fdm_paso3',
         ]);
+        $this->combustible_fdm_monto_blanco = ParametroMensual::obtener('combustible_fdm_monto_blanco',$this->mes,$this->anio);
+        $this->combustible_fdm_monto_negro = ParametroMensual::obtener('combustible_fdm_monto_negro',$this->mes,$this->anio);
+        $this->adicionales_fdm_monto_blanco = ParametroMensual::obtener('adicionales_fdm_monto_blanco',$this->mes,$this->anio);
+        $this->adicionales_fdm_monto_negro = ParametroMensual::obtener('adicionales_fdm_monto_negro',$this->mes,$this->anio);
+
 
         $this->blancoCostosAdicionales = $this->parametros['adicionales_fdm_monto_blanco']->valor ?? '-';
         $this->negroCostosAdicionales = $this->parametros['adicionales_fdm_monto_negro']->valor ?? '-';

@@ -102,12 +102,12 @@
 
                     {{-- MONTO BLANCO --}}
                     <x-td class="text-center">
-                        S/. {{ formatear_numero($parametros['combustible_fdm_monto_blanco']->valor) ?? '-' }}
+                        S/. {{ formatear_numero($combustible_fdm_monto_blanco) ?? '-' }}
                     </x-td>
 
                     {{-- MONTO NEGRO --}}
                     <x-td class="text-center">
-                        S/. {{ formatear_numero($parametros['combustible_fdm_monto_negro']->valor) ?? '-' }}
+                        S/. {{ formatear_numero($combustible_fdm_monto_negro) ?? '-' }}
                     </x-td>
 
                     {{-- INFORME BLANCO --}}
@@ -195,10 +195,10 @@
                         Costos adicionales
                     </x-td>
                     <x-td class="text-center">
-                        S/. {{ formatear_numero($parametros['adicionales_fdm_monto_blanco']->valor) ?? '-' }}
+                        S/. {{ formatear_numero($adicionales_fdm_monto_blanco) ?? '-' }}
                     </x-td>
                     <x-td class="text-center">
-                        S/. {{ formatear_numero($parametros['adicionales_fdm_monto_negro']->valor) ?? '-' }}
+                        S/. {{ formatear_numero($adicionales_fdm_monto_negro) ?? '-' }}
                     </x-td>
                     <x-td class="text-center">
                         -
