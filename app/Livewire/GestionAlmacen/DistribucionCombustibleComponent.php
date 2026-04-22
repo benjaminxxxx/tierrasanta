@@ -23,7 +23,7 @@ class DistribucionCombustibleComponent extends Component
     public bool   $modalDistribucion     = false;
     public ?int   $salidaActivaId        = null;
     public array  $distribucionesActivas = [];
-    public array  $filasModificadas      = [];
+    public array  $filasModificadasModal      = [];
 
     // Filtros
     public ?string $filtroMaquinariaId = null;
@@ -165,7 +165,7 @@ class DistribucionCombustibleComponent extends Component
     public function abrirModalDistribucion(int $salidaId): void
     {
         $this->salidaActivaId   = $salidaId;
-        $this->filasModificadas = [];
+        $this->filasModificadasModal = [];
 
         $salida = AlmacenProductoSalida::with('distribuciones')->findOrFail($salidaId);
            
@@ -200,7 +200,7 @@ class DistribucionCombustibleComponent extends Component
             if ($resultados['eliminados'] > 0)    $partes[] = "{$resultados['eliminados']} eliminados";
 
             $this->alert('success', count($partes) ? implode(', ', $partes) : 'Sin cambios');
-            $this->filasModificadas     = [];
+            $this->filasModificadasModal     = [];
             $this->modalDistribucion    = false;
             $this->salidaActivaId       = null;
             $this->generarDistribucion();

@@ -22,33 +22,31 @@
 
             @else
                 <x-card>
-                    <x-spacing>
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-lg dark:text-primaryTextDark">{{ $rol->name }}</span>
-                            <div class="flex space-x-2">
-                                <x-secondary-button wire:click="editarRol({{ $rol->id }})" title="Editar Rol">
-                                    <i class="fa fa-edit"></i>
-                                </x-secondary-button>
-                                <x-danger-button wire:click="eliminarRol({{ $rol->id }})" title="Eliminar Rol">
-                                    <i class="fa fa-trash"></i>
-                                </x-danger-button>
-                            </div>
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-lg dark:text-primaryTextDark">{{ $rol->name }}</span>
+                        <div class="flex space-x-2">
+                            <x-button variant="secondary" wire:click="editarRol({{ $rol->id }})" title="Editar Rol">
+                                <i class="fa fa-edit"></i>
+                            </x-button>
+                            <x-button variant="danger" wire:click="eliminarRol({{ $rol->id }})" title="Eliminar Rol">
+                                <i class="fa fa-trash"></i>
+                            </x-button>
                         </div>
+                    </div>
 
 
-                        <div class="mt-2">
-                            <span class="font-semibold dark:text-primaryTextDark">Permisos:</span>
-                            @if ($rol->permissions->count())
-                                <ul class="list-disc list-inside text-sm text-gray-700 mt-1 dark:text-primaryTextDark">
-                                    @foreach ($rol->permissions as $permiso)
-                                        <li>{{ $permiso->name }}</li>
-                                    @endforeach
-                                </ul>
-                            @else
-                                <p class="text-sm text-gray-500 dark:text-primaryTextDark">Sin permisos asignados.</p>
-                            @endif
-                        </div>
-                    </x-spacing>
+                    <div class="mt-2">
+                        <span class="font-semibold dark:text-primaryTextDark">Permisos:</span>
+                        @if ($rol->permissions->count())
+                            <ul class="list-disc list-inside text-sm text-gray-700 mt-1 dark:text-primaryTextDark">
+                                @foreach ($rol->permissions as $permiso)
+                                    <li>{{ $permiso->name }}</li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <p class="text-sm text-gray-500 dark:text-primaryTextDark">Sin permisos asignados.</p>
+                        @endif
+                    </div>
                 </x-card>
             @endif
 
@@ -57,29 +55,28 @@
     </div>
 
     <x-h3>Permisos Existentes</x-h3>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 my-4">
         @foreach ($permisos as $permiso)
             <x-card>
-                <x-spacing>
-                    <div class="flex items-center justify-between">
-                        <span class="font-bold text-lg dark:text-primaryTextDark">{{ $permiso->name }}</span>
-                        <div class="flex space-x-2">
+                <div class="flex items-center justify-between">
+                    <span class="font-bold text-lg dark:text-primaryTextDark">{{ $permiso->name }}</span>
+                    <div class="flex space-x-2">
 
-                            @hasrole('Super Admin')
-                            <x-secondary-button wire:click="editarPermiso({{ $permiso->id }})" title="Editar Permiso">
-                                <i class="fa fa-edit"></i>
-                            </x-secondary-button>
-                            <x-danger-button wire:click="eliminarPermiso({{ $permiso->id }})" title="Eliminar Permiso">
-                                <i class="fa fa-trash"></i>
-                            </x-danger-button>
-                            @endhasrole
-                        </div>
+                        @hasrole('Super Admin')
+                        <x-button variant="secondary" wire:click="editarPermiso({{ $permiso->id }})" title="Editar Permiso">
+                            <i class="fa fa-edit"></i>
+                        </x-button>
+                        <x-button variant="danger" wire:click="eliminarPermiso({{ $permiso->id }})"
+                            title="Eliminar Permiso">
+                            <i class="fa fa-trash"></i>
+                        </x-button>
+                        @endhasrole
                     </div>
+                </div>
 
-                    <p class="text-sm text-gray-500 mt-1 dark:text-primaryTextDark">
-                        ID: {{ $permiso->id }}
-                    </p>
-                </x-spacing>
+                <p class="text-sm text-gray-500 mt-1 dark:text-primaryTextDark">
+                    ID: {{ $permiso->id }}
+                </p>
             </x-card>
         @endforeach
     </div>
@@ -91,7 +88,7 @@
         </x-slot>
 
         <x-slot name="content">
-            <x-input-string label="Nombre del Permiso" wire:model.live="nombrePermiso" error="nombrePermiso" />
+            <x-input label="Nombre del Permiso" wire:model="nombrePermiso" error="nombrePermiso" />
 
             <div class="mt-4">
                 <span class="font-semibold">Asignar a Roles:</span>
@@ -109,9 +106,9 @@
 
         <x-slot name="footer">
             <x-flex class="justify-end full-width">
-                <x-secondary-button wire:click="$set('mostrarModalCrearPermiso', false)">
+                <x-button variant="secondary" wire:click="$set('mostrarModalCrearPermiso', false)">
                     Cancelar
-                </x-secondary-button>
+                </x-button>
 
                 <x-button wire:click="guardarPermiso">
                     <I class="fa fa-save"></I> {{ $modoEditarPermiso ? 'Actualizar Permiso' : 'Guardar Permiso' }}
@@ -145,9 +142,9 @@
 
         <x-slot name="footer">
             <x-flex class="justify-end full-width">
-                <x-secondary-button wire:click="$set('mostrarModalCrearRol', false)">
+                <x-button variant="secondary" wire:click="$set('mostrarModalCrearRol', false)">
                     Cancelar
-                </x-secondary-button>
+                </x-button>
 
                 <x-button wire:click="guardarRol">
                     <I class="fa fa-save"></I> {{ $modoEditarRol ? 'Actualizar Rol' : 'Guardar Rol' }}

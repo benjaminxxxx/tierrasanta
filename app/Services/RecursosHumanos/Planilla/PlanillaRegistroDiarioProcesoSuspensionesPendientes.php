@@ -2,20 +2,8 @@
 
 namespace App\Services\RecursosHumanos\Planilla;
 
-use App\Models\Labores;
-use App\Models\PlanDetalleHora;
-use App\Models\PlanMensual;
-use App\Models\PlanMensualDetalle;
 use App\Models\PlanRegistroDiario;
-use App\Models\PlanResumenDiario;
 use App\Models\PlanSuspension;
-use App\Models\PlanTipoAsistencia;
-use App\Services\Campo\Gestion\CampoServicio;
-use App\Services\PlanTipoAsistenciaServicio;
-use App\Support\CalculoHelper;
-use App\Support\FormatoHelper;
-use Carbon\CarbonPeriod;
-use Exception;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 

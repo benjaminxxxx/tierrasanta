@@ -177,6 +177,14 @@ class Sidebar extends Component
                     ['title' => 'Tipo de Asistencia', 'route' => 'configuracion.tipo_asistencia'],
                 ]
             ],
+            [
+                'title' => 'Reporte',
+                'icon' => 'fa fa-file',
+                'roles' => ['Administrador', 'Super Admin'],
+                'children' => [
+                    ['title' => 'Reporte Diario', 'route' => 'reporte_general.reporte_diario'],
+                ]
+            ],
         ];
 
         return $this->filterMenu($rawMenu);

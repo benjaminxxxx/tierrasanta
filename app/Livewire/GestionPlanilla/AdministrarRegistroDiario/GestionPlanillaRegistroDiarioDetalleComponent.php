@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Livewire\GestionPlanilla\AdministrarRegistroDiario;
-use App\Livewire\Traits\ConFechaReporteDia;
+
 use App\Models\PlanResumenDiario;
 use App\Services\Modulos\Planilla\GestionPlanillaReporteDiario;
 use App\Services\RecursosHumanos\Personal\ActividadServicio;

@@ -2,7 +2,6 @@
 
 namespace App\Traits\ListasComunes;
 
-use App\Models\PlanTipoAsistencia;
 use App\Services\PlanTipoAsistenciaServicio;
 
 trait ConArrayPlanTipoAsistencia

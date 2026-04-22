@@ -189,11 +189,11 @@
 
         isDark: JSON.parse(localStorage.getItem('darkMode') ?? 'false'),
         hotModal: null,
-        filasModificadasModal: [],
+        filasModificadasModal: @entangle('filasModificadasModal'),
 
         init() {
             // Cuando el modal pasa a true → esperar que el DOM esté pintado → montar Handsontable
-            /*this.$watch('modalAbierto', (abierto) => {
+            this.$watch('modalAbierto', (abierto) => {
                 if (abierto) {
                     // $nextTick espera el re-render de Alpine/Livewire,
                     // setTimeout da margen para la transición CSS del dialog
@@ -205,7 +205,7 @@
                 } else {
                     this.destruirModalTable();
                 }
-            });*/
+            });
 
             // Si los datos del modal cambian con el modal ya abierto (recarga tras error)
             /*
@@ -236,10 +236,8 @@
             this.destruirModalTable();
 
             const container = document.getElementById('modalTableContainer');
-            console.log(container);
+         
             if (!container) return;
-
-            this.filasModificadasModal = [];
 
             const hot = new Handsontable(container, {
                 ...window.HstConfig,
@@ -254,6 +252,7 @@
                 licenseKey: 'non-commercial-and-evaluation',
 
                 afterChange: (changes, source) => {
+                  
                     if (source === 'loadData' || source === 'recalculado') return;
                     if (!['edit', 'CopyPaste.paste', 'Autofill.fill'].includes(source)) return;
 
@@ -265,6 +264,7 @@
                             this.filasModificadasModal = [...this.filasModificadasModal, row];
                         }
                     });
+                    console.log(this.filasModificadasModal);
                 },
             });
 

@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\PlanTipoAsistencia;
 use App\Services\PlanTipoAsistenciaServicio;
 use Illuminate\Database\Seeder;
 

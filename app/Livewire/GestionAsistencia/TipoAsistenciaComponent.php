@@ -12,7 +12,12 @@ class TipoAsistenciaComponent extends Component
     use LivewireAlert;
 
     public $tipoAsistencias;
+    public $codigosInvalidos = [];
     protected $listeners = ['confirmarEliminar', 'resturar', 'nuevoRegistro' => '$refresh'];
+    public function mount(PlanTipoAsistenciaServicio $servicio)
+    {
+        $this->codigosInvalidos = $servicio->obtenerCodigosNoRegistrados();
+    }
 
     public function eliminarTipoAsistencia($id)
     {

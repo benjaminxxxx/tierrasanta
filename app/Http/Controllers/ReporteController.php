@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 
 class ReporteController extends Controller
 {
+    public function reporte_diario(){
+        return view('livewire.gestion-reportes.reporte-diario');
+    }
     public function ResumenPlanilla(){
         return view('livewire.gestion-planilla.resumen-planilla-indice');
     }

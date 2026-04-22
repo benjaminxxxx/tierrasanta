@@ -3,19 +3,12 @@
 namespace App\Livewire\GestionPlanilla;
 
 use App\Models\PlanEmpleado;
-use App\Models\PlanPeriodo;
-use App\Models\PlanSuspension;
-use App\Models\PlanTipoAsistencia;
 use App\Models\PlanTipoSuspension;
 use App\Services\Planilla\PlanillaSuspensionProceso;
 use App\Services\Planilla\PlanillaSuspensionServicio;
-use App\Services\PlanillaPeriodoServicio;
-use App\Services\RecursosHumanos\Personal\EmpleadoServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaEmpleadoServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaRegistroDiarioProcesoSuspensionesPendientes;
-use App\Services\RecursosHumanos\Planilla\PlanillaRegistroDiarioServicio;
 use App\Traits\Selectores\ConSelectorMes;
-use Illuminate\Support\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -94,7 +87,6 @@ class SuspensionesPlanillaComponent extends Component
     {
         $pendiente = $this->suspensionesPendientes[$index];
 
-        // Mapear tipo_asistencia a tipo_suspension_id
         $tipoSuspensionId = $this->mapearTipoAsistenciaASuspension($pendiente['tipo_asistencia']);
 
         // Emitir evento a Alpine/Handsontable
@@ -204,11 +196,6 @@ class SuspensionesPlanillaComponent extends Component
         return ($anio >= 2000 && $anio <= 2100) ? $anio : null;
     }
 
-
-    public function getTiposAsistenciaProperty()
-    {
-        return PlanTipoAsistencia::all();
-    }
 
 
     public function render()

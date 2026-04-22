@@ -1,4 +1,4 @@
-<x-card>
+<div class="space-y-4">
     <x-flex class="mb-4">
         <x-title>
             Tipo de Asistencias
@@ -7,7 +7,15 @@
             <i class="fa fa-plus"></i> Registrar asistencias
         </x-button>
     </x-flex>
-
+    <div>
+        {{-- Sección de alertas --}}
+        @if(count($codigosInvalidos) > 0)
+            <x-warning>
+                Los siguientes códigos están siendo usados en otras instancias del sistema y deben ser registrados:
+                <strong>{{ implode(', ', $codigosInvalidos) }}</strong>
+            </x-warning>
+        @endif
+    </div>
     <x-table>
         <x-slot name="thead">
             <x-tr>
@@ -50,7 +58,7 @@
                     <x-td class="text-center">
                         <x-button
                             @click="$wire.dispatch('editarTipoAsistencia',{tipoAsistenciaId:{{ $tipoAsistencia->id }}})"
-                            wire:loading.attr="disabled">
+                            wire:loading.attr="disabled" size="xs">
                             <i class="fa fa-pencil"></i>
                         </x-button>
                         @php
@@ -59,7 +67,7 @@
                         @endphp
                         @if (!in_array($tipoAsistencia->codigo, $filtro))
                             <x-button wire:click="eliminarTipoAsistencia({{ $tipoAsistencia->id }})"
-                                wire:loading.attr="disabled" variant="danger">
+                                wire:loading.attr="disabled" variant="danger" size="xs">
                                 <i class="fa fa-remove"></i>
                             </x-button>
                         @endif
@@ -74,7 +82,5 @@
             <i class="fa fa-refresh"></i> Restaurar Valores por Defecto
         </x-button>
     </div>
-
     <x-loading wire:loading wire:target="agregarTipoAsistencia" />
-
-</x-card>
+</div>

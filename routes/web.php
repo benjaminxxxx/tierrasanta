@@ -166,6 +166,8 @@ Route::middleware([
         Route::get('/resumen_anual', [CuadrillaController::class, 'resumen_anual'])
             ->name('gestion_cuadrilleros.resumen_anual');
     });
+    Route::get('/reporte-general/reporte-diario', [ReporteController::class, 'reporte_diario'])->name('reporte_general.reporte_diario');
+
     Route::get('/reporte/actividades-diarias', [ReporteDiarioController::class, 'actividades_diarias'])->name('reporte.actividades_diarias');
     Route::get('/reporte/reporte-diario', [ReporteDiarioController::class, 'index'])->name('reporte.reporte_diario');
     Route::get('/riego/reporte-diario', [ReporteDiarioController::class, 'riego'])->name('reporte.reporte_diario_riego');
