@@ -20,6 +20,7 @@ class DistribucionCombustibleFormComponent extends Component
     public ?int   $salidaActivaId        = null;
     public array  $distribucionesActivas = [];
     public array  $filasModificadas      = [];
+    public $respetarSalida = false;
     public $salida;
     protected $listeners = ['abrirModalDistribucion'];
 
@@ -62,7 +63,8 @@ class DistribucionCombustibleFormComponent extends Component
         try {
             $resultados = DistribucionCombustibleServicio::guardarDistribuciones(
                 $data,
-                $this->salidaActivaId
+                $this->salidaActivaId,
+                $this->respetarSalida
             );
 
             $partes = [];

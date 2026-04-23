@@ -28,6 +28,7 @@ class DistribucionCombustibleComponent extends Component
     // Filtros
     public ?string $filtroMaquinariaId = null;
     public ?string $filtroCampo        = null;
+    public $respetarSalida = false;
     protected $listeners = ['confirmarEliminarDistribucion'];
 
     public function mount(): void
@@ -191,7 +192,8 @@ class DistribucionCombustibleComponent extends Component
         try {
             $resultados = DistribucionCombustibleServicio::guardarDistribuciones(
                 $data,
-                $this->salidaActivaId
+                $this->salidaActivaId,
+                $this->respetarSalida
             );
 
             $partes = [];

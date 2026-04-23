@@ -1,5 +1,5 @@
-<x-app-layout title="Resumen de Planilla">
+<x-app-layout title="Reporte Diario">
     
-    <livewire:gestion-planilla.resumen-planilla-component/>
+   <livewire:gestion-reportes.reporte-diario-component />
     
 </x-app-layout>

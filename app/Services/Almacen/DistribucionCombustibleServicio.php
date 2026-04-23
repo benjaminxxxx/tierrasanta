@@ -93,7 +93,7 @@ class DistribucionCombustibleServicio
 
         return $resultados;
     }*/
-    public static function guardarDistribuciones(array $filas, int $salidaId): array
+    public static function guardarDistribuciones(array $filas, int $salidaId, bool $respetarSalida = false): array
     {
         $resultados = ['creados' => 0, 'actualizados' => 0, 'eliminados' => 0];
 
@@ -123,7 +123,7 @@ class DistribucionCombustibleServicio
             return true;
         };
 
-        DB::transaction(function () use ($filas, $salida, $siguienteSalida, $fechaEnRango, &$resultados) {
+        DB::transaction(function () use ($filas, $salida, $siguienteSalida, $fechaEnRango, &$resultados, $respetarSalida) {
             foreach ($filas as $fila) {
                 $id = $fila['id'] ?? null;
 
@@ -160,7 +160,7 @@ class DistribucionCombustibleServicio
                     // que exista otra salida con la misma fecha.
                     // Si la nueva fecha cae fuera del rango, buscamos la salida
                     // correcta. Si no existe ninguna válida → error.
-                    if ($fechaEnRango($fila['fecha'])) {
+                    if ($fechaEnRango($fila['fecha']) || $respetarSalida) {
 
                         $salidaDestino = $salida;
                     } else {
@@ -215,11 +215,14 @@ class DistribucionCombustibleServicio
                                 . "No se puede registrar una distribución con fecha previa a la salida."
                             );
                         }
-                        throw new \Exception(
-                            "La fecha {$fila['fecha']} pertenece a la salida del {$siguienteSalida->fecha_reporte}, "
-                            . "no a esta ({$salida->fecha_reporte}). "
-                            . "Regístrela desde esa salida."
-                        );
+                        if (!$respetarSalida) {
+                            throw new \Exception(
+                                "La fecha {$fila['fecha']} pertenece a la salida del {$siguienteSalida->fecha_reporte}, "
+                                . "no a esta ({$salida->fecha_reporte}). "
+                                . "Regístrela desde esa salida."
+                            );
+                        }
+
                     }
 
                     DistribucionCombustible::create([

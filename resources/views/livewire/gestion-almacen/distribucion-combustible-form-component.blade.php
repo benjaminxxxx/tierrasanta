@@ -4,7 +4,7 @@
     {{-- Modal gestión distribuciones --}}
     <x-dialog-modal wire:model.live="modalDistribucion" maxWidth="full">
         <x-slot name="title">
-            Gestionar Distribuciones
+            Gestionar las Distribuciones
            
             @if($salida)
                 <span class="ml-2 text-sm font-normal text-muted-foreground">
@@ -20,6 +20,7 @@
             <div wire:ignore class="w-full h-[300px] overflow-auto">
                 <div id="modalTableContainer"></div>
             </div>
+            <x-checkbox id="respetarSalida" label="Respetar salida (evitar que la distribución se asigne a otra salida)" wire:model="respetarSalida" class="mt-4" />
         </x-slot>
 
         <x-slot name="footer">

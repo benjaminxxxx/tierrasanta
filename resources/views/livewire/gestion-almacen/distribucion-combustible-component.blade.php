@@ -158,9 +158,11 @@
 
         <x-slot name="content">
             {{-- wire:ignore: Livewire no debe tocar el DOM del Handsontable --}}
-            <div wire:ignore class="w-full h-[300px] overflow-auto">
+            <div wire:ignore class="w-full h-[300px] overflow-auto mb-4">
                 <div id="modalTableContainer"></div>
             </div>
+            <x-input type="checkbox" id="respetarSalida" label="Respetar salida (evitar que la distribución se asigne a otra salida)" wire:model="respetarSalida"/>
+        
         </x-slot>
 
         <x-slot name="footer">
