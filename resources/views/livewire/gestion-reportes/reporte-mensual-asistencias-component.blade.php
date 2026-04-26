@@ -1,4 +1,4 @@
-{{-- Vista principal --}}
+{{-- Vista mensual --}}
 <div x-data="asistenciasChart">
     <x-card>
 
@@ -6,19 +6,21 @@
         <div class="mb-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <x-icon>
-                    <i class="fa-solid fa-user-clock"></i>
+                    <i class="fa-solid fa-calendar-days"></i>
                 </x-icon>
                 <div>
-                    <x-title>Asistencias del día</x-title>
+                    <x-title>Asistencias del mes</x-title>
                     <x-subtitle>
-                        {{ \Carbon\Carbon::parse($fecha)->isoFormat('dddd, D [de] MMMM [de] YYYY') }}
+                        {{ ucfirst(\Carbon\Carbon::createFromDate($anio, $mes, 1)->isoFormat('MMMM [de] YYYY')) }}
                     </x-subtitle>
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <x-button variant="ghost" wire:click="actualizar" wire:target="actualizar" title="Actualizar datos">
+                {{-- Actualizar ahora recalcula desde resúmenes diarios y persiste --}}
+                <x-button variant="ghost" wire:click="actualizar" wire:target="actualizar"
+                          title="Recalcular desde resúmenes diarios">
                     <i class="fa-solid fa-rotate"></i>
-                    <span>Actualizar</span>
+                    <span>Recalcular</span>
                 </x-button>
 
                 <x-button variant="export" title="Exportar PDF" @click="exportar">
@@ -32,18 +34,19 @@
         @if($sinDatos)
             <div class="flex flex-col items-center justify-center gap-1.5 px-6 py-14 text-center text-muted-foreground">
                 <i class="fa-solid fa-database text-4xl opacity-70"></i>
-                <x-subtitle>No hay resumen generado para esta fecha.</x-subtitle>
-                <span class="text-xs">Genera el reporte desde el módulo de planilla diaria.</span>
+                <x-subtitle>No hay resumen generado para este mes.</x-subtitle>
+                <span class="text-xs">
+                    Presiona "Recalcular" para generar el resumen desde los reportes diarios.
+                </span>
             </div>
 
         @else
 
-            {{-- ══ MÉTRICAS RÁPIDAS ════════════════════════════════════════ --}}
             @php
                 $asistidos = collect($totales)->where('acumula', 1)->sum('total');
-                $ausentes = $totalPlanilla - $asistidos;
-                $pctAsist = $totalPlanilla > 0 ? round(($asistidos / $totalPlanilla) * 100, 1) : 0;
-                $pctAusent = $totalPlanilla > 0 ? round(($ausentes / $totalPlanilla) * 100, 1) : 0;
+                $ausentes  = $totalPlanilla - $asistidos;
+                $pctAsist  = $totalPlanilla > 0 ? round(($asistidos / $totalPlanilla) * 100, 1) : 0;
+                $pctAusent = $totalPlanilla > 0 ? round(($ausentes  / $totalPlanilla) * 100, 1) : 0;
             @endphp
 
             <div class="grid grid-cols-1 border-b border-white/[0.07] md:grid-cols-4 rounded-xl overflow-hidden mb-6">
@@ -56,16 +59,14 @@
                 <x-rda-metric label="Sin acumular" value-class="text-red-400" :pct="$pctAusent">
                     {{ $ausentes }}
                 </x-rda-metric>
-                <x-rda-metric label="Actividades" value-class="text-indigo-400">
-                    {{ $resumen->total_actividades ?? 0 }}
+                {{-- Días con datos en lugar de actividades --}}
+                <x-rda-metric label="Días con reporte" value-class="text-indigo-400">
+                    {{ collect($totales)->max('total') > 0 ? '—' : 0 }}
                 </x-rda-metric>
             </div>
 
-            {{-- ══ CUERPO: GRÁFICO + TABLA ════════════════════════════════ --}}
-
             <div class="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4">
 
-                {{-- Gráfico doughnut --}}
                 <div class="flex items-center justify-center">
                     <div class="relative size-[180px]">
                         <div wire:ignore>
@@ -78,7 +79,6 @@
                     </div>
                 </div>
 
-                {{-- Tabla de desglose --}}
                 <div class="overflow-x-auto">
                     <x-table>
                         <x-slot name="thead">
@@ -86,7 +86,7 @@
                                 <x-th>Código</x-th>
                                 <x-th>Descripción</x-th>
                                 <x-th>Tipo</x-th>
-                                <x-th align="right">Total</x-th>
+                                <x-th align="right">Total acum.</x-th>
                                 <x-th align="right">%</x-th>
                                 <x-th></x-th>
                             </x-tr>
@@ -94,37 +94,23 @@
                         <x-slot name="tbody">
                             @foreach($totales as $item)
                                 <x-tr>
-
                                     <x-td>
                                         <x-rda-badge :color="$item['color']">
                                             {{ $item['codigo'] }}
                                         </x-rda-badge>
                                     </x-td>
-
                                     <x-td>
                                         {{ $item['descripcion'] }}
-
                                         @if(!$item['acumula'])
                                             <span>no acumula</span>
                                         @endif
                                     </x-td>
-
-                                    <x-td>
-                                        {{ $item['tipo'] }}
-                                    </x-td>
-
-                                    <x-td align="right">
-                                        {{ $item['total'] }}
-                                    </x-td>
-
-                                    <x-td align="right">
-                                        {{ $item['porcentaje'] }}%
-                                    </x-td>
-
+                                    <x-td>{{ $item['tipo'] }}</x-td>
+                                    <x-td align="right">{{ $item['total'] }}</x-td>
+                                    <x-td align="right">{{ $item['porcentaje'] }}%</x-td>
                                     <x-td>
                                         <x-rda-bar :pct="$item['porcentaje']" :color="$item['color']" />
                                     </x-td>
-
                                 </x-tr>
                             @endforeach
                         </x-slot>
@@ -135,6 +121,7 @@
         @endif
     </x-card>
 </div>
+
 @script
 <script>
     Alpine.data('asistenciasChart', () => ({
@@ -144,33 +131,21 @@
         init() {
             this.$nextTick(() => this.buildChart());
             Livewire.on('resumenActualizado', ({ totales }) => {
-                
-                console.log(totales);
                 this.refrescar(totales);
             });
         },
         destroy() {
-            if (this.chart) {
-                this.chart.destroy();
-                this.chart = null;
-            }
+            if (this.chart) { this.chart.destroy(); this.chart = null; }
         },
         buildChart() {
             const canvas = document.getElementById('chartAsistencias');
             if (!canvas) return;
-            if (!window.Chart) {
-                setTimeout(() => this.buildChart(), 300);
-                return;
-            }
-
+            if (!window.Chart) { setTimeout(() => this.buildChart(), 300); return; }
             const existing = Chart.getChart(canvas);
             if (existing) existing.destroy();
-
-            const labels = this.totales.map(t => t.descripcion);
-            const data = this.totales.map(t => t.total);
-            const colors = this.totales.map(t => t.color);
-            const borders = this.totales.map(t => t.color);
-
+            const labels  = this.totales.map(t => t.descripcion);
+            const data    = this.totales.map(t => t.total);
+            const colors  = this.totales.map(t => t.color);
             this.chart = new Chart(canvas, {
                 type: 'doughnut',
                 data: {
@@ -178,7 +153,7 @@
                     datasets: [{
                         data,
                         backgroundColor: colors.map(c => c + 'CC'),
-                        borderColor: borders,
+                        borderColor: colors,
                         borderWidth: 1.5,
                         hoverOffset: 6,
                     }]
@@ -199,9 +174,8 @@
                             callbacks: {
                                 label: ctx => {
                                     const pct = this.total > 0
-                                        ? ((ctx.parsed / this.total) * 100).toFixed(1)
-                                        : 0;
-                                    return `  ${ctx.parsed} empleados (${pct}%)`;
+                                        ? ((ctx.parsed / this.total) * 100).toFixed(1) : 0;
+                                    return `  ${ctx.parsed} (${pct}%)`;
                                 }
                             }
                         }
@@ -215,7 +189,7 @@
         },
         refrescar(nuevosTotales) {
             this.totales = nuevosTotales;
-            this.total = nuevosTotales.reduce((s, t) => s + t.total, 0);
+            this.total   = nuevosTotales.reduce((s, t) => s + t.total, 0);
             this.$nextTick(() => this.buildChart());
         }
     }));

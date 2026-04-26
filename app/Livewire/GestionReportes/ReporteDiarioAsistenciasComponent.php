@@ -3,6 +3,7 @@
 namespace App\Livewire\GestionReportes;
 
 use App\Models\PlanResumenDiario;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Livewire\Component;
 
 class ReporteDiarioAsistenciasComponent extends Component
@@ -18,6 +19,32 @@ class ReporteDiarioAsistenciasComponent extends Component
     {
         $this->fecha = $fecha;
         $this->cargarDatos();
+    }
+    public function exportarPdf(string $chartBase64 = ''): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $asistidos = collect($this->totales)->where('acumula', 1)->sum('total');
+        $ausentes = $this->totalPlanilla - $asistidos;
+
+        $pdf = Pdf::loadView('reportes.asistencias-pdf', [
+            'fechaFormateada' => \Carbon\Carbon::parse($this->fecha)
+                ->isoFormat('dddd, D [de] MMMM [de] YYYY'),
+            'totalPlanilla' => $this->totalPlanilla,
+            'asistidos' => $asistidos,
+            'ausentes' => $ausentes,
+            'pctAsist' => $this->totalPlanilla > 0
+                ? round(($asistidos / $this->totalPlanilla) * 100, 1) : 0,
+            'pctAusent' => $this->totalPlanilla > 0
+                ? round(($ausentes / $this->totalPlanilla) * 100, 1) : 0,
+            'actividades' => $this->resumen->total_actividades ?? 0,
+            'totales' => $this->totales,
+            'chartBase64' => $chartBase64 ?: null,
+        ])->setPaper('a4', 'landscape');
+
+        return response()->streamDownload(
+            fn() => print ($pdf->output()),
+            "asistencias_{$this->fecha}.pdf",
+            ['Content-Type' => 'application/pdf']
+        );
     }
 
     public function actualizar(): void
@@ -50,13 +77,13 @@ class ReporteDiarioAsistenciasComponent extends Component
                     : 0;
 
                 return [
-                    'codigo'        => $t->codigo,
-                    'descripcion'   => $t->descripcion,
-                    'color'         => $t->color,
-                    'tipo'          => $t->tipo,
-                    'total'         => $t->total_asistidos,
-                    'porcentaje'    => $porcentaje,
-                    'acumula'       => $t->acumula_asistencia,
+                    'codigo' => $t->codigo,
+                    'descripcion' => $t->descripcion,
+                    'color' => $t->color,
+                    'tipo' => $t->tipo,
+                    'total' => $t->total_asistidos,
+                    'porcentaje' => $porcentaje,
+                    'acumula' => $t->acumula_asistencia,
                     'afecta_sueldo' => $t->afecta_sueldo,
                 ];
             })

@@ -12,4 +12,7 @@ class ReporteController extends Controller
     public function ResumenPlanilla(){
         return view('livewire.gestion-planilla.resumen-planilla-indice');
     }
+    public function reporte_mensual(){
+        return view('livewire.gestion-reportes.reporte-mensual');
+    }
 }

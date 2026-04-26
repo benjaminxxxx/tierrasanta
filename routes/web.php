@@ -167,6 +167,7 @@ Route::middleware([
             ->name('gestion_cuadrilleros.resumen_anual');
     });
     Route::get('/reporte-general/reporte-diario', [ReporteController::class, 'reporte_diario'])->name('reporte_general.reporte_diario');
+    Route::get('/reporte-general/reporte-mensual', [ReporteController::class, 'reporte_mensual'])->name('reporte_general.reporte_mensual');
 
     Route::get('/reporte/actividades-diarias', [ReporteDiarioController::class, 'actividades_diarias'])->name('reporte.actividades_diarias');
     Route::get('/reporte/reporte-diario', [ReporteDiarioController::class, 'index'])->name('reporte.reporte_diario');

@@ -183,6 +183,7 @@ class Sidebar extends Component
                 'roles' => ['Administrador', 'Super Admin'],
                 'children' => [
                     ['title' => 'Reporte Diario', 'route' => 'reporte_general.reporte_diario'],
+                    ['title' => 'Reporte Mensual', 'route' => 'reporte_general.reporte_mensual'],
                 ]
             ],
         ];
