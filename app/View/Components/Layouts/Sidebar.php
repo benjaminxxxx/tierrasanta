@@ -184,6 +184,7 @@ class Sidebar extends Component
                 'children' => [
                     ['title' => 'Reporte Diario', 'route' => 'reporte_general.reporte_diario'],
                     ['title' => 'Reporte Mensual', 'route' => 'reporte_general.reporte_mensual'],
+                    ['title' => 'Reporte Anual', 'route' => 'reporte_general.reporte_anual'],
                 ]
             ],
         ];

@@ -15,4 +15,7 @@ class ReporteController extends Controller
     public function reporte_mensual(){
         return view('livewire.gestion-reportes.reporte-mensual');
     }
+    public function reporte_anual(){
+        return view('livewire.gestion-reportes.reporte-anual'); 
+    }
 }

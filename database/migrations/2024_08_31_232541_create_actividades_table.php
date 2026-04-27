@@ -23,9 +23,7 @@ return new class extends Migration {
             $table->string('nombre_labor');
             $table->integer('codigo_labor');
             $table->unsignedInteger('recojos')->default(1);
-            $table->json('tramos_bonificacion')->nullable();
-            $table->json('tramos_bonificacion_destajo')->nullable();
-            $table->decimal('estandar_produccion', 10, 2)->nullable();
+            
             $table->string('unidades', 20)->nullable();
 
             // Control de auditoría
