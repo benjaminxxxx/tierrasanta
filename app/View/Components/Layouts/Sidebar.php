@@ -178,13 +178,14 @@ class Sidebar extends Component
                 ]
             ],
             [
-                'title' => 'Reporte',
+                'title' => 'Reporte y Auditoria',
                 'icon' => 'fa fa-file',
                 'roles' => ['Administrador', 'Super Admin'],
                 'children' => [
                     ['title' => 'Reporte Diario', 'route' => 'reporte_general.reporte_diario'],
                     ['title' => 'Reporte Mensual', 'route' => 'reporte_general.reporte_mensual'],
                     ['title' => 'Reporte Anual', 'route' => 'reporte_general.reporte_anual'],
+                    ['title' => 'Auditoria', 'route' => 'auditoria'],
                 ]
             ],
         ];

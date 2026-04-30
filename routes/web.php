@@ -171,6 +171,7 @@ Route::middleware([
     Route::get('/reporte-general/reporte-anual', [ReporteController::class, 'reporte_anual'])->name('reporte_general.reporte_anual');
 
     Route::get('/reporte/actividades-diarias', [ReporteDiarioController::class, 'actividades_diarias'])->name('reporte.actividades_diarias');
+    Route::get('/auditoria', [ReporteController::class, 'auditoria'])->name('auditoria');
     Route::get('/reporte/reporte-diario', [ReporteDiarioController::class, 'index'])->name('reporte.reporte_diario');
     Route::get('/riego/reporte-diario', [ReporteDiarioController::class, 'riego'])->name('reporte.reporte_diario_riego');
     Route::post('/reporte/reporte-diario/importar-empleados', [ReporteDiarioController::class, 'ImportarEmpleados'])->name('reporte.reporte_diario.importar_empleados');
