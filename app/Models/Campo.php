@@ -47,7 +47,7 @@ class Campo extends Model
             ->where('fecha', Carbon::now()->format('Y-m-d')) // Filtra por la fecha actual
             ->where('hora_inicio', '<=', $horaActual) // Hora de inicio debe ser menor o igual a la hora actual
             ->where('hora_fin', '>=', $horaActual) // Hora de fin debe ser mayor o igual a la hora actual
-            ->exists(); 
+            ->exists();
     }
 
     // Accesor para verificar si el campo se regó hoy
@@ -57,17 +57,17 @@ class Campo extends Model
 
         // Obtener el primer detalle de riego que coincide con la fecha
         $detalleRiego = $this->detalleRiegos()
-        ->where('fecha', $fecha)
-        ->get(); // Usamos first() en lugar de exists() para obtener el primer resultado
+            ->where('fecha', $fecha)
+            ->get(); // Usamos first() en lugar de exists() para obtener el primer resultado
 
-        if ($detalleRiego && $detalleRiego->count()>0) {
+        if ($detalleRiego && $detalleRiego->count() > 0) {
             $data = [];
             foreach ($detalleRiego as $riego) {
                 $data[] = [
                     'regadorDocumento' => $riego->documento,
                     'hora_inicio' => Carbon::parse($riego->hora_inicio)->format('H:i'), // Convertir a HH:MM
                     'hora_fin' => Carbon::parse($riego->hora_fin)->format('H:i'), // Convertir a HH:MM
-                    'nombreRegador'=>$riego->regador
+                    'nombreRegador' => $riego->regador
                 ];
             }
             return [
@@ -96,7 +96,18 @@ class Campo extends Model
     }
     public function getCampaniaActualAttribute()
     {
-        $ultimaCampania = self::campanias()->orderBy('fecha_inicio','desc')->first();
+        $ultimaCampania = self::campanias()->orderBy('fecha_inicio', 'desc')->first();
         return $ultimaCampania;
+    }
+    public function campanaActiva()
+    {
+        return $this->hasOne(CampoCampania::class, 'campo', 'nombre')
+            ->whereNull('fecha_fin');
+    }
+
+    public function siembras()
+    {
+        return $this->hasMany(Siembra::class, 'campo_nombre', 'nombre')
+            ->orderByDesc('fecha_siembra');
     }
 }

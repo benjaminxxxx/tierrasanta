@@ -6,7 +6,7 @@ use App\Models\Auditoria;
 
 class AuditoriaServicio
 {
-    public static function getAuditoria(string $modelo, int $id): array
+    public static function getAuditoria(string $modelo, int|string $id): array
     {
         return Auditoria::where('modelo', $modelo)
             ->where('modelo_id', $id)
@@ -25,7 +25,7 @@ class AuditoriaServicio
     }
     public static function registrar(
         string $modelo,
-        int $modeloId,
+        int|string $modeloId,
         string $accion,
         ?array $antes = null,
         ?array $despues = null,
