@@ -2,18 +2,16 @@
 
 namespace App\Livewire\CochinillaVentas;
 
-use App\Livewire\Traits\ConFechaReporte;
 use App\Models\VentaCochinilla;
 use App\Services\Cochinilla\VentaServicio;
-use Illuminate\Support\Carbon;
+use App\Traits\Selectores\ConSelectorMes;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
-use Session;
 
 class CochinillaVentaReporteComponent extends Component
 {
     use LivewireAlert;
-    use ConFechaReporte;
+    use ConSelectorMes;
     //Variables Existentes $mes,$anio
     public $condicionSugerencia = [];
     public $clienteSugerencia = [];
@@ -26,7 +24,7 @@ class CochinillaVentaReporteComponent extends Component
     protected $listeners = ['storeTableAgruparPorIngresos', 'storeTableDataEnviarAContabilidad'];
     public function mount()
     {
-        $this->cargarFechaDesdeSession();
+        $this->inicializarMesAnio();
         $this->cargarReporte();
         $this->condicionSugerencia = VentaCochinilla::query()
             ->select('condicion')
@@ -42,10 +40,7 @@ class CochinillaVentaReporteComponent extends Component
             ->pluck('cliente')
             ->toArray();
     }
-    public function updatedMes(){
-        $this->cargarReporte();
-    }
-    public function updatedAnio(){
+    protected function despuesMesAnioModificado($anio, $mes){
         $this->cargarReporte();
     }
     public function cargarReporte(){

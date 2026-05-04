@@ -107,7 +107,17 @@ class CampaniaCampoSelectorComponent extends Component
     }
 
     // --- Acciones ---
+    public function generarReporteConsumo($campaniaId)
+    {
+        try {
+            $campaniaServicio = new \App\Services\CampaniaServicio($campaniaId);
 
+            $campaniaServicio->actualizarConsumo();
+            $this->alert('success', 'Reporte de consumo generado correctamente.');
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
+        }
+    }
     public function generarBdd($campaniaId)
     {
         try {

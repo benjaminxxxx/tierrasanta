@@ -577,7 +577,7 @@ class AlmacenServicio
         ];
 
         $pesticidas = PesticidaCampania::where('campo_campania_id', $campaniaId)
-            ->with('producto') // Asegúrate que producto trae categoría_pesticida
+            ->with('producto.categoria')
             ->get();
 
         $resumen = [];
@@ -585,7 +585,7 @@ class AlmacenServicio
 
         // Agrupamos primero por categoría
         $agrupadoPorCategoria = $pesticidas->groupBy(function ($f) {
-            return $f->producto->categoria_pesticida ?? 'Sin categoría';
+            return $f->producto?->categoria?->descripcion ?? 'Sin categoría';
         });
 
         foreach ($agrupadoPorCategoria as $categoria => $grupoPorCategoria) {

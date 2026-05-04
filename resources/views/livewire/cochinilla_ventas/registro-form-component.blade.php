@@ -8,8 +8,8 @@
                 @if (!$registroEntregaGrupoId)
                     {{-- Filtros --}}
                     <x-flex class="my-4 items-start">
-                        <x-input type="date" label="Fecha de venta" class="!w-auto" wire:model="fecha_venta" />
-                        <x-select label="Tipo de ingreso" class="!w-auto" wire:model="tipo_ingreso">
+                        <x-selector-dia label="Fecha de venta" wire:model="fecha_venta" />
+                        <x-select label="Tipo de ingreso" class="w-auto" wire:model="tipo_ingreso">
                             <option value="">Todos los ingresos</option>
                             <option value="filtrados">Ingresos Filtrados</option>
                             <option value="sinfiltrados">Sin Filtrados (para vender fresco)</option>
@@ -77,6 +77,7 @@
         seleccionados: [],
         tableData: [],
         totalVenta: '0.00',
+        isDark: JSON.parse(localStorage.getItem('darkMode')),
         fechaVenta: null,
         selectedRows: [],
         condicionSugerencia: @json($condicionSugerencia),
@@ -85,25 +86,19 @@
         hot: null,
         init() {
 
-            this.listeners.push(
+            Livewire.on('cargarTablaFuente', (data) => {
 
-                Livewire.on('cargarTablaFuente', (data) => {
+                this.$nextTick(() => {
 
-                    this.$nextTick(() => {
+                    const ingresos = data[0].ingresos;
+                    this.fechaVenta = data[0].fecha_venta;
+                    this.initTableFuente(ingresos);
+                });
+            });
+            Livewire.on('sendDataRegistroEntregaVenta', (data) => {
 
-                        const ingresos = data[0].ingresos;
-                        this.fechaVenta = data[0].fecha_venta;
-                        this.initTableFuente(ingresos);
-                    });
-                })
-            );
-            this.listeners.push(
-
-                Livewire.on('sendDataRegistroEntregaVenta', (data) => {
-
-                    this.sendDataRegistroEntregaVenta();
-                })
-            );
+                this.sendDataRegistroEntregaVenta();
+            });
         },
         actualizarTotalVenta() {
             if (!this.hot) {
@@ -131,6 +126,7 @@
             const container = this.$refs.tableContainerFuente;
             const hot = new Handsontable(container, {
                 data: datos,
+                themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
                 colHeaders: true,
                 rowHeaders: true,
                 columns: [
@@ -139,7 +135,7 @@
                         type: 'text',
                         title: 'Detalle Cosecha',
                         width: 70,
-                        className: 'text-left !bg-gray-50',
+                        className: this.isDark ? 'text-left !bg-muted' : 'text-left !bg-gray-50 !text-black',
                         readOnly: true
                     },
 
@@ -148,7 +144,7 @@
                         type: 'text',
                         title: 'Detalle Stock',
                         width: 45,
-                        className: 'text-left !bg-gray-50',
+                        className: this.isDark ? 'text-left !bg-muted' : 'text-left !bg-gray-50 !text-black',
                         readOnly: true
                     },
 

@@ -64,10 +64,6 @@ class Producto extends Model
         return $this->belongsToMany(Nutriente::class, 'producto_nutrientes', 'producto_id', 'nutriente_codigo')
             ->withPivot('porcentaje');
     }
-    public function categoriaPesticida()
-    {
-        return $this->belongsTo(CategoriaPesticida::class, 'categoria_pesticida');
-    }
     public function getCompraActivaAttribute()
     {
         return $this->compras()->where('estado', 1)->exists();
@@ -206,7 +202,14 @@ class Producto extends Model
     }
     public function getCategoriaConDescripcionAttribute()
     {
-        return mb_strtoupper($this->categoria_codigo . ($this->categoriaPesticida?->descripcion ? ' - ' . $this->categoriaPesticida->descripcion : ''));
+        $categoria = $this->categoria?->descripcion;
+        $subcategoria = $this->subcategoria?->nombre;
+
+        if ($subcategoria) {
+            return mb_strtoupper($categoria . ' - ' . $subcategoria);
+        }
+
+        return mb_strtoupper($categoria);
     }
     public function getListaNutrientesAttribute()
     {

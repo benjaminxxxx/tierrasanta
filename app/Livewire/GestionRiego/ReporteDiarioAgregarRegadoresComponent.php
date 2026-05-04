@@ -2,11 +2,6 @@
 
 namespace App\Livewire\GestionRiego;
 
-use App\Livewire\Traits\ConFechaReporteDia;
-use App\Models\ConsolidadoRiego;
-use App\Models\Cuadrillero;
-use App\Models\PlanEmpleado;
-use App\Models\ReporteDiarioRiego;
 use App\Services\Campo\Riego\RiegoServicio;
 use App\Services\RecursosHumanos\Personal\EmpleadoServicio;
 use Exception;

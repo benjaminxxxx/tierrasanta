@@ -30,6 +30,9 @@
                         <x-dropdown-link class="text-center" wire:click="generarBdd({{ $campaniaSeleccionada }})">
                             Generar Reporte BDD
                         </x-dropdown-link>
+                        <x-dropdown-link class="text-center" wire:click="generarReporteConsumo({{ $campaniaSeleccionada }})">
+                            Generar Reporte Consumo
+                        </x-dropdown-link>
                         <x-dropdown-link class="text-center !text-red-600"
                             wire:confirm="¿Estás seguro de eliminar esta campaña?"
                             wire:click="eliminarCampania({{ $campaniaSeleccionada }})">

@@ -5,8 +5,6 @@ namespace App\Services;
 use App\Models\AlmacenProductoSalida;
 use App\Models\CampoCampania;
 use App\Models\CamposCampaniasConsumo;
-use App\Models\CochinillaInfestacion;
-use App\Models\ContabilidadCostoDetalle;
 use App\Models\ResumenConsumoProductos;
 use Exception;
 use Illuminate\Support\Carbon;
@@ -36,7 +34,7 @@ class CampaniaServicio
         if (!$this->campoCampania) {
             return;
         }
-        
+
         $data = [];
         $evaluacionesPoblacionPlanta = $this->campoCampania->poblacionPlantas;
         if ($evaluacionesPoblacionPlanta->count() > 0) {
@@ -45,14 +43,14 @@ class CampaniaServicio
             if ($evaluacionDiaCero) {
                 $data['pp_dia_cero_fecha_evaluacion'] = $evaluacionDiaCero->fecha;
                 $data['pp_dia_cero_numero_pencas_madre'] = $evaluacionDiaCero->promedio_plantas_ha;
-            }else{
+            } else {
                 $data['pp_dia_cero_fecha_evaluacion'] = null;
                 $data['pp_dia_cero_numero_pencas_madre'] = null;
             }
             if ($evaluacionUltimaResiembra) {
                 $data['pp_resiembra_fecha_evaluacion'] = $evaluacionUltimaResiembra->fecha;
                 $data['pp_resiembra_numero_pencas_madre'] = $evaluacionUltimaResiembra->promedio_plantas_ha;
-            }else{
+            } else {
                 $data['pp_resiembra_fecha_evaluacion'] = null;
                 $data['pp_resiembra_numero_pencas_madre'] = null;
             }
@@ -130,7 +128,7 @@ class CampaniaServicio
 
         $this->campoCampania->update($data);
     }
-    
+
 
     /**
      * Actualiza los Gastos y Consumos de una determinada campaña
@@ -142,10 +140,10 @@ class CampaniaServicio
             'gasto_planilla' => $this->gastoPlanilla(),
             'gasto_cuadrilla' => $this->gastoCuadrilla()
         ]);
-/*
-        $this->actualizarConsumo();
-        $this->campoCampania->refresh();
-        $this->generarBddMensual();*/
+        /*
+                $this->actualizarConsumo();
+                $this->campoCampania->refresh();
+                $this->generarBddMensual();*/
     }
     public function generarBddMensual()
     {
@@ -493,7 +491,12 @@ class CampaniaServicio
         if ($fecha_fin) {
             $query->whereDate('fecha_reporte', '<=', $fecha_fin);
         }
-        $registros = $query->where('campo_nombre', $campo)->get();
+        $registros = $query->where('campo_nombre', $campo)
+            ->with([
+                'producto.categoria',
+                'compraSalida.proveedor'
+            ])
+            ->get();
         if ($registros) {
 
             $resumenConsumoProductosData = [];
@@ -518,7 +521,7 @@ class CampaniaServicio
                     'fecha' => $registro->fecha_reporte,
                     'campo' => $registro->campo_nombre,
                     'producto' => $registro->producto->nombre_completo,
-                    'categoria' => $registro->producto->categoria,
+                    'categoria' => $registro->producto?->categoria?->descripcion,
                     'cantidad' => $registro->cantidad,
                     'total_costo' => $registro->total_costo,
                     'campos_campanias_id' => $this->campoCampania->id,

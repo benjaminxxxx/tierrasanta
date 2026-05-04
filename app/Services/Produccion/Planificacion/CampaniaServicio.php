@@ -29,6 +29,7 @@ class CampaniaServicio
             $campania->fecha_inicio,
             $campania->fecha_fin
         );
+        
         $informacionCuadrilla = app(DataManoObraServicio::class)->generarCuaderillerosPor(
             $campania->campo,
             $campania->fecha_inicio,

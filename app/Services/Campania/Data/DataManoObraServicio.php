@@ -14,28 +14,73 @@ class DataManoObraServicio
     public function generarPlanillerosPor($campo, $fechaInicio, $fechaFin = null)
     {
         $fechaFin = $fechaFin ?? now();
-        $detalleDiarios = PlanDetalleHora::with(['registroDiario.detalleMensual.empleado', 'labores'])->whereHas('registroDiario', function ($registroDiario) use ($fechaInicio, $fechaFin) {
-            return $registroDiario->whereBetween('fecha', [$fechaInicio, $fechaFin]);
-        })
+
+        $detalleDiarios = PlanDetalleHora::with([
+            'registroDiario.detalleMensual.empleado',
+            'labores'
+        ])
+            ->whereHas('registroDiario', function ($query) use ($fechaInicio, $fechaFin) {
+                $query->whereBetween('fecha', [$fechaInicio, $fechaFin]);
+            })
             ->where('campo_nombre', $campo)
-            ->get()
-            ->toArray();
+            ->get();
+
         $data = [];
+
         foreach ($detalleDiarios as $i => $detalleDiario) {
 
-            $genero = '-';
+            $registroDiario = $detalleDiario->registroDiario;
+            $detalleMensual = $registroDiario?->detalleMensual;
+            $empleado = $detalleMensual?->empleado;
 
-            if (isset($detalleDiario['registro_diario']['detalle_mensual']['empleado'])) {
-                $genero = $detalleDiario['registro_diario']['detalle_mensual']['empleado']['genero'];
+            // Si falta información crítica, continuar o registrar
+            if (!$registroDiario || !$detalleMensual) {
+
+                logger()->warning('Registro incompleto en generarPlanillerosPor', [
+                    'indice' => $i,
+                    'plan_detalle_hora_id' => $detalleDiario->id,
+                ]);
+
+                continue;
             }
-            $fecha = $detalleDiario['registro_diario']['fecha'];
-            $trabajador = $detalleDiario['registro_diario']['detalle_mensual']['nombres'];
-            
-            $manoObra = $detalleDiario['labores']['nombre_labor'];
-            $jornalDiario = (float) $detalleDiario['registro_diario']['detalle_mensual']['jornal_diario'];
 
-            $cantidadJornales = CalculoHelper::calcularJornales2($detalleDiario['hora_inicio'], $detalleDiario['hora_fin']);
-            $totalHoras = CalculoHelper::obtenerDiferenciaHoras($detalleDiario['hora_inicio'], $detalleDiario['hora_fin']);
+            $fecha = $registroDiario->fecha;
+
+            $trabajador = $detalleMensual->nombres ?? '-';
+
+            $genero = $empleado?->genero ?? '-';
+
+            $jornalDiario = (float) ($detalleMensual->jornal_diario ?? 0);
+
+            // Relación labores
+            $manoObra = '-';
+
+            if ($detalleDiario->labores) {
+
+                // Si labores es belongsTo
+                if (is_object($detalleDiario->labores)) {
+                    $manoObra = $detalleDiario->labores->nombre_labor ?? '-';
+                }
+
+                // Si labores es hasMany
+                if ($detalleDiario->labores instanceof \Illuminate\Support\Collection) {
+                    $manoObra = $detalleDiario->labores
+                        ->pluck('nombre_labor')
+                        ->filter()
+                        ->implode(', ');
+                }
+            }
+
+            $cantidadJornales = CalculoHelper::calcularJornales2(
+                $detalleDiario->hora_inicio,
+                $detalleDiario->hora_fin
+            );
+
+            $totalHoras = CalculoHelper::obtenerDiferenciaHoras(
+                $detalleDiario->hora_inicio,
+                $detalleDiario->hora_fin
+            );
+
             $data[] = [
                 'fecha' => $fecha,
                 'horas' => $totalHoras,
@@ -43,9 +88,10 @@ class DataManoObraServicio
                 'sexo' => $genero,
                 'mano_obra' => $manoObra,
                 'cantidad_jornales' => $cantidadJornales,
-                'costo' => ($jornalDiario * $cantidadJornales),
+                'costo' => $jornalDiario * $cantidadJornales,
             ];
         }
+
         return $data;
     }
     public function generarCuaderillerosPor($campo, $fechaInicio, $fechaFin = null)

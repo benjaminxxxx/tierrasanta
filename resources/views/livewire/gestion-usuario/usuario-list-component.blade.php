@@ -2,7 +2,7 @@
     <x-card>
         <x-flex>
             <x-title>
-                Usuarios
+                Gestión de Usuarios
             </x-title>
             <x-button type="button" @click="$wire.dispatch('CrearUsuario')" class="w-full md:w-auto ">
                 <i class="fa fa-user-plus"></i> Nuevo usuario
@@ -58,7 +58,7 @@
                     @endforeach
                 @else
                     <x-tr>
-                        <x-td colspan="4">No hay usuarios registrados.</x-td>
+                        <x-td colspan="100%">No hay usuarios registrados.</x-td>
                     </x-tr>
                 @endif
             </x-slot>

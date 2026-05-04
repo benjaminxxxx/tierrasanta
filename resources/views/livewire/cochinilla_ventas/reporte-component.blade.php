@@ -8,55 +8,52 @@
     </x-flex>
 
     <x-card>
-        <x-spacing>
 
+        <div x-data="tableReporteVenta">
 
-            <div x-data="tableReporteVenta">
-
-                <x-flex class="mb-4">
-                    <x-select-meses wire:model.live="mes" />
-                    <x-select-anios wire:model.live="anio" max="current" />
-                    @if ($puedeVincular)
-                        <x-button variant="danger" wire:click="cancelarGenerarReporte">
-                            <i class="fa fa-file"></i> Cancelar Generar Reporte
-                        </x-button>
-                    @else
-                        <x-button wire:click="obtenerParaReporte">
-                            <i class="fa fa-file"></i> Generar Reporte
-                        </x-button>
-                    @endif
-
-                    <x-button wire:click="vincularIngreso" :disabled="!$puedeVincular">
-                        <i class="fa fa-link"></i> Vincular Ingreso
+            <x-flex class="mb-4">
+                <x-select-meses wire:model.live="mes" class="w-auto" />
+                <x-select-anios wire:model.live="anio" max="current" class="w-auto" />
+                @if ($puedeVincular)
+                    <x-button variant="danger" wire:click="cancelarGenerarReporte">
+                        <i class="fa fa-file"></i> Cancelar Generar Reporte
                     </x-button>
-                    <x-button @click="agruparPorIngresos" :disabled="!$registroVinculado">
-                        <i class="fa fa-layer-group"></i> Agrupar por Ingresos
+                @else
+                    <x-button wire:click="obtenerParaReporte">
+                        <i class="fa fa-file"></i> Generar Reporte
+                    </x-button>
+                @endif
+
+                <x-button wire:click="vincularIngreso" :disabled="!$puedeVincular">
+                    <i class="fa fa-link"></i> Vincular Ingreso
+                </x-button>
+                <x-button @click="agruparPorIngresos" :disabled="!$registroVinculado">
+                    <i class="fa fa-layer-group"></i> Agrupar por Ingresos
+                </x-button>
+            </x-flex>
+
+            <div wire:ignore>
+                <x-h3>Detalle de Venta</x-h3>
+                <div x-ref="tableReporteContainer"></div>
+                <div class="text-right mt-2 font-semibold text-lg dark:text-white">
+                    Total Venta: Kg. <span x-text="totalVenta"></span>
+                </div>
+                <x-flex class="w-full justify-end my-3">
+                    <x-button @click="enviarVentaAContabilidad">
+                        <i class="fa fa-paper-plane"></i> Guardar Reporte
                     </x-button>
                 </x-flex>
 
-                <div wire:ignore>
-                    <x-h3>Detalle de Venta</x-h3>
-                    <div x-ref="tableReporteContainer"></div>
-                    <div class="text-right mt-2 font-semibold text-lg dark:text-white">
-                        Total Venta: Kg. <span x-text="totalVenta"></span>
-                    </div>
-                    <x-flex class="w-full justify-end my-3">
-                        <x-button @click="enviarVentaAContabilidad">
-                            <i class="fa fa-paper-plane"></i> Guardar Reporte
-                        </x-button>
-                    </x-flex>
-
-                </div>
-                @if($totalVentaEntrega != 0)
-                    <div class="my-3">
-                        <x-h3>
-                            Total Venta según entrega: {{ $totalVentaEntrega }}
-                        </x-h3>
-                        <p>Antes de guardar los cambios el total de Kg. debe coincidir</p>
-                    </div>
-                @endif
             </div>
-        </x-spacing>
+            @if($totalVentaEntrega != 0)
+                <div class="my-3">
+                    <x-h3>
+                        Total Venta según entrega: {{ $totalVentaEntrega }}
+                    </x-h3>
+                    <p>Antes de guardar los cambios el total de Kg. debe coincidir</p>
+                </div>
+            @endif
+        </div>
     </x-card>
 
     <x-loading wire:loading />
@@ -71,6 +68,7 @@
         tableData: @json($reporteCargado),
         totalVenta: '0.00',
         fechaVenta: null,
+        isDark: JSON.parse(localStorage.getItem('darkMode')),
         selectedRows: [],
         condicionSugerencia: @json($condicionSugerencia),
         clienteSugerencia: @json($clienteSugerencia),
@@ -81,16 +79,13 @@
             this.$nextTick(() => {
                 this.initTable();
             });
-            this.listeners.push(
+            Livewire.on('cargarTabla', (data) => {
 
-                Livewire.on('cargarTabla', (data) => {
-
-                    this.$nextTick(() => {
-                        this.tableData = data[0].entregas;
-                        this.initTable();
-                    });
-                })
-            );
+                this.$nextTick(() => {
+                    this.tableData = data[0].entregas;
+                    this.initTable();
+                });
+            });
         },
         initTable() {
 
@@ -106,6 +101,7 @@
                 data: this.tableData,
                 colHeaders: true,
                 rowHeaders: true,
+                themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
                 columns: [
                     {
                         data: 'cosecha_fecha_ingreso',

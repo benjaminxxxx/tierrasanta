@@ -2,11 +2,9 @@
 
 namespace App\Livewire\CochinillaVentas;
 
-use App\Livewire\Traits\ConFechaReporte;
 use App\Livewire\Traits\ListaCampos;
-use App\Models\VentaCochinilla;
 use App\Services\Cochinilla\VentaServicio;
-use Illuminate\Support\Carbon;
+use App\Traits\Selectores\ConSelectorMes;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use Session;
@@ -14,7 +12,7 @@ use Session;
 class CochinillaVentaFacturadaComponent extends Component
 {
     use LivewireAlert;
-    use ConFechaReporte;
+    use ConSelectorMes;
     use ListaCampos;
     public $ventasFacturadas = [];
     protected $listeners = ['storeTableDataRegistroVentas'];
@@ -22,17 +20,11 @@ class CochinillaVentaFacturadaComponent extends Component
     public function mount()
     {
         $this->cargarCampos();
-        $this->cargarFechaDesdeSession();
+        $this->inicializarMesAnio();
         $this->cargarReporte();
     }
-    public function updatedMes($valor)
+    protected function despuesMesAnioModificado($anio, $mes)
     {
-        $this->actualizarSesionMes($valor);
-        $this->cargarReporte();
-    }
-    public function updatedAnio($valor)
-    {
-        $this->actualizarSesionAnio($valor);
         $this->cargarReporte();
     }
     public function actualizarDesdeReporte(){

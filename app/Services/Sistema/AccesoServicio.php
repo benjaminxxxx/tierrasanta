@@ -8,6 +8,13 @@ use Illuminate\Support\Collection;
 
 class AccesoServicio
 {
+
+    public static function crearRolSiNoExiste(string $nombre): Role
+    {
+        return Role::firstOrCreate(
+            ['name' => $nombre, 'guard_name' => 'web']
+        );
+    }
     public static function obtenerRoles(): Collection
     {
         return Role::with('permissions')->get();

@@ -11,8 +11,8 @@
         <div x-data="tableVentaFacturada">
 
             <x-flex class="mb-4">
-                <x-select-meses wire:model.live="mes" />
-                <x-select-anios wire:model.live="anio" max="current" />
+                <x-select-meses wire:model.live="mes" class="w-auto" />
+                <x-select-anios wire:model.live="anio" max="current" class="w-auto" />
                 <x-button wire:click="actualizarDesdeReporte">
                     <i class="fa fa-sync"></i> Actualizar desde reporte
                 </x-button>
@@ -47,6 +47,7 @@
         tableData: @json($ventasFacturadas),
         totalVenta: '0.00',
         campos: @json($campos),
+        isDark: JSON.parse(localStorage.getItem('darkMode')),
         totalVentaDolares: '0.00',
         fechaVenta: null,
         selectedRows: [],
@@ -57,15 +58,12 @@
             this.$nextTick(() => {
                 this.initTable();
             });
-            this.listeners.push(
-
-                Livewire.on('cargarTabla', (data) => {
-                    this.$nextTick(() => {
-                        this.tableData = data[0].ventas;
-                        this.initTable();
-                    });
-                })
-            );
+            Livewire.on('cargarTabla', (data) => {
+                this.$nextTick(() => {
+                    this.tableData = data[0].ventas;
+                    this.initTable();
+                });
+            });
         },
         initTable() {
 
@@ -80,6 +78,7 @@
             const hot = new Handsontable(container, {
                 data: this.tableData,
                 colHeaders: true,
+                themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
                 rowHeaders: true,
                 columns: [
                     { data: 'campania', type: 'text', className: '!text-center !bg-amber-200', title: 'CAMPAÑA', readOnly: true },

@@ -13,7 +13,7 @@ return new class extends Migration {
         Schema::create('auditorias', function (Blueprint $table) {
             $table->id();
             $table->string('modelo');               // App\Models\CochinillaInfestacion
-            $table->unsignedBigInteger('modelo_id');
+            $table->string('modelo_id',10)->nullable();
             $table->enum('accion', ['crear', 'editar', 'eliminar']);
             $table->json('cambios')->nullable();    // {"antes": {...}, "despues": {...}}
             $table->string('observacion')->nullable();
