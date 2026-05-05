@@ -3,9 +3,12 @@
         <x-h3>
             Registro de Entrega de venta
         </x-h3>
-        <x-button @click="$wire.dispatch('crearRegistroVentaCochinilla')">
-            <i class="fa fa-plus"></i> Registrar Entrega de Venta
-        </x-button>
+        @can('Registrar entrega de venta')
+            <x-button @click="$wire.dispatch('crearRegistroVentaCochinilla')">
+                <i class="fa fa-plus"></i> Registrar Entrega de Venta
+            </x-button>
+        @endcan
+
     </x-flex>
     <x-card>
         <x-flex class="mb-4">
@@ -83,7 +86,7 @@
             {{ $registroEntregas->links() }}
         </div>
     </x-card>
-    
+
     <x-loading wire:loading />
     <livewire:cochinilla_ventas.cochinilla-venta-registro-entrega-form-component />
 </div>

@@ -47,6 +47,9 @@ class UsuarioListComponent extends Component
     public function render()
     {
         $this->usuarios = UsuarioServicio::obtenerUsuariosConRoles();
-        return view('livewire.gestion-usuario.usuario-list-component');
+        return view('livewire.gestion-usuario.usuario-list-component', [
+            
+            'roles' => \Spatie\Permission\Models\Role::all(),
+        ]);
     }
 }

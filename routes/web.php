@@ -11,6 +11,7 @@ use App\Http\Controllers\GestionInsumosController;
 use App\Http\Controllers\KardexController;
 use App\Http\Controllers\MaquinariaController;
 use App\Http\Controllers\NutrienteController;
+use App\Http\Controllers\PermisosRolController;
 use App\Http\Controllers\ReporteDiarioController;
 use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
@@ -109,7 +110,7 @@ Route::middleware([
         // Pantalla principal / dashboard
         Route::get('/importar', function () {
             return view('livewire.gestion-planilla.importar-planilla-indice');
-        })->name('planilla.importar'); 
+        })->name('planilla.importar');
 
         Route::get('/contratos/{id?}', function ($id = null) {
             return view('livewire.gestion-planilla.contratos-planilla-indice', compact('id'));
@@ -125,7 +126,7 @@ Route::middleware([
 
         Route::get('/suspensiones', function () {
             return view('livewire.gestion-planilla.suspensiones-planilla-indice');
-        })->name('planilla.suspensiones'); 
+        })->name('planilla.suspensiones');
 
         Route::get('/gestion_planilla/reporte_general', function () {
             // Apunta a la nueva y más corta ubicación
@@ -206,7 +207,8 @@ Route::middleware([
     //USUARIOS
     Route::get('/gestion-usuario/usuarios', [UsuarioController::class, 'index'])->middleware('permission:Usuarios Administrar')->name('usuarios');
     Route::get('/gestion-usuario/roles-y-permisos', [UsuarioController::class, 'roles_permisos'])->middleware('permission:Roles')->name('roles_permisos');
-
+    Route::get('/gestion-usuario/permisos-rol/{rol}', [PermisosRolController::class, 'index'])
+        ->name('gestion-usuario.permisos-rol');
 
     //INSUMOS
     Route::get('/gestion_insumos/kardex', [GestionInsumosController::class, 'kardex'])->name('gestion_insumos.kardex');

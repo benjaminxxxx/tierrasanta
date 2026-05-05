@@ -1,4 +1,4 @@
-<div>
+<div class="space-y-4">
     <x-card>
         <x-flex>
             <x-title>
@@ -35,19 +35,16 @@
                                     </x-button>
                                     @if ($usuario->id != Auth::id())
                                         @if ($usuario->estado != '1')
-                                            <x-button variant="warning"
-                                                wire:click="updateStatus('{{ $usuario->id }}','1')">
+                                            <x-button variant="warning" wire:click="updateStatus('{{ $usuario->id }}','1')">
                                                 <i class="fa fa-ban"></i>
                                             </x-button>
                                         @else
-                                            <x-button variant="success"
-                                                wire:click="updateStatus('{{ $usuario->id }}','0')">
+                                            <x-button variant="success" wire:click="updateStatus('{{ $usuario->id }}','0')">
                                                 <i class="fa fa-check"></i>
                                             </x-button>
                                         @endif
 
-                                        <x-button variant="danger"
-                                            wire:click="confirmarEliminacion({{ $usuario->id }})">
+                                        <x-button variant="danger" wire:click="confirmarEliminacion({{ $usuario->id }})">
                                             <i class="fa fa-remove"></i>
                                         </x-button>
                                     @endif
@@ -63,6 +60,25 @@
                 @endif
             </x-slot>
         </x-table>
+    </x-card>
+    <x-card>
+        {{-- Debajo de la tabla de usuarios --}}
+        @php
+            $rolesGestionables = $roles->filter(fn($r) => !in_array($r->name, ['Super Admin', 'Administrador']));
+        @endphp
+
+        @if ($rolesGestionables->isNotEmpty())
+            <div>
+                <p class="text-sm text-muted-foreground mb-3 font-medium">Administrar permisos por rol</p>
+                <div class="flex flex-wrap gap-3">
+                    @foreach ($rolesGestionables as $rol)
+                        <x-button href="{{ route('gestion-usuario.permisos-rol', ['rol' => $rol->name]) }}" variant="secondary">
+                            🔐 Permisos · {{ $rol->name }}
+                        </x-button>
+                    @endforeach
+                </div>
+            </div>
+        @endif
     </x-card>
     <x-loading wire:loading />
 </div>

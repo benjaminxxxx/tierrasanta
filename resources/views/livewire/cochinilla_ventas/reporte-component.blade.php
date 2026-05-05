@@ -19,9 +19,12 @@
                         <i class="fa fa-file"></i> Cancelar Generar Reporte
                     </x-button>
                 @else
-                    <x-button wire:click="obtenerParaReporte">
-                        <i class="fa fa-file"></i> Generar Reporte
-                    </x-button>
+                    @can('Gestionar reporte de venta')
+                        <x-button wire:click="obtenerParaReporte">
+                            <i class="fa fa-file"></i> Generar Reporte
+                        </x-button>
+                    @endcan
+
                 @endif
 
                 <x-button wire:click="vincularIngreso" :disabled="!$puedeVincular">
@@ -39,9 +42,12 @@
                     Total Venta: Kg. <span x-text="totalVenta"></span>
                 </div>
                 <x-flex class="w-full justify-end my-3">
-                    <x-button @click="enviarVentaAContabilidad">
-                        <i class="fa fa-paper-plane"></i> Guardar Reporte
-                    </x-button>
+                    @can('Gestionar reporte de venta')
+                        <x-button @click="enviarVentaAContabilidad">
+                            <i class="fa fa-paper-plane"></i> Guardar Reporte
+                        </x-button>
+                    @endcan
+
                 </x-flex>
 
             </div>
