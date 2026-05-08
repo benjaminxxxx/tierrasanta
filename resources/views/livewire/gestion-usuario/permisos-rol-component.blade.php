@@ -21,12 +21,12 @@
     </div>
 
     {{-- Botones --}}
-    <div class="flex items-center gap-4 pt-4 border-t border-border justify-end">
+    <x-inferior-derecha>
         <x-button wire:click="guardar" wire:loading.attr="disabled">
             <i class="fas fa-save"></i> Guardar permisos
         </x-button>
         <span wire:loading class="text-sm text-muted-foreground">Guardando...</span>
-    </div>
+    </x-inferior-derecha>
 </div>
 @script
 <script>

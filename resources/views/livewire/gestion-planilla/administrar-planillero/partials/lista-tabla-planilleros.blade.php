@@ -19,7 +19,7 @@
             @if ($empleados->count())
                 @foreach ($empleados as $indice => $empleado)
                     <x-tr style="background-color: {{ $empleado->color_grupo ?? '#ffffff' }};
-                                     color: {{ $empleado->color_texto_grupo ?? '' }}">
+                                                                             color: {{ $empleado->color_texto_grupo ?? '' }}">
                         <x-th value="{{ $indice + 1 }}" class="dark:text-gray-800 text-center" />
                         <x-td class="dark:text-gray-800">
                             {{ $empleado->nombreCompleto }}
@@ -55,35 +55,47 @@
                                 <x-slot name="content">
                                     <div class="w-full text-center">
                                         @if (!$empleado->trashed())
+                                            @can('Planilla Empleados Gestionar Contratos y Sueldos')
+                                                <x-dropdown-link href="{{ route('planilla.contratos', ['id' => $empleado->id]) }}">
+                                                    <i class="fa fa-table"></i> Gestionar Contratos
+                                                </x-dropdown-link>
 
-                                            <x-dropdown-link href="{{ route('planilla.contratos', ['id' => $empleado->id]) }}">
-                                                <i class="fa fa-table"></i> Gestionar Contratos
-                                            </x-dropdown-link>
+                                                <x-dropdown-link
+                                                    @click="$wire.dispatch('abrirFormularioRegistroEmpleadoSueldo',{id:{{ $empleado->id }}})">
+                                                    <i class="fa fa-money-bill"></i> Gestionar Sueldos
+                                                </x-dropdown-link>
+                                            @endcan
 
-                                            <x-dropdown-link
-                                                @click="$wire.dispatch('abrirFormularioRegistroEmpleadoSueldo',{id:{{ $empleado->id }}})">
-                                                <i class="fa fa-money-bill"></i> Gestionar Sueldos
-                                            </x-dropdown-link>
 
-                                            <x-dropdown-link
-                                                @click="$wire.dispatch('agregarFamiliarEmpleado',{id:{{ $empleado->id }}})">
-                                                <i class="fa-solid fa-people-roof"></i> Gestionar Familiares
-                                            </x-dropdown-link>
 
-                                            <x-dropdown-link
-                                                @click="$wire.dispatch('editarEmpleado',{id:{{ $empleado->id }}})">
-                                                <i class="fa fa-pencil"></i> Editar Registro
-                                            </x-dropdown-link>
+                                            @can('Planilla Empleados Gestionar Familiares')
+                                                <x-dropdown-link
+                                                    @click="$wire.dispatch('agregarFamiliarEmpleado',{id:{{ $empleado->id }}})">
+                                                    <i class="fa-solid fa-people-roof"></i> Gestionar Familiares
+                                                </x-dropdown-link>
+                                            @endcan
+                                            @can('Planilla Empleados Editar Empleado')
+                                                <x-dropdown-link @click="$wire.dispatch('editarEmpleado',{id:{{ $empleado->id }}})">
+                                                    <i class="fa fa-pencil"></i> Editar Registro
+                                                </x-dropdown-link>
+                                            @endcan
 
-                                            <x-dropdown-link wire:click="eliminarEmpleado({{ $empleado->id }})"
-                                                class="text-red-600 hover:text-red-700">
-                                                <i class="fa fa-remove"></i> Eliminar Empleado
-                                            </x-dropdown-link>
+
+
+                                            @can('Planilla Empleados Eliminar')
+                                                <x-dropdown-link wire:click="eliminarEmpleado({{ $empleado->id }})"
+                                                    class="text-red-600 hover:text-red-700">
+                                                    <i class="fa fa-remove"></i> Eliminar Empleado
+                                                </x-dropdown-link>
+                                            @endcan
                                         @else
-                                            <x-dropdown-link wire:click="restaurarEmpleado({{ $empleado->id }})"
-                                                class="text-green-600 hover:text-green-700">
-                                                <i class="fa fa-undo"></i> Restaurar Empleado
-                                            </x-dropdown-link>
+                                            @can('Planilla Empleados Restaurar Empleado')
+                                                <x-dropdown-link wire:click="restaurarEmpleado({{ $empleado->id }})"
+                                                    class="text-green-600 hover:text-green-700">
+                                                    <i class="fa fa-undo"></i> Restaurar Empleado
+                                                </x-dropdown-link>
+                                            @endcan
+
                                         @endif
                                     </div>
                                 </x-slot>

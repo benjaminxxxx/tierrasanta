@@ -1,12 +1,14 @@
 <div>
 
     <x-flex>
-        <x-h3>
+        <x-title>
             Evaluación de Brotes x Piso
-        </x-h3>
+        </x-title>
+        @can(\App\Constants\Permisos::BROTE_EVALUACION_CREAR)
         <x-button type="button" @click="$wire.dispatch('agregarEvaluacionBrote')">
             <i class="fa fa-plus"></i> Agregar Evaluación
         </x-button>
+        @endcan
     </x-flex>
     <x-card class="mt-4">
         <x-flex class="justify-between">
@@ -28,7 +30,7 @@
 
                 <x-input type="search" label="Evaluador" wire:model.live.debounce.600ms="evaluadorFiltro" />
             </x-flex>
-
+ @can(\App\Constants\Permisos::BROTE_EVALUACION_REPORTE)
             <div class="relative">
                 <x-dropdown width="60">
                     <x-slot name="trigger">
@@ -53,9 +55,10 @@
                     </x-slot>
                 </x-dropdown>
             </div>
+    @endcan
         </x-flex>
     </x-card>
-
+@can(\App\Constants\Permisos::BROTE_EVALUACION_VER)
     <x-card class="mt-4" x-data="{ abiertos: {} }">
         <x-table>
 
@@ -131,15 +134,17 @@
                                         <i class="fa fa-file-excel"></i>
                                     </x-button>
                                 @endif
-
+ @can(\App\Constants\Permisos::BROTE_EVALUACION_EDITAR)
                                 <x-button variant="secondary"
                                     @click="$wire.dispatch('editarEvaluacionBrotesPorPiso',{evaluacionBrotesXPisoId:{{ $e->id }}})">
                                     <i class="fa fa-edit"></i>
                                 </x-button>
-
+@endcan
+ @can(\App\Constants\Permisos::BROTE_EVALUACION_ELIMINAR)
                                 <x-button variant="danger" wire:click="eliminarBrotesXPiso({{ $e->id }})">
                                     <i class="fa fa-trash"></i>
                                 </x-button>
+@endcan
                             </x-flex>
                         </x-td>
                     </tr>
@@ -207,5 +212,7 @@
             {{ $evaluacionesBrotes->links() }}
         </div>
     </x-card>
+@endcan
+    
     <x-loading wire:loading />
 </div>

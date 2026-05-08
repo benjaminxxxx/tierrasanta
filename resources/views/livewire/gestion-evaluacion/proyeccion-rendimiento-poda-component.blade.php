@@ -5,9 +5,10 @@
         </x-flex>
         <x-flex class="!items-start w-full mt-4">
             <div class="flex-1">
+
                 <x-flex>
-                    <x-select-campo wire:model.live="campoSeleccionado" />
-                    <x-select wire:model.live="campaniaSeleccionada" label="Campaña">
+                    <x-select-campo wire:model.live="campoSeleccionado" class="w-auto" />
+                    <x-select wire:model.live="campaniaSeleccionada" label="Campaña" class="w-auto">
                         <option value="">Seleccione campaña</option>
                         @foreach ($campaniasPorCampo as $campaniaPorCampo)
                             <option value="{{ $campaniaPorCampo->id }}">
@@ -68,9 +69,13 @@
 
                                             </x-th>
                                             <x-td class="text-right">
-                                                <x-button type="submit">
+                                                 @can(\App\Constants\Permisos::PROYECCION_EVALUACION_GUARDAR)
+                               <x-button type="submit">
                                                     <i class="fa fa-save"></i> Guardar
                                                 </x-button>
+
+                            @endcan
+                                                
                                             </x-td>
                                         </x-tr>
                                     </x-slot>
@@ -87,13 +92,17 @@
                             <div wire:ignore>
                                 <div x-ref="tableContainer"></div>
                             </div>
-                            @if ($campoSeleccionado && $campaniaSeleccionada)
-                                <x-flex class="justify-end w-full mt-4">
-                                    <x-button type="button" @click="sendDataProyeccionPoda">
-                                        <i class="fa fa-save"></i> Registrar detalle
-                                    </x-button>
-                                </x-flex>
-                            @endif
+                            @can(\App\Constants\Permisos::PROYECCION_EVALUACION_DETALLE)
+                                @if ($campoSeleccionado && $campaniaSeleccionada)
+                                    <x-flex class="justify-end w-full mt-4">
+                                        <x-button type="button" @click="sendDataProyeccionPoda">
+                                            <i class="fa fa-save"></i> Registrar detalle
+                                        </x-button>
+                                    </x-flex>
+                                @endif
+
+                            @endcan
+
                         </div>
                     </div>
                 </x-flex>
@@ -104,93 +113,93 @@
     <x-loading wire:loading />
 </div>
 @script
-    <script>
-        Alpine.data('{{ $idTable }}', () => ({
-            listeners: [],
-            tableData: @json($table),
-            hot: null,
-            init() {
-                this.initTable();
-                this.listeners.push(
-                    Livewire.on('recargarRendimientoPoda', (data) => {
-                        this.tableData = data[0];
-                        this.hot.destroy();
-                        this.initTable();
-                        this.hot.loadData(this.tableData);
-                    })
-                );
-                this.listeners.push(
+<script>
+    Alpine.data('{{ $idTable }}', () => ({
+        listeners: [],
+        tableData: @json($table),
+        hot: null,
+        init() {
+            this.initTable();
+            this.listeners.push(
+                Livewire.on('recargarRendimientoPoda', (data) => {
+                    this.tableData = data[0];
+                    this.hot.destroy();
+                    this.initTable();
+                    this.hot.loadData(this.tableData);
+                })
+            );
+            this.listeners.push(
 
-                    Livewire.on('guardarDetallePoda', () => {
-                        this.sendDataProyeccionPoda();
-                    })
-                );
-            },
-            initTable() {
+                Livewire.on('guardarDetallePoda', () => {
+                    this.sendDataProyeccionPoda();
+                })
+            );
+        },
+        initTable() {
 
-                const container = this.$refs.tableContainer;
-                const hot = new Handsontable(container, {
-                    data: this.tableData,
-                    colHeaders: true,
-                    rowHeaders: true,
-                    columns: [{
-                            data: 'nro_muestra',
-                            className: '!text-center !bg-gray-100',
-                            title: 'N° MUESTRA',
-                            readOnly: true,
-                        },
-                        {
-                            data: 'peso_fresco_kg',
-                            className: '!text-center',
-                            title: 'PESO FRESCO (kg)'
-                        },
-                        {
-                            data: 'peso_seco_kg',
-                            className: '!text-center',
-                            title: 'PESO SECO (kg)'
-                        },
-                        {
-                            data: 'rdto_hectarea_kg',
-                            className: '!text-center !bg-gray-100',
-                            title: 'RDTO/HECTAREA (kg)',
-                            readOnly: true,
-                        },
-                        {
-                            data: 'relacion_fresco_seco',
-                            className: '!text-center !bg-gray-100',
-                            title: 'RELACION FRESCO/SECO',
-                            readOnly: true,
-                        }
-                    ],
-                    height: 'auto',
-                    manualColumnResize: false,
-                    manualRowResize: true,
-                    stretchH: 'all',
-                    autoColumnSize: false,
-                    licenseKey: 'non-commercial-and-evaluation',
-
-                });
-
-                this.hot = hot;
-            },
-            sendDataProyeccionPoda() {
-                let allData = [];
-
-                // Recorre todas las filas de la tabla y obtiene los datos completos
-                for (let row = 0; row < this.hot.countRows(); row++) {
-                    const rowData = this.hot.getSourceDataAtRow(row);
-                    allData.push(rowData);
+            const container = this.$refs.tableContainer;
+            const hot = new Handsontable(container, {
+                data: this.tableData,
+                colHeaders: true,
+                rowHeaders: true,
+                columns: [{
+                    data: 'nro_muestra',
+                    className: '!text-center !bg-gray-100',
+                    title: 'N° MUESTRA',
+                    readOnly: true,
+                },
+                {
+                    data: 'peso_fresco_kg',
+                    className: '!text-center',
+                    title: 'PESO FRESCO (kg)'
+                },
+                {
+                    data: 'peso_seco_kg',
+                    className: '!text-center',
+                    title: 'PESO SECO (kg)'
+                },
+                {
+                    data: 'rdto_hectarea_kg',
+                    className: '!text-center !bg-gray-100',
+                    title: 'RDTO/HECTAREA (kg)',
+                    readOnly: true,
+                },
+                {
+                    data: 'relacion_fresco_seco',
+                    className: '!text-center !bg-gray-100',
+                    title: 'RELACION FRESCO/SECO',
+                    readOnly: true,
                 }
+                ],
+                height: 'auto',
+                manualColumnResize: false,
+                manualRowResize: true,
+                stretchH: 'all',
+                autoColumnSize: false,
+                licenseKey: 'non-commercial-and-evaluation',
 
-                // Filtra las filas vacías
-                const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
-                    null && cell !== ''));
+            });
 
-                const data = {
-                    datos: filteredData
-                };
-                $wire.dispatchSelf('storeTableDataProyeccionPoda', data);
+            this.hot = hot;
+        },
+        sendDataProyeccionPoda() {
+            let allData = [];
+
+            // Recorre todas las filas de la tabla y obtiene los datos completos
+            for (let row = 0; row < this.hot.countRows(); row++) {
+                const rowData = this.hot.getSourceDataAtRow(row);
+                allData.push(rowData);
             }
-        }));
-    </script>
+
+            // Filtra las filas vacías
+            const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
+                null && cell !== ''));
+
+            const data = {
+                datos: filteredData
+            };
+            $wire.dispatchSelf('storeTableDataProyeccionPoda', data);
+        }
+    }));
+</script>
 @endscript

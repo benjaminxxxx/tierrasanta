@@ -1,17 +1,23 @@
 <?php
+
+use App\Constants\Permisos;
 // config/permisos_tree.php
 
 return [
     [
-        'nombre' => 'Planilla',
+        'nombre' => Permisos::PLANILLA,
         'hijos' => [
             [
-                'nombre' => 'Planilla Empleados',
+                'nombre' => Permisos::PERSONAL,
                 'hijos' => [
-                    ['nombre' => 'Planilla Empleados Ver'],
-                    ['nombre' => 'Planilla Empleados Agregar'],
-                    ['nombre' => 'Planilla Empleados Editar'],
-                    ['nombre' => 'Planilla Empleados Eliminar'],
+                    ['nombre' => Permisos::PERSONAL_VER],
+                    ['nombre' => Permisos::PERSONAL_CREAR],
+                    ['nombre' => Permisos::PERSONAL_EDITAR],
+                    ['nombre' => Permisos::PERSONAL_CONTRATOS],
+                    ['nombre' => Permisos::PERSONAL_FAMILIARES],
+                    ['nombre' => Permisos::PERSONAL_OPCIONES],
+                    ['nombre' => Permisos::PERSONAL_ELIMINAR],
+                    ['nombre' => Permisos::PERSONAL_RESTAURAR],
                 ],
             ],
             [
@@ -330,30 +336,40 @@ return [
     ],
 
     [
-        'nombre' => 'Evaluación de Campo',
+        'nombre' => Permisos::EVALUACION,
         'hijos' => [
             [
-                'nombre' => 'Evaluación Campo Población Plantas',
+                'nombre' => Permisos::PLANTA_EVALUACION,
                 'hijos' => [
-                    ['nombre' => 'Evaluación Campo Población Plantas Ver'],
+                    ['nombre' => Permisos::PLANTA_EVALUACION_VER],
+                    ['nombre' => Permisos::PLANTA_EVALUACION_CREAR],
+                    ['nombre' => Permisos::PLANTA_EVALUACION_EDITAR],
+                    ['nombre' => Permisos::PLANTA_EVALUACION_ELIMINAR],
+                    ['nombre' => Permisos::PLANTA_EVALUACION_REPORTE],
                 ],
             ],
             [
-                'nombre' => 'Evaluación Campo Brotes',
+                'nombre' => Permisos::BROTE_EVALUACION,
                 'hijos' => [
-                    ['nombre' => 'Evaluación Campo Brotes Ver'],
+                    ['nombre' => Permisos::BROTE_EVALUACION_VER],
+                    ['nombre' => Permisos::BROTE_EVALUACION_CREAR],
+                    ['nombre' => Permisos::BROTE_EVALUACION_EDITAR],
+                    ['nombre' => Permisos::BROTE_EVALUACION_ELIMINAR],
+                    ['nombre' => Permisos::BROTE_EVALUACION_REPORTE],
                 ],
             ],
             [
-                'nombre' => 'Evaluación Campo Infestación Cosecha',
+                'nombre' => Permisos::INFESTACION_EVALUACION,
                 'hijos' => [
-                    ['nombre' => 'Evaluación Campo Infestación Cosecha Ver'],
+                    ['nombre' => Permisos::INFESTACION_EVALUACION_VER],
+                    ['nombre' => Permisos::INFESTACION_EVALUACION_REGISTRAR]
                 ],
             ],
             [
-                'nombre' => 'Evaluación Campo Proyección Rendimiento',
+                'nombre' => Permisos::PROYECCION_EVALUACION,
                 'hijos' => [
-                    ['nombre' => 'Evaluación Campo Proyección Rendimiento Ver'],
+                    ['nombre' => Permisos::PROYECCION_EVALUACION_GUARDAR],
+                    ['nombre' => Permisos::PROYECCION_EVALUACION_DETALLE]
                 ],
             ],
         ],

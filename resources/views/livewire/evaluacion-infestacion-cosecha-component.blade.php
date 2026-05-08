@@ -5,18 +5,20 @@
     </div>
     <x-card>
 
+        @can(\App\Constants\Permisos::INFESTACION_EVALUACION_VER)
+            <x-flex class="mt-4">
+                <x-select-campo wire:model.live="campoSeleccionado" label="Seleccionar Campo" class="w-auto" />
+                <x-select wire:model.live="campaniaSeleccionada" label="Seleccionar Campaña" class="w-auto">
+                    <option value="">Seleccione campaña</option>
+                    @foreach ($campaniasPorCampo as $campaniaPorCampo)
+                        <option value="{{ $campaniaPorCampo->id }}">
+                            {{ $campaniaPorCampo->nombre_campania }}
+                        </option>
+                    @endforeach
+                </x-select>
+            </x-flex>
+        @endcan
 
-        <x-flex class="mt-4">
-            <x-select-campo wire:model.live="campoSeleccionado" label="Seleccionar Campo" class="w-auto" />
-            <x-select wire:model.live="campaniaSeleccionada" label="Seleccionar Campaña" class="w-auto">
-                <option value="">Seleccione campaña</option>
-                @foreach ($campaniasPorCampo as $campaniaPorCampo)
-                    <option value="{{ $campaniaPorCampo->id }}">
-                        {{ $campaniaPorCampo->nombre_campania }}
-                    </option>
-                @endforeach
-            </x-select>
-        </x-flex>
 
         @if ($campania && $campoSeleccionado)
             <div class="mt-6">
@@ -33,8 +35,7 @@
                     {{-- ÚLTIMA INFESTACIÓN --}}
                     <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
                         <div class="flex items-center gap-3">
-                            <div
-                                class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+                            <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
                                 <i class="w-5 h-5 text-white fa fa-calendar"></i>
                             </div>
 
@@ -77,8 +78,7 @@
             <div class="grid md:grid-cols-3 gap-4 mt-5">
 
                 {{-- Primera evaluación --}}
-                <div
-                    class="rounded-lg border border-border bg-muted text-muted-foreground p-4 space-y-3">
+                <div class="rounded-lg border border-border bg-muted text-muted-foreground p-4 space-y-3">
 
                     <div class="text-sm font-medium">
                         1° Evaluación
@@ -96,8 +96,7 @@
                 </div>
 
                 {{-- Segunda evaluación --}}
-                <div
-                    class="rounded-lg border border-border bg-muted text-muted-foreground p-4 space-y-3">
+                <div class="rounded-lg border border-border bg-muted text-muted-foreground p-4 space-y-3">
 
                     <div class="text-sm font-medium">
                         2° Evaluación
@@ -115,8 +114,7 @@
                 </div>
 
                 {{-- Tercera evaluación --}}
-                <div
-                    class="rounded-lg border border-border bg-muted text-muted-foreground p-4 space-y-3">
+                <div class="rounded-lg border border-border bg-muted text-muted-foreground p-4 space-y-3">
 
                     <div class="text-sm font-medium">
                         3° Evaluación
@@ -193,151 +191,153 @@
 
             </div>
         </x-card>
+        @can(\App\Constants\Permisos::INFESTACION_EVALUACION_REGISTRAR)
+            <x-inferior-derecha>
+                <x-button type="button" @click="sendDataEvaluacionInfestacion()">
+                    <i class="fa fa-save"></i> Guardar Evaluación
+                </x-button>
+            </x-inferior-derecha>
+        @endcan
 
-        <x-inferior-derecha>
-            <x-button type="button" @click="sendDataEvaluacionInfestacion()">
-                <i class="fa fa-save"></i> Guardar Evaluación
-            </x-button>
-        </x-inferior-derecha>
     @endif
 
     <x-loading wire:loading />
 </div>
 @script
-    <script>
-        Alpine.data('{{ $idTable }}', () => ({
-            tableData: @json($table),
-            isDark: JSON.parse(localStorage.getItem('darkMode')),
-            hot: null,
-            init() {
+<script>
+    Alpine.data('{{ $idTable }}', () => ({
+        tableData: @json($table),
+        isDark: JSON.parse(localStorage.getItem('darkMode')),
+        hot: null,
+        init() {
+            this.initTable();
+            $watch('darkMode', value => {
+
+                this.isDark = value;
+                const columns = this.getColumns();
+                this.hot.updateSettings({
+                    themeName: value ? 'ht-theme-main-dark' : 'ht-theme-main',
+                    columns: columns
+                });
+
+            });
+            Livewire.on('recargarEvaluacion', (data) => {
+                this.tableData = data[0].table;
+                this.hot.destroy();
                 this.initTable();
-                $watch('darkMode', value => {
+                this.hot.loadData(this.tableData);
+            });
+            Livewire.on('guardadoConfirmado', () => {
+                this.sendDataPoblacionPlanta();
+            });
+        },
+        initTable() {
 
-                    this.isDark = value;
-                    const columns = this.getColumns();
-                    this.hot.updateSettings({
-                        themeName: value ? 'ht-theme-main-dark' : 'ht-theme-main',
-                        columns: columns
-                    });
+            const container = this.$refs.tableContainer;
+            const hot = new Handsontable(container, {
+                ...window.HstConfig,
+                data: this.tableData,
+                colHeaders: true,
+                themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
+                columns: this.getColumns(),
+                nestedHeaders: this.getNestedHeaders(),
+                height: 'auto',
+                manualColumnResize: false,
+                manualRowResize: true,
+                stretchH: 'all',
+                autoColumnSize: false,
+                licenseKey: 'non-commercial-and-evaluation',
 
-                });
-                Livewire.on('recargarEvaluacion', (data) => {
-                    this.tableData = data[0].table;
-                    this.hot.destroy();
-                    this.initTable();
-                    this.hot.loadData(this.tableData);
-                });
-                Livewire.on('guardadoConfirmado', () => {
-                    this.sendDataPoblacionPlanta();
-                });
-            },
-            initTable() {
+            });
 
-                const container = this.$refs.tableContainer;
-                const hot = new Handsontable(container, {
-                    ...window.HstConfig,
-                    data: this.tableData,
-                    colHeaders: true,
-                    themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
-                    columns: this.getColumns(),
-                    nestedHeaders: this.getNestedHeaders(),
-                    height: 'auto',
-                    manualColumnResize: false,
-                    manualRowResize: true,
-                    stretchH: 'all',
-                    autoColumnSize: false,
-                    licenseKey: 'non-commercial-and-evaluation',
-
-                });
-
-                this.hot = hot;
-            },
-            getColumns() {
-                return [{
-                        data: 'n_pencas',
-                        type: 'numeric',
-                        className: 'htCenter htMiddle font-semibold',
-                        readOnly: true
-                    },
-
-                    // Evaluación 1
-                    {
-                        data: 'eval_primera_piso_2',
-                        type: 'numeric',
-                        className: 'htCenter'
-                    },
-                    {
-                        data: 'eval_primera_piso_3',
-                        type: 'numeric',
-                        className: 'htCenter'
-                    },
-
-                    // Evaluación 2
-                    {
-                        data: 'eval_segunda_piso_2',
-                        type: 'numeric',
-                        className: 'htCenter'
-                    },
-                    {
-                        data: 'eval_segunda_piso_3',
-                        type: 'numeric',
-                        className: 'htCenter'
-                    },
-
-                    // Evaluación 3
-                    {
-                        data: 'eval_tercera_piso_2',
-                        type: 'numeric',
-                        className: 'htCenter'
-                    },
-                    {
-                        data: 'eval_tercera_piso_3',
-                        type: 'numeric',
-                        className: 'htCenter'
-                    },
-                ];
+            this.hot = hot;
+        },
+        getColumns() {
+            return [{
+                data: 'n_pencas',
+                type: 'numeric',
+                className: 'htCenter htMiddle font-semibold',
+                readOnly: true
             },
 
-            getNestedHeaders() {
-                return [
-                    [
-                        'N° PENCA',
-                        {
-                            label: 'Evaluación 1<br><small>60–70 días</small>',
-                            colspan: 2
-                        },
-                        {
-                            label: 'Evaluación 2<br><small>75–85 días</small>',
-                            colspan: 2
-                        },
-                        {
-                            label: 'Evaluación 3<br><small>100–120 días</small>',
-                            colspan: 2
-                        },
-                    ],
-                    [
-                        '', // simula rowspan de "N° PENCA"
-                        '2° Piso', '3° Piso',
-                        '2° Piso', '3° Piso',
-                        '2° Piso', '3° Piso',
-                    ]
-                ];
+            // Evaluación 1
+            {
+                data: 'eval_primera_piso_2',
+                type: 'numeric',
+                className: 'htCenter'
             },
-            sendDataEvaluacionInfestacion() {
-                let allData = [];
+            {
+                data: 'eval_primera_piso_3',
+                type: 'numeric',
+                className: 'htCenter'
+            },
 
-                // Recorre todas las filas de la tabla y obtiene los datos completos
-                for (let row = 0; row < this.hot.countRows(); row++) {
-                    const rowData = this.hot.getSourceDataAtRow(row);
-                    allData.push(rowData);
-                }
+            // Evaluación 2
+            {
+                data: 'eval_segunda_piso_2',
+                type: 'numeric',
+                className: 'htCenter'
+            },
+            {
+                data: 'eval_segunda_piso_3',
+                type: 'numeric',
+                className: 'htCenter'
+            },
 
-                // Filtra las filas vacías
-                const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
-                    null && cell !== ''));
+            // Evaluación 3
+            {
+                data: 'eval_tercera_piso_2',
+                type: 'numeric',
+                className: 'htCenter'
+            },
+            {
+                data: 'eval_tercera_piso_3',
+                type: 'numeric',
+                className: 'htCenter'
+            },
+            ];
+        },
 
-                $wire.guardarDatosEvaluacionInfestacionCosecha(filteredData);
+        getNestedHeaders() {
+            return [
+                [
+                    'N° PENCA',
+                    {
+                        label: 'Evaluación 1<br><small>60–70 días</small>',
+                        colspan: 2
+                    },
+                    {
+                        label: 'Evaluación 2<br><small>75–85 días</small>',
+                        colspan: 2
+                    },
+                    {
+                        label: 'Evaluación 3<br><small>100–120 días</small>',
+                        colspan: 2
+                    },
+                ],
+                [
+                    '', // simula rowspan de "N° PENCA"
+                    '2° Piso', '3° Piso',
+                    '2° Piso', '3° Piso',
+                    '2° Piso', '3° Piso',
+                ]
+            ];
+        },
+        sendDataEvaluacionInfestacion() {
+            let allData = [];
+
+            // Recorre todas las filas de la tabla y obtiene los datos completos
+            for (let row = 0; row < this.hot.countRows(); row++) {
+                const rowData = this.hot.getSourceDataAtRow(row);
+                allData.push(rowData);
             }
-        }));
-    </script>
+
+            // Filtra las filas vacías
+            const filteredData = allData.filter(row => row && Object.values(row).some(cell => cell !==
+                null && cell !== ''));
+
+            $wire.guardarDatosEvaluacionInfestacionCosecha(filteredData);
+        }
+    }));
+</script>
 @endscript

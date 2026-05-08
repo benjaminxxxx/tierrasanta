@@ -1,5 +1,6 @@
 <?php
 
+use App\Constants\Permisos;
 use App\Http\Controllers\AlmacenController;
 use App\Http\Controllers\CampaniaController;
 use App\Http\Controllers\CampoController;
@@ -44,7 +45,7 @@ Route::middleware([
 
     Route::get('/empleados', function () {
         return view('livewire.gestion-planilla.administrar-planillero.indice-empleados');
-    })->name('empleados');
+    })->name('empleados')->middleware('can:Planilla Empleados');
     Route::get('/configuracion', function () {
         return view('configuracion');
     })->name('configuracion');
@@ -231,10 +232,10 @@ Route::middleware([
     Route::get('/fdm/costos_generales', [FdmController::class, 'costos_generales'])->name('fdm.costos_generales');
 
     //REPORTE CAMPO
-    Route::get('/evaluacion_campo/poblacion_planta', [ReporteCampoController::class, 'poblacion_plantas'])->name('reporte_campo.poblacion_plantas');
-    Route::get('/evaluacion_campo/evaluacion_brotes', [ReporteCampoController::class, 'evaluacion_brotes'])->name('reporte_campo.evaluacion_brotes');
-    Route::get('/evaluacion_campo/evaluacion_infestacion_cosecha', [ReporteCampoController::class, 'evaluacion_infestacion_cosecha'])->name('reporte_campo.evaluacion_infestacion_cosecha');
-    Route::get('/evaluacion-campo/proyeccion-rendimiento-poda', [ReporteCampoController::class, 'evaluacion_proyeccion_rendimiento_poda'])->name('reporte_campo.evaluacion_proyeccion_rendimiento_poda');
+    Route::get('/evaluacion_campo/poblacion_planta', [ReporteCampoController::class, 'poblacion_plantas'])->name('reporte_campo.poblacion_plantas')->middleware('can:' . Permisos::PLANTA_EVALUACION);
+    Route::get('/evaluacion_campo/evaluacion_brotes', [ReporteCampoController::class, 'evaluacion_brotes'])->name('reporte_campo.evaluacion_brotes')->middleware('can:' . Permisos::BROTE_EVALUACION);
+    Route::get('/evaluacion_campo/evaluacion_infestacion_cosecha', [ReporteCampoController::class, 'evaluacion_infestacion_cosecha'])->name('reporte_campo.evaluacion_infestacion_cosecha')->middleware('can:' . Permisos::INFESTACION_EVALUACION);
+    Route::get('/evaluacion-campo/proyeccion-rendimiento-poda', [ReporteCampoController::class, 'evaluacion_proyeccion_rendimiento_poda'])->name('reporte_campo.evaluacion_proyeccion_rendimiento_poda')->middleware('can:' . Permisos::PROYECCION_EVALUACION);
 
     //COCHINILLA
     Route::get('/cochinilla/ingreso', [CochinillaController::class, 'ingreso'])->name('cochinilla.ingreso');
@@ -243,7 +244,7 @@ Route::middleware([
     Route::get('/cochinilla/cosechamamas', [CochinillaController::class, 'cosecha_mamas'])->name('cochinilla.cosecha_mamas');
     Route::get('/cochinilla/infestacion', [CochinillaController::class, 'infestacion'])->name('cochinilla.infestacion');
     Route::get('/cochinilla/infestacion/masivo', [CochinillaController::class, 'infestacion_masivo'])->name('cochinilla.infestacion.masivo');
-    Route::get('/cochinilla/ventas', [CochinillaController::class, 'ventas'])->name('cochinilla.ventas');
+    Route::get('/cochinilla/ventas', [CochinillaController::class, 'ventas'])->name('cochinilla.ventas')->middleware('can:Cochinilla Venta');
 
     Route::get('/test/costos', [TestController::class, 'mano_obra']);
 });

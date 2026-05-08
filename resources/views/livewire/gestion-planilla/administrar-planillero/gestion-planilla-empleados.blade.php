@@ -4,11 +4,16 @@
             <x-title>
                 Administración de empleados
             </x-title>
-            <x-button type="button" @click="$wire.dispatch('abrirFormularioNuevoEmpleado')">
-                <i class="fa fa-plus"></i> Nuevo Empleado
-            </x-button>
+            @can('Planilla Empleados Crear Empleado')
+                <x-button type="button" @click="$wire.dispatch('abrirFormularioNuevoEmpleado')">
+                    <i class="fa fa-plus"></i> Nuevo Empleado
+                </x-button>
+            @endcan
         </x-flex>
-        @include('livewire.gestion-planilla.administrar-planillero.partials.lista-opciones-adicionales')
+        @can('Planilla Empleados Gestionar Opciones')
+             @include('livewire.gestion-planilla.administrar-planillero.partials.lista-opciones-adicionales')
+        @endcan
+       
     </x-flex>
 
     @include('livewire.gestion-planilla.administrar-planillero.partials.lista-filtro')
