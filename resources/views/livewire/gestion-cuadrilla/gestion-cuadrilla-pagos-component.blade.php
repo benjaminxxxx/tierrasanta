@@ -2,9 +2,9 @@
     <x-flex class="w-full justify-between">
         <x-flex class="my-3">
             <div>
-                <x-h3>
+                <x-title>
                     Reporte General de Cuadrilla
-                </x-h3>
+                </x-title>
             </div>
         </x-flex>
         <x-button-a href="{{ route('cuadrilleros.gestion') }}">
@@ -16,18 +16,19 @@
         <x-flex class="justify-between">
             <form wire:submit="buscarRegistros">
                 <x-flex class="w-full !items-end">
-                    <x-input-date label="Fecha inicio" wire:model.live="fecha_inicio" error="fecha_inicio" />
-                    <x-input-date label="Fecha fin" wire:model.live="fecha_fin" error="fecha_fin" />
+                    <x-selector-dia label="Fecha inicio" wire:model.live="fecha_inicio" error="fecha_inicio" />
+                    <x-selector-dia label="Fecha fin" wire:model.live="fecha_fin" error="fecha_fin" />
 
-                    <x-select label="Grupo" wire:model.live="grupoSeleccionado" error="grupoSeleccionado">
+                    <x-select label="Grupo" wire:model.live="grupoSeleccionado" error="grupoSeleccionado"
+                        class="w-auto">
                         <option value="">TODOS LOS GRUPOS</option>
                         @foreach ($grupoCuadrillas as $grupoCuadrilla)
                             <option value="{{ $grupoCuadrilla->codigo }}">{{ $grupoCuadrilla->nombre }}</option>
                         @endforeach
                     </x-select>
                     <x-input type="search" label="Buscar por nombre" wire:model="nombre_cuadrillero"
-                        error="nombre_cuadrillero" />
-                    <x-button type="submit">
+                        error="nombre_cuadrillero" class="w-auto" />
+                    <x-button type="submit" class="w-auto">
                         <i class="fa fa-filter"></i> Filtrar
                     </x-button>
                 </x-flex>
@@ -48,9 +49,12 @@
 
                     <x-slot name="content">
                         <div class="w-60">
-                            <x-dropdown-link class="text-center" wire:click="generarInformeGeneralCuadrilla">
-                                Descargar Reporte Excel
-                            </x-dropdown-link>
+                            @can(\App\Constants\Permisos::CUADRILLA_RESUMEN_GENERAL_EXPORTAR)
+                                <x-dropdown-link class="text-center" wire:click="generarInformeGeneralCuadrilla">
+                                    Descargar Reporte Excel
+                                </x-dropdown-link>
+                            @endcan
+
                         </div>
                     </x-slot>
                 </x-dropdown>

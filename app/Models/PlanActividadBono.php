@@ -15,9 +15,12 @@ class PlanActividadBono extends Model
         'registro_diario_id',
         'actividad_id',
         'metodo_id',
+        'bono_manual',
         'total_bono',
     ];
-
+    protected $casts = [
+        'bono_manual' => 'boolean',
+    ];
     // Relaciones
     public function registroDiario()
     {

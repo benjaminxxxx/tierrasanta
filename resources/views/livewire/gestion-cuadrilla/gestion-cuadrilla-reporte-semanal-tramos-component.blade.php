@@ -4,9 +4,11 @@
         <x-h3>
             Registro Semanal Cuadrilla
         </x-h3>
+        @can(\App\Constants\Permisos::CUADRILLA_SEMANAL_GESTIONAR_TRAMO)
         <x-button wire:click="crearNuevoTramo" wire:loading.attr="disabled">
             <i class="fa fa-plus"></i> Crear tramo
         </x-button>
+        @endcan
         <x-button variant="success" wire:click="buscarTramo" wire:loading.attr="disabled">
             <i class="fa fa-search"></i> Buscar Tramo
         </x-button>

@@ -17,29 +17,43 @@
 
             <x-slot name="content">
                 <div class="w-full">
-                    <x-dropdown-link class="text-center" @click="agregarCuadrillerosEnTramo">
-                        Agregar Grupo y cuadrilleros
-                    </x-dropdown-link>
-                    <x-dropdown-link class="text-center" @click="$wire.dispatch('asignarCostosPorFecha',{tramoId: {{ $tramoLaboral->id}}})">
-                        Asignar costos por jornal
-                    </x-dropdown-link>
-                    <x-dropdown-link class="text-center" @click="$wire.dispatch('abrirGastosAdicionales')">
-                        Agregar/Quitar gastos adicionales
-                    </x-dropdown-link>
-                    <x-dropdown-link class="text-center" @click="abrirReordenarGruposForm">
-                        Reordenar grupos
-                    </x-dropdown-link>
-                    <x-dropdown-link class="text-center" @click="$wire.dispatch('editarTramo')">
-                        Editar tramo
-                    </x-dropdown-link>
-                    <x-dropdown-link class="text-center" @click="$wire.dispatch('eliminarTramo')">
-                        Eliminar tramo
-                    </x-dropdown-link>
-                    
-                    <x-dropdown-link class="text-center" href="{{ route('gestion_cuadrilleros.registro-diario.index') }}" target="_blank">
+                    @can(\App\Constants\Permisos::CUADRILLA_SEMANAL_AGREGAR_GRUPOS)
+                        <x-dropdown-link class="text-center" @click="agregarCuadrillerosEnTramo">
+                            Agregar Grupo y cuadrilleros
+                        </x-dropdown-link>
+                    @endcan
+                    @can(\App\Constants\Permisos::CUADRILLA_SEMANAL_ASIGNAR_COSTOS)
+                        <x-dropdown-link class="text-center"
+                            @click="$wire.dispatch('asignarCostosPorFecha',{tramoId: {{ $tramoLaboral->id}}})">
+                            Asignar costos por jornal
+                        </x-dropdown-link>
+                    @endcan
+                    @can(\App\Constants\Permisos::CUADRILLA_SEMANAL_GESTIONAR_GASTOS)
+                        <x-dropdown-link class="text-center" @click="$wire.dispatch('abrirGastosAdicionales')">
+                            Agregar/Quitar gastos adicionales
+                        </x-dropdown-link>
+                    @endcan
+                    @can(\App\Constants\Permisos::CUADRILLA_SEMANAL_GESTIONAR_TRAMO)
+                        <x-dropdown-link class="text-center" @click="abrirReordenarGruposForm">
+                            Reordenar grupos
+                        </x-dropdown-link>
+                        <x-dropdown-link class="text-center" @click="$wire.dispatch('editarTramo')">
+                            Editar tramo
+                        </x-dropdown-link>
+                        <x-dropdown-link class="text-center" @click="$wire.dispatch('eliminarTramo')">
+                            Eliminar tramo
+                        </x-dropdown-link>
+                    @endcan
+
+
+
+
+                    <x-dropdown-link class="text-center"
+                        href="{{ route('gestion_cuadrilleros.registro-diario.index') }}" target="_blank">
                         Administrar registros diarios
                     </x-dropdown-link>
-                    <x-dropdown-link class="text-center" href="{{ route('gestion_cuadrilleros.bonificaciones.index') }}" target="_blank">
+                    <x-dropdown-link class="text-center" href="{{ route('gestion_cuadrilleros.bonificaciones.index') }}"
+                        target="_blank">
                         Adminsitrar bonos
                     </x-dropdown-link>
                 </div>

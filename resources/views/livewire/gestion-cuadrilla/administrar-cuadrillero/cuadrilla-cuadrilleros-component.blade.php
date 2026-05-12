@@ -1,11 +1,14 @@
 <div x-data="gestionCuadrilla">
     <x-flex>
-        <x-h3>
-            Cuadrilleros
-        </x-h3>
-        <x-button type="button" @click="$wire.dispatch('registrarCuadrillero')">
-            <i class="fa fa-plus"></i> Agregar Cuadrillero
-        </x-button>
+        <x-title>
+            Gestión de Cuadrilleros
+        </x-title>
+        @can(\App\Constants\Permisos::CUADRILLA_LISTA_GESTIONAR)
+            <x-button type="button" @click="$wire.dispatch('registrarCuadrillero')">
+                <i class="fa fa-plus"></i> Agregar Cuadrillero
+            </x-button>
+        @endcan
+
     </x-flex>
     <x-card class="mt-3">
         <x-flex class="justify-between">
@@ -61,20 +64,24 @@
                             <x-td value="{{ $cuadrillero->registrosDiarios->count() }}" class="text-center" />
                             <x-td class="text-center">
                                 <x-flex class="justify-center">
-                                    @if (!$cuadrillero->trashed())
-                                        <x-button
-                                            @click="$wire.dispatch('editarCuadrillero', { cuadrilleroId: {{ $cuadrillero->id }} })">
-                                            <i class="fa fa-edit"></i>
-                                        </x-button>
+                                    @can(\App\Constants\Permisos::CUADRILLA_LISTA_GESTIONAR)
+                                        @if (!$cuadrillero->trashed())
+                                            <x-button
+                                                @click="$wire.dispatch('editarCuadrillero', { cuadrilleroId: {{ $cuadrillero->id }} })">
+                                                <i class="fa fa-edit"></i>
+                                            </x-button>
 
-                                        <x-button variant="danger" wire:click="eliminarCuadrillero({{ $cuadrillero->id }})">
-                                            <i class="fa fa-trash"></i>
-                                        </x-button>
-                                    @else
-                                        <x-button variant="secondary" wire:click="restaurar({{ $cuadrillero->id }})">
-                                            Restaurar
-                                        </x-button>
-                                    @endif
+                                            <x-button variant="danger"
+                                                wire:click="eliminarCuadrillero({{ $cuadrillero->id }})">
+                                                <i class="fa fa-trash"></i>
+                                            </x-button>
+                                        @else
+                                            <x-button variant="secondary" wire:click="restaurar({{ $cuadrillero->id }})">
+                                                Restaurar
+                                            </x-button>
+                                        @endif
+                                    @endcan
+
                                 </x-flex>
                             </x-td>
 
@@ -97,18 +104,18 @@
     <x-loading wire:loading />
 </div>
 @script
-<script>
-    Alpine.data('gestionCuadrilla', () => ({
-        nombre: @entangle('nombreDocumentoFiltro'),
-        grupo: @entangle('grupoSeleccionado'),
-        init() {
+    <script>
+        Alpine.data('gestionCuadrilla', () => ({
+            nombre: @entangle('nombreDocumentoFiltro'),
+            grupo: @entangle('grupoSeleccionado'),
+            init() {
 
-        },
-        limpiarFiltro() {
-            this.nombre = '';
-            this.grupo = '';
-            $wire.$refresh();
-        }
-    }));
-</script>
+            },
+            limpiarFiltro() {
+                this.nombre = '';
+                this.grupo = '';
+                $wire.$refresh();
+            }
+        }));
+    </script>
 @endscript

@@ -15,7 +15,11 @@ class CuadActividadBono extends Model
         'registro_diario_id',
         'actividad_id',
         'metodo_id',
+        'bono_manual',
         'total_bono'
+    ];
+    protected $casts = [
+        'bono_manual' => 'boolean',
     ];
 
     // Relación inversa

@@ -19,7 +19,7 @@
                         <i class="fa fa-file"></i> Cancelar Generar Reporte
                     </x-button>
                 @else
-                    @can('Gestionar reporte de venta')
+                    @can(\App\Constants\Permisos::COCHINILLA_VENTA_REPORTE_VER)
                         <x-button wire:click="obtenerParaReporte">
                             <i class="fa fa-file"></i> Generar Reporte
                         </x-button>
@@ -42,7 +42,7 @@
                     Total Venta: Kg. <span x-text="totalVenta"></span>
                 </div>
                 <x-flex class="w-full justify-end my-3">
-                    @can('Gestionar reporte de venta')
+                    @can(\App\Constants\Permisos::COCHINILLA_VENTA_REPORTE_VER)
                         <x-button @click="enviarVentaAContabilidad">
                             <i class="fa fa-paper-plane"></i> Guardar Reporte
                         </x-button>

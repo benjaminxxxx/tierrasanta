@@ -21,6 +21,7 @@ return new class extends Migration {
                 ->cascadeOnDelete();
 
             $table->decimal('total_bono', 10, 2)->default(0);
+            $table->boolean('bono_manual')->default(false);
 
             $table->timestamps();
 

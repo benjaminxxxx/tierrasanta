@@ -3,10 +3,8 @@
 namespace App\Livewire\GestionCuadrilla;
 use App\Models\Actividad;
 use App\Models\CuadRegistroDiario;
-use App\Models\Labores;
 use App\Models\PlanRegistroDiario;
 use App\Services\Bonificacion\GuardarBonificacionProceso;
-use App\Services\RecursosHumanos\Personal\EmpleadoServicio;
 use App\Support\DateHelper;
 use Exception;
 use Illuminate\Support\Carbon;
@@ -66,6 +64,7 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
                     'campo' => $campoNombre,
                     'labor' => $codigoLabor,
                     'total_bono' => $totalBonoCalculado,
+                    'bono_manual'        => (bool) optional($registro->actividadesBonos->first())->bono_manual,
                 ];
 
                 // Ahora las producciones están dentro de actividadesBonos
@@ -117,6 +116,7 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
                     'campo' => $campoNombre,
                     'labor' => $codigoLabor,
                     'total_bono' => $totalBonoCalculado,
+                    'bono_manual'        => (bool) optional($registroPlanilla->actividadesBonos->first())->bono_manual,
                 ];
 
                 $horariosConcatenados = [];

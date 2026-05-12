@@ -683,7 +683,8 @@ class CuadrilleroServicio
             ],
             [
                 'metodo_id' => $metodoId,
-                'total_bono' => $fila['total_bono'] ?? 0
+                'total_bono' => $fila['total_bono'] ?? 0,
+                'bono_manual' => (bool) ($fila['bono_manual'] ?? false),
             ]
         );
 

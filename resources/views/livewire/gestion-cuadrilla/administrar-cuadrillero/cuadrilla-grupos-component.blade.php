@@ -1,14 +1,20 @@
 <div>
     <div class="flex items-center gap-3">
-        <x-h3>Grupos de Cuadrillas</x-h3>
-        <x-button type="button" @click="$wire.dispatch('registrarGrupo')">
-            <i class="fa fa-plus"></i> Registrar grupo
-        </x-button>
+        <x-title>Gestión de Grupos de Cuadrillas</x-title>
+        @can(\App\Constants\Permisos::CUADRILLA_GRUPO_GESTIONAR)
+            <x-button type="button" @click="$wire.dispatch('registrarGrupo')">
+                <i class="fa fa-plus"></i> Registrar grupo
+            </x-button>
+        @endcan
+
     </div>
     <x-card2 class="mt-5">
-        <x-flex class="justify-end">
-            <x-toggle-switch :checked="$verEliminados" label="Ver eliminados" wire:model.live="verEliminados" />
-        </x-flex>
+        @can(\App\Constants\Permisos::CUADRILLA_GRUPO_VER_ELIMINADOS)
+            <x-flex class="justify-end">
+                <x-toggle-switch :checked="$verEliminados" label="Ver eliminados" wire:model.live="verEliminados" />
+            </x-flex>
+        @endcan
+
         <x-table class="mt-5">
             <x-slot name="thead">
                 <x-tr>
@@ -34,7 +40,8 @@
                         </x-td>
                         <x-td value="{{ $grupo->nombre }}" />
                         <x-td value="{{ $grupo->cuadrilleros->count() }}" class="text-center" />
-                        <x-td value="{{ $grupo->costo_dia_sugerido }}" class="text-center text-black  text-lg font-bold" />
+                        <x-td value="{{ $grupo->costo_dia_sugerido }}"
+                            class="text-center text-black  text-lg font-bold" />
                         <x-td>
                             <div class="rounded-lg p-2 text-center text-black text-lg font-bold"
                                 style="background-color:{{ $grupo->color ? $grupo->color : '#ffffff' }}">
@@ -46,20 +53,24 @@
                         </x-td>
                         <x-td class="text-center">
                             <x-flex class="justify-center">
-                                @if (!$grupo->trashed())
-                                    <x-button type="button"
-                                        @click="$wire.dispatch('editarGrupo', { codigo: '{{ $grupo->codigo }}' })">
-                                        <i class="fa fa-edit"></i>
-                                    </x-button>
+                                @can(\App\Constants\Permisos::CUADRILLA_GRUPO_GESTIONAR)
+                                    @if (!$grupo->trashed())
+                                        <x-button type="button"
+                                            @click="$wire.dispatch('editarGrupo', { codigo: '{{ $grupo->codigo }}' })">
+                                            <i class="fa fa-edit"></i>
+                                        </x-button>
 
-                                    <x-button variant="danger" type="button" wire:click="eliminarGrupoCuadrilla('{{ $grupo->codigo }}')">
-                                        <i class="fa fa-trash"></i>
-                                    </x-button>
-                                @else
-                                    <x-button variant="secondary" wire:click="restaurar('{{ $grupo->codigo }}')">
-                                        Restaurar
-                                    </x-button>
-                                @endif
+                                        <x-button variant="danger" type="button"
+                                            wire:click="eliminarGrupoCuadrilla('{{ $grupo->codigo }}')">
+                                            <i class="fa fa-trash"></i>
+                                        </x-button>
+                                    @else
+                                        <x-button variant="secondary" wire:click="restaurar('{{ $grupo->codigo }}')">
+                                            Restaurar
+                                        </x-button>
+                                    @endif
+                                @endcan
+
 
                             </x-flex>
                         </x-td>

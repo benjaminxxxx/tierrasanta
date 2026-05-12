@@ -78,124 +78,184 @@ class Permisos
     // =========================================================================
 
     // — Módulo raíz
-    const EVALUACION                            = 'Evaluación de Campo';
+    const EVALUACION = 'Evaluación de Campo';
 
     // — Submódulo: Población de Plantas
-    const PLANTA_EVALUACION                     = 'Evaluación de Campo Población Plantas';
-    const PLANTA_EVALUACION_VER                 = 'Evaluación de Campo Población Plantas Ver';
-    const PLANTA_EVALUACION_CREAR               = 'Evaluación de Campo Población Plantas Crear Evaluación';
-    const PLANTA_EVALUACION_EDITAR              = 'Evaluación de Campo Población Plantas Editar Evaluación';
-    const PLANTA_EVALUACION_ELIMINAR            = 'Evaluación de Campo Población Plantas Eliminar Evaluación';
-    const PLANTA_EVALUACION_REPORTE             = 'Evaluación de Campo Población Plantas Ver Reporte';
+    const PLANTA_EVALUACION = 'Evaluación de Campo Población Plantas';
+    const PLANTA_EVALUACION_VER = 'Evaluación de Campo Población Plantas Ver';
+    const PLANTA_EVALUACION_CREAR = 'Evaluación de Campo Población Plantas Crear Evaluación';
+    const PLANTA_EVALUACION_EDITAR = 'Evaluación de Campo Población Plantas Editar Evaluación';
+    const PLANTA_EVALUACION_ELIMINAR = 'Evaluación de Campo Población Plantas Eliminar Evaluación';
+    const PLANTA_EVALUACION_REPORTE = 'Evaluación de Campo Población Plantas Ver Reporte';
 
     // — Submódulo: Brotes x Piso
-    const BROTE_EVALUACION                      = 'Evaluación de Campo Brotes x Piso';
-    const BROTE_EVALUACION_VER                  = 'Evaluación de Campo Brotes x Piso Ver';
-    const BROTE_EVALUACION_CREAR                = 'Evaluación de Campo Brotes x Piso Crear Evaluación';
-    const BROTE_EVALUACION_EDITAR               = 'Evaluación de Campo Brotes x Piso Editar Evaluación';
-    const BROTE_EVALUACION_ELIMINAR             = 'Evaluación de Campo Brotes x Piso Eliminar Evaluación';
-    const BROTE_EVALUACION_REPORTE              = 'Evaluación de Campo Brotes x Piso Ver Reporte';
+    const BROTE_EVALUACION = 'Evaluación de Campo Brotes x Piso';
+    const BROTE_EVALUACION_VER = 'Evaluación de Campo Brotes x Piso Ver';
+    const BROTE_EVALUACION_CREAR = 'Evaluación de Campo Brotes x Piso Crear Evaluación';
+    const BROTE_EVALUACION_EDITAR = 'Evaluación de Campo Brotes x Piso Editar Evaluación';
+    const BROTE_EVALUACION_ELIMINAR = 'Evaluación de Campo Brotes x Piso Eliminar Evaluación';
+    const BROTE_EVALUACION_REPORTE = 'Evaluación de Campo Brotes x Piso Ver Reporte';
 
     // — Submódulo: Infestación Cosecha
-    const INFESTACION_EVALUACION                = 'Evaluación de Campo Infestación Cosecha';
-    const INFESTACION_EVALUACION_VER            = 'Evaluación de Campo Infestación Cosecha Ver';
-    const INFESTACION_EVALUACION_REGISTRAR      = 'Evaluación de Campo Infestación Cosecha Registrar Evaluación';
+    const INFESTACION_EVALUACION = 'Evaluación de Campo Infestación Cosecha';
+    const INFESTACION_EVALUACION_VER = 'Evaluación de Campo Infestación Cosecha Ver';
+    const INFESTACION_EVALUACION_REGISTRAR = 'Evaluación de Campo Infestación Cosecha Registrar Evaluación';
 
     // — Submódulo: Proyección Rendimiento Poda
-    const PROYECCION_EVALUACION                 = 'Evaluación de Campo Proyección Rendimiento';
-    const PROYECCION_EVALUACION_GUARDAR         = 'Evaluación de Campo Proyección Rendimiento Guardar Proyección';
-    const PROYECCION_EVALUACION_DETALLE         = 'Evaluación de Campo Proyección Rendimiento Registrar Detalle';
+    const PROYECCION_EVALUACION = 'Evaluación de Campo Proyección Rendimiento';
+    const PROYECCION_EVALUACION_GUARDAR = 'Evaluación de Campo Proyección Rendimiento Guardar Proyección';
+    const PROYECCION_EVALUACION_DETALLE = 'Evaluación de Campo Proyección Rendimiento Registrar Detalle';
 
     // =========================================================================
     // DOMINIO: PERSONAL (empleados, familiares, contratos)
     // Tablas: plan_empleados, plan_familiares, plan_contratos, plan_sueldos
     // =========================================================================
 
-    const PERSONAL                              = 'Planilla Empleados';
-    const PERSONAL_VER                          = 'Planilla Empleados Ver';
-    const PERSONAL_CREAR                        = 'Planilla Empleados Crear Empleado';
-    const PERSONAL_EDITAR                       = 'Planilla Empleados Editar Empleado';
-    const PERSONAL_ELIMINAR                     = 'Planilla Empleados Eliminar';
-    const PERSONAL_RESTAURAR                    = 'Planilla Empleados Restaurar Empleado';
-    const PERSONAL_CONTRATOS                    = 'Planilla Empleados Gestionar Contratos y Sueldos';
-    const PERSONAL_FAMILIARES                   = 'Planilla Empleados Gestionar Familiares';
-    const PERSONAL_OPCIONES                     = 'Planilla Empleados Gestionar Opciones';
+    const PERSONAL = 'Planilla Empleados';
+    const PERSONAL_VER = 'Planilla Empleados Ver';
+    const PERSONAL_CREAR = 'Planilla Empleados Crear Empleado';
+    const PERSONAL_EDITAR = 'Planilla Empleados Editar Empleado';
+    const PERSONAL_ELIMINAR = 'Planilla Empleados Eliminar';
+    const PERSONAL_RESTAURAR = 'Planilla Empleados Restaurar Empleado';
+    const PERSONAL_CONTRATOS = 'Planilla Empleados Gestionar Contratos y Sueldos';
+    const PERSONAL_FAMILIARES = 'Planilla Empleados Gestionar Familiares';
+    const PERSONAL_OPCIONES = 'Planilla Empleados Gestionar Opciones';
+
+    // =========================================================================
+// DOMINIO: CUADRILLA
+// Tablas: cuad_cuadrilleros, cuad_grupos, cuad_tramos_laborales,
+//         cuad_registros_diarios, cuad_bonos_actividades, cuad_resumen_tramos
+// =========================================================================
+
+    const CUADRILLA = 'Cuadrilla';
+
+    // — Panel (solo acceso, sin sub-permisos)
+    const CUADRILLA_PANEL = 'Cuadrilla Panel Cuadrilleros';
+
+    // — Lista de cuadrilleros
+    const CUADRILLA_LISTA = 'Cuadrilla Lista Cuadrilleros';
+    const CUADRILLA_LISTA_GESTIONAR = 'Cuadrilla Lista Cuadrilleros Gestionar';
+
+    // — Grupos
+    const CUADRILLA_GRUPO = 'Cuadrilla Grupos';
+    const CUADRILLA_GRUPO_GESTIONAR = 'Cuadrilla Grupos Gestionar';
+    const CUADRILLA_GRUPO_VER_ELIMINADOS = 'Cuadrilla Grupos Ver Eliminados';
+
+    // — Reporte Semanal
+    const CUADRILLA_SEMANAL = 'Cuadrilla Reporte Semanal';
+    const CUADRILLA_SEMANAL_GESTIONAR_TRAMO = 'Cuadrilla Reporte Semanal Gestionar Tramo';
+    const CUADRILLA_SEMANAL_AGREGAR_GRUPOS = 'Cuadrilla Reporte Semanal Agregar Grupos y Cuadrillas';
+    const CUADRILLA_SEMANAL_ASIGNAR_COSTOS = 'Cuadrilla Reporte Semanal Asignar Costos por Jornal';
+    const CUADRILLA_SEMANAL_GESTIONAR_GASTOS = 'Cuadrilla Reporte Semanal Gestionar Gastos Adicionales';
+    const CUADRILLA_SEMANAL_GESTIONAR_HORAS = 'Cuadrilla Reporte Semanal Gestionar Horas';
+
+    // — Reporte Diario
+    const CUADRILLA_DIARIO = 'Cuadrilla Reporte Diario';
+    const CUADRILLA_DIARIO_GESTIONAR = 'Cuadrilla Reporte Diario Gestionar';
+
+    // — Bonificaciones (sin Ver hijo — el acceso al módulo ya lo garantiza el padre)
+    const CUADRILLA_BONIFICACION = 'Cuadrilla Bonificaciones';
+    const CUADRILLA_BONIFICACION_AGREGAR_METODO = 'Cuadrilla Bonificaciones Agregar Método';
+    const CUADRILLA_BONIFICACION_AGREGAR_RECOJO = 'Cuadrilla Bonificaciones Agregar Recojo';
+    const CUADRILLA_BONIFICACION_ACTUALIZAR = 'Cuadrilla Bonificaciones Actualizar Bonificación';
+
+    // — Resumen General
+    const CUADRILLA_RESUMEN_GENERAL = 'Cuadrilla Resumen General';
+    const CUADRILLA_RESUMEN_GENERAL_EXPORTAR = 'Cuadrilla Resumen General Exportar';
+
+    // — Resumen Anual
+    const CUADRILLA_RESUMEN_ANUAL = 'Cuadrilla Resumen Anual';
+    const CUADRILLA_RESUMEN_ANUAL_EXPORTAR = 'Cuadrilla Resumen Anual Exportar';
 
     // =========================================================================
     // DOMINIO: PLANILLA (asistencia, registros diarios, resúmenes)
     // Tablas: plan_mensuales, plan_registros_diarios, plan_periodos, etc.
     // =========================================================================
 
-    const PLANILLA                              = 'Planilla';
-    const PLANILLA_ACTIVIDAD_VER                = 'Planilla Actividades Diarias Ver';
-    const PLANILLA_ASISTENCIA_VER               = 'Planilla Asistencia Mensual Ver';
-    const PLANILLA_SUSPENSION                   = 'Planilla Permisos y Suspensiones';
-    const PLANILLA_SUSPENSION_VER               = 'Planilla Permisos y Suspensiones Ver';
-    const PLANILLA_SUSPENSION_CREAR             = 'Planilla Permisos y Suspensiones Crear';
-    const PLANILLA_SUSPENSION_EDITAR            = 'Planilla Permisos y Suspensiones Editar';
-    const PLANILLA_SUSPENSION_ELIMINAR          = 'Planilla Permisos y Suspensiones Eliminar';
-    const PLANILLA_RESUMEN_MENSUAL_VER          = 'Planilla Resumen Mensual Ver';
-    const PLANILLA_RESUMEN_GENERAL_VER          = 'Planilla Resumen General Ver';
-    const PLANILLA_BLANCO_VER                   = 'Planilla Blanco Ver';
-    const PLANILLA_CONCEPTOS                    = 'Planilla Conceptos';
-    const PLANILLA_CONCEPTOS_VER                = 'Planilla Conceptos Ver';
-    const PLANILLA_CONCEPTOS_CREAR              = 'Planilla Conceptos Crear';
-    const PLANILLA_CONCEPTOS_EDITAR             = 'Planilla Conceptos Editar';
-    const PLANILLA_CONCEPTOS_ELIMINAR           = 'Planilla Conceptos Eliminar';
-    const PLANILLA_PARAMETROS_VER               = 'Planilla Parámetros Ver';
-    const PLANILLA_PARAMETROS_EDITAR            = 'Planilla Parámetros Editar';
+    const PLANILLA = 'Planilla';
+    const PLANILLA_ACTIVIDAD_VER = 'Planilla Actividades Diarias Ver';
+    const PLANILLA_ASISTENCIA_VER = 'Planilla Asistencia Mensual Ver';
+    const PLANILLA_SUSPENSION = 'Planilla Permisos y Suspensiones';
+    const PLANILLA_SUSPENSION_VER = 'Planilla Permisos y Suspensiones Ver';
+    const PLANILLA_SUSPENSION_CREAR = 'Planilla Permisos y Suspensiones Crear';
+    const PLANILLA_SUSPENSION_EDITAR = 'Planilla Permisos y Suspensiones Editar';
+    const PLANILLA_SUSPENSION_ELIMINAR = 'Planilla Permisos y Suspensiones Eliminar';
+    const PLANILLA_RESUMEN_MENSUAL_VER = 'Planilla Resumen Mensual Ver';
+    const PLANILLA_RESUMEN_GENERAL_VER = 'Planilla Resumen General Ver';
+    const PLANILLA_BLANCO_VER = 'Planilla Blanco Ver';
+    const PLANILLA_CONCEPTOS = 'Planilla Conceptos';
+    const PLANILLA_CONCEPTOS_VER = 'Planilla Conceptos Ver';
+    const PLANILLA_CONCEPTOS_CREAR = 'Planilla Conceptos Crear';
+    const PLANILLA_CONCEPTOS_EDITAR = 'Planilla Conceptos Editar';
+    const PLANILLA_CONCEPTOS_ELIMINAR = 'Planilla Conceptos Eliminar';
+    const PLANILLA_PARAMETROS_VER = 'Planilla Parámetros Ver';
+    const PLANILLA_PARAMETROS_EDITAR = 'Planilla Parámetros Editar';
 
     // =========================================================================
     // DOMINIO: COCHINILLA
     // Tablas: cochinilla_*, venta_cochinillas, venta_facturada_cochinillas
     // =========================================================================
 
-    const COCHINILLA                            = 'Cochinilla';
-    const COCHINILLA_INGRESO                    = 'Cochinilla Ingreso';
-    const COCHINILLA_INGRESO_VER                = 'Cochinilla Ingreso Ver';
-    const COCHINILLA_INGRESO_CREAR              = 'Cochinilla Ingreso Crear';
-    const COCHINILLA_INGRESO_EDITAR             = 'Cochinilla Ingreso Editar';
-    const COCHINILLA_INGRESO_ELIMINAR           = 'Cochinilla Ingreso Eliminar';
-    const COCHINILLA_VENTEADO                   = 'Cochinilla Venteado';
-    const COCHINILLA_VENTEADO_VER               = 'Cochinilla Venteado Ver';
-    const COCHINILLA_VENTEADO_CREAR             = 'Cochinilla Venteado Crear';
-    const COCHINILLA_VENTEADO_EDITAR            = 'Cochinilla Venteado Editar';
-    const COCHINILLA_VENTEADO_ELIMINAR          = 'Cochinilla Venteado Eliminar';
-    const COCHINILLA_FILTRADO                   = 'Cochinilla Filtrado';
-    const COCHINILLA_FILTRADO_VER               = 'Cochinilla Filtrado Ver';
-    const COCHINILLA_FILTRADO_CREAR             = 'Cochinilla Filtrado Crear';
-    const COCHINILLA_FILTRADO_EDITAR            = 'Cochinilla Filtrado Editar';
-    const COCHINILLA_FILTRADO_ELIMINAR          = 'Cochinilla Filtrado Eliminar';
-    const COCHINILLA_COSECHA                    = 'Cochinilla Cosecha Mamas';
-    const COCHINILLA_COSECHA_VER                = 'Cochinilla Cosecha Mamas Ver';
-    const COCHINILLA_COSECHA_CREAR              = 'Cochinilla Cosecha Mamas Crear';
-    const COCHINILLA_COSECHA_EDITAR             = 'Cochinilla Cosecha Mamas Editar';
-    const COCHINILLA_COSECHA_ELIMINAR           = 'Cochinilla Cosecha Mamas Eliminar';
-    const COCHINILLA_INFESTACION                = 'Cochinilla Infestación';
-    const COCHINILLA_INFESTACION_VER            = 'Cochinilla Infestación Ver';
-    const COCHINILLA_INFESTACION_CREAR          = 'Cochinilla Infestación Crear';
-    const COCHINILLA_INFESTACION_EDITAR         = 'Cochinilla Infestación Editar';
-    const COCHINILLA_INFESTACION_ELIMINAR       = 'Cochinilla Infestación Eliminar';
-    const COCHINILLA_VENTA                      = 'Cochinilla Venta';
-    const COCHINILLA_VENTA_VER                  = 'Cochinilla Venta Ver';
-    const COCHINILLA_VENTA_CREAR                = 'Cochinilla Venta Crear';
-    const COCHINILLA_VENTA_EDITAR               = 'Cochinilla Venta Editar';
-    const COCHINILLA_VENTA_ELIMINAR             = 'Cochinilla Venta Eliminar';
+    const COCHINILLA = 'Cochinilla';
+    const COCHINILLA_INGRESO = 'Cochinilla Ingreso';
+    const COCHINILLA_INGRESO_VER = 'Cochinilla Ingreso Ver';
+    const COCHINILLA_INGRESO_CREAR = 'Cochinilla Ingreso Crear';
+    const COCHINILLA_INGRESO_EDITAR = 'Cochinilla Ingreso Editar';
+    const COCHINILLA_INGRESO_ELIMINAR = 'Cochinilla Ingreso Eliminar';
+    const COCHINILLA_VENTEADO = 'Cochinilla Venteado';
+    const COCHINILLA_VENTEADO_VER = 'Cochinilla Venteado Ver';
+    const COCHINILLA_VENTEADO_CREAR = 'Cochinilla Venteado Crear';
+    const COCHINILLA_VENTEADO_EDITAR = 'Cochinilla Venteado Editar';
+    const COCHINILLA_VENTEADO_ELIMINAR = 'Cochinilla Venteado Eliminar';
+    const COCHINILLA_FILTRADO = 'Cochinilla Filtrado';
+    const COCHINILLA_FILTRADO_VER = 'Cochinilla Filtrado Ver';
+    const COCHINILLA_FILTRADO_CREAR = 'Cochinilla Filtrado Crear';
+    const COCHINILLA_FILTRADO_EDITAR = 'Cochinilla Filtrado Editar';
+    const COCHINILLA_FILTRADO_ELIMINAR = 'Cochinilla Filtrado Eliminar';
+    const COCHINILLA_COSECHA = 'Cochinilla Cosecha Mamas';
+    const COCHINILLA_COSECHA_VER = 'Cochinilla Cosecha Mamas Ver';
+    const COCHINILLA_COSECHA_CREAR = 'Cochinilla Cosecha Mamas Crear';
+    const COCHINILLA_COSECHA_EDITAR = 'Cochinilla Cosecha Mamas Editar';
+    const COCHINILLA_COSECHA_ELIMINAR = 'Cochinilla Cosecha Mamas Eliminar';
+    const COCHINILLA_INFESTACION = 'Cochinilla Infestación';
+    const COCHINILLA_INFESTACION_VER = 'Cochinilla Infestación Ver';
+    const COCHINILLA_INFESTACION_CREAR = 'Cochinilla Infestación Crear';
+    const COCHINILLA_INFESTACION_EDITAR = 'Cochinilla Infestación Editar';
+    const COCHINILLA_INFESTACION_ELIMINAR = 'Cochinilla Infestación Eliminar';
+    // =========================================================================
+// COCHINILLA — Venta
+// Tablas: venta_cochinillas, venta_facturada_cochinillas, venta_cochinilla_reportes
+// Roles típicos: Registrador de campo (entrega), Contabilidad (costos/facturación)
+// =========================================================================
+
+    const COCHINILLA_VENTA = 'Cochinilla Venta';
+
+    // — Entrega (registrador de campo)
+    const COCHINILLA_VENTA_ENTREGA_VER = 'Cochinilla Venta Ver Entrega';
+    const COCHINILLA_VENTA_ENTREGA_REGISTRAR = 'Cochinilla Venta Registrar Entrega';
+
+    // — Reporte de venta (supervisor / administración)
+    const COCHINILLA_VENTA_REPORTE_VER = 'Cochinilla Venta Ver Reporte';
+    const COCHINILLA_VENTA_REPORTE_GESTIONAR = 'Cochinilla Venta Gestionar Reporte';
+
+    // — Costo y facturación (contabilidad)
+    const COCHINILLA_VENTA_FACTURACION_VER = 'Cochinilla Venta Ver Facturación';
+    const COCHINILLA_VENTA_FACTURACION_GESTIONAR = 'Cochinilla Venta Gestionar Facturación';
 
     // =========================================================================
     // DOMINIO: SISTEMA (usuarios, roles, auditoría, configuración)
     // Tablas: users, roles, permissions, auditorias, configuracion*
     // =========================================================================
 
-    const SISTEMA                               = 'Sistema';
-    const SISTEMA_USUARIO                       = 'Usuarios Administrar';
-    const SISTEMA_USUARIO_VER                   = 'Usuarios Ver';
-    const SISTEMA_USUARIO_CREAR                 = 'Usuarios Crear';
-    const SISTEMA_USUARIO_EDITAR                = 'Usuarios Editar';
-    const SISTEMA_USUARIO_ELIMINAR              = 'Usuarios Eliminar';
-    const SISTEMA_ROL                           = 'Roles';
-    const SISTEMA_ROL_VER                       = 'Roles Ver';
-    const SISTEMA_ROL_CREAR                     = 'Roles Crear';
-    const SISTEMA_ROL_EDITAR                    = 'Roles Editar';
-    const SISTEMA_ROL_PERMISOS                  = 'Roles Permisos Administrar';
+    const SISTEMA = 'Sistema';
+    const SISTEMA_USUARIO = 'Usuarios Administrar';
+    const SISTEMA_USUARIO_VER = 'Usuarios Ver';
+    const SISTEMA_USUARIO_CREAR = 'Usuarios Crear';
+    const SISTEMA_USUARIO_EDITAR = 'Usuarios Editar';
+    const SISTEMA_USUARIO_ELIMINAR = 'Usuarios Eliminar';
+    const SISTEMA_ROL = 'Roles';
+    const SISTEMA_ROL_VER = 'Roles Ver';
+    const SISTEMA_ROL_CREAR = 'Roles Crear';
+    const SISTEMA_ROL_EDITAR = 'Roles Editar';
+    const SISTEMA_ROL_PERMISOS = 'Roles Permisos Administrar';
 }

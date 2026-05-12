@@ -103,63 +103,59 @@ return [
     ],
 
     [
-        'nombre' => 'Cuadrilla',
+        'nombre' => Permisos::CUADRILLA,
         'hijos' => [
             [
-                'nombre' => 'Cuadrilla Panel Cuadrilleros',
+                'nombre' => Permisos::CUADRILLA_PANEL,
+                'hijos' => [], // acceso al módulo, sin sub-permisos
+            ],
+            [
+                'nombre' => Permisos::CUADRILLA_LISTA,
                 'hijos' => [
-                    ['nombre' => 'Cuadrilla Panel Cuadrilleros Ver'],
+                    ['nombre' => Permisos::CUADRILLA_LISTA_GESTIONAR],
                 ],
             ],
             [
-                'nombre' => 'Cuadrilla Lista Cuadrilleros',
+                'nombre' => Permisos::CUADRILLA_GRUPO,
                 'hijos' => [
-                    ['nombre' => 'Cuadrilla Lista Cuadrilleros Ver'],
-                    ['nombre' => 'Cuadrilla Lista Cuadrilleros Agregar'],
-                    ['nombre' => 'Cuadrilla Lista Cuadrilleros Editar'],
-                    ['nombre' => 'Cuadrilla Lista Cuadrilleros Eliminar'],
+                    ['nombre' => Permisos::CUADRILLA_GRUPO_GESTIONAR],
+                    ['nombre' => Permisos::CUADRILLA_GRUPO_VER_ELIMINADOS],
                 ],
             ],
             [
-                'nombre' => 'Cuadrilla Grupos',
+                'nombre' => Permisos::CUADRILLA_SEMANAL,
                 'hijos' => [
-                    ['nombre' => 'Cuadrilla Grupos Ver'],
-                    ['nombre' => 'Cuadrilla Grupos Agregar'],
-                    ['nombre' => 'Cuadrilla Grupos Editar'],
-                    ['nombre' => 'Cuadrilla Grupos Eliminar'],
+                    ['nombre' => Permisos::CUADRILLA_SEMANAL_GESTIONAR_TRAMO],
+                    ['nombre' => Permisos::CUADRILLA_SEMANAL_AGREGAR_GRUPOS],
+                    ['nombre' => Permisos::CUADRILLA_SEMANAL_ASIGNAR_COSTOS],
+                    ['nombre' => Permisos::CUADRILLA_SEMANAL_GESTIONAR_GASTOS],
+                    ['nombre' => Permisos::CUADRILLA_SEMANAL_GESTIONAR_HORAS],
                 ],
             ],
             [
-                'nombre' => 'Cuadrilla Reporte Semanal',
+                'nombre' => Permisos::CUADRILLA_DIARIO,
                 'hijos' => [
-                    ['nombre' => 'Cuadrilla Reporte Semanal Ver'],
+                    ['nombre' => Permisos::CUADRILLA_DIARIO_GESTIONAR],
                 ],
             ],
             [
-                'nombre' => 'Cuadrilla Reporte Diario',
+                'nombre' => Permisos::CUADRILLA_BONIFICACION,
                 'hijos' => [
-                    ['nombre' => 'Cuadrilla Reporte Diario Ver'],
+                    ['nombre' => Permisos::CUADRILLA_BONIFICACION_AGREGAR_METODO],
+                    ['nombre' => Permisos::CUADRILLA_BONIFICACION_AGREGAR_RECOJO],
+                    ['nombre' => Permisos::CUADRILLA_BONIFICACION_ACTUALIZAR],
                 ],
             ],
             [
-                'nombre' => 'Cuadrilla Bonificaciones',
+                'nombre' => Permisos::CUADRILLA_RESUMEN_GENERAL,
                 'hijos' => [
-                    ['nombre' => 'Cuadrilla Bonificaciones Ver'],
-                    ['nombre' => 'Cuadrilla Bonificaciones Agregar'],
-                    ['nombre' => 'Cuadrilla Bonificaciones Editar'],
-                    ['nombre' => 'Cuadrilla Bonificaciones Eliminar'],
+                    ['nombre' => Permisos::CUADRILLA_RESUMEN_GENERAL_EXPORTAR],
                 ],
             ],
             [
-                'nombre' => 'Cuadrilla Resumen General',
+                'nombre' => Permisos::CUADRILLA_RESUMEN_ANUAL,
                 'hijos' => [
-                    ['nombre' => 'Cuadrilla Resumen General Ver'],
-                ],
-            ],
-            [
-                'nombre' => 'Cuadrilla Resumen Anual',
-                'hijos' => [
-                    ['nombre' => 'Cuadrilla Resumen Anual Ver'],
+                    ['nombre' => Permisos::CUADRILLA_RESUMEN_ANUAL_EXPORTAR],
                 ],
             ],
         ],
@@ -277,59 +273,34 @@ return [
         'nombre' => 'Cochinilla',
         'hijos' => [
             [
-                'nombre' => 'Cochinilla Ingreso',
-                'hijos' => [
-                    ['nombre' => 'Cochinilla Ingreso Ver'],
-                    ['nombre' => 'Cochinilla Ingreso Agregar'],
-                    ['nombre' => 'Cochinilla Ingreso Editar'],
-                    ['nombre' => 'Cochinilla Ingreso Eliminar'],
-                ],
+                'nombre' => Permisos::COCHINILLA_INGRESO,
+                'hijos' => [],
             ],
             [
-                'nombre' => 'Cochinilla Venteado',
-                'hijos' => [
-                    ['nombre' => 'Cochinilla Venteado Ver'],
-                    ['nombre' => 'Cochinilla Venteado Agregar'],
-                    ['nombre' => 'Cochinilla Venteado Editar'],
-                    ['nombre' => 'Cochinilla Venteado Eliminar'],
-                ],
+                'nombre' => Permisos::COCHINILLA_VENTEADO,
+                'hijos' => [],
             ],
             [
-                'nombre' => 'Cochinilla Filtrado',
-                'hijos' => [
-                    ['nombre' => 'Cochinilla Filtrado Ver'],
-                    ['nombre' => 'Cochinilla Filtrado Agregar'],
-                    ['nombre' => 'Cochinilla Filtrado Editar'],
-                    ['nombre' => 'Cochinilla Filtrado Eliminar'],
-                ],
+                'nombre' => Permisos::COCHINILLA_FILTRADO,
+                'hijos' => [],
             ],
             [
-                'nombre' => 'Cochinilla Cosecha Mamas',
-                'hijos' => [
-                    ['nombre' => 'Cochinilla Cosecha Mamas Ver'],
-                    ['nombre' => 'Cochinilla Cosecha Mamas Agregar'],
-                    ['nombre' => 'Cochinilla Cosecha Mamas Editar'],
-                    ['nombre' => 'Cochinilla Cosecha Mamas Eliminar'],
-                ],
+                'nombre' => Permisos::COCHINILLA_COSECHA,
+                'hijos' => [],
             ],
             [
-                'nombre' => 'Cochinilla Infestación',
-                'hijos' => [
-                    ['nombre' => 'Cochinilla Infestación Ver'],
-                    ['nombre' => 'Cochinilla Infestación Agregar'],
-                    ['nombre' => 'Cochinilla Infestación Editar'],
-                    ['nombre' => 'Cochinilla Infestación Eliminar'],
-                ],
+                'nombre' => Permisos::COCHINILLA_INFESTACION,
+                'hijos' => [],
             ],
             [
-                'nombre' => 'Cochinilla Venta',
+                'nombre' => Permisos::COCHINILLA_VENTA,
                 'hijos' => [
-                    ['nombre' => 'Ver entrega de venta'],
-                    ['nombre' => 'Registrar entrega de venta'],
-                    ['nombre' => 'Ver reporte de venta'],
-                    ['nombre' => 'Gestionar reporte de venta'],
-                    ['nombre' => 'Ver costo de venta y facturacion'],
-                    ['nombre' => 'Gestionar costo de venta y facturacion'],
+                    ['nombre' => Permisos::COCHINILLA_VENTA_ENTREGA_VER],
+                    ['nombre' => Permisos::COCHINILLA_VENTA_ENTREGA_REGISTRAR],
+                    ['nombre' => Permisos::COCHINILLA_VENTA_REPORTE_VER],
+                    ['nombre' => Permisos::COCHINILLA_VENTA_REPORTE_GESTIONAR],
+                    ['nombre' => Permisos::COCHINILLA_VENTA_FACTURACION_VER],
+                    ['nombre' => Permisos::COCHINILLA_VENTA_FACTURACION_GESTIONAR],
                 ],
             ],
         ],

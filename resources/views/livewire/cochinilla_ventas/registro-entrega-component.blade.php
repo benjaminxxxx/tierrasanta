@@ -3,7 +3,7 @@
         <x-h3>
             Registro de Entrega de venta
         </x-h3>
-        @can('Registrar entrega de venta')
+        @can(\App\Constants\Permisos::COCHINILLA_VENTA_ENTREGA_REGISTRAR)
             <x-button @click="$wire.dispatch('crearRegistroVentaCochinilla')">
                 <i class="fa fa-plus"></i> Registrar Entrega de Venta
             </x-button>

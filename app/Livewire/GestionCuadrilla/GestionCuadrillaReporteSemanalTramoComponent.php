@@ -2,6 +2,7 @@
 
 namespace App\Livewire\GestionCuadrilla;
 
+use App\Constants\Permisos;
 use App\Models\CuadRegistroDiario;
 use App\Models\CuadResumenPorTramo;
 use App\Models\Cuadrillero;
@@ -19,6 +20,7 @@ use Carbon\CarbonPeriod;
 use DB;
 use Exception;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rules\Can;
 use Livewire\Component;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 
@@ -202,6 +204,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
     public function storeTableDataGuardarHoras($datos)
     {
         try {
+
             if (!$this->tramoLaboral) {
                 throw new Exception("Recargar la página");
             }
@@ -224,8 +227,9 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
         DB::beginTransaction();
         try {
 
-            /*
-             */
+            if (!auth()->user()->can(Permisos::CUADRILLA_SEMANAL_GESTIONAR_HORAS)) {
+                throw new Exception("No tiene permisos para editar el reporte semanal");
+            }
             foreach ($resumenes as $id => $resumenData) {
                 // Solo enviar fecha y recibo
                 $payload = [

@@ -1,10 +1,10 @@
-<x-app-layout>
+<x-app-layout title="Resumen Anual Cuadrilla">
     <div class="container mx-auto p-6">
         <div class="mb-2">
-            <x-h3>
+            <x-title>
                 Panel Estadístico - Cuadrilleros FDM
-            </x-h3>
-            <x-label>Análisis anual de costos y bonos de trabajadores en cuadrilla</x-label>
+            </x-title>
+            <x-subtitle>Análisis anual de costos y bonos de trabajadores en cuadrilla</x-subtitle>
         </div>
 
         <livewire:gestion-cuadrilla.gestion-cuadrilla-resumen-anual-component />

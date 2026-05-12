@@ -77,11 +77,11 @@ Route::middleware([
     //CUADRILLA
     Route::get('/cuadrilla/cuadrilleros', function () {
         return view('livewire.gestion-cuadrilla.administrar-cuadrillero.cuadrilleros');
-    })->name('cuadrilla.cuadrilleros');
+    })->name('cuadrilla.cuadrilleros')->middleware('can:' . Permisos::CUADRILLA_LISTA);
 
     Route::get('/cuadrilla/grupos', function () {
         return view('livewire.gestion-cuadrilla.administrar-cuadrillero.grupos');
-    })->name('cuadrilla.grupos');
+    })->name('cuadrilla.grupos')->middleware('can:' . Permisos::CUADRILLA_GRUPO);
 
 
     //CAMPAÑAS
@@ -138,11 +138,11 @@ Route::middleware([
     Route::prefix('cuadrilla/gestion_cuadrilleros')->group(function () {
         // Pantalla principal / dashboard
         Route::get('/', [CuadrillaController::class, 'gestion'])
-            ->name('cuadrilleros.gestion');
+            ->name('cuadrilleros.gestion')->middleware('can:' . Permisos::CUADRILLA_PANEL);
 
-        // Registro Diario
+        // Registro Diario cuadrilla/gestion_cuadrilleros/registro-diario
         Route::get('/registro-diario', [CuadrillaController::class, 'registro_diario'])
-            ->name('gestion_cuadrilleros.registro-diario.index');
+            ->name('gestion_cuadrilleros.registro-diario.index')->middleware('can:' . Permisos::CUADRILLA_DIARIO);
 
         // Gestión de Actividades
         Route::get('/actividades', [CuadrillaController::class, 'actividades'])
@@ -150,7 +150,7 @@ Route::middleware([
 
         // Grupos de Pago
         Route::get('/reporte-semanal', [CuadrillaController::class, 'reporte_semanal'])
-            ->name('gestion_cuadrilleros.reporte-semanal.index');
+            ->name('gestion_cuadrilleros.reporte-semanal.index')->middleware('can:' . Permisos::CUADRILLA_SEMANAL);
 
         // Períodos Grupales
         Route::get('/periodos', [CuadrillaController::class, 'periodos'])
@@ -158,15 +158,15 @@ Route::middleware([
 
         // Módulo de Pagos
         Route::get('/resumen-general', [CuadrillaController::class, 'pagos'])
-            ->name('gestion_cuadrilleros.resumen_general.index');
+            ->name('gestion_cuadrilleros.resumen_general.index')->middleware('can:' . Permisos::CUADRILLA_RESUMEN_GENERAL);
 
         // Bonificaciones
         Route::get('/bonificaciones', [CuadrillaController::class, 'bonificaciones'])
-            ->name('gestion_cuadrilleros.bonificaciones.index');
+            ->name('gestion_cuadrilleros.bonificaciones.index')->middleware('can:' . Permisos::CUADRILLA_BONIFICACION);
 
         // Resumen anual cuadrilla
         Route::get('/resumen_anual', [CuadrillaController::class, 'resumen_anual'])
-            ->name('gestion_cuadrilleros.resumen_anual');
+            ->name('gestion_cuadrilleros.resumen_anual')->middleware('can:' . Permisos::CUADRILLA_RESUMEN_ANUAL);
     });
     Route::get('/reporte-general/reporte-diario', [ReporteController::class, 'reporte_diario'])->name('reporte_general.reporte_diario');
     Route::get('/reporte-general/reporte-mensual', [ReporteController::class, 'reporte_mensual'])->name('reporte_general.reporte_mensual');
@@ -238,13 +238,12 @@ Route::middleware([
     Route::get('/evaluacion-campo/proyeccion-rendimiento-poda', [ReporteCampoController::class, 'evaluacion_proyeccion_rendimiento_poda'])->name('reporte_campo.evaluacion_proyeccion_rendimiento_poda')->middleware('can:' . Permisos::PROYECCION_EVALUACION);
 
     //COCHINILLA
-    Route::get('/cochinilla/ingreso', [CochinillaController::class, 'ingreso'])->name('cochinilla.ingreso');
-    Route::get('/cochinilla/venteado', [CochinillaController::class, 'venteado'])->name('cochinilla.venteado');
-    Route::get('/cochinilla/filtrado', [CochinillaController::class, 'filtrado'])->name('cochinilla.filtrado');
-    Route::get('/cochinilla/cosechamamas', [CochinillaController::class, 'cosecha_mamas'])->name('cochinilla.cosecha_mamas');
-    Route::get('/cochinilla/infestacion', [CochinillaController::class, 'infestacion'])->name('cochinilla.infestacion');
-    Route::get('/cochinilla/infestacion/masivo', [CochinillaController::class, 'infestacion_masivo'])->name('cochinilla.infestacion.masivo');
-    Route::get('/cochinilla/ventas', [CochinillaController::class, 'ventas'])->name('cochinilla.ventas')->middleware('can:Cochinilla Venta');
+    Route::get('/cochinilla/ingreso', [CochinillaController::class, 'ingreso'])->name('cochinilla.ingreso')->middleware('can:' . Permisos::COCHINILLA_INGRESO);
+    Route::get('/cochinilla/venteado', [CochinillaController::class, 'venteado'])->name('cochinilla.venteado')->middleware('can:' . Permisos::COCHINILLA_VENTEADO);
+    Route::get('/cochinilla/filtrado', [CochinillaController::class, 'filtrado'])->name('cochinilla.filtrado')->middleware('can:' . Permisos::COCHINILLA_FILTRADO);
+    Route::get('/cochinilla/cosechamamas', [CochinillaController::class, 'cosecha_mamas'])->name('cochinilla.cosecha_mamas')->middleware('can:' . Permisos::COCHINILLA_COSECHA);
+    Route::get('/cochinilla/infestacion', [CochinillaController::class, 'infestacion'])->name('cochinilla.infestacion')->middleware('can:' . Permisos::COCHINILLA_INFESTACION);
+    Route::get('/cochinilla/ventas', [CochinillaController::class, 'ventas'])->name('cochinilla.ventas')->middleware('can:' . Permisos::COCHINILLA_VENTA);
 
     Route::get('/test/costos', [TestController::class, 'mano_obra']);
 });
