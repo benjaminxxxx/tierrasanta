@@ -75,11 +75,14 @@
                                 S/ {{ number_format($fila['costo'], 2) }}
                             </td>
                             <td class="py-2 px-3 border-b border-blue-200 dark:border-blue-800 text-right">
-                                <button wire:click="abrirModalDistribucion({{ $fila['salida_id'] }})"
+                                @can(\App\Constants\Permisos::INSUMO_DISTRIBUCION_GESTIONAR)
+                                     <button wire:click="abrirModalDistribucion({{ $fila['salida_id'] }})"
                                     class="inline-flex items-center gap-1 rounded px-2 py-1 text-xs
                                                    bg-blue-600 hover:bg-blue-700 text-white transition-colors whitespace-nowrap">
                                     <i class="fa fa-sliders"></i> Gestionar
                                 </button>
+                                @endcan
+                               
                             </td>
                         </tr>
                     @else
@@ -121,9 +124,11 @@
                                 S/ {{ number_format($fila['costo'], 4) }}
                             </td>
                             <td class="py-1.5 px-3 border-b border-border">
+                                 @can(\App\Constants\Permisos::INSUMO_DISTRIBUCION_GESTIONAR)
                                 <x-button wire:click="eliminarDistribucion({{ $fila['id'] }})" size="xs" variant="danger">
                                     <i class="fa fa-remove"></i>
                                 </x-button>
+                                @endcan
                             </td>
                         </tr>
                     @endif

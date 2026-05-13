@@ -12,7 +12,8 @@
     <title>{{ $title ??  'Tierra Santa Holding S.A.C.'}}</title>
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('css/fontawesome.min.css') }}" />
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    {{-- https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js --}}
+    <script src="{{ asset('js/flatpickr/es.js') }}"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
     @include('comun.handsontable')
@@ -37,7 +38,7 @@ $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(valu
 
     @stack('modals')
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ asset('js/chart.js') }}"></script>
     @livewireScripts
     <script src="{{ asset('js/sweetalert2@11.js') }}"></script>
     <x-livewire-alert::scripts />

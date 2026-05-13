@@ -136,16 +136,44 @@ class Sidebar extends Component
             [
                 'title' => 'Kardex y Almacén',
                 'icon' => 'fa fa-clipboard-list',
-                'can' => 'Kardex y Almacén',
+                'can' => Permisos::INSUMO,
                 'children' => [
-                    ['title' => 'Entradas (compras)', 'route' => 'almacen.compras', 'can' => 'Almacén Compras Ver'],
-                    ['title' => 'Salida de Almacén Pesticidas y Fertilizantes', 'route' => 'almacen.salida_productos', 'can' => 'Almacén Salida Pesticidas Ver'],
-                    ['title' => 'Salida de Combustible', 'route' => 'almacen.salida_combustible', 'can' => 'Almacén Salida Combustible Ver'],
-                    ['title' => 'Distribución de Combustible', 'route' => 'almacen.distribucion_combustible', 'can' => 'Almacén Distribución Combustible Ver'],
-                    ['title' => 'Kardex de Insumos', 'route' => 'gestion_insumos.kardex', 'can' => 'Kardex Insumos Ver'],
-                    ['title' => 'Kardexes por Producto', 'route' => 'gestion_insumos.kardex.crear', 'can' => 'Kardex Por Producto Ver'],
-                    ['title' => 'Reporte de Kardex', 'route' => 'gestion_insumos.kardex.reportes', 'can' => 'Kardex Reporte Ver'],
-                    ['title' => 'Ver Kardex', 'route' => 'kardex.lista', 'can' => 'Kardex Lista Ver'],
+                    [
+                        'title' => 'Entradas (compras)',
+                        'route' => 'almacen.compras',
+                        'can' => Permisos::INSUMO_COMPRA,
+                    ],
+                    [
+                        'title' => 'Salida de Almacén Pesticidas y Fertilizantes',
+                        'route' => 'almacen.salida_productos',
+                        'can' => Permisos::INSUMO_SALIDA,
+                    ],
+                    [
+                        'title' => 'Salida de Combustible',
+                        'route' => 'almacen.salida_combustible',
+                        'can' => Permisos::INSUMO_COMBUSTIBLE,
+                    ],
+                    [
+                        'title' => 'Distribución de Combustible',
+                        'route' => 'almacen.distribucion_combustible',
+                        'can' => Permisos::INSUMO_DISTRIBUCION,
+                    ],
+                    [
+                        'title' => 'Kardex de Insumos',
+                        'route' => 'gestion_insumos.kardex',
+                        'can' => Permisos::INSUMO_KARDEX,
+                    ],
+                    [
+                        // Misma guardia que Kardex — comparte permisos hijos
+                        'title' => 'Kardex por Insumo',
+                        'route' => 'gestion_insumos.kardex.crear',
+                        'can' => Permisos::INSUMO_KARDEX,
+                    ],
+                    [
+                        'title' => 'Reporte de Kardex',
+                        'route' => 'gestion_insumos.kardex.reportes',
+                        'can' => Permisos::INSUMO_KARDEX_REPORTE,
+                    ],
                 ],
             ],
             [

@@ -193,24 +193,50 @@
                     this.calcularBonos();
                 },
                 cells: (row, col) => {
-                    const cellProperties = {};
-                    const colData = this.generarColumnasDinamicas();
-                    // Identificar si es la columna total_bono
-                    if (colData[col]?.data === 'total_bono') {
-                        const rowData = this.hot?.getSourceDataAtRow(row);
-                        if (rowData?.bono_manual) {
-                            cellProperties.readOnly = false;
-                            cellProperties.className = '!bg-green-100 !text-center font-bold';
-                        } else {
-                            cellProperties.readOnly = true;
-                            cellProperties.className = this.isDark
-                                ? '!bg-muted !text-center font-bold'
-                                : '!bg-yellow-100 !text-center font-bold';
-                        }
-                    }
-                    return cellProperties;
+                    return this.evaluarCeldas(row, col);  // ← delegar a método
                 },
                 licenseKey: 'non-commercial-and-evaluation',
+            });
+
+            this.inicializarBackups();
+            this.refrescarCeldas();
+        },
+        inicializarBackups() {
+            this.tableDataBonificados.forEach(row => {
+                if (row.bono_manual && row.metodo_bonificacion) {
+                    row._metodo_backup = row.metodo_bonificacion;
+                    row.metodo_bonificacion = null;
+                }
+            });
+        },
+        evaluarCeldas(row, col) {
+            const cellProperties = {};
+            const colData = this.generarColumnasDinamicas();
+            const rowData = this.hot?.getSourceDataAtRow(row);
+
+            if (colData[col]?.data === 'metodo_bonificacion' && rowData?.bono_manual) {
+                cellProperties.readOnly = true;
+                cellProperties.className = '!bg-muted !text-center text-muted-foreground italic';
+            }
+
+            if (colData[col]?.data === 'total_bono') {
+                if (rowData?.bono_manual) {
+                    cellProperties.readOnly = false;
+                    cellProperties.className = '!text-center font-bold';
+                } else {
+                    cellProperties.readOnly = true;
+                    cellProperties.className = this.isDark
+                        ? '!bg-muted !text-center font-bold'
+                        : '!bg-yellow-100 !text-center font-bold';
+                }
+            }
+
+            return cellProperties;
+        },
+
+        refrescarCeldas() {
+            this.hot.updateSettings({
+                cells: (row, col) => this.evaluarCeldas(row, col)
             });
         },
         recalcularTodo() {
@@ -245,15 +271,29 @@
         toggleManualTodos(checked) {
             this.tableDataBonificados.forEach((row, rowIndex) => {
                 row.bono_manual = checked;
+
+                if (checked) {
+                    // Guardar backup y limpiar
+                    if (row.metodo_bonificacion) {
+                        row._metodo_backup = row.metodo_bonificacion;
+                        row.metodo_bonificacion = null;
+                    }
+                } else {
+                    // Restaurar desde backup
+                    if (!row.metodo_bonificacion && row._metodo_backup) {
+                        row.metodo_bonificacion = row._metodo_backup;
+                        row._metodo_backup = null;
+                    }
+                }
+
                 this.hot.setDataAtRowProp(rowIndex, 'bono_manual', checked, 'toggleManualTodos');
             });
 
             if (!checked) {
-                // Al desmarcar todos, recalcular bonos automáticamente
                 this.calcularBonos();
             } else {
-                // Al marcar todos, solo refrescar visual (respetar valores actuales)
                 this.hot.render();
+                this.refrescarCeldas();
             }
         },
 
@@ -409,7 +449,20 @@
         calcularBonos() {
             this.tableDataBonificados.forEach(trabajador => {
 
-                if (trabajador.bono_manual) return;
+                if (trabajador.bono_manual) {
+                    // Guardar backup y limpiar método visualmente
+                    if (trabajador.metodo_bonificacion) {
+                        trabajador._metodo_backup = trabajador.metodo_bonificacion;
+                        trabajador.metodo_bonificacion = null;
+                    }
+                    return;
+                }
+
+                // Al desactivar manual, restaurar método desde backup
+                if (!trabajador.metodo_bonificacion && trabajador._metodo_backup) {
+                    trabajador.metodo_bonificacion = trabajador._metodo_backup;
+                    trabajador._metodo_backup = null;
+                }
 
                 const nombreMetodoSeleccionado = trabajador.metodo_bonificacion;
 
@@ -448,6 +501,7 @@
             });
 
             this.hot.render();
+            this.refrescarCeldas();
         },
 
         /**
@@ -580,7 +634,8 @@
         guardarBonificaciones() {
             let allData = [];
             for (let row = 0; row < this.hot.countRows(); row++) {
-                const rowData = this.hot.getSourceDataAtRow(row);
+                const rowData = { ...this.hot.getSourceDataAtRow(row) };
+                delete rowData._metodo_backup; // ← no enviar al backend
                 allData.push(rowData);
             }
 

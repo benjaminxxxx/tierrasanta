@@ -243,6 +243,47 @@ class Permisos
     const COCHINILLA_VENTA_FACTURACION_GESTIONAR = 'Cochinilla Venta Gestionar Facturación';
 
     // =========================================================================
+// DOMINIO: INSUMO (compras, almacén, kardex)
+// Tablas: compra_productos, almacen_producto_salidas, distribucion_combustibles,
+//         ins_kardexes, ins_kardex_movimientos, ins_kardex_reportes,
+//         ins_kardex_reporte_detalles, ins_kardex_reporte_categorias
+// =========================================================================
+
+    // — Módulo raíz
+    const INSUMO = 'Kardex y Almacén';
+
+    // — Compras (quien no tiene GESTIONAR solo ve y filtra la tabla)
+    const INSUMO_COMPRA = 'Kardex y Almacén Compras';
+    const INSUMO_COMPRA_GESTIONAR = 'Kardex y Almacén Compras Gestionar';
+
+    // — Salida de Almacén Pesticidas y Fertilizantes
+    const INSUMO_SALIDA = 'Kardex y Almacén Salida Insumos';
+    const INSUMO_SALIDA_GESTIONAR = 'Kardex y Almacén Salida Insumos Gestionar';
+
+    // — Salida de Combustible
+    const INSUMO_COMBUSTIBLE = 'Kardex y Almacén Salida Combustible';
+    const INSUMO_COMBUSTIBLE_GESTIONAR = 'Kardex y Almacén Salida Combustible Gestionar';
+
+    // — Distribución de Combustible
+    const INSUMO_DISTRIBUCION = 'Kardex y Almacén Distribución Combustible';
+    const INSUMO_DISTRIBUCION_GESTIONAR = 'Kardex y Almacén Distribución Combustible Gestionar';
+
+    // — Kardex de Insumos
+    const INSUMO_KARDEX = 'Kardex y Almacén Kardex';
+    const INSUMO_KARDEX_CREAR = 'Kardex y Almacén Kardex Crear';
+    const INSUMO_KARDEX_ELIMINAR = 'Kardex y Almacén Kardex Eliminar';
+    const INSUMO_KARDEX_ASIGNAR_MOVIMIENTOS = 'Kardex y Almacén Kardex Asignar Entradas y Salidas';
+    const INSUMO_KARDEX_GENERAR_RESUMEN = 'Kardex y Almacén Kardex Generar Resumen';
+    const INSUMO_KARDEX_IMPORTAR = 'Kardex y Almacén Kardex Importar Masivo';
+
+    // — Reporte de Kardex
+    const INSUMO_KARDEX_REPORTE = 'Kardex y Almacén Kardex Reporte';
+    const INSUMO_KARDEX_REPORTE_VER = 'Kardex y Almacén Kardex Reporte Ver';
+    const INSUMO_KARDEX_REPORTE_CREAR = 'Kardex y Almacén Kardex Reporte Crear';
+    const INSUMO_KARDEX_REPORTE_ELIMINAR = 'Kardex y Almacén Kardex Reporte Eliminar';
+    const INSUMO_KARDEX_REPORTE_GENERAR_RESUMEN = 'Kardex y Almacén Kardex Reporte Generar Resumen';
+
+    // =========================================================================
     // DOMINIO: SISTEMA (usuarios, roles, auditoría, configuración)
     // Tablas: users, roles, permissions, auditorias, configuracion*
     // =========================================================================

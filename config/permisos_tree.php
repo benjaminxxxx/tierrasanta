@@ -407,66 +407,51 @@ return [
     ],
 
     [
-        'nombre' => 'Kardex y Almacén',
+        'nombre' => Permisos::INSUMO,
         'hijos' => [
             [
-                'nombre' => 'Almacén Compras',
+                'nombre' => Permisos::INSUMO_COMPRA,
                 'hijos' => [
-                    ['nombre' => 'Almacén Compras Ver'],
-                    ['nombre' => 'Almacén Compras Agregar'],
-                    ['nombre' => 'Almacén Compras Editar'],
-                    ['nombre' => 'Almacén Compras Eliminar'],
+                    ['nombre' => Permisos::INSUMO_COMPRA_GESTIONAR],
                 ],
             ],
             [
-                'nombre' => 'Almacén Salida Pesticidas',
+                'nombre' => Permisos::INSUMO_SALIDA,
                 'hijos' => [
-                    ['nombre' => 'Almacén Salida Pesticidas Ver'],
-                    ['nombre' => 'Almacén Salida Pesticidas Agregar'],
-                    ['nombre' => 'Almacén Salida Pesticidas Editar'],
-                    ['nombre' => 'Almacén Salida Pesticidas Eliminar'],
+                    ['nombre' => Permisos::INSUMO_SALIDA_GESTIONAR],
                 ],
             ],
             [
-                'nombre' => 'Almacén Salida Combustible',
+                'nombre' => Permisos::INSUMO_COMBUSTIBLE,
                 'hijos' => [
-                    ['nombre' => 'Almacén Salida Combustible Ver'],
-                    ['nombre' => 'Almacén Salida Combustible Agregar'],
-                    ['nombre' => 'Almacén Salida Combustible Editar'],
-                    ['nombre' => 'Almacén Salida Combustible Eliminar'],
+                    ['nombre' => Permisos::INSUMO_COMBUSTIBLE_GESTIONAR],
                 ],
             ],
             [
-                'nombre' => 'Almacén Distribución Combustible',
+                'nombre' => Permisos::INSUMO_DISTRIBUCION,
                 'hijos' => [
-                    ['nombre' => 'Almacén Distribución Combustible Ver'],
-                    ['nombre' => 'Almacén Distribución Combustible Agregar'],
-                    ['nombre' => 'Almacén Distribución Combustible Editar'],
-                    ['nombre' => 'Almacén Distribución Combustible Eliminar'],
+                    ['nombre' => Permisos::INSUMO_DISTRIBUCION_GESTIONAR],
                 ],
             ],
             [
-                'nombre' => 'Kardex Insumos',
+                // Kardex por Insumo comparte este nodo — ambas rutas usan
+                // los mismos permisos hijos para habilitar/deshabilitar botones
+                'nombre' => Permisos::INSUMO_KARDEX,
                 'hijos' => [
-                    ['nombre' => 'Kardex Insumos Ver'],
+                    ['nombre' => Permisos::INSUMO_KARDEX_CREAR],
+                    ['nombre' => Permisos::INSUMO_KARDEX_ELIMINAR],
+                    ['nombre' => Permisos::INSUMO_KARDEX_ASIGNAR_MOVIMIENTOS],
+                    ['nombre' => Permisos::INSUMO_KARDEX_GENERAR_RESUMEN],
+                    ['nombre' => Permisos::INSUMO_KARDEX_IMPORTAR],
                 ],
             ],
             [
-                'nombre' => 'Kardex Por Producto',
+                'nombre' => Permisos::INSUMO_KARDEX_REPORTE,
                 'hijos' => [
-                    ['nombre' => 'Kardex Por Producto Ver'],
-                ],
-            ],
-            [
-                'nombre' => 'Kardex Reporte',
-                'hijos' => [
-                    ['nombre' => 'Kardex Reporte Ver'],
-                ],
-            ],
-            [
-                'nombre' => 'Kardex Lista',
-                'hijos' => [
-                    ['nombre' => 'Kardex Lista Ver'],
+                    ['nombre' => Permisos::INSUMO_KARDEX_REPORTE_VER],
+                    ['nombre' => Permisos::INSUMO_KARDEX_REPORTE_CREAR],
+                    ['nombre' => Permisos::INSUMO_KARDEX_REPORTE_ELIMINAR],
+                    ['nombre' => Permisos::INSUMO_KARDEX_REPORTE_GENERAR_RESUMEN],
                 ],
             ],
         ],

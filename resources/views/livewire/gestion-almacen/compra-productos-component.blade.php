@@ -37,11 +37,14 @@
             <div x-ref="tableContainer"></div>
         </div>
     </x-card>
-    <x-inferior-derecha>
-        <x-button @click="guardarCompraInsumos">
-            <i class="fa fa-save"></i> Guardar Compras
-        </x-button>
-    </x-inferior-derecha>
+    @can(\App\Constants\Permisos::INSUMO_COMPRA_GESTIONAR)
+        <x-inferior-derecha>
+            <x-button @click="guardarCompraInsumos">
+                <i class="fa fa-save"></i> Guardar Compras
+            </x-button>
+        </x-inferior-derecha>
+    @endcan
+
     <x-dialog-modal wire:model.live="mostrarDetalleCompras">
         <x-slot name="title">
             Detalle de Compras Seleccionadas
@@ -126,7 +129,7 @@
                             <div class="border-b border-border pb-3">
                                 <div class="flex items-center justify-between text-sm">
                                     <span class="font-semibold uppercase
-                                    {{ $entrada['accion'] === 'crear' ? 'text-green-600' :
+                                                {{ $entrada['accion'] === 'crear' ? 'text-green-600' :
                             ($entrada['accion'] === 'eliminar' ? 'text-red-600' : 'text-yellow-600') }}">
                                         {{ $entrada['accion'] }}
                                     </span>

@@ -211,7 +211,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
             $fechaInicio = $this->tramoLaboral->fecha_inicio;
             $fechaFin = $this->tramoLaboral->fecha_fin;
             $tramoLaboralId = $this->tramoLaboral->id;
-
+            
             $this->guardarReporteSemanal($fechaInicio, $fechaFin, $datos, $this->resumenes, $tramoLaboralId);
             CuadrilleroServicio::registrarTotalesEnResumenDiarioPlanilla($fechaInicio, $fechaFin);
 
@@ -282,7 +282,9 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
                     if (!$cuadrilleroId) {
                         continue;
                     }
-
+                    if($fila['nombres']=='JUAN ARMAS'){
+//dd($fila);
+                    }
                     foreach ($dias as $index => $d) {
                         $fechaStr = $d->toDateString();
                         $keyDia = 'dia_' . ($index + 1);

@@ -151,7 +151,7 @@
                     <div class="mb-4 border-b border-border pb-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="font-semibold uppercase
-                                                                                                                                        {{ $entrada['accion'] === 'crear' ? 'text-green-600' :
+                                                                                                                                                                {{ $entrada['accion'] === 'crear' ? 'text-green-600' :
                 ($entrada['accion'] === 'eliminar' ? 'text-red-600' : 'text-yellow-600') }}">
                                 {{ $entrada['accion'] }}
                             </span>
@@ -201,11 +201,19 @@
         </x-slot>
     </x-dialog-modal>
 
-    <x-inferior-derecha>
-        <x-button @click="guardarSalidaAlmacen()">
-            <i class="fa fa-save"></i> Guardar Salidas Modificadas
-        </x-button>
-    </x-inferior-derecha>
+    @php
+        $puedeGestionar = ($tipo == 'productos' && auth()->user()->can(\App\Constants\Permisos::INSUMO_SALIDA_GESTIONAR)) ||
+            ($tipo == 'combustible' && auth()->user()->can(\App\Constants\Permisos::INSUMO_COMBUSTIBLE_GESTIONAR));
+    @endphp
+
+    @if($puedeGestionar)
+        <x-inferior-derecha>
+            <x-button @click="guardarSalidaAlmacen()">
+                <i class="fa fa-save"></i> Guardar Salidas Modificadas
+            </x-button>
+        </x-inferior-derecha>
+    @endif
+
 
     <x-loading wire:loading />
 </div>
