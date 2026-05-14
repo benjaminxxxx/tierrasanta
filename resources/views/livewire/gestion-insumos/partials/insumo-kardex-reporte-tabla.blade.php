@@ -16,19 +16,33 @@
                     <x-td class="text-center">{{ $reporte->created_at->format('d/m/Y') }}</x-td>
                     <x-td class="text-center">{{ $reporte->tipo_kardex }}</x-td>
                     <x-td class="text-center">
-                        @if($reporte->categorias->isEmpty())
+                        @if ($reporte->categorias->isEmpty())
                             N/A
                         @else
                             {{ $reporte->categorias->pluck('categoria_codigo')->join(', ') }}
                         @endif
                     </x-td>
-                    <x-td class="text-center">
-                        <x-button href="{{ route('gestion_insumos.kardex.reporte',$reporte->id) }}">
-                            <i class="fa fa-link"></i> Ver Reporte
-                        </x-button>
-                        <x-button variant="danger" wire:click="eliminarInsumoKardexReporte({{ $reporte->id }})">
-                            <i class="fa fa-remove"></i> Eliminar
-                        </x-button>
+                    <x-td class="text-center space-y-2">
+                        @can(\App\Constants\Permisos::INSUMO_KARDEX_REPORTE_VER)
+                            <x-button href="{{ route('gestion_insumos.kardex.reporte', $reporte->id) }}">
+                                <i class="fa fa-link"></i> Ver Reporte
+                            </x-button>
+                        @else
+                            <x-danger>
+                                No tiene autorización para ver el reporte.
+                            </x-danger>
+                        @endcan
+                        @can(\App\Constants\Permisos::INSUMO_KARDEX_REPORTE_ELIMINAR)
+                            <x-button variant="danger" wire:click="eliminarInsumoKardexReporte({{ $reporte->id }})">
+                                <i class="fa fa-remove"></i> Eliminar
+                            </x-button>
+                        @else
+                            <x-danger>
+                                No tiene autorización para eliminar el reporte.
+                            </x-danger>
+                        @endcan
+
+
                     </x-td>
                 </x-tr>
             @empty

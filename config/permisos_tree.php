@@ -347,60 +347,50 @@ return [
     ],
 
     [
-        'nombre' => 'Producto y Nutrientes',
+        'nombre' => Permisos::INSUMO_CATALOGO,
         'hijos' => [
             [
-                'nombre' => 'Productos',
+                'nombre' => Permisos::INSUMO_PRODUCTO,
                 'hijos' => [
-                    ['nombre' => 'Productos Ver'],
-                    ['nombre' => 'Productos Agregar'],
-                    ['nombre' => 'Productos Editar'],
-                    ['nombre' => 'Productos Eliminar'],
+                    ['nombre' => Permisos::INSUMO_PRODUCTO_VER],
+                    ['nombre' => Permisos::INSUMO_PRODUCTO_GESTIONAR],
+                    ['nombre' => Permisos::INSUMO_PRODUCTO_RESTAURAR],
                 ],
             ],
             [
-                'nombre' => 'Categorias',
+                'nombre' => Permisos::INSUMO_CATEGORIA,
                 'hijos' => [
-                    ['nombre' => 'Categorias Ver'],
-                    ['nombre' => 'Categorias Agregar'],
-                    ['nombre' => 'Categorias Editar'],
-                    ['nombre' => 'Categorias Eliminar'],
+                    ['nombre' => Permisos::INSUMO_CATEGORIA_VER],
+                    ['nombre' => Permisos::INSUMO_CATEGORIA_GESTIONAR],
                 ],
             ],
             [
-                'nombre' => 'Subcategorias',
+                'nombre' => Permisos::INSUMO_SUBCATEGORIA,
                 'hijos' => [
-                    ['nombre' => 'Subcategorias Ver'],
-                    ['nombre' => 'Subcategorias Agregar'],
-                    ['nombre' => 'Subcategorias Editar'],
-                    ['nombre' => 'Subcategorias Eliminar'],
+                    ['nombre' => Permisos::INSUMO_SUBCATEGORIA_VER],
+                    ['nombre' => Permisos::INSUMO_SUBCATEGORIA_VER_AUDITORIA],
+                    ['nombre' => Permisos::INSUMO_SUBCATEGORIA_GESTIONAR],
                 ],
             ],
             [
-                'nombre' => 'Usos',
+                'nombre' => Permisos::INSUMO_USO,
                 'hijos' => [
-                    ['nombre' => 'Usos Ver'],
-                    ['nombre' => 'Usos Agregar'],
-                    ['nombre' => 'Usos Editar'],
-                    ['nombre' => 'Usos Eliminar'],
+                    ['nombre' => Permisos::INSUMO_USO_VER],
+                    ['nombre' => Permisos::INSUMO_USO_GESTIONAR],
                 ],
             ],
             [
-                'nombre' => 'Nutrientes',
+                // Sin hijos de acción — el padre ya es el único permiso necesario
+                'nombre' => Permisos::INSUMO_NUTRIENTE,
                 'hijos' => [
-                    ['nombre' => 'Nutrientes Ver'],
-                    ['nombre' => 'Nutrientes Agregar'],
-                    ['nombre' => 'Nutrientes Editar'],
-                    ['nombre' => 'Nutrientes Eliminar'],
+                    ['nombre' => Permisos::INSUMO_NUTRIENTE_VER],
                 ],
             ],
             [
-                'nombre' => 'Tabla Concentración',
+                'nombre' => Permisos::INSUMO_CONCENTRACION,
                 'hijos' => [
-                    ['nombre' => 'Tabla Concentración Ver'],
-                    ['nombre' => 'Tabla Concentración Agregar'],
-                    ['nombre' => 'Tabla Concentración Editar'],
-                    ['nombre' => 'Tabla Concentración Eliminar'],
+                    ['nombre' => Permisos::INSUMO_CONCENTRACION_VER],
+                    ['nombre' => Permisos::INSUMO_CONCENTRACION_GESTIONAR],
                 ],
             ],
         ],

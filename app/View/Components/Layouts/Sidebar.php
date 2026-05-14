@@ -123,14 +123,14 @@ class Sidebar extends Component
             [
                 'title' => 'Producto y Nutrientes',
                 'icon' => 'fa fa-box',
-                'can' => 'Producto y Nutrientes',
+                'can' => Permisos::INSUMO_CATALOGO,
                 'children' => [
-                    ['title' => 'Productos', 'route' => 'productos.index', 'can' => 'Productos Ver'],
-                    ['title' => 'Categorias', 'route' => 'categorias.index', 'can' => 'Categorias Ver'],
-                    ['title' => 'Subcategorias', 'route' => 'subcategorias.index', 'can' => 'Subcategorias Ver'],
-                    ['title' => 'Usos', 'route' => 'producto.usos', 'can' => 'Usos Ver'],
-                    ['title' => 'Nutrientes', 'route' => 'nutrientes.index', 'can' => 'Nutrientes Ver'],
-                    ['title' => 'Tabla de concentración', 'route' => 'tabla_concentracion.index', 'can' => 'Tabla Concentración Ver'],
+                    ['title' => 'Productos', 'route' => 'productos.index', 'can' => Permisos::INSUMO_PRODUCTO],
+                    ['title' => 'Categorias', 'route' => 'categorias.index', 'can' => Permisos::INSUMO_CATEGORIA],
+                    ['title' => 'Subcategorias', 'route' => 'subcategorias.index', 'can' => Permisos::INSUMO_SUBCATEGORIA],
+                    ['title' => 'Usos', 'route' => 'producto.usos', 'can' => Permisos::INSUMO_USO],
+                    ['title' => 'Nutrientes', 'route' => 'nutrientes.index', 'can' => Permisos::INSUMO_NUTRIENTE],
+                    ['title' => 'Tabla de concentración', 'route' => 'tabla_concentracion.index', 'can' => Permisos::INSUMO_CONCENTRACION],
                 ],
             ],
             [

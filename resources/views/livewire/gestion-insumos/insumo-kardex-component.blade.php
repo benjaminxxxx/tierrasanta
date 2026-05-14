@@ -10,9 +10,11 @@
                 </x-subtitle>
             </div>
             <div>
+                @can(\App\Constants\Permisos::INSUMO_KARDEX_CREAR)
                 <x-button @click="$wire.dispatch('nuevoInsumoKardex')">
                     <i class="fa fa-plus"></i> Crear Nuevo Kardex
                 </x-button>
+                @endcan
             </div>
         </x-flex>
     </x-card>

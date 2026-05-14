@@ -8,9 +8,16 @@
                     {{ mb_strtoupper($insumoKardexReporte->nombre) }}
                 </x-title>
                 <div>
-                    <x-button wire:click="procesarKardexConsolidado">
-                        <i class="fa fa-check"></i> Generar Resumen
-                    </x-button>
+                    @can(\App\Constants\Permisos::INSUMO_KARDEX_REPORTE_GENERAR_RESUMEN)
+                        <x-button wire:click="procesarKardexConsolidado">
+                            <i class="fa fa-check"></i> Generar Resumen
+                        </x-button>
+                    @else
+                        <x-danger>
+                            No tiene autorización para generar el resumen.
+                        </x-danger>
+                    @endcan
+
                 </div>
             </x-flex>
             <x-flex class="uppercase">
@@ -34,8 +41,7 @@
         <x-table class="my-4">
             <x-slot name="thead">
                 <x-tr>
-                    <x-th colspan="2" style="background-color:#31869B"
-                        class="px-4 py-2 text-white font-bold text-lg">
+                    <x-th colspan="2" style="background-color:#31869B" class="px-4 py-2 text-white font-bold text-lg">
 
                         ÍNDICE DE
 
@@ -82,10 +88,9 @@
                                 <!-- Spinner solo visible mientras loading sea true -->
                                 <svg x-show="loading" class="animate-spin h-4 w-4 text-gray-700"
                                     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10"
-                                        stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor"
-                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                        stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z">
                                     </path>
                                 </svg>
                             </a>

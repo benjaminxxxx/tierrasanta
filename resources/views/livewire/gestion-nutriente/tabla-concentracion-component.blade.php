@@ -30,6 +30,7 @@
             listeners: [],
             tableData: @json($tableData),
             hot: null,
+            isDark: JSON.parse(localStorage.getItem('darkMode')),
             listaNutrientes: @json($listaNutrientes),
             listaFertilizantes: @json($listaFertilizantes),
             init() {
@@ -47,12 +48,11 @@
                 const container = this.$refs.tableContainer;
                 const hot = new Handsontable(container, {
                     data: this.tableData,
-                    themeName: 'ht-theme-main',
+                    themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
                     colHeaders: true,
                     rowHeaders: true,
                     columns: columns,
                     width: '100%',
-                    height: 'auto',
                     manualColumnResize: false,
                     manualRowResize: true,
                     minSpareRows: 1,

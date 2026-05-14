@@ -125,14 +125,18 @@
                                         <x-dropdown-link href="{{ route('gestion_insumos.kardex.detalle', $kardex->id) }}">
                                             Ver Kardex
                                         </x-dropdown-link>
-                                        <x-dropdown-link
-                                            href="{{ route('gestion_insumos.kardex_asignacion', ['productoId' => $kardex->producto_id, 'anio' => $kardex->anio]) }}"
-                                            target="_blank">
-                                            Asignar Entradas y Salidas (paso 2)
-                                        </x-dropdown-link>
-                                        <x-dropdown-link wire:click="eliminarInsumoKardex({{ $kardex->id }})">
-                                            Eliminar Kardex
-                                        </x-dropdown-link>
+                                        @can(\App\Constants\Permisos::INSUMO_KARDEX_ASIGNAR_MOVIMIENTOS)
+                                            <x-dropdown-link
+                                                href="{{ route('gestion_insumos.kardex_asignacion', ['productoId' => $kardex->producto_id, 'anio' => $kardex->anio]) }}"
+                                                target="_blank">
+                                                Asignar Entradas y Salidas (paso 2)
+                                            </x-dropdown-link>
+                                        @endcan
+                                        @can(\App\Constants\Permisos::INSUMO_KARDEX_ELIMINAR)
+                                            <x-dropdown-link wire:click="eliminarInsumoKardex({{ $kardex->id }})">
+                                                Eliminar Kardex
+                                            </x-dropdown-link>
+                                        @endcan
                                     </div>
                                 </x-slot>
                             </x-dropdown>

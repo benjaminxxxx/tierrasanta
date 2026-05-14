@@ -243,11 +243,49 @@ class Permisos
     const COCHINILLA_VENTA_FACTURACION_GESTIONAR = 'Cochinilla Venta Gestionar Facturación';
 
     // =========================================================================
-// DOMINIO: INSUMO (compras, almacén, kardex)
-// Tablas: compra_productos, almacen_producto_salidas, distribucion_combustibles,
-//         ins_kardexes, ins_kardex_movimientos, ins_kardex_reportes,
-//         ins_kardex_reporte_detalles, ins_kardex_reporte_categorias
-// =========================================================================
+    // DOMINIO: INSUMO (catálogo, compras, almacén, kardex)
+    // Tablas: productos, ins_categorias, ins_subcategorias, ins_usos,
+    //         nutrientes, producto_nutrientes, tabla_concentracion,
+    //         compra_productos, almacen_producto_salidas, distribucion_combustibles,
+    //         ins_kardexes, ins_kardex_movimientos, ins_kardex_reportes,
+    //         ins_kardex_reporte_detalles, ins_kardex_reporte_categorias
+    // =========================================================================
+
+    // — Módulo raíz catálogo
+    const INSUMO_CATALOGO = 'Producto y Nutrientes';
+
+    // — Productos
+    const INSUMO_PRODUCTO = 'Producto y Nutrientes Productos';
+    const INSUMO_PRODUCTO_VER = 'Producto y Nutrientes Productos Ver';
+    const INSUMO_PRODUCTO_GESTIONAR = 'Producto y Nutrientes Productos Gestionar';
+    const INSUMO_PRODUCTO_RESTAURAR = 'Producto y Nutrientes Productos Restaurar';
+
+    // — Categorías
+    const INSUMO_CATEGORIA = 'Producto y Nutrientes Categorías';
+    const INSUMO_CATEGORIA_VER = 'Producto y Nutrientes Categorías Ver';
+    const INSUMO_CATEGORIA_GESTIONAR = 'Producto y Nutrientes Categorías Gestionar';
+
+    // — Subcategorías
+    const INSUMO_SUBCATEGORIA = 'Producto y Nutrientes Subcategorías';
+    const INSUMO_SUBCATEGORIA_VER = 'Producto y Nutrientes Subcategorías Ver';
+    const INSUMO_SUBCATEGORIA_VER_AUDITORIA = 'Producto y Nutrientes Subcategorías Ver Auditoría';
+    const INSUMO_SUBCATEGORIA_GESTIONAR = 'Producto y Nutrientes Subcategorías Gestionar';
+
+    // — Usos (fines/aplicaciones de cada producto)
+    const INSUMO_USO = 'Producto y Nutrientes Usos';
+    const INSUMO_USO_VER = 'Producto y Nutrientes Usos Ver';
+    const INSUMO_USO_GESTIONAR = 'Producto y Nutrientes Usos Gestionar';
+
+    // — Nutrientes (solo lectura por ahora)
+    const INSUMO_NUTRIENTE = 'Producto y Nutrientes Nutrientes';
+    const INSUMO_NUTRIENTE_VER = 'Producto y Nutrientes Nutrientes Ver';
+
+    // — Tabla de Concentración
+    const INSUMO_CONCENTRACION = 'Producto y Nutrientes Tabla Concentración';
+    const INSUMO_CONCENTRACION_VER = 'Producto y Nutrientes Tabla Concentración Ver';
+    const INSUMO_CONCENTRACION_GESTIONAR = 'Producto y Nutrientes Tabla Concentración Gestionar';
+
+    // — Módulo raíz almacén/kardex
 
     // — Módulo raíz
     const INSUMO = 'Kardex y Almacén';

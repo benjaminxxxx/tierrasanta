@@ -42,22 +42,28 @@
                                         Ver Kardex {{ ucfirst($tipoOpuesto) }}
                                     </x-dropdown-link>
                                 @endif
-
-                                <div x-data="{ openFileDialog() { $refs.fileInputNegro.click() } }">
+                                @can(\App\Constants\Permisos::INSUMO_KARDEX_IMPORTAR)
                                     <x-dropdown-link @click="openFileDialog()">
                                         Importar Kardex {{ $insumoKardex->tipo }}
                                     </x-dropdown-link>
+                                @endcan
+                                <div x-data="{ openFileDialog() { $refs.fileInputNegro.click() } }">
+
                                     <input type="file"
                                         accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                                         x-ref="fileInputNegro" style="display: none;"
                                         wire:model.live="archivoExcelKardex" />
                                 </div>
-                                <x-dropdown-link href="{{ $linkEntradasYSalidas }}" target="_blank">
-                                    Asignar Entradas y Salidas
-                                </x-dropdown-link>
-                                <x-dropdown-link wire:click="generarDetalleKardexInsumo">
-                                    Generar Resumen
-                                </x-dropdown-link>
+                                @can(\App\Constants\Permisos::INSUMO_KARDEX_ASIGNAR_MOVIMIENTOS)
+                                    <x-dropdown-link href="{{ $linkEntradasYSalidas }}" target="_blank">
+                                        Asignar Entradas y Salidas
+                                    </x-dropdown-link>
+                                @endcan
+                                @can(\App\Constants\Permisos::INSUMO_KARDEX_GENERAR_RESUMEN)
+                                    <x-dropdown-link wire:click="generarDetalleKardexInsumo">
+                                        Generar Resumen
+                                    </x-dropdown-link>
+                                @endcan
                                 @if ($insumoKardex->file && $disk->exists($insumoKardex->file))
                                     <x-dropdown-link href="{{ $disk->url($insumoKardex->file) }}">
                                         Descargar Reporte

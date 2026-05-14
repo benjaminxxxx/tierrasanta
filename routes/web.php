@@ -212,12 +212,12 @@ Route::middleware([
         ->name('gestion-usuario.permisos-rol');
 
     //INSUMOS
-    Route::get('/gestion_insumos/kardex', [GestionInsumosController::class, 'kardex'])->name('gestion_insumos.kardex');
-    Route::get('/gestion_insumos/kardex/crear', [GestionInsumosController::class, 'kardexCrear'])->name('gestion_insumos.kardex.crear');
-    Route::get('/gestion_insumos/kardex/detalle/{insumoKardexId}', [GestionInsumosController::class, 'kardexDetalle'])->name('gestion_insumos.kardex.detalle');
-    Route::get('/gestion_insumos/kardex/reportes', [GestionInsumosController::class, 'kardexReportes'])->name('gestion_insumos.kardex.reportes');
-    Route::get('/gestion_insumos/kardex/reporte/{insumoKardexReporteId}', [GestionInsumosController::class, 'kardexReporte'])->name('gestion_insumos.kardex.reporte');
-    Route::get('/gestion_insumos/kardex/asignacion/{productoId}/{anio}', [GestionInsumosController::class, 'kardexAsignacion'])->name('gestion_insumos.kardex_asignacion');
+    Route::get('/gestion_insumos/kardex', [GestionInsumosController::class, 'kardex'])->name('gestion_insumos.kardex')->middleware('can:' . Permisos::INSUMO_KARDEX);
+    Route::get('/gestion_insumos/kardex/crear', [GestionInsumosController::class, 'kardexCrear'])->name('gestion_insumos.kardex.crear')->middleware('can:' . Permisos::INSUMO_KARDEX);
+    Route::get('/gestion_insumos/kardex/detalle/{insumoKardexId}', [GestionInsumosController::class, 'kardexDetalle'])->name('gestion_insumos.kardex.detalle')->middleware('can:' . Permisos::INSUMO_KARDEX);
+    Route::get('/gestion_insumos/kardex/reportes', [GestionInsumosController::class, 'kardexReportes'])->name('gestion_insumos.kardex.reportes')->middleware('can:' . Permisos::INSUMO_KARDEX_REPORTE);
+    Route::get('/gestion_insumos/kardex/reporte/{insumoKardexReporteId}', [GestionInsumosController::class, 'kardexReporte'])->name('gestion_insumos.kardex.reporte')->middleware('can:' . Permisos::INSUMO_KARDEX_REPORTE_VER);
+    Route::get('/gestion_insumos/kardex/asignacion/{productoId}/{anio}', [GestionInsumosController::class, 'kardexAsignacion'])->name('gestion_insumos.kardex_asignacion')->middleware('can:' . Permisos::INSUMO_KARDEX_ASIGNAR_MOVIMIENTOS);
     //KARDEX
     Route::get('/kardex/lista', [KardexController::class, 'lista'])->name('kardex.lista');
     Route::get('/kardex/ver/{id}', [KardexController::class, 'ver'])->name('kardex.ver');

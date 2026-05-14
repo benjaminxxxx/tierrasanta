@@ -25,13 +25,17 @@
                 {{-- Separador --}}
                 <div class="self-stretch w-px bg-muted mx-2"></div>
 
-                {{-- Mitad derecha: crear --}}
-                <div class="flex-1 flex flex-col items-center justify-center gap-3 py-2">
-                    <p class="text-sm text-gray-500 text-center">¿El producto no existe aún?</p>
+                @can(\App\Constants\Permisos::INSUMO_PRODUCTO_GESTIONAR)
+                    {{-- Lo que ve quien tiene permiso --}}
                     <x-button @click="$wire.dispatch('CrearProducto')">
                         <i class="fa fa-plus mr-1"></i> Crear nuevo producto
                     </x-button>
-                </div>
+                @else
+                    {{-- Lo que ve quien NO tiene permiso --}}
+                    <x-danger>
+                        No tienes permisos para crear productos.
+                    </x-danger>
+                @endcan
 
             </div>
         @endif
@@ -39,7 +43,7 @@
         @if($producto)
             {{-- Card producto --}}
             <div class="mt-4 border rounded-xl p-4 space-y-4
-                    {{ $producto->trashed()
+                                {{ $producto->trashed()
             ? 'border-red-300 bg-red-50 dark:bg-red-950 dark:border-red-800'
             : 'border-border bg-muted' }}">
 
@@ -48,9 +52,9 @@
                     <div class="space-y-1">
                         @if($producto->trashed())
                             <span class="inline-flex items-center gap-1 text-xs font-medium text-red-600
-                                                         bg-red-100 dark:bg-red-900 dark:text-red-300
-                                                         border border-red-200 dark:border-red-700
-                                                         px-2 py-0.5 rounded-md">
+                                                                                 bg-red-100 dark:bg-red-900 dark:text-red-300
+                                                                                 border border-red-200 dark:border-red-700
+                                                                                 px-2 py-0.5 rounded-md">
                                 <i class="fa fa-trash text-[10px]"></i> Producto eliminado
                             </span>
                         @endif
@@ -60,18 +64,35 @@
                         <p class="text-base font-medium">{{ $producto->nombre_comercial }}</p>
                     </div>
 
-                    <x-flex>
+                    <x-flex class="gap-2 items-center">
                         @if($producto->trashed())
-                            <x-button wire:click="restaurarProducto" variant="success">
-                                <i class="fa fa-undo"></i> Restaurar
-                            </x-button>
+                            {{-- Caso: Producto Eliminado --}}
+                            @can(\App\Constants\Permisos::INSUMO_PRODUCTO_RESTAURAR)
+                                <x-button wire:click="restaurarProducto" variant="success">
+                                    <i class="fa fa-undo mr-1"></i> Restaurar
+                                </x-button>
+                            @else
+                                <x-danger>
+                                    El producto está eliminado y no tienes permiso para
+                                    restaurarlo.
+                                </x-danger>
+                            @endcan
                         @else
-                            <x-button @click="$wire.dispatch('EditarProducto', { id: {{ $producto->id }} })">
-                                <i class="fa fa-edit"></i> Editar
-                            </x-button>
+                            {{-- Caso: Producto Activo --}}
+                            @can(\App\Constants\Permisos::INSUMO_PRODUCTO_GESTIONAR)
+                                <x-button @click="$wire.dispatch('EditarProducto', { id: {{ $producto->id }} })">
+                                    <i class="fa fa-edit mr-1"></i> Editar
+                                </x-button>
+                            @else
+                                <span class="text-xs text-gray-500 italic">
+                                    <i class="fa fa-lock mr-1"></i> Sin permiso para editar
+                                </span>
+                            @endcan
                         @endif
+
+                        {{-- Botón de acción general --}}
                         <x-button wire:click="quitarProducto" variant="danger">
-                            <i class="fa fa-sync"></i> Cambiar
+                            <i class="fa fa-sync mr-1"></i> Cambiar
                         </x-button>
                     </x-flex>
                 </div>
@@ -103,8 +124,8 @@
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
                             @foreach($producto->nutrientes as $nutriente)
                                 <div class="flex items-center justify-between
-                                                    bg-background border border-border
-                                                    rounded-lg px-3 py-2 text-sm">
+                                                                                        bg-background border border-border
+                                                                                        rounded-lg px-3 py-2 text-sm">
                                     <span class="text-foreground">{{ $nutriente->nombre }}</span>
                                     <span class="text-xs font-medium text-muted-foreground ml-2 shrink-0">
                                         {{ $nutriente->pivot->porcentaje }}%
@@ -123,7 +144,7 @@
                             @foreach($producto->usos as $uso)
                                 <span
                                     class="text-xs px-2 py-0.5 rounded-md
-                                                                                     bg-background border border-border text-foreground">
+                                                                                                                         bg-background border border-border text-foreground">
                                     {{ $uso->nombre }}
                                 </span>
                             @endforeach
@@ -136,7 +157,7 @@
                 {{-- Info eliminación --}}
                 @if($producto->trashed())
                     <div class="border-t border-red-200 dark:border-red-800 pt-3
-                                                grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                                                                        grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                         <div>
                             <p class="text-xs text-muted-foreground mb-1">Eliminado por</p>
                             <p class="text-red-700 dark:text-red-300 font-medium">
@@ -166,7 +187,7 @@
                             @endphp
 
                             <div class="border rounded-xl p-3 flex flex-col gap-2 min-w-[110px] transition
-                                                                                    {{ $esAnioActivo
+                                                                                                                        {{ $esAnioActivo
                         ? 'border-blue-400 ring-2 ring-blue-100 dark:ring-blue-900'
                         : 'border-gray-200 dark:border-gray-700 hover:border-gray-300' }}">
 
@@ -174,17 +195,15 @@
 
                                 <div class="flex gap-2">
                                     @if($grupo['blanco'])
-                                                <button wire:click="seleccionarKardex({{ $grupo['blanco']->id }}, 'blanco')"
-                                                    class="text-xs px-3 py-1 rounded-lg border font-medium transition
-                                                                                                                                                                {{ $kardexId === $grupo['blanco']->id && $tipoKardex === 'blanco'
+                                                <button wire:click="seleccionarKardex({{ $grupo['blanco']->id }}, 'blanco')" class="text-xs px-3 py-1 rounded-lg border font-medium transition
+                                                                                                                                                                                                                                        {{ $kardexId === $grupo['blanco']->id && $tipoKardex === 'blanco'
                                         ? 'bg-blue-100 border-blue-400 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
                                         : 'border-border hover:bg-blue-50 hover:border-blue-300' }}">B</button>
                                     @endif
 
                                     @if($grupo['negro'])
-                                                <button wire:click="seleccionarKardex({{ $grupo['negro']->id }}, 'negro')"
-                                                    class="text-xs px-3 py-1 rounded-lg border font-medium transition
-                                                                                                                                                                {{ $kardexId === $grupo['negro']->id && $tipoKardex === 'negro'
+                                                <button wire:click="seleccionarKardex({{ $grupo['negro']->id }}, 'negro')" class="text-xs px-3 py-1 rounded-lg border font-medium transition
+                                                                                                                                                                                                                                        {{ $kardexId === $grupo['negro']->id && $tipoKardex === 'negro'
                                         ? 'bg-gray-800 border-gray-600 text-gray-100'
                                         : 'border-border hover:bg-gray-800 hover:text-gray-100' }}">N</button>
                                     @endif
@@ -194,9 +213,9 @@
 
                     {{-- Nuevo kardex --}}
                     <button @click="$wire.dispatch('nuevoInsumoKardex', { productoId: {{ $producto->id }} })" class="border border-dashed border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3
-                                               flex flex-col items-center justify-center gap-1 text-gray-400
-                                               hover:text-gray-600 hover:border-gray-400 hover:bg-gray-50
-                                               dark:hover:bg-gray-800 transition min-w-[90px]">
+                                                           flex flex-col items-center justify-center gap-1 text-gray-400
+                                                           hover:text-gray-600 hover:border-gray-400 hover:bg-gray-50
+                                                           dark:hover:bg-gray-800 transition min-w-[90px]">
                         <span class="text-lg leading-none">+</span>
                         <span class="text-xs">Nuevo kardex</span>
                     </button>
@@ -224,7 +243,8 @@
     </x-card>
 
     @if ($kardexId && $tipoKardex)
-        <livewire:gestion-insumos.insumo-kardex-detalle-component :insumoKardexId="$kardexId" wire:key="kardex{{ $kardexId }}{{ $tipoKardex }}"/>
+        <livewire:gestion-insumos.insumo-kardex-detalle-component :insumoKardexId="$kardexId"
+            wire:key="kardex{{ $kardexId }}{{ $tipoKardex }}" />
     @endif
 
     <x-loading wire:loading />
