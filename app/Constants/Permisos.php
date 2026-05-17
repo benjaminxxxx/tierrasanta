@@ -167,29 +167,63 @@ class Permisos
     const CUADRILLA_RESUMEN_ANUAL = 'Cuadrilla Resumen Anual';
     const CUADRILLA_RESUMEN_ANUAL_EXPORTAR = 'Cuadrilla Resumen Anual Exportar';
 
+
     // =========================================================================
-    // DOMINIO: PLANILLA (asistencia, registros diarios, resúmenes)
-    // Tablas: plan_mensuales, plan_registros_diarios, plan_periodos, etc.
+    // DOMINIO: PLANILLA (asistencia, registros diarios, resúmenes, liquidaciones)
+    // Tablas: plan_mensuales, plan_registros_diarios, plan_periodos,
+    //         plan_permisos, plan_suspensiones, plan_conceptos_configs,
+    //         plan_resumen_diario, plan_mensual_detalles, parametros_mensuales
     // =========================================================================
 
+    // — Módulo raíz
     const PLANILLA = 'Planilla';
+
+    // — Actividades Diarias
+    const PLANILLA_ACTIVIDAD = 'Planilla Actividades Diarias';
     const PLANILLA_ACTIVIDAD_VER = 'Planilla Actividades Diarias Ver';
+    const PLANILLA_ACTIVIDAD_GESTIONAR = 'Planilla Actividades Diarias Gestionar';
+
+    // — Asistencia Mensual
+    const PLANILLA_ASISTENCIA = 'Planilla Asistencia Mensual';
     const PLANILLA_ASISTENCIA_VER = 'Planilla Asistencia Mensual Ver';
+
+    // — Permisos y Suspensiones
     const PLANILLA_SUSPENSION = 'Planilla Permisos y Suspensiones';
     const PLANILLA_SUSPENSION_VER = 'Planilla Permisos y Suspensiones Ver';
-    const PLANILLA_SUSPENSION_CREAR = 'Planilla Permisos y Suspensiones Crear';
-    const PLANILLA_SUSPENSION_EDITAR = 'Planilla Permisos y Suspensiones Editar';
-    const PLANILLA_SUSPENSION_ELIMINAR = 'Planilla Permisos y Suspensiones Eliminar';
+    const PLANILLA_SUSPENSION_GESTIONAR = 'Planilla Permisos y Suspensiones Gestionar';
+
+    // — Resumen Mensual
+    const PLANILLA_RESUMEN_MENSUAL = 'Planilla Resumen Mensual';
     const PLANILLA_RESUMEN_MENSUAL_VER = 'Planilla Resumen Mensual Ver';
+
+    // — Resumen General
+    const PLANILLA_RESUMEN_GENERAL = 'Planilla Resumen General';
     const PLANILLA_RESUMEN_GENERAL_VER = 'Planilla Resumen General Ver';
+
+    // — Planilla Blanco (B+N)
+    const PLANILLA_BLANCO = 'Planilla Blanco';
     const PLANILLA_BLANCO_VER = 'Planilla Blanco Ver';
-    const PLANILLA_CONCEPTOS = 'Planilla Conceptos';
-    const PLANILLA_CONCEPTOS_VER = 'Planilla Conceptos Ver';
-    const PLANILLA_CONCEPTOS_CREAR = 'Planilla Conceptos Crear';
-    const PLANILLA_CONCEPTOS_EDITAR = 'Planilla Conceptos Editar';
-    const PLANILLA_CONCEPTOS_ELIMINAR = 'Planilla Conceptos Eliminar';
-    const PLANILLA_PARAMETROS_VER = 'Planilla Parámetros Ver';
-    const PLANILLA_PARAMETROS_EDITAR = 'Planilla Parámetros Editar';
+    const PLANILLA_BLANCO_GESTIONAR = 'Planilla Blanco Gestionar';
+
+    // — Familiares (vista general de asignación familiar desde planilla)
+    const PLANILLA_FAMILIAR = 'Planilla Familiares';
+    const PLANILLA_FAMILIAR_VER = 'Planilla Familiares Ver';
+    const PLANILLA_FAMILIAR_GESTIONAR = 'Planilla Familiares Gestionar';
+
+    // — Contratos (vista general de contratos desde planilla)
+    const PLANILLA_CONTRATO = 'Planilla Contratos';
+    const PLANILLA_CONTRATO_VER = 'Planilla Contratos Ver';
+    const PLANILLA_CONTRATO_GESTIONAR = 'Planilla Contratos Gestionar';
+
+    // — Conceptos
+    const PLANILLA_CONCEPTO = 'Planilla Conceptos';
+    const PLANILLA_CONCEPTO_VER = 'Planilla Conceptos Ver';
+    const PLANILLA_CONCEPTO_GESTIONAR = 'Planilla Conceptos Gestionar';
+
+    // — Parámetros
+    const PLANILLA_PARAMETRO = 'Planilla Parámetros';
+    const PLANILLA_PARAMETRO_VER = 'Planilla Parámetros Ver';
+    const PLANILLA_PARAMETRO_GESTIONAR = 'Planilla Parámetros Gestionar';
 
     // =========================================================================
     // DOMINIO: COCHINILLA

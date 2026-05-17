@@ -18,8 +18,9 @@
         <x-slot name="tbody">
             @if ($empleados->count())
                 @foreach ($empleados as $indice => $empleado)
-                    <x-tr style="background-color: {{ $empleado->color_grupo ?? '#ffffff' }};
-                                                                             color: {{ $empleado->color_texto_grupo ?? '' }}">
+                    <x-tr
+                        style="background-color: {{ $empleado->color_grupo ?? '#ffffff' }};
+                                                                                     color: {{ $empleado->color_texto_grupo ?? '' }}">
                         <x-th value="{{ $indice + 1 }}" class="dark:text-gray-800 text-center" />
                         <x-td class="dark:text-gray-800">
                             {{ $empleado->nombreCompleto }}
@@ -55,7 +56,8 @@
                                 <x-slot name="content">
                                     <div class="w-full text-center">
                                         @if (!$empleado->trashed())
-                                            @can('Planilla Empleados Gestionar Contratos y Sueldos')
+
+                                            @can(\App\Constants\Permisos::PERSONAL_CONTRATOS)
                                                 <x-dropdown-link href="{{ route('planilla.contratos', ['id' => $empleado->id]) }}">
                                                     <i class="fa fa-table"></i> Gestionar Contratos
                                                 </x-dropdown-link>
@@ -66,30 +68,29 @@
                                                 </x-dropdown-link>
                                             @endcan
 
-
-
-                                            @can('Planilla Empleados Gestionar Familiares')
+                                            @can(\App\Constants\Permisos::PERSONAL_FAMILIARES)
                                                 <x-dropdown-link
                                                     @click="$wire.dispatch('agregarFamiliarEmpleado',{id:{{ $empleado->id }}})">
                                                     <i class="fa-solid fa-people-roof"></i> Gestionar Familiares
                                                 </x-dropdown-link>
                                             @endcan
-                                            @can('Planilla Empleados Editar Empleado')
+
+                                            @can(\App\Constants\Permisos::PERSONAL_EDITAR)
                                                 <x-dropdown-link @click="$wire.dispatch('editarEmpleado',{id:{{ $empleado->id }}})">
                                                     <i class="fa fa-pencil"></i> Editar Registro
                                                 </x-dropdown-link>
                                             @endcan
 
-
-
-                                            @can('Planilla Empleados Eliminar')
+                                            @can(\App\Constants\Permisos::PERSONAL_ELIMINAR)
                                                 <x-dropdown-link wire:click="eliminarEmpleado({{ $empleado->id }})"
                                                     class="text-red-600 hover:text-red-700">
                                                     <i class="fa fa-remove"></i> Eliminar Empleado
                                                 </x-dropdown-link>
                                             @endcan
+
                                         @else
-                                            @can('Planilla Empleados Restaurar Empleado')
+
+                                            @can(\App\Constants\Permisos::PERSONAL_RESTAURAR)
                                                 <x-dropdown-link wire:click="restaurarEmpleado({{ $empleado->id }})"
                                                     class="text-green-600 hover:text-green-700">
                                                     <i class="fa fa-undo"></i> Restaurar Empleado

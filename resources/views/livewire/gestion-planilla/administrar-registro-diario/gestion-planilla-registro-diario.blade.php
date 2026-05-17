@@ -25,9 +25,11 @@
 
             <div class="lg:flex gap-4 lg:w-auto text-center">
                 <x-selector-dia type="date" wire:model.live="fecha" class="text-center !w-auto" />
+                @can(\App\Constants\Permisos::PLANILLA_ACTIVIDAD_GESTIONAR)
                 <x-button @click="$wire.dispatch('mostrarModalOrdenPlanilla',{mes:{{ $mes }},anio:{{ $anio }}})">
                     <i class="fa fa-users"></i> Gestionar Lista
                 </x-button>
+                @endcan
             </div>
 
             <x-button variant="secondary" wire:click="fechaPosterior">
@@ -35,9 +37,17 @@
             </x-button>
         </x-flex>
     </x-card>
+    @can(\App\Constants\Permisos::PLANILLA_ACTIVIDAD_VER)
+        <livewire:gestion-planilla.administrar-registro-diario.gestion-planilla-registro-diario-detalle-component
+            wire:key="{{ $fecha }}" :fecha="$fecha" />
+    @else
+        <x-danger class="mt-4">
+            No tienes permiso para ver el detalle de las labores diarias.
+        </x-danger>
+    @endcan
 
-    <livewire:gestion-planilla.administrar-registro-diario.gestion-planilla-registro-diario-detalle-component
-        wire:key="{{ $fecha }}" :fecha="$fecha" />
+
+
     @include('livewire.gestion-planilla.administrar-registro-diario.partials.orden-planilla-mensual')
 
 

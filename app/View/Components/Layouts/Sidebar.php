@@ -32,19 +32,63 @@ class Sidebar extends Component
             [
                 'title' => 'Planilla',
                 'icon' => 'fa fa-table',
-                'can' => 'Planilla',
+                'can' => Permisos::PLANILLA,
                 'children' => [
-                    ['title' => 'Empleados', 'route' => 'empleados', 'can' => 'Planilla Empleados'],
-                    ['title' => 'Actividades Diarias', 'route' => 'reporte.reporte_diario', 'can' => 'Planilla Actividades Diarias Ver'],
-                    ['title' => 'Asistencia Mensual', 'route' => 'planilla.asistencia', 'can' => 'Planilla Asistencia Mensual Ver'],
-                    ['title' => 'Permisos y Suspensiones', 'route' => 'planilla.suspensiones', 'can' => 'Planilla Permisos y Suspensiones Ver'],
-                    ['title' => 'Resumen Mensual', 'route' => 'reporte.resumen_planilla', 'can' => 'Planilla Resumen Mensual Ver'],
-                    ['title' => 'Resumen General', 'route' => 'gestion_planilla.reporte_general', 'can' => 'Planilla Resumen General Ver'],
-                    ['title' => 'Planilla B+N', 'route' => 'planilla.blanco', 'can' => 'Planilla Blanco Ver'],
-                    ['title' => 'Familiares', 'route' => 'empleados.asignacion_familiar', 'can' => 'Planilla Familiares Ver'],
-                    ['title' => 'Contratos Empleados', 'route' => 'planilla.contratos', 'can' => 'Planilla Contratos Ver'],
-                    ['title' => 'Conceptos', 'route' => 'planilla.conceptos', 'can' => 'Planilla Conceptos Ver'],
-                    ['title' => 'Parámetros', 'route' => 'planilla.parametros', 'can' => 'Planilla Parámetros Ver'],
+                    [
+                        'title' => 'Empleados',
+                        'route' => 'empleados',
+                        'can' => Permisos::PERSONAL
+                    ],
+                    [
+                        'title' => 'Actividades Diarias',
+                        'route' => 'reporte.reporte_diario',
+                        'can' => Permisos::PLANILLA_ACTIVIDAD
+                    ],
+                    [
+                        'title' => 'Asistencia Mensual',
+                        'route' => 'planilla.asistencia',
+                        'can' => Permisos::PLANILLA_ASISTENCIA
+                    ],
+                    [
+                        'title' => 'Permisos y Suspensiones',
+                        'route' => 'planilla.suspensiones',
+                        'can' => Permisos::PLANILLA_SUSPENSION
+                    ],
+                    [
+                        'title' => 'Resumen Mensual',
+                        'route' => 'reporte.resumen_planilla',
+                        'can' => Permisos::PLANILLA_RESUMEN_MENSUAL
+                    ],
+                    [
+                        'title' => 'Resumen General',
+                        'route' => 'gestion_planilla.reporte_general',
+                        'can' => Permisos::PLANILLA_RESUMEN_GENERAL
+                    ],
+                    [
+                        'title' => 'Planilla B+N',
+                        'route' => 'planilla.blanco',
+                        'can' => Permisos::PLANILLA_BLANCO
+                    ],
+                    [
+                        'title' => 'Familiares',
+                        'route' => 'empleados.asignacion_familiar',
+                        'can' => Permisos::PLANILLA_FAMILIAR
+                    ],
+                    [
+                        'title' => 'Contratos Empleados',
+                        'route' => 'planilla.contratos',
+                        'can' => Permisos::PLANILLA_CONTRATO
+                    ],
+                    [
+                        'title' => 'Conceptos',
+                        'route' => 'planilla.conceptos',
+                        'can' => Permisos::PLANILLA_CONCEPTO
+                    ],
+                    [
+                        'title' => 'Parámetros',
+                        'route' => 'planilla.parametros',
+                        'can' => Permisos::PLANILLA_PARAMETRO
+                    ],
                 ],
             ],
             [

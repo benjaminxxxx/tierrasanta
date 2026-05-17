@@ -40,8 +40,8 @@ Route::middleware([
         return view('livewire.dashboard.indice');
     })->name('dashboard');
 
-    Route::get('/planilla/asistencia/{anio?}/{mes?}', [AsistenciaPlanillaController::class, 'index'])->name('planilla.asistencia');
-    Route::get('/planilla/bn', [AsistenciaPlanillaController::class, 'blanco'])->name('planilla.blanco');
+    Route::get('/planilla/asistencia/{anio?}/{mes?}', [AsistenciaPlanillaController::class, 'index'])->name('planilla.asistencia')->middleware('can:' . Permisos::PLANILLA_ASISTENCIA);
+    Route::get('/planilla/bn', [AsistenciaPlanillaController::class, 'blanco'])->name('planilla.blanco')->middleware('can:' . Permisos::PLANILLA_BLANCO);
 
     Route::get('/empleados', function () {
         return view('livewire.gestion-planilla.administrar-planillero.indice-empleados');
@@ -115,7 +115,7 @@ Route::middleware([
 
         Route::get('/contratos/{id?}', function ($id = null) {
             return view('livewire.gestion-planilla.contratos-planilla-indice', compact('id'));
-        })->name('planilla.contratos');
+        })->name('planilla.contratos')->middleware('can:' . Permisos::PERSONAL_CONTRATOS);
 
         Route::get('/conceptos', function () {
             return view('livewire.gestion-planilla.conceptos-planilla-indice');
@@ -127,13 +127,13 @@ Route::middleware([
 
         Route::get('/suspensiones', function () {
             return view('livewire.gestion-planilla.suspensiones-planilla-indice');
-        })->name('planilla.suspensiones');
+        })->name('planilla.suspensiones')->middleware('can:' . Permisos::PLANILLA_SUSPENSION);
 
         Route::get('/gestion_planilla/reporte_general', function () {
             // Apunta a la nueva y más corta ubicación
             return view('livewire.gestion-planilla.reportes.reporte-general-index');
         })
-            ->name('gestion_planilla.reporte_general'); // ¡Cambia el nombre de la ruta para ser más específico!
+            ->name('gestion_planilla.reporte_general')->middleware('can:' . Permisos::PLANILLA_RESUMEN_GENERAL);
     });
     Route::prefix('cuadrilla/gestion_cuadrilleros')->group(function () {
         // Pantalla principal / dashboard
@@ -174,13 +174,13 @@ Route::middleware([
 
     Route::get('/reporte/actividades-diarias', [ReporteDiarioController::class, 'actividades_diarias'])->name('reporte.actividades_diarias');
     Route::get('/auditoria', [ReporteController::class, 'auditoria'])->name('auditoria');
-    Route::get('/reporte/reporte-diario', [ReporteDiarioController::class, 'index'])->name('reporte.reporte_diario');
+    Route::get('/reporte/reporte-diario', [ReporteDiarioController::class, 'index'])->name('reporte.reporte_diario')->middleware('can:' . Permisos::PLANILLA_ACTIVIDAD);;
     Route::get('/riego/reporte-diario', [ReporteDiarioController::class, 'riego'])->name('reporte.reporte_diario_riego');
     Route::post('/reporte/reporte-diario/importar-empleados', [ReporteDiarioController::class, 'ImportarEmpleados'])->name('reporte.reporte_diario.importar_empleados');
     Route::post('/reporte/reporte-diario/guardar-empleados', [ReporteDiarioController::class, 'GuardarInformacion'])->name('reporte.reporte_diario.guardar_informacion');
     Route::post('/reporte/reporte-diario/actualizar-campos', [ReporteDiarioController::class, 'ActualizarCampos'])->name('reporte.reporte_diario.actualizar_campos');
 
-    Route::get('/planilla/resumen-mensual', [ReporteController::class, 'ResumenPlanilla'])->name('reporte.resumen_planilla');
+    Route::get('/planilla/resumen-mensual', [ReporteController::class, 'ResumenPlanilla'])->name('reporte.resumen_planilla')->middleware('can:' . Permisos::PLANILLA_RESUMEN_MENSUAL);
 
     //PROVEEDORES
     Route::get('/proveedores', [ProveedorController::class, 'index'])->name('proveedores.index');

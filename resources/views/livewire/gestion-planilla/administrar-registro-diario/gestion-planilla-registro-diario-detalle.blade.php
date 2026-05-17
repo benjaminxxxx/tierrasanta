@@ -12,6 +12,7 @@
                     </template>
                 </x-select>
             </x-flex>
+            @can(\App\Constants\Permisos::PLANILLA_ACTIVIDAD_GESTIONAR)
             <x-flex>
                 <x-button @click="agregarTramo">
                     <i class="fa fa-plus"></i> Agregar tramo
@@ -20,18 +21,19 @@
                     <i class="fa fa-minus"></i> Quitar tramo
                 </x-button>
             </x-flex>
+            @endcan
         </x-flex>
         <div wire:ignore>
             <div x-ref="tableContainer" class="mt-5"></div>
         </div>
-
+        @can(\App\Constants\Permisos::PLANILLA_ACTIVIDAD_GESTIONAR)
         <div class="fixed bottom-6 right-6 z-40">
             <x-button @click="enviarRegistrosDiariosPlanilla" class="flex items-center gap-2 shadow-lg">
                 <i class="fa fa-save"></i>
                 Guardar Información
             </x-button>
         </div>
-
+        @endcan
     </x-card>
 
     <x-card class="mt-5 max-w-lg">
