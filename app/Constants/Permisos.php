@@ -277,6 +277,35 @@ class Permisos
     const COCHINILLA_VENTA_FACTURACION_GESTIONAR = 'Cochinilla Venta Gestionar Facturación';
 
     // =========================================================================
+// DOMINIO: CAMPO — Riego
+// Tablas: reg_registro_diario, reg_labores, reg_resumen,
+//         labores (tipo riego), campos
+// Nota: Riego es un submódulo de CAMPO. Prefijo CAMPO_RIEGO para
+//       diferenciarlo de labores de campo general (CAMPO_LABOR).
+// =========================================================================
+
+    // — Módulo raíz
+    const CAMPO_RIEGO = 'Riego';
+
+    // — Reporte Diario de Regadores
+    const CAMPO_RIEGO_REPORTE = 'Riego Reporte Diario';
+    const CAMPO_RIEGO_REPORTE_VER = 'Riego Reporte Diario Ver';
+    const CAMPO_RIEGO_REPORTE_GESTIONAR = 'Riego Reporte Diario Gestionar';
+
+    // — Labores en Riego
+    const CAMPO_RIEGO_LABOR = 'Riego Labores';
+    const CAMPO_RIEGO_LABOR_VER = 'Riego Labores Ver';
+    const CAMPO_RIEGO_LABOR_GESTIONAR = 'Riego Labores Gestionar';
+
+    // — Estado de Riegos
+    const CAMPO_RIEGO_ESTADO = 'Riego Estado';
+    const CAMPO_RIEGO_ESTADO_VER = 'Riego Estado Ver';
+
+    // — Resumen Diario de Riegos
+    const CAMPO_RIEGO_RESUMEN = 'Riego Resumen Diario';
+    const CAMPO_RIEGO_RESUMEN_VER = 'Riego Resumen Diario Ver';
+
+    // =========================================================================
     // DOMINIO: INSUMO (catálogo, compras, almacén, kardex)
     // Tablas: productos, ins_categorias, ins_subcategorias, ins_usos,
     //         nutrientes, producto_nutrientes, tabla_concentracion,

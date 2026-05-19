@@ -67,13 +67,6 @@ return [
                 ],
             ],
             [
-                'nombre' => Permisos::PLANILLA_CONTRATO,
-                'hijos' => [
-                    ['nombre' => Permisos::PLANILLA_CONTRATO_VER],
-                    ['nombre' => Permisos::PLANILLA_CONTRATO_GESTIONAR],
-                ],
-            ],
-            [
                 'nombre' => Permisos::PLANILLA_CONCEPTO,
                 'hijos' => [
                     ['nombre' => Permisos::PLANILLA_CONCEPTO_VER],
@@ -150,33 +143,32 @@ return [
     ],
 
     [
-        'nombre' => 'Riego',
+        'nombre' => Permisos::CAMPO_RIEGO,
         'hijos' => [
             [
-                'nombre' => 'Riego Reporte Diario',
+                'nombre' => Permisos::CAMPO_RIEGO_REPORTE,
                 'hijos' => [
-                    ['nombre' => 'Riego Reporte Diario Ver'],
+                    ['nombre' => Permisos::CAMPO_RIEGO_REPORTE_VER],
+                    ['nombre' => Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR],
                 ],
             ],
             [
-                'nombre' => 'Riego Labores',
+                'nombre' => Permisos::CAMPO_RIEGO_LABOR,
                 'hijos' => [
-                    ['nombre' => 'Riego Labores Ver'],
-                    ['nombre' => 'Riego Labores Agregar'],
-                    ['nombre' => 'Riego Labores Editar'],
-                    ['nombre' => 'Riego Labores Eliminar'],
+                    ['nombre' => Permisos::CAMPO_RIEGO_LABOR_VER],
+                    ['nombre' => Permisos::CAMPO_RIEGO_LABOR_GESTIONAR],
                 ],
             ],
             [
-                'nombre' => 'Riego Estado',
+                'nombre' => Permisos::CAMPO_RIEGO_ESTADO,
                 'hijos' => [
-                    ['nombre' => 'Riego Estado Ver'],
+                    ['nombre' => Permisos::CAMPO_RIEGO_ESTADO_VER],
                 ],
             ],
             [
-                'nombre' => 'Riego Resumen Diario',
+                'nombre' => Permisos::CAMPO_RIEGO_RESUMEN,
                 'hijos' => [
-                    ['nombre' => 'Riego Resumen Diario Ver'],
+                    ['nombre' => Permisos::CAMPO_RIEGO_RESUMEN_VER],
                 ],
             ],
         ],

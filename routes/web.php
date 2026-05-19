@@ -54,11 +54,11 @@ Route::middleware([
     })->name('descuentos_afp');
     Route::get('/empleados/asignacion-familiar', function () {
         return view('empleados.asignacion_familiar');
-    })->name('empleados.asignacion_familiar');
+    })->name('empleados.asignacion_familiar')->middleware('can:' . Permisos::PLANILLA_FAMILIAR);
 
     Route::get('/riego/labores', function () {
         return view('configuracion.labores_riego');
-    })->name('configuracion.labores_riego');
+    })->name('configuracion.labores_riego')->middleware('can:' . Permisos::CAMPO_RIEGO_LABOR);
 
     Route::get('/campo/labores', function () {
         return view('configuracion.labores');
@@ -88,7 +88,7 @@ Route::middleware([
     Route::get('/campanias', [CampaniaController::class, 'campanias'])->name('campanias');
     Route::get('/campo/camapania/{campo?}', [CampoController::class, 'campania'])->name('campo.campania');
     Route::get('/campanias_x_campo/{campania?}', [CampoController::class, 'campaniaxcampo'])->name('campania.x.campo');
-    Route::get('/riego/estados', [CampoController::class, 'riego'])->name('campo.riego');
+    Route::get('/riego/estados', [CampoController::class, 'riego'])->name('campo.riego')->middleware('can:' . Permisos::CAMPO_RIEGO_ESTADO);
     Route::get('/campo/campos', [CampoController::class, 'campos'])->name('campo.campos');
     Route::get('/campo/siembras', [CampoController::class, 'siembra'])->name('campo.siembra');
     Route::post('/campo/mapa/guardar-posicion/{nombre}', [CampoController::class, 'guardarPosicion'])->name('campo.mapa.guardar-posicion');
@@ -101,7 +101,7 @@ Route::middleware([
     //Consolidados
     Route::get('/riego/resumen-diario', function () {
         return view('consolidado.riegos');
-    })->name('consolidado.riego');
+    })->name('consolidado.riego')->middleware('can:' . Permisos::CAMPO_RIEGO_RESUMEN);
 
     //Planilla
     Route::get('/planilla/asistencia/cargar-asistencias', [AsistenciaPlanillaController::class, 'cargarAsistencias'])->name('planilla.asistencia.cargar_asistencias');
@@ -119,11 +119,11 @@ Route::middleware([
 
         Route::get('/conceptos', function () {
             return view('livewire.gestion-planilla.conceptos-planilla-indice');
-        })->name('planilla.conceptos');
+        })->name('planilla.conceptos')->middleware('can:' . Permisos::PLANILLA_CONCEPTO);
 
         Route::get('/parametros', function () {
             return view('livewire.gestion-planilla.parametros-planilla-indice');
-        })->name('planilla.parametros');
+        })->name('planilla.parametros')->middleware('can:' . Permisos::PLANILLA_PARAMETRO);
 
         Route::get('/suspensiones', function () {
             return view('livewire.gestion-planilla.suspensiones-planilla-indice');
@@ -174,8 +174,8 @@ Route::middleware([
 
     Route::get('/reporte/actividades-diarias', [ReporteDiarioController::class, 'actividades_diarias'])->name('reporte.actividades_diarias');
     Route::get('/auditoria', [ReporteController::class, 'auditoria'])->name('auditoria');
-    Route::get('/reporte/reporte-diario', [ReporteDiarioController::class, 'index'])->name('reporte.reporte_diario')->middleware('can:' . Permisos::PLANILLA_ACTIVIDAD);;
-    Route::get('/riego/reporte-diario', [ReporteDiarioController::class, 'riego'])->name('reporte.reporte_diario_riego');
+    Route::get('/reporte/reporte-diario', [ReporteDiarioController::class, 'index'])->name('reporte.reporte_diario')->middleware('can:' . Permisos::PLANILLA_ACTIVIDAD);
+    Route::get('/riego/reporte-diario', [ReporteDiarioController::class, 'riego'])->name('reporte.reporte_diario_riego')->middleware('can:' . Permisos::CAMPO_RIEGO_REPORTE);
     Route::post('/reporte/reporte-diario/importar-empleados', [ReporteDiarioController::class, 'ImportarEmpleados'])->name('reporte.reporte_diario.importar_empleados');
     Route::post('/reporte/reporte-diario/guardar-empleados', [ReporteDiarioController::class, 'GuardarInformacion'])->name('reporte.reporte_diario.guardar_informacion');
     Route::post('/reporte/reporte-diario/actualizar-campos', [ReporteDiarioController::class, 'ActualizarCampos'])->name('reporte.reporte_diario.actualizar_campos');

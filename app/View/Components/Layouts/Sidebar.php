@@ -77,7 +77,7 @@ class Sidebar extends Component
                     [
                         'title' => 'Contratos Empleados',
                         'route' => 'planilla.contratos',
-                        'can' => Permisos::PLANILLA_CONTRATO
+                        'can' => Permisos::PERSONAL_CONTRATOS
                     ],
                     [
                         'title' => 'Conceptos',
@@ -106,15 +106,16 @@ class Sidebar extends Component
                     ['title' => 'Resumen anual', 'route' => 'gestion_cuadrilleros.resumen_anual', 'can' => Permisos::CUADRILLA_RESUMEN_ANUAL],
                 ],
             ],
+           
             [
                 'title' => 'Riego',
                 'icon' => 'fa fa-water',
-                'can' => 'Riego',
+                'can' => Permisos::CAMPO_RIEGO,
                 'children' => [
-                    ['title' => 'Reporte diario regadores', 'route' => 'reporte.reporte_diario_riego', 'can' => 'Riego Reporte Diario Ver'],
-                    ['title' => 'Labores en riego', 'route' => 'configuracion.labores_riego', 'can' => 'Riego Labores Ver'],
-                    ['title' => 'Ver estado de riegos', 'route' => 'campo.riego', 'can' => 'Riego Estado Ver'],
-                    ['title' => 'Resumen diario de riegos', 'route' => 'consolidado.riego', 'can' => 'Riego Resumen Diario Ver'],
+                    ['title' => 'Reporte diario regadores', 'route' => 'reporte.reporte_diario_riego', 'can' => Permisos::CAMPO_RIEGO_REPORTE],
+                    ['title' => 'Labores en riego', 'route' => 'configuracion.labores_riego', 'can' => Permisos::CAMPO_RIEGO_LABOR],
+                    ['title' => 'Ver estado de riegos', 'route' => 'campo.riego', 'can' => Permisos::CAMPO_RIEGO_ESTADO],
+                    ['title' => 'Resumen diario de riegos', 'route' => 'consolidado.riego', 'can' => Permisos::CAMPO_RIEGO_RESUMEN],
                 ],
             ],
             [

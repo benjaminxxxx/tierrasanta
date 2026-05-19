@@ -17,23 +17,32 @@
                     <x-input type="number" wire:model.live="limiteHorasDiarias" label="Limite de Horas" />
                 </x-flex>
             </x-flex>
-            <x-flex>
-                <x-button @click="$wire.dispatch('abrirAgregarRegador')">
-                    <i class="fa fa-plus"></i> Agregar Regador
-                </x-button>
-                <x-button wire:click="enviarRegistroDiarioRegadores">
-                    <i class="fa fa-paper-plane"></i> Enviar Registro Diario
-                </x-button>
-            </x-flex>
+            @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
+                <x-flex>
+                    <x-button @click="$wire.dispatch('abrirAgregarRegador')">
+                        <i class="fa fa-plus"></i> Agregar Regador
+                    </x-button>
+                    <x-button wire:click="enviarRegistroDiarioRegadores">
+                        <i class="fa fa-paper-plane"></i> Enviar Registro Diario
+                    </x-button>
+                </x-flex>
+            @endcan
+
         </x-flex>
     </x-card>
     <div class="my-4">
-        @if ($consolidados && $consolidados->count() > 0)
-            @foreach ($consolidados as $riego)
-                <livewire:gestion-riego.reporte-diario-riego-detalle-component :resumenId="$riego->id" :fecha="$riego->fecha"
-                    wire:key="horas_riego_{{ $riego->id }}_{{ $riego->fecha }}" />
-            @endforeach
-        @endif
+        @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_VER)
+            @if ($consolidados && $consolidados->count() > 0)
+                @foreach ($consolidados as $riego)
+                    <livewire:gestion-riego.reporte-diario-riego-detalle-component :resumenId="$riego->id" :fecha="$riego->fecha"
+                        wire:key="horas_riego_{{ $riego->id }}_{{ $riego->fecha }}" />
+                @endforeach
+            @endif
+        @else
+            <x-danger>
+                No tienes permisos para ver el reporte diario de riego. Por favor, contacta al administrador.
+            </x-danger>
+        @endcan
     </div>
     <x-dialog-modal wire:model.live="mostrarEnvioAReporteDiario">
         <x-slot name="title">
