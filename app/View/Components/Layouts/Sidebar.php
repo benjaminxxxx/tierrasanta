@@ -89,6 +89,16 @@ class Sidebar extends Component
                         'route' => 'planilla.parametros',
                         'can' => Permisos::PLANILLA_PARAMETRO
                     ],
+                    [
+                        'title' => 'Descuentos de AFP',
+                        'route' => 'descuentos_afp',
+                        'can' => Permisos::PLANILLA_CONFIG_AFP,
+                    ],
+                    [
+                        'title' => 'Tipo de Asistencia',
+                        'route' => 'configuracion.tipo_asistencia',
+                        'can' => Permisos::PLANILLA_CONFIG_ASISTENCIA,
+                    ],
                 ],
             ],
             [
@@ -106,7 +116,7 @@ class Sidebar extends Component
                     ['title' => 'Resumen anual', 'route' => 'gestion_cuadrilleros.resumen_anual', 'can' => Permisos::CUADRILLA_RESUMEN_ANUAL],
                 ],
             ],
-           
+
             [
                 'title' => 'Riego',
                 'icon' => 'fa fa-water',
@@ -121,30 +131,41 @@ class Sidebar extends Component
             [
                 'title' => 'Campo',
                 'icon' => 'fa fa-leaf',
-                'can' => 'Campo',
+                'can' => Permisos::CAMPO,
                 'children' => [
-                    ['title' => 'Labores', 'route' => 'configuracion.labores', 'can' => 'Campo Labores Ver'],
-                    ['title' => 'Mano de obra', 'route' => 'campo.mano_obra', 'can' => 'Campo Mano de Obra Ver'],
-                    ['title' => 'Campos', 'route' => 'campo.campos', 'can' => 'Campo Campos Ver'],
-                    ['title' => 'Siembras', 'route' => 'campo.siembra', 'can' => 'Campo Siembras Ver'],
+                    ['title' => 'Labores', 'route' => 'configuracion.labores', 'can' => Permisos::CAMPO_LABOR],
+                    ['title' => 'Mano de obra', 'route' => 'campo.mano_obra', 'can' => Permisos::CAMPO_MANO_OBRA],
+                    ['title' => 'Campos', 'route' => 'campo.campos', 'can' => Permisos::CAMPO_PARCELA],
+                    ['title' => 'Siembras', 'route' => 'campo.siembra', 'can' => Permisos::CAMPO_SIEMBRA],
+                    ['title' => 'Maquinarias', 'route' => 'maquinarias.index', 'can' => Permisos::CAMPO_MAQUINARIA],
                 ],
             ],
             [
                 'title' => 'Campañas',
                 'icon' => 'fa fa-flag',
-                'can' => 'Campañas',
+                'can' => Permisos::CAMPAÑA,
                 'children' => [
-                    ['title' => 'Resumen General de Campañas', 'route' => 'campanias', 'can' => 'Campañas Resumen General Ver'],
-                    ['title' => 'Todas las campañas', 'route' => 'campania.calendario', 'can' => 'Campañas Calendario Ver'],
-                    ['title' => 'Costos', 'route' => 'campania.costos', 'can' => 'Campañas Costos Ver'],
-                    ['title' => 'Campañas por campo', 'route' => 'campo.campania', 'can' => 'Campañas Por Campo Ver'],
-                    ['title' => 'Campañas por campo v2', 'route' => 'campania.x.campo', 'can' => 'Campañas Por Campo v2 Ver'],
+                    [
+                        'title' => 'Resumen General de Campañas',
+                        'route' => 'campanias',
+                        'can' => Permisos::CAMPAÑA_RESUMEN,
+                    ],
+                    [
+                        'title' => 'Todas las campañas',
+                        'route' => 'campania.calendario',
+                        'can' => Permisos::CAMPAÑA_CALENDARIO,
+                    ],
+                    [
+                        'title' => 'Campañas por campo',
+                        'route' => 'campania.x.campo',
+                        'can' => Permisos::CAMPAÑA_POR_CAMPO,
+                    ],
                 ],
             ],
             [
                 'title' => 'Cochinilla',
                 'icon' => 'fa fa-bug',
-                'can' => 'Cochinilla',
+                'can' => Permisos::COCHINILLA,
                 'children' => [
                     ['title' => 'Ingreso', 'route' => 'cochinilla.ingreso', 'can' => Permisos::COCHINILLA_INGRESO],
                     ['title' => 'Venteado', 'route' => 'cochinilla.venteado', 'can' => Permisos::COCHINILLA_VENTEADO],
@@ -176,6 +197,7 @@ class Sidebar extends Component
                     ['title' => 'Usos', 'route' => 'producto.usos', 'can' => Permisos::INSUMO_USO],
                     ['title' => 'Nutrientes', 'route' => 'nutrientes.index', 'can' => Permisos::INSUMO_NUTRIENTE],
                     ['title' => 'Tabla de concentración', 'route' => 'tabla_concentracion.index', 'can' => Permisos::INSUMO_CONCENTRACION],
+                    ['title' => 'Proveedores', 'route' => 'proveedores.index', 'can' => Permisos::INSUMO_PROVEEDOR],
                 ],
             ],
             [
@@ -224,52 +246,42 @@ class Sidebar extends Component
             [
                 'title' => 'Sistema',
                 'icon' => 'fas fa-palette',
-                'can' => 'Sistema',
+                'can' => Permisos::SISTEMA,
                 'children' => [
-                    ['title' => 'Usuarios', 'route' => 'usuarios', 'can' => 'Usuarios Ver'],
-                    ['title' => 'Roles y Permisos', 'route' => 'roles_permisos', 'can' => 'Roles Ver'],
+                    [
+                        'title' => 'Usuarios',
+                        'route' => 'usuarios',
+                        'can' => Permisos::SISTEMA_USUARIO,
+                    ],
+                    [
+                        'title' => 'Roles y Permisos',
+                        'route' => 'roles_permisos',
+                        'can' => Permisos::SISTEMA_ROL,
+                    ],
                 ],
             ],
             [
                 'title' => 'Contabilidad',
                 'icon' => 'fa fa-calculator',
-                'can' => 'Contabilidad',
+                'can' => Permisos::CONTABILIDAD,
                 'children' => [
-                    ['title' => 'Costos Generales FDM', 'route' => 'fdm.costos_generales', 'can' => 'Contabilidad Costos FDM Ver'],
-                    ['title' => 'Gasto General', 'route' => 'gastos.general', 'can' => 'Contabilidad Gasto General Ver'],
-                    ['title' => 'Costos Mensuales', 'route' => 'contabilidad.costos_mensuales', 'can' => 'Contabilidad Costos Mensuales Ver'],
-                    ['title' => 'Costo Mensual', 'route' => 'contabilidad.costo_mensual', 'can' => 'Contabilidad Costo Mensual Ver'],
-                    ['title' => 'Costos Generales', 'route' => 'contabilidad.costos_generales', 'can' => 'Contabilidad Costos Generales Ver'],
+                    ['title' => 'Costos Generales FDM', 'route' => 'fdm.costos_generales', 'can' => Permisos::CONTABILIDAD_FDM],
+                    ['title' => 'Costos Mensuales', 'route' => 'contabilidad.costos_mensuales', 'can' => Permisos::CONTABILIDAD_COSTO_MENSUAL_LISTA],
+                    ['title' => 'Costo Mensual', 'route' => 'contabilidad.costo_mensual', 'can' => Permisos::CONTABILIDAD_COSTO_MENSUAL],
+                    ['title' => 'Costos x Campaña', 'route' => 'campania.costos', 'can' => Permisos::CAMPAÑA_COSTOS],
+                    
                 ],
             ],
-            [
-                'title' => 'Información General',
-                'icon' => 'fa fa-users',
-                'can' => 'Información General',
-                'children' => [
-                    ['title' => 'Proveedores', 'route' => 'proveedores.index', 'can' => 'Proveedores Ver'],
-                    ['title' => 'Maquinarias', 'route' => 'maquinarias.index', 'can' => 'Maquinarias Ver'],
-                ],
-            ],
-            [
-                'title' => 'Configuración',
-                'icon' => 'fa fa-cogs',
-                'can' => 'Configuración',
-                'children' => [
-                    ['title' => 'Parámetros', 'route' => 'configuracion', 'can' => 'Configuración Parámetros Ver'],
-                    ['title' => 'Descuentos de AFP', 'route' => 'descuentos_afp', 'can' => 'Configuración Descuentos AFP Ver'],
-                    ['title' => 'Tipo de Asistencia', 'route' => 'configuracion.tipo_asistencia', 'can' => 'Configuración Tipo Asistencia Ver'],
-                ],
-            ],
+
             [
                 'title' => 'Reporte y Auditoria',
                 'icon' => 'fa fa-file',
-                'can' => 'Reporte y Auditoría',
+                'can' => Permisos::REPORTE,
                 'children' => [
-                    ['title' => 'Reporte Diario', 'route' => 'reporte_general.reporte_diario', 'can' => 'Reporte Diario Ver'],
-                    ['title' => 'Reporte Mensual', 'route' => 'reporte_general.reporte_mensual', 'can' => 'Reporte Mensual Ver'],
-                    ['title' => 'Reporte Anual', 'route' => 'reporte_general.reporte_anual', 'can' => 'Reporte Anual Ver'],
-                    ['title' => 'Auditoria', 'route' => 'auditoria', 'can' => 'Auditoría Ver'],
+                    ['title' => 'Reporte Diario', 'route' => 'reporte_general.reporte_diario', 'can' => Permisos::REPORTE_DIARIO],
+                    ['title' => 'Reporte Mensual', 'route' => 'reporte_general.reporte_mensual', 'can' => Permisos::REPORTE_MENSUAL],
+                    ['title' => 'Reporte Anual', 'route' => 'reporte_general.reporte_anual', 'can' => Permisos::REPORTE_ANUAL],
+                    ['title' => 'Auditoria', 'route' => 'auditoria', 'can' => Permisos::REPORTE_AUDITORIA],
                 ],
             ],
         ];

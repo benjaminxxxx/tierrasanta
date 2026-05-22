@@ -4,9 +4,12 @@
         <x-h3>
             Gestión de Productos
         </x-h3>
-        <x-button type="button" @click="$wire.dispatch('CrearProducto')" class="w-full md:w-auto ">
-            <i class="fa fa-plus"></i> Nuevo Producto
-        </x-button>
+        @can(\App\Constants\Permisos::INSUMO_PRODUCTO_GESTIONAR)
+            <x-button type="button" @click="$wire.dispatch('CrearProducto')" class="w-full md:w-auto ">
+                <i class="fa fa-plus"></i> Nuevo Producto
+            </x-button>
+        @endcan
+
     </x-flex>
     <x-card>
         {{-- Fila 1: búsqueda + categoría + limpiar --}}
@@ -109,146 +112,154 @@
         @endif
     </x-card>
     <x-card>
-        <x-table class="mt-5">
-            <x-slot name="thead">
-                <tr>
-                    <x-th class="text-center">
-                        N°
-                    </x-th>
-                    <x-th>
-                        <button wire:click="sortBy('nombre_comercial')" class="focus:outline-none">
-                            NOMBRE COMERCIAL <i class="fa fa-sort"></i>
-                        </button>
-                    </x-th>
-                    <x-th class="text-center">
-                        <button wire:click="sortBy('categoria_codigo')" class="focus:outline-none">
-                            CATEGORÍA <i class="fa fa-sort"></i>
-                        </button>
-                    </x-th>
-                    <x-th value="TIPO DE EXISTENCIA (TABLA 5)" class="text-center" />
-                    <x-th value="NUTRIENTES" class="text-center" />
-                    <x-th value="USOS" class="text-center" />
-                    <x-th value="ACCIONES" class="text-center" />
-                </tr>
-            </x-slot>
-            <x-slot name="tbody">
-                @if ($productos && $productos->count() > 0)
-                    @foreach ($productos as $indice => $producto)
-                        <x-tr>
-                            <x-th value="{{ $indice + 1 }}" class="text-center" />
-                            {{-- Nombre + ingrediente activo como sub --}}
-                            <x-td class="text-left">
-                                {!! $producto->nombre_completo_kg !!}
-                            </x-td>
+        @can(\App\Constants\Permisos::INSUMO_PRODUCTO_VER)
+            <x-table class="mt-5">
+                <x-slot name="thead">
+                    <tr>
+                        <x-th class="text-center">
+                            N°
+                        </x-th>
+                        <x-th>
+                            <button wire:click="sortBy('nombre_comercial')" class="focus:outline-none">
+                                NOMBRE COMERCIAL <i class="fa fa-sort"></i>
+                            </button>
+                        </x-th>
+                        <x-th class="text-center">
+                            <button wire:click="sortBy('categoria_codigo')" class="focus:outline-none">
+                                CATEGORÍA <i class="fa fa-sort"></i>
+                            </button>
+                        </x-th>
+                        <x-th value="TIPO DE EXISTENCIA (TABLA 5)" class="text-center" />
+                        <x-th value="NUTRIENTES" class="text-center" />
+                        <x-th value="USOS" class="text-center" />
+                        <x-th value="ACCIONES" class="text-center" />
+                    </tr>
+                </x-slot>
+                <x-slot name="tbody">
+                    @if ($productos && $productos->count() > 0)
+                        @foreach ($productos as $indice => $producto)
+                            <x-tr>
+                                <x-th value="{{ $indice + 1 }}" class="text-center" />
+                                {{-- Nombre + ingrediente activo como sub --}}
+                                <x-td class="text-left">
+                                    {!! $producto->nombre_completo_kg !!}
+                                </x-td>
 
-                            {{-- Categoría --}}
-                            <x-td class="text-center">
-                                <div class="flex flex-col items-center gap-1">
-                                    <span>{{ $producto->categoria_con_descripcion }}</span>
-                                    {{-- Indicador kardex año actual --}}
-                                    @if ($producto->kardexActual)
-                                        <span class="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
-                                            <i class="fa fa-check-circle"></i>
-                                            Kardex {{ now()->year }}
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                                            <i class="fa fa-circle-xmark"></i>
-                                            Sin kardex
-                                        </span>
-                                    @endif
-                                </div>
-                            </x-td>
-
-                            {{-- Tipo existencia --}}
-                            <x-td value="{{ $producto->tipo_existencia }}" class="text-center" />
-
-                            {{-- Nutrientes --}}
-                            <x-td class="text-left">
-                                {!! $producto->lista_nutrientes !!}
-                            </x-td>
-
-                            {{-- Usos --}}
-                            <x-td class="text-left">
-                                @if ($producto->usos->isNotEmpty())
-                                    <div class="flex flex-wrap gap-1">
-                                        @foreach ($producto->usos->unique('id') as $uso)
-                                            <span
-                                                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs
-                                                                             font-medium bg-primary/10 text-primary border border-primary/20">
-                                                {{ $uso->nombre }}
-                                            </span>
-                                        @endforeach
-                                    </div>
-                                @else
-                                    <span class="text-xs text-muted-foreground">—</span>
-                                @endif
-                            </x-td>
-
-                            <x-td class="text-center">
-                                <x-dropdown align="right" width="48">
-                                    <x-slot name="trigger">
-                                        <button type="button"
-                                            class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-100 transition">
-                                            Opciones
-                                            <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"
-                                                viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </button>
-                                    </x-slot>
-
-                                    <x-slot name="content">
-                                        {{-- Ver auditoría --}}
-                                        <x-dropdown-link href="#"
-                                            @click.prevent="$wire.verAuditoriaProducto({{ $producto->id }})">
-                                            <i class="fa fa-history"></i>
-                                            <span class="ml-2">Historial</span>
-                                        </x-dropdown-link>
+                                {{-- Categoría --}}
+                                <x-td class="text-center">
+                                    <div class="flex flex-col items-center gap-1">
+                                        <span>{{ $producto->categoria_con_descripcion }}</span>
+                                        {{-- Indicador kardex año actual --}}
                                         @if ($producto->kardexActual)
-                                            <x-dropdown-link
-                                                href="{{ route('gestion_insumos.kardex.detalle', ['insumoKardexId' => $producto->kardexActual->id]) }}">
-                                                <i class="fa fa-eye"></i>
-                                                <span class="ml-2">Ver Kardex</span>
-                                            </x-dropdown-link>
+                                            <span class="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
+                                                <i class="fa fa-check-circle"></i>
+                                                Kardex {{ now()->year }}
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                                                <i class="fa fa-circle-xmark"></i>
+                                                Sin kardex
+                                            </span>
                                         @endif
-                                        {{-- Ver compras --}}
-                                        <x-dropdown-link href="#"
-                                            href="{{ route('almacen.compras', ['producto_id' => $producto->id]) }}">
-                                            <i class="fa fa-money-bill"></i>
-                                            <span class="ml-2">Compras</span>
-                                        </x-dropdown-link>
+                                    </div>
+                                </x-td>
 
-                                        {{-- Editar --}}
-                                        <x-dropdown-link href="#"
-                                            @click.prevent="$wire.dispatch('EditarProducto',{ id: {{ $producto->id }} })">
-                                            <i class="fa fa-edit"></i>
-                                            <span class="ml-2">Editar</span>
-                                        </x-dropdown-link>
+                                {{-- Tipo existencia --}}
+                                <x-td value="{{ $producto->tipo_existencia }}" class="text-center" />
 
-                                        {{-- Eliminar --}}
-                                        <x-dropdown-link href="#"
-                                            @click.prevent=" $wire.confirmarEliminacion({{ $producto->id }}) ">
-                                            <i class="fa fa-trash text-red-600"></i>
-                                            <span class="ml-2">Eliminar</span>
-                                        </x-dropdown-link>
+                                {{-- Nutrientes --}}
+                                <x-td class="text-left">
+                                    {!! $producto->lista_nutrientes !!}
+                                </x-td>
 
-                                    </x-slot>
-                                </x-dropdown>
-                            </x-td>
+                                {{-- Usos --}}
+                                <x-td class="text-left">
+                                    @if ($producto->usos->isNotEmpty())
+                                        <div class="flex flex-wrap gap-1">
+                                            @foreach ($producto->usos->unique('id') as $uso)
+                                                <span
+                                                    class="inline-flex items-center px-2 py-0.5 rounded-full text-xs
+                                                                                                                                 font-medium bg-primary/10 text-primary border border-primary/20">
+                                                    {{ $uso->nombre }}
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="text-xs text-muted-foreground">—</span>
+                                    @endif
+                                </x-td>
 
+                                <x-td class="text-center">
+                                    @can(\App\Constants\Permisos::INSUMO_PRODUCTO_GESTIONAR)
+                                        <x-dropdown align="right" width="48">
+                                            <x-slot name="trigger">
+                                                <button type="button"
+                                                    class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-100 transition">
+                                                    Opciones
+                                                    <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"
+                                                        viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </button>
+                                            </x-slot>
+
+                                            <x-slot name="content">
+                                                {{-- Ver auditoría --}}
+                                                <x-dropdown-link href="#"
+                                                    @click.prevent="$wire.verAuditoriaProducto({{ $producto->id }})">
+                                                    <i class="fa fa-history"></i>
+                                                    <span class="ml-2">Historial</span>
+                                                </x-dropdown-link>
+                                                @if ($producto->kardexActual)
+                                                    <x-dropdown-link
+                                                        href="{{ route('gestion_insumos.kardex.detalle', ['insumoKardexId' => $producto->kardexActual->id]) }}">
+                                                        <i class="fa fa-eye"></i>
+                                                        <span class="ml-2">Ver Kardex</span>
+                                                    </x-dropdown-link>
+                                                @endif
+                                                {{-- Ver compras --}}
+                                                <x-dropdown-link href="#"
+                                                    href="{{ route('almacen.compras', ['producto_id' => $producto->id]) }}">
+                                                    <i class="fa fa-money-bill"></i>
+                                                    <span class="ml-2">Compras</span>
+                                                </x-dropdown-link>
+
+                                                {{-- Editar --}}
+                                                <x-dropdown-link href="#"
+                                                    @click.prevent="$wire.dispatch('EditarProducto',{ id: {{ $producto->id }} })">
+                                                    <i class="fa fa-edit"></i>
+                                                    <span class="ml-2">Editar</span>
+                                                </x-dropdown-link>
+
+                                                {{-- Eliminar --}}
+                                                <x-dropdown-link href="#"
+                                                    @click.prevent=" $wire.confirmarEliminacion({{ $producto->id }}) ">
+                                                    <i class="fa fa-trash text-red-600"></i>
+                                                    <span class="ml-2">Eliminar</span>
+                                                </x-dropdown-link>
+
+                                            </x-slot>
+                                        </x-dropdown>
+                                    @endcan
+                                </x-td>
+
+                            </x-tr>
+                        @endforeach
+                    @else
+                        <x-tr>
+                            <x-td colspan="100%">No Hay Productos Registrados.</x-td>
                         </x-tr>
-                    @endforeach
-                @else
-                    <x-tr>
-                        <x-td colspan="100%">No Hay Productos Registrados.</x-td>
-                    </x-tr>
-                @endif
-            </x-slot>
-        </x-table>
-        <div class="mt-5">
-            {{ $productos->links() }}
-        </div>
+                    @endif
+                </x-slot>
+            </x-table>
+            <div class="mt-5">
+                {{ $productos->links() }}
+            </div>
+        @else
+            <x-danger>
+                No tiene permiso para ver la siguiente información.
+            </x-danger>
+        @endcan
     </x-card>
     <x-dialog-modal wire:model.live="modalAuditoria">
         <x-slot name="title">Historial de auditoría — Producto</x-slot>
@@ -284,7 +295,7 @@
                     <div class="mb-4 border-b border-border pb-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="font-semibold uppercase
-                                        {{ $entrada['accion'] === 'crear' ? 'text-green-600' :
+                                                                {{ $entrada['accion'] === 'crear' ? 'text-green-600' :
                 ($entrada['accion'] === 'eliminar' ? 'text-red-600' : 'text-yellow-600') }}">
                                 {{ $entrada['accion'] }}
                             </span>

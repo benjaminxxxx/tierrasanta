@@ -80,6 +80,20 @@ return [
                     ['nombre' => Permisos::PLANILLA_PARAMETRO_GESTIONAR],
                 ],
             ],
+            [
+                'nombre' => Permisos::PLANILLA_CONFIG_AFP,
+                'hijos' => [
+                    ['nombre' => Permisos::PLANILLA_CONFIG_AFP_VER],
+                    ['nombre' => Permisos::PLANILLA_CONFIG_AFP_GESTIONAR],
+                ],
+            ],
+            [
+                'nombre' => Permisos::PLANILLA_CONFIG_ASISTENCIA,
+                'hijos' => [
+                    ['nombre' => Permisos::PLANILLA_CONFIG_ASISTENCIA_VER],
+                    ['nombre' => Permisos::PLANILLA_CONFIG_ASISTENCIA_GESTIONAR],
+                ],
+            ],
         ],
     ],
 
@@ -175,82 +189,82 @@ return [
     ],
 
     [
-        'nombre' => 'Campo',
+        'nombre' => Permisos::CAMPO,
         'hijos' => [
             [
-                'nombre' => 'Campo Labores',
+                'nombre' => Permisos::CAMPO_LABOR,
                 'hijos' => [
-                    ['nombre' => 'Campo Labores Ver'],
-                    ['nombre' => 'Campo Labores Agregar'],
-                    ['nombre' => 'Campo Labores Editar'],
-                    ['nombre' => 'Campo Labores Eliminar'],
+                    ['nombre' => Permisos::CAMPO_LABOR_VER],
+                    ['nombre' => Permisos::CAMPO_LABOR_GESTIONAR],
                 ],
             ],
             [
-                'nombre' => 'Campo Mano de Obra',
+                'nombre' => Permisos::CAMPO_MANO_OBRA,
                 'hijos' => [
-                    ['nombre' => 'Campo Mano de Obra Ver'],
-                    ['nombre' => 'Campo Mano de Obra Agregar'],
-                    ['nombre' => 'Campo Mano de Obra Editar'],
-                    ['nombre' => 'Campo Mano de Obra Eliminar'],
+                    ['nombre' => Permisos::CAMPO_MANO_OBRA_VER],
+                    ['nombre' => Permisos::CAMPO_MANO_OBRA_GESTIONAR],
                 ],
             ],
             [
-                'nombre' => 'Campo Campos',
+                'nombre' => Permisos::CAMPO_PARCELA,
                 'hijos' => [
-                    ['nombre' => 'Campo Campos Ver'],
-                    ['nombre' => 'Campo Campos Agregar'],
-                    ['nombre' => 'Campo Campos Editar'],
-                    ['nombre' => 'Campo Campos Eliminar'],
+                    ['nombre' => Permisos::CAMPO_PARCELA_VER],
+                    ['nombre' => Permisos::CAMPO_PARCELA_GESTIONAR],
                 ],
             ],
             [
-                'nombre' => 'Campo Siembras',
+                'nombre' => Permisos::CAMPO_SIEMBRA,
                 'hijos' => [
-                    ['nombre' => 'Campo Siembras Ver'],
-                    ['nombre' => 'Campo Siembras Agregar'],
-                    ['nombre' => 'Campo Siembras Editar'],
-                    ['nombre' => 'Campo Siembras Eliminar'],
+                    ['nombre' => Permisos::CAMPO_SIEMBRA_VER],
+                    ['nombre' => Permisos::CAMPO_SIEMBRA_GESTIONAR],
+                ],
+            ],
+            [
+                'nombre' => Permisos::CAMPO_MAQUINARIA,
+                'hijos' => [
+                    ['nombre' => Permisos::CAMPO_MAQUINARIA_VER],
+                    ['nombre' => Permisos::CAMPO_MAQUINARIA_GESTIONAR],
+                ],
+            ],
+        ],
+    ],
+    /* /*[
+                    'nombre' => 'Campañas Costos',
+                    'hijos' => [
+                        ['nombre' => 'Campañas Costos Ver'],
+                        ['nombre' => 'Campañas Costos Agregar'],
+                        ['nombre' => 'Campañas Costos Editar'],
+                        ['nombre' => 'Campañas Costos Eliminar'],
+                    ],
+                ],*/
+    [
+        'nombre' => Permisos::CAMPAÑA,
+        'hijos' => [
+            [
+                'nombre' => Permisos::CAMPAÑA_RESUMEN,
+                'hijos' => [
+                    ['nombre' => Permisos::CAMPAÑA_RESUMEN_VER],
+                    ['nombre' => Permisos::CAMPAÑA_GESTIONAR],
+                ],
+            ],
+            [
+                'nombre' => Permisos::CAMPAÑA_CALENDARIO,
+                'hijos' => [
+                    ['nombre' => Permisos::CAMPAÑA_CALENDARIO_VER],
+                ],
+            ],
+            [
+                'nombre' => Permisos::CAMPAÑA_POR_CAMPO,
+                'hijos' => [
+                    ['nombre' => Permisos::CAMPAÑA_POR_CAMPO_VER],
+                    ['nombre' => Permisos::CAMPAÑA_POR_CAMPO_GESTIONAR],
                 ],
             ],
         ],
     ],
 
     [
-        'nombre' => 'Campañas',
-        'hijos' => [
-            [
-                'nombre' => 'Campañas Resumen General',
-                'hijos' => [
-                    ['nombre' => 'Campañas Resumen General Ver'],
-                ],
-            ],
-            [
-                'nombre' => 'Campañas Calendario',
-                'hijos' => [
-                    ['nombre' => 'Campañas Calendario Ver'],
-                ],
-            ],
-            [
-                'nombre' => 'Campañas Costos',
-                'hijos' => [
-                    ['nombre' => 'Campañas Costos Ver'],
-                    ['nombre' => 'Campañas Costos Agregar'],
-                    ['nombre' => 'Campañas Costos Editar'],
-                    ['nombre' => 'Campañas Costos Eliminar'],
-                ],
-            ],
-            [
-                'nombre' => 'Campañas Por Campo',
-                'hijos' => [
-                    ['nombre' => 'Campañas Por Campo Ver'],
-                ],
-            ],
-        ],
-    ],
-
-    [
-        'nombre' => 'Cochinilla',
+        'nombre' => Permisos::COCHINILLA,
         'hijos' => [
             [
                 'nombre' => Permisos::COCHINILLA_INGRESO,
@@ -334,7 +348,6 @@ return [
                 'hijos' => [
                     ['nombre' => Permisos::INSUMO_PRODUCTO_VER],
                     ['nombre' => Permisos::INSUMO_PRODUCTO_GESTIONAR],
-                    ['nombre' => Permisos::INSUMO_PRODUCTO_RESTAURAR],
                 ],
             ],
             [
@@ -348,7 +361,6 @@ return [
                 'nombre' => Permisos::INSUMO_SUBCATEGORIA,
                 'hijos' => [
                     ['nombre' => Permisos::INSUMO_SUBCATEGORIA_VER],
-                    ['nombre' => Permisos::INSUMO_SUBCATEGORIA_VER_AUDITORIA],
                     ['nombre' => Permisos::INSUMO_SUBCATEGORIA_GESTIONAR],
                 ],
             ],
@@ -371,6 +383,13 @@ return [
                 'hijos' => [
                     ['nombre' => Permisos::INSUMO_CONCENTRACION_VER],
                     ['nombre' => Permisos::INSUMO_CONCENTRACION_GESTIONAR],
+                ],
+            ],
+            [
+                'nombre' => Permisos::INSUMO_PROVEEDOR,
+                'hijos' => [
+                    ['nombre' => Permisos::INSUMO_PROVEEDOR_VER],
+                    ['nombre' => Permisos::INSUMO_PROVEEDOR_GESTIONAR],
                 ],
             ],
         ],
@@ -428,146 +447,85 @@ return [
     ],
 
     [
-        'nombre' => 'Sistema',
+        'nombre' => Permisos::SISTEMA,
         'hijos' => [
             [
-                'nombre' => 'Usuarios Administrar',
+                'nombre' => Permisos::SISTEMA_USUARIO,
                 'hijos' => [
-                    ['nombre' => 'Usuarios Ver'],
-                    ['nombre' => 'Usuarios Agregar'],
-                    ['nombre' => 'Usuarios Editar'],
-                    ['nombre' => 'Usuarios Eliminar'],
+                    ['nombre' => Permisos::SISTEMA_USUARIO_VER],
+                    ['nombre' => Permisos::SISTEMA_USUARIO_GESTIONAR],
+                    ['nombre' => Permisos::SISTEMA_USUARIO_ROL_PERMISOS],
                 ],
             ],
             [
-                'nombre' => 'Roles',
+                'nombre' => Permisos::SISTEMA_ROL,
                 'hijos' => [
-                    ['nombre' => 'Roles Ver'],
-                    ['nombre' => 'Roles Agregar'],
-                    ['nombre' => 'Roles Editar'],
-                    ['nombre' => 'Roles Permisos Administrar'],
+                    ['nombre' => Permisos::SISTEMA_ROL_VER],
+                    ['nombre' => Permisos::SISTEMA_ROL_GESTIONAR],
                 ],
             ],
         ],
     ],
 
     [
-        'nombre' => 'Contabilidad',
+        'nombre' => Permisos::CONTABILIDAD,
         'hijos' => [
             [
-                'nombre' => 'Contabilidad Costos FDM',
+                'nombre' => Permisos::CONTABILIDAD_FDM,
                 'hijos' => [
-                    ['nombre' => 'Contabilidad Costos FDM Ver'],
+                    ['nombre' => Permisos::CONTABILIDAD_FDM_VER],
+                    ['nombre' => Permisos::CONTABILIDAD_FDM_GESTIONAR],
                 ],
             ],
             [
-                'nombre' => 'Contabilidad Gasto General',
+                'nombre' => Permisos::CONTABILIDAD_COSTO_MENSUAL_LISTA,
                 'hijos' => [
-                    ['nombre' => 'Contabilidad Gasto General Ver'],
-                    ['nombre' => 'Contabilidad Gasto General Agregar'],
-                    ['nombre' => 'Contabilidad Gasto General Editar'],
-                    ['nombre' => 'Contabilidad Gasto General Eliminar'],
+                    ['nombre' => Permisos::CONTABILIDAD_COSTO_MENSUAL_LISTA_VER],
+                    ['nombre' => Permisos::CONTABILIDAD_COSTO_MENSUAL_LISTA_GESTIONAR],
                 ],
             ],
             [
-                'nombre' => 'Contabilidad Costos Mensuales',
+                'nombre' => Permisos::CONTABILIDAD_COSTO_MENSUAL,
                 'hijos' => [
-                    ['nombre' => 'Contabilidad Costos Mensuales Ver'],
+                    ['nombre' => Permisos::CONTABILIDAD_COSTO_MENSUAL_VER],
+                    ['nombre' => Permisos::CONTABILIDAD_COSTO_MENSUAL_GESTIONAR],
                 ],
             ],
             [
-                'nombre' => 'Contabilidad Costo Mensual',
+                'nombre' => Permisos::CAMPAÑA_COSTOS,
                 'hijos' => [
-                    ['nombre' => 'Contabilidad Costo Mensual Ver'],
-                ],
-            ],
-            [
-                'nombre' => 'Contabilidad Costos Generales',
-                'hijos' => [
-                    ['nombre' => 'Contabilidad Costos Generales Ver'],
+                    ['nombre' => Permisos::CAMPAÑA_COSTOS_VER],
+                    ['nombre' => Permisos::CAMPAÑA_COSTOS_GESTIONAR],
                 ],
             ],
         ],
     ],
 
     [
-        'nombre' => 'Información General',
+        'nombre' => Permisos::REPORTE,
         'hijos' => [
             [
-                'nombre' => 'Proveedores',
+                'nombre' => Permisos::REPORTE_DIARIO,
                 'hijos' => [
-                    ['nombre' => 'Proveedores Ver'],
-                    ['nombre' => 'Proveedores Agregar'],
-                    ['nombre' => 'Proveedores Editar'],
-                    ['nombre' => 'Proveedores Eliminar'],
+                    ['nombre' => Permisos::REPORTE_DIARIO_VER],
                 ],
             ],
             [
-                'nombre' => 'Maquinarias',
+                'nombre' => Permisos::REPORTE_MENSUAL,
                 'hijos' => [
-                    ['nombre' => 'Maquinarias Ver'],
-                    ['nombre' => 'Maquinarias Agregar'],
-                    ['nombre' => 'Maquinarias Editar'],
-                    ['nombre' => 'Maquinarias Eliminar'],
-                ],
-            ],
-        ],
-    ],
-
-    [
-        'nombre' => 'Configuración',
-        'hijos' => [
-            [
-                'nombre' => 'Configuración Parámetros',
-                'hijos' => [
-                    ['nombre' => 'Configuración Parámetros Ver'],
-                    ['nombre' => 'Configuración Parámetros Editar'],
+                    ['nombre' => Permisos::REPORTE_MENSUAL_VER],
                 ],
             ],
             [
-                'nombre' => 'Configuración Descuentos AFP',
+                'nombre' => Permisos::REPORTE_ANUAL,
                 'hijos' => [
-                    ['nombre' => 'Configuración Descuentos AFP Ver'],
-                    ['nombre' => 'Configuración Descuentos AFP Editar'],
+                    ['nombre' => Permisos::REPORTE_ANUAL_VER],
                 ],
             ],
             [
-                'nombre' => 'Configuración Tipo Asistencia',
+                'nombre' => Permisos::REPORTE_AUDITORIA,
                 'hijos' => [
-                    ['nombre' => 'Configuración Tipo Asistencia Ver'],
-                    ['nombre' => 'Configuración Tipo Asistencia Agregar'],
-                    ['nombre' => 'Configuración Tipo Asistencia Editar'],
-                    ['nombre' => 'Configuración Tipo Asistencia Eliminar'],
-                ],
-            ],
-        ],
-    ],
-
-    [
-        'nombre' => 'Reporte y Auditoría',
-        'hijos' => [
-            [
-                'nombre' => 'Reporte Diario',
-                'hijos' => [
-                    ['nombre' => 'Reporte Diario Ver'],
-                ],
-            ],
-            [
-                'nombre' => 'Reporte Mensual',
-                'hijos' => [
-                    ['nombre' => 'Reporte Mensual Ver'],
-                ],
-            ],
-            [
-                'nombre' => 'Reporte Anual',
-                'hijos' => [
-                    ['nombre' => 'Reporte Anual Ver'],
-                ],
-            ],
-            [
-                'nombre' => 'Auditoría',
-                'hijos' => [
-                    ['nombre' => 'Auditoría Ver'],
+                    ['nombre' => Permisos::REPORTE_AUDITORIA_VER],
                 ],
             ],
         ],

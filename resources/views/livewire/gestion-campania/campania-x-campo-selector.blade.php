@@ -1,13 +1,16 @@
-<div x-data="campaniaXCampo">
+<div x-data="campaniaXCampo" class="space-y-4">
     <x-flex class="justify-between">
         <x-title>
             Campañas por Campo
         </x-title>
-        <x-button @click="$wire.dispatch('registroCampania')">
-            <i class="fa fa-plus"></i> Registrar Nueva Campaña
-        </x-button>
+        @can(\App\Constants\Permisos::CAMPAÑA_GESTIONAR)
+            <x-button @click="$wire.dispatch('registroCampania')">
+                <i class="fa fa-plus"></i> Registrar Nueva Campaña
+            </x-button>
+        @endcan
+
     </x-flex>
-    <x-card class="mt-4">
+    <x-card>
         <x-flex class="justify-between">
             <x-flex>
                 <x-select-campo wire:model.live="campoSeleccionado" class="w-auto" label="Seleccionar Campo" />
@@ -27,8 +30,15 @@
     </x-card>
 
     @if ($campaniaSeleccionada)
-        <livewire:gestion-campania.campania-por-campo-informe-component :campania="$campaniaSeleccionada"
-            wire:key="Camp{{ $campaniaSeleccionada }}" />
+        @can(\App\Constants\Permisos::CAMPAÑA_POR_CAMPO_VER)
+            <livewire:gestion-campania.campania-por-campo-informe-component :campania="$campaniaSeleccionada"
+                wire:key="Camp{{ $campaniaSeleccionada }}" />
+        @else
+            <x-danger>
+                No tienes permisos para ver la información de la campaña. Por favor, contacta al administrador.
+            </x-danger>
+        @endcan
+
     @else
         <x-card class="mt-4">
             <x-label>
@@ -40,18 +50,18 @@
     <x-loading wire:loading />
 </div>
 @script
-    <script>
-        Alpine.data('campaniaXCampo', () => ({
-            init() {
-                Livewire.on('campania-cambiada', ({
-                    id
-                }) => {
+<script>
+    Alpine.data('campaniaXCampo', () => ({
+        init() {
+            Livewire.on('campania-cambiada', ({
+                id
+            }) => {
 
-                    const base = '{{ route('campania.x.campo') }}';
-                    const nuevaUrl = `${base}/${id}`;
-                    window.history.pushState({}, '', nuevaUrl);
-                })
-            }
-        }));
-    </script>
+                const base = '{{ route('campania.x.campo') }}';
+                const nuevaUrl = `${base}/${id}`;
+                window.history.pushState({}, '', nuevaUrl);
+            })
+        }
+    }));
+</script>
 @endscript

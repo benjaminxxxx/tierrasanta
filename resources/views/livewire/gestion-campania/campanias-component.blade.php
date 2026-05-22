@@ -2,20 +2,23 @@
     <x-loading wire:loading />
 
     <x-flex>
-        <x-h3>
+        <x-title>
             Campañas - Resumen General
-        </x-h3>
-        <x-button @click="$wire.dispatch('registroCampania')">
-            <i class="fa fa-plus"></i> Registrar nueva campaña
-        </x-button>
+        </x-title>
+        @can(\App\Constants\Permisos::CAMPAÑA_GESTIONAR)
+            <x-button @click="$wire.dispatch('registroCampania')">
+                <i class="fa fa-plus"></i> Registrar nueva campaña
+            </x-button>
+        @endcan
+
     </x-flex>
-    <x-card2 class="mt-4">
+    <x-card class="mt-4">
         <x-flex class="justify-between">
             <x-flex>
-                <x-select-campo label="Filtrar por Campo" wire:model.live="campoSeleccionado" />
+                <x-select-campo label="Filtrar por Campo" wire:model.live="campoSeleccionado" class="w-auto" />
 
                 @if (is_array($campanias) && count($campanias) > 0)
-                    <x-select wire:model.live="campaniaSeleccionada" label="Seleccionar Campaña">
+                    <x-select wire:model.live="campaniaSeleccionada" label="Seleccionar Campaña" class="w-auto">
                         <option value="">Elegir Campaña</option>
                         @foreach ($campanias as $campaniaId => $campaniaNombre)
                             <option value="{{ $campaniaId }}">{{ $campaniaNombre }}</option>
@@ -31,7 +34,7 @@
                 </x-button>
             </x-flex>
         </x-flex>
-    </x-card2>
+    </x-card>
     <div class="">
         @php
             $columnBlocks = [
@@ -115,7 +118,7 @@
                     'title' => 'Cosecha',
                     'color' => 'bg-cyan-600 text-white',
                     'columns' => [
-                        'Fecha de cosecha', 
+                        'Fecha de cosecha',
                         'Tiempo de infestación a cosecha',
                         'Tiempo de re-infestación a cosecha',
                         'Tiempo de inicio a cosecha',
@@ -134,11 +137,11 @@
                         'Rendimiento total (kg)',
                         'Rendimiento por infestador (gr)',
                         'Rendimiento por penca (gr)',
-                        
+
                         'PROYECCION COSECHA CONTEO',
                         'PROYECCION COSECHA PODA',
                         'DIFERENCIA PROYECCION CONTEO',
-                        'DIFERENCIA PROYECCION PODA'                     			
+                        'DIFERENCIA PROYECCION PODA'
 
                     ],
                 ],
@@ -146,7 +149,7 @@
                     'title' => 'ANALISIS FINANCIERO',
                     'color' => 'bg-blue-600 text-white',
                     'columns' => [
-                        'COSTO $', 
+                        'COSTO $',
                         'PRECIO VENTA $',
                         'VENTA TOTAL $',
                         'UTILIDAD O PERDIDA $',
@@ -156,111 +159,120 @@
                 ]
             ];
         @endphp
+        @can(\App\Constants\Permisos::CAMPAÑA_RESUMEN_VER)
+            <table class="mt-3 p-6 border border-border rounded-lg shadow-sm w-full text-sm text-left rtl:text-right">
+                <thead class="text-xs uppercase bg-muted text-card-foreground">
 
-        <table
-            class="mt-3 p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <!-- PRIMERA FILA: títulos y colspans -->
+                    <x-tr>
+                        <x-th class="text-center" rowspan="2">N°</x-th>
+                        <x-th class="text-center" rowspan="2">Acciones</x-th>
+                        <x-th class="text-center" rowspan="2">Campaña</x-th>
+                        <x-th class="text-center" rowspan="2">Campo</x-th>
+                        <x-th class="text-center" rowspan="2">Área</x-th>
+                        <x-th class="text-center" rowspan="2">Siembra</x-th>
+                        <x-th class="text-center" rowspan="2">Inicio de Campaña</x-th>
+                        <x-th class="text-center" rowspan="2">Fin de Campaña</x-th>
 
-                <!-- PRIMERA FILA: títulos y colspans -->
-                <x-tr>
-                    <x-th class="text-center" rowspan="2">N°</x-th>
-                    <x-th class="text-center" rowspan="2">Acciones</x-th>
-                    <x-th class="text-center" rowspan="2">Campaña</x-th>
-                    <x-th class="text-center" rowspan="2">Campo</x-th>
-                    <x-th class="text-center" rowspan="2">Área</x-th>
-                    <x-th class="text-center" rowspan="2">Siembra</x-th>
-                    <x-th class="text-center" rowspan="2">Inicio de Campaña</x-th>
-                    <x-th class="text-center" rowspan="2">Fin de Campaña</x-th>
-
-                    @foreach ($columnBlocks as $block)
-                        <x-th class="text-center {{ $block['color'] }}" colspan="{{ count($block['columns']) }}">
-                            {{ $block['title'] }}
-                        </x-th>
-                    @endforeach
-                </x-tr>
-
-                <!-- SEGUNDA FILA: subcolumnas -->
-                <x-tr>
-                    @foreach ($columnBlocks as $block)
-                        @foreach ($block['columns'] as $col)
-                            <x-th class="text-center {{ $block['color'] }}">
-                                {{ $col }}
+                        @foreach ($columnBlocks as $block)
+                            <x-th class="text-center {{ $block['color'] }}" colspan="{{ count($block['columns']) }}">
+                                {{ $block['title'] }}
                             </x-th>
                         @endforeach
-                    @endforeach
-                </x-tr>
-
-            </thead>
-
-            <tbody>
-                @foreach ($campaniasGenerales as $indice => $campania)
-                    <x-tr>
-                        <x-td class="text-center">
-                            {{$indice + 1}}
-                        </x-td>
-                        <x-td class="text-center">
-                            <x-dropdown align="left">
-                                <x-slot name="trigger">
-                                    <span class="inline-flex rounded-md w-full lg:w-auto">
-                                        <x-button type="button" class="flex items-center justify-center">
-                                            Opciones
-                                            <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
-                                            </svg>
-                                        </x-button>
-                                    </span>
-                                </x-slot>
-
-                                <x-slot name="content">
-                                    <div class="w-full text-center">
-                                        <x-dropdown-link class="text-center"
-                                            @click="$wire.dispatch('editarCampania',{campaniaId:{{ $campania->id }}})">
-                                            Editar Campaña
-                                        </x-dropdown-link>
-                                        <x-dropdown-link class="text-center !text-red-600"
-                                            wire:confirm="¿Estás seguro de eliminar esta campaña?"
-                                            wire:click="eliminarCampania({{ $campania->id }})">
-                                            Eliminar Campaña
-                                        </x-dropdown-link>
-                                    </div>
-                                </x-slot>
-                            </x-dropdown>
-                        </x-td>
-                        <x-td class="text-center">
-                            {{$campania->nombre_campania}}
-                        </x-td>
-                        <x-td class="text-center">
-                            {{$campania->campo}}
-                        </x-td>
-
-                        <x-td class="text-center">
-                            {{$campania->area}}
-                        </x-td>
-                        <x-td class="text-center">
-                            {{$campania->fecha_siembra}}
-                        </x-td>
-                        <x-td class="text-center">
-                            {{$campania->fecha_inicio}}
-                        </x-td>
-                        <x-td class="text-center">
-                            {{$campania->fecha_fin}}
-                        </x-td>
-                        <!--POBLACIÓN DE PLANTAS-->
-
-                        @include('livewire.gestion-campania.partials.campanias-poblacion-plantas')
-                        @include('livewire.gestion-campania.partials.campanias-brotes-x-piso')
-                        @include('livewire.gestion-campania.partials.campanias-infestacion')
-                        @include('livewire.gestion-campania.partials.campanias-reinfestacion')
-                        @include('livewire.gestion-campania.partials.campanias-cosecha')
-                        @include('livewire.gestion-campania.partials.campanias-analisis-financiero')
                     </x-tr>
-                @endforeach
-            </tbody>
-        </table>
-        <div class="my-4">
-            {{$campaniasGenerales->links()}}
-        </div>
+
+                    <!-- SEGUNDA FILA: subcolumnas -->
+                    <x-tr>
+                        @foreach ($columnBlocks as $block)
+                            @foreach ($block['columns'] as $col)
+                                <x-th class="text-center {{ $block['color'] }}">
+                                    {{ $col }}
+                                </x-th>
+                            @endforeach
+                        @endforeach
+                    </x-tr>
+
+                </thead>
+
+                <tbody>
+                    @foreach ($campaniasGenerales as $indice => $campania)
+                        <x-tr>
+                            <x-td class="text-center">
+                                {{$indice + 1}}
+                            </x-td>
+                            <x-td class="text-center">
+                                @can(\App\Constants\Permisos::CAMPAÑA_GESTIONAR)
+                                    <x-dropdown align="left">
+                                        <x-slot name="trigger">
+                                            <span class="inline-flex rounded-md w-full lg:w-auto">
+                                                <x-button type="button" class="flex items-center justify-center">
+                                                    Opciones
+                                                    <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                        viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+                                                    </svg>
+                                                </x-button>
+                                            </span>
+                                        </x-slot>
+
+                                        <x-slot name="content">
+                                            <div class="w-full text-center">
+                                                <x-dropdown-link class="text-center"
+                                                    @click="$wire.dispatch('editarCampania',{campaniaId:{{ $campania->id }}})">
+                                                    Editar Campaña
+                                                </x-dropdown-link>
+                                                <x-dropdown-link class="text-center !text-red-600"
+                                                    wire:confirm="¿Estás seguro de eliminar esta campaña?"
+                                                    wire:click="eliminarCampania({{ $campania->id }})">
+                                                    Eliminar Campaña
+                                                </x-dropdown-link>
+                                            </div>
+                                        </x-slot>
+                                    </x-dropdown>
+                                @else
+                                    -
+                                @endcan
+                            </x-td>
+                            <x-td class="text-center">
+                                {{$campania->nombre_campania}}
+                            </x-td>
+                            <x-td class="text-center">
+                                {{$campania->campo}}
+                            </x-td>
+
+                            <x-td class="text-center">
+                                {{$campania->area}}
+                            </x-td>
+                            <x-td class="text-center">
+                                {{$campania->fecha_siembra}}
+                            </x-td>
+                            <x-td class="text-center">
+                                {{$campania->fecha_inicio}}
+                            </x-td>
+                            <x-td class="text-center">
+                                {{$campania->fecha_fin}}
+                            </x-td>
+                            <!--POBLACIÓN DE PLANTAS-->
+
+                            @include('livewire.gestion-campania.partials.campanias-poblacion-plantas')
+                            @include('livewire.gestion-campania.partials.campanias-brotes-x-piso')
+                            @include('livewire.gestion-campania.partials.campanias-infestacion')
+                            @include('livewire.gestion-campania.partials.campanias-reinfestacion')
+                            @include('livewire.gestion-campania.partials.campanias-cosecha')
+                            @include('livewire.gestion-campania.partials.campanias-analisis-financiero')
+                        </x-tr>
+                    @endforeach
+                </tbody>
+            </table>
+            <div class="my-4">
+                {{$campaniasGenerales->links()}}
+            </div>
+        @else
+            <x-danger class="mt-4">
+                No tienes permiso para ver el resumen de campañas. Por favor, contacta al administrador.
+            </x-danger>
+        @endcan
+
     </div>
 </div>

@@ -105,6 +105,32 @@ class Permisos
     const PROYECCION_EVALUACION = 'Evaluación de Campo Proyección Rendimiento';
     const PROYECCION_EVALUACION_GUARDAR = 'Evaluación de Campo Proyección Rendimiento Guardar Proyección';
     const PROYECCION_EVALUACION_DETALLE = 'Evaluación de Campo Proyección Rendimiento Registrar Detalle';
+    // =========================================================================
+// DOMINIO: CAMPAÑA (campañas agrícolas, costos, resúmenes por campo)
+// Tablas: campos_campanias, campos_campanias_consumos,
+//         fertilizacion_campanias, pesticidas_campanias,
+//         costo_mensual_distribuciones
+// =========================================================================
+
+    // — Módulo raíz
+    const CAMPAÑA = 'Campañas';
+
+    // — Resumen General (+ gestión de campañas desde aquí)
+    const CAMPAÑA_RESUMEN = 'Campañas Resumen General';
+    const CAMPAÑA_RESUMEN_VER = 'Campañas Resumen General Ver';
+    const CAMPAÑA_GESTIONAR = 'Campañas Gestionar';
+
+    // — Calendario (todas las campañas, solo lectura)
+    const CAMPAÑA_CALENDARIO = 'Campañas Calendario';
+    const CAMPAÑA_CALENDARIO_VER = 'Campañas Calendario Ver';
+
+    // — Por Campo (v2)
+    const CAMPAÑA_POR_CAMPO = 'Campañas Por Campo';
+    const CAMPAÑA_POR_CAMPO_VER = 'Campañas Por Campo Ver';
+    const CAMPAÑA_POR_CAMPO_GESTIONAR = 'Campañas Por Campo Gestionar';
+    const CAMPAÑA_COSTOS = 'Campañas Costo';
+    const CAMPAÑA_COSTOS_VER = 'Campañas Costo Ver';
+    const CAMPAÑA_COSTOS_GESTIONAR = 'Campañas Costo Gestionar';
 
     // =========================================================================
     // DOMINIO: PERSONAL (empleados, familiares, contratos)
@@ -120,6 +146,8 @@ class Permisos
     const PERSONAL_CONTRATOS = 'Planilla Empleados Gestionar Contratos y Sueldos';
     const PERSONAL_FAMILIARES = 'Planilla Empleados Gestionar Familiares';
     const PERSONAL_OPCIONES = 'Planilla Empleados Gestionar Opciones';
+
+
 
     // =========================================================================
 // DOMINIO: CUADRILLA
@@ -167,6 +195,25 @@ class Permisos
     const CUADRILLA_RESUMEN_ANUAL = 'Cuadrilla Resumen Anual';
     const CUADRILLA_RESUMEN_ANUAL_EXPORTAR = 'Cuadrilla Resumen Anual Exportar';
 
+    // =========================================================================
+// DOMINIO: SISTEMA (usuarios, roles, auditoría, configuración)
+// Tablas: users, roles, permissions, model_has_roles,
+//         role_has_permissions, model_has_permissions
+// =========================================================================
+
+    // — Módulo raíz
+    const SISTEMA = 'Sistema';
+
+    // — Usuarios
+    const SISTEMA_USUARIO = 'Usuarios Administrar';
+    const SISTEMA_USUARIO_VER = 'Usuarios Ver';
+    const SISTEMA_USUARIO_GESTIONAR = 'Usuarios Gestionar';
+    const SISTEMA_USUARIO_ROL_PERMISOS = 'Usuarios Permisos x Rol Gestionar';
+
+    // — Roles
+    const SISTEMA_ROL = 'Roles';
+    const SISTEMA_ROL_VER = 'Roles Ver';
+    const SISTEMA_ROL_GESTIONAR = 'Roles Gestionar';
 
     // =========================================================================
     // DOMINIO: PLANILLA (asistencia, registros diarios, resúmenes, liquidaciones)
@@ -210,11 +257,6 @@ class Permisos
     const PLANILLA_FAMILIAR_VER = 'Planilla Familiares Ver';
     const PLANILLA_FAMILIAR_GESTIONAR = 'Planilla Familiares Gestionar';
 
-    // — Contratos (vista general de contratos desde planilla)
-    const PLANILLA_CONTRATO = 'Planilla Contratos';
-    const PLANILLA_CONTRATO_VER = 'Planilla Contratos Ver';
-    const PLANILLA_CONTRATO_GESTIONAR = 'Planilla Contratos Gestionar';
-
     // — Conceptos
     const PLANILLA_CONCEPTO = 'Planilla Conceptos';
     const PLANILLA_CONCEPTO_VER = 'Planilla Conceptos Ver';
@@ -232,30 +274,10 @@ class Permisos
 
     const COCHINILLA = 'Cochinilla';
     const COCHINILLA_INGRESO = 'Cochinilla Ingreso';
-    const COCHINILLA_INGRESO_VER = 'Cochinilla Ingreso Ver';
-    const COCHINILLA_INGRESO_CREAR = 'Cochinilla Ingreso Crear';
-    const COCHINILLA_INGRESO_EDITAR = 'Cochinilla Ingreso Editar';
-    const COCHINILLA_INGRESO_ELIMINAR = 'Cochinilla Ingreso Eliminar';
     const COCHINILLA_VENTEADO = 'Cochinilla Venteado';
-    const COCHINILLA_VENTEADO_VER = 'Cochinilla Venteado Ver';
-    const COCHINILLA_VENTEADO_CREAR = 'Cochinilla Venteado Crear';
-    const COCHINILLA_VENTEADO_EDITAR = 'Cochinilla Venteado Editar';
-    const COCHINILLA_VENTEADO_ELIMINAR = 'Cochinilla Venteado Eliminar';
     const COCHINILLA_FILTRADO = 'Cochinilla Filtrado';
-    const COCHINILLA_FILTRADO_VER = 'Cochinilla Filtrado Ver';
-    const COCHINILLA_FILTRADO_CREAR = 'Cochinilla Filtrado Crear';
-    const COCHINILLA_FILTRADO_EDITAR = 'Cochinilla Filtrado Editar';
-    const COCHINILLA_FILTRADO_ELIMINAR = 'Cochinilla Filtrado Eliminar';
     const COCHINILLA_COSECHA = 'Cochinilla Cosecha Mamas';
-    const COCHINILLA_COSECHA_VER = 'Cochinilla Cosecha Mamas Ver';
-    const COCHINILLA_COSECHA_CREAR = 'Cochinilla Cosecha Mamas Crear';
-    const COCHINILLA_COSECHA_EDITAR = 'Cochinilla Cosecha Mamas Editar';
-    const COCHINILLA_COSECHA_ELIMINAR = 'Cochinilla Cosecha Mamas Eliminar';
     const COCHINILLA_INFESTACION = 'Cochinilla Infestación';
-    const COCHINILLA_INFESTACION_VER = 'Cochinilla Infestación Ver';
-    const COCHINILLA_INFESTACION_CREAR = 'Cochinilla Infestación Crear';
-    const COCHINILLA_INFESTACION_EDITAR = 'Cochinilla Infestación Editar';
-    const COCHINILLA_INFESTACION_ELIMINAR = 'Cochinilla Infestación Eliminar';
     // =========================================================================
 // COCHINILLA — Venta
 // Tablas: venta_cochinillas, venta_facturada_cochinillas, venta_cochinilla_reportes
@@ -275,6 +297,36 @@ class Permisos
     // — Costo y facturación (contabilidad)
     const COCHINILLA_VENTA_FACTURACION_VER = 'Cochinilla Venta Ver Facturación';
     const COCHINILLA_VENTA_FACTURACION_GESTIONAR = 'Cochinilla Venta Gestionar Facturación';
+    // =========================================================================
+// DOMINIO: CAMPO (labores, mano de obra, campos, siembras)
+// Tablas: campos, labores, mano_obras, siembras, reg_labores,
+//         reg_registro_diario, reg_resumen, reg_horas_acumuladas
+// Nota: CAMPO_RIEGO es un submódulo separado por volumen y roles distintos.
+//       Este bloque cubre la gestión base del campo agrícola.
+// =========================================================================
+
+    // — Módulo raíz
+    const CAMPO = 'Campo';
+
+    // — Labores de Campo
+    const CAMPO_LABOR = 'Campo Labores';
+    const CAMPO_LABOR_VER = 'Campo Labores Ver';
+    const CAMPO_LABOR_GESTIONAR = 'Campo Labores Gestionar';
+
+    // — Mano de Obra
+    const CAMPO_MANO_OBRA = 'Campo Mano de Obra';
+    const CAMPO_MANO_OBRA_VER = 'Campo Mano de Obra Ver';
+    const CAMPO_MANO_OBRA_GESTIONAR = 'Campo Mano de Obra Gestionar';
+
+    // — Campos (parcelas / unidades de cultivo)
+    const CAMPO_PARCELA = 'Campo Campos';
+    const CAMPO_PARCELA_VER = 'Campo Campos Ver';
+    const CAMPO_PARCELA_GESTIONAR = 'Campo Campos Gestionar';
+
+    // — Siembras
+    const CAMPO_SIEMBRA = 'Campo Siembras';
+    const CAMPO_SIEMBRA_VER = 'Campo Siembras Ver';
+    const CAMPO_SIEMBRA_GESTIONAR = 'Campo Siembras Gestionar';
 
     // =========================================================================
 // DOMINIO: CAMPO — Riego
@@ -318,26 +370,24 @@ class Permisos
     const INSUMO_CATALOGO = 'Producto y Nutrientes';
 
     // — Productos
-    const INSUMO_PRODUCTO = 'Producto y Nutrientes Productos';
-    const INSUMO_PRODUCTO_VER = 'Producto y Nutrientes Productos Ver';
-    const INSUMO_PRODUCTO_GESTIONAR = 'Producto y Nutrientes Productos Gestionar';
-    const INSUMO_PRODUCTO_RESTAURAR = 'Producto y Nutrientes Productos Restaurar';
+    const INSUMO_PRODUCTO = 'Productos';
+    const INSUMO_PRODUCTO_VER = 'Productos Ver';
+    const INSUMO_PRODUCTO_GESTIONAR = 'Productos Gestionar';
 
     // — Categorías
-    const INSUMO_CATEGORIA = 'Producto y Nutrientes Categorías';
-    const INSUMO_CATEGORIA_VER = 'Producto y Nutrientes Categorías Ver';
-    const INSUMO_CATEGORIA_GESTIONAR = 'Producto y Nutrientes Categorías Gestionar';
+    const INSUMO_CATEGORIA = 'Producto Categorías';
+    const INSUMO_CATEGORIA_VER = 'Producto Categorías Ver';
+    const INSUMO_CATEGORIA_GESTIONAR = 'Producto Categorías Gestionar';
 
     // — Subcategorías
-    const INSUMO_SUBCATEGORIA = 'Producto y Nutrientes Subcategorías';
-    const INSUMO_SUBCATEGORIA_VER = 'Producto y Nutrientes Subcategorías Ver';
-    const INSUMO_SUBCATEGORIA_VER_AUDITORIA = 'Producto y Nutrientes Subcategorías Ver Auditoría';
-    const INSUMO_SUBCATEGORIA_GESTIONAR = 'Producto y Nutrientes Subcategorías Gestionar';
+    const INSUMO_SUBCATEGORIA = 'Producto Subcategorías';
+    const INSUMO_SUBCATEGORIA_VER = 'Producto Subcategorías Ver';
+    const INSUMO_SUBCATEGORIA_GESTIONAR = 'Producto Subcategorías Gestionar';
 
     // — Usos (fines/aplicaciones de cada producto)
-    const INSUMO_USO = 'Producto y Nutrientes Usos';
-    const INSUMO_USO_VER = 'Producto y Nutrientes Usos Ver';
-    const INSUMO_USO_GESTIONAR = 'Producto y Nutrientes Usos Gestionar';
+    const INSUMO_USO = 'Producto Usos';
+    const INSUMO_USO_VER = 'Producto Usos Ver';
+    const INSUMO_USO_GESTIONAR = 'Producto Usos Gestionar';
 
     // — Nutrientes (solo lectura por ahora)
     const INSUMO_NUTRIENTE = 'Producto y Nutrientes Nutrientes';
@@ -385,19 +435,79 @@ class Permisos
     const INSUMO_KARDEX_REPORTE_GENERAR_RESUMEN = 'Kardex y Almacén Kardex Reporte Generar Resumen';
 
     // =========================================================================
-    // DOMINIO: SISTEMA (usuarios, roles, auditoría, configuración)
-    // Tablas: users, roles, permissions, auditorias, configuracion*
-    // =========================================================================
+// DOMINIO: CONTABILIDAD
+// Tablas: costos_mensuales, costo_fdm_mensuals, costo_mano_indirectas,
+//         costo_mensual_distribuciones, kardex_consolidados
+// =========================================================================
 
-    const SISTEMA = 'Sistema';
-    const SISTEMA_USUARIO = 'Usuarios Administrar';
-    const SISTEMA_USUARIO_VER = 'Usuarios Ver';
-    const SISTEMA_USUARIO_CREAR = 'Usuarios Crear';
-    const SISTEMA_USUARIO_EDITAR = 'Usuarios Editar';
-    const SISTEMA_USUARIO_ELIMINAR = 'Usuarios Eliminar';
-    const SISTEMA_ROL = 'Roles';
-    const SISTEMA_ROL_VER = 'Roles Ver';
-    const SISTEMA_ROL_CREAR = 'Roles Crear';
-    const SISTEMA_ROL_EDITAR = 'Roles Editar';
-    const SISTEMA_ROL_PERMISOS = 'Roles Permisos Administrar';
+    // — Módulo raíz
+    const CONTABILIDAD = 'Contabilidad';
+
+    // — Costos FDM
+    const CONTABILIDAD_FDM = 'Contabilidad Costos FDM';
+    const CONTABILIDAD_FDM_VER = 'Contabilidad Costos FDM Ver';
+    const CONTABILIDAD_FDM_GESTIONAR = 'Contabilidad Costos FDM Gestionar';
+
+    // — Costos Mensuales
+    const CONTABILIDAD_COSTO_MENSUAL_LISTA = 'Contabilidad Costos Mensuales';
+    const CONTABILIDAD_COSTO_MENSUAL_LISTA_VER = 'Contabilidad Costos Mensuales Ver';
+    const CONTABILIDAD_COSTO_MENSUAL_LISTA_GESTIONAR = 'Contabilidad Costos Mensuales Gestionar';
+
+    // — Costo Mensual (detalle individual)
+    const CONTABILIDAD_COSTO_MENSUAL = 'Contabilidad Costo Mensual';
+    const CONTABILIDAD_COSTO_MENSUAL_VER = 'Contabilidad Costo Mensual Ver';
+    const CONTABILIDAD_COSTO_MENSUAL_GESTIONAR = 'Contabilidad Costo Mensual Gestionar';
+    
+
+    // =========================================================================
+// DOMINIO: INSUMO — Proveedores
+// Tablas: proveedores (vinculados a compra_productos)
+// =========================================================================
+
+    const INSUMO_PROVEEDOR = 'Proveedores';
+    const INSUMO_PROVEEDOR_VER = 'Proveedores Ver';
+    const INSUMO_PROVEEDOR_GESTIONAR = 'Proveedores Gestionar';
+
+    // =========================================================================
+// DOMINIO: CAMPO — Maquinarias
+// Tablas: maquinarias, detalle_maquinaria_consumos
+// =========================================================================
+
+    const CAMPO_MAQUINARIA = 'Maquinarias';
+    const CAMPO_MAQUINARIA_VER = 'Maquinarias Ver';
+    const CAMPO_MAQUINARIA_GESTIONAR = 'Maquinarias Gestionar';
+
+
+
+    // =========================================================================
+// DOMINIO: REPORTE (reportes generales + auditoría)
+// Tablas: auditorias, rep_actividades_diarias, reporte_costo_planillas,
+//         rpt_distribucion_combustibles, v_reporte_actividades_diario
+// =========================================================================
+
+    const REPORTE = 'Reporte y Auditoría';
+    const REPORTE_DIARIO = 'Reporte Diario';
+    const REPORTE_DIARIO_VER = 'Reporte Diario Ver';
+    const REPORTE_MENSUAL = 'Reporte Mensual';
+    const REPORTE_MENSUAL_VER = 'Reporte Mensual Ver';
+    const REPORTE_ANUAL = 'Reporte Anual';
+    const REPORTE_ANUAL_VER = 'Reporte Anual Ver';
+    const REPORTE_AUDITORIA = 'Auditoría';
+    const REPORTE_AUDITORIA_VER = 'Auditoría Ver';
+
+    // =========================================================================
+// DOMINIO: PLANILLA — Configuración
+// Tablas: plan_sp_desc, plan_sp_desc_hist, plan_tipo_asistencias
+// Nota: Estas configuraciones aplican SOLO a trabajadores de planilla
+//       (contrato formal con descuentos, seguros, AFP).
+//       No aplican a cuadrilleros (pago por jornal/producción).
+// =========================================================================
+
+    const PLANILLA_CONFIG_AFP = 'Configuración Descuentos AFP';
+    const PLANILLA_CONFIG_AFP_VER = 'Configuración Descuentos AFP Ver';
+    const PLANILLA_CONFIG_AFP_GESTIONAR = 'Configuración Descuentos AFP Gestionar';
+
+    const PLANILLA_CONFIG_ASISTENCIA = 'Configuración Tipo Asistencia';
+    const PLANILLA_CONFIG_ASISTENCIA_VER = 'Configuración Tipo Asistencia Ver';
+    const PLANILLA_CONFIG_ASISTENCIA_GESTIONAR = 'Configuración Tipo Asistencia Gestionar';
 }

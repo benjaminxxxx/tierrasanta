@@ -2,7 +2,9 @@
 
 namespace App\Livewire\GestionInsumos;
 
+use App\Constants\Permisos;
 use App\Services\Insumo\InsumoUsoServicio;
+use Auth;
 use Illuminate\Validation\ValidationException;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -43,6 +45,10 @@ class UsosComponent extends Component
 
     public function eliminarUso(int $id): void
     {
+        if (!Auth::user()->can(Permisos::INSUMO_USO_GESTIONAR)) {
+            $this->alert('error','Sin permiso para realizar esta acción');
+            return;
+        }
         InsumoUsoServicio::eliminarUso($id);
         $this->alert('success', 'Uso eliminado correctamente.');
         $this->dispatch('cargarDataUsos', data: InsumoUsoServicio::getUsos());

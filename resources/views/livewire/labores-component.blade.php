@@ -1,20 +1,23 @@
 <div>
     <x-flex>
-        <x-h3>
+        <x-title>
             Labores para planilla y cuadrilla
-        </x-h3>
-        <x-button wire:click="crearNuevaLabor">
-            <i class="fa fa-plus"></i> Crear nueva labor
-        </x-button>
-        <div x-data="{ openFileDialog() { $refs.fileLabores.click() } }">
-            <x-button variant="success" type="button" @click="openFileDialog()">
-                <i class="fa fa-file-excel"></i> Importar desde Excel
+        </x-title>
+        @can(\App\Constants\Permisos::CAMPO_LABOR_GESTIONAR)
+            <x-button wire:click="crearNuevaLabor">
+                <i class="fa fa-plus"></i> Crear nueva labor
             </x-button>
-            <input type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                x-ref="fileLabores" style="display: none;" wire:model.live="fileLabores" />
-        </div>
+            <div x-data="{ openFileDialog() { $refs.fileLabores.click() } }">
+                <x-button variant="success" type="button" @click="openFileDialog()">
+                    <i class="fa fa-file-excel"></i> Importar desde Excel
+                </x-button>
+                <input type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    x-ref="fileLabores" style="display: none;" wire:model.live="fileLabores" />
+            </div>
+        @endcan
+
     </x-flex>
-    <x-card class="mt-3">
+    <x-card class="mt-3 space-y-4">
 
         <x-flex class="justify-between">
             <x-flex>
@@ -41,78 +44,84 @@
                 <x-toggle-switch :checked="$verEliminados" label="Ver eliminados" wire:model.live="verEliminados" />
             </div>
         </x-flex>
-        <x-table class="mt-5">
-            <x-slot name="thead">
-                <x-tr>
-                    <x-th value="Código" class="text-center" />
-                    <x-th value="Nombre de la Labor" />
-                    <x-th value="Mano de obra" />
-                    <x-th value="Estándar de producción" class="text-center" />
-                    <x-th value="Tramos de bonificación" class="text-center" />
-                    <x-th value="Acciones" class="text-center" />
-                </x-tr>
-            </x-slot>
-            <x-slot name="tbody">
-                @if ($labores && $labores->count() > 0)
-                    @foreach ($labores as $indice => $labor)
-                        <x-tr>
-                            <x-th valign="top" value="{{ $labor->codigo }}" class="text-center" />
-                            <x-td valign="top" value="{{ $labor->nombre_labor }}" />
-                            <x-td valign="top" value="{{ $labor->manoObra?->descripcion }}" />
-                            <x-td valign="top" value="{{ $labor->estandar_produccion . ' ' . $labor->unidades }}"
-                                class="text-center" />
-                            <x-td valign="top" class="text-center">
-                                {{-- Lista de tramos --}}
-                                @php
-                                    $tramos = is_string($labor->tramos_bonificacion)
-                                        ? json_decode($labor->tramos_bonificacion, true)
-                                        : $labor->tramos_bonificacion;
-                                @endphp
-
-                                @if (!empty($tramos) && is_array($tramos))
-                                    <ul class="text-sm text-left space-y-1">
-                                        @foreach ($tramos as $tramo)
-                                            <li>
-                                                Hasta <span class="font-semibold">{{ $tramo['hasta'] }}</span> unidades
-                                                &rarr;
-                                                <span class="font-semibold">S/. {{ $tramo['monto'] }}</span>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                @else
-                                    <span class="text-gray-400 italic">Sin tramos</span>
-                                @endif
-                            </x-td>
-                            <x-td valign="top" class="text-center">
-                                <x-flex class="justify-center">
-                                    @if ($labor->trashed())
-                                        <x-button class="secondary" wire:click="restaurarLabor({{ $labor->id }})">
-                                            <i class="fa fa-undo"></i> Restaurar
-                                        </x-button>
-                                    @else
-                                        <x-button wire:click="editarLabor({{ $labor->id }})">
-                                            <i class="fa fa-edit"></i>
-                                        </x-button>
-                                        <x-button variant="danger"
-                                            wire:click="confirmarEliminarLabor({{ $labor->id }})">
-                                            <i class="fa fa-trash"></i>
-                                        </x-button>
-                                    @endif
-
-                                </x-flex>
-                            </x-td>
-                        </x-tr>
-                    @endforeach
-                @else
+        @can(\App\Constants\Permisos::CAMPO_LABOR_VER)
+            <x-table class="mt-5">
+                <x-slot name="thead">
                     <x-tr>
-                        <x-td colspan="100%">No hay Labores registrados.</x-td>
+                        <x-th value="Código" class="text-center" />
+                        <x-th value="Nombre de la Labor" />
+                        <x-th value="Mano de obra" />
+                        <x-th value="Estándar de producción" class="text-center" />
+                        <x-th value="Tramos de bonificación" class="text-center" />
+                        <x-th value="Acciones" class="text-center" />
                     </x-tr>
-                @endif
-            </x-slot>
-        </x-table>
-        <div class="my-5">
-            {{ $labores->links() }}
-        </div>
+                </x-slot>
+                <x-slot name="tbody">
+                    @if ($labores && $labores->count() > 0)
+                        @foreach ($labores as $indice => $labor)
+                            <x-tr>
+                                <x-th valign="top" value="{{ $labor->codigo }}" class="text-center" />
+                                <x-td valign="top" value="{{ $labor->nombre_labor }}" />
+                                <x-td valign="top" value="{{ $labor->manoObra?->descripcion }}" />
+                                <x-td valign="top" value="{{ $labor->estandar_produccion . ' ' . $labor->unidades }}"
+                                    class="text-center" />
+                                <x-td valign="top" class="text-center">
+                                    {{-- Lista de tramos --}}
+                                    @php
+                                        $tramos = is_string($labor->tramos_bonificacion)
+                                            ? json_decode($labor->tramos_bonificacion, true)
+                                            : $labor->tramos_bonificacion;
+                                    @endphp
+
+                                    @if (!empty($tramos) && is_array($tramos))
+                                        <ul class="text-sm text-left space-y-1">
+                                            @foreach ($tramos as $tramo)
+                                                <li>
+                                                    Hasta <span class="font-semibold">{{ $tramo['hasta'] }}</span> unidades
+                                                    &rarr;
+                                                    <span class="font-semibold">S/. {{ $tramo['monto'] }}</span>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    @else
+                                        <span class="text-gray-400 italic">Sin tramos</span>
+                                    @endif
+                                </x-td>
+                                <x-td valign="top" class="text-center">
+                                    <x-flex class="justify-center">
+                                        @can(\App\Constants\Permisos::CAMPO_LABOR_GESTIONAR)
+                                            @if ($labor->trashed())
+                                                <x-button class="secondary" wire:click="restaurarLabor({{ $labor->id }})">
+                                                    <i class="fa fa-undo"></i> Restaurar
+                                                </x-button>
+                                            @else
+                                                <x-button wire:click="editarLabor({{ $labor->id }})">
+                                                    <i class="fa fa-edit"></i>
+                                                </x-button>
+                                                <x-button variant="danger" wire:click="confirmarEliminarLabor({{ $labor->id }})">
+                                                    <i class="fa fa-trash"></i>
+                                                </x-button>
+                                            @endif
+                                        @endcan
+                                    </x-flex>
+                                </x-td>
+                            </x-tr>
+                        @endforeach
+                    @else
+                        <x-tr>
+                            <x-td colspan="100%">No hay Labores registrados.</x-td>
+                        </x-tr>
+                    @endif
+                </x-slot>
+            </x-table>
+            <div class="my-5">
+                {{ $labores->links() }}
+            </div>
+        @else
+            <x-danger>
+                No tienes permisos para ver las labores del campo. Por favor, contacta al administrador.
+            </x-danger>
+        @endcan
     </x-card>
     <x-dialog-modal maxWidth="lg" wire:model="mostrarFormularioLabor">
         <x-slot name="title">
@@ -162,8 +171,7 @@
 
                                 <!-- Monto -->
                                 <div class="flex flex-col">
-                                    <x-input type="number" step="0.1" label="Se paga S/."
-                                        x-model="tramo.monto" />
+                                    <x-input type="number" step="0.1" label="Se paga S/." x-model="tramo.monto" />
                                 </div>
 
                                 <!-- Remove button -->

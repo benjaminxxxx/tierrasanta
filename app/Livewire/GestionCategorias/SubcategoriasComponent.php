@@ -2,9 +2,12 @@
 
 namespace App\Livewire\GestionCategorias;
 
+use App\Constants\Permisos;
 use App\Models\InsCategoria;
 use App\Models\InsSubcategoria;
 use App\Services\Categoria\SubcategoriaServicio;
+use Auth;
+use Exception;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
@@ -82,6 +85,9 @@ class SubcategoriasComponent extends Component
     public function eliminar(int $id): void
     {
         try {
+            if(Auth::user()->cannot(Permisos::INSUMO_SUBCATEGORIA_GESTIONAR)){
+                throw new Exception('No puede eliminar el registro por falta de permisos');
+            }
             SubcategoriaServicio::eliminar($id);
             $this->cargarRegistros();
             $this->dispatch('cargarDataSubcategorias', data: $this->registros);

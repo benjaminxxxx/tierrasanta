@@ -15,9 +15,11 @@
                 <i class="fa-solid fa-download"></i>
                 <span>Exportar PDF</span>
             </x-button>
+            @can(\App\Constants\Permisos::CAMPO_PARCELA_GESTIONAR)
             <x-button wire:click="registrarCampo">
                 <i class="fa fa-plus"></i> Agregar Campo
             </x-button>
+            @endcan
         </div>
     </div>
 
@@ -72,6 +74,7 @@
     </x-card>
 
     {{-- ══ TABLA ══ --}}
+    @can(\App\Constants\Permisos::CAMPO_PARCELA_VER)
     <x-card>
         <div class="overflow-x-auto">
             <x-table>
@@ -202,6 +205,7 @@
                             {{-- Acciones --}}
                             <x-td>
                                 <div class="flex items-center gap-1.5">
+                                    @can(\App\Constants\Permisos::CAMPO_PARCELA_GESTIONAR)
                                     <x-button
                                         @click="$wire.dispatch('registroCampania', {campoNombre: '{{ $campo->nombre }}'})">
                                         <i class="fa fa-plus"></i>
@@ -217,6 +221,7 @@
                                         title="Ver historial">
                                         <i class="fa-solid fa-clock-rotate-left"></i>
                                     </x-button>
+                                    @endcan
                                 </div>
                             </x-td>
 
@@ -239,6 +244,11 @@
             {{ $campos->links() }}
         </div>
     </x-card>
+    @else
+        <x-danger>
+            No tienes permisos para ver los campos. Por favor, contacta al administrador.
+        </x-danger>
+    @endcan
 
     {{-- ══ MODAL FORMULARIO ══ --}}
     <x-dialog-modal wire:model.live="mostrarFormulario">

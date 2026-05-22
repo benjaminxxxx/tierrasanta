@@ -58,9 +58,11 @@
                         @endif
                     </x-td>
                     <x-td class="text-center">
+                        @can(\App\Constants\Permisos::CONTABILIDAD_FDM_GESTIONAR)
                         <x-button variant="secondary" type="button" wire:click="recalcularCostoFdm('cuadrilleros')">
                             <i class="fa fa-calculator"></i> Recalcular costos
                         </x-button>
+                        @endcan
                     </x-td>
                 </x-tr>
                 <x-tr>
@@ -86,9 +88,11 @@
                         -
                     </x-td>
                     <x-td class="text-center">
+                        @can(\App\Constants\Permisos::CONTABILIDAD_FDM_GESTIONAR)
                         <x-button type="button" variant="secondary" wire:click="recalcularCostoFdm('planilleros')">
                             <i class="fa fa-calculator"></i> Recalcular costos
                         </x-button>
+                        @endcan
                     </x-td>
                 </x-tr>
                 <x-tr>
@@ -182,9 +186,11 @@
 
                     </x-td>
                     <x-td class="text-center">
+                        @can(\App\Constants\Permisos::CONTABILIDAD_FDM_GESTIONAR)
                         <x-button type="button" variant="secondary" wire:click="recalcularMaquinaria">
                             <i class="fa fa-calculator"></i> Recalcular costos
                         </x-button>
+                        @endcan
                     </x-td>
                 </x-tr>
                 <x-tr>
@@ -225,9 +231,11 @@
 
         </div>
         <x-flex class="justify-end w-full">
+            @can(\App\Constants\Permisos::CONTABILIDAD_FDM_GESTIONAR)
             <x-button @click="sendDataCostos" class="mt-5">
                 <i class="fa fa-save"></i> Guardar Costos
             </x-button>
+            @endcan
         </x-flex>
     </x-card>
 

@@ -1,21 +1,30 @@
 <div x-data="gestionSubcategorias" class="space-y-4">
- 
+
     <x-flex>
         <x-title>Gestión de Subcategorías</x-title>
-        <x-button href="{{ route('categorias.index') }}">
-            Administrar categorías ↗
-        </x-button>
+        @can(\App\Constants\Permisos::INSUMO_CATEGORIA)
+            <x-button href="{{ route('categorias.index') }}">
+                Administrar categorías ↗
+            </x-button>
+        @endcan
     </x-flex>
-    <x-card>
-        <div wire:ignore>
-            <div x-ref="tableContainer"></div>
-        </div>
-    </x-card>
-
+    @can(\App\Constants\Permisos::INSUMO_SUBCATEGORIA_VER)
+        <x-card>
+            <div wire:ignore>
+                <div x-ref="tableContainer"></div>
+            </div>
+        </x-card>
+    @else
+        <x-danger>
+            No tiene permiso para ver la siguiente información.
+        </x-danger>
+    @endcan
     <x-inferior-derecha>
-        <x-button @click="guardarSubcategorias()">
-            <i class="fa fa-save"></i> Guardar Subcategorías Modificadas
-        </x-button>
+        @can(\App\Constants\Permisos::INSUMO_SUBCATEGORIA_GESTIONAR)
+            <x-button @click="guardarSubcategorias()">
+                <i class="fa fa-save"></i> Guardar Subcategorías Modificadas
+            </x-button>
+        @endcan
     </x-inferior-derecha>
 
     {{-- Modal Auditoría --}}
@@ -24,7 +33,7 @@
         <x-slot name="content">
             @php
                 $entradaCreacion = collect($auditoriaHistorial)->firstWhere('accion', 'crear');
-                $ultimaEdicion   = collect($auditoriaHistorial)
+                $ultimaEdicion = collect($auditoriaHistorial)
                     ->where('accion', 'editar')
                     ->sortByDesc('fecha_accion')
                     ->first();
@@ -34,7 +43,7 @@
                 <div>
                     <span class="font-semibold text-card-foreground">Creado por:</span>
                     {{ $entradaCreacion['usuario_nombre'] ?? '—' }}
-                    @if($entradaCreacion)
+                    @if ($entradaCreacion)
                         <span class="ml-1 text-gray-400">
                             {{ \Carbon\Carbon::parse($entradaCreacion['fecha_accion'])->format('d/m/Y H:i') }}
                         </span>
@@ -43,7 +52,7 @@
                 <div>
                     <span class="font-semibold text-card-foreground">Última edición:</span>
                     {{ $ultimaEdicion['usuario_nombre'] ?? '—' }}
-                    @if($ultimaEdicion)
+                    @if ($ultimaEdicion)
                         <span class="ml-1 text-gray-400">
                             {{ \Carbon\Carbon::parse($ultimaEdicion['fecha_accion'])->format('d/m/Y H:i') }}
                         </span>
@@ -54,7 +63,8 @@
             @forelse($auditoriaHistorial as $entrada)
                 <div class="mb-4 border-b border-border pb-3">
                     <div class="flex items-center justify-between text-sm">
-                        <span class="font-semibold uppercase
+                        <span
+                            class="font-semibold uppercase
                             {{ $entrada['accion'] === 'crear' ? 'text-green-600' : ($entrada['accion'] === 'eliminar' ? 'text-red-600' : 'text-yellow-600') }}">
                             {{ $entrada['accion'] }}
                         </span>
@@ -64,8 +74,8 @@
                         </span>
                     </div>
 
-                    @if(!empty($entrada['cambios']))
-                        @if($entrada['accion'] === 'editar')
+                    @if (!empty($entrada['cambios']))
+                        @if ($entrada['accion'] === 'editar')
                             <table class="mt-2 w-full text-xs text-gray-700">
                                 <thead>
                                     <tr class="text-left text-gray-400">
@@ -75,11 +85,12 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($entrada['cambios']['antes'] ?? [] as $campo => $valorAntes)
+                                    @foreach ($entrada['cambios']['antes'] ?? [] as $campo => $valorAntes)
                                         <tr>
                                             <td class="pr-4 font-medium text-muted-foreground">{{ $campo }}</td>
                                             <td class="pr-4 text-red-500">{{ $valorAntes ?? '—' }}</td>
-                                            <td class="text-green-600">{{ $entrada['cambios']['despues'][$campo] ?? '—' }}</td>
+                                            <td class="text-green-600">
+                                                {{ $entrada['cambios']['despues'][$campo] ?? '—' }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -89,7 +100,7 @@
                         @endif
                     @endif
 
-                    @if(!empty($entrada['observacion']))
+                    @if (!empty($entrada['observacion']))
                         <p class="mt-1 text-xs text-card-foreground italic">{{ $entrada['observacion'] }}</p>
                     @endif
                 </div>
@@ -106,159 +117,166 @@
 </div>
 
 @script
-<script>
-    Alpine.data('gestionSubcategorias', () => ({
-        filasModificadas: @entangle('filasModificadas'),
-        isDark: JSON.parse(localStorage.getItem('darkMode')),
-        tableData: @js($registros),
-        listaCategorias: @js($listaCategorias),
+    <script>
+        Alpine.data('gestionSubcategorias', () => ({
+            filasModificadas: @entangle('filasModificadas'),
+            isDark: JSON.parse(localStorage.getItem('darkMode')),
+            tableData: @js($registros),
+            listaCategorias: @js($listaCategorias),
 
-        init() {
-            this.initTable(this.tableData);
+            init() {
+                this.initTable(this.tableData);
 
-            $watch('darkMode', value => {
-                this.isDark = value;
-                this.hot?.updateSettings({
-                    themeName: value ? 'ht-theme-main-dark' : 'ht-theme-main',
-                    columns: this.getColumns(),
-                });
-            });
-
-            Livewire.on('cargarDataSubcategorias', ({ data }) => {
-                if (!this.$refs.tableContainer) return;
-                this.$nextTick(() => {
-                    if (!this.$refs.tableContainer) return;
-                    this.tableData = data;
-                    this.initTable(data);
-                });
-            });
-        },
-
-        initTable(tableData) {
-            if (this.hot) {
-                try { this.hot.destroy(); } catch (e) {}
-                this.hot = null;
-            }
-            const container = this.$refs.tableContainer;
-            if (!container) return;
-
-            this.hot = new Handsontable(container, {
-                ...window.HstConfig,
-                data: tableData,
-                themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
-                colHeaders: true,
-                rowHeaders: true,
-                columns: this.getColumns(),
-                manualColumnResize: false,
-                manualRowResize: true,
-                stretchH: 'all',
-                minSpareRows: 1,
-                autoColumnSize: false,
-                licenseKey: 'non-commercial-and-evaluation',
-                afterChange: (changes, source) => {
-                    if (source === 'loadData') return;
-                    changes?.forEach(([row]) => {
-                        if (!this.filasModificadas.includes(row)) {
-                            this.filasModificadas = [...this.filasModificadas, row];
-                        }
+                $watch('darkMode', value => {
+                    this.isDark = value;
+                    this.hot?.updateSettings({
+                        themeName: value ? 'ht-theme-main-dark' : 'ht-theme-main',
+                        columns: this.getColumns(),
                     });
-                },
-                afterRenderer: (TD, row, col, prop, value, cellProperties) => {
-                    if (col !== 4) return;
+                });
 
-                    const hot = cellProperties.instance; // 👈 clave
-                    const sourceRow = hot.getSourceDataAtRow(row);
+                Livewire.on('cargarDataSubcategorias', ({
+                    data
+                }) => {
+                    if (!this.$refs.tableContainer) return;
+                    this.$nextTick(() => {
+                        if (!this.$refs.tableContainer) return;
+                        this.tableData = data;
+                        this.initTable(data);
+                    });
+                });
+            },
 
-                    if (!sourceRow?.id) return;
-
-                    TD.innerHTML = '';
-                    TD.classList.add('htCenter');
-
-                    const btnAudit = document.createElement('button');
-                    btnAudit.innerHTML = '<i class="fa fa-history"></i>';
-                    btnAudit.title = 'Ver auditoría';
-                    btnAudit.className = 'px-2 py-0.5 text-xs text-blue-600 hover:text-blue-800';
-                    btnAudit.onclick = () => $wire.verAuditoria(sourceRow.id);
-
-                    const btnDel = document.createElement('button');
-                    btnDel.innerHTML = '<i class="fa fa-trash"></i>';
-                    btnDel.title = 'Eliminar';
-                    btnDel.className = 'px-2 py-0.5 text-xs text-red-500 hover:text-red-700';
-                    btnDel.onclick = () => {
-                        if (confirm(`¿Eliminar "${sourceRow.nombre}"?`)) {
-                            $wire.eliminar(sourceRow.id);
-                        }
-                    };
-
-                    TD.append(btnAudit, btnDel);
+            initTable(tableData) {
+                if (this.hot) {
+                    try {
+                        this.hot.destroy();
+                    } catch (e) {}
+                    this.hot = null;
                 }
-            });
-        },
+                const container = this.$refs.tableContainer;
+                if (!container) return;
 
-        getColumns() {
-            // Construir source para el dropdown a partir de listaCategorias
-            // listaCategorias = { codigo: descripcion, ... }
-            const categoriasSource = Object.entries(this.listaCategorias)
-                .map(([codigo, descripcion]) => ({ codigo, descripcion }));
-
-            return [
-                {
-                    // Dropdown de categoría: muestra descripcion, guarda codigo
-                    data: 'categoria_codigo',
-                    title: 'CATEGORÍA',
-                    type: 'dropdown',
-                    source: categoriasSource.map(c => c.codigo),
-                    // Renderizar la descripción en vez del código
-                    renderer: (hotInstance, TD, row, col, prop, value) => {
-                        const found = categoriasSource.find(c => c.codigo === value);
-                        TD.innerText = found ? found.descripcion : (value ?? '');
-                        TD.classList.add('htMiddle');
+                this.hot = new Handsontable(container, {
+                    ...window.HstConfig,
+                    data: tableData,
+                    themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
+                    colHeaders: true,
+                    rowHeaders: true,
+                    columns: this.getColumns(),
+                    manualColumnResize: false,
+                    manualRowResize: true,
+                    stretchH: 'all',
+                    minSpareRows: 1,
+                    autoColumnSize: false,
+                    licenseKey: 'non-commercial-and-evaluation',
+                    afterChange: (changes, source) => {
+                        if (source === 'loadData') return;
+                        changes?.forEach(([row]) => {
+                            if (!this.filasModificadas.includes(row)) {
+                                this.filasModificadas = [...this.filasModificadas, row];
+                            }
+                        });
                     },
-                    width: 160,
-                },
-                {
-                    data: 'nombre',
-                    title: 'NOMBRE',
-                    type: 'text',
-                    width: 200,
-                },
-                {
-                    data: 'descripcion',
-                    title: 'DESCRIPCIÓN',
-                    type: 'text',
-                    width: 300,
-                },
-                {
-                    data: 'cantidad_productos',
-                    title: 'CANT.<br/>PRODUCTOS',
-                    type: 'text',
-                    readOnly: true,
-                    className: '!bg-muted !text-center',
-                },
-                
-                {
-                    // Columna de acciones — no editable, renderizada por afterRenderer
-                    data: null,
-                    title: 'ACCIONES',
-                    readOnly: true,
-                    width: 90,
-                    disableVisualSelection: true,
-                },
-            ];
-        },
+                    afterRenderer: (TD, row, col, prop, value, cellProperties) => {
+                        if (col !== 4) return;
 
-        guardarSubcategorias() {
-            if (this.filasModificadas.length === 0) {
-                alert('Ninguna fila modificada');
-                return;
-            }
+                        const hot = cellProperties.instance; // 👈 clave
+                        const sourceRow = hot.getSourceDataAtRow(row);
 
-            const data = [...this.filasModificadas]
-                .map(i => this.hot.getSourceDataAtRow(i))
-                .filter(fila => fila && Object.values(fila).some(v => v !== null && v !== ''));
+                        if (!sourceRow?.id) return;
 
-            $wire.guardarSubcategorias(data);
-        },
-    }))
-</script>
+                        TD.innerHTML = '';
+                        TD.classList.add('htCenter');
+
+                        const btnAudit = document.createElement('button');
+                        btnAudit.innerHTML = '<i class="fa fa-history"></i>';
+                        btnAudit.title = 'Ver auditoría';
+                        btnAudit.className =
+                        'px-2 py-0.5 text-xs text-blue-600 hover:text-blue-800';
+                        btnAudit.onclick = () => $wire.verAuditoria(sourceRow.id);
+
+                        const btnDel = document.createElement('button');
+                        btnDel.innerHTML = '<i class="fa fa-trash"></i>';
+                        btnDel.title = 'Eliminar';
+                        btnDel.className = 'px-2 py-0.5 text-xs text-red-500 hover:text-red-700';
+                        btnDel.onclick = () => {
+                            if (confirm(`¿Eliminar "${sourceRow.nombre}"?`)) {
+                                $wire.eliminar(sourceRow.id);
+                            }
+                        };
+
+                        TD.append(btnAudit, btnDel);
+                    }
+                });
+            },
+
+            getColumns() {
+                // Construir source para el dropdown a partir de listaCategorias
+                // listaCategorias = { codigo: descripcion, ... }
+                const categoriasSource = Object.entries(this.listaCategorias)
+                    .map(([codigo, descripcion]) => ({
+                        codigo,
+                        descripcion
+                    }));
+
+                return [{
+                        // Dropdown de categoría: muestra descripcion, guarda codigo
+                        data: 'categoria_codigo',
+                        title: 'CATEGORÍA',
+                        type: 'dropdown',
+                        source: categoriasSource.map(c => c.codigo),
+                        // Renderizar la descripción en vez del código
+                        renderer: (hotInstance, TD, row, col, prop, value) => {
+                            const found = categoriasSource.find(c => c.codigo === value);
+                            TD.innerText = found ? found.descripcion : (value ?? '');
+                            TD.classList.add('htMiddle');
+                        },
+                        width: 160,
+                    },
+                    {
+                        data: 'nombre',
+                        title: 'NOMBRE',
+                        type: 'text',
+                        width: 200,
+                    },
+                    {
+                        data: 'descripcion',
+                        title: 'DESCRIPCIÓN',
+                        type: 'text',
+                        width: 300,
+                    },
+                    {
+                        data: 'cantidad_productos',
+                        title: 'CANT.<br/>PRODUCTOS',
+                        type: 'text',
+                        readOnly: true,
+                        className: '!bg-muted !text-center',
+                    },
+
+                    {
+                        // Columna de acciones — no editable, renderizada por afterRenderer
+                        data: null,
+                        title: 'ACCIONES',
+                        readOnly: true,
+                        width: 90,
+                        disableVisualSelection: true,
+                    },
+                ];
+            },
+
+            guardarSubcategorias() {
+                if (this.filasModificadas.length === 0) {
+                    alert('Ninguna fila modificada');
+                    return;
+                }
+
+                const data = [...this.filasModificadas]
+                    .map(i => this.hot.getSourceDataAtRow(i))
+                    .filter(fila => fila && Object.values(fila).some(v => v !== null && v !== ''));
+
+                $wire.guardarSubcategorias(data);
+            },
+        }))
+    </script>
 @endscript

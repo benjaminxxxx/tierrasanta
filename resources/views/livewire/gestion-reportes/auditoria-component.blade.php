@@ -67,6 +67,7 @@
     </x-card>
 
     {{-- ══ TABLA ══ --}}
+    @can(\App\Constants\Permisos::REPORTE_AUDITORIA_VER)
     <x-card>
         <div class="overflow-x-auto">
             <x-table>
@@ -204,6 +205,11 @@
             </div>
         @endif
     </x-card>
+     @else
+        <x-danger>
+            No tiene permisos para ver la siguiente información.
+        </x-danger>
+    @endcan
 
     <x-loading wire:loading/>
 </div>

@@ -1,22 +1,23 @@
 <div class="space-y-4" x-data="costosMensuales">
-    <x-card>
-        <x-flex class="justify-between">
-            <div>
-                <x-h3>Costos Mensuales</x-h3>
-                <x-label>
-                    Gestión y análisis de costos blanco y negro
-                </x-label>
-            </div>
-            <x-button @click="$wire.dispatch('agregarCostoMensual')">
-                <i class="fa fa-plus"></i> Agregar Costo
-            </x-button>
-        </x-flex>
-    </x-card>
+
+    <x-flex class="justify-between">
+        <div>
+            <x-title>Costos Mensuales</x-title>
+            <x-subtitle>
+                Gestión y análisis de costos blanco y negro
+            </x-subtitle>
+        </div>
+        @can(\App\Constants\Permisos::CONTABILIDAD_COSTO_MENSUAL_LISTA_GESTIONAR)
+        <x-button @click="$wire.dispatch('agregarCostoMensual')">
+            <i class="fa fa-plus"></i> Agregar Costo
+        </x-button>
+        @endcan
+    </x-flex>
     <x-card>
         <x-flex>
 
             {{-- Año --}}
-            <x-select label="Año" wire:model.live="filtroAnio">
+            <x-select label="Año" wire:model.live="filtroAnio" class="w-auto">
                 <option value="">Todos</option>
                 @foreach ($aniosDisponibles as $anio)
                     <option value="{{ $anio }}">{{ $anio }}</option>
@@ -24,7 +25,7 @@
             </x-select>
 
             {{-- Mes --}}
-            <x-select label="Mes" wire:model.live="filtroMes">
+            <x-select label="Mes" wire:model.live="filtroMes" class="w-auto">
                 <option value="">Todos</option>
                 @foreach ($meses as $index => $mes)
                     <option value="{{ $index + 1 }}">
@@ -34,13 +35,13 @@
             </x-select>
 
             {{-- Tipo de costo --}}
-            <x-select label="Tipo de Costo" wire:model.live="selectedType">
+            <x-select label="Tipo de Costo" wire:model.live="selectedType" class="w-auto">
                 <option value="blanco">Blanco</option>
                 <option value="negro">Negro</option>
             </x-select>
 
             {{-- Categoría --}}
-            <x-select label="Categoría" wire:model.live="selectedCategory">
+            <x-select label="Categoría" wire:model.live="selectedCategory" class="w-auto">
                 <option value="todos">Todos</option>
                 <option value="fijo">Fijo</option>
                 <option value="operativo">Operativo</option>
@@ -48,160 +49,170 @@
 
         </x-flex>
     </x-card>
-    <x-card>
-        <x-table>
+    @can(\App\Constants\Permisos::CONTABILIDAD_COSTO_MENSUAL_LISTA_VER)
+        <x-card>
+            <x-table>
 
-            {{-- THEAD --}}
-            <x-slot name="thead">
-                {{-- Fila 1 --}}
-                <x-tr class="bg-muted/50">
-                    <x-th rowspan="2" class="text-left">
-                        Período
-                    </x-th>
-
-                    @if ($selectedCategory === 'fijo' || $selectedCategory === 'todos')
-                        <x-th colspan="5" class="text-center font-bold bg-blue-500/10">
-                            FIJO
+                {{-- THEAD --}}
+                <x-slot name="thead">
+                    {{-- Fila 1 --}}
+                    <x-tr class="bg-muted/50">
+                        <x-th rowspan="2" class="text-left">
+                            Período
                         </x-th>
-                    @endif
 
-                    @if ($selectedCategory === 'operativo' || $selectedCategory === 'todos')
-                        <x-th colspan="2" class="text-center font-bold bg-purple-500/10">
-                            OPERATIVO
-                        </x-th>
-                    @endif
-
-                    <x-th rowspan="2" class="text-right font-bold">
-                        TOTAL
-                    </x-th>
-                    <x-th rowspan="2" class="text-right font-bold">
-                        ACCIONES
-                    </x-th>
-                </x-tr>
-
-                {{-- Fila 2 --}}
-                <x-tr class="bg-muted/50">
-                    @if ($selectedCategory === 'fijo' || $selectedCategory === 'todos')
-                        <x-th class="text-right">Administrativo</x-th>
-                        <x-th class="text-right">Financiero</x-th>
-                        <x-th class="text-right">Gastos Oficina</x-th>
-                        <x-th class="text-right">Depreciaciones</x-th>
-                        <x-th class="text-right">Costo Terreno</x-th>
-                    @endif
-
-                    @if ($selectedCategory === 'operativo' || $selectedCategory === 'todos')
-                        <x-th class="text-right">Servicios Fundo</x-th>
-                        <x-th class="text-right">Mano Obra Indirecta</x-th>
-                    @endif
-                </x-tr>
-            </x-slot>
-
-            {{-- TBODY --}}
-            <x-slot name="tbody">
-                @foreach ($filteredData as $item)
-                    @php
-                        $getValue = fn($blanco, $negro) =>
-                            $selectedType === 'blanco' ? $blanco : $negro;
-
-                        $totalFijo =
-                            $getValue($item->fijo_administrativo_blanco, $item->fijo_administrativo_negro) +
-                            $getValue($item->fijo_financiero_blanco, $item->fijo_financiero_negro) +
-                            $getValue($item->fijo_gastos_oficina_blanco, $item->fijo_gastos_oficina_negro) +
-                            $getValue($item->fijo_depreciaciones_blanco, $item->fijo_depreciaciones_negro) +
-                            $getValue($item->fijo_costo_terreno_blanco, $item->fijo_costo_terreno_negro);
-
-                        $totalOperativo =
-                            $getValue($item->operativo_servicios_fundo_blanco, $item->operativo_servicios_fundo_negro) +
-                            $getValue($item->operativo_mano_obra_indirecta_blanco, $item->operativo_mano_obra_indirecta_negro);
-
-                        $totalGeneral = $totalFijo + $totalOperativo;
-                    @endphp
-
-                    <x-tr class="hover:bg-muted/30 transition-colors">
-
-                        {{-- Periodo --}}
-                        <x-td class="font-medium">
-                            {{ $meses[$item->mes - 1] }} {{ $item->anio }}
-                        </x-td>
-
-                        {{-- FIJO --}}
                         @if ($selectedCategory === 'fijo' || $selectedCategory === 'todos')
-                            <x-td class="text-right">
-                                {{ formatear_numero($getValue($item->fijo_administrativo_blanco, $item->fijo_administrativo_negro)) }}
-                            </x-td>
-                            <x-td class="text-right">
-                                {{ formatear_numero($getValue($item->fijo_financiero_blanco, $item->fijo_financiero_negro)) }}
-                            </x-td>
-                            <x-td class="text-right">
-                                {{ formatear_numero($getValue($item->fijo_gastos_oficina_blanco, $item->fijo_gastos_oficina_negro)) }}
-                            </x-td>
-                            <x-td class="text-right">
-                                {{ formatear_numero($getValue($item->fijo_depreciaciones_blanco, $item->fijo_depreciaciones_negro)) }}
-                            </x-td>
-                            <x-td class="text-right">
-                                {{ formatear_numero($getValue($item->fijo_costo_terreno_blanco, $item->fijo_costo_terreno_negro)) }}
-                            </x-td>
+                            <x-th colspan="5" class="text-center font-bold bg-blue-500/10">
+                                FIJO
+                            </x-th>
                         @endif
 
-                        {{-- OPERATIVO --}}
                         @if ($selectedCategory === 'operativo' || $selectedCategory === 'todos')
-                            <x-td class="text-right">
-                                {{ formatear_numero($getValue($item->operativo_servicios_fundo_blanco, $item->operativo_servicios_fundo_negro)) }}
-                            </x-td>
-                            <x-td class="text-right">
-                                {{ formatear_numero($getValue($item->operativo_mano_obra_indirecta_blanco, $item->operativo_mano_obra_indirecta_negro)) }}
-                            </x-td>
+                            <x-th colspan="2" class="text-center font-bold bg-purple-500/10">
+                                OPERATIVO
+                            </x-th>
                         @endif
 
-                        {{-- TOTAL --}}
-                        <x-td class="text-right font-bold">
-                            {{ formatear_numero($totalGeneral) }}
-                        </x-td>
-                        <x-td>
-                            <div class="ms-3 relative">
-                                <x-dropdown align="right" width="60">
-                                    <x-slot name="trigger">
-                                        <span class="inline-flex rounded-md">
-                                            <button type="button"
-                                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none focus:bg-gray-50 dark:focus:bg-gray-700 active:bg-gray-50 dark:active:bg-gray-700 transition ease-in-out duration-150">
-                                                
-                                                Opciones
-                                                <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
-                                                    fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                                                    stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
-                                                </svg>
-                                            </button>
-                                        </span>
-                                    </x-slot>
-
-                                    <x-slot name="content">
-                                        <div class="w-60">
-                                            <x-dropdown-link @click="$wire.dispatch('distribuirCostosMensuales',{costoMensualId:{{ $item->id }}})">
-                                                Distribuir Costos
-                                            </x-dropdown-link>
-                                            <x-dropdown-link @click="$wire.dispatch('verDistribucionCostosMensuales',{costoMensualId:{{ $item->id }}})">
-                                                Ver Distribución
-                                            </x-dropdown-link>
-                                        </div>
-                                    </x-slot>
-                                </x-dropdown>
-                            </div>
-                        </x-td>
+                        <x-th rowspan="2" class="text-right font-bold">
+                            TOTAL
+                        </x-th>
+                        <x-th rowspan="2" class="text-right font-bold">
+                            ACCIONES
+                        </x-th>
                     </x-tr>
-                @endforeach
-            </x-slot>
 
-        </x-table>
-    </x-card>
+                    {{-- Fila 2 --}}
+                    <x-tr class="bg-muted/50">
+                        @if ($selectedCategory === 'fijo' || $selectedCategory === 'todos')
+                            <x-th class="text-right">Administrativo</x-th>
+                            <x-th class="text-right">Financiero</x-th>
+                            <x-th class="text-right">Gastos Oficina</x-th>
+                            <x-th class="text-right">Depreciaciones</x-th>
+                            <x-th class="text-right">Costo Terreno</x-th>
+                        @endif
 
-    <x-card>
-        <x-h3>Cuadro Estadístico Anual</x-h3>
-        <div class="mt-4 w-full" wire:ignore>
-            <canvas id="graficoCostosAnual" class="!w-full"></canvas>
-        </div>
-    </x-card>
+                        @if ($selectedCategory === 'operativo' || $selectedCategory === 'todos')
+                            <x-th class="text-right">Servicios Fundo</x-th>
+                            <x-th class="text-right">Mano Obra Indirecta</x-th>
+                        @endif
+                    </x-tr>
+                </x-slot>
+
+                {{-- TBODY --}}
+                <x-slot name="tbody">
+                    @foreach ($filteredData as $item)
+                        @php
+                            $getValue = fn($blanco, $negro) =>
+                                $selectedType === 'blanco' ? $blanco : $negro;
+
+                            $totalFijo =
+                                $getValue($item->fijo_administrativo_blanco, $item->fijo_administrativo_negro) +
+                                $getValue($item->fijo_financiero_blanco, $item->fijo_financiero_negro) +
+                                $getValue($item->fijo_gastos_oficina_blanco, $item->fijo_gastos_oficina_negro) +
+                                $getValue($item->fijo_depreciaciones_blanco, $item->fijo_depreciaciones_negro) +
+                                $getValue($item->fijo_costo_terreno_blanco, $item->fijo_costo_terreno_negro);
+
+                            $totalOperativo =
+                                $getValue($item->operativo_servicios_fundo_blanco, $item->operativo_servicios_fundo_negro) +
+                                $getValue($item->operativo_mano_obra_indirecta_blanco, $item->operativo_mano_obra_indirecta_negro);
+
+                            $totalGeneral = $totalFijo + $totalOperativo;
+                        @endphp
+
+                        <x-tr class="hover:bg-muted/30 transition-colors">
+
+                            {{-- Periodo --}}
+                            <x-td class="font-medium">
+                                {{ $meses[$item->mes - 1] }} {{ $item->anio }}
+                            </x-td>
+
+                            {{-- FIJO --}}
+                            @if ($selectedCategory === 'fijo' || $selectedCategory === 'todos')
+                                <x-td class="text-right">
+                                    {{ formatear_numero($getValue($item->fijo_administrativo_blanco, $item->fijo_administrativo_negro)) }}
+                                </x-td>
+                                <x-td class="text-right">
+                                    {{ formatear_numero($getValue($item->fijo_financiero_blanco, $item->fijo_financiero_negro)) }}
+                                </x-td>
+                                <x-td class="text-right">
+                                    {{ formatear_numero($getValue($item->fijo_gastos_oficina_blanco, $item->fijo_gastos_oficina_negro)) }}
+                                </x-td>
+                                <x-td class="text-right">
+                                    {{ formatear_numero($getValue($item->fijo_depreciaciones_blanco, $item->fijo_depreciaciones_negro)) }}
+                                </x-td>
+                                <x-td class="text-right">
+                                    {{ formatear_numero($getValue($item->fijo_costo_terreno_blanco, $item->fijo_costo_terreno_negro)) }}
+                                </x-td>
+                            @endif
+
+                            {{-- OPERATIVO --}}
+                            @if ($selectedCategory === 'operativo' || $selectedCategory === 'todos')
+                                <x-td class="text-right">
+                                    {{ formatear_numero($getValue($item->operativo_servicios_fundo_blanco, $item->operativo_servicios_fundo_negro)) }}
+                                </x-td>
+                                <x-td class="text-right">
+                                    {{ formatear_numero($getValue($item->operativo_mano_obra_indirecta_blanco, $item->operativo_mano_obra_indirecta_negro)) }}
+                                </x-td>
+                            @endif
+
+                            {{-- TOTAL --}}
+                            <x-td class="text-right font-bold">
+                                {{ formatear_numero($totalGeneral) }}
+                            </x-td>
+                            <x-td>
+                                <div class="ms-3 relative">
+                                    @can(\App\Constants\Permisos::CONTABILIDAD_COSTO_MENSUAL_LISTA_GESTIONAR)
+                                        <x-dropdown align="right" width="60">
+                                            <x-slot name="trigger">
+                                                <span class="inline-flex rounded-md">
+                                                    <button type="button"
+                                                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none focus:bg-gray-50 dark:focus:bg-gray-700 active:bg-gray-50 dark:active:bg-gray-700 transition ease-in-out duration-150">
+
+                                                        Opciones
+                                                        <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                                                            fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                                            stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+                                                        </svg>
+                                                    </button>
+                                                </span>
+                                            </x-slot>
+
+                                            <x-slot name="content">
+                                                <div class="w-60">
+                                                    <x-dropdown-link
+                                                        @click="$wire.dispatch('distribuirCostosMensuales',{costoMensualId:{{ $item->id }}})">
+                                                        Distribuir Costos
+                                                    </x-dropdown-link>
+                                                    <x-dropdown-link
+                                                        @click="$wire.dispatch('verDistribucionCostosMensuales',{costoMensualId:{{ $item->id }}})">
+                                                        Ver Distribución
+                                                    </x-dropdown-link>
+                                                </div>
+                                            </x-slot>
+                                        </x-dropdown>
+                                    @endcan
+                                </div>
+                            </x-td>
+                        </x-tr>
+                    @endforeach
+                </x-slot>
+
+            </x-table>
+        </x-card>
+
+        <x-card>
+            <x-h3>Cuadro Estadístico Anual</x-h3>
+            <div class="mt-4 w-full" wire:ignore>
+                <canvas id="graficoCostosAnual" class="!w-full"></canvas>
+            </div>
+        </x-card>
+    @else
+        <x-danger>
+            No tiene permiso para visualizar la siguiente información.
+        </x-danger>
+    @endcan
     <x-loading wire:loading />
 </div>
 

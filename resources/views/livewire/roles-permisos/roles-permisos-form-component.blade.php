@@ -1,58 +1,58 @@
 <div class="p-6">
-    <x-h3>Gestión de Roles y Permisos</x-h3>
+    <x-title>Gestión de Roles y Permisos</x-title>
 
     <div class="flex justify-end space-x-2 my-4">
-        @hasrole('Super Admin')
-        <x-button wire:click="$set('mostrarModalCrearPermiso', true)">
-            <I class="fa fa-plus"></I> Nuevo Permiso
-        </x-button>
-        @endhasrole
+        @can(\App\Constants\Permisos::SISTEMA_ROL_GESTIONAR)
+            <x-button wire:click="$set('mostrarModalCrearRol', true)">
+                <I class="fa fa-plus"></I> Nuevo Rol
+            </x-button>
+        @endcan
 
-        <x-button wire:click="$set('mostrarModalCrearRol', true)">
-            <I class="fa fa-plus"></I> Nuevo Rol
-        </x-button>
     </div>
 
     <x-h3>Roles Existentes</x-h3>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 my-4">
-        @foreach ($roles as $rol)
+    @can(\App\Constants\Permisos::SISTEMA_ROL_VER)
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 my-4">
+            @foreach ($roles as $rol)
 
-            @if ($rol->name == 'Super Admin')
+                @if ($rol->name == 'Super Admin')
 
 
-            @else
-                <x-card>
-                    <div class="flex items-center justify-between">
-                        <span class="font-bold text-lg dark:text-primaryTextDark">{{ $rol->name }}</span>
-                        <div class="flex space-x-2">
-                            <x-button variant="secondary" wire:click="editarRol({{ $rol->id }})" title="Editar Rol">
-                                <i class="fa fa-edit"></i>
-                            </x-button>
-                            <x-button variant="danger" wire:click="eliminarRol({{ $rol->id }})" title="Eliminar Rol">
-                                <i class="fa fa-trash"></i>
-                            </x-button>
+                @else
+                    <x-card>
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-lg dark:text-primaryTextDark">{{ $rol->name }}</span>
+                            <div class="flex space-x-2">
+                                <x-button variant="secondary" wire:click="editarRol({{ $rol->id }})" title="Editar Rol">
+                                    <i class="fa fa-edit"></i>
+                                </x-button>
+                            </div>
                         </div>
-                    </div>
 
 
-                    <div class="mt-2">
-                        <span class="font-semibold dark:text-primaryTextDark">Permisos:</span>
-                        @if ($rol->permissions->count())
-                            <ul class="list-disc list-inside text-sm text-gray-700 mt-1 dark:text-primaryTextDark">
-                                @foreach ($rol->permissions as $permiso)
-                                    <li>{{ $permiso->name }}</li>
-                                @endforeach
-                            </ul>
-                        @else
-                            <p class="text-sm text-gray-500 dark:text-primaryTextDark">Sin permisos asignados.</p>
-                        @endif
-                    </div>
-                </x-card>
-            @endif
+                        <div class="mt-2">
+                            <span class="font-semibold dark:text-primaryTextDark">Permisos:</span>
+                            @if ($rol->permissions->count())
+                                <ul class="list-disc list-inside text-sm text-gray-700 mt-1 dark:text-primaryTextDark">
+                                    @foreach ($rol->permissions as $permiso)
+                                        <li>{{ $permiso->name }}</li>
+                                    @endforeach
+                                </ul>
+                            @else
+                                <p class="text-sm text-gray-500 dark:text-primaryTextDark">Sin permisos asignados.</p>
+                            @endif
+                        </div>
+                    </x-card>
+                @endif
 
 
-        @endforeach
-    </div>
+            @endforeach
+        </div>
+    @else
+        <p class="text-sm text-muted-foreground">Sin permisos para ver roles.</p>
+
+    @endcan
+
 
     <x-h3>Permisos Existentes</x-h3>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 my-4">
