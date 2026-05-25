@@ -62,7 +62,6 @@ class ProductoServicio
     {
         /***
          * Se agrego una nueva logica al modificar una compra:
-         * Cuando se genera el kardex la salida se relaciona a la compra mediante CompraSalidaStock
          * todas estas salidas cambiaran de kardex y luego se procedera a borrar su relacion con la compra
          * pero por que se borra la relacion si la compra tambien esta cambiando de kardex?
          * porque al pasarse al kardex diferente puede que haya una compra anterior a esta compra con stock aun disponible, entonces se

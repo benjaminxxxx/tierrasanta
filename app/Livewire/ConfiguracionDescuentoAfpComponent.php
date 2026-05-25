@@ -2,7 +2,6 @@
 
 namespace App\Livewire;
 
-use App\Models\Configuracion;
 use App\Models\PlanDescuentoSp;
 use App\Models\PlanDescuentoSpHistorico;
 use App\Services\Configuracion\ConfiguracionHistorialServicio;

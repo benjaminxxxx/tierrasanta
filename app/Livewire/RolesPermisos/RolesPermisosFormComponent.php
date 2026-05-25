@@ -8,7 +8,7 @@ use Livewire\Component;
 class RolesPermisosFormComponent extends Component
 {
     use LivewireAlert;
-
+    public $breadcrumb = [];
     public $roles;
     public $permisos;
     public $mostrarModalCrearPermiso = false;
@@ -24,6 +24,9 @@ class RolesPermisosFormComponent extends Component
 
     public function mount()
     {
+        $this->breadcrumb = [
+            ['label' => 'Roles']
+        ];
         $this->cargarDatos();
     }
 

@@ -10,6 +10,7 @@ class PermisosRolComponent extends Component
 {
     use LivewireAlert;
 
+    public $breadcrumb = [];
     public string $rolNombre = '';
     public array $arbol = [];
     // Array plano de nombres de permisos activados
@@ -18,6 +19,10 @@ class PermisosRolComponent extends Component
     public function mount(string $rol): void
     {
         $this->rolNombre = $rol;
+        $this->breadcrumb = [
+            ['route' => 'roles_permisos', 'label' => 'Roles'],
+            ['label' => $this->rolNombre]
+        ];
         $this->arbol = config('permisos_tree');
         $this->permisosActivados = PermisosServicio::obtenerPermisosDeRol($rol);
     }

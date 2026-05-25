@@ -1,143 +1,88 @@
-<div class="p-6">
-    <x-title>Gestión de Roles y Permisos</x-title>
-
-    <div class="flex justify-end space-x-2 my-4">
+<div class="space-y-4">
+    <x-flex class="justify-between">
+        <x-breadcrumb :items="$breadcrumb" />
         @can(\App\Constants\Permisos::SISTEMA_ROL_GESTIONAR)
             <x-button wire:click="$set('mostrarModalCrearRol', true)">
                 <I class="fa fa-plus"></I> Nuevo Rol
             </x-button>
         @endcan
-
-    </div>
+    </x-flex>
 
     <x-h3>Roles Existentes</x-h3>
     @can(\App\Constants\Permisos::SISTEMA_ROL_VER)
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 my-4">
-            @foreach ($roles as $rol)
+        <div>
+            <x-table>
+                <x-slot name="thead">
+                    <x-tr>
+                        <x-th>
+                            #
+                        </x-th>
+                        <x-th>
+                            Rol
+                        </x-th>
+                        <x-th>
+                            Cantidad de Permisos
+                        </x-th>
+                        <x-th>
+                            Acciones
+                        </x-th>
+                    </x-tr>
+                </x-slot>
+                <x-slot name="tbody">
+                    @php
+                        $indice = 0;
+                    @endphp
+                    @foreach ($roles as $rol)
+                        @if ($rol->name != 'Super Admin')
+                            @php
+                                $indice++;
+                            @endphp
+                            <x-tr>
+                                <x-td>
+                                    {{ $indice }}
+                                </x-td>
+                                <x-td>
+                                    {{ $rol->name }}
+                                </x-td>
+                                <x-td>
+                                    {{ $rol->permissions->count() }}
+                                </x-td>
 
-                @if ($rol->name == 'Super Admin')
+                                @can(\App\Constants\Permisos::SISTEMA_ROL_GESTIONAR)
+                                    <x-td class="text-center">
+                                        <x-flex class="justify-center">
+                                            <x-button href="{{ route('gestion-usuario.permisos-rol', ['rol' => $rol->name]) }}">
+                                                <i class="fa fa-link"></I> Gestionar Permisos
+                                            </x-button>
+                                            <x-button variant="danger" wire:click="eliminarRol({{ $rol->id }})"
+                                                wire:confirm="¿Está seguro que desea eliminar este rol?">
+                                                <i class="fa fa-remove"></i>
+                                            </x-button>
+                                        </x-flex>
+                                    </x-td>
+
+                                @endcan
+                            </x-tr>
+                        @endif
 
 
-                @else
-                    <x-card>
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-lg dark:text-primaryTextDark">{{ $rol->name }}</span>
-                            <div class="flex space-x-2">
-                                <x-button variant="secondary" wire:click="editarRol({{ $rol->id }})" title="Editar Rol">
-                                    <i class="fa fa-edit"></i>
-                                </x-button>
-                            </div>
-                        </div>
+                    @endforeach
+                </x-slot>
+            </x-table>
 
-
-                        <div class="mt-2">
-                            <span class="font-semibold dark:text-primaryTextDark">Permisos:</span>
-                            @if ($rol->permissions->count())
-                                <ul class="list-disc list-inside text-sm text-gray-700 mt-1 dark:text-primaryTextDark">
-                                    @foreach ($rol->permissions as $permiso)
-                                        <li>{{ $permiso->name }}</li>
-                                    @endforeach
-                                </ul>
-                            @else
-                                <p class="text-sm text-gray-500 dark:text-primaryTextDark">Sin permisos asignados.</p>
-                            @endif
-                        </div>
-                    </x-card>
-                @endif
-
-
-            @endforeach
         </div>
     @else
         <p class="text-sm text-muted-foreground">Sin permisos para ver roles.</p>
 
     @endcan
-
-
-    <x-h3>Permisos Existentes</x-h3>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 my-4">
-        @foreach ($permisos as $permiso)
-            <x-card>
-                <div class="flex items-center justify-between">
-                    <span class="font-bold text-lg dark:text-primaryTextDark">{{ $permiso->name }}</span>
-                    <div class="flex space-x-2">
-
-                        @hasrole('Super Admin')
-                        <x-button variant="secondary" wire:click="editarPermiso({{ $permiso->id }})" title="Editar Permiso">
-                            <i class="fa fa-edit"></i>
-                        </x-button>
-                        <x-button variant="danger" wire:click="eliminarPermiso({{ $permiso->id }})"
-                            title="Eliminar Permiso">
-                            <i class="fa fa-trash"></i>
-                        </x-button>
-                        @endhasrole
-                    </div>
-                </div>
-
-                <p class="text-sm text-gray-500 mt-1 dark:text-primaryTextDark">
-                    ID: {{ $permiso->id }}
-                </p>
-            </x-card>
-        @endforeach
-    </div>
-
-    <!-- Modal Crear Permiso -->
-    <x-dialog-modal wire:model.live="mostrarModalCrearPermiso">
-        <x-slot name="title">
-            <x-h3>Crear Nuevo Permiso</x-h3>
-        </x-slot>
-
-        <x-slot name="content">
-            <x-input label="Nombre del Permiso" wire:model="nombrePermiso" error="nombrePermiso" />
-
-            <div class="mt-4">
-                <span class="font-semibold">Asignar a Roles:</span>
-                @foreach ($roles as $rol)
-                    <div class="mt-1">
-                        <label class="inline-flex items-center">
-                            <input type="checkbox" wire:model.live="rolesSeleccionados" value="{{ $rol->id }}"
-                                class="rounded border-gray-300">
-                            <span class="ml-2">{{ $rol->name }}</span>
-                        </label>
-                    </div>
-                @endforeach
-            </div>
-        </x-slot>
-
-        <x-slot name="footer">
-            <x-flex class="justify-end full-width">
-                <x-button variant="secondary" wire:click="$set('mostrarModalCrearPermiso', false)">
-                    Cancelar
-                </x-button>
-
-                <x-button wire:click="guardarPermiso">
-                    <I class="fa fa-save"></I> {{ $modoEditarPermiso ? 'Actualizar Permiso' : 'Guardar Permiso' }}
-                </x-button>
-            </x-flex>
-        </x-slot>
-    </x-dialog-modal>
-
     <!-- Modal Crear Rol -->
     <x-dialog-modal wire:model.live="mostrarModalCrearRol">
         <x-slot name="title">
-            <x-h3>Crear Nuevo Rol</x-h3>
+            Crear Nuevo Rol
         </x-slot>
 
         <x-slot name="content">
-            <x-input-string label="Nombre del Rol" wire:model.live="nombreRol" error="nombreRol" />
-
-            <div class="mt-4">
-                <span class="font-semibold">Asignar Permisos:</span>
-                @foreach ($permisos as $permiso)
-                    <div class="mt-1">
-                        <label class="inline-flex items-center">
-                            <input type="checkbox" wire:model.live="permisosSeleccionados" value="{{ $permiso->id }}"
-                                class="rounded border-gray-300">
-                            <span class="ml-2">{{ $permiso->name }}</span>
-                        </label>
-                    </div>
-                @endforeach
-            </div>
+            <x-input label="Nombre del Rol" wire:model="nombreRol" error="nombreRol" />
         </x-slot>
 
         <x-slot name="footer">

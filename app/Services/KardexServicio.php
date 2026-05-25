@@ -3,8 +3,6 @@ namespace App\Services;
 
 use App\Models\InsKardex;
 use App\Models\InsKardexReporte;
-use App\Models\Kardex;
-use App\Models\KardexConsolidado;
 use DB;
 
 class KardexServicio

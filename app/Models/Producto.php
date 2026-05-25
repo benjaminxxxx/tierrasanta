@@ -116,43 +116,6 @@ class Producto extends Model
             ->whereYear('created_at', now()->year)
             ->exists();
     }
-    public function getStockDisponibleAttribute()
-    {
-        //Verificar si hay kardex con el producto
-        $fecha = Carbon::now();
-        $productoId = $this->id;
-        $kardex = Kardex::whereHas('productos', function ($query) use ($productoId) {
-            $query->where('producto_id', $productoId);
-        })
-            ->where('fecha_inicial', '<=', $fecha)
-            ->where('fecha_final', '>=', $fecha)
-            ->where('estado', 'activo')
-            ->where('eliminado', false)
-            ->first();
-
-        if (!$kardex) {
-            return [
-                'stock_disponible_porcentaje' => 0, // Redondeado y convertido a entero
-                'stock_disponible' => 0
-            ];
-        }
-
-        $totalStock = 0;
-        $cantidadUsada = 0;
-        $kardexProductos = $kardex->productos()->where('producto_id', $productoId)->get();
-        foreach ($kardexProductos as $kardexProducto) {
-            $totalStock += $kardexProducto->stockDisponible['total_stock'];
-            $cantidadUsada += $kardexProducto->stockDisponible['cantidad_usada'];
-        }
-
-        $stockDisponible = $totalStock - $cantidadUsada;
-        $porcentaje = $totalStock > 0 ? ($stockDisponible / $totalStock) * 100 : 0;
-
-        return [
-            'stock_disponible_porcentaje' => (int) round($porcentaje), // Redondeado y convertido a entero
-            'stock_disponible' => round($stockDisponible, 3) // Redondeado a 2 decimales
-        ];
-    }
 
 
 

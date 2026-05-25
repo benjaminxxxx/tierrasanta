@@ -42,12 +42,14 @@
                                         Ver Kardex {{ ucfirst($tipoOpuesto) }}
                                     </x-dropdown-link>
                                 @endif
-                                @can(\App\Constants\Permisos::INSUMO_KARDEX_IMPORTAR)
-                                    <x-dropdown-link @click="openFileDialog()">
-                                        Importar Kardex {{ $insumoKardex->tipo }}
-                                    </x-dropdown-link>
-                                @endcan
+
+
                                 <div x-data="{ openFileDialog() { $refs.fileInputNegro.click() } }">
+                                    @can(\App\Constants\Permisos::INSUMO_KARDEX_IMPORTAR)
+                                        <x-dropdown-link @click="openFileDialog()">
+                                            Importar Kardex {{ $insumoKardex->tipo }}
+                                        </x-dropdown-link>
+                                    @endcan
 
                                     <input type="file"
                                         accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

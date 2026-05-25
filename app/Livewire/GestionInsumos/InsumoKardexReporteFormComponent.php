@@ -4,7 +4,6 @@ namespace App\Livewire\GestionInsumos;
 
 use App\Models\InsCategoria;
 use App\Models\InsKardexReporte;
-use App\Models\Kardex;
 use Carbon\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;

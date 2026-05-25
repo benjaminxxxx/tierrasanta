@@ -1,7 +1,6 @@
-<x-app-layout>
+<x-app-layout title="Productos">
     
     <livewire:productos-component/>
     <livewire:productos-form-component/>
-    <livewire:productos-compra-component/>
 
 </x-app-layout>

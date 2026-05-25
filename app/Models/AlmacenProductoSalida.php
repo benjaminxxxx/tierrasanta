@@ -35,27 +35,6 @@ class AlmacenProductoSalida extends Model
     {
         return $this->hasMany(DistribucionCombustible::class, 'almacen_producto_salida_id');
     }
-
-    public function kardexProducto()
-    {
-        return $this->belongsTo(KardexProducto::class, 'kardex_producto_id');
-    }
-    public function compraStock()
-    {
-        return $this->hasMany(CompraSalidaStock::class, 'salida_almacen_id');
-    }
-
-    public function compraSalida()
-    {
-        return $this->hasManyThrough(
-            CompraProducto::class,         // Modelo destino
-            CompraSalidaStock::class,      // Modelo intermedio
-            'salida_almacen_id',           // Clave foránea en CompraSalidaStock (relación con AlmacenProductoSalida)
-            'id',                           // Clave primaria en CompraProducto
-            'id',                           // Clave primaria en AlmacenProductoSalida
-            'compra_producto_id'            // Clave foránea en CompraSalidaStock (relación con CompraProducto)
-        );
-    }
     // Relación con Producto
     public function producto()
     {
@@ -64,7 +43,7 @@ class AlmacenProductoSalida extends Model
 
     // Relación con Compra
     /**
-     * Esta funcion debe quedar obsoleta, la compra ya no se relaciona a compra_proucto_id, sino a salidacomprastock que aun falta verificar, para su correcto uso cambia por compraSalida
+     * Esta funcion debe quedar obsoleta, la compra ya no se relaciona a compra_proucto_id, sino a salidacomprastock que aun falta verificar
      */
     public function compra()
     {
@@ -88,10 +67,6 @@ class AlmacenProductoSalida extends Model
         return $this->maquinaria?->nombre ?? '-';
     }
 
-    public function getPerteneceAUnaCompraAttribute()
-    {
-        return $this->compraStock()->count() > 0;
-    }
 
     public function getObservacionAttribute()
     {

@@ -24,8 +24,8 @@ namespace App\Constants;
  *    - PLANILLA     → plan_mensuales, plan_registros_diarios, plan_conceptos, etc.
  *    - CUADRILLA    → cuad_*
  *    - INSUMO       → ins_*, kardex_*, compra_*, almacen_*
- *    - CAMPO        → campos, labores, siembras, mano_obras, reg_*
- *    - CAMPAÑA      → campos_campanias, fertilizacion_campanias, pesticidas_campanias
+ *    - CAMPO        → campos, labores, siembras, reg_*
+ *    - CAMPAÑA      → campos_campanias, pesticidas_campanias
  *    - COCHINILLA   → cochinilla_*, venta_cochinillas, venta_facturada_cochinillas
  *    - PLANTA       → eval_poblacion_plantas*, poblacion_plantas*
  *    - EVALUACION   → eval_brotes*, eval_infestacion*, evaluacion_*, proyeccion_*
@@ -108,7 +108,7 @@ class Permisos
     // =========================================================================
 // DOMINIO: CAMPAÑA (campañas agrícolas, costos, resúmenes por campo)
 // Tablas: campos_campanias, campos_campanias_consumos,
-//         fertilizacion_campanias, pesticidas_campanias,
+//         , pesticidas_campanias,
 //         costo_mensual_distribuciones
 // =========================================================================
 

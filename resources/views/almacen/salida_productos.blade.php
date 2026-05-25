@@ -6,6 +6,5 @@
     <livewire:almacen-salida-kardex-component/>
     <livewire:productos-form-component/>
     <livewire:productos-stock-component/>
-    <livewire:productos-compra-component/>
     
 </x-app-layout>

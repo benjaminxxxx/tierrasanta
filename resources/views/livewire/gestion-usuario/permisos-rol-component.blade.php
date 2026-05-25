@@ -1,11 +1,7 @@
 {{-- resources/views/livewire/gestion-usuario/permisos-rol-component.blade.php --}}
-<div x-data="permisosTree" class="max-w-4xl mx-auto py-8 px-4">
-    {{-- Encabezado --}}
-    <div class="mb-8">
-        <h1 class="text-2xl font-bold text-foreground">
-            Administración de permisos
-            <span class="text-primary">· {{ $rolNombre }}</span>
-        </h1>
+<div x-data="permisosTree" class="space-y-4">
+    <div>
+        <x-breadcrumb :items="$breadcrumb" />
         <p class="text-muted-foreground mt-1 text-sm">
             Activa o desactiva permisos para este rol. Al activar un nodo padre se activan
             automáticamente todos sus hijos. Al activar un hijo, su padre (y abuelos) se activan
@@ -14,7 +10,7 @@
     </div>
 
     {{-- Árbol --}}
-    <div class="space-y-3 mb-8">
+    <div class="space-y-3">
         <template x-for="(nodo, idx) in arbol" :key="idx">
             <div x-html="renderNodo(nodo, [idx])"></div>
         </template>

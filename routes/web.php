@@ -9,7 +9,6 @@ use App\Http\Controllers\CochinillaController;
 use App\Http\Controllers\CuadrillaController;
 use App\Http\Controllers\FdmController;
 use App\Http\Controllers\GestionInsumosController;
-use App\Http\Controllers\KardexController;
 use App\Http\Controllers\MaquinariaController;
 use App\Http\Controllers\NutrienteController;
 use App\Http\Controllers\PermisosRolController;
@@ -46,9 +45,7 @@ Route::middleware([
     Route::get('/empleados', function () {
         return view('livewire.gestion-planilla.administrar-planillero.indice-empleados');
     })->name('empleados')->middleware('can:Planilla Empleados');
-    /*Route::get('/configuracion', function () {
-        return view('configuracion');
-    })->name('configuracion'); obsoleto*/
+
     Route::get('/descuentos-de-afp', function () {
         return view('descuentos_afp');
     })->name('descuentos_afp')->middleware('can:' . Permisos::PLANILLA_CONFIG_AFP);
@@ -209,9 +206,7 @@ Route::middleware([
     Route::get('/gestion_insumos/kardex/reportes', [GestionInsumosController::class, 'kardexReportes'])->name('gestion_insumos.kardex.reportes')->middleware('can:' . Permisos::INSUMO_KARDEX_REPORTE);
     Route::get('/gestion_insumos/kardex/reporte/{insumoKardexReporteId}', [GestionInsumosController::class, 'kardexReporte'])->name('gestion_insumos.kardex.reporte')->middleware('can:' . Permisos::INSUMO_KARDEX_REPORTE_VER);
     Route::get('/gestion_insumos/kardex/asignacion/{productoId}/{anio}', [GestionInsumosController::class, 'kardexAsignacion'])->name('gestion_insumos.kardex_asignacion')->middleware('can:' . Permisos::INSUMO_KARDEX_ASIGNAR_MOVIMIENTOS);
-    //KARDEX
-    Route::get('/kardex/lista', [KardexController::class, 'lista'])->name('kardex.lista');
-    Route::get('/kardex/ver/{id}', [KardexController::class, 'ver'])->name('kardex.ver');
+    
 
     //GASTOS
     //Route::get('/contabilidad/gasto/general', [GastoController::class, 'general'])->name('gastos.general');

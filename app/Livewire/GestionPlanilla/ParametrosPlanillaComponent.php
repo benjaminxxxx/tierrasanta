@@ -3,7 +3,6 @@
 namespace App\Livewire\GestionPlanilla;
 
 use App\Models\Configuracion;
-use App\Models\ConfiguracionHistorial;
 use App\Services\Configuracion\ConfiguracionHistorialProceso;
 use App\Services\Configuracion\ConfiguracionHistorialServicio;
 use Dotenv\Exception\ValidationException;

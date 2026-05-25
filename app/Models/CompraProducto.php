@@ -75,16 +75,10 @@ class CompraProducto extends Model
             }
         });
     }
-    public function almacenSalida()
-    {
-        return $this->hasMany(CompraSalidaStock::class, 'compra_producto_id');
-    }
+ 
     // Relación con Producto
 
-    public function getCantidadDisponibleAttribute()
-    {
-        return (float) $this->stock - (float) $this->almacenSalida()->sum('stock');
-    }
+    
     public function getCostoPorUnidadAttribute()
     {
         return (float) $this->total / (float) $this->stock;

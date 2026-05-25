@@ -24,18 +24,7 @@ return new class extends Migration {
             $table->foreignId('maquinaria_id')->nullable()
                 ->constrained('maquinarias')
                 ->onDelete('set null');
-            $table->unsignedBigInteger('cantidad_kardex_producto_id')->nullable();
-            $table->unsignedBigInteger('kardex_producto_id')->nullable();
-            $table->decimal('cantidad_stock_inicial', 8, 3)->nullable();
-            $table->foreign('cantidad_kardex_producto_id')
-                ->references('id')
-                ->on('kardex_productos')
-                ->onDelete('set null');
-
-            $table->foreign('kardex_producto_id')
-                ->references('id')
-                ->on('kardex_productos')
-                ->onDelete('set null');
+        
 
             $table->integer('indice')->nullable();
             $table->enum('tipo_kardex', ['blanco', 'negro'])->nullable();

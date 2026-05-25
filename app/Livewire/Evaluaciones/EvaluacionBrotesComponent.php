@@ -2,8 +2,6 @@
 
 namespace App\Livewire\Evaluaciones;
 
-use App\Models\EvalBrotesPorPiso;
-use App\Models\EvaluacionBrotesXPiso;
 use App\Services\Produccion\MateriaPrima\BrotesPorPisoServicio;
 use App\Services\Produccion\Planificacion\CampaniaServicio;
 use Jantinnerezo\LivewireAlert\LivewireAlert;

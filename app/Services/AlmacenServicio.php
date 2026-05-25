@@ -4,11 +4,8 @@ namespace App\Services;
 
 use App\Models\AlmacenProductoSalida;
 use App\Models\CampoCampania;
-use App\Models\CompraProducto;
-use App\Models\CompraSalidaStock;
 use App\Models\InsKardex;
 use App\Models\InsResFertilizanteCampania;
-use App\Models\KardexProducto;
 use App\Models\PesticidaCampania;
 use App\Models\Producto;
 use App\Models\ProductoNutriente;
@@ -707,25 +704,7 @@ class AlmacenServicio
 
 
 
-    public static function resetearStocks(KardexProducto $kardexProducto)
-    {
-        AlmacenProductoSalida::where('cantidad_kardex_producto_id', $kardexProducto->id)->delete();
-        $comprasProcesadas = CompraSalidaStock::where('kardex_producto_id', $kardexProducto->id)->get();
-        foreach ($comprasProcesadas as $compra) {
-            $compraProducto = CompraProducto::find($compra->compra_producto_id);
-            if ($compraProducto) {
-                $compraProducto->update([
-                    'fecha_termino' => null
-                ]);
-            }
-            $compra->delete();
-            //en un futuro usar trigger
-        }
-        $kardexProducto->salidasStockUsado()->update([
-            'cantidad_kardex_producto_id' => null,
-            'cantidad_stock_inicial' => null
-        ]);
-    }
+    
     public static function registrarSalida($data)
     {
         if (!is_array($data) || empty($data)) {

@@ -161,15 +161,7 @@
         <x-slot name="footer">
             <x-flex class="justify-end">
                 <x-button variant="secondary" type="button" wire:click="closeForm" class="mr-2">Cerrar</x-button>
-                @if ($productoId)
-                    <x-button variant="secondary" class="mr-2"
-                        @click="$wire.dispatch('VerComprasProducto',{'id':{{ $productoId }}})">
-                        <i class="fa fa-money-bill"></i> Compras
-                    </x-button>
-
-                    <livewire:compra-producto-import-export-component :productoid="$productoId"
-                        wire:key="registroCompra{{ $productoId }}" />
-                @endif
+               
 
                 <x-button type="submit" wire:click="guardarProducto" class="ml-3">
                     <i class="fa fa-save"></i> Guardar

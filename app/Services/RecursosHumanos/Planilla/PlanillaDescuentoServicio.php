@@ -2,16 +2,9 @@
 
 namespace App\Services\RecursosHumanos\Planilla;
 
-use App\Models\PlanDescuentoSp;
 use App\Models\PlanDescuentoSpHistorico;
-use App\Models\PlanEmpleado;
-use App\Services\Configuracion\ConfiguracionHistorialServicio;
-use DB;
 use Exception;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
 class PlanillaDescuentoServicio
 {

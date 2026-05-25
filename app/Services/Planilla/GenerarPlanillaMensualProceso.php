@@ -2,9 +2,6 @@
 
 namespace App\Services\Planilla;
 
-use App\Models\PlanConceptosConfig;
-use App\Models\PlanMensual;
-use App\Services\Configuracion\ConfiguracionHistorialServicio;
 use App\Services\PlanillaMensualServicio;
 use App\Services\PlanSueldoServicio;
 use App\Services\RecursosHumanos\Personal\ContratoServicio;
@@ -12,11 +9,9 @@ use App\Services\RecursosHumanos\Planilla\PlanillaDescuentoServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaEmpleadoServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaMensualDetalleServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaRegistroDiarioServicio;
-use App\Support\CalculoHelper;
 use Exception;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 class GenerarPlanillaMensualProceso
 {

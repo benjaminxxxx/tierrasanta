@@ -494,7 +494,6 @@ class CampaniaServicio
         $registros = $query->where('campo_nombre', $campo)
             ->with([
                 'producto.categoria',
-                'compraSalida.proveedor'
             ])
             ->get();
         if ($registros) {
@@ -505,12 +504,7 @@ class CampaniaServicio
                 $orden_compra = null;
                 $tienda_comercial = null;
                 $factura = null;
-                if ($registro->compraSalida->count() > 0) {
-                    $compraVinculaa = $registro->compraSalida->first();
-
-                    $tienda_comercial = $compraVinculaa->proveedor ? $compraVinculaa->proveedor->nombre : '-';
-                    $factura = $compraVinculaa->serie . '-' . $compraVinculaa->numero;
-                }
+             
 
 
                 //solo se aceptan valores blanco, negro y -

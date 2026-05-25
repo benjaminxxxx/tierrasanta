@@ -1,6 +1,5 @@
-<x-app-layout>
+<x-app-layout title="Consolidado de Regadores">
 
     <livewire:consolidado-riego-component />
-    <livewire:gestion-riego.consolidar-regadores-component />
 
 </x-app-layout>
