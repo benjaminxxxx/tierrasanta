@@ -26,7 +26,6 @@ class EvaluacionInfestacionFormComponent extends Component
     public function sincronizarInformacionInfestacion($campaniaId)
     {
         try {
-
             $campaniaServicio = new CampaniaServicio();
             $campaniaServicio->registrarHistorialDeInfestaciones($campaniaId,'infestacion');
 

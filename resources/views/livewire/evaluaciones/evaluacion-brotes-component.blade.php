@@ -115,7 +115,7 @@
 
                         {{-- Totales --}}
                         <x-td
-                            class="text-center">{{ number_format($e->promedio_actual_total_brotes_2y3piso, 0) }}</x-td>
+                            class="text-center bg-lime-200">{{ number_format($e->promedio_actual_total_brotes_2y3piso, 0) }}</x-td>
                         <x-td
                             class="text-center">{{ number_format($e->promedio_total_brotes_2y3piso_n_dias, 0) }}</x-td>
 

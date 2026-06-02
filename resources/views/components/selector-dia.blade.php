@@ -53,7 +53,19 @@
             defaultDate: value,
             onChange: function(selectedDates, dateStr) {
                 value = dateStr;
+            },
+            onReady: function(selectedDates, dateStr, fp) {
+        fp.altInput.addEventListener('blur', function() {
+            if (fp.isOpen) return; // ✅ evita interferir con navegación del calendario
+
+            const parsed = fp.parseDate(fp.altInput.value, fp.config.altFormat);
+            if (parsed) {
+                fp.setDate(parsed, true);
+            } else {
+                fp.altInput.value = value ?? '';
             }
+        });
+    }
         });
 
         Livewire.hook('commit', ({ component, commit, respond, succeed, fail }) => {

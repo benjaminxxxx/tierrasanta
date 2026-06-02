@@ -76,6 +76,12 @@ class CrudCampaniaServicio
                 }
             }
 
+            $data['infestacion_fecha'] = ($data['infestacion_fecha']==='')? null: $data['infestacion_fecha'];
+            $data['infestacion_fecha_recojo_vaciado_infestadores'] = ($data['infestacion_fecha_recojo_vaciado_infestadores']==='')? null: $data['infestacion_fecha_recojo_vaciado_infestadores'];
+            $data['infestacion_fecha_colocacion_malla'] = ($data['infestacion_fecha_colocacion_malla']==='')? null: $data['infestacion_fecha_colocacion_malla'];
+            $data['infestacion_fecha_retiro_malla'] = ($data['infestacion_fecha_retiro_malla']==='')? null: $data['infestacion_fecha_retiro_malla'];
+            
+
             // 5. Crear o actualizar
             if ($campaniaId) {
                 $campania = CampoCampania::findOrFail($campaniaId);

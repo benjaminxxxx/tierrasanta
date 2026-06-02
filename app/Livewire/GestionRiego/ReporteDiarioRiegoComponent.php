@@ -260,6 +260,9 @@ class ReporteDiarioRiegoComponent extends Component
             ]);
         }
     }
+    public function verResumenSemanalRiego(){
+        
+    }
     public function render()
     {
         return view('livewire.gestion-riego.reporte-diario-riego-component');

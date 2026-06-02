@@ -1,5 +1,5 @@
 <div x-data="accordionTable('accordion-campania')" 
-     @accordion-open-all.window="openAll(['info-general','poblacion-plantas','brotes','infestacion','reinfestacion','nutrientes'])"
+     @accordion-open-all.window="openAll(['info-general','poblacion-plantas','brotes','infestacion','reinfestacion','cosechamadres','cosecha','riego','nutrientes','analisis_financiero'])"
      @accordion-close-all.window="closeAll()">
     <x-card class="mt-4">
         <div class="flex justify-end gap-3 mb-3">
@@ -90,6 +90,12 @@
                                 'id' => 'nutrientes',
                                 'titulo' => 'NUTRIENTES',
                                 'partial' => 'livewire.gestion-campania.partials.campania-x-campo-nutrientes',
+                            ])
+
+                            @include('livewire.gestion-campania.partials.accordion-section', [
+                                'id' => 'analisis_financiero',
+                                'titulo' => 'ANÁLISIS FINANCIERO',
+                                'partial' => 'livewire.gestion-campania.partials.campania-x-campo-analisis-financiero',
                             ])
                         </x-slot>
                     </x-table>

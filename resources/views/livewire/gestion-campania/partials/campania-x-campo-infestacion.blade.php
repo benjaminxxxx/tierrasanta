@@ -4,17 +4,21 @@
         {{ formatear_fecha($campania->infestacion_fecha) }}
     </x-td>
     <x-td></x-td>
-    <x-td class="bg-gray-100 dark:bg-gray-600" rowspan="100%">
+    <x-td class="bg-gray-100 dark:bg-gray-600 space-y-4" rowspan="100%">
         @if ($campania)
-            <div class="flex flex-wrap gap-4 space-y-2">
-                <x-button type="button" @click="$wire.dispatch('editarCampania',{campaniaId:{{ $campania->id }},tab:'infestacion'})">
-                    <i class="fa fa-edit"></i> EDITAR
+            <div>
+                <a href="{{ route('reporte_campo.evaluacion_brotes',['campaniaId'=>$campania->id]) }}" target="_blank" class="bg-lime-200 py-3 px-6 border border-border rounded">Consultar Información <i class="fa fa-question"></i></a>
+            </div>
+            <x-flex>
+                <x-button type="button"
+                    @click="$wire.dispatch('editarCampania',{campaniaId:{{ $campania->id }},tab:'infestacion'})">
+                    <i class="fa fa-edit"></i> EDITAR FECHAS
                 </x-button>
                 <x-button type="button"
                     @click="$wire.dispatch('sincronizarInformacionInfestacion',{campaniaId:{{ $campania->id }}})">
                     <i class="fa fa-sync"></i> SINCRONIZAR DESDE INFESTACIÓN
                 </x-button>
-            </div>
+            </x-flex>
 
         @endif
     </x-td>
@@ -25,7 +29,7 @@
 </x-tr>
 <x-tr>
     <x-td>Número de pencas a la infestación</x-td>
-    <x-td class="text-right">{{ number_format($campania->infestacion_numero_pencas, 0) }}</x-td>
+    <x-td class="text-right bg-lime-200">{{ number_format($campania->infestacion_numero_pencas, 0) }}</x-td>
 </x-tr>
 <x-tr>
     <x-td>Kg totales de madres</x-td>

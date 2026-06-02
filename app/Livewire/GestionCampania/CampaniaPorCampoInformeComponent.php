@@ -15,7 +15,9 @@ class CampaniaPorCampoInformeComponent extends Component
     protected $listeners = [
         'poblacionPlantasRegistrado' => 'refrescar', 
         'evaluacionInfestacionGuardada' => 'refrescar', 
-        'riegoCampaniaModificado' => 'sincronizarRiegos'
+        'riegoCampaniaModificado' => 'sincronizarRiegos',
+        'campaniaInsertada' => 'refrescar', 
+        'refrescarInformeCampaniaXCampo' => 'refrescar'
     ];
     public function mount($campania)
     {

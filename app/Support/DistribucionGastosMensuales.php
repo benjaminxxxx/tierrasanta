@@ -12,6 +12,45 @@ class DistribucionGastosMensuales
         $finMes = (clone $inicioMes)->modify('last day of this month');
         $diasMes = (int) $finMes->format('j');
 
+        $datosProcesados = self::prepararPesos($campanias, $inicioMes, $finMes);
+        $pesoTotal = array_sum(array_column($datosProcesados, 'dias_activos'));
+
+        $resultado = [];
+
+        foreach ($datosProcesados as $campania) {
+            $tienePeso = $campania['dias_activos'] > 0 && $pesoTotal > 0;
+            $porcentaje = $tienePeso ? ($campania['dias_activos'] / $pesoTotal) : 0;
+
+            $fila = [
+                'campania_id' => $campania['campania_id'],
+                'campo' => $campania['campo'],
+                'nombre_campania' => $campania['nombre_campania'],
+                'fecha_inicio' => $campania['fecha_inicio'],
+                'fecha_fin' => $campania['fecha_fin'],
+                'anio' => $anio,
+                'mes' => $mes,
+                'dias_mes' => $diasMes,
+                'dias_activos' => $campania['dias_activos'],
+                'porcentaje' => $porcentaje, // sin round, se redondea al mostrar
+            ];
+
+            foreach ($gastosMensuales as $tipo => $montoTotal) {
+                // Número real sin redondear — el redondeo va en la vista
+                $fila["monto_{$tipo}"] = $tienePeso ? ($montoTotal * $porcentaje) : 0.0;
+            }
+
+            $resultado[] = $fila;
+        }
+        
+        return $resultado;
+    }
+    /*
+    public static function calcular(int $anio, int $mes, array $gastosMensuales, array $campanias): array
+    {
+        $inicioMes = new DateTime("{$anio}-{$mes}-01");
+        $finMes = (clone $inicioMes)->modify('last day of this month');
+        $diasMes = (int) $finMes->format('j');
+
         // 1. Preparar datos y calcular pesos
         $datosProcesados = self::prepararPesos($campanias, $inicioMes, $finMes);
         $pesoTotal = array_sum(array_column($datosProcesados, 'dias_activos'));
@@ -19,26 +58,27 @@ class DistribucionGastosMensuales
         // 2. Distribución
         $resultado = [];
         $acumuladosPorGasto = array_fill_keys(array_keys($gastosMensuales), 0.0);
-        
+
         // Identificamos la última campaña QUE TENGA PESO para el ajuste de redondeo
         $ultimaCampaniaConPeso = self::obtenerUltimoIdConPeso($datosProcesados);
 
         foreach ($datosProcesados as $campania) {
             $tienePeso = $campania['dias_activos'] > 0 && $pesoTotal > 0;
             $esUltimaParaRedondeo = ($campania['campania_id'] === $ultimaCampaniaConPeso);
-            
+
             $porcentaje = $tienePeso ? ($campania['dias_activos'] / $pesoTotal) : 0;
 
             $fila = [
-                'campania_id'  => $campania['campania_id'],
+                'campania_id' => $campania['campania_id'],
+                'campo' => $campania['campo'],
                 'nombre_campania' => $campania['nombre_campania'],
                 'fecha_inicio' => $campania['fecha_inicio'],
                 'fecha_fin' => $campania['fecha_fin'],
-                'anio'         => $anio,
-                'mes'          => $mes,
-                'dias_mes'     => $diasMes,
+                'anio' => $anio,
+                'mes' => $mes,
+                'dias_mes' => $diasMes,
                 'dias_activos' => $campania['dias_activos'],
-                'porcentaje'   => round($porcentaje, 6),
+                'porcentaje' => round($porcentaje, 6),
             ];
 
             foreach ($gastosMensuales as $tipo => $montoTotal) {
@@ -61,7 +101,7 @@ class DistribucionGastosMensuales
 
         return $resultado;
     }
-
+*/
     private static function prepararPesos(array $campanias, DateTime $inicioMes, DateTime $finMes): array
     {
         $preparados = [];
@@ -71,8 +111,8 @@ class DistribucionGastosMensuales
             if (!empty($campania['fecha_inicio'])) {
                 $inicioCampania = new DateTime($campania['fecha_inicio']);
                 // Si fecha_fin es null, usamos el fin del mes como fecha límite
-                $finCampania = !empty($campania['fecha_fin']) 
-                    ? new DateTime($campania['fecha_fin']) 
+                $finCampania = !empty($campania['fecha_fin'])
+                    ? new DateTime($campania['fecha_fin'])
                     : clone $finMes;
 
                 $inicioReal = max($inicioCampania, $inicioMes);
@@ -84,7 +124,8 @@ class DistribucionGastosMensuales
             }
 
             $preparados[] = [
-                'campania_id'  => $campania['campania_id'],
+                'campo' => $campania['campo'],
+                'campania_id' => $campania['campania_id'],
                 'nombre_campania' => $campania['nombre_campania'],
                 'fecha_inicio' => $campania['fecha_inicio'],
                 'fecha_fin' => $campania['fecha_fin'],
@@ -97,7 +138,8 @@ class DistribucionGastosMensuales
     private static function obtenerUltimoIdConPeso(array $datos): ?int
     {
         $filtrados = array_filter($datos, fn($d) => $d['dias_activos'] > 0);
-        if (empty($filtrados)) return null;
+        if (empty($filtrados))
+            return null;
         return end($filtrados)['campania_id'];
     }
 }

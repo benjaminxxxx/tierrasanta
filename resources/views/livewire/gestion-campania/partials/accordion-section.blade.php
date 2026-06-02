@@ -16,7 +16,7 @@
         DATOS/HA
     </x-th>
     <x-th class="text-right">
-        <svg :class="isOpen('{{ $id }}') ? 'rotate-180' : 'rotate-0'" class="w-4 h-4 transition-transform inline-block"
+        <svg :class="isOpen('{{ $id }}') ? 'rotate-0' : 'rotate-180'" class="w-4 h-4 transition-transform inline-block"
             xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
             <path stroke="currentColor" stroke-width="2" d="M9 5L5 1 1 5" />
         </svg>

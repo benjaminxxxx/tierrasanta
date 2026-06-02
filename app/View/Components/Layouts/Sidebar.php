@@ -182,7 +182,7 @@ class Sidebar extends Component
                 'children' => [
                     ['title' => 'Población Plantas', 'route' => 'reporte_campo.poblacion_plantas', 'can' => Permisos::PLANTA_EVALUACION],
                     ['title' => 'Brotes x Piso', 'route' => 'reporte_campo.evaluacion_brotes', 'can' => Permisos::BROTE_EVALUACION],
-                    ['title' => 'Infestación Cosecha', 'route' => 'reporte_campo.evaluacion_infestacion_cosecha', 'can' => Permisos::INFESTACION_EVALUACION],
+                    ['title' => 'Proyección rendimiento: Conteo de cochinilla', 'route' => 'reporte_campo.evaluacion_infestacion_cosecha', 'can' => Permisos::INFESTACION_EVALUACION],
                     ['title' => 'Proyección Rendimiento Poda', 'route' => 'reporte_campo.evaluacion_proyeccion_rendimiento_poda', 'can' => Permisos::PROYECCION_EVALUACION],
                 ],
             ],

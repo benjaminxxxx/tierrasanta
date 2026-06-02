@@ -14,11 +14,16 @@ class CampaniasComponent extends Component
 {
     use WithPagination, WithoutUrlPagination, LivewireAlert;
     public $campoSeleccionado;
+    public $breadcrumb = [];
     public $campaniaSeleccionada;
     public $campanias = [];
     protected $listeners = ['campaniaInsertada' => 'refrescar'];
     public function mount()
     {
+         $this->breadcrumb = [
+            ['label' => 'Resúmen General de Campañas']
+        ];
+
         $this->campoSeleccionado = session('campo');
         if ($this->campoSeleccionado) {
 

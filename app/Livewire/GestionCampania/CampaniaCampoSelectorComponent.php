@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Session;
 class CampaniaCampoSelectorComponent extends Component
 {
     use LivewireAlert;
-
+    public $breadcrumb = [];
     public $campoSeleccionado;
     public $campaniaSeleccionada; // El ID
     public $campanias = [];
@@ -21,6 +21,10 @@ class CampaniaCampoSelectorComponent extends Component
 
     public function mount($campaniaId = null)
     {
+        $this->breadcrumb = [
+            ['route' => 'campanias', 'label' => 'Resúmen General de Campañas'],
+            ['label' => 'Campañas por Campo']
+        ];
         // 1. Determinar el campo inicial
         if ($campaniaId) {
             $campaniaModel = CampoCampania::find($campaniaId);
@@ -44,7 +48,7 @@ class CampaniaCampoSelectorComponent extends Component
     private function cargarYSeleccionar($campo, $campaniaIdDeseada = null)
     {
         $this->campoSeleccionado = $campo;
-        
+
         // Cargar lista de campañas
         $this->campanias = CampoCampania::where('campo', $campo)
             ->orderBy('nombre_campania', 'desc')
@@ -72,7 +76,7 @@ class CampaniaCampoSelectorComponent extends Component
     {
         $this->campaniaSeleccionada = $id;
         $this->campania = CampoCampania::find($id);
-        
+
         if ($this->campania) {
             Session::put('campania', $id);
             $this->dispatch('campania-cambiada', id: $id);

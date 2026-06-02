@@ -1,10 +1,9 @@
 <div>
     <x-loading wire:loading />
 
-    <x-flex>
-        <x-title>
-            Campañas - Resumen General
-        </x-title>
+    <x-flex class="justify-between">
+        <x-breadcrumb :items="$breadcrumb"/>
+
         @can(\App\Constants\Permisos::CAMPAÑA_GESTIONAR)
             <x-button @click="$wire.dispatch('registroCampania')">
                 <i class="fa fa-plus"></i> Registrar nueva campaña
@@ -196,7 +195,7 @@
 
                 <tbody>
                     @foreach ($campaniasGenerales as $indice => $campania)
-                        <x-tr>
+                        <x-tr class="bg-card">
                             <x-td class="text-center">
                                 {{$indice + 1}}
                             </x-td>
@@ -218,6 +217,10 @@
 
                                         <x-slot name="content">
                                             <div class="w-full text-center">
+                                                <x-dropdown-link class="text-center"
+                                                    href="{{ route('campania.x.campo',['campania'=>$campania->id]) }}">
+                                                    Gestionar Detalle
+                                                </x-dropdown-link>
                                                 <x-dropdown-link class="text-center"
                                                     @click="$wire.dispatch('editarCampania',{campaniaId:{{ $campania->id }}})">
                                                     Editar Campaña

@@ -12,88 +12,101 @@
 
         {{-- CONTENT --}}
         <x-slot name="content">
-            <div class="relative border rounded-lg overflow-hidden dark:border-gray-500">
+            <div class="relative border rounded-lg overflow-hidden border-border">
                 <div class="max-h-[70vh] overflow-y-auto">
                     <table class="min-w-full border-collapse">
-                        <thead class="sticky top-0 z-20 bg-white dark:bg-gray-900">
-                            <tr>
-                                <th rowspan="2">Campaña</th>
-                                <th rowspan="2">Inicio</th>
-                                <th rowspan="2">Fin</th>
-                                <th rowspan="2" class="text-center">Días</th>
-                                <th rowspan="2" class="text-center">%</th>
+                        <thead class="sticky top-0 z-20 bg-muted">
+                            <x-tr>
+                                <x-th rowspan="2">Campo</x-th>
+                                <x-th rowspan="2">Campaña</x-th>
+                                <x-th rowspan="2">Inicio</x-th>
+                                <x-th rowspan="2">Fin</x-th>
+                                <x-th rowspan="2" class="text-center">Días</x-th>
+                                <x-th rowspan="2" class="text-center">%</x-th>
 
-                                <th colspan="5" class="text-center bg-gray-50 dark:bg-indigo-600 dark:text-white">
+                                <x-th colspan="5" class="text-center bg-gray-50 dark:bg-indigo-600 dark:text-white">
                                     COSTOS FIJOS
-                                </th>
+                                </x-th>
 
-                                <th colspan="2" class="text-center bg-gray-50 dark:bg-amber-600 dark:text-white">
+                                <x-th colspan="2" class="text-center bg-gray-50 dark:bg-amber-600 dark:text-white">
                                     COSTOS OPERATIVOS
-                                </th>
-                            </tr>
+                                </x-th>
+                            </x-tr>
 
-                            <tr>
-                                <th class="text-right">Administrativo</th>
-                                <th class="text-right">Financiero</th>
-                                <th class="text-right">Gastos Oficina</th>
-                                <th class="text-right">Depreciaciones</th>
-                                <th class="text-right">Costo Terreno</th>
+                            <x-tr>
+                                <x-th class="text-right">Administrativo</x-th>
+                                <x-th class="text-right">Financiero</x-th>
+                                <x-th class="text-right">Gastos Oficina</x-th>
+                                <x-th class="text-right">Depreciaciones</x-th>
+                                <x-th class="text-right">Costo Terreno</x-th>
 
-                                <th class="text-right">Servicios Fundo</th>
-                                <th class="text-right">Mano Obra Ind.</th>
-                            </tr>
+                                <x-th class="text-right">Servicios Fundo</x-th>
+                                <x-th class="text-right">Mano Obra Ind.</x-th>
+                            </x-tr>
                         </thead>
                         <tbody>
                             @if(is_array($distribucionCalculada) && count($distribucionCalculada) > 0)
                                 @foreach($distribucionCalculada as $fila)
-                                    <tr class="{{ $fila['porcentaje'] == 0 ? 'opacity-50' : '' }}">
-                                        <td>{{ $fila['nombre_campania'] }}</td>
-                                        <td>{{ $fila['fecha_inicio'] }}</td>
-                                        <td>{{ $fila['fecha_fin'] ?? 'Abierta' }}</td>
-                                        <td class="text-center">{{ $fila['dias_activos'] }}</td>
-                                        <td class="text-center">
+                                    <x-tr class="{{ $fila['porcentaje'] == 0 ? 'opacity-50' : '' }}">
+                                        <x-td class="text-center">{{ $fila['campo'] }}</x-td>
+                                        <x-td>{{ $fila['nombre_campania'] }}</x-td>
+                                        <x-td>{{ formatear_fecha($fila['fecha_inicio']) }}</x-td>
+                                        <x-td>
+                                            {{ $fila['fecha_fin'] ? formatear_fecha($fila['fecha_fin']) : 'Abierta' }}
+                                        </x-td>
+                                        <x-td class="text-center">{{ $fila['dias_activos'] }}</x-td>
+                                        <x-td class="text-center">
                                             {{ number_format($fila['porcentaje'] * 100, 2) }}%
-                                        </td>
+                                        </x-td>
 
-                                        <td class="text-right">{{ formatear_numero($fila['monto_fijo_administrativo']) }}</td>
-                                        <td class="text-right">{{ formatear_numero($fila['monto_fijo_financiero']) }}</td>
-                                        <td class="text-right">{{ formatear_numero($fila['monto_fijo_gastos_oficina']) }}</td>
-                                        <td class="text-right">{{ formatear_numero($fila['monto_fijo_depreciaciones']) }}</td>
-                                        <td class="text-right">{{ formatear_numero($fila['monto_fijo_costo_terreno']) }}</td>
+                                        <x-td
+                                            class="text-right">{{ formatear_numero($fila['monto_fijo_administrativo']) }}</x-td>
+                                        <x-td class="text-right">{{ formatear_numero($fila['monto_fijo_financiero']) }}</x-td>
+                                        <x-td
+                                            class="text-right">{{ formatear_numero($fila['monto_fijo_gastos_oficina']) }}</x-td>
+                                        <x-td
+                                            class="text-right">{{ formatear_numero($fila['monto_fijo_depreciaciones']) }}</x-td>
+                                        <x-td
+                                            class="text-right">{{ formatear_numero($fila['monto_fijo_costo_terreno']) }}</x-td>
 
-                                        <td class="text-right">{{ formatear_numero($fila['monto_operativo_servicios_fundo']) }}
-                                        </td>
-                                        <td class="text-right">
+                                        <x-td
+                                            class="text-right">{{ formatear_numero($fila['monto_operativo_servicios_fundo']) }}
+                                        </x-td>
+                                        <x-td class="text-right">
                                             {{ formatear_numero($fila['monto_operativo_mano_obra_indirecta']) }}
-                                        </td>
-                                    </tr>
+                                        </x-td>
+                                    </x-tr>
                                 @endforeach
 
                             @endif
                         </tbody>
                         @if(is_array($totalesCalculados) && count($totalesCalculados) > 0)
-                            <tfoot class="sticky bottom-0 z-20 bg-gray-100 dark:bg-gray-800">
-                                <tr class="font-semibold">
-                                    <td colspan="5" class="text-right">TOTAL DISTRIBUIDO</td>
-                                    <td class="text-right">{{ formatear_numero($totalesCalculados['fijo_administrativo']) }}
-                                    </td>
-                                    <td class="text-right">{{ formatear_numero($totalesCalculados['fijo_financiero']) }}
-                                    </td>
-                                    <td class="text-right">{{ formatear_numero($totalesCalculados['fijo_gastos_oficina']) }}
-                                    </td>
-                                    <td class="text-right">{{ formatear_numero($totalesCalculados['fijo_depreciaciones']) }}
-                                    </td>
-                                    <td class="text-right">{{ formatear_numero($totalesCalculados['fijo_costo_terreno']) }}
-                                    </td>
-                                    <td class="text-right">
+                            <tfoot class="sticky bottom-0 z-20 bg-muted">
+                                <x-tr class="font-semibold">
+                                    <x-td colspan="6" class="text-right">TOTAL DISTRIBUIDO</x-td>
+                                    <x-td
+                                        class="text-right">{{ formatear_numero($totalesCalculados['fijo_administrativo']) }}
+                                    </x-td>
+                                    <x-td class="text-right">{{ formatear_numero($totalesCalculados['fijo_financiero']) }}
+                                    </x-td>
+                                    <x-td
+                                        class="text-right">{{ formatear_numero($totalesCalculados['fijo_gastos_oficina']) }}
+                                    </x-td>
+                                    <x-td
+                                        class="text-right">{{ formatear_numero($totalesCalculados['fijo_depreciaciones']) }}
+                                    </x-td>
+                                    <x-td
+                                        class="text-right">{{ formatear_numero($totalesCalculados['fijo_costo_terreno']) }}
+                                    </x-td>
+                                    <x-td class="text-right">
                                         {{ formatear_numero($totalesCalculados['operativo_servicios_fundo']) }}
-                                    </td>
-                                    <td class="text-right">
+                                    </x-td>
+                                    <x-td class="text-right">
                                         {{ formatear_numero($totalesCalculados['operativo_mano_obra_indirecta']) }}
-                                    </td>
-                                </tr>
+                                    </x-td>
+                                </x-tr>
 
-                                <tr class="font-semibold">
+                                <x-tr class="font-semibold">
                                     <td colspan="5" class="text-right">TOTAL REAL MES</td>
                                     <td class="text-right">{{ formatear_numero($totalesReales['fijo_administrativo']) }}
                                     </td>
@@ -104,19 +117,21 @@
                                     </td>
                                     <td class="text-right">{{ formatear_numero($totalesReales['fijo_costo_terreno']) }}</td>
                                     <td class="text-right">
-                                        {{ formatear_numero($totalesReales['operativo_servicios_fundo']) }}</td>
+                                        {{ formatear_numero($totalesReales['operativo_servicios_fundo']) }}
+                                    </td>
                                     <td class="text-right">
-                                        {{ formatear_numero($totalesReales['operativo_mano_obra_indirecta']) }}</td>
-                                </tr>
+                                        {{ formatear_numero($totalesReales['operativo_mano_obra_indirecta']) }}
+                                    </td>
+                                </x-tr>
 
-                                <tr class="font-semibold">
+                                <x-tr class="font-semibold">
                                     <td colspan="5" class="text-right">DIFERENCIA</td>
                                     @foreach($totalesDiferencia as $diff)
                                         <td class="text-right {{ $diff != 0 ? 'text-red-600' : 'text-green-600' }}">
                                             {{ formatear_numero($diff) }}
                                         </td>
                                     @endforeach
-                                </tr>
+                                </x-tr>
                             </tfoot>
                         @endif
                     </table>
@@ -131,7 +146,7 @@
             </x-button>
 
             <x-button class="ml-2" wire:click="aprobarDistribucion">
-                Aprobar distribución
+                <i class="fas fa-check"></i> Aprobar distribución
             </x-button>
         </x-slot>
 

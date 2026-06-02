@@ -1,33 +1,59 @@
-<div>
+<div class="space-y-4">
+    <x-flex class="justify-between">
+        <div>
+            <x-title>
+                Registro Diario de Riego
+            </x-title>
 
+        </div>
+
+        <div class="ms-3 relative">
+            <x-dropdown align="right" width="60">
+                <x-slot name="trigger">
+                    <span class="inline-flex rounded-md">
+                        <button type="button"
+                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-card-foreground bg-card transition ease-in-out duration-150">
+                            Opciones
+
+                            <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+                            </svg>
+                        </button>
+                    </span>
+                </x-slot>
+
+                <x-slot name="content">
+                    <div class="w-60">
+                        <!-- Team Management -->
+                        <div class="block px-4 py-2 text-xs text-gray-400">
+                            Opciones
+                        </div>
+
+                        <!-- Team Settings -->
+                        <x-dropdown-link wire:click="verResumenSemanalRiego">
+                            Ver Resumen Semanal
+                        </x-dropdown-link>
+                        @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
+                            <x-dropdown-link @click="$wire.dispatch('abrirAgregarRegador')">
+                                Agregar Regador
+                            </x-dropdown-link>
+                            <x-dropdown-link wire:click="enviarRegistroDiarioRegadores">
+                                Enviar Registro Diario
+                            </x-dropdown-link>
+                        @endcan
+
+                    </div>
+                </x-slot>
+            </x-dropdown>
+        </div>
+
+    </x-flex>
     <x-card>
         <x-flex class="justify-between">
-            <x-flex>
-                <x-title>
-                    Registro Diario de Riego
-                </x-title>
-                <x-flex class="!items-end">
-                    <x-button variant="secondary" wire:click="fechaAnterior" class="w-full lg:w-auto">
-                        <i class="fa fa-chevron-left"></i>
-                    </x-button>
-                    <x-selector-dia wire:model.live="fecha" label="Fecha Seleccionada" />
-                    <x-button variant="secondary" wire:click="fechaPosterior" class="w-full lg:w-auto">
-                        <i class="fa fa-chevron-right"></i>
-                    </x-button>
-                    <x-input type="number" wire:model.live="limiteHorasDiarias" label="Limite de Horas" />
-                </x-flex>
-            </x-flex>
-            @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
-                <x-flex>
-                    <x-button @click="$wire.dispatch('abrirAgregarRegador')">
-                        <i class="fa fa-plus"></i> Agregar Regador
-                    </x-button>
-                    <x-button wire:click="enviarRegistroDiarioRegadores">
-                        <i class="fa fa-paper-plane"></i> Enviar Registro Diario
-                    </x-button>
-                </x-flex>
-            @endcan
-
+            @include('comun.selector-dia-base')
+            <x-input type="number" wire:model.live="limiteHorasDiarias" label="Limite de Horas" />
         </x-flex>
     </x-card>
     <div class="my-4">

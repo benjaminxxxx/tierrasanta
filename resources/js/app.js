@@ -13,7 +13,7 @@ flatpickr.setDefaults({
   dateFormat: "d/m/Y", // ✅ visible al usuario
   altInput: true,
   altFormat: "d/m/Y", // ✅ formato visible en input
-  allowInput: true // permite escribir la fecha manualmente si quieres
+  allowInput: true
 });
 
 window.FullCalendar = {

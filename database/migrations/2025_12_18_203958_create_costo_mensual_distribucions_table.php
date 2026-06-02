@@ -13,7 +13,6 @@ return new class extends Migration {
         Schema::create('costo_mensual_distribuciones', function (Blueprint $table) {
             $table->id();
 
-            // Relación fuerte
             $table->foreignId('costo_mensual_id')
                 ->constrained('costos_mensuales')
                 ->cascadeOnDelete();
@@ -22,29 +21,26 @@ return new class extends Migration {
                 ->constrained('campos_campanias')
                 ->cascadeOnDelete();
 
-            // Periodo
             $table->unsignedSmallInteger('anio');
             $table->unsignedTinyInteger('mes');
 
-            // Cálculo
             $table->unsignedTinyInteger('dias_mes');
             $table->unsignedTinyInteger('dias_activos');
-            $table->decimal('porcentaje', 10, 6);
+            $table->decimal('porcentaje', 20, 10);
 
             // Costos fijos
-            $table->decimal('fijo_administrativo', 12, 2)->default(0);
-            $table->decimal('fijo_financiero', 12, 2)->default(0);
-            $table->decimal('fijo_gastos_oficina', 12, 2)->default(0);
-            $table->decimal('fijo_depreciaciones', 12, 2)->default(0);
-            $table->decimal('fijo_costo_terreno', 12, 2)->default(0);
+            $table->decimal('fijo_administrativo', 20, 10)->default(0);
+            $table->decimal('fijo_financiero', 20, 10)->default(0);
+            $table->decimal('fijo_gastos_oficina', 20, 10)->default(0);
+            $table->decimal('fijo_depreciaciones', 20, 10)->default(0);
+            $table->decimal('fijo_costo_terreno', 20, 10)->default(0);
 
             // Costos operativos
-            $table->decimal('operativo_servicios_fundo', 12, 2)->default(0);
-            $table->decimal('operativo_mano_obra_indirecta', 12, 2)->default(0);
+            $table->decimal('operativo_servicios_fundo', 20, 10)->default(0);
+            $table->decimal('operativo_mano_obra_indirecta', 20, 10)->default(0);
 
             $table->timestamps();
 
-            // Evita duplicados en reprocesos
             $table->unique([
                 'costo_mensual_id',
                 'campo_campania_id'

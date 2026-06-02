@@ -17,7 +17,7 @@ class CostosMensualesFormComponent extends Component
         'anio' => null,
         'mes' => null
     ];
-    protected $listeners = ['agregarCostoMensual'];
+    protected $listeners = ['agregarCostoMensual','editarCostosMensuales'];
     public function mount()
     {
 
@@ -35,6 +35,13 @@ class CostosMensualesFormComponent extends Component
         $this->form['anio'] = $anioActual;
         $this->form['mes'] = now()->month;
         $this->paso = 1;
+        $this->mostrarFormCostosMensuales = true;
+    }
+    public function editarCostosMensuales($costoMensualId)
+    {
+        $costo = CostoMensual::findOrFail($costoMensualId);
+        $this->form = array_merge($this->form, $costo->toArray());
+        $this->paso = 2;
         $this->mostrarFormCostosMensuales = true;
     }
     public function cargarCostoMensual(): void

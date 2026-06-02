@@ -88,7 +88,10 @@ Route::middleware([
     Route::get('/campo/campos', [CampoController::class, 'campos'])->name('campo.campos')->middleware('can:' . Permisos::CAMPO_PARCELA);
     Route::get('/campo/siembras', [CampoController::class, 'siembra'])->name('campo.siembra')->middleware('can:' . Permisos::CAMPO_SIEMBRA);
     
-    Route::get('/campania/costos', [CampaniaController::class, 'costos'])->name('campania.costos')->middleware('can:' . Permisos::CAMPAÑA_COSTOS);
+    Route::get('/campania/costos/{campaniaId?}', [CampaniaController::class, 'costos'])
+    ->name('campania.costos')
+    ->middleware('can:' . Permisos::CAMPAÑA_COSTOS);
+
     Route::get('/campania/calendario', function () {
         return view('livewire.gestion-campania.campania-calendario-indice');
     })->name('campania.calendario')->middleware('can:' . Permisos::CAMPAÑA_CALENDARIO);
@@ -219,7 +222,7 @@ Route::middleware([
 
     //REPORTE CAMPO
     Route::get('/evaluacion_campo/poblacion_planta', [ReporteCampoController::class, 'poblacion_plantas'])->name('reporte_campo.poblacion_plantas')->middleware('can:' . Permisos::PLANTA_EVALUACION);
-    Route::get('/evaluacion_campo/evaluacion_brotes', [ReporteCampoController::class, 'evaluacion_brotes'])->name('reporte_campo.evaluacion_brotes')->middleware('can:' . Permisos::BROTE_EVALUACION);
+    Route::get('/evaluacion_campo/evaluacion_brotes/{campaniaId?}', [ReporteCampoController::class, 'evaluacion_brotes'])->name('reporte_campo.evaluacion_brotes')->middleware('can:' . Permisos::BROTE_EVALUACION);
     Route::get('/evaluacion_campo/evaluacion_infestacion_cosecha', [ReporteCampoController::class, 'evaluacion_infestacion_cosecha'])->name('reporte_campo.evaluacion_infestacion_cosecha')->middleware('can:' . Permisos::INFESTACION_EVALUACION);
     Route::get('/evaluacion-campo/proyeccion-rendimiento-poda', [ReporteCampoController::class, 'evaluacion_proyeccion_rendimiento_poda'])->name('reporte_campo.evaluacion_proyeccion_rendimiento_poda')->middleware('can:' . Permisos::PROYECCION_EVALUACION);
 

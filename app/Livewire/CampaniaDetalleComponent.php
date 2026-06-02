@@ -16,18 +16,7 @@ class CampaniaDetalleComponent extends Component
     public function mount(){
         $this->mostrarVacios = Session::get('mostrarVacios',false);
     }
-    public function actualizarInformacionCampania(){
-        if(!$this->campania){
-            return $this->alert('error','La campaña ya no existe.');
-        }
-        
-        $campaniaServicio = new CampaniaServicio($this->campania->id);
-       /* $campaniaServicio->registrarHistorialPoblacionPlantas();
-        $campaniaServicio->registrarHistorialBrotes();*/
-        $campaniaServicio->actualizarGastosyConsumos();
-        /*$campaniaServicio->registrarHistorialDeInfestaciones();
-        $campaniaServicio->registrarHistorialDeInfestaciones('reinfestacion');*/
-    }
+    
     public function abrirCampaniaDetalle($campaniaId)
     {
         try {

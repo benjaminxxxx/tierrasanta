@@ -1,8 +1,7 @@
 <div x-data="campaniaXCampo" class="space-y-4">
+   
     <x-flex class="justify-between">
-        <x-title>
-            Campañas por Campo
-        </x-title>
+        <x-breadcrumb :items="$breadcrumb"/>
         @can(\App\Constants\Permisos::CAMPAÑA_GESTIONAR)
             <x-button @click="$wire.dispatch('registroCampania')">
                 <i class="fa fa-plus"></i> Registrar Nueva Campaña

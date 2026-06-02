@@ -127,7 +127,7 @@ class CampaniaServicio
             ->where('tipo_infestacion', $tipo)
             ->orderBy('fecha')
             ->get();
-
+            
         $data = [];
 
         if ($infestaciones->isNotEmpty()) {

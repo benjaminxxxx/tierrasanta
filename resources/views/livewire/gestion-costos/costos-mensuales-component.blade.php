@@ -182,6 +182,10 @@
                                             <x-slot name="content">
                                                 <div class="w-60">
                                                     <x-dropdown-link
+                                                        @click="$wire.dispatch('editarCostosMensuales',{costoMensualId:{{ $item->id }}})">
+                                                        Editar Costos
+                                                    </x-dropdown-link>
+                                                    <x-dropdown-link
                                                         @click="$wire.dispatch('distribuirCostosMensuales',{costoMensualId:{{ $item->id }}})">
                                                         Distribuir Costos
                                                     </x-dropdown-link>

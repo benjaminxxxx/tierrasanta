@@ -24,15 +24,17 @@ class CostosMensualesDistribucionFormComponent extends Component
     protected $listeners = ['distribuirCostosMensuales'];
     public function distribuirCostosMensuales(int $costoMensualId): void
     {
+        
         try {
             $costoMensual = CostoMensual::findOrFail($costoMensualId);
             $advertencias = ValidadorRangosCampania::validarCampos();
-
+      
             $advertenciasPorCampania = collect($advertencias)
                 ->flatMap(function ($campo) {
                     return collect($campo['errores'])
                         ->flatMap(function ($error) {
-                            return collect($error['campania_ids'])->map(function ($campaniaId) use ($error) {
+                          
+                            return collect($error['campania_id'])->map(function ($campaniaId) use ($error) {
                                 return [
                                     'campania_id' => $campaniaId,
                                     'tipo' => $error['tipo'],
@@ -57,12 +59,12 @@ class CostosMensualesDistribucionFormComponent extends Component
                 'operativo_servicios_fundo' => $costoMensual->operativo_servicios_fundo,
                 'operativo_mano_obra_indirecta' => $costoMensual->operativo_mano_obra_indirecta,
             ];
-
+            
             $inicioMes = Carbon::create($anio, $mes, 1)->startOfDay();
             $finMes = (clone $inicioMes)->endOfMonth();
 
             $campanias = CampoCampania::query()
-                ->select('id', 'nombre_campania', 'fecha_inicio', 'fecha_fin')
+                ->select('id', 'nombre_campania', 'fecha_inicio', 'fecha_fin','campo')
                 ->where('fecha_inicio', '<=', $finMes)
                 ->where(function ($q) use ($inicioMes) {
                     $q->whereNull('fecha_fin')
@@ -78,6 +80,7 @@ class CostosMensualesDistribucionFormComponent extends Component
                         'nombre_campania' => $c->nombre_campania,
                         'fecha_inicio' => $c->fecha_inicio,
                         'fecha_fin' => $c->fecha_fin,
+                        'campo' => $c->campo,
 
                         // flags de validación
                         'warning' => $errores->isNotEmpty(),
@@ -153,7 +156,7 @@ class CostosMensualesDistribucionFormComponent extends Component
 
             app(DistribucionCostoMensualServicio::class)
                 ->guardar($this->costoMensual->id, $this->distribucionCalculada);
-
+            $this->dispatch('distribucionAprobada');
             $this->alert('success', 'Distribución mensual guardada correctamente');
             $this->mostrarFormDistribucionCostosMensuales = false;
         } catch (\Throwable $th) {

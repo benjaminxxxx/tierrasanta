@@ -112,9 +112,9 @@
         </x-slot>
 
         <x-slot name="footer">
-            <x-secondary-button wire:click="$set('displayingToken', false)" wire:loading.attr="disabled">
+            <x-button variant="secondary" wire:click="$set('displayingToken', false)" wire:loading.attr="disabled">
                 {{ __('Close') }}
-            </x-secondary-button>
+            </x-button>
         </x-slot>
     </x-dialog-modal>
 

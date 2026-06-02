@@ -23,9 +23,9 @@ class EvaluacionBrotesComponent extends Component
     public $campaniasParaFiltro = [];
     protected $listeners = ['brotesPorPisoRegistrado' => '$refresh','confirmareliminarBrotesXPiso'];
 
-    public function mount()
+    public function mount($campaniaId = null)
     {
-       
+       $this->campaniaFiltrada = $campaniaId;
     }
     public function updatedCampoFiltrado()
     {
