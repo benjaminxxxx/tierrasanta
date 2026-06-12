@@ -317,7 +317,6 @@ class ResumenTramoServicio
         $dataParaUpsert = [];
         $contadorAuxiliar = 0;
         // 4. Iteramos sobre la lista unificada de códigos de grupo.
-
         foreach ($todosLosCodigos as $codigoGrupo) {
 
             $contadorAuxiliar++;
@@ -339,12 +338,12 @@ class ResumenTramoServicio
             // 🔹 Calcular adicionales
             $adicionales = $this->calcularAdicionales($tramoLaboral, $resumenesAnterioresDelGrupo, $grupo, $codigoGrupo, $tramoAnterior);
             $dataParaUpsert = array_merge($dataParaUpsert, $adicionales);
-
             // 🔹 Calcular bonos
             $bonos = $this->calcularBonos($tramoLaboral, $resumenesAnterioresDelGrupo, $grupo, $codigoGrupo, $tramoAnterior);
             $dataParaUpsert = array_merge($dataParaUpsert, $bonos);
 
         }
+        
         // 1. Obtenemos las "claves únicas" de los registros que acabamos de calcular.
         // Una clave puede ser: "COD01-sueldo-ANDRES (septiembre)"
         $clavesCalculadas = collect($dataParaUpsert)->map(function ($row) {
