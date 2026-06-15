@@ -114,7 +114,7 @@
                                                 </x-button>
                                             @endif
                                             {{-- Supervisor: habilitar corrección en aprobados --}}
-                                            @can('aprobar-gastos-cuadrilla')
+                                            @can(\App\Constants\Permisos::CUADRILLA_SEMANAL_GESTIONAR_GASTOS_APROBACION)
                                                 @if ($gasto['estado'] === 'aprobado')
                                                     <x-button wire:click="habilitarCorreccion({{ $gasto['id'] }})" variant="success"
                                                         title="Habilitar corrección">
@@ -200,7 +200,7 @@
             </div>
         </x-slot>
         <x-slot name="footer">
-            @can('aprobar-gastos-cuadrilla')
+            @can(\App\Constants\Permisos::CUADRILLA_SEMANAL_GESTIONAR_GASTOS_APROBACION)
                 <x-button wire:click="aprobarTodos"
                     wire:confirm="¿Aprobar y sellar todos los gastos pendientes? Esta acción no se puede deshacer fácilmente."
                     variant="success">

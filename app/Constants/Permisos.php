@@ -175,6 +175,7 @@ class Permisos
     const CUADRILLA_SEMANAL_AGREGAR_GRUPOS = 'Cuadrilla Reporte Semanal Agregar Grupos y Cuadrillas';
     const CUADRILLA_SEMANAL_ASIGNAR_COSTOS = 'Cuadrilla Reporte Semanal Asignar Costos por Jornal';
     const CUADRILLA_SEMANAL_GESTIONAR_GASTOS = 'Cuadrilla Reporte Semanal Gestionar Gastos Adicionales';
+    const CUADRILLA_SEMANAL_GESTIONAR_GASTOS_APROBACION = 'Cuadrilla Reporte Semanal Aprobación de Gastos Adicionales';
     const CUADRILLA_SEMANAL_GESTIONAR_HORAS = 'Cuadrilla Reporte Semanal Gestionar Horas';
 
     // — Reporte Diario

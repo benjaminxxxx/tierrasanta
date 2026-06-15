@@ -124,6 +124,7 @@ return [
                     ['nombre' => Permisos::CUADRILLA_SEMANAL_AGREGAR_GRUPOS],
                     ['nombre' => Permisos::CUADRILLA_SEMANAL_ASIGNAR_COSTOS],
                     ['nombre' => Permisos::CUADRILLA_SEMANAL_GESTIONAR_GASTOS],
+                    ['nombre' => Permisos::CUADRILLA_SEMANAL_GESTIONAR_GASTOS_APROBACION],
                     ['nombre' => Permisos::CUADRILLA_SEMANAL_GESTIONAR_HORAS],
                 ],
             ],

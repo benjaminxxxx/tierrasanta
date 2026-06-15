@@ -329,12 +329,12 @@ class ResumenTramoServicio
 
 
             $resumenesAnterioresDelGrupo = $resumenesAnteriores->where('grupo_codigo', $codigoGrupo);
-           
+
             // 🔹 Calcular sueldos
             $sueldos = $this->calcularSueldos($tramoLaboral, $resumenesAnterioresDelGrupo, $grupo, $codigoGrupo, $tramoAnterior);
 
             $dataParaUpsert = array_merge($dataParaUpsert, $sueldos);
-      
+
             // 🔹 Calcular adicionales
             $adicionales = $this->calcularAdicionales($tramoLaboral, $resumenesAnterioresDelGrupo, $grupo, $codigoGrupo, $tramoAnterior);
             $dataParaUpsert = array_merge($dataParaUpsert, $adicionales);
@@ -343,7 +343,7 @@ class ResumenTramoServicio
             $dataParaUpsert = array_merge($dataParaUpsert, $bonos);
 
         }
-        
+
         // 1. Obtenemos las "claves únicas" de los registros que acabamos de calcular.
         // Una clave puede ser: "COD01-sueldo-ANDRES (septiembre)"
         $clavesCalculadas = collect($dataParaUpsert)->map(function ($row) {
@@ -367,7 +367,7 @@ class ResumenTramoServicio
         if ($idsParaEliminar->isNotEmpty()) {
             CuadResumenPorTramo::destroy($idsParaEliminar);
         }
-        
+
         $this->upsertResumenes($dataParaUpsert, $tramoLaboral->id);
     }
 
@@ -376,9 +376,6 @@ class ResumenTramoServicio
      */
     private function calcularSueldos($tramoLaboral, $resumenesAnteriores, $grupo, $codigoGrupo, $tramoAnterior = null)
     {
-        if ($codigoGrupo == 'CSJOYA') {
-
-        }
         $costosQuery = CuadRegistroDiario::where('codigo_grupo', $codigoGrupo)
             ->whereBetween('fecha', [$tramoLaboral->fecha_inicio, $tramoLaboral->fecha_fin]);
 
@@ -389,7 +386,7 @@ class ResumenTramoServicio
         $totalCostosActual = $costosQuery->get()->sum(function ($item) {
             return $item->costo_dia; // atributo calculado
         });
-        
+
         //dd($totalCostosActual);
         $descripcion = $grupo->nombre;
 
@@ -480,6 +477,87 @@ class ResumenTramoServicio
      */
     private function calcularSueldosMensuales($tramoLaboral, $resumenesAnteriores, $grupo, $codigoGrupo, $tramoAnterior, $costosQuery)
     {
+        $meses = [
+            1 => 'enero',
+            2 => 'febrero',
+            3 => 'marzo',
+            4 => 'abril',
+            5 => 'mayo',
+            6 => 'junio',
+            7 => 'julio',
+            8 => 'agosto',
+            9 => 'septiembre',
+            10 => 'octubre',
+            11 => 'noviembre',
+            12 => 'diciembre'
+        ];
+
+        // 1. Costos actuales agrupados por número de mes → nombre en español fijo
+        $costosActualesPorMes = (clone $costosQuery)->get()
+            ->groupBy(fn($r) => $meses[Carbon::parse($r->fecha)->month])
+            ->map(fn($registros) => $registros->sum('costo_dia'));
+
+        // 2. Unificamos descripciones anteriores + nuevas, comparando en minúsculas
+        $descripcionesAnteriores = $resumenesAnteriores
+            ->where('tipo', 'sueldo')
+            ->pluck('descripcion');
+
+        $descripcionesNuevas = $costosActualesPorMes
+            ->keys()
+            ->map(fn($mes) => "{$grupo->nombre} ({$mes})");
+
+        // Normalizamos en minúsculas para evitar duplicados por capitalización distinta
+        $todasLasDescripciones = $descripcionesAnteriores
+            ->merge($descripcionesNuevas)
+            ->unique(fn($desc) => mb_strtolower($desc))
+            ->values();
+
+        $resultados = [];
+
+        foreach ($todasLasDescripciones as $descripcion) {
+            // Extraemos el mes de la descripción, normalizando a minúsculas
+            preg_match('/\((\p{L}+)\)/u', $descripcion, $matches);
+            $mes = !empty($matches[1]) ? mb_strtolower($matches[1]) : null;
+
+            // Buscamos el costo actual por ese mes (0 si no hubo actividad)
+            $costoActual = $costosActualesPorMes->get($mes, 0);
+
+            // Buscamos deuda anterior comparando en minúsculas
+            $registroAnterior = $resumenesAnteriores->first(
+                fn($r) => mb_strtolower($r->descripcion) === mb_strtolower($descripcion)
+            );
+            $deudaPendienteAnterior = $registroAnterior->deuda_acumulada ?? 0;
+
+            $deudaAcumuladaFinal = $deudaPendienteAnterior + $costoActual;
+
+            if ($deudaAcumuladaFinal <= 0) {
+                continue;
+            }
+
+            $fechaAcumulada = $registroAnterior->fecha_acumulada ?? $tramoLaboral->fecha_inicio;
+
+            $resultados[] = [
+                'grupo_codigo' => $codigoGrupo,
+                'color' => $grupo->color,
+                'tipo' => 'sueldo',
+                'descripcion' => "{$grupo->nombre} ({$mes})", // Siempre guardamos en minúscula normalizada
+                'condicion' => 'Pendiente',
+                'fecha_acumulada' => $fechaAcumulada,
+                'deuda_actual' => $costoActual,
+                'deuda_acumulada' => $deudaAcumuladaFinal,
+                'tramo_id' => $tramoLaboral->id,
+                'tramo_acumulado_id' => $tramoAnterior?->id,
+                'modalidad_pago' => $grupo->modalidad_pago,
+                'fecha_inicio' => $tramoLaboral->fecha_inicio,
+                'fecha_fin' => $tramoLaboral->fecha_fin,
+            ];
+        }
+
+        return $resultados;
+    }
+    /*
+    private function calcularSueldosMensuales($tramoLaboral, $resumenesAnteriores, $grupo, $codigoGrupo, $tramoAnterior, $costosQuery)
+    {
         // 1. Pre-calculamos los costos del tramo actual, pero agrupados por el nombre del mes.
         // Ej: ['septiembre' => 180.42, 'octubre' => 360.84]
         $costosActualesPorMes = (clone $costosQuery)->get()
@@ -537,7 +615,7 @@ class ResumenTramoServicio
         }
         return $resultados;
     }
-
+*/
     /**
      * (CORRECCIÓN CLAVE #2) Calcula los gastos adicionales consolidando actuales con pendientes.
      * Esta función fue refactorizada para corregir el cálculo de la deuda y simplificar la lógica.
@@ -558,7 +636,7 @@ class ResumenTramoServicio
         $resultados = [];
 
         foreach ($todasLasDescripciones as $descripcion) {
-           
+
             $montoActual = $gastosActuales->where('descripcion', $descripcion)->sum('monto');
             $registroAnterior = $adicionalesAnteriores->firstWhere('descripcion', $descripcion);
 
@@ -574,7 +652,7 @@ class ResumenTramoServicio
                 continue; // No generar registros en cero.
 
             $descripcionAlias = $descripcion . ' ' . $grupo->nombre;
-            
+
             $resultados[] = [
                 'grupo_codigo' => $codigoGrupo,
                 'color' => $grupo->color,
