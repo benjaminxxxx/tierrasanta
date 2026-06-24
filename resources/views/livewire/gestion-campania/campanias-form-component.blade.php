@@ -174,8 +174,7 @@
                             <tr>
                                 <td class="p-2">Infestador tubo – campos (kg)</td>
                                 <td class="p-2 w-48">
-                                    <x-input type="number"
-                                        wire:model="campania.cosechamadres_infestador_tubo_campos" />
+                                    <x-input type="number" wire:model="campania.cosechamadres_infestador_tubo_campos" />
                                 </td>
                             </tr>
 
@@ -274,8 +273,7 @@
                             <tr>
                                 <td class="p-2">Tubo</td>
                                 <td class="p-2 w-48">
-                                    <x-input readonly
-                                        wire:model="campania.cosechamadres_conversion_fresco_seco_tubo" />
+                                    <x-input readonly wire:model="campania.cosechamadres_conversion_fresco_seco_tubo" />
                                 </td>
                             </tr>
 
@@ -328,8 +326,8 @@
                     <x-h3>Tiempos calculados</x-h3>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <x-input type="text" label="Infestación → Cosecha"
-                            wire:model="campania.cosch_tiempo_inf_cosch" readonly />
+                        <x-input type="text" label="Infestación → Cosecha" wire:model="campania.cosch_tiempo_inf_cosch"
+                            readonly />
 
                         <x-input type="text" label="Reinfestación → Cosecha"
                             wire:model="campania.cosch_tiempo_reinf_cosch" readonly />
@@ -383,8 +381,8 @@
                     <x-h3>Resultados calculados</x-h3>
 
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <x-input type="string" label="Factor F/S Cartón"
-                            wire:model="campania.cosch_factor_fs_carton" readonly />
+                        <x-input type="string" label="Factor F/S Cartón" wire:model="campania.cosch_factor_fs_carton"
+                            readonly />
                         <x-input type="string" label="Factor F/S Tubo" wire:model="campania.cosch_factor_fs_tubo"
                             readonly />
                         <x-input type="string" label="Factor F/S Malla" wire:model="campania.cosch_factor_fs_malla"
@@ -394,8 +392,8 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <x-input type="string" label="Producción por hectárea"
-                            wire:model="campania.cosch_total_cosecha" readonly />
+                        <x-input type="string" label="Producción por hectárea" wire:model="campania.cosch_total_cosecha"
+                            readonly />
 
                         <x-input type="string" label="Producción total de campaña"
                             wire:model="campania.cosch_total_campania" readonly />
@@ -404,6 +402,15 @@
                 </div>
 
             </div>
+            @if ($errors->any())
+                <x-danger class="mt-4">
+                    <ul class="list-disc list-inside">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </x-danger>
+            @endif
         </x-slot>
         <x-slot name="footer">
             <!--Boton cerrar y registrar, parametros action id, si el id existe se cambia el texto a actualizar-->
@@ -412,16 +419,16 @@
     </x-dialog-modal>
 </div>
 @script
-    <script>
-        Alpine.data('cosechaForm', () => ({
-            tabActual: @entangle('tabActual'),
+<script>
+    Alpine.data('cosechaForm', () => ({
+        tabActual: @entangle('tabActual'),
 
-            init() {
-                // respaldo por si llega null o vacío desde Livewire
-                if (!this.tabActual) {
-                    this.tabActual = 'general'
-                }
+        init() {
+            // respaldo por si llega null o vacío desde Livewire
+            if (!this.tabActual) {
+                this.tabActual = 'general'
             }
-        }))
-    </script>
+        }
+    }))
+</script>
 @endscript

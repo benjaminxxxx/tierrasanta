@@ -1,7 +1,7 @@
 <x-tr class="">
     <x-th colspan="3" class="bg-gray-50 text-xs text-gray-700 uppercase  dark:bg-gray-700 dark:text-gray-400">INFORMACIÓN GENERAL</x-th>
     <x-td class="bg-gray-100 dark:bg-gray-600 text-xs text-gray-700 uppercase">
-        <x-button>
+        <x-button @click="$wire.dispatch('editarCampania',{campaniaId:{{ $campania->id }},tab:'general'})">
             <i class="fa fa-edit"></i> Editar
         </x-button>
     </x-td>
@@ -24,8 +24,8 @@
 </x-tr>
 
 <x-tr>
-    <x-td>Área:</x-td>
-    <x-td>{{ $campania->campo_model->area }}</x-td>
+    <x-td>Área de la Campaña:</x-td>
+    <x-td>{{ $campania->area }}</x-td>
 </x-tr>
 
 <x-tr>

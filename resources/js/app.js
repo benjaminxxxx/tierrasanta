@@ -41,6 +41,6 @@ window.HstConfig = {
     manualColumnResize: false,
     manualRowResize: true,
     stretchH: 'all',
-    minSpareRows: 1,
+    //minSpareRows: 1,
     autoColumnSize: false,
 };

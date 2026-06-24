@@ -45,7 +45,6 @@ class CampaniaPorCampoInformeComponent extends Component
         if (!$this->campania) {
             return $this->alert('error', 'Seleccione una campaña para continuar.');
         }
-
         $campaniaServicio = new CampaniaServicio($this->campania->id);
         $campaniaServicio->registrarHistorialRiegos();
         $this->campania->refresh();

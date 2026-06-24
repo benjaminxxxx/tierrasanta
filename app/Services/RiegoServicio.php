@@ -178,6 +178,7 @@ class RiegoServicio
 
         // Acumulados
         $riegoHrsAcumuladas = self::sumarHorasTotales($riegos);
+
         $riegoM3AcumHa = $multiplicar($riegoHrsAcumuladas);
 
         return [
@@ -201,16 +202,15 @@ class RiegoServicio
             ->sum(function ($riego) {
                 if (!$riego->total_horas)
                     return 0;
-
+                dd($riego->total_horas);
                 [$h, $m, $s] = explode(':', $riego->total_horas);
                 return (int) $h + ((int) $m / 60) + ((int) $s / 3600);
             });
     }
     protected static function sumarHorasTotales($riegos)
     {
-        return $riegos->sum(function ($riego) {
-            return CarbonInterval::createFromFormat('H:i:s', $riego->total_horas)->totalHours;
-        });
+        // sum() sumará directamente los valores decimales (ej. 1.5 + 2.25 = 3.75)
+        return $riegos->sum('total_horas');
     }
 
 

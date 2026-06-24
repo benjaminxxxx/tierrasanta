@@ -64,12 +64,12 @@
                                 <x-tr>
                                     <x-th>Número de pencas a la infestación</x-th>
                                     <x-td
-                                        class="bg-lime-100">{{ number_format($campania->infestacion_numero_pencas, 0) }}</x-td>
+                                        class="bg-lime-100 dark:bg-lime-900">{{ number_format($campania->infestacion_numero_pencas, 0) }}</x-td>
                                 </x-tr>
                                 <x-tr>
                                     <x-th>Kg totales de madres</x-th>
                                     <x-td
-                                        class="bg-purple-100">{{ number_format($campania->infestacion_kg_totales_madre, 0) }}</x-td>
+                                        class="bg-purple-100 dark:bg-purple-800">{{ number_format($campania->infestacion_kg_totales_madre, 0) }}</x-td>
                                 </x-tr>
                                 @if (
                                     $mostrarVacios ||
@@ -78,7 +78,7 @@
                                     <x-tr>
                                         <x-th>Kg de madres para infestador cartón</x-th>
                                         <x-td
-                                            class="bg-orange-100">{{ number_format($campania->infestacion_kg_madre_infestador_carton, 0) }}</x-td>
+                                            class="bg-orange-100 dark:bg-orange-800">{{ number_format($campania->infestacion_kg_madre_infestador_carton, 0) }}</x-td>
                                     </x-tr>
                                 @endif
 
@@ -89,7 +89,7 @@
                                     <x-tr>
                                         <x-th>Kg de madres para infestador tubos</x-th>
                                         <x-td
-                                            class="bg-indigo-100">{{ number_format($campania->infestacion_kg_madre_infestador_tubos, 0) }}</x-td>
+                                            class="bg-indigo-100 dark:bg-indigo-800">{{ number_format($campania->infestacion_kg_madre_infestador_tubos, 0) }}</x-td>
                                     </x-tr>
                                 @endif
 
@@ -100,7 +100,7 @@
                                     <x-tr>
                                         <x-th>Kg de madres para infestador mallita</x-th>
                                         <x-td
-                                            class="bg-stone-100">{{ number_format($campania->infestacion_kg_madre_infestador_mallita, 0) }}</x-td>
+                                            class="bg-stone-100 dark:bg-stone-800">{{ number_format($campania->infestacion_kg_madre_infestador_mallita, 0) }}</x-td>
                                     </x-tr>
                                 @endif
 

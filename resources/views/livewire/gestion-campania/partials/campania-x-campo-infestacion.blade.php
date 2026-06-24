@@ -29,7 +29,7 @@
 </x-tr>
 <x-tr>
     <x-td>Número de pencas a la infestación</x-td>
-    <x-td class="text-right bg-lime-200">{{ number_format($campania->infestacion_numero_pencas, 0) }}</x-td>
+    <x-td class="text-right bg-lime-200 dark:bg-lime-600">{{ number_format($campania->infestacion_numero_pencas, 0) }}</x-td>
 </x-tr>
 <x-tr>
     <x-td>Kg totales de madres</x-td>

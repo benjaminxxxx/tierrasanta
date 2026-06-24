@@ -9,10 +9,22 @@
     <x-card>
         <x-flex class="justify-between">
             <x-title>
-                <a href="{{ route('gestion_insumos.kardex') }}"
-                    class="underline text-blue-600 dark:text-blue-300">KARDEX</a> /
-                KARDEX {{ mb_strtoupper($insumoKardex->tipo) }} {{ mb_strtoupper($insumoKardex->descripcion) }}
-                {{ $insumoKardex->anio }}
+
+                <x-flex>
+                    <div>
+                        <a href="{{ route('gestion_insumos.kardex') }}"
+                            class="underline text-blue-600 dark:text-blue-300">KARDEX</a> /
+                        KARDEX {{ mb_strtoupper($insumoKardex->tipo) }} {{ mb_strtoupper($insumoKardex->descripcion) }}
+                        {{ $insumoKardex->anio }}
+                    </div>
+                    <div>
+                        @can(\App\Constants\Permisos::INSUMO_KARDEX_GENERAR_RESUMEN)
+                            <x-button variant="success" wire:click="generarDetalleKardexInsumo">
+                                <i class="fa fa-check"></i> Actualizar Kardex
+                            </x-button>
+                        @endcan
+                    </div>
+                </x-flex>
             </x-title>
             <x-flex>
                 <x-button title="Activar Ayuda" @click="ayudaActivada = !ayudaActivada">

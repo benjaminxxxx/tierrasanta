@@ -48,12 +48,14 @@ class HSTCuadrillaReporteSemanalHoras
             foreach ($grupoEnTramo->cuadrilleros as $cuadrilleroEnTramo) {
                 $orden++;
                 $handsontableData[] = $this->buildCrewMemberRow($cuadrilleroEnTramo, $grupoEnTramo->grupo, $orden);
+                
             }
         }
 
         if (count($handsontableData) > 0) {
             $handsontableData[] = $this->buildTotalsRow($handsontableData);
         }
+        
         return $handsontableData;
     }
 
@@ -142,8 +144,8 @@ class HSTCuadrillaReporteSemanalHoras
         $totals = $this->populateDailyDataAndGetTotals($fila, $registrosDelCuadrillero);
 
         // Añadir totales a la fila
-        $fila['total_bono'] = $totals['bono'];
-        $fila['total_costo'] = $totals['costo'] + $totals['bono'];
+        $fila['total_bono'] = formatear_numero($totals['bono'],2,false);
+        $fila['total_costo'] = formatear_numero($totals['costo'],2,false) + formatear_numero($totals['bono'],2,false);
 
         return $fila;
     }
@@ -244,7 +246,7 @@ class HSTCuadrillaReporteSemanalHoras
             // Asigna los valores a la fila
             $keyIndex = $index + 1;
             $fila["dia_{$keyIndex}"]    = $horas;
-            $fila["jornal_{$keyIndex}"] = $jornal;
+            $fila["jornal_{$keyIndex}"] = formatear_numero($jornal,2,false);
             $fila["bono_{$keyIndex}"]   = $bono;
             
             // Acumula los totales

@@ -26,7 +26,7 @@ class CochinillaInfestacionMasivoComponent extends Component
     {
         $this->breadcrumb = [
             ['route' => 'cochinilla.infestacion', 'label' => 'Infestaciones'],
-            ['label' => 'Carga Masiva']
+            ['label' => 'Gestión de Infestaciones']
         ];
         $this->inicializarMesAnio();
         $this->listaCampos = $this->cargarListaHstCampos();
