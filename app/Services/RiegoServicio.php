@@ -2,10 +2,7 @@
 namespace App\Services;
 use App\Models\CampoCampania;
 use App\Models\ReporteDiarioRiego;
-use Carbon\CarbonInterval;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 
 class RiegoServicio
 {
@@ -69,53 +66,7 @@ class RiegoServicio
 
         $campania->update($resultados);
     }
-    /*
-    VERSION ESTABLE ANTIGUA
-    protected static function calcularResumenRiego($campania, $riegos)
-    {
-        $inicio = $campania->fecha_inicio;
-        $infestacion = $campania->infestacion_fecha;
-        $reinfestacion = $campania->reinfestacion_fecha;
-        $cosecha = $campania->cosch_fecha;
-        $descargaPorHora = $campania->riego_descarga_ha_hora;
-
-        $fechaInicioRiego = $riegos->first()->fecha;
-        $fechaFinRiego = $riegos->last()->fecha;
-
-        $entre = fn($desde, $hasta) => self::sumarHorasEntreFechas($riegos, $desde, $hasta);
-        $multiplicar = fn($horas) => $horas !== null && $descargaPorHora ? $horas * $descargaPorHora : null;
-
-        $riegoHrsIniInfest = ($inicio && $infestacion) ? $entre($inicio, $infestacion) : null;
-        $riegoM3IniInfest = $multiplicar($riegoHrsIniInfest);
-
-        $riegoHrsInfestReinf = ($infestacion && $reinfestacion) ? $entre($infestacion, $reinfestacion) : null;
-        $riegoM3InfestReinf = $multiplicar($riegoHrsInfestReinf);
-
-        if ($reinfestacion && $cosecha) {
-            $riegoHrsReinfCosecha = $entre($reinfestacion, $cosecha);
-        } elseif ($infestacion && $cosecha) {
-            $riegoHrsReinfCosecha = $entre($infestacion, $cosecha);
-        } else {
-            $riegoHrsReinfCosecha = null;
-        }
-
-        $riegoM3ReinfCosecha = $multiplicar($riegoHrsReinfCosecha);
-
-        $riegoHrsAcumuladas = self::sumarHorasTotales($riegos);
-        $riegoM3AcumHa = $multiplicar($riegoHrsAcumuladas);
-        return [
-            'riego_inicio' => $fechaInicioRiego,
-            'riego_fin' => $fechaFinRiego,
-            'riego_hrs_ini_infest' => $riegoHrsIniInfest,
-            'riego_m3_ini_infest' => $riegoM3IniInfest,
-            'riego_hrs_infest_reinf' => $riegoHrsInfestReinf,
-            'riego_m3_infest_reinf' => $riegoM3InfestReinf,
-            'riego_hrs_reinf_cosecha' => $riegoHrsReinfCosecha,
-            'riego_m3_reinf_cosecha' => $riegoM3ReinfCosecha,
-            'riego_hrs_acumuladas' => $riegoHrsAcumuladas,
-            'riego_m3_acum_ha' => $riegoM3AcumHa,
-        ];
-    }*/
+ 
     /**
      * Summary of calcularResumenRiego
      * @param mixed $campania
@@ -194,18 +145,24 @@ class RiegoServicio
             'riego_m3_acum_ha' => $riegoM3AcumHa,
         ];
     }
-
+    /*version donde el total de horas era un valor con formato H:i:s y se convertía a decimal
+        protected static function sumarHorasEntreFechas($riegos, $desde, $hasta)
+        {
+            return $riegos
+                ->whereBetween('fecha', [$desde, $hasta])
+                ->sum(function ($riego) {
+                    if (!$riego->total_horas)
+                        return 0;
+                    dd($riego->total_horas);
+                    [$h, $m, $s] = explode(':', $riego->total_horas);
+                    return (int) $h + ((int) $m / 60) + ((int) $s / 3600);
+                });
+        }*/
     protected static function sumarHorasEntreFechas($riegos, $desde, $hasta)
     {
         return $riegos
             ->whereBetween('fecha', [$desde, $hasta])
-            ->sum(function ($riego) {
-                if (!$riego->total_horas)
-                    return 0;
-                dd($riego->total_horas);
-                [$h, $m, $s] = explode(':', $riego->total_horas);
-                return (int) $h + ((int) $m / 60) + ((int) $s / 3600);
-            });
+            ->sum('total_horas');
     }
     protected static function sumarHorasTotales($riegos)
     {
