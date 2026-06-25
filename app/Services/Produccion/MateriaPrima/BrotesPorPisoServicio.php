@@ -275,8 +275,28 @@ class BrotesPorPisoServicio
         return EvalBrotesPorPiso::create($campos);
     }
 
-    private function validarDatos(array $datos): void
+    private function validarDatos(array &$datos): void
     {
+        // ==========================================
+        // 0. FILTRAR FILAS VACÍAS (ANTES DE VALIDAR)
+        // ==========================================
+        if (isset($datos['detalles']) && is_array($datos['detalles'])) {
+            $datos['detalles'] = array_filter($datos['detalles'], function ($fila) {
+                // Evaluamos solo los campos de entrada manual del formulario
+                $tieneNumeroCama = !is_null($fila['numero_cama']) && $fila['numero_cama'] !== '';
+                $tieneLongitud = !is_null($fila['longitud_cama']) && $fila['longitud_cama'] !== '';
+                $tieneBrote2pAct = !is_null($fila['brotes_aptos_2p_actual']) && $fila['brotes_aptos_2p_actual'] !== '';
+                $tieneBrote2pDesp = !is_null($fila['brotes_aptos_2p_despues_n_dias']) && $fila['brotes_aptos_2p_despues_n_dias'] !== '';
+                $tieneBrote3pAct = !is_null($fila['brotes_aptos_3p_actual']) && $fila['brotes_aptos_3p_actual'] !== '';
+                $tieneBrote3pDesp = !is_null($fila['brotes_aptos_3p_despues_n_dias']) && $fila['brotes_aptos_3p_despues_n_dias'] !== '';
+
+                // Si al menos uno de estos campos tiene datos, la fila es válida y se conserva
+                return $tieneNumeroCama || $tieneLongitud || $tieneBrote2pAct || $tieneBrote2pDesp || $tieneBrote3pAct || $tieneBrote3pDesp;
+            });
+
+            // Es crucial reindexar las claves (0, 1, 2...) para que los mensajes de error coincidan con el orden real
+            $datos['detalles'] = array_values($datos['detalles']);
+        }
         // ===============================
         // A. VALIDACIÓN GENERAL
         // ===============================

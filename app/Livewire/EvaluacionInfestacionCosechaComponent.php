@@ -79,7 +79,7 @@ class EvaluacionInfestacionCosechaComponent extends Component
     }
     public function buscarUltimaInfestacion()
     {
-        $this->reset(['primeraEvalFecha','segundaEvalFecha','terceraEvalFecha','ultimaInfestacion','proyeccionCochinillaXGramo']);
+        $this->reset(['primeraEvalFecha', 'segundaEvalFecha', 'terceraEvalFecha', 'ultimaInfestacion', 'proyeccionCochinillaXGramo']);
 
         if ($this->campania) {
             $this->ultimaInfestacion = $this->campania->infestaciones()->latest('fecha')->first();
@@ -92,21 +92,25 @@ class EvaluacionInfestacionCosechaComponent extends Component
     }
     public function guardarDatosEvaluacionInfestacionCosecha(array $datos)
     {
-        if (!$this->campania) {
-            return;
+        try {
+            if (!$this->campania) {
+                return;
+            }
+            $this->campania->eval_infest_fecha_primera = $this->primeraEvalFecha;
+            $this->campania->eval_infest_fecha_segunda = $this->segundaEvalFecha;
+            $this->campania->eval_infest_fecha_tercera = $this->terceraEvalFecha;
+            $this->campania->eval_cosch_proj_coch_x_gramo = $this->proyeccionCochinillaXGramo;
+            $this->campania->save();
+           
+            app(EvaluacionInfestacionPencaServicio::class)->guardar($this->campania, $datos);
+            $this->renderizarTabla();
+            $this->alert('success', 'Evaluación guardada correctamente.');
+        } catch (\Exception $e) {
+            $this->alert('error', $e->getMessage());
         }
-        $this->campania->eval_infest_fecha_primera = $this->primeraEvalFecha;
-        $this->campania->eval_infest_fecha_segunda = $this->segundaEvalFecha;
-        $this->campania->eval_infest_fecha_tercera = $this->terceraEvalFecha;
-        $this->campania->eval_cosch_proj_coch_x_gramo = $this->proyeccionCochinillaXGramo;
-        $this->campania->save();
-
-        app(EvaluacionInfestacionPencaServicio::class)->guardar($this->campania, $datos);
-        $this->renderizarTabla();
-        $this->alert('success', 'Evaluación guardada correctamente.');
     }
 
-   
+
     public function render()
     {
         return view('livewire.evaluacion-infestacion-cosecha-component');

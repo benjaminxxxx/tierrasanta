@@ -107,6 +107,8 @@ class ProductosComponent extends Component
             'usoSeleccionado',
             'nutrientesSeleccionados',
         ]);
+
+        $this->dispatch('filtros-limpiados');
     }
     public function render()
     {

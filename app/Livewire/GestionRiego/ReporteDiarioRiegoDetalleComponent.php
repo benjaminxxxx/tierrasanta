@@ -35,6 +35,8 @@ class ReporteDiarioRiegoDetalleComponent extends Component
     public $acumulado = [];
     public $registroDiarioAcumulado = null;
     public $noAcumularHoras = false;
+    public bool $mostrarDetalleAcumulado = false;
+    public array $detalleAcumulado = [];
     protected $listeners = ["registroConsolidado"];
     public function mount($resumenId)
     {
@@ -50,6 +52,29 @@ class ReporteDiarioRiegoDetalleComponent extends Component
 
         $this->obtenerRegistrosDiarios();
         $this->horasAcumuladas = $this->resumenRiego->disponible_formateado;
+    }
+    public function verDetalleAcumulado(): void
+    {
+        if (!$this->registroDiarioAcumulado)
+            return;
+
+        $this->detalleAcumulado = AcumulacionUso::where('consolidado_destino_id', $this->resumenRiego->id)
+            ->with('consolidadoOrigen') // eager load
+            ->get()
+            ->map(function ($uso) {
+                $origen = $uso->consolidadoOrigen;
+                $horas = intdiv($uso->minutos_consumidos, 60);
+                $mins = $uso->minutos_consumidos % 60;
+                return [
+                    'fecha' => $origen->fecha,
+                    'trabajador' => $origen->trabajador_nombre,
+                    'minutos' => $uso->minutos_consumidos,
+                    'formateado' => $horas > 0 ? "{$horas}h {$mins}min" : "{$mins}min",
+                ];
+            })
+            ->toArray();
+
+        $this->mostrarDetalleAcumulado = true;
     }
     protected function sincronizarAcumulado(): void
     {
@@ -205,6 +230,8 @@ class ReporteDiarioRiegoDetalleComponent extends Component
 
             $this->resumenRiego->refresh();
             $this->sincronizarAcumulado();
+            $this->mostrarDetalleAcumulado = false; // ← cerrar modal
+            $this->detalleAcumulado = [];           // ← limpiar datos
 
             $this->dispatch('registroConsolidado');
             $this->alert('success', 'Horas acumuladas liberadas correctamente.');
@@ -254,7 +281,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
             'descuento_horas_almuerzo' => $valor
         ]);
         app(ConsolidadorServicio::class)->consolidar($this->resumenRiego);
-       
+
     }
     public function updatedNoAcumularHoras($valor)
     {
@@ -263,7 +290,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
         ]);
         app(ConsolidadorServicio::class)->consolidar($this->resumenRiego);
     }
-   
+
     public function storeTableDataRegistroDiarioRiego($data)
     {
         try {
@@ -275,7 +302,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
                 $data
             );*/
             app(ConsolidarJornadaRiegoProceso::class)
-                ->ejecutarGuardadoRegistros($this->resumenRiego, $this->fecha, $data,$this->noAcumularHoras);
+                ->ejecutarGuardadoRegistros($this->resumenRiego, $this->fecha, $data, $this->noAcumularHoras);
             $this->sincronizarAcumulado();
             //$this->dispatch('consolidarRegador', $this->resumenRiego->id);
             $this->alert("success", "Registro Guardado");

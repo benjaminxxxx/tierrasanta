@@ -1,9 +1,9 @@
 <div class="space-y-4">
 
     <x-flex>
-        <x-h3>
+        <x-title>
             Gestión de Productos
-        </x-h3>
+        </x-title>
         @can(\App\Constants\Permisos::INSUMO_PRODUCTO_GESTIONAR)
             <x-button type="button" @click="$wire.dispatch('CrearProducto')" class="w-full md:w-auto ">
                 <i class="fa fa-plus"></i> Nuevo Producto
@@ -16,13 +16,25 @@
         <div class="flex flex-wrap items-end gap-4">
 
             {{-- Buscar --}}
-            <div>
+            <div wire:ignore>
                 <x-label>Buscar por nombre</x-label>
-                <div class="relative">
+                <div class="relative" x-data="{
+        query: '{{ $search }}',
+        timer: null,
+        dispatch(value) {
+            clearTimeout(this.timer);
+            this.timer = setTimeout(() => {
+                $wire.set('search', value);
+            }, 600);
+        }
+    }" x-on:filtros-limpiados.window="query = ''">
                     <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none text-primary">
                         <i class="fa fa-search"></i>
                     </div>
-                    <x-input type="search" wire:model.live="search" class="!pl-10 !w-auto" autocomplete="off" />
+
+                    <x-input type="search" x-model="query" x-on:input="dispatch(query)"
+                        x-on:keydown.escape="query = ''; $wire.set('search', '')" class="!pl-10 !w-auto"
+                        autocomplete="off" />
                 </div>
             </div>
 
@@ -179,7 +191,7 @@
                                             @foreach ($producto->usos->unique('id') as $uso)
                                                 <span
                                                     class="inline-flex items-center px-2 py-0.5 rounded-full text-xs
-                                                                                                                                 font-medium bg-primary/10 text-primary border border-primary/20">
+                                                                                                                                                                         font-medium bg-primary/10 text-primary border border-primary/20">
                                                     {{ $uso->nombre }}
                                                 </span>
                                             @endforeach
@@ -295,7 +307,7 @@
                     <div class="mb-4 border-b border-border pb-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="font-semibold uppercase
-                                                                {{ $entrada['accion'] === 'crear' ? 'text-green-600' :
+                                                                                {{ $entrada['accion'] === 'crear' ? 'text-green-600' :
                 ($entrada['accion'] === 'eliminar' ? 'text-red-600' : 'text-yellow-600') }}">
                                 {{ $entrada['accion'] }}
                             </span>

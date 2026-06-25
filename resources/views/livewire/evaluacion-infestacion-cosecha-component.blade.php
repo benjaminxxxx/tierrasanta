@@ -69,6 +69,13 @@
             <div x-ref="tableContainer"></div>
         </div>
     </x-card>
+    <x-card>
+        {{-- Primera fila: Cochinillas por gramo --}}
+       
+            <x-input id="cochinillas_gramo" type="number" wire:model="proyeccionCochinillaXGramo"
+                class="text-lg font-semibold" placeholder="Ej: 500" label="N° Cochinillas por Gramo" />
+        
+    </x-card>
     @if ($campoSeleccionado && $campaniaSeleccionada && $ultimaInfestacion)
         <x-card class="mt-4">
             <x-h3>
@@ -141,11 +148,7 @@
                 Proyección de Cosecha
             </x-h3>
 
-            {{-- Primera fila: Cochinillas por gramo --}}
-            <div class="mb-6">
-                <x-input id="cochinillas_gramo" type="number" wire:model="proyeccionCochinillaXGramo"
-                    class="text-lg font-semibold" placeholder="Ej: 500" label="N° Cochinillas por Gramo" />
-            </div>
+
 
             {{-- Segunda fila: Resultados calculados --}}
             <div class="grid md:grid-cols-3 gap-4">
@@ -241,13 +244,26 @@
                 themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
                 columns: this.getColumns(),
                 nestedHeaders: this.getNestedHeaders(),
-                height: 'auto',
+                minSpareRows: 1,
                 manualColumnResize: false,
                 manualRowResize: true,
                 stretchH: 'all',
                 autoColumnSize: false,
                 licenseKey: 'non-commercial-and-evaluation',
-
+                beforePaste: (data, coords) => {
+                    // Recorremos las filas y celdas que se están pegando
+                    for (let i = 0; i < data.length; i++) {
+                        for (let j = 0; j < data[i].length; j++) {
+                            if (typeof data[i][j] === 'string') {
+                                // Expresión regular que detecta si el formato tiene comas de miles (ej: 1,050)
+                                // Si es así, elimina la coma para que quede "1050" puro.
+                                if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(data[i][j].trim())) {
+                                    data[i][j] = data[i][j].replace(/,/g, '');
+                                }
+                            }
+                        }
+                    }
+                }
             });
 
             this.hot = hot;
@@ -257,7 +273,7 @@
                 data: 'n_pencas',
                 type: 'numeric',
                 className: 'htCenter htMiddle font-semibold',
-                readOnly: true
+                //readOnly: true
             },
 
             // Evaluación 1

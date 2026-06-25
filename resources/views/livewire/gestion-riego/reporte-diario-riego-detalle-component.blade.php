@@ -55,12 +55,15 @@
                     <x-flex class="justify-between w-full">
                         <div>
                             @if ($registroDiarioAcumulado)
-                                Se usaron {{ $registroDiarioAcumulado->total_horas }} hora(s) de trabajos acumulados.
-                                @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
-                                    <x-button variant="danger"
-                                        wire:click="quitarAcumulado({{ $registroDiarioAcumulado->id }})"><i
-                                            class="fa fa-remove"></i> Quitar</x-button>
-                                @endcan
+                                <div class="flex items-center gap-3">
+                                    <span class="text-sm">
+                                        Se usaron {{ $registroDiarioAcumulado->total_horas }} hora(s) de trabajos
+                                        acumulados.
+                                    </span>
+                                    <x-button variant="secondary" wire:click="verDetalleAcumulado">
+                                        <i class="fa fa-eye"></i> Ver detalle
+                                    </x-button>
+                                </div>
                             @endif
                         </div>
                         @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
@@ -74,6 +77,65 @@
         </div>
 
     </x-card>
+    <x-dialog-modal maxWidth="lg" wire:model="mostrarDetalleAcumulado">
+        <x-slot name="title">
+            Detalle de Horas Acumuladas Usadas
+        </x-slot>
+
+        <x-slot name="content">
+            <x-subtitle>
+                Estas son las fechas de origen de las horas usadas hoy
+                ({{ $resumenRiego->fecha }}):
+            </x-subtitle>
+
+            <x-table class="mt-4">
+                <x-slot name="thead">
+                    <x-tr class="">
+                        <x-th class="">Fecha origen</x-th>
+                        <x-th class="">Trabajador</x-th>
+                        <x-th class=" text-right">Horas consumidas</x-th>
+                    </x-tr>
+                </x-slot>
+                <x-slot name="tbody">
+                    @forelse ($detalleAcumulado as $fila)
+                        <x-tr class="">
+                            <x-td class="">{{ $fila['fecha'] }}</x-td>
+                            <x-td class="">{{ $fila['trabajador'] }}</x-td>
+                            <x-td class=" text-right">{{ $fila['formateado'] }}</x-td>
+                        </x-tr>
+                    @empty
+                        <x-tr>
+                            <x-td colspan="3" class="text-center">
+                                Sin registros
+                            </x-td>
+                        </x-tr>
+                    @endforelse
+                </x-slot>
+                <x-slot name="tfoot">
+                    <x-tr class="font-semibold">
+                        <x-td colspan="2" class="text-right">Total usado:</x-td>
+                        <x-td class="text-right">
+                            {{ $registroDiarioAcumulado?->total_horas }} h
+                        </x-td>
+                    </x-tr>
+                </x-slot>
+            </x-table>
+        </x-slot>
+
+        <x-slot name="footer">
+            <x-button variant="secondary" wire:click="$set('mostrarDetalleAcumulado', false)">
+                Cerrar
+            </x-button>
+
+            @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
+                <x-button variant="danger" wire:click="quitarAcumulado({{ $registroDiarioAcumulado?->id }})"
+                    wire:loading.attr="disabled"
+                    onclick="confirm('¿Confirmas liberar estas horas acumuladas?') || event.stopImmediatePropagation()">
+                    <i class="fa fa-remove"></i> Eliminar horas acumuladas
+                </x-button>
+            @endcan
+        </x-slot>
+    </x-dialog-modal>
     <x-dialog-modal maxWidth="lg" wire:model="mostrarHorasAcumuladasForm">
         <x-slot name="title">
             Registrar Uso de Horas Acumuladas
