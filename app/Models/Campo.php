@@ -27,6 +27,10 @@ class Campo extends Model
     {
         return self::orderBy('orden')->get();
     }
+    public function campanias()
+    {
+        return $this->hasMany(CampoCampania::class, 'campo');
+    }
     public function hijos()
     {
         return $this->hasMany(Campo::class, 'campo_parent_nombre');
@@ -90,10 +94,7 @@ class Campo extends Model
         return $this->hasMany(ReporteDiarioRiego::class, 'campo', 'nombre');
     }
 
-    public function campanias()
-    {
-        return $this->hasMany(CampoCampania::class, 'campo');
-    }
+    
     public function getCampaniaActualAttribute()
     {
         $ultimaCampania = self::campanias()->orderBy('fecha_inicio', 'desc')->first();

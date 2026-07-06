@@ -2,7 +2,6 @@
 
 namespace App\Livewire\GestionCochinilla;
 
-use App\Models\Auditoria;
 use App\Models\CochinillaInfestacion;
 use App\Services\Cochinilla\InfestacionServicio;
 use App\Support\FormatoHelper;
@@ -18,10 +17,11 @@ class CochinillaInfestacionMasivoComponent extends Component
     public $breadcrumb = [];
     public array $filasModificadas = [];
     public $codigoActualizacion = '';
-    public ?int $auditoriaModeloId = null;
-    public array $auditoriaHistorial = [];
-    public bool $modalAuditoria = false;
+    public bool $modalInfestacionMasivo = false;
     public array $listaCampos = [];
+    protected $listeners = [
+        'abrirRegistroInfestacion' => 'abrirModalInfestacionMasivo'
+    ];
     public function mount()
     {
         $this->breadcrumb = [
@@ -31,17 +31,12 @@ class CochinillaInfestacionMasivoComponent extends Component
         $this->inicializarMesAnio();
         $this->listaCampos = $this->cargarListaHstCampos();
     }
-    public function verAuditoria(int $id): void
+    public function abrirModalInfestacionMasivo()
     {
-        $this->auditoriaModeloId = $id;
-        $this->auditoriaHistorial = Auditoria::where('modelo', CochinillaInfestacion::class)
-            ->where('modelo_id', $id)
-            ->orderByDesc('fecha_accion')
-            ->get()
-            ->toArray();
-
-        $this->modalAuditoria = true;
+        $this->modalInfestacionMasivo = true;
+        $this->listarInfestaciones();
     }
+    
     public function listarInfestaciones()
     {
         $mes = $this->mes;
@@ -65,25 +60,7 @@ class CochinillaInfestacionMasivoComponent extends Component
     {
         $this->listarInfestaciones();
     }
-    public function vincularConCampanias(): void
-    {
-        try {
-            $sincronizados = InfestacionServicio::sincronizarCampaniasPorMes(
-                (int) $this->mes,
-                (int) $this->anio
-            );
 
-            $mensaje = $sincronizados > 0
-                ? "{$sincronizados} infestaciones vinculadas con su campaña"
-                : 'Todas las infestaciones ya tienen campaña asignada';
-
-            $this->alert('success', $mensaje);
-            $this->listarInfestaciones();
-
-        } catch (\Exception $e) {
-            $this->alert('error', $e->getMessage());
-        }
-    }
     // En Livewire, solo limpiar si todo fue bien
     public function guardarInfestacionMasivo(array $data)
     {
