@@ -110,6 +110,8 @@
     <livewire:evaluaciones.evaluacion-infestacion-form-component />
     <livewire:evaluaciones.evaluacion-reinfestacion-form-component />
     <livewire:gestion-riego.riego-campania-form-component />
+    
+    <livewire:gestion-siembra.siembra-form-component />
     <x-loading wire:loading />
 </div>
 @script

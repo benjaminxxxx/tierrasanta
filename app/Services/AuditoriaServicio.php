@@ -23,6 +23,24 @@ class AuditoriaServicio
             ])
             ->toArray();
     }
+    public static function obtenerHistorial(string $modelo, int $page = 5)
+    {
+        $historial = Auditoria::where('modelo', $modelo)
+            ->orderByDesc('fecha_accion')
+            ->paginate($page);
+
+        $historial->setCollection(
+            $historial->getCollection()->map(function ($a) {
+                $a->cambios = is_string($a->cambios)
+                    ? json_decode($a->cambios, true)
+                    : $a->cambios;
+
+                return $a;
+            })
+        );
+
+        return $historial;
+    }
     public static function registrar(
         string $modelo,
         int|string $modeloId,

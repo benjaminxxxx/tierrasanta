@@ -1,7 +1,7 @@
 <div>
 
 
-    <x-dialog-modal wire:model.live="mostrarFormulario" maxWidth="full">
+    <x-dialog-modal wire:model.live="mostrarFormulario" maxWidth="lg">
         <x-slot name="title">
             Registro de Siembra
         </x-slot>
@@ -11,7 +11,6 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ">
 
                 <x-selector-dia wire:model.live="fecha_siembra" label="Fecha de Siembra" />
-                <x-selector-dia wire:model="fecha_renovacion" label="Fecha de Limpieza" />
                 <x-select-campo wire:model="campo_nombre" label="Campo" placeholder="Elige un campo" class="w-full" />
 
 

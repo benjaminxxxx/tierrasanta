@@ -15,8 +15,7 @@ class Siembra extends Model
     protected $fillable = [
         'campo_nombre',
         'fecha_siembra',
-        //'fecha_renovacion',
-
+        'creado_por',
     ];
 
     public function campo()

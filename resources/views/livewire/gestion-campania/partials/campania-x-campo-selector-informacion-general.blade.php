@@ -45,7 +45,7 @@
 
 <x-tr>
     <x-td>Fecha de siembra:</x-td>
-    <x-td>{{ formatear_fecha($campania->fecha_siembra) }}</x-td>
+    <x-td>{{ formatear_fecha($campania->fecha_siembra) }} <x-button @click="$wire.dispatch('agregarSiembra')" variant="warning" title="Registrar otra fecha de siembra" size="xs"><i class="fa fa-pencil"></i></x-button></x-td>
 </x-tr>
 
 <x-tr>

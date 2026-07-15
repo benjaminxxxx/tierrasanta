@@ -137,7 +137,7 @@
                                     {{ $cochinillaIngreso->campoCampania?->variedad_tuna }}
                                 </x-td>
                                 <x-td class="text-center">
-                                    {{ $cochinillaIngreso->fecha_siembra }}
+                                    {{ formatear_fecha($cochinillaIngreso->fecha_siembra) }}
                                 </x-td>
                                 <x-td class="text-center">
 
@@ -192,7 +192,7 @@
                             {{ $cochinillaIngreso->campoCampania?->variedad_tuna }}
                         </x-th>
                         <x-th class="text-center">
-                            {{ $cochinillaIngreso->fecha_siembra }}
+                            {{ formatear_fecha($cochinillaIngreso->fecha_siembra) }}
                         </x-th>
                         <x-th class="text-center">
                             {{ $cochinillaIngreso->filtrado123 }}

@@ -17,7 +17,8 @@ class CampaniaPorCampoInformeComponent extends Component
         'evaluacionInfestacionGuardada' => 'refrescar', 
         'riegoCampaniaModificado' => 'sincronizarRiegos',
         'campaniaInsertada' => 'refrescar', 
-        'refrescarInformeCampaniaXCampo' => 'refrescar'
+        'refrescarInformeCampaniaXCampo' => 'refrescar',
+        'siembraGuardada' => 'refrescar',
     ];
     public function mount($campania)
     {
