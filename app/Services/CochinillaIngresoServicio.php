@@ -29,23 +29,7 @@ class CochinillaIngresoServicio
      * @return void
      */
 
-    public static function estandarizarIngresos()
-    {
-        $ingresos = CochinillaIngreso::doesntHave('detalles')->get();
-
-        if ($ingresos) {
-            foreach ($ingresos as $ingreso) {
-
-                CochinillaIngresoDetalle::create([
-                    'cochinilla_ingreso_id' => $ingreso->id,
-                    'sublote_codigo' => $ingreso->lote . '.1',
-                    'fecha' => $ingreso->fecha,
-                    'total_kilos' => $ingreso->total_kilos,
-                    'observacion' => $ingreso->observacion,
-                ]);
-            }
-        }
-    }
+ 
     /**
      * Genera el siguiente código de sublote disponible para un nuevo ingreso de cochinilla.
      *
@@ -61,25 +45,11 @@ class CochinillaIngresoServicio
      * @return string Código del siguiente sublote (ej. "123.4" o "124.1")
      */
 
-    public static function generarCodigoSiguiente(): string
+    public static function generarCodigoSiguiente(): int
     {
-        $ultimoIngreso = CochinillaIngreso::latest('lote')->first();
+        $ultimoLote = CochinillaIngreso::max('lote');
 
-        if ($ultimoIngreso && $ultimoIngreso->detalles()->exists()) {
-            $ultimoDetalle = $ultimoIngreso->detalles()
-                ->orderByRaw('CAST(SUBSTRING_INDEX(sublote_codigo, ".", -1) AS UNSIGNED) DESC')
-                ->first();
-
-            $partes = explode('.', $ultimoDetalle->sublote_codigo);
-            $loteBase = $partes[0];
-            $numero = isset($partes[1]) ? ((int) $partes[1] + 1) : 1;
-
-            return $loteBase . '.' . $numero;
-        }
-
-        // Si no hay detalle, usamos el siguiente lote entero
-        $nuevoLote = $ultimoIngreso ? ((int) $ultimoIngreso->lote + 1) : 1;
-        return (string) $nuevoLote;
+        return $ultimoLote ? ((int) $ultimoLote + 1) : 1;
     }
     /**
      * Registra o actualiza un sublote de ingreso de cochinilla.

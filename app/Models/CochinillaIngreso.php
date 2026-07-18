@@ -47,6 +47,17 @@ class CochinillaIngreso extends Model
         'filtrado_diferencia_kilos',
         'filtrado_diferencia_porcentaje',
     ];
+    public function detallesMama()
+    {
+        return $this->hasMany(CochinillaIngresoDetalle::class)
+            ->whereHas('observacionRelacionada', function ($q) {
+                $q->where('es_cosecha_mama', true);
+            });
+    }
+    public function detalles()
+    {
+        return $this->hasMany(CochinillaIngresoDetalle::class);
+    }
     #endregion
 
     #region RELACIONES
@@ -95,10 +106,7 @@ class CochinillaIngreso extends Model
     {
         return $this->belongsTo(Campo::class, 'campo', 'nombre');
     }
-    public function detalles()
-    {
-        return $this->hasMany(CochinillaIngresoDetalle::class);
-    }
+    
     public function venteados()
     {
         return $this->hasMany(CochinillaVenteado::class, 'cochinilla_ingreso_id');
@@ -116,13 +124,7 @@ class CochinillaIngreso extends Model
     {
         return $this->belongsTo(CampoCampania::class);
     }
-    public function detallesMama()
-    {
-        return $this->hasMany(CochinillaIngresoDetalle::class)
-            ->whereHas('observacionRelacionada', function ($q) {
-                $q->where('es_cosecha_mama', true);
-            });
-    }
+    
     protected $appends = [
         'total_filtrado_kilos',
         'total_filtrado_primera',

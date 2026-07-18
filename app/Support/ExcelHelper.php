@@ -110,7 +110,14 @@ class ExcelHelper
     {
         return new StreamedResponse(function () use ($spreadsheet) {
 
+            // Limpiar la caché de cálculo
+            \PhpOffice\PhpSpreadsheet\Calculation\Calculation::getInstance($spreadsheet)
+                ->clearCalculationCache();
+
             $writer = new Xlsx($spreadsheet);
+
+            // Fuerza el precálculo de las fórmulas
+            $writer->setPreCalculateFormulas(true);
 
             // salida directa
             $writer->save('php://output');

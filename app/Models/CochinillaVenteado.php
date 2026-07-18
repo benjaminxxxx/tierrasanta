@@ -35,17 +35,29 @@ class CochinillaVenteado extends Model
     }
     public function getPorcentajeLimpiaAttribute()
     {
-        return $this->limpia / $this->kilos_ingresado * 100;
+        if ((float) $this->kilos_ingresado == 0) {
+            return 0;
+        }
+        return ($this->limpia / $this->kilos_ingresado) * 100;
     }
+
     public function getPorcentajeBasuraAttribute()
     {
-        return $this->basura / $this->kilos_ingresado * 100;
+        if ((float) $this->kilos_ingresado == 0) {
+            return 0;
+        }
+        return ($this->basura / $this->kilos_ingresado) * 100;
     }
+
     public function getPorcentajePolvilloAttribute()
     {
-        return $this->polvillo / $this->kilos_ingresado * 100;
+        if ((float) $this->kilos_ingresado == 0) {
+            return 0;
+        }
+        return ($this->polvillo / $this->kilos_ingresado) * 100;
     }
-    public function getTotalAttribute(){
+    public function getTotalAttribute()
+    {
         return $this->polvillo + $this->basura + $this->limpia;
     }
 }

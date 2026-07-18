@@ -24,7 +24,6 @@ class CochinillaCosechaMamasComponent extends Component
     public $campaniaUnica = false;
     public function mount($campaniaId = null, $campaniaUnica = false)
     {
-        CochinillaIngresoServicio::estandarizarIngresos();
 
         $this->anioSeleccionado = Session::get('anio_seleccionado');
         $this->observacionSeleccionado = Session::get('observacion_seleccionado');

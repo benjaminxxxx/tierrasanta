@@ -151,28 +151,31 @@
                                             @endforeach
                                         </div>
 
-                                    @elseif($reg->accion === 'crear' && isset($cambios['creado']))
-                                        <div class="text-[11px] text-emerald-400/80">
-                                            @foreach(array_slice($cambios['creado'], 0, 3) as $k => $v)
-                                                <div><span class="font-mono text-muted-foreground">{{ $k }}:</span> {{ Str::limit((string)$v, 30) }}</div>
-                                            @endforeach
-                                            @if(count($cambios['creado']) > 3)
-                                                <div class="text-muted-foreground italic">+{{ count($cambios['creado']) - 3 }} campos más</div>
-                                            @endif
-                                        </div>
+                                   @elseif($reg->accion === 'crear' && isset($cambios['creado']))
+    <div class="text-[11px] text-emerald-400/80">
+        @foreach($cambios['creado'] as $k => $v)
+            <div>
+                <span class="font-mono text-muted-foreground">{{ $k }}:</span> 
+                {{ is_array($v) ? json_encode($v, JSON_UNESCAPED_UNICODE) : $v }}
+            </div>
+        @endforeach
+    </div>
 
-                                    @elseif($reg->accion === 'eliminar' && isset($cambios['eliminado']))
-                                        <div class="text-[11px] text-red-400/80">
-                                            @foreach(array_slice($cambios['eliminado'], 0, 3) as $k => $v)
-                                                <div><span class="font-mono text-muted-foreground">{{ $k }}:</span> {{ Str::limit((string)$v, 30) }}</div>
-                                            @endforeach
-                                        </div>
+@elseif($reg->accion === 'eliminar' && isset($cambios['eliminado']))
+    <div class="text-[11px] text-red-400/80">
+        @foreach($cambios['eliminado'] as $k => $v)
+            <div>
+                <span class="font-mono text-muted-foreground">{{ $k }}:</span> 
+                {{ is_array($v) ? json_encode($v, JSON_UNESCAPED_UNICODE) : $v }}
+            </div>
+        @endforeach
+    </div>
 
-                                    @else
-                                        <span class="text-xs text-muted-foreground font-mono">
-                                            {{ Str::limit(json_encode($cambios, JSON_UNESCAPED_UNICODE), 80) }}
-                                        </span>
-                                    @endif
+@else
+    <span class="text-xs text-muted-foreground font-mono">
+        {{ json_encode($cambios, JSON_UNESCAPED_UNICODE) }}
+    </span>
+@endif
                                 @else
                                     <span class="text-muted-foreground text-xs">—</span>
                                 @endif
