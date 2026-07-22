@@ -1,50 +1,22 @@
 <div>
-    <x-flex>
-        <x-title>
-            Planilla Mensual
-        </x-title>
+    <x-flex class="justify-between">
+        <div>
+            <x-title>
+                Planilla Mensual
+            </x-title>
+            <x-subtitle>
+                Gestión y consolidación de datos mensuales para la generación del PLAME
+            </x-subtitle>
+        </div>
+        @include('comun.selector-mes-base')
     </x-flex>
-    <x-card class="mt-4">
-        <x-flex class="justify-between">
 
-            <x-button variant="secondary" wire:click="mesAnterior">
-                <i class="fa fa-chevron-left"></i> Mes Anterior
-            </x-button>
-
-            <x-flex>
-                <x-select-meses wire:model.live="mes" class="w-auto"/>
-                <x-select-anios wire:model.live="anio" class="w-auto" />
-                @if ($sePuedeVerNegro)
-                    <x-group-field>
-                        @if ($componente == 'blanco')
-                            <x-button type="button" wire:click="ver('negro')">
-                                Ver Negro
-                            </x-button>
-                        @endif
-                        @if ($componente == 'negro')
-                            <x-button type="button" wire:click="ver('blanco')">
-                                Ver Blanco
-                            </x-button>
-                        @endif
-                    </x-group-field>
-                @endif
-            </x-flex>
-
-
-            <!-- Botón para mes posterior -->
-            <x-button variant="secondary" wire:click="mesSiguiente">
-                Mes Siguiente <i class="fa fa-chevron-right"></i>
-            </x-button>
-        </x-flex>
-    </x-card>
-    @if ($componente == 'blanco')
-        <livewire:planilla-blanco-detalle-component wire:key="{{ $mes }}-{{ $anio }}" :mes="$mes"
-            :anio="$anio" />
-    @endif
-    @if ($componente == 'negro')
-        <livewire:planilla-negro-detalle-component wire:key="{{ $mes }}-{{ $anio }}-negro"
-            :mes="$mes" :anio="$anio" />
-    @endif
-
+    <livewire:planilla-blanco-detalle-component wire:key="{{ $mes }}-{{ $anio }}" :mes="$mes" :anio="$anio" />
+    <livewire:gestion-planilla.validar-sueldo-planilla-component wire:key="{{ $mes }}-{{ $anio }}" :mes="$mes"
+        :anio="$anio" />
+    <!-- Componente de Validación de Fecha de Nacimiento -->
+    <livewire:gestion-planilla.validar-fecha-nacimiento-planilla-component wire:key="fechas-nac-{{ $mes }}-{{ $anio }}"
+        :mes="$mes" :anio="$anio" />
+        
     <x-loading wire:loading />
 </div>

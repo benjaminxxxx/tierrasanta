@@ -4,12 +4,132 @@ namespace App\Services;
 use App\Models\PlanEmpleado;
 use App\Models\PlanMensualDetalle;
 use App\Models\PlanSueldo;
+use App\Services\RecursosHumanos\Planilla\PlanillaEmpleadoServicio;
 use DB;
 use Exception;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 class PlanSueldoServicio
 {
+    /**
+     * Obtiene la colección de empleados que carecen de sueldo activo en el mes/año.
+     */
+    public function obtenerEmpleadosSinSueldoEnPeriodo(int $mes, int $anio): Collection
+    {
+        $empleadosServicio = app(PlanillaEmpleadoServicio::class);
+        $empleados = $empleadosServicio->obtenerPlanillaAgraria($mes, $anio);
+
+        $inicioMes = Carbon::createFromDate($anio, $mes, 1)->startOfMonth()->format('Y-m-d');
+        $finMes = Carbon::createFromDate($anio, $mes, 1)->endOfMonth()->format('Y-m-d');
+
+        // Cargar relación 'sueldos' filtrada por el periodo
+        $empleados->load([
+            'sueldos' => function ($q) use ($inicioMes, $finMes) {
+                $q->where('fecha_inicio', '<=', $finMes)
+                    ->where(function ($sub) use ($inicioMes) {
+                        $sub->whereNull('fecha_fin')
+                            ->orWhere('fecha_fin', '>=', $inicioMes);
+                    });
+            }
+        ]);
+
+        return $empleados->filter(fn($emp) => $emp->sueldos->isEmpty());
+    }
+    /**
+     * Registra un nuevo sueldo cerrando el anterior activo de forma automática.
+     *
+     * @param array $datos ['plan_empleado_id', 'sueldo', 'fecha_inicio']
+     * @return PlanSueldo
+     * @throws Exception
+     */
+    public function crear(array $datos): PlanSueldo
+    {
+        return DB::transaction(function () use ($datos) {
+            $empleadoId = $datos['plan_empleado_id'];
+            $sueldoMonto = (float) $datos['sueldo'];
+            $fechaInicioNuevo = Carbon::parse($datos['fecha_inicio'])->startOfDay();
+            $fechaInicioStr = $fechaInicioNuevo->format('Y-m-d');
+
+            if ($sueldoMonto <= 0) {
+                throw new Exception("El sueldo debe ser mayor a 0.00.");
+            }
+
+            // 1. Validar que no exista un sueldo con exactamente la misma fecha de inicio
+            $existeMismaFecha = PlanSueldo::where('plan_empleado_id', $empleadoId)
+                ->where('fecha_inicio', $fechaInicioStr)
+                ->exists();
+
+            if ($existeMismaFecha) {
+                throw new Exception("Ya existe un sueldo registrado exactamente en la fecha {$fechaInicioStr} para este empleado.");
+            }
+
+            // 2. Buscar si existe un sueldo posterior (el inmediatamente siguiente en la línea de tiempo)
+            $sueldoSiguiente = PlanSueldo::where('plan_empleado_id', $empleadoId)
+                ->where('fecha_inicio', '>', $fechaInicioStr)
+                ->orderBy('fecha_inicio', 'asc')
+                ->first();
+
+            // 3. Buscar el sueldo inmediatamente anterior (el previo en la línea de tiempo)
+            $sueldoAnterior = PlanSueldo::where('plan_empleado_id', $empleadoId)
+                ->where('fecha_inicio', '<', $fechaInicioStr)
+                ->orderBy('fecha_inicio', 'desc')
+                ->first();
+
+            // Determinar la fecha_fin del nuevo sueldo
+            $fechaFinNuevo = null;
+
+            if ($sueldoSiguiente) {
+                // Si hay un sueldo en el futuro, el nuevo sueldo debe terminar 1 día antes
+                $fechaFinNuevo = Carbon::parse($sueldoSiguiente->fecha_inicio)->subDay()->format('Y-m-d');
+            }
+
+            // 4. Si hay un sueldo anterior, debemos ajustar su fecha_fin
+            if ($sueldoAnterior) {
+                $nuevaFechaFinAnterior = $fechaInicioNuevo->copy()->subDay()->format('Y-m-d');
+
+                // Solo actualizamos si el sueldo anterior no tenía fecha_fin o si su fecha_fin actual era mayor
+                if (is_null($sueldoAnterior->fecha_fin) || $sueldoAnterior->fecha_fin > $nuevaFechaFinAnterior) {
+                    $sueldoAnterior->update([
+                        'fecha_fin' => $nuevaFechaFinAnterior
+                    ]);
+                }
+            }
+
+            // 5. Crear el nuevo sueldo intercalado o final
+            return PlanSueldo::create([
+                'plan_empleado_id' => $empleadoId,
+                'sueldo' => $sueldoMonto,
+                'fecha_inicio' => $fechaInicioStr,
+                'fecha_fin' => $fechaFinNuevo,
+            ]);
+        });
+    }
+
+    /**
+     * Registro masivo desde el componente de validación
+     */
+    public function crearMasivo(array $sueldos, array $fechas): int
+    {
+        $guardados = 0;
+
+        DB::transaction(function () use ($sueldos, $fechas, &$guardados) {
+            foreach ($sueldos as $empleadoId => $monto) {
+                // Solo procesa si ambos valores existen y son válidos
+                if (!empty($monto) && !empty($fechas[$empleadoId])) {
+                    $this->crear([
+                        'plan_empleado_id' => $empleadoId,
+                        'sueldo' => $monto,
+                        'fecha_inicio' => $fechas[$empleadoId],
+                    ]);
+                    $guardados++;
+                }
+            }
+        });
+
+        return $guardados;
+    }
+
     /**
      * Obtiene el último sueldo vigente para una lista de empleados.
      */
@@ -73,10 +193,7 @@ class PlanSueldoServicio
         return PlanSueldo::find($id);
     }
 
-    public function crear(array $datos)
-    {
-        return PlanSueldo::create($datos);
-    }
+
 
     public function actualizar($id, array $datos)
     {

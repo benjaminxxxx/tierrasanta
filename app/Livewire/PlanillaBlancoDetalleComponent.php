@@ -59,8 +59,10 @@ class PlanillaBlancoDetalleComponent extends Component
     public $diasMes;
     public $descuentoColores;
     public $grupoColores;
-    //public $reporteTotalHorasPorMes;
-    protected $listeners = ['GuardarInformacion'];
+    public $hayEmpleadosSinSueldo = false;
+    public $hayEmpleadosSinFechaNacimiento = false;
+
+    protected $listeners = ['GuardarInformacion', 'resultadoSueldosValidados', 'resultadoFechasNacimientoValidadas'];
     public function mount($mes, $anio)
     {
         $this->mes = $mes;
@@ -68,6 +70,14 @@ class PlanillaBlancoDetalleComponent extends Component
         $this->descuentoColores = PlanDescuentoSp::get()->pluck("color", "codigo")->toArray();
         $this->grupoColores = PlanGrupo::get()->pluck("color", "codigo")->toArray();
         $this->obtenerInformacionMensual();
+    }
+    public function resultadoSueldosValidados($hayEmpleadosSinSueldo)
+    {
+        $this->hayEmpleadosSinSueldo = $hayEmpleadosSinSueldo;
+    }
+    public function resultadoFechasNacimientoValidadas($hayEmpleadosSinFechaNacimiento)
+    {
+        $this->hayEmpleadosSinFechaNacimiento = $hayEmpleadosSinFechaNacimiento;
     }
     public function obtenerInformacionMensual()
     {
@@ -239,7 +249,7 @@ class PlanillaBlancoDetalleComponent extends Component
             $totalHorasMap = app(PlanillaRegistroDiarioServicio::class)
                 ->obtenerTotalHorasPorMes($this->mes, $this->anio)
                 ->pluck('total_horas_mes', 'plan_empleado_id');
-          
+
             $dataIds = collect($datos)->pluck('plan_empleado_id')->unique()->toArray();
             $sueldosPactados = app(PlanSueldoServicio::class)->obtenerSueldosPorMes($dataIds, $this->mes, $this->anio);
             $totalHorasBaseMes = $this->totalHoras;

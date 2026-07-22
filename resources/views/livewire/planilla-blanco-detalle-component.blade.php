@@ -1,11 +1,23 @@
-<div x-data="planilla_blanco">
+<div x-data="planilla_blanco" class="space-y-4 mt-4">
 
     @if (!$planillaMensual)
-        <x-warning class="mt-4">
+        <x-warning>
             No hay registros de empleados para generar esta planilla, registre asistencias en <a
                 href="{{ route('reporte.reporte_diario') }}" class="underline text-blue-600">[Registro Diario de
                 Planilla]</a>
         </x-warning>
+    @endif
+    @if ($hayEmpleadosSinSueldo)
+        <x-danger>
+            Hay empleados sin sueldo para este mes y año, debe actualizar los datos <x-button variant="danger"
+                @click="$wire.dispatch('mostrarValidadorSueldos')">AQUÍ</x-button>.
+        </x-danger>
+    @endif
+    @if ($hayEmpleadosSinFechaNacimiento)
+        <x-danger>
+            Hay empleados contratados que no tienen fecha de nacimiento registrada
+            <x-button variant="danger" @click="$wire.dispatch('mostrarValidadorFechasNacimiento')">AQUÍ</x-button>.
+        </x-danger>
     @endif
     @if ($planillaMensual)
         <x-card class="mt-5">
