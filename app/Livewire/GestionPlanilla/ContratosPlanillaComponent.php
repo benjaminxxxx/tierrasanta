@@ -15,6 +15,8 @@ class ContratosPlanillaComponent extends Component
 {
     use WithPagination, LivewireAlert, WithoutUrlPagination, WithFileUploads;
 
+    
+    public $breadcrumb = [];
     public $buscar = '';
     public $perPage = 10;
     public $mostrarInformacionContrato = false;
@@ -32,9 +34,14 @@ class ContratosPlanillaComponent extends Component
         'fecha_desde' => '',
         'fecha_hasta' => '',
     ];
-    protected $listeners = ['contratoActualizado' => 'refresh', 'confirmarEliminarContrato'];
+    protected $listeners = ['contratoActualizado' => '$refresh', 'confirmarEliminarContrato'];
     public function mount($id = null)
     {
+        $this->breadcrumb = [
+            ['route' => 'planilla.panel_contrato', 'label' => 'Panel contratos'],
+            ['label' => 'Lista de contratos']
+        ];
+
         if ($id) {
             $empleado = PlanEmpleado::find( $id)->first();
             if ($empleado) {

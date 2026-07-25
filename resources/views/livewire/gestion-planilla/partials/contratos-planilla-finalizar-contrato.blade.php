@@ -19,7 +19,6 @@
                     </h3>
                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-blue-700 dark:text-blue-300">
                         <span><strong>DNI:</strong> {{ $contratoAFinalizar->empleado->documento }}</span>
-                        <span><strong>Cargo:</strong> {{ $contratoAFinalizar->cargo->nombre ?? 'No asignado' }}</span>
                         <span><strong>Planilla:</strong> {{ ucfirst($contratoAFinalizar->tipo_planilla) }}</span>
                     </div>
                 </div>

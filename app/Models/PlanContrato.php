@@ -14,7 +14,6 @@ class PlanContrato extends Model
         'tipo_contrato',
         'fecha_inicio',
         'fecha_fin',
-        'cargo_codigo',
         'grupo_codigo',
         'compensacion_vacacional',
         'tipo_planilla',
@@ -52,10 +51,6 @@ class PlanContrato extends Model
     public function descuento()
     {
         return $this->belongsTo(PlanDescuentoSp::class, 'plan_sp_codigo');
-    }
-    public function cargo()
-    {
-        return $this->belongsTo(PlanCargo::class, 'cargo_codigo');
     }
     public function grupo()
     {

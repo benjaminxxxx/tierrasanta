@@ -34,7 +34,7 @@ class GestionPlanillaEmpleadosComponent extends Component
         'planGenero',
         'planEliminados',
     ];
-    protected $listeners = ['empleadoGuardado' => '$refresh'];
+    protected $listeners = ['empleadoGuardado' => '$refresh','cargoAsignado'=>'$refresh'];
     public function mount()
     {
         $this->mesVigencia = Carbon::now()->format('m');
@@ -69,7 +69,6 @@ class GestionPlanillaEmpleadosComponent extends Component
                     'id' => $e->id,
                     'nombre' => mb_strtoupper(trim("{$e->nombres} {$e->apellido_paterno} {$e->apellido_materno}")),
                     'grupo_codigo' => optional($e->ultimoContrato)->grupo_codigo ?? '-',
-                    'cargo_codigo' => optional($e->ultimoContrato)->cargo_codigo ?? '-',
                     'tipo_planilla' => mb_strtoupper(optional($e->ultimoContrato)->tipo_planilla ?? '-'), // "1" o "2"
                     'sueldo_actual' => optional($e->ultimoSueldo)->sueldo ?? 0,
                     'nuevo_sueldo' => optional($e->ultimoSueldo)->sueldo ?? 0,

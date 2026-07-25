@@ -1,8 +1,9 @@
 <div class="space-y-4" x-data="contratosPlanillaLista">
-
+    <x-breadcrumb :items="$breadcrumb" />
     <!-- Header -->
     <x-flex class="justify-between">
         <div>
+
             <x-title>Gestión de Contratos</x-title>
             <x-subtitle>Administra los contratos de planilla de tus empleados</x-subtitle>
         </div>
@@ -36,9 +37,9 @@
     <x-loading wire:loading />
 </div>
 @script
-    <script>
-        Alpine.data('contratosPlanillaLista', () => ({
+<script>
+    Alpine.data('contratosPlanillaLista', () => ({
 
-        }));
-    </script>
+    }));
+</script>
 @endscript

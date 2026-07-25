@@ -75,9 +75,14 @@ class Sidebar extends Component
                         'can' => Permisos::PLANILLA_FAMILIAR
                     ],
                     [
-                        'title' => 'Contratos Empleados',
-                        'route' => 'planilla.contratos',
+                        'title' => 'Contratos',
+                        'route' => 'planilla.panel_contrato',
                         'can' => Permisos::PERSONAL_CONTRATOS
+                    ],
+                    [
+                        'title' => 'Cargos',
+                        'route' => 'planilla.cargos',
+                        'can' => Permisos::PERSONAL_CARGOS
                     ],
                     [
                         'title' => 'Conceptos',

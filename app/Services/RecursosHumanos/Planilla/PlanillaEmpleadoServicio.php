@@ -338,6 +338,17 @@ class PlanillaEmpleadoServicio
             }
         }
 
+
+        if (!empty($filtros['cargo_id'])) {
+            $query->whereHas('empleadoCargos', function ($q) use ($filtros) {
+                $q->where('plan_cargo_id', $filtros['cargo_id'])
+                    ->where(function ($sub) {
+                        $sub->whereNull('fecha_fin')
+                            ->orWhere('fecha_fin', '>=', now());
+                    });
+            });
+        }
+
         $filtrosContrato = collect([
             'cargo_id',
             'descuento_sp_codigo',
@@ -351,9 +362,6 @@ class PlanillaEmpleadoServicio
         ) {
             $query->whereHas('contratos', function ($q) use ($filtros) {
 
-                if (!empty($filtros['cargo_id'])) {
-                    $q->where('cargo_codigo', $filtros['cargo_id']);
-                }
 
                 if (!empty($filtros['descuento_sp_codigo'])) {
                     $q->whereHas('descuento', function ($sub) use ($filtros) {

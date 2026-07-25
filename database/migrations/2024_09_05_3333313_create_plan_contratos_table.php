@@ -16,8 +16,6 @@ return new class extends Migration {
             $table->enum('tipo_contrato',['plazo fijo','indefinido','temporal'])->default('indefinido');
             $table->date('fecha_inicio');
             $table->date('fecha_fin')->nullable();
-            $table->string('cargo_codigo')->nullable(); //la tabla foreign tiene como primary key string
-            $table->foreign('cargo_codigo')->references('codigo')->on('plan_cargos')->onDelete('set null'); // Clave foránea
             $table->string('grupo_codigo')->nullable(); //la tabla foreign tiene como primary key string
             $table->foreign('grupo_codigo')->references('codigo')->on('plan_grupos')->onDelete('set null');
             $table->decimal('compensacion_vacacional', 10, 2)->nullable();
@@ -35,7 +33,7 @@ return new class extends Migration {
             $table->string('motivo_cese_sunat', 2)->nullable(); // Códigos T-Registro (01, 02, etc.)
             $table->text('comentario_cese')->nullable();
             $table->foreignId('finalizado_por')->nullable()->constrained('users')->nullOnDelete();
-            $table->enum('estado', ['activo', 'finalizado'])->default('activo');
+            $table->enum('estado', ['activo', 'en_prueba' ,'finalizado'])->default('activo');
             $table->foreignId('eliminado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->softDeletes();
         });

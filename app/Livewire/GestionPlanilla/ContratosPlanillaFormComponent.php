@@ -5,26 +5,30 @@ namespace App\Livewire\GestionPlanilla;
 use App\Models\PlanContrato;
 use App\Models\PlanEmpleado;
 use App\Services\RecursosHumanos\Personal\ContratoServicio;
-use App\Services\RecursosHumanos\Personal\EmpleadoServicio;
-use DB;
 use Illuminate\Validation\ValidationException;
-use Livewire\Component;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
+use Livewire\Component;
 use Carbon\Carbon;
 
 class ContratosPlanillaFormComponent extends Component
 {
     use LivewireAlert;
+    public $mostrarFormularioContrato = false;
 
-    public $mostrarFormulario = false;
-    public $esEdicion = false;
-    public $contratoId = null;
-    public $contratoAFinalizar;
+    // Paso 1: selección de empleado
+    public ?int $filtroEmpleadoId = null;
+    public ?string $empleadoNombre = null;
 
-    public $plan_empleado_id = '';
+    // Paso 2: historial + formulario
+    public $historial = [];
+    public $contratoVigente = null;
+
+    public bool $mostrarForm = false;
+    public bool $esEdicion = false;
+    public ?int $contratoId = null;
+
     public $tipo_contrato = '';
     public $fecha_inicio = '';
-    public $cargo_codigo = '';
     public $grupo_codigo = '';
     public $compensacion_vacacional = '';
     public $tipo_planilla = '';
@@ -32,60 +36,108 @@ class ContratosPlanillaFormComponent extends Component
     public $esta_jubilado = 0;
     public $modalidad_pago = '';
     public $fecha_fin_prueba = '';
-    public $empleados = [];
-    public $contrato;
-    public $contratosAbiertos = []; // Para el foreach en la vista
-    public $datosCierre = [];
 
-    protected $listeners = ['nuevoContrato', 'editarContrato', 'renovarContrato'];
-    public function mount()
+    // Panel de finalizar (por contrato)
+    public ?int $contratoAFinalizarId = null;
+    public $datosCierre = ['fecha_fin' => '', 'motivo_cese_sunat' => '', 'comentario_cese' => ''];
+
+    protected $listeners = ['abrirFormularioRegistroContrato' => 'seleccionarEmpleado'];
+
+    public function getEmpleados($search)
     {
-        $this->empleados = EmpleadoServicio::cargarSearchableEmpleadosPlanilla();
+        $query = PlanEmpleado::orderBy('nombres');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nombres', 'like', "%{$search}%")
+                    ->orWhere('apellido_paterno', 'like', "%{$search}%")
+                    ->orWhere('apellido_materno', 'like', "%{$search}%")
+                    ->orWhere('documento', 'like', "%{$search}%");
+            });
+        }
+
+        return $query->limit(10)->get(['id', 'nombres', 'apellido_paterno', 'apellido_materno'])
+            ->map(fn($e) => [
+                'id' => $e->id,
+                'name' => trim("{$e->nombres} {$e->apellido_paterno} {$e->apellido_materno}"),
+            ])
+            ->toArray();
     }
-    public function updatedPlanEmpleadoId($value)
+
+    public function updatedFiltroEmpleadoId($value): void
     {
         if ($value) {
-            // Buscamos contratos activos del empleado seleccionado
-            $this->contratosAbiertos = PlanContrato::where('plan_empleado_id', $value)
-                ->where('estado', 'activo')
-                ->get();
-
-            // Inicializamos los inputs para cada contrato abierto
-            foreach ($this->contratosAbiertos as $contrato) {
-                $this->datosCierre[$contrato->id] = [
-                    'fecha_fin' => '',
-                    'motivo_cese_sunat' => '',
-                    'comentario_cese' => ''
-                ];
-            }
+            $this->cargarEmpleado((int) $value);
         } else {
-            $this->contratosAbiertos = [];
-            $this->datosCierre = [];
+            $this->limpiarSeleccion();
         }
     }
 
-    public function nuevoContrato()
+    // Permite abrir el componente ya con un empleado preseleccionado (dispatch externo)
+    public function seleccionarEmpleado($empleadoId = null): void
     {
-        $this->resetFormulario();
-        $this->esEdicion = false;
-        $this->mostrarFormulario = true;
+        $this->limpiarSeleccion();
+        $this->mostrarFormularioContrato = true;
+        if ($empleadoId) {
+            $this->filtroEmpleadoId = $empleadoId;
+            $this->cargarEmpleado((int) $empleadoId);
+        }
+
     }
 
-    public function editarContrato($id)
+    protected function cargarEmpleado(int $empleadoId): void
     {
-        $this->resetFormulario();
-        $contrato = PlanContrato::find($id);
+        $empleado = PlanEmpleado::find($empleadoId);
 
-        $this->contrato = $contrato;
-        if (!$contrato) {
-            $this->alert('error', 'Contrato no encontrado');
+        if (!$empleado) {
+            $this->alert('error', 'Empleado inexistente.');
             return;
         }
+
+        $this->filtroEmpleadoId = $empleado->id;
+        $this->empleadoNombre = trim("{$empleado->nombres} {$empleado->apellido_paterno} {$empleado->apellido_materno}");
+
+        $this->cargarHistorial();
+        $this->cerrarForm();
+    }
+
+    protected function cargarHistorial(): void
+    {
+        $servicio = app(ContratoServicio::class);
+        $this->historial = $servicio->historial($this->filtroEmpleadoId);
+        $this->contratoVigente = $servicio->contratoVigente($this->filtroEmpleadoId);
+    }
+
+    public function limpiarSeleccion(): void
+    {
+        $this->reset(['filtroEmpleadoId', 'empleadoNombre', 'historial', 'contratoVigente']);
+        $this->cerrarForm();
+    }
+
+    public function nuevoContrato(): void
+    {
+        if ($this->contratoVigente) {
+            $this->alert('error', 'El empleado ya tiene un contrato vigente. Finalícelo antes de crear uno nuevo.');
+            return;
+        }
+
+        $this->resetFormulario();
+        $this->esEdicion = false;
+        $this->mostrarForm = true;
+    }
+
+    public function editarContrato(int $id): void
+    {
+        $contrato = PlanContrato::find($id);
+
+        if (!$contrato) {
+            $this->alert('error', 'Contrato no encontrado.');
+            return;
+        }
+
         $this->contratoId = $contrato->id;
-        $this->plan_empleado_id = $contrato->plan_empleado_id;
         $this->tipo_contrato = $contrato->tipo_contrato;
         $this->fecha_inicio = $contrato->fecha_inicio->format('Y-m-d');
-        $this->cargo_codigo = $contrato->cargo_codigo;
         $this->grupo_codigo = $contrato->grupo_codigo;
         $this->compensacion_vacacional = $contrato->compensacion_vacacional;
         $this->tipo_planilla = $contrato->tipo_planilla;
@@ -94,48 +146,21 @@ class ContratosPlanillaFormComponent extends Component
         $this->modalidad_pago = $contrato->modalidad_pago;
         $this->fecha_fin_prueba = $contrato->fecha_fin_prueba ? $contrato->fecha_fin_prueba->format('Y-m-d') : '';
 
-
         $this->esEdicion = true;
-        $this->mostrarFormulario = true;
+        $this->mostrarForm = true;
     }
 
-    public function renovarContrato($id)
+    public function guardarContrato(ContratoServicio $servicio): void
     {
-        $contrato = PlanContrato::find($id);
+        $this->grupo_codigo = blank($this->grupo_codigo) ? null : $this->grupo_codigo;
+        $this->plan_sp_codigo = blank($this->plan_sp_codigo) ? null : $this->plan_sp_codigo;
 
-        if (!$contrato) {
-            $this->alert('error', 'Contrato no encontrado');
-            return;
-        }
-
-        $this->contratoId = $contrato->id;
-        $this->plan_empleado_id = $contrato->plan_empleado_id;
-        $this->tipo_contrato = $contrato->tipo_contrato;
-        $this->fecha_inicio = now()->format('Y-m-d');
-        $this->cargo_codigo = $contrato->cargo_codigo;
-        $this->grupo_codigo = $contrato->grupo_codigo;
-        $this->compensacion_vacacional = $contrato->compensacion_vacacional;
-        $this->tipo_planilla = $contrato->tipo_planilla;
-        $this->plan_sp_codigo = $contrato->plan_sp_codigo;
-        $this->esta_jubilado = $contrato->esta_jubilado ?? 0;
-        $this->modalidad_pago = $contrato->modalidad_pago;
-        $this->fecha_fin_prueba = '';
-
-        $this->esEdicion = false;
-        $this->mostrarFormulario = true;
-    }
-
-    public function guardarContrato(ContratoServicio $servicio)
-    {
         $data = [
-            'plan_empleado_id' => $this->plan_empleado_id,
+            'plan_empleado_id' => $this->filtroEmpleadoId,
             'tipo_contrato' => $this->tipo_contrato,
             'fecha_inicio' => $this->fecha_inicio,
-            'cargo_codigo' => $this->cargo_codigo ?? null,
             'grupo_codigo' => $this->grupo_codigo,
-            'compensacion_vacacional' => $this->compensacion_vacacional !== null
-                ? (float) $this->compensacion_vacacional
-                : null,
+            'compensacion_vacacional' => $this->compensacion_vacacional !== '' ? (float) $this->compensacion_vacacional : null,
             'tipo_planilla' => $this->tipo_planilla,
             'plan_sp_codigo' => $this->plan_sp_codigo,
             'esta_jubilado' => (bool) $this->esta_jubilado,
@@ -143,56 +168,68 @@ class ContratosPlanillaFormComponent extends Component
             'fecha_fin_prueba' => $this->fecha_fin_prueba ? Carbon::parse($this->fecha_fin_prueba) : null,
         ];
 
-
         try {
-            DB::transaction(function () use ($servicio, $data) {
+            $servicio->guardarContrato($data, $this->esEdicion ? $this->contratoId : null);
 
-                // 1. Si hay contratos abiertos, los finalizamos primero
-                if (!$this->esEdicion && count($this->contratosAbiertos) > 0) {
-                    foreach ($this->datosCierre as $id => $valores) {
-                        // Validar que los datos de cierre estén llenos
-                        if (empty($valores['fecha_fin']) || empty($valores['motivo_cese_sunat'])) {
-                            throw new \Exception("Debe completar la fecha y motivo de cese de los contratos anteriores.");
-                        }
-
-                        $servicio->finalizarContrato($id, $valores);
-                    }
-                }
-
-                // 2. Proceder con el guardado o edición del contrato principal
-                $servicio->guardarContrato($data, $this->esEdicion ? $this->contratoId : null);
-            });
-
-            $mensaje = $this->esEdicion ? 'Actualizado correctamente' : 'Creado correctamente (Contratos previos cerrados)';
-            $this->alert('success', $mensaje);
-
-            $this->dispatch('contratoActualizado');
-            $this->cerrarFormulario();
-
+            $this->alert('success', $this->esEdicion ? 'Contrato actualizado.' : 'Contrato creado.');
+            $this->cargarHistorial();
+            $this->cerrarForm();
         } catch (ValidationException $e) {
-            throw $e;
-        } catch (\Exception $e) {
+            $this->setErrorBag($e->validator->getMessageBag());
+        } catch (\DomainException $e) {
             $this->alert('error', $e->getMessage());
         }
     }
 
-    public function cerrarFormulario()
+    public function abrirFinalizar(int $contratoId): void
     {
-        $this->mostrarFormulario = false;
+        $this->contratoAFinalizarId = $contratoId;
+        $this->datosCierre = ['fecha_fin' => '', 'motivo_cese_sunat' => '', 'comentario_cese' => ''];
+    }
+
+    public function confirmarFinalizar(ContratoServicio $servicio): void
+    {
+        $this->validate([
+            'datosCierre.fecha_fin' => ['required', 'date'],
+            'datosCierre.motivo_cese_sunat' => ['required', 'string'],
+        ]);
+
+        try {
+            $servicio->finalizarContrato($this->contratoAFinalizarId, $this->datosCierre);
+
+            $this->alert('success', 'Contrato finalizado.');
+            $this->contratoAFinalizarId = null;
+            $this->cargarHistorial();
+        } catch (\DomainException $e) {
+            $this->alert('error', $e->getMessage());
+        }
+    }
+
+    public function reabrirContrato(int $contratoId, ContratoServicio $servicio): void
+    {
+        try {
+            $servicio->reabrirContrato($contratoId);
+
+            $this->alert('success', 'Contrato reaperturado. Ya puede editarlo.');
+            $this->cargarHistorial();
+        } catch (\DomainException $e) {
+            $this->alert('error', $e->getMessage());
+        }
+    }
+
+    public function cerrarForm(): void
+    {
+        $this->mostrarForm = false;
+        $this->contratoAFinalizarId = null;
         $this->resetFormulario();
     }
 
-    private function resetFormulario()
+    protected function resetFormulario(): void
     {
-        $this->contratosAbiertos = []; // Para el foreach en la vista
-        $this->datosCierre = [];
         $this->reset([
-            'contrato',
             'contratoId',
-            'plan_empleado_id',
             'tipo_contrato',
             'fecha_inicio',
-            'cargo_codigo',
             'grupo_codigo',
             'compensacion_vacacional',
             'tipo_planilla',
@@ -206,11 +243,6 @@ class ContratosPlanillaFormComponent extends Component
 
     public function render()
     {
-        $empleados = PlanEmpleado::orderBy('created_at', 'desc')
-            ->get();
-
-        return view('livewire.gestion-planilla.contratos-planilla-form-component', [
-            'empleados' => $empleados,
-        ]);
+        return view('livewire.gestion-planilla.contratos-planilla-form-component');
     }
 }

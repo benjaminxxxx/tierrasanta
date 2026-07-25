@@ -33,7 +33,7 @@
                             class="dark:text-gray-800 text-center" />
                         <x-td value="{{ $empleado->ultimoContrato?->descuento?->codigo }}"
                             class="dark:text-gray-800 text-center" />
-                        <x-td value="{{ $empleado->ultimoContrato?->cargo?->nombre }}" class="dark:text-gray-800 text-center" />
+                        <x-td value="{{ $empleado->nombreCargoActual }}" class="dark:text-gray-800 text-center" />
                         <x-td value="{{ $empleado->ultimoContrato?->modalidad_pago }}" class="dark:text-gray-800 text-center" />
                         <x-td value="{{ $empleado->tipo_planilla_descripcion }}" class="dark:text-gray-800 text-center" />
 
@@ -58,13 +58,21 @@
                                         @if (!$empleado->trashed())
 
                                             @can(\App\Constants\Permisos::PERSONAL_CONTRATOS)
-                                                <x-dropdown-link href="{{ route('planilla.contratos', ['id' => $empleado->id]) }}">
+                                                <x-dropdown-link @click="$wire.dispatch('abrirFormularioRegistroContrato', { empleadoId: {{ $empleado->id }} })">
                                                     <i class="fa fa-table"></i> Gestionar Contratos
                                                 </x-dropdown-link>
 
                                                 <x-dropdown-link
                                                     @click="$wire.dispatch('abrirFormularioRegistroEmpleadoSueldo',{id:{{ $empleado->id }}})">
                                                     <i class="fa fa-money-bill"></i> Gestionar Sueldos
+                                                </x-dropdown-link>
+                                            @endcan
+
+                                            @can(\App\Constants\Permisos::PERSONAL_CARGOS)
+
+                                                <x-dropdown-link
+                                                    @click="$wire.dispatch('abrirFormularioRegistroEmpleadoCargo',{id:{{ $empleado->id }}})">
+                                                    <i class="fa fa-id-badge"></i> Gestionar Cargo
                                                 </x-dropdown-link>
                                             @endcan
 

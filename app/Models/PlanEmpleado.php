@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Auth;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PlanEmpleado extends Model
@@ -30,6 +32,10 @@ class PlanEmpleado extends Model
         'actualizado_por',
         'eliminado_por',
     ];
+    public function contratos()
+    {
+        return $this->hasMany(PlanContrato::class, 'plan_empleado_id');
+    }
     public function asignacionFamiliar()
     {
         return $this->hasMany(PlanFamiliar::class, 'plan_empleado_id');
@@ -44,10 +50,7 @@ class PlanEmpleado extends Model
 
         return Carbon::parse($this->fecha_nacimiento)->diffInYears($fechaCorte);
     }
-    public function contratos()
-    {
-        return $this->hasMany(PlanContrato::class, 'plan_empleado_id');
-    }
+
     public function sueldos()
     {
         return $this->hasMany(PlanSueldo::class, 'plan_empleado_id');
@@ -154,5 +157,50 @@ class PlanEmpleado extends Model
             }
         });
     }
+    /**
+     * 1. Relación con todos los registros de cargos del empleado a través de sus contratos
+     */
+    public function empleadoCargos()
+    {
+        // Si PlanEmpleadoCargo se relaciona directamente con el empleado:
+        return $this->hasMany(PlanEmpleadoCargo::class, 'plan_empleado_id');
 
+        // NOTA: Si PlanEmpleadoCargo se conecta mediante PlanContrato, se usará hasManyThrough:
+        // return $this->hasManyThrough(PlanEmpleadoCargo::class, PlanContrato::class, 'plan_empleado_id', 'plan_contrato_id');
+    }
+
+    /**
+     * 2. Relación HasOne para el cargo VIGENTE (donde fecha_fin es null)
+     */
+    public function cargoActualRegistro(): HasOne
+    {
+        return $this->hasOne(PlanEmpleadoCargo::class, 'plan_empleado_id')
+            ->whereNull('fecha_fin')
+            ->latestOfMany('fecha_inicio'); // En caso de inconsistencias, toma el más reciente
+    }
+
+    /**
+     * 3. Accessor para obtener directamente el objeto PlanCargo o el nombre del cargo
+     * Uso: $empleado->cargo_actual (retorna el modelo PlanCargo)
+     */
+    public function cargoActual(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                // Retorna el Modelo PlanCargo asociado al registro activo
+                return $this->cargoActualRegistro?->cargo;
+            }
+        );
+    }
+
+    /**
+     * 4. Accessor alternativo para obtener solo el NOMBRE del cargo directamente
+     * Uso: $empleado->nombre_cargo_actual (retorna string)
+     */
+    public function nombreCargoActual(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->cargoActualRegistro?->cargo?->nombre ?? 'Sin Cargo Asignado'
+        );
+    }
 }

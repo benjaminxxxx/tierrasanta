@@ -144,6 +144,7 @@ class Permisos
     const PERSONAL_ELIMINAR = 'Planilla Empleados Eliminar';
     const PERSONAL_RESTAURAR = 'Planilla Empleados Restaurar Empleado';
     const PERSONAL_CONTRATOS = 'Planilla Empleados Gestionar Contratos y Sueldos';
+    const PERSONAL_CARGOS = 'Planilla Empleados Gestionar Cargos';
     const PERSONAL_FAMILIARES = 'Planilla Empleados Gestionar Familiares';
     const PERSONAL_OPCIONES = 'Planilla Empleados Gestionar Opciones';
 

@@ -1,151 +1,185 @@
-<div x-data="contratoPlanillaForm">
+<x-dialog-modal wire:model.live="mostrarFormularioContrato" maxWidth="full">
+    <x-slot name="title">
+        Registro de contratación
+    </x-slot>
 
-    <x-dialog-modal wire:model.live="mostrarFormulario" maxWidth="2xl">
-        <x-slot name="title">
-            {{ $esEdicion ? 'Editar Contrato' : 'Nuevo Contrato' }}
-        </x-slot>
+    <x-slot name="content">
+        <div class="space-y-4">
+            <x-flex>
+                <div class="mt-4 w-full md:w-96">
+                    <x-label value="Empleado" />
+                    <x-select-dropdown wire:model="filtroEmpleadoId" source="getEmpleados"
+                        placeholder="Buscar empleado..." />
+                </div>
+            </x-flex>
 
-        <x-slot name="content">
-            <div class="space-y-6">
+            @if ($filtroEmpleadoId)
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-                <div>
+                    {{-- Columna izquierda: historial --}}
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <x-subtitle>Contratos — {{ $empleadoNombre }}</x-subtitle>
+                            <x-button wire:click="nuevoContrato">+ Nuevo contrato</x-button>
+                        </div>
 
-                    <div x-show="!esEdicion">
-                        <x-searchable-select :options="$empleados" search-placeholder="Buscar trabajador..."
-                            wire:model.live="plan_empleado_id" />
+                        <x-table>
+                            <x-slot name="thead">
+                                <x-tr>
+                                    <x-th>Tipo</x-th>
+                                    <x-th>Inicio</x-th>
+                                    <x-th>Fin</x-th>
+                                    <x-th>Estado</x-th>
+                                    <x-th class="text-right">Acciones</x-th>
+                                </x-tr>
+                            </x-slot>
+                            <x-slot name="tbody">
+                                @forelse ($historial as $contrato)
+                                    <x-tr wire:key="contrato-{{ $contrato->id }}"
+                                        class="{{ $contrato->estado !== 'finalizado' ? 'bg-green-50 dark:bg-green-950' : '' }}">
+                                        <x-th class="uppercase">{{ $contrato->tipo_contrato }}</x-th>
+                                        <x-th>{{ $contrato->fecha_inicio->format('d/m/Y') }}</x-th>
+                                        <x-th>{{ $contrato->fecha_fin?->format('d/m/Y') ?? '—' }}</x-th>
+                                        <x-th>
+                                            @if ($contrato->estado === 'finalizado')
+                                                <span
+                                                    class="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600">Finalizado</span>
+                                            @elseif ($contrato->estado === 'en_prueba')
+                                                <span class="px-2 py-0.5 rounded text-xs bg-amber-100 text-amber-700">En
+                                                    prueba</span>
+                                            @else
+                                                <span class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">Activo</span>
+                                            @endif
+                                        </x-th>
+                                        <x-th class="text-right">
+                                            <div class="flex justify-end gap-2">
+                                                @if ($contrato->estado !== 'finalizado')
+                                                    <x-button variant="secondary"
+                                                        wire:click="editarContrato({{ $contrato->id }})">Editar</x-button>
+                                                    <x-button variant="danger"
+                                                        wire:click="abrirFinalizar({{ $contrato->id }})">Finalizar</x-button>
+                                                @elseif ($historial->first()?->id === $contrato->id)
+                                                    <x-button variant="secondary" wire:click="reabrirContrato({{ $contrato->id }})"
+                                                        wire:confirm="¿Reaperturar este contrato?">
+                                                        Reaperturar
+                                                    </x-button>
+                                                @endif
+                                            </div>
+                                        </x-th>
+                                    </x-tr>
+
+                                    {{-- Panel inline de finalizar, solo para el contrato seleccionado --}}
+                                    @if ($contratoAFinalizarId === $contrato->id)
+                                        <x-tr>
+                                            <x-th colspan="5">
+                                                <div
+                                                    class="p-3 rounded border border-amber-300 bg-amber-50 dark:bg-amber-950 space-y-3">
+                                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                        <x-input type="date" label="Fecha de fin" wire:model="datosCierre.fecha_fin"
+                                                            error="datosCierre.fecha_fin" />
+                                                        <x-select label="Motivo cese (SUNAT)"
+                                                            wire:model="datosCierre.motivo_cese_sunat"
+                                                            error="datosCierre.motivo_cese_sunat">
+                                                            <option value="">Seleccione...</option>
+                                                            <option value="01">Renuncia</option>
+                                                            <option value="02">Despido</option>
+                                                        </x-select>
+                                                        <x-input type="text" label="Comentario"
+                                                            wire:model="datosCierre.comentario_cese" />
+                                                    </div>
+                                                    <div class="flex justify-end gap-2">
+                                                        <x-button variant="secondary"
+                                                            wire:click="$set('contratoAFinalizarId', null)">Cancelar</x-button>
+                                                        <x-button wire:click="confirmarFinalizar">Confirmar cierre</x-button>
+                                                    </div>
+                                                </div>
+                                            </x-th>
+                                        </x-tr>
+                                    @endif
+                                @empty
+                                    <x-tr>
+                                        <x-th colspan="5" class="py-6 text-center text-gray-400">
+                                            Este empleado no tiene contratos registrados.
+                                        </x-th>
+                                    </x-tr>
+                                @endforelse
+                            </x-slot>
+                        </x-table>
                     </div>
-                    @if ($contrato)
-                        <div class="mt-2">
-                            <p class="text-sm text-gray-600 dark:text-gray-400">
-                                Empleado: {{ $contrato->empleado->nombre_completo ?? 'No disponible' }}
-                            </p>
-                        </div>
-                    @endif
-                    @if (count($contratosAbiertos) > 0)
-                        <x-warning class="my-4">
-                            <h4 class="mb-2">
-                                El empleado tiene contratos sin finalizar
-                            </h4>
-                            <p class="text-smmb-4">Debe cerrar los siguientes contratos para poder
-                                registrar uno nuevo:</p>
 
-                            <div class="mt-4">
-                                @foreach ($contratosAbiertos as $contrato)
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <div>
-                                            <label for="" class="dark:text-white">Inicio: {{ $contrato->fecha_inicio }}</label>
-                                            <x-input type="date"
-                                                wire:model="datosCierre.{{ $contrato->id }}.fecha_fin" />
-                                        </div>
-                                        <div>
-                                            <label for="" class="dark:text-white">Motivo Cese (SUNAT)</label>
-                                            <x-select wire:model="datosCierre.{{ $contrato->id }}.motivo_cese_sunat"
-                                                class="w-full text-sm">
-                                                <option value="">Seleccione...</option>
-                                                <option value="01">Renuncia</option>
-                                                <option value="02">Despido</option>
-                                            </x-select>
-                                        </div>
-                                        <div>
-                                            <label for="" class="dark:text-white">Comentario</label>
-                                            <x-input type="text"
-                                                wire:model="datosCierre.{{ $contrato->id }}.comentario_cese" />
-                                        </div>
+                    {{-- Columna derecha: formulario --}}
+                    <div>
+                        @if ($mostrarForm)
+                            <x-title>{{ $esEdicion ? 'Editar Contrato' : 'Nuevo Contrato' }}</x-title>
+
+                            <div class="grid grid-cols-1 gap-4 mt-4">
+                                <x-select label="Tipo de Contrato *" wire:model="tipo_contrato" error="tipo_contrato">
+                                    <option value="">Seleccionar tipo</option>
+                                    <option value="plazo fijo">PLAZO FIJO</option>
+                                    <option value="indefinido">INDEFINIDO</option>
+                                    <option value="temporal">TEMPORAL</option>
+                                </x-select>
+
+                                <x-input label="Fecha de Inicio *" type="date" wire:model="fecha_inicio" error="fecha_inicio" />
+                                <x-input label="Fecha Fin de Prueba" type="date" wire:model="fecha_fin_prueba" />
+
+                                <x-select-planilla-grupos label="Grupo" textoTodos="SELECCIONAR" wire:model="grupo_codigo"
+                                    error="grupo_codigo" />
+
+                                <x-select label="Tipo de planilla" wire:model="tipo_planilla" error="tipo_planilla"
+                                    class="uppercase">
+                                    <option value="">SELECCIONAR</option>
+                                    <option value="agraria">AGRARIA</option>
+                                    <option value="oficina">OFICINA</option>
+                                    <option value="general">GENERAL</option>
+                                    <option value="mype">MYPE</option>
+                                    <option value="construccion">CONSTRUCCIÓN</option>
+                                </x-select>
+
+                                <x-select-planilla-descuentos label="Sistema de Pensión" textTodos="NO AFILIADO"
+                                    wire:model="plan_sp_codigo" error="plan_sp_codigo" />
+
+                                <x-input label="Compensación Vacacional" type="number" step="0.01"
+                                    wire:model="compensacion_vacacional" placeholder="Monto en soles" />
+
+                                <x-select label="Modalidad de Pago *" wire:model="modalidad_pago" error="modalidad_pago">
+                                    <option value="">SELECCIONAR</option>
+                                    <option value="mensual">MENSUAL</option>
+                                    <option value="quincenal">QUINCENAL</option>
+                                    <option value="semanal">SEMANAL</option>
+                                </x-select>
+
+                                <x-group-field>
+                                    <x-label for="esta_jubilado">¿Está Jubilado(a)?</x-label>
+                                    <div class="flex items-center mt-2">
+                                        <x-checkbox wire:model="esta_jubilado" id="esta_jubilado" class="mr-2" />
+                                        <span>Sí, está jubilado(a)</span>
                                     </div>
-                                @endforeach
+                                </x-group-field>
                             </div>
-
-                        </x-warning>
-                    @endif
+                        @else
+                            <div class="py-12 text-center text-gray-400">
+                                Selecciona "Nuevo contrato" o "Editar" en un contrato de la lista para ver el formulario aquí.
+                            </div>
+                        @endif
+                    </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    <x-select label="Tipo de Contrato *" wire:model="tipo_contrato" error="tipo_contrato"
-                        class="w-full">
-                        <option value="">Seleccionar tipo</option>
-                        <option value="plazo fijo">PLAZO FIJO</option>
-                        <option value="indefinido">INDEFINIDO</option>
-                        <option value="temporal">TEMPORAL</option>
-                    </x-select>
+            @endif
 
-                    <x-input id="fecha_inicio" label="Fecha de Inicio *" type="date" class=""
-                        wire:model="fecha_inicio" error="fecha_inicio" />
+            <x-loading wire:loading />
+        </div>
+    </x-slot>
 
-
-
-                    <x-input id="fecha_fin_prueba" label="Fecha Fin de Prueba" type="date" class="mt-1 block w-full"
-                        wire:model="fecha_fin_prueba" />
-
-
-
-                    <x-select-planilla-cargos label="Cargo" wire:model="cargo_codigo" id="cargo_codigo"
-                        error="cargo_codigo" />
-
-                    <x-select-planilla-grupos label="Grupo" textoTodos="SELECCIONAR" wire:model="grupo_codigo"
-                        error="grupo_codigo" />
-
-
-                    <x-select class="uppercase" label="Tipo de planilla" wire:model="tipo_planilla" id="tipo_planilla"
-                        class="!w-full uppercase" error="tipo_planilla">
-                        <option value="">SELECCIONAR</option>
-                        <option value="agraria">AGRARIA</option>
-                        <option value="oficina">OFICINA</option>
-                    </x-select>
-
-                    <x-select-planilla-descuentos label="Sistema de Pensión" textTodos="NO AFILIADO"
-                        wire:model="plan_sp_codigo" error="plan_sp_codigo" />
-
-                    <x-input id="compensacion_vacacional" label="Compensación Vacacional" type="number" step="0.01"
-                        class="mt-1 block w-full" wire:model="compensacion_vacacional" placeholder="Monto en soles" />
-
-                    <x-select label="Modalidad de Pago *" wire:model="modalidad_pago" error="modalidad_pago">
-                        <option value="">SELECCIONAR</option>
-                        <option value="mensual">MENSUAL</option>
-                        <option value="quincenal">QUINCENAL</option>
-                        <option value="semanal">SEMANAL</option>
-                    </x-select>
-
-                    <x-group-field>
-                        <x-label for="esta_jubilado">¿Está Jubilado(a)?</x-label>
-                        <div class="flex items-center mt-2">
-                            <x-checkbox wire:model="esta_jubilado" id="esta_jubilado" class="mr-2" />
-                            <span>Sí, está jubilado(a)</span>
-                        </div>
-                    </x-group-field>
-                </div>
-
-                <!-- Mensajes de Error -->
-                @if ($errors->any())
-                    <x-warning>
-                        <div class="text-sm">
-                            <p class="font-medium mb-2">Por favor, corrige los siguientes errores:</p>
-                            <ul class="list-disc list-inside space-y-1">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    </x-warning>
-                @endif
-            </div>
-        </x-slot>
-
-        <x-slot name="footer">
-            <x-button variant="secondary" wire:click="cerrarFormulario">
-                Cancelar
-            </x-button>
-            <x-button wire:click="guardarContrato" wire:loading.attr="disabled">
-                <i class="fas fa-save"></i> {{ $esEdicion ? 'Actualizar Contrato' : 'Crear Contrato' }}
-            </x-button>
-        </x-slot>
-    </x-dialog-modal>
-
-
-    <x-loading wire:loading />
-</div>
-@script
-    <script>
-        Alpine.data('contratoPlanillaForm', () => ({
-            esEdicion: @entangle('esEdicion')
-        }));
-    </script>
-@endscript
+    <x-slot name="footer">
+        <x-button variant="secondary" wire:click="$set('mostrarFormularioContrato', false)"
+            wire:loading.attr="disabled">
+            Cerrar
+        </x-button>
+        @if ($filtroEmpleadoId && $mostrarForm)
+        <x-button variant="secondary" wire:click="cerrarForm">Cancelar</x-button>
+        <x-button wire:click="guardarContrato" wire:loading.attr="disabled">
+            {{ $esEdicion ? 'Actualizar Contrato' : 'Crear Contrato' }}
+        </x-button>
+        @endif
+    </x-slot>
+</x-dialog-modal>

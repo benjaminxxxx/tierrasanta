@@ -13,6 +13,8 @@ use App\Http\Controllers\MaquinariaController;
 use App\Http\Controllers\NutrienteController;
 use App\Http\Controllers\PermisosRolController;
 use App\Http\Controllers\ReporteDiarioController;
+use App\Livewire\GestionPlanilla\CargosComponent;
+use App\Livewire\GestionPlanilla\PanelContratoComponent;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AsistenciaPlanillaController;
 use App\Http\Controllers\GastoController;
@@ -113,6 +115,10 @@ Route::middleware([
         Route::get('/contratos/{id?}', function ($id = null) {
             return view('livewire.gestion-planilla.contratos-planilla-indice', compact('id'));
         })->name('planilla.contratos')->middleware('can:' . Permisos::PERSONAL_CONTRATOS);
+
+        Route::get('/panel_contrato', PanelContratoComponent::class)->name('planilla.panel_contrato')->middleware('can:' . Permisos::PERSONAL_CONTRATOS);
+
+        Route::get('/cargos', CargosComponent::class)->name('planilla.cargos')->middleware('can:' . Permisos::PERSONAL_CARGOS);
 
         Route::get('/conceptos', function () {
             return view('livewire.gestion-planilla.conceptos-planilla-indice');
