@@ -40,7 +40,7 @@ class PlanEmpleado extends Model
     {
         return $this->hasMany(PlanFamiliar::class, 'plan_empleado_id');
     }
-    public function edadContableSegun(int $mes, int $anio): ?int
+    public function edadContable(int $mes, int $anio): ?int
     {
         if (!$this->fecha_nacimiento) {
             return null;
@@ -55,24 +55,56 @@ class PlanEmpleado extends Model
     {
         return $this->hasMany(PlanSueldo::class, 'plan_empleado_id');
     }
-
-    public function ultimoContrato()
-    {
-        return $this->hasOne(PlanContrato::class, 'plan_empleado_id')->latestOfMany('fecha_inicio');
-    }
-    public function contratoSegun(int $mes, int $anio): ?PlanContrato
-    {
-        $fechaReferencia = Carbon::createFromDate($anio, $mes, 1)->startOfMonth();
-
-        return $this->hasOne(PlanContrato::class, 'plan_empleado_id')
-            ->where('fecha_inicio', '<=', $fechaReferencia)
-            ->orderBy('fecha_inicio', 'desc')
-            ->first();
-    }
     public function ultimoSueldo()
     {
         return $this->hasOne(PlanSueldo::class, 'plan_empleado_id')->latestOfMany('fecha_inicio');
     }
+    /**
+     * Obtiene el monto del sueldo vigente para un mes y año específicos.
+     *
+     * @param int $mes (1-12)
+     * @param int $anio (Ej: 2024)
+     * @return float|null
+     */
+    public function sueldo($mes, $anio): ?float
+    {
+        // 1. Crear el primer y último día del mes consultado
+        $inicioMes = Carbon::createFromDate($anio, $mes, 1)->startOfDay();
+        $finMes = Carbon::createFromDate($anio, $mes, 1)->endOfMonth()->endOfDay();
+
+        // 2. Buscar el registro vigente en ese rango
+        $registro = $this->sueldos()
+            ->where('fecha_inicio', '<=', $finMes)
+            ->where(function ($query) use ($inicioMes) {
+                $query->whereNull('fecha_fin')
+                    ->orWhere('fecha_fin', '>=', $inicioMes);
+            })
+            ->orderBy('fecha_inicio', 'desc')
+            ->first();
+
+        // 3. Retornar el monto en float si existe, o null
+        return $registro ? (float) $registro->sueldo : null;
+    }
+    public function contrato(int $mes, int $anio): ?PlanContrato
+    {
+        $inicioMes = Carbon::create($anio, $mes, 1)->startOfMonth();
+        $finMes = $inicioMes->copy()->endOfMonth();
+
+        return $this->hasOne(PlanContrato::class, 'plan_empleado_id')
+            ->where('fecha_inicio', '<=', $finMes)
+            ->where(function ($query) use ($inicioMes) {
+                $query->whereNull('fecha_fin')
+                    ->orWhere('fecha_fin', '>=', $inicioMes);
+            })
+            ->orderByDesc('fecha_inicio')
+            ->first();
+    }
+    public function ultimoContrato()
+    {
+        return $this->hasOne(PlanContrato::class, 'plan_empleado_id')->latestOfMany('fecha_inicio');
+    }
+
+
 
 
     public function getNombreCompletoAttribute()
@@ -132,6 +164,25 @@ class PlanEmpleado extends Model
             'mensaje' => $mensaje,
             'cantidad' => $cantidadHijos,
         ];
+    }
+    public function cantidadHijosConAsignacionFamiliar(
+        ?int $mes = null,
+        ?int $anio = null
+    ): int {
+        $fechaCorte = $mes && $anio
+            ? Carbon::create($anio, $mes, 1)->endOfMonth()
+            : now();
+
+        return PlanFamiliar::where('plan_empleado_id', $this->id)
+            ->get()
+            ->filter(function ($asignacion) use ($fechaCorte) {
+                $edad = Carbon::parse($asignacion->fecha_nacimiento)
+                    ->diffInYears($fechaCorte);
+
+                return $edad < 18 ||
+                    ($edad >= 18 && $asignacion->esta_estudiando);
+            })
+            ->count();
     }
     protected static function boot()
     {

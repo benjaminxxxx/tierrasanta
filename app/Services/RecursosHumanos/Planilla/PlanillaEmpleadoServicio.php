@@ -402,10 +402,11 @@ class PlanillaEmpleadoServicio
         // 🔹 Ordenar y paginar
         return $query->orderBy('orden')->paginate(20);
     }
-
+//class PlanillaEmpleadoServicio
     /**
      * Retorna los empleados con contrato agrario vigente en el mes/año indicado.
      */
+    /*
     public function obtenerPlanillaAgraria(int $mes, int $anio, $orden = "orden")
     {
         $fechaInicioMes = Carbon::createFromDate($anio, $mes, 1)->startOfMonth();
@@ -435,5 +436,102 @@ class PlanillaEmpleadoServicio
             ])
             ->orderBy($orden)
             ->get();
+    }
+*/
+    /**
+     * Retorna los empleados con contrato agrario vigente en el mes/año indicado.
+     *
+     * @param  array $ordenConfig  Ej: [['campo' => 'genero', 'direccion' => 'desc'], ['campo' => 'apellido_paterno', 'direccion' => 'asc']]
+     */
+    public function obtenerPlanillaAgraria(int $mes, int $anio, array $ordenConfig = [])
+    {
+        $fechaInicioMes = Carbon::createFromDate($anio, $mes, 1)->startOfMonth();
+        $fechaFinMes = Carbon::createFromDate($anio, $mes, 1)->endOfMonth();
+
+        $query = PlanEmpleado::query()
+            ->whereNull('deleted_at')
+            ->whereHas('contratos', function ($query) use ($fechaInicioMes, $fechaFinMes) {
+                $query->where('tipo_planilla', 'agraria')
+                    ->where('fecha_inicio', '<=', $fechaFinMes)
+                    ->where(function ($q) use ($fechaInicioMes) {
+                        $q->whereNull('fecha_fin')
+                            ->orWhere('fecha_fin', '>=', $fechaInicioMes);
+                    });
+            })
+            ->with([
+                'contratos' => function ($query) use ($fechaInicioMes, $fechaFinMes) {
+                    $query->where('tipo_planilla', 'agraria')
+                        ->where('fecha_inicio', '<=', $fechaFinMes)
+                        ->where(function ($q) use ($fechaInicioMes) {
+                            $q->whereNull('fecha_fin')
+                                ->orWhere('fecha_fin', '>=', $fechaInicioMes);
+                        })
+                        ->orderByDesc('fecha_inicio')
+                        ->limit(1);
+                }
+            ]);
+
+        $this->aplicarOrden($query, $ordenConfig);
+
+        return $query->get();
+    }
+
+    /**
+     * Aplica el orden dinámico configurado. Si viene vacío, cae al orden por defecto.
+     */
+    protected function aplicarOrden($query, array $ordenConfig): void
+    {
+        if (empty($ordenConfig)) {
+            $query->orderBy('orden');
+            return;
+        }
+
+        foreach ($ordenConfig as $item) {
+            $campo = $item['campo'] ?? null;
+            $direccion = strtolower($item['direccion'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
+
+            if (!$campo) {
+                continue;
+            }
+
+            $this->aplicarCampoOrden($query, $campo, $direccion);
+        }
+    }
+
+    /**
+     * Aquí decides caso por caso cómo se traduce cada "campo lógico" a una
+     * columna/expresión real de la BD (puede requerir join si no vive en plan_empleados).
+     */
+    protected function aplicarCampoOrden($query, string $campo, string $direccion): void
+    {
+        match ($campo) {
+            // Columnas directas en plan_empleados
+            'orden', 'nombres', 'apellido_paterno', 'apellido_materno', 'genero', 'documento' =>
+                $query->orderBy($campo, $direccion),
+
+            // TODO: si alguno de estos vive en otra tabla (ej. tabla persona), aquí agregamos
+            // el join correspondiente antes del orderBy, ej:
+            // 'genero' => $query->join('personas', 'personas.id', '=', 'plan_empleados.persona_id')
+            //     ->orderBy('personas.genero', $direccion)
+            //     ->select('plan_empleados.*'),
+
+            default => null, // campo desconocido, se ignora silenciosamente
+        };
+    }
+
+    /**
+     * Lista de campos disponibles para armar el orden en el modal de configuración.
+     * Centralizado aquí para que el componente y el servicio compartan la misma fuente.
+     */
+    public static function camposOrdenables(): array
+    {
+        return [
+            ['value' => 'orden', 'label' => 'Orden (por defecto)'],
+            ['value' => 'nombres', 'label' => 'Nombres'],
+            ['value' => 'apellido_paterno', 'label' => 'Apellido Paterno'],
+            ['value' => 'apellido_materno', 'label' => 'Apellido Materno'],
+            ['value' => 'genero', 'label' => 'Género'],
+            ['value' => 'documento', 'label' => 'Documento'],
+        ];
     }
 }

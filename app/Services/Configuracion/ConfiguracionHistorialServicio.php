@@ -3,6 +3,7 @@
 namespace App\Services\Configuracion;
 
 use App\Models\ConfiguracionHistorial;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -37,6 +38,7 @@ class ConfiguracionHistorialServicio
 
         return $registros;
     }
+    /*
     public static function valorVigente(string $codigo, int $mes, int $anio): float
     {
         $fechaConsulta = sprintf('%04d-%02d-01', $anio, $mes);
@@ -53,6 +55,59 @@ class ConfiguracionHistorialServicio
         if (!$registro) {
             throw new \Exception(
                 "No existe un valor vigente para '{$codigo}' en {$mes}/{$anio}."
+            );
+        }
+
+        return (float) $registro->valor;
+    }*/
+    public static function valorVigente(
+        string $codigo,
+        int $mes,
+        int $anio
+    ): float {
+        if ($mes < 1 || $mes > 12) {
+            throw new \InvalidArgumentException(
+                "El mes '{$mes}' no es válido."
+            );
+        }
+
+        if ($anio < 2000 || $anio > 2100) {
+            throw new \InvalidArgumentException(
+                "El año '{$anio}' no es válido."
+            );
+        }
+
+        $codigo = trim($codigo);
+
+        if ($codigo === '') {
+            throw new \InvalidArgumentException(
+                'El código de configuración no puede estar vacío.'
+            );
+        }
+
+        $fechaConsulta = Carbon::create($anio, $mes, 1)->startOfMonth();
+
+        $registro = ConfiguracionHistorial::query()
+            ->where('configuracion_codigo', $codigo)
+            ->whereDate('fecha_inicio', '<=', $fechaConsulta)
+            ->where(function ($query) use ($fechaConsulta) {
+                $query->whereNull('fecha_fin')
+                    ->orWhereDate('fecha_fin', '>=', $fechaConsulta);
+            })
+            ->orderByDesc('fecha_inicio')
+            ->first();
+
+        if (!$registro) {
+            throw new \RuntimeException(
+                "No existe un valor vigente para la configuración " .
+                "'{$codigo}' en {$mes}/{$anio}."
+            );
+        }
+
+        if ($registro->valor === null || !is_numeric($registro->valor)) {
+            throw new \RuntimeException(
+                "El valor de la configuración '{$codigo}' " .
+                "no es válido en {$mes}/{$anio}."
             );
         }
 
@@ -77,7 +132,7 @@ class ConfiguracionHistorialServicio
     public static function crear(array $data, $indice)
     {
         $validados = self::validar($data, null);
-        
+
 
         return ConfiguracionHistorial::create($validados);
     }

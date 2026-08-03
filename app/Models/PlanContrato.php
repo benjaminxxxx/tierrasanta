@@ -15,6 +15,7 @@ class PlanContrato extends Model
         'fecha_inicio',
         'fecha_fin',
         'grupo_codigo',
+        'remuneracion_basica',
         'compensacion_vacacional',
         'tipo_planilla',
         'plan_sp_codigo',

@@ -29,45 +29,7 @@ class GestionPlanillaRegistroDiarioComponent extends Component
             $this->alert('error', $th->getMessage());
         }
     }
-    /*
-    public function agregarPlanilleros()
-    {
-        $empleados = app(GestionPlanillaReporteDiario::class)
-            ->obtenerPlanillaAgraria($this->mes, $this->anio)
-            ->toArray();
-
-        if (count($empleados) == 0) {
-            return $this->alert('warning', 'No hay registros aún');
-        }
-
-        // Fecha del mes anterior
-        $fecha = Carbon::createFromDate($this->anio, $this->mes, 1)->subMonth();
-
-        // Obtener lista de ordenes del mes anterior
-        $listaAnterior = PlanillaMensualDetalleServicio::obtenerOrden($fecha->month, $fecha->year);
-
-        // INYECTAR EL ORDEN
-        foreach ($empleados as &$emp) {
-            $id = $emp['id'];
-            $emp['orden'] = $listaAnterior[$id] ?? null;
-        }
-        unset($emp);
-
-        // Guardar en la propiedad del componente
-        $this->listaPlanilla = $empleados;
-    }
-    public function guardarOrdenMensualEmpleados()
-    {
-        try {
-
-            app(GestionPlanillaReporteDiario::class)->guardarOrdenMensualEmpleados($this->mes, $this->anio, $this->listaPlanilla);
-            $this->mostrarListaPlanillaMensual = false;
-            $this->dispatch('actualizarListaPlanillaRegistroDiario');
-            $this->alert('success', 'Registro Actualizado Correctamente.');
-        } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
-        }
-    }*/
+   
     protected function despuesFechaModificada(string $fecha)
     {
         $fecha = Carbon::parse($this->fecha);

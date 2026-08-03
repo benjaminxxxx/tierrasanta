@@ -15,9 +15,9 @@ return new class extends Migration {
             $table->string('documento', 8);
             $table->string('nombres');
             $table->string('grupo', 50)->nullable();
-            $table->string('spp_snp')->nullable();
-            $table->string('empleado_grupo_color')->nullable();
-            $table->foreignId('plan_empleado_id')->nullable()->constrained('plan_empleados')->nullOnDelete();
+            $table->string('spp_snp')->nullable();  //x
+            $table->string('empleado_grupo_color')->nullable(); //x
+            $table->foreignId('plan_empleado_id')->nullable()->constrained('plan_empleados')->nullOnDelete(); //x
 
             $table->integer('orden');
             $table->decimal('remuneracion_basica', 10, 2)->nullable();

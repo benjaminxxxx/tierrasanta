@@ -112,7 +112,7 @@
                         @if ($mostrarForm)
                             <x-title>{{ $esEdicion ? 'Editar Contrato' : 'Nuevo Contrato' }}</x-title>
 
-                            <div class="grid grid-cols-1 gap-4 mt-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                 <x-select label="Tipo de Contrato *" wire:model="tipo_contrato" error="tipo_contrato">
                                     <option value="">Seleccionar tipo</option>
                                     <option value="plazo fijo">PLAZO FIJO</option>
@@ -138,6 +138,10 @@
 
                                 <x-select-planilla-descuentos label="Sistema de Pensión" textTodos="NO AFILIADO"
                                     wire:model="plan_sp_codigo" error="plan_sp_codigo" />
+
+                                <x-input label="Remuneración Basica (opcional)" type="number" step="0.1"
+                                    wire:model="remuneracion_basica" placeholder="Monto en soles"
+                                    help="Colocar si tiene un sueldo fijo personalizado en el plame" />
 
                                 <x-input label="Compensación Vacacional" type="number" step="0.01"
                                     wire:model="compensacion_vacacional" placeholder="Monto en soles" />
@@ -176,10 +180,10 @@
             Cerrar
         </x-button>
         @if ($filtroEmpleadoId && $mostrarForm)
-        <x-button variant="secondary" wire:click="cerrarForm">Cancelar</x-button>
-        <x-button wire:click="guardarContrato" wire:loading.attr="disabled">
-            {{ $esEdicion ? 'Actualizar Contrato' : 'Crear Contrato' }}
-        </x-button>
+            <x-button variant="secondary" wire:click="cerrarForm">Cancelar</x-button>
+            <x-button wire:click="guardarContrato" wire:loading.attr="disabled">
+                {{ $esEdicion ? 'Actualizar Contrato' : 'Crear Contrato' }}
+            </x-button>
         @endif
     </x-slot>
 </x-dialog-modal>

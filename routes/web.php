@@ -13,6 +13,9 @@ use App\Http\Controllers\MaquinariaController;
 use App\Http\Controllers\NutrienteController;
 use App\Http\Controllers\PermisosRolController;
 use App\Http\Controllers\ReporteDiarioController;
+use App\Livewire\ConfiguracionDescuentoAfpComponent;
+use App\Livewire\ConfiguracionPrimasComisionesComponent;
+use App\Livewire\GestionPlanilla\AsistenciaMensualComponent;
 use App\Livewire\GestionPlanilla\CargosComponent;
 use App\Livewire\GestionPlanilla\PanelContratoComponent;
 use Illuminate\Support\Facades\Route;
@@ -42,15 +45,15 @@ Route::middleware([
     })->name('dashboard');
 
     Route::get('/planilla/asistencia/{anio?}/{mes?}', [AsistenciaPlanillaController::class, 'index'])->name('planilla.asistencia')->middleware('can:' . Permisos::PLANILLA_ASISTENCIA);
+    Route::get('/planilla/asistencias', AsistenciaMensualComponent::class)->name('planilla.asistencias')->middleware('can:' . Permisos::PLANILLA_ASISTENCIA_VER);
+
     Route::get('/planilla/bn', [AsistenciaPlanillaController::class, 'blanco'])->name('planilla.blanco')->middleware('can:' . Permisos::PLANILLA_BLANCO);
 
     Route::get('/empleados', function () {
         return view('livewire.gestion-planilla.administrar-planillero.indice-empleados');
     })->name('empleados')->middleware('can:Planilla Empleados');
 
-    Route::get('/descuentos-de-afp', function () {
-        return view('descuentos_afp');
-    })->name('descuentos_afp')->middleware('can:' . Permisos::PLANILLA_CONFIG_AFP);
+    Route::get('/descuentos-de-afp', ConfiguracionPrimasComisionesComponent::class)->name('descuentos_afp')->middleware('can:' . Permisos::PLANILLA_CONFIG_AFP);
     Route::get('/empleados/asignacion-familiar', function () {
         return view('empleados.asignacion_familiar');
     })->name('empleados.asignacion_familiar')->middleware('can:' . Permisos::PLANILLA_FAMILIAR);

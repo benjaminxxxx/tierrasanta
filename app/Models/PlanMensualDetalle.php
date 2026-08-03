@@ -61,7 +61,12 @@ class PlanMensualDetalle extends Model
         'faltas_injustificadas',
 
         'dias_laborados',
-        'dias_no_laborados'
+        'dias_no_laborados',
+
+
+        //nuevo calculo
+        'sueldo_real_proyectado',
+        'sueldo_real_liquidado'
     ];
     public function empleado()
     {

@@ -3,8 +3,10 @@
 use Carbon\Carbon;
 
 if (!function_exists('formatear_fecha')) {
-    function formatear_fecha($fecha, $formato = 'd/m/Y') {
-        if (!$fecha) return null;
+    function formatear_fecha($fecha, $formato = 'd/m/Y')
+    {
+        if (!$fecha)
+            return null;
 
         try {
             return Carbon::parse($fecha)->format($formato);
@@ -16,7 +18,8 @@ if (!function_exists('formatear_fecha')) {
 if (!function_exists('formatear_tiempo')) {
     function formatear_tiempo($tiempo, $formato = 'H:i')
     {
-        if (!$tiempo) return null;
+        if (!$tiempo)
+            return null;
 
         try {
             return Carbon::parse($tiempo)->format($formato);
@@ -41,7 +44,8 @@ if (!function_exists('formatear_numero')) {
      */
     function formatear_numero($numero, $decimales = 2, $rellenarCeros = true)
     {
-        if (!is_numeric($numero)) return null;
+        if (!is_numeric($numero))
+            return null;
 
         // Redondeo al límite solicitado
         $redondeado = round($numero, $decimales);
@@ -57,7 +61,27 @@ if (!function_exists('formatear_numero')) {
         return rtrim(rtrim($formateado, '0'), '.');
     }
 }
+if (!function_exists('fmt')) {
+    /**
+     * Igual que formatear_numero(), pero pensado para mostrar directo en Blade:
+     * si el valor es null o no numérico, retorna un placeholder en vez de
+     * lanzar el deprecation warning de number_format(null) o mostrar "0.00"
+     * engañoso cuando en realidad el dato nunca se calculó/configuró.
+     *
+     * fmt(null)                    -> "—"
+     * fmt(5.2)                     -> "5.20"
+     * fmt(5.2, 4, false)           -> "5.2"
+     * fmt(null, 2, true, '-')      -> "-"
+     */
+    function fmt($numero, $decimales = 2, $rellenarCeros = true, $placeholder = '—')
+    {
+        if (is_null($numero) || $numero === '' || !is_numeric($numero)) {
+            return $placeholder;
+        }
 
+        return formatear_numero($numero, $decimales, $rellenarCeros);
+    }
+}
 if (!function_exists('formatear_minutos_horas')) {
 
     /**

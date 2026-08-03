@@ -19,6 +19,7 @@ return new class extends Migration {
             $table->string('grupo_codigo')->nullable(); //la tabla foreign tiene como primary key string
             $table->foreign('grupo_codigo')->references('codigo')->on('plan_grupos')->onDelete('set null');
             $table->decimal('compensacion_vacacional', 10, 2)->nullable();
+            $table->decimal('remuneracion_basica', 10, 2)->nullable();
             $table->enum('tipo_planilla', ['agraria', 'oficina', 'general', 'mype', 'construccion'])->default('agraria');  //hay agraria, y de oficina y podria haber mas         
             $table->string('plan_sp_codigo')->nullable();
             $table->foreign('plan_sp_codigo')->references('codigo')->on('plan_sp_desc')->onDelete('set null');

@@ -15,28 +15,30 @@ class PlanMensual extends Model
         'anio',
         'dias_laborables',
         'total_horas',
-        'factor_remuneracion_basica',
+        'remuneracion_basica',
+        //'factor_remuneracion_basica',
         'total_empleados',
         'excel',
         //campos que se copian a planilla para ya no depender de configuracion
         'asignacion_familiar',
-        'cts_porcentaje',
         'gratificaciones',
         'essalud_gratificaciones',
         'rmv',
         'beta30',
         'essalud',
         'vida_ley',
-        'vida_ley_porcentaje',
         'pension_sctr',
-        'pension_sctr_porcentaje',
         'essalud_eps',
-        'porcentaje_constante',
-        'rem_basica_essalud'
+        'rem_basica_essalud',
+        'cts'
     ];
    
     public function detalle()
     {
         return $this->hasMany(PlanMensualDetalle::class, 'plan_mensual_id')->orderBy('orden');
+    }
+    public function planilla()
+    {
+        return $this->hasMany(PlanMensualPersonal::class, 'plan_mensual_id')->orderBy('orden');
     }
 }
