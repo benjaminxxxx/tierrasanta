@@ -179,7 +179,6 @@ class AperturaPlanillaModal extends Component
     protected function guardarApertura(): PlanMensual
     {
         $this->validate();
-
         return PlanMensual::updateOrCreate(
             ['mes' => $this->mes, 'anio' => $this->anio],
             [
@@ -221,6 +220,9 @@ class AperturaPlanillaModal extends Component
             PlanillaMensualServicio::snapshotDescuentosSp($planMensual->id, $this->mes, $this->anio);
 
             $resultado = app(PlanillaServicio::class)->generarProyeccion($this->mes, $this->anio);
+
+            $excelPath = app(PlanillaServicio::class)->generarExcelPlanilla($this->mes, $this->anio);
+            $planMensual->update(['excel'=>$excelPath]);
 
             $tieneErrores = !empty($resultado['errores']);
 

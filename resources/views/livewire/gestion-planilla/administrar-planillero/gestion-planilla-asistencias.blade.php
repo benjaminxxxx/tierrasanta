@@ -1,7 +1,15 @@
 <div>
-    <x-title>
-        Asistencia Mensual
-    </x-title>
+
+    <x-flex class="justify-between">
+        <x-title>
+            Asistencia Mensual
+        </x-title>
+        <div>
+            <x-button href="{{ route('planilla.asistencias') }}" variant="success" target="_blank">
+                <i class="fa fa-check"></i> Version Nueva (beta)
+            </x-button>
+        </div>
+    </x-flex>
     @include('comun.selector-mes')
     @can(\App\Constants\Permisos::PLANILLA_ASISTENCIA_VER)
         <livewire:gestion-planilla.administrar-planillero.gestion-planilla-detalle-asistencias-component :mes="$mes"

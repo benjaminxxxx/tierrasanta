@@ -6,7 +6,6 @@ use App\Models\InsCategoria;
 use App\Models\InsSubcategoria;
 use App\Models\InsUso;
 use App\Models\Nutriente;
-use App\Models\Producto;
 use App\Services\Insumo\InsumoServicio;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;

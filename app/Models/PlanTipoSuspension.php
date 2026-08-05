@@ -10,7 +10,8 @@ class PlanTipoSuspension extends Model
     protected $fillable = [
         'codigo',
         'grupo',
-        'descripcion'
+        'descripcion',
+        'descripcion_corta'
     ];
     
 }

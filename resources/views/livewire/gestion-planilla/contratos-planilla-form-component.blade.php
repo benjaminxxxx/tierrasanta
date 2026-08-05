@@ -143,6 +143,9 @@
                                     wire:model="remuneracion_basica" placeholder="Monto en soles"
                                     help="Colocar si tiene un sueldo fijo personalizado en el plame" />
 
+                                <x-input label="Bonificación" type="number" step="0.1"
+                                    wire:model="bonificacion" placeholder="Monto en soles" />
+
                                 <x-input label="Compensación Vacacional" type="number" step="0.01"
                                     wire:model="compensacion_vacacional" placeholder="Monto en soles" />
 

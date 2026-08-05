@@ -63,11 +63,11 @@
                     {{-- SUELDO --}}
                     <x-td>{{ $index + 1 }}</x-td>
 
-                    <x-td>
+                    <x-td class="whitespace-nowrap">
                         {{ $empleado->nombres }}
                     </x-td>
 
-                    <x-td class="text-center">
+                    <x-td class="text-center whitespace-nowrap">
                         {{ $empleado->sistema_pension }}
                     </x-td>
 
@@ -96,7 +96,7 @@
                     </x-td>
 
                     <x-td>
-                        {{ number_format($empleado->proyectado_sueldo_bruto_negro, 2) }}
+                        {{ number_format($empleado->proyectado_sueldo_neto, 2) }}
                     </x-td>
 
                     {{-- BENEFICIOS --}}
@@ -133,15 +133,15 @@
                         {{ number_format($empleado->proyectado_essalud_eps, 2) }}
                     </x-td>
 
-                    {{-- TOTALES --}}
+                    {{-- SUELDO NETO + BENF. SOCI. PROYEC. --}}
                     <x-td class="text-right">
                         {{ number_format($empleado->proyectado_sueldo_neto_beneficios, 2) }}
                     </x-td>
-
+                    {{-- SUELDO BRUTO + BENF. SOCI. PROYEC. + APORT. EMPLE. --}}
                     <x-td class="text-right">
                         {{ number_format($empleado->proyectado_sueldo_bruto_beneficios_aportes, 2) }}
                     </x-td>
-
+                    {{-- JORNAL DIARIO --}}
                     <x-td class="text-center">
                         {{ number_format($empleado->proyectado_jornal_diario, 2) }}
                     </x-td>
@@ -155,7 +155,7 @@
                     {{-- SEGUNDO BLOQUE --}}
                     <x-td class="text-center">{{ $index + 1 }}</x-td>
 
-                    <x-td>
+                    <x-td class="whitespace-nowrap">
                         {{ $empleado->nombres }}
                     </x-td>
 

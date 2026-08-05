@@ -92,14 +92,6 @@ class PlanMensualPersonal extends Model
             'es_pensionista' => 'boolean',
             'edad' => 'integer',
 
-            // Proyectado
-            'remuneracion_basica' => 'decimal:2',
-            'bonificacion' => 'decimal:2',
-            'asignacion_familiar' => 'decimal:2',
-            'compensacion_vacacional' => 'decimal:2',
-            'proyectado_dscto_afp_prima_seguro' => 'decimal:2',
-            'proyectado_sueldo_neto_total' => 'decimal:2',
-
             // Suspensiones
             'sp_01' => 'integer',
             'sp_02' => 'integer',
@@ -298,6 +290,7 @@ class PlanMensualPersonal extends Model
 
     /**
      * =((H7*(0.63%))*1.18)
+     * proyectado_vida_ley
      */
     protected function proyectadoVidaLey(): Attribute
     {
@@ -361,6 +354,7 @@ class PlanMensualPersonal extends Model
 
     /**
      * =J7+K7+L7+M7+N7
+     * SUELDO NETO + BENF. SOCI. PROYEC.
      */
     protected function proyectadoSueldoNetoBeneficios(): Attribute
     {

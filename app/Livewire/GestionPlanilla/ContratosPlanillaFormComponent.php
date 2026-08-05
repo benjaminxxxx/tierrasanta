@@ -31,6 +31,7 @@ class ContratosPlanillaFormComponent extends Component
     public $fecha_inicio = '';
     public $grupo_codigo = '';
     public $remuneracion_basica = null;
+    public $bonificacion = null;
     public $compensacion_vacacional = '';
     public $tipo_planilla = '';
     public $plan_sp_codigo = '';
@@ -141,6 +142,7 @@ class ContratosPlanillaFormComponent extends Component
         $this->fecha_inicio = $contrato->fecha_inicio->format('Y-m-d');
         $this->grupo_codigo = $contrato->grupo_codigo;
         $this->remuneracion_basica = $contrato->remuneracion_basica;
+        $this->bonificacion = $contrato->bonificacion;
         $this->compensacion_vacacional = $contrato->compensacion_vacacional;
         $this->tipo_planilla = $contrato->tipo_planilla;
         $this->plan_sp_codigo = $contrato->plan_sp_codigo;
@@ -163,6 +165,7 @@ class ContratosPlanillaFormComponent extends Component
             'fecha_inicio' => $this->fecha_inicio,
             'grupo_codigo' => $this->grupo_codigo,
             'remuneracion_basica' => $this->remuneracion_basica !== '' ? (float) $this->remuneracion_basica : null,
+            'bonificacion' => $this->bonificacion !== '' ? (float) $this->bonificacion : null,
             'compensacion_vacacional' => $this->compensacion_vacacional !== '' ? (float) $this->compensacion_vacacional : null,
             'tipo_planilla' => $this->tipo_planilla,
             'plan_sp_codigo' => $this->plan_sp_codigo,
@@ -240,7 +243,8 @@ class ContratosPlanillaFormComponent extends Component
             'esta_jubilado',
             'modalidad_pago',
             'fecha_fin_prueba',
-            'remuneracion_basica'
+            'remuneracion_basica',
+            'bonificacion'
         ]);
         $this->resetErrorBag();
     }

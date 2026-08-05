@@ -10,10 +10,14 @@ class PlanillaBlancoComponent extends Component
 {
     use ConSelectorMes;
     public $vista = 'Proyectada';
+    public $planillaMensual = null;
 
     public function mount()
     {
         $this->inicializarMesAnio();
+        if($this->mes && $this->anio){
+            $this->planillaMensual = PlanMensual::where('mes',$this->mes)->where('anio',$this->anio)->first();
+        }
     }
     protected function despuesMesAnioModificado(string $mes, string $anio)
     {
