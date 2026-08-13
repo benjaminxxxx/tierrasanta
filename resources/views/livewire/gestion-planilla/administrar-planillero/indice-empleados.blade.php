@@ -6,5 +6,6 @@
     <livewire:gestion-planilla.empleado-cargo-component/>
     <livewire:gestion-planilla.contratos-planilla-form-component />
     
-    <livewire:gestion-planilla.administrar-familiares.familiares-planilla-form-component />
+    <livewire:gestion-planilla.derecho-habiente.derecho-habiente-wizard-component />
+    <livewire:gestion-planilla.derecho-habiente.derecho-habiente-form-component />
 </x-app-layout>

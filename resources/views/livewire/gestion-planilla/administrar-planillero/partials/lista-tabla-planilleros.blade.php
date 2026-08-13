@@ -78,8 +78,8 @@
 
                                             @can(\App\Constants\Permisos::PERSONAL_FAMILIARES)
                                                 <x-dropdown-link
-                                                    @click="$wire.dispatch('agregarFamiliarEmpleado',{id:{{ $empleado->id }}})">
-                                                    <i class="fa-solid fa-people-roof"></i> Gestionar Familiares
+                                                    @click="$wire.dispatch('abrirDerechoHabienteWizard',{empleadoId:{{ $empleado->id }}})">
+                                                    <i class="fa-solid fa-people-roof"></i> Gestionar Derecho Habientes
                                                 </x-dropdown-link>
                                             @endcan
 

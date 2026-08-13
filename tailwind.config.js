@@ -25,6 +25,14 @@ export default {
         },
         extend: {
             colors: {
+                accent: {
+                    DEFAULT: "oklch(var(--accent) / <alpha-value>)",
+                    foreground: "oklch(var(--accent-foreground) / <alpha-value>)",
+                },
+                muted: {
+                    DEFAULT: "oklch(var(--muted) / <alpha-value>)",
+                    foreground: "oklch(var(--muted-foreground) / <alpha-value>)",
+                },
                 background: "var(--background)",
                 foreground: "var(--foreground)",
                 primary: {
@@ -39,14 +47,7 @@ export default {
                     DEFAULT: "var(--destructive)",
                     foreground: "var(--destructive-foreground)",
                 },
-                muted: {
-                    DEFAULT: "var(--muted)",
-                    foreground: "var(--muted-foreground)",
-                },
-                accent: {
-                    DEFAULT: "var(--accent)",
-                    foreground: "var(--accent-foreground)",
-                },
+                
                 card: {
                     DEFAULT: "var(--card)",
                     foreground: "var(--card-foreground)",

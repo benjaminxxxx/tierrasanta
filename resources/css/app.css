@@ -1,19 +1,21 @@
 @font-face {
-  font-family: 'Inter';
-  src: url('../fonts/Inter-VariableFont_opsz,wght.ttf') format('truetype-variations');
-  font-weight: 100 900; /* Define el rango de pesos soportados */
-  font-stretch: normal;
-  font-style: normal;
-  font-display: swap;
+    font-family: "Inter";
+    src: url("../fonts/Inter-VariableFont_opsz,wght.ttf")
+        format("truetype-variations");
+    font-weight: 100 900; /* Define el rango de pesos soportados */
+    font-stretch: normal;
+    font-style: normal;
+    font-display: swap;
 }
 
 /* Si también necesitas la versión Itálica (opcional) */
 @font-face {
-  font-family: 'Inter';
-  src: url('../fonts/Inter-Italic-VariableFont_opsz,wght.ttf') format('truetype-variations');
-  font-weight: 100 900;
-  font-style: italic;
-  font-display: swap;
+    font-family: "Inter";
+    src: url("../fonts/Inter-Italic-VariableFont_opsz,wght.ttf")
+        format("truetype-variations");
+    font-weight: 100 900;
+    font-style: italic;
+    font-display: swap;
 }
 
 @tailwind base;
@@ -36,10 +38,10 @@
         --primary-foreground: oklch(0.985 0 0);
         --secondary: oklch(0.97 0 0);
         --secondary-foreground: oklch(0.205 0 0);
-        --muted: oklch(0.97 0 0);
-        --muted-foreground: oklch(0.556 0 0);
-        --accent: oklch(0.97 0 0);
-        --accent-foreground: oklch(0.205 0 0);
+        --muted: 0.97 0 0;
+        --muted-foreground: 0.556 0 0;
+        --accent: 0.86 0.21 130; /* equivalente a lime-400 */
+        --accent-foreground: 0.25 0.08 130; /* equivalente a lime-950 */
         --destructive: oklch(0.577 0.245 27.325);
         --destructive-foreground: oklch(0.577 0.245 27.325);
         --border: oklch(0.922 0 0);
@@ -61,7 +63,7 @@
         --sidebar-ring: oklch(0.708 0 0);
     }
     .dark {
-        --background: #0A0A0A;
+        --background: #0a0a0a;
         --foreground: oklch(0.985 0 0);
         --card: #171717;
         --card-foreground: oklch(0.985 0 0);
@@ -72,10 +74,10 @@
         --primary-foreground: oklch(0.205 0 0);
         --secondary: #262626;
         --secondary-foreground: oklch(0.985 0 0);
-        --muted: oklch(0.269 0 0);
-        --muted-foreground: oklch(0.708 0 0);
-        --accent: oklch(0.269 0 0);
-        --accent-foreground: oklch(0.985 0 0);
+        --muted: 0.269 0 0;
+        --muted-foreground: 0.708 0 0;
+        --accent: 0.86 0.21 130;
+        --accent-foreground: 0.25 0.08 130;
         --destructive: oklch(0.396 0.141 25.723);
         --destructive-foreground: oklch(0.637 0.237 25.331);
         --border: oklch(0.269 0 0);
@@ -115,10 +117,10 @@
         @apply h-[calc(100vh_-_8.125rem)] lg:h-[calc(100vh_-_5.625rem)];
     }
 }
-body{
+body {
     @apply text-foreground;
 }
-a{
+a {
     @apply text-link;
 }
 /* third-party libraries CSS */
@@ -129,7 +131,6 @@ a{
 .tableCheckbox:checked ~ div {
     @apply border-primary bg-primary;
 }
-
 
 .flatpickr-wrapper {
     @apply w-full;
@@ -175,7 +176,7 @@ span.flatpickr-weekday,
 .flatpickr-day:focus,
 .flatpickr-day.prevMonthDay:focus,
 .flatpickr-day.nextMonthDay:focus {
-  @apply border-border !bg-muted;
+    @apply border-border !bg-muted;
 }
 .flatpickr-day.selected,
 .flatpickr-day.startRange,

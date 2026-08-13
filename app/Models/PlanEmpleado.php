@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\DerechoHabiente\EmpleadoAsignacionFamiliarService;
 use Auth;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -32,14 +33,15 @@ class PlanEmpleado extends Model
         'actualizado_por',
         'eliminado_por',
     ];
+    public function derechoHabientes()
+    {
+        return $this->hasMany(EmpleadoDerechoHabiente::class, 'empleado_id');
+    }
     public function contratos()
     {
         return $this->hasMany(PlanContrato::class, 'plan_empleado_id');
     }
-    public function asignacionFamiliar()
-    {
-        return $this->hasMany(PlanFamiliar::class, 'plan_empleado_id');
-    }
+    
     public function edadContable(int $mes, int $anio): ?int
     {
         if (!$this->fecha_nacimiento) {
@@ -138,51 +140,28 @@ class PlanEmpleado extends Model
         return $this->color_grupo ? '#000' : null;
     }
 
-    public function getTienePlanFamiliarAttribute()
-    {
-        // Obtener todas las asignaciones familiares del empleado
-        $asignaciones = PlanFamiliar::where('plan_empleado_id', $this->id)->get();
-
-        $cantidadHijos = 0;
-
-
-        foreach ($asignaciones as $asignacion) {
-            // Calcular la edad del hijo
-            $edad = Carbon::parse($asignacion->fecha_nacimiento)->age;
-
-            // Verificar las condiciones
-            if ($edad < 18 || ($edad >= 18 && $asignacion->esta_estudiando)) {
-                $cantidadHijos++;
-            }
-        }
-
-        // Determinar el mensaje basado en la cantidad de hijos
-        $mensaje = $cantidadHijos === 0 ? "No" : ($cantidadHijos === 1 ? "1 Hijo" : "{$cantidadHijos} Hijos");
-
-        // Retornar el array con el mensaje y la cantidad
-        return [
-            'mensaje' => $mensaje,
-            'cantidad' => $cantidadHijos,
-        ];
-    }
     public function cantidadHijosConAsignacionFamiliar(
         ?int $mes = null,
         ?int $anio = null
     ): int {
-        $fechaCorte = $mes && $anio
-            ? Carbon::create($anio, $mes, 1)->endOfMonth()
-            : now();
+        $mes = $mes ?? now()->month;
+        $anio = $anio ?? now()->year;
 
-        return PlanFamiliar::where('plan_empleado_id', $this->id)
-            ->get()
-            ->filter(function ($asignacion) use ($fechaCorte) {
-                $edad = Carbon::parse($asignacion->fecha_nacimiento)
-                    ->diffInYears($fechaCorte);
-
-                return $edad < 18 ||
-                    ($edad >= 18 && $asignacion->esta_estudiando);
+        // 1. Obtener vínculos activos de tipo 'hijo'
+        $vinculosHijos = $this->derechoHabientes()
+            ->where('activo', true)
+            ->whereHas('derechoHabiente', function ($q) {
+                $q->where('tipo', 'hijo');
             })
-            ->count();
+            ->with('derechoHabiente')
+            ->get();
+
+        // 2. Evaluar mediante el Servicio de Dominio
+        $service = app(EmpleadoAsignacionFamiliarService::class);
+        $resultado = $service->evaluarColeccion($vinculosHijos, $mes, $anio);
+
+        // 3. Contar cuántos hijos califican
+        return collect($resultado['detalle'])->where('califica', true)->count();
     }
     protected static function boot()
     {

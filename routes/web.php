@@ -17,6 +17,7 @@ use App\Livewire\ConfiguracionDescuentoAfpComponent;
 use App\Livewire\ConfiguracionPrimasComisionesComponent;
 use App\Livewire\GestionPlanilla\AsistenciaMensualComponent;
 use App\Livewire\GestionPlanilla\CargosComponent;
+use App\Livewire\GestionPlanilla\DerechoHabiente\DerechoHabienteListaComponent;
 use App\Livewire\GestionPlanilla\PanelContratoComponent;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AsistenciaPlanillaController;
@@ -54,9 +55,8 @@ Route::middleware([
     })->name('empleados')->middleware('can:Planilla Empleados');
 
     Route::get('/descuentos-de-afp', ConfiguracionPrimasComisionesComponent::class)->name('descuentos_afp')->middleware('can:' . Permisos::PLANILLA_CONFIG_AFP);
-    Route::get('/empleados/asignacion-familiar', function () {
-        return view('empleados.asignacion_familiar');
-    })->name('empleados.asignacion_familiar')->middleware('can:' . Permisos::PLANILLA_FAMILIAR);
+    
+    Route::get('/planilla/derecho-habiente',DerechoHabienteListaComponent::class)->name('empleado.derecho_habiente')->middleware('can:' . Permisos::PLANILLA_FAMILIAR);
 
     Route::get('/riego/labores', function () {
         return view('configuracion.labores_riego');

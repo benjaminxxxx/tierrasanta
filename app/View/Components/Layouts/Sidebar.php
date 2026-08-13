@@ -70,8 +70,8 @@ class Sidebar extends Component
                         'can' => Permisos::PLANILLA_BLANCO
                     ],
                     [
-                        'title' => 'Familiares',
-                        'route' => 'empleados.asignacion_familiar',
+                        'title' => 'Derecho Habientes',
+                        'route' => 'empleado.derecho_habiente',
                         'can' => Permisos::PLANILLA_FAMILIAR
                     ],
                     [

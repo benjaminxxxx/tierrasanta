@@ -13,21 +13,21 @@
 
     // Mapeo de Variantes
     $variantClasses = [
-        // --- Variantes SEMÁNTICAS (Shadcn Style) ---
-        'default'     => 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
-        'destructive' => 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
-        'outline'     => 'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground',
-        'secondary'   => 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',
-        'ghost'       => 'hover:bg-accent hover:text-accent-foreground',
-        'link'        => 'text-primary underline-offset-4 hover:underline',
+    // --- Variantes SEMÁNTICAS (Shadcn Style) ---
+    'default'     => 'bg-accent text-accent-foreground shadow-sm hover:bg-accent/90',
+    'destructive' => 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
+    'outline'     => 'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground',
+    'secondary'   => 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',
+    'ghost'       => 'hover:bg-accent hover:text-accent-foreground',
+    'link'        => 'text-primary underline-offset-4 hover:underline',
 
-        // --- Variantes CLÁSICAS (Tailwind Colors) ---
-        'success'     => 'text-white bg-green-600 hover:bg-green-700 focus:ring-green-500/50 dark:bg-green-500 dark:hover:bg-green-600',
-        'warning'     => 'text-white bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400/50',
-        'danger'      => 'text-white bg-red-600 hover:bg-red-700 focus:ring-red-500/50', // Alias de destructive si prefieres
-        'info'        => 'text-white bg-blue-500 hover:bg-blue-600 focus:ring-blue-400/50',
-        'alternative' => 'text-gray-900 bg-white border border-gray-200 hover:bg-gray-100 hover:text-primary focus:ring-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700',
-    ][$variant] ?? 'bg-primary text-primary-foreground';
+    // --- Variantes CLÁSICAS ---
+    'success'     => 'text-white bg-green-600 hover:bg-green-600/90 focus:ring-green-500/50 dark:bg-green-500 dark:hover:bg-green-500/90',
+    'warning'     => 'text-white bg-yellow-500 hover:bg-yellow-500/90 focus:ring-yellow-400/50',
+    'danger'      => 'text-white bg-red-600 hover:bg-red-600/90 focus:ring-red-500/50',
+    'info'        => 'text-white bg-blue-500 hover:bg-blue-500/90 focus:ring-blue-400/50',
+    'alternative' => 'text-gray-900 bg-white border border-gray-200 hover:bg-gray-100 hover:text-primary focus:ring-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700',
+][$variant] ?? 'bg-primary text-primary-foreground hover:bg-primary/90';
 
     // Mapeo de Tamaños
     $sizeClasses = [

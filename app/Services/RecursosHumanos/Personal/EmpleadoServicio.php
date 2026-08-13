@@ -7,7 +7,6 @@ use App\Models\ConsolidadoRiego;
 use App\Models\Cuadrillero;
 use App\Models\PlanContrato;
 use App\Models\PlanEmpleado;
-use App\Models\PlanFamiliar;
 use App\Models\PlanSueldo;
 use App\Models\ReporteDiario;
 use App\Services\Cuadrilla\CuadrilleroServicio;
@@ -79,11 +78,11 @@ class EmpleadoServicio
             foreach ($hijos as $item) {
                 $padreId = $dniToIdMap[$item['documento_padre']] ?? self::obtenerIdPorDni($item['documento_padre']);
                 $payload = self::prepararDatos($item, ['documento_padre']);
-
+/*
                 PlanFamiliar::updateOrCreate(
                     ['plan_empleado_id' => $padreId, 'documento' => $item['documento']],
                     $payload
-                );
+                );*/
             }
 
             DB::commit();
