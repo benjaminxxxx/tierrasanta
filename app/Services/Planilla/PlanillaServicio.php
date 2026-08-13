@@ -972,8 +972,8 @@ class PlanillaServicio
 
                 if ($dia <= $diasEnElMes) {
                     $fechaDiaStr = Carbon::createFromDate($anio, $mes, $dia)->format('Y-m-d');
-                    $datosDia = $asistenciaPorEmpleado[$empleado->id][$dia] ?? ['horas' => 0, 'codigo' => 'A'];
-
+                    $datosDia = $asistenciaPorEmpleado[$empleado->plan_empleado_id][$dia] ?? ['horas' => 0, 'codigo' => 'A'];
+    
                     $codigoAsistencia = $datosDia['codigo'];
                     $horas = $datosDia['horas'];
 
@@ -997,9 +997,9 @@ class PlanillaServicio
                     // C. Generar Comentario / Nota de Excel
                     $textoComentario = null;
 
-                    if (isset($mapaSuspensiones[$empleado->id][$fechaDiaStr])) {
+                    if (isset($mapaSuspensiones[$empleado->plan_empleado_id][$fechaDiaStr])) {
                         // C1. Si existe una suspensión registrada
-                        $susp = $mapaSuspensiones[$empleado->id][$fechaDiaStr];
+                        $susp = $mapaSuspensiones[$empleado->plan_empleado_id][$fechaDiaStr];
                         $tSusp = $susp->tipoSuspension;
 
                         // Prioriza la descripcion_corta si está llena
