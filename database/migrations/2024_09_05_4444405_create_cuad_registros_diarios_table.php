@@ -47,6 +47,10 @@ return new class extends Migration {
                 ->constrained('cuad_tramos_laborales', 'id', 'fk_cuad_registros_diarios_bono')
                 ->onDelete('set null');
 
+            $table->foreignId('tramo_cuadrillero_id')
+                ->constrained('cuad_tramo_cuadrilleros')
+                ->onDelete('cascade');
+
             $table->timestamps();
         });
     }

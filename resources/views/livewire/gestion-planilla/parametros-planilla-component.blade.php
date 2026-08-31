@@ -62,19 +62,14 @@
 
             const container = this.$refs.tableContainer;
             const hot = new Handsontable(container, {
+                ...window.HstConfig,
                 data: this.tableData,
                 colHeaders: true,
                 rowHeaders: true,
                 themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
                 columns: this.getColumns(),
-                manualColumnResize: false,
                 width: '100%',
-                autoColumnSize: true,
                 minSpareRows: 1,
-                manualRowResize: true,
-                stretchH: 'all',
-                licenseKey: 'non-commercial-and-evaluation',
-
             });
 
             this.hot = hot;

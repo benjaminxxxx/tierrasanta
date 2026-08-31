@@ -24,7 +24,8 @@ class CuadRegistroDiario extends Model
         'tramo_laboral_id',
         //nuevo campo triggeado
         'jornal_aplicado',
-        'horas_destajo'
+        'horas_destajo',
+        'tramo_cuadrillero_id'
     ];
     protected $append = [
         'costo_dia'

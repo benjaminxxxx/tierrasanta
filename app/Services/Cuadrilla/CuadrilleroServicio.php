@@ -164,7 +164,7 @@ class CuadrilleroServicio
         $trabajadoresAgrupados = [];
 
         /*
-        
+
         "2025-12-29" // app\Services\Cuadrilla\CuadrilleroServicio.php:41
         array:4 [▼ // app\Services\Cuadrilla\CuadrilleroServicio.php:41
         0 => array:17 [▼
@@ -191,7 +191,7 @@ class CuadrilleroServicio
         3 => array:17 [▶]
         ]
         foreach ($datos as $registro) {
-      
+
             $labores = [];
             // 1. Recolectar todas las actividades válidas del trabajador.
             for ($x = 1; $x <= $totalColumnas; $x++) {
@@ -273,7 +273,7 @@ class CuadrilleroServicio
         }
 
         $resumen = json_encode(array_values($resultado));//para depuracion , JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
-       
+
         $resumenPlanilla = PlanResumenDiario::firstOrCreate([
             'fecha' => $fecha
         ]);
@@ -293,7 +293,7 @@ class CuadrilleroServicio
 
                 $totalCuadrilleros = CuadRegistroDiario::whereDate('fecha', $fecha)->distinct('cuadrillero_id')->count();
                 if ($fecha->format('Y-m-d') == '2026-01-02') {
-                  
+
                 }
                 $resumenPlanilla = PlanResumenDiario::firstOrCreate(['fecha' => $fecha]);
                 $resumenPlanilla->update([
@@ -301,6 +301,32 @@ class CuadrilleroServicio
                 ]);
             }
         }*/
+
+    /**
+     * Registra y actualiza los totales diarios de asistencias/jornales en el resumen de planilla.
+     *
+     * CONTEXTO:
+     * - Un cuadrillero puede trabajar en múltiples grupos durante un mismo día, ya sea dentro
+     *   del mismo tramo laboral o en tramos independientes (ej. tramo de fin de semana/domingo).
+     * - Cada turno o participación de un cuadrillero en un grupo distinto representa un jornal
+     *   independiente con su propio costo/tarifa por hora.
+     * - Por tanto, en el indicador `total_cuadrillas` se contabiliza cada registro de grupo como
+     *   un jornal prestado (suma de participaciones individuales).
+     *
+     * REGLA DE DUPLICIDAD:
+     * - Se considera duplicado ÚNICAMENTE si existe más de un registro para la misma persona,
+     *   en la misma fecha, dentro del MISMO tramo y en el MISMO grupo.
+     *
+     * EJEMPLO:
+     * - Juan asiste el sábado en el Tramo 1 (Lun-Sáb) en el grupo "MAÑANEROS SUR" (10 soles/hr) -> 1 Asistencia.
+     * - El mismo sábado, Juan es asignado al grupo "SÁBADO TARDE" (15 soles/hr) -> 1 Asistencia.
+     * - Resultado para el resumen del sábado: total_cuadrillas = 2 (se cuentan como 2 participaciones/jornales).
+     * - Si intentamos registrar nuevamente a Juan en "MAÑANEROS SUR" el mismo sábado y mismo tramo -> Se lanza una Excepción de duplicidad.
+     *
+     * @param string|\DateTime $fechaInicio Fecha de inicio del rango a procesar
+     * @param string|\DateTime $fechaFin    Fecha de fin del rango a procesar
+     * @throws Exception Si se detecta un registro duplicado en la misma fecha, tramo y grupo.
+     */
     public static function registrarTotalesEnResumenDiarioPlanilla($fechaInicio, $fechaFin)
     {
         $periodo = CarbonPeriod::create($fechaInicio, $fechaFin);
@@ -310,37 +336,41 @@ class CuadrilleroServicio
             // 1. Traer todos los registros del día
             $registros = CuadRegistroDiario::whereDate('fecha', $fecha)->get();
 
-            // 2. Agrupar por cuadrillero_id para detectar duplicados
+            // 2. Duplicidad real = mismo cuadrillero + mismo tramo + MISMO GRUPO
+            //    (Un cuadrillero puede trabajar en distintos grupos el mismo día, pero no dos veces en el mismo grupo)
             $duplicados = $registros
-                ->groupBy('cuadrillero_id')
-                ->filter(function ($items) {
-                    return $items->count() > 1; // más de 1 registro = duplicado
-                });
+                ->groupBy(fn($r) => $r->tramo_laboral_id . '|' . $r->codigo_grupo . '|' . $r->cuadrillero_id)
+                ->filter(fn($items) => $items->count() > 1);
 
-            // 3. Si hay duplicados, lanza excepción con detalle completo
             if ($duplicados->isNotEmpty()) {
 
                 $detalles = [];
 
-                foreach ($duplicados as $cuadrilleroId => $items) {
+                foreach ($duplicados as $clave => $items) {
+                    [$tramoId, $codigoGrupo, $cuadrilleroId] = explode('|', $clave);
                     $cuadrillero = Cuadrillero::find($cuadrilleroId);
                     $detalles[] = [
                         'cuadrillero_id' => $cuadrilleroId,
                         'nombre' => $cuadrillero?->nombres,
+                        'tramo_laboral_id' => $tramoId,
+                        'codigo_grupo' => $codigoGrupo,
                         'fecha' => $fecha->format('Y-m-d'),
                         'cantidad_registros' => $items->count(),
                     ];
                 }
 
                 throw new Exception(
-                    "Se detectaron duplicaciones en CuadRegistroDiario:\n" .
+                    "Se detectaron duplicaciones en CuadRegistroDiario (mismo tramo y mismo grupo):\n" .
                     json_encode($detalles, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
                 );
             }
 
-            // 4. Si no hay duplicados → continuar flujo normal
-            $totalCuadrilleros = $registros->unique('cuadrillero_id')->count();
+            // 3. Contar el total de asistencias/jornales del día
+            //    Cada registro en un grupo (sea en el mismo tramo o en tramos distintos)
+            //    cuenta como un jornal/cuadrilla trabajado.
+            $totalCuadrilleros = $registros->count();
 
+            // 4. Actualizar el resumen diario de planilla
             $resumenPlanilla = PlanResumenDiario::firstOrCreate(['fecha' => $fecha]);
             $resumenPlanilla->update([
                 'total_cuadrillas' => $totalCuadrilleros

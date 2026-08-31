@@ -38,24 +38,24 @@ class HSTCuadrillaReporteSemanalHoras
         $gruposEnTramos = $this->obtenerListaOficial();
 
         foreach ($gruposEnTramos as $grupoEnTramo) {
-            
+
             // Añadir la fila de cabecera para el grupo
-         
-            $handsontableData[] = $this->buildGroupHeaderRow($grupoEnTramo->grupo);
+
+            $handsontableData[] = $this->buildGroupHeaderRow($grupoEnTramo);
 
             // Añadir las filas para cada cuadrillero del grupo
             $orden = 0;
             foreach ($grupoEnTramo->cuadrilleros as $cuadrilleroEnTramo) {
                 $orden++;
                 $handsontableData[] = $this->buildCrewMemberRow($cuadrilleroEnTramo, $grupoEnTramo->grupo, $orden);
-                
+
             }
         }
 
         if (count($handsontableData) > 0) {
             $handsontableData[] = $this->buildTotalsRow($handsontableData);
         }
-        
+
         return $handsontableData;
     }
 
@@ -69,9 +69,9 @@ class HSTCuadrillaReporteSemanalHoras
         return $this->obtenerListaOficial()->map(function (GrupoTramo $grupoTramo) {
             return [
                 'codigo' => $grupoTramo->grupo->codigo,
-                'color'  => $grupoTramo->grupo->color,
+                'color' => $grupoTramo->grupo->color,
                 'nombre' => $grupoTramo->grupo->nombre,
-                'orden'  => $grupoTramo->orden,
+                'orden' => $grupoTramo->orden,
             ];
         })->toArray();
     }
@@ -101,7 +101,7 @@ class HSTCuadrillaReporteSemanalHoras
             ->get()
             ->groupBy(fn($item) => $item->cuadrillero_id . '|' . $item->codigo_grupo);
     }
-    
+
     /**
      * Obtiene los grupos y sus respectivos cuadrilleros ordenados.
      */
@@ -113,13 +113,17 @@ class HSTCuadrillaReporteSemanalHoras
     /**
      * Construye la fila de cabecera para un grupo.
      */
-    private function buildGroupHeaderRow(Grupo $grupo): array
+    private function buildGroupHeaderRow(GrupoTramo $grupoTramo): array
     {
+        $cantidad = $grupoTramo->cuadrilleros->count();
+        $textoCuadrillero = \Illuminate\Support\Str::plural('cuadrillero', $cantidad);
+
         return [
-            'orden'   => null,
-            'header'  => true,
-            'nombres' => $grupo->nombre,
-            'color'   => $grupo->color,
+            'orden' => null,
+            'header' => true,
+            'nombres' => "{$grupoTramo->grupo->nombre} ({$cantidad} {$textoCuadrillero})",
+            'color' => $grupoTramo->grupo->color,
+            'codigo_grupo' => $grupoTramo->grupo->codigo,
         ];
     }
 
@@ -129,23 +133,23 @@ class HSTCuadrillaReporteSemanalHoras
     private function buildCrewMemberRow(CuadrilleroTramo $cuadrilleroEnTramo, Grupo $grupo, int $orden): array
     {
         $fila = [
-            'orden'          => $orden,
+            'orden' => $orden,
             'cuadrillero_id' => $cuadrilleroEnTramo->cuadrillero_id,
-            'codigo_grupo'   => $grupo->codigo,
-            'header'         => false,
-            'nombres'        => $cuadrilleroEnTramo->cuadrillero->nombres,
-            'color'          => $grupo->color,
+            'codigo_grupo' => $grupo->codigo,
+            'header' => false,
+            'nombres' => $cuadrilleroEnTramo->cuadrillero->nombres,
+            'color' => $grupo->color,
         ];
 
         // Lógica para poblar los datos diarios
         $clave = $cuadrilleroEnTramo->cuadrillero_id . '|' . $grupo->codigo;
         $registrosDelCuadrillero = $this->registrosDiarios->get($clave, collect());
-        
+
         $totals = $this->populateDailyDataAndGetTotals($fila, $registrosDelCuadrillero);
 
         // Añadir totales a la fila
-        $fila['total_bono'] = formatear_numero($totals['bono'],2,false);
-        $fila['total_costo'] = formatear_numero($totals['costo'],2,false) + formatear_numero($totals['bono'],2,false);
+        $fila['total_bono'] = formatear_numero($totals['bono'], 2, false);
+        $fila['total_costo'] = formatear_numero($totals['costo'], 2, false) + formatear_numero($totals['bono'], 2, false);
 
         return $fila;
     }
@@ -159,41 +163,41 @@ class HSTCuadrillaReporteSemanalHoras
     {
         // 1. Inicializar la fila de totales con valores en cero
         $totals = [
-            'nombres'  => 'TOTALES',
+            'nombres' => 'TOTALES',
             'is_total' => true,      // Una bandera para identificarla en el frontend si es necesario
-            'color'    => '#80b5eaff', // Un color oscuro y neutro para la fila de totales
+            'color' => '#80b5eaff', // Un color oscuro y neutro para la fila de totales
         ];
-        
+
         // Pre-llenar todas las columnas numéricas para evitar errores
         foreach ($this->diasDelTramo as $index => $dia) {
             $keyIndex = $index + 1;
-            $totals["dia_{$keyIndex}"]    = 0;
+            $totals["dia_{$keyIndex}"] = 0;
             $totals["jornal_{$keyIndex}"] = 0.0;
-            $totals["bono_{$keyIndex}"]   = 0.0;
+            $totals["bono_{$keyIndex}"] = 0.0;
         }
         $totals['total_costo'] = 0.0;
-        $totals['total_bono']  = 0.0;
+        $totals['total_bono'] = 0.0;
 
 
         // 2. Filtrar solo las filas de datos de cuadrilleros (ignorando las cabeceras de grupo)
         $workerRows = array_filter($dataRows, fn($row) => isset($row['cuadrillero_id']));
-        
+
         // 3. Iterar sobre las filas de datos para calcular los totales
         foreach ($workerRows as $row) {
             // Sumar totales generales
             $totals['total_costo'] += (float) $row['total_costo'];
-            $totals['total_bono']  += (float) $row['total_bono'];
+            $totals['total_bono'] += (float) $row['total_bono'];
 
             // Iterar sobre cada día del tramo para sumar las columnas dinámicas
             foreach ($this->diasDelTramo as $index => $dia) {
                 $keyIndex = $index + 1;
-                
+
                 // REQUERIMIENTO ESPECIAL: Para las horas, contar trabajadores, no sumar horas.
                 // Si la columna 'dia_X' tiene un valor numérico (no es '-'), se incrementa el contador.
                 if (is_numeric($row["dia_{$keyIndex}"])) {
                     $totals["dia_{$keyIndex}"]++;
                 }
-                
+
                 // Sumar los jornales y bonos diarios
                 if (is_numeric($row["jornal_{$keyIndex}"])) {
                     $totals["jornal_{$keyIndex}"] += (float) $row["jornal_{$keyIndex}"];
@@ -203,21 +207,21 @@ class HSTCuadrillaReporteSemanalHoras
                 }
             }
         }
-        
+
         // Formatear los totales generales
         $totals['total_costo'] = formatear_numero($totals['total_costo']);
-        $totals['total_bono']  = formatear_numero($totals['total_bono']);
+        $totals['total_bono'] = formatear_numero($totals['total_bono']);
 
         // Formatear los totales de cada día
         foreach ($this->diasDelTramo as $index => $dia) {
             $keyIndex = $index + 1;
             $totals["jornal_{$keyIndex}"] = formatear_numero($totals["jornal_{$keyIndex}"]);
-            $totals["bono_{$keyIndex}"]   = formatear_numero($totals["bono_{$keyIndex}"]);
+            $totals["bono_{$keyIndex}"] = formatear_numero($totals["bono_{$keyIndex}"]);
             // La columna 'dia_X' es un conteo, por lo que no se formatea como número decimal.
         }
 
         // 5. Devolver la fila de totales ya formateada
-        
+
         return $totals;
     }
     /**
@@ -233,27 +237,27 @@ class HSTCuadrillaReporteSemanalHoras
 
         foreach ($this->diasDelTramo as $index => $dia) {
             $fechaStr = $dia->toDateString();
-            
+
             // Busca el registro para el día actual
             $registro = $registros->first(
                 fn($item) => Carbon::parse($item->fecha)->toDateString() === $fechaStr
             );
-            
-            $horas  = $registro && $registro->total_horas > 0 ? $registro->total_horas : '-';
-            $jornal = $registro && $registro->costo_dia > 0   ? $registro->costo_dia   : '-';
-            $bono   = $registro && $registro->total_bono > 0  ? $registro->total_bono  : '-';
+
+            $horas = $registro && $registro->total_horas > 0 ? $registro->total_horas : '-';
+            $jornal = $registro && $registro->costo_dia > 0 ? $registro->costo_dia : '-';
+            $bono = $registro && $registro->total_bono > 0 ? $registro->total_bono : '-';
 
             // Asigna los valores a la fila
             $keyIndex = $index + 1;
-            $fila["dia_{$keyIndex}"]    = $horas;
-            $fila["jornal_{$keyIndex}"] = formatear_numero($jornal,2,false);
-            $fila["bono_{$keyIndex}"]   = $bono;
-            
+            $fila["dia_{$keyIndex}"] = $horas;
+            $fila["jornal_{$keyIndex}"] = formatear_numero($jornal, 2, false);
+            $fila["bono_{$keyIndex}"] = $bono;
+
             // Acumula los totales
             $totalCosto += is_numeric($jornal) ? (float) $jornal : 0;
-            $totalBono  += is_numeric($bono) ? (float) $bono : 0;
+            $totalBono += is_numeric($bono) ? (float) $bono : 0;
         }
-        
+
         return ['costo' => $totalCosto, 'bono' => $totalBono];
     }
 }

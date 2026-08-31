@@ -98,9 +98,9 @@
         </x-slot>
 
         <x-slot name="footer">
-            <x-secondary-button wire:click="$set('mostrarFormulario', false)" wire:loading.attr="disabled">
+            <x-button wire:click="$set('mostrarFormulario', false)" wire:loading.attr="disabled">
                 Cerrar
-            </x-secondary-button>
+            </x-button>
         </x-slot>
     </x-dialog-modal>
 </div>

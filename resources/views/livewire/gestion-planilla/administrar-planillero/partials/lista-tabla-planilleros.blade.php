@@ -1,5 +1,5 @@
 <x-card class="mt-5">
-    <x-table>
+    <x-table noScroll>
         <x-slot name="thead">
 
             <tr>

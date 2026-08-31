@@ -9,7 +9,7 @@
             <i class="fa fa-plus"></i> Crear tramo
         </x-button>
         @endcan
-        <x-button variant="success" wire:click="buscarTramo" wire:loading.attr="disabled">
+        <x-button variant="secondary" wire:click="buscarTramo" wire:loading.attr="disabled">
             <i class="fa fa-search"></i> Buscar Tramo
         </x-button>
     </x-flex>
