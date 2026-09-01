@@ -67,14 +67,31 @@
                 }
             });
 
-            this.$watch('filtroGrupo', () => this.aplicarFiltros());
-            this.$watch('busquedaNombre', () => this.aplicarFiltros());
+            this.$watch('filtroGrupo', () => {
+                this.aplicarFiltros();
+                this.$nextTick(() => this.subirScrollTabla());
+            });
+
+            this.$watch('busquedaNombre', () => {
+                this.aplicarFiltros();
+                this.$nextTick(() => this.subirScrollTabla());
+            });
         },
         abrirBusquedaFlotante() {
             this.mostrarBusquedaFlotante = true;
             this.$nextTick(() => {
                 this.$refs.inputBusquedaFlotante?.focus();
             });
+        },
+        subirScrollTabla() {
+            const el = this.$refs.tableContainerSemana;
+            if (!el) return;
+
+            // Offset para no dejar el borde superior de la tabla pegado al viewport
+            const offset = 100;
+            const top = el.getBoundingClientRect().top + window.scrollY - offset;
+
+            window.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' });
         },
         // Separa el array plano en grupos {header, miembros} + fila de totales aparte
         agruparFilas(filas) {

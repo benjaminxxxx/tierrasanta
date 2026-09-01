@@ -35,7 +35,7 @@
     x-transition.opacity
     @click.outside="mostrarBusquedaFlotante = false"
     @keydown.escape.window="mostrarBusquedaFlotante = false"
-    class="fixed bottom-24 left-6 z-[1001] bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-2xl shadow-2xl p-4 flex flex-col gap-3 w-[min(90vw,26rem)]"
+    class="fixed bottom-24 left-6 z-[1001] bg-card border border-border rounded-2xl shadow-2xl p-4 flex flex-col gap-3 w-[min(90vw,26rem)]"
     style="display: none;"
 >
     <div class="flex justify-between items-center">
@@ -55,7 +55,7 @@
             autocomplete="off"
             spellcheck="false"
             name="busqueda_flotante_no_autocomplete"
-            class="w-full text-lg px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600
+            class="w-full text-lg px-4 py-3 rounded-xl border border-border
                    bg-gray-50 dark:bg-gray-800 dark:text-white
                    focus:outline-none focus:ring-2 focus:ring-green-500"
         />
@@ -64,7 +64,7 @@
     <select
         wire:ignore.self
         x-model="filtroGrupo"
-        class="w-full text-lg px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600
+        class="w-full text-lg px-4 py-3 rounded-xl border border-border
                bg-gray-50 dark:bg-gray-800 dark:text-white
                focus:outline-none focus:ring-2 focus:ring-green-500"
     >
