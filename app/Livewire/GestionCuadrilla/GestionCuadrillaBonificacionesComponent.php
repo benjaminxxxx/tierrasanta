@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Livewire\GestionCuadrilla;
+
 use App\Livewire\Traits\ConFechaReporteDia;
 use App\Models\Actividad;
 use App\Models\CuadRegistroDiario;
@@ -13,21 +14,26 @@ class GestionCuadrillaBonificacionesComponent extends Component
 {
     use ConFechaReporteDia;
     use LivewireAlert;
+
     public $mostrarInconsistencias = false;
     public $inconsistencias = [];
     public $seleccionTodos = false;
     public $fecha1;
     public $actividades = [];
     public $actividadSeleccionada;
+    public $filaExpandida = null; // Almacena el ID/Índice de la fila abierta
+
     public function mount()
     {
         $this->inicializarFecha();
         $this->obtenerActividades();
     }
+
     protected function despuesFechaModificada(string $fecha)
     {
         $this->obtenerActividades();
     }
+
     public function obtenerActividades()
     {
         if (!$this->fecha) {
@@ -35,16 +41,36 @@ class GestionCuadrillaBonificacionesComponent extends Component
         }
         $this->reset(['actividadSeleccionada']);
         $this->actividades = Actividad::where('fecha', $this->fecha)->get();
-
     }
+
+    public function toggleExpander($key)
+    {
+        $this->filaExpandida = ($this->filaExpandida === $key) ? null : $key;
+    }
+
     public function buscarInconsistencias()
     {
         $this->mostrarInconsistencias = true;
         $this->seleccionTodos = false;
+        $this->filaExpandida = null;
 
+        // 1. CUADRILLA (Consulta con WHERE EXISTS para prevenir multiplicidad de horas)
         $cuadrilla = DB::table('cuad_registros_diarios as rd')
             ->leftJoin(
-                DB::raw('(SELECT registro_diario_id, SUM(total_bono) as suma_bono FROM cuad_bonos_actividades GROUP BY registro_diario_id) as sb'),
+                DB::raw('(
+                    SELECT 
+                        ba.registro_diario_id, 
+                        SUM(ba.total_bono) as suma_bono 
+                    FROM cuad_bonos_actividades ba
+                    INNER JOIN actividades a ON a.id = ba.actividad_id
+                    WHERE EXISTS (
+                        SELECT 1 
+                        FROM cuad_detalles_horas dh 
+                        WHERE dh.registro_diario_id = ba.registro_diario_id 
+                        AND dh.codigo_labor = a.codigo_labor
+                    )
+                    GROUP BY ba.registro_diario_id
+                ) as sb'),
                 'sb.registro_diario_id',
                 '=',
                 'rd.id'
@@ -57,27 +83,38 @@ class GestionCuadrillaBonificacionesComponent extends Component
                 DB::raw('COALESCE(sb.suma_bono, 0) as total_correcto'),
                 'c.nombres as nombre'
             )
-            ->whereRaw('ABS(rd.total_bono - COALESCE(sb.suma_bono, 0)) > 0.01')
+            ->whereRaw('ABS(COALESCE(rd.total_bono, 0) - COALESCE(sb.suma_bono, 0)) > 0.01')
             ->get()
             ->map(fn($r) => $this->mapearFila('CUADRILLA', $r));
 
+        // 2. PLANILLA
         $planilla = DB::table('plan_registros_diarios as rd')
             ->leftJoin(
-                DB::raw('(SELECT registro_diario_id, SUM(total_bono) as suma_bono FROM plan_actividad_bonos GROUP BY registro_diario_id) as sb'),
+                DB::raw('(
+                    SELECT 
+                        pba.registro_diario_id, 
+                        SUM(pba.total_bono) as suma_bono 
+                    FROM plan_actividad_bonos pba
+                    INNER JOIN actividades a ON a.id = pba.actividad_id
+                    WHERE EXISTS (
+                        SELECT 1 
+                        FROM plan_detalles_horas dh 
+                        WHERE dh.plan_reg_dia_id = pba.registro_diario_id 
+                        AND dh.codigo_labor = a.codigo_labor
+                    )
+                    GROUP BY pba.registro_diario_id
+                ) as sb'),
                 'sb.registro_diario_id',
                 '=',
                 'rd.id'
             )
-            // 1. Unimos con la tabla intermedia del detalle mensual
             ->join('plan_mensual_detalles as pmd', 'pmd.id', '=', 'rd.plan_det_men_id')
-            // 2. Unimos con la tabla de empleados usando la FK que está en el detalle mensual
             ->join('plan_empleados as e', 'e.id', '=', 'pmd.plan_empleado_id')
             ->select(
                 'rd.id as registro_diario_id',
                 'rd.fecha',
                 'rd.total_bono as total_actual',
                 DB::raw('COALESCE(sb.suma_bono, 0) as total_correcto'),
-                // Puedes tomar los nombres directo de pmd.nombres o concatenar desde e.nombres/apellidos
                 'pmd.nombres as nombre'
             )
             ->whereRaw('ABS(COALESCE(rd.total_bono, 0) - COALESCE(sb.suma_bono, 0)) > 0.01')
@@ -92,7 +129,10 @@ class GestionCuadrillaBonificacionesComponent extends Component
 
     private function mapearFila(string $tipo, $r): array
     {
+        $detalles = $this->obtenerExplicacionDetallada($tipo, $r->registro_diario_id);
+
         return [
+            'key' => "{$tipo}_{$r->registro_diario_id}",
             'tipo' => $tipo,
             'registro_diario_id' => $r->registro_diario_id,
             'fecha' => $r->fecha,
@@ -100,12 +140,57 @@ class GestionCuadrillaBonificacionesComponent extends Component
             'total_actual' => (float) $r->total_actual,
             'total_correcto' => (float) $r->total_correcto,
             'diferencia' => round((float) $r->total_correcto - (float) $r->total_actual, 2),
+            'labores_horas' => $detalles['labores_horas'],
+            'bonos_registrados' => $detalles['bonos_registrados'],
             'seleccionado' => false,
             'corregido' => false,
         ];
     }
 
-    // Se dispara automáticamente al cambiar el checkbox "seleccionar todos" (wire:model.live)
+    private function obtenerExplicacionDetallada(string $tipo, int $registroDiarioId): array
+    {
+        if ($tipo === 'CUADRILLA') {
+            $laboresHoras = DB::table('cuad_detalles_horas')
+                ->where('registro_diario_id', $registroDiarioId)
+                ->pluck('codigo_labor')
+                ->unique()
+                ->toArray();
+
+            $bonos = DB::table('cuad_bonos_actividades as ba')
+                ->join('actividades as a', 'a.id', '=', 'ba.actividad_id')
+                ->where('ba.registro_diario_id', $registroDiarioId)
+                ->select('a.codigo_labor', 'a.nombre_labor', 'ba.total_bono')
+                ->get();
+        } else {
+            $laboresHoras = DB::table('plan_detalles_horas')
+                ->where('plan_reg_dia_id', $registroDiarioId)
+                ->pluck('codigo_labor')
+                ->unique()
+                ->toArray();
+
+            $bonos = DB::table('plan_actividad_bonos as pba')
+                ->join('actividades as a', 'a.id', '=', 'pba.actividad_id')
+                ->where('pba.registro_diario_id', $registroDiarioId)
+                ->select('a.codigo_labor', 'a.nombre_labor', 'pba.total_bono')
+                ->get();
+        }
+
+        $bonosMapeados = $bonos->map(function ($b) use ($laboresHoras) {
+            $esValido = in_array($b->codigo_labor, $laboresHoras);
+            return [
+                'labor' => "[{$b->codigo_labor}] {$b->nombre_labor}",
+                'monto' => (float) $b->total_bono,
+                'valido' => $esValido,
+                'motivo' => $esValido ? 'Labor presente en detalles de horas' : 'Labor eliminada o no coincide con horas registradas',
+            ];
+        })->toArray();
+
+        return [
+            'labores_horas' => implode(', ', $laboresHoras) ?: 'Sin horas registradas',
+            'bonos_registrados' => $bonosMapeados,
+        ];
+    }
+
     public function updatedSeleccionTodos($valor)
     {
         foreach ($this->inconsistencias as $index => $item) {
@@ -168,6 +253,7 @@ class GestionCuadrillaBonificacionesComponent extends Component
                 ->update(['total_bono' => $item['total_correcto']]);
         }
     }
+
     public function render()
     {
         return view('livewire.gestion-cuadrilla.gestion-cuadrilla-bonificaciones-component');

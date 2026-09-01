@@ -28,6 +28,74 @@ use Illuminate\Validation\ValidationException;
 class CuadrilleroServicio
 {
     /**
+     * Detecta qué cuadrilleros perderán bonos si se guardan los cambios de Handsontable.
+     */
+    public static function detectarBonosAEliminar($fecha, $rows): array
+    {
+        $afectados = [];
+        $maxCol = 0;
+
+        if (!empty($rows)) {
+            foreach (array_keys($rows[0]) as $key) {
+                if (preg_match('/^campo_(\d+)$/', $key, $matches)) {
+                    $maxCol = max($maxCol, (int) $matches[1]);
+                }
+            }
+        }
+
+        foreach ($rows as $fila) {
+            $cuadrilleroId = $fila['cuadrillero_id'] ?? null;
+            $codigoGrupo = $fila['codigo_grupo'] ?? null;
+            if (!$cuadrilleroId)
+                continue;
+
+            $registro = CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
+                ->where('fecha', $fecha)
+                ->where('codigo_grupo', $codigoGrupo)
+                ->first();
+
+            if (!$registro)
+                continue;
+
+            // Labores presentes en la nueva edición
+            $laboresNuevas = [];
+            for ($j = 1; $j <= $maxCol; $j++) {
+                $labor = $fila["labor_$j"] ?? null;
+                $inicio = $fila["hora_inicio_$j"] ?? null;
+                $fin = $fila["hora_fin_$j"] ?? null;
+                if ($labor && $inicio && $fin) {
+                    $laboresNuevas[] = $labor;
+                }
+            }
+
+            // Obtener bonos activos registrados para esta persona
+            $bonosRegistrados = DB::table('cuad_bonos_actividades as ba')
+                ->join('actividades as a', 'a.id', '=', 'ba.actividad_id')
+                ->where('ba.registro_diario_id', $registro->id)
+                ->select('a.id as actividad_id', 'a.codigo_labor', 'a.nombre_labor', 'ba.total_bono')
+                ->get();
+
+            $bonosPerdidos = [];
+            foreach ($bonosRegistrados as $bono) {
+                if (!in_array($bono->codigo_labor, $laboresNuevas)) {
+                    $bonosPerdidos[] = [
+                        'actividad' => "[{$bono->codigo_labor}] {$bono->nombre_labor}",
+                        'monto' => (float) $bono->total_bono,
+                    ];
+                }
+            }
+
+            if (!empty($bonosPerdidos)) {
+                $afectados[] = [
+                    'nombre' => $fila['cuadrillero_nombres'] ?? 'Trabajador',
+                    'bonos' => $bonosPerdidos,
+                ];
+            }
+        }
+
+        return $afectados;
+    }
+    /**
      * Genera un resumen para planilla agrupando trabajadores con el mismo conjunto canónico de actividades.
      *
      * @param string $fecha La fecha (no se usa en la lógica de agrupación, pero se mantiene).
@@ -1642,6 +1710,166 @@ class CuadrilleroServicio
                     $campo = $fila["campo_$j"] ?? null;
                     $labor = $fila["labor_$j"] ?? null;
 
+                    if ($labor && !array_key_exists($labor, $labores)) {
+                        throw new Exception("Error en la fila {$filaOrden}, el código {$labor} no existe.");
+                    }
+
+                    if ($inicio || $fin || $campo || $labor) {
+                        if (!$inicio || !$fin || !$labor) {
+                            $errores[] = "Fila " . ($i + 1) . ", tramo $j: falta hora o labor.";
+                            continue;
+                        }
+
+                        $inicio = FormatoHelper::normalizarHora($inicio);
+                        $fin = FormatoHelper::normalizarHora($fin);
+
+                        $tramos[] = [
+                            'codigo_labor' => $labor,
+                            'campo_nombre' => $campo,
+                            'hora_inicio' => $inicio,
+                            'hora_fin' => $fin,
+                        ];
+                    }
+                }
+
+                // Obtener Registro Diario
+                $registro = CuadRegistroDiario::where('cuadrillero_id', $cuadrilleroId)
+                    ->where('fecha', $fecha)
+                    ->where('codigo_grupo', $codigoGrupo)
+                    ->first();
+
+                if (!$registro) {
+                    throw new Exception("No existe el registro con fecha {$fecha} e id {$cuadrilleroId}");
+                }
+
+                // 1. ACTUALIZAR DETALLE DE HORAS
+                if (empty($tramos)) {
+                    // Si la fila quedó vacía, se eliminan todas las horas registradas
+                    $registro->detalleHoras()->delete();
+                } else {
+                    $existentes = $registro->detalleHoras()->get();
+
+                    $clave = fn($tramo) => implode('|', [
+                        $tramo['codigo_labor'],
+                        $tramo['campo_nombre'],
+                        Carbon::parse($tramo['hora_inicio'])->format('H:i'),
+                        Carbon::parse($tramo['hora_fin'])->format('H:i'),
+                    ]);
+                    $existentesMap = $existentes->keyBy($clave);
+                    $nuevosMap = collect($tramos)->keyBy($clave);
+
+                    // Eliminar los tramos retirados
+                    foreach ($existentes as $existente) {
+                        $k = $clave($existente->toArray());
+                        if (!$nuevosMap->has($k)) {
+                            $existente->delete();
+                        }
+                    }
+
+                    // Insertar los nuevos tramos
+                    foreach ($nuevosMap as $k => $nuevo) {
+                        $detalle = $existentesMap->get($k);
+                        if ($detalle) {
+                            continue;
+                        }
+
+                        $registro->detalleHoras()->create([
+                            'codigo_labor' => $nuevo['codigo_labor'],
+                            'campo_nombre' => $nuevo['campo_nombre'],
+                            'hora_inicio' => $nuevo['hora_inicio'],
+                            'hora_fin' => $nuevo['hora_fin'],
+                            'produccion' => null,
+                            'costo_bono' => 0,
+                        ]);
+                    }
+                }
+
+                // =========================================================================
+                // 2. LIMPIEZA DE BONOS HUÉRFANOS Y RECALCULO DE TOTAL_BONO
+                // =========================================================================
+
+                // Obtener labores vigentes tras la edición de horas
+                $laboresVigentes = $registro->detalleHoras()
+                    ->whereNotNull('codigo_labor')
+                    ->pluck('codigo_labor')
+                    ->unique()
+                    ->toArray();
+
+                if (empty($laboresVigentes)) {
+                    // Si no le quedó ninguna labor, eliminar todos sus bonos
+                    DB::table('cuad_bonos_actividades')
+                        ->where('registro_diario_id', $registro->id)
+                        ->delete();
+                } else {
+                    // Eliminar solo los bonos cuyas labores asociadas ya no existen
+                    DB::table('cuad_bonos_actividades')
+                        ->where('registro_diario_id', $registro->id)
+                        ->whereIn('actividad_id', function ($query) use ($laboresVigentes) {
+                            $query->select('id')
+                                ->from('actividades')
+                                ->whereNotIn('codigo_labor', $laboresVigentes);
+                        })
+                        ->delete();
+                }
+
+                // Recalcular la suma real de los bonos que permanecen válidos
+                $sumaBonosVigentes = DB::table('cuad_bonos_actividades')
+                    ->where('registro_diario_id', $registro->id)
+                    ->sum('total_bono');
+
+                // Actualizar cabecera de registro diario
+                $registro->update([
+                    'total_bono' => $sumaBonosVigentes ?? 0.00
+                ]);
+            }
+
+            if (count($errores)) {
+                throw ValidationException::withMessages(['errores' => $errores]);
+            }
+
+            DB::commit();
+            return true;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+    /*
+    public static function guardarDesdeHandsontable($fecha, $rows)
+    {
+        DB::beginTransaction();
+        try {
+            if (!$fecha) {
+                throw ValidationException::withMessages([
+                    'fecha' => 'Debe especificar una fecha.'
+                ]);
+            }
+
+            $labores = Labores::all()->pluck('id', 'codigo')->toArray();
+
+            $errores = [];
+            $maxCol = 0;
+            if (!empty($rows)) {
+                foreach (array_keys($rows[0]) as $key) {
+                    if (preg_match('/^campo_(\d+)$/', $key, $matches)) {
+                        $maxCol = max($maxCol, (int) $matches[1]);
+                    }
+                }
+            }
+
+            foreach ($rows as $i => $fila) {
+
+                $cuadrilleroId = $fila['cuadrillero_id'] ?? null;
+                $codigoGrupo = $fila['codigo_grupo'] ?? null;
+                $filaOrden = $i + 1;
+
+                $tramos = [];
+                for ($j = 1; $j <= $maxCol; $j++) {
+                    $inicio = $fila["hora_inicio_$j"] ?? null;
+                    $fin = $fila["hora_fin_$j"] ?? null;
+                    $campo = $fila["campo_$j"] ?? null;
+                    $labor = $fila["labor_$j"] ?? null;
+
 
                     if ($labor && !array_key_exists($labor, $labores)) {
                         throw new Exception("Error en la fila {$filaOrden}, el código {$labor} no existe.");
@@ -1739,7 +1967,7 @@ class CuadrilleroServicio
             DB::rollBack();
             throw $e;
         }
-    }
+    }*/
 
     protected static function getLaborNombre($laborId)
     {
