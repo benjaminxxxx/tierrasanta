@@ -82,56 +82,6 @@ class PlanillaServicio
         $registroDiario->update([
             'total_bono' => $sumaBonos
         ]);
-
-        //dd($registroDiario);
-/*
-        $fecha = now();
-
-        $planillaDni = $fila['planilla_dni'] ?? null;
-        $campo = $fila['campo'] ?? null;
-        $labor = $fila['labor'] ?? null;
-        $totalBono = floatval($fila['total_bono'] ?? 0);
-
-        // Buscar el registro diario para la fecha
-        $registro = ReporteDiario::where('documento', $planillaDni)
-            ->whereDate('fecha', $fecha)
-            ->with(['detalles'])
-            ->first();
-
-        if (!$registro) {
-            return;
-        }
-
-        // Obtener detalles de esa actividad, ordenados por horario
-        $detalles = $registro->detalles()
-            ->where('campo', $campo)
-            ->where('labor', $labor)
-            ->orderBy('hora_salida')
-            ->get();
-
-        $conteoTramos = $detalles->count();
-
-        if ($conteoTramos === 0) {
-            return;
-        }
-
-        // Calcular bono proporcional por tramo
-        $bonoPorTramo = round($totalBono / $conteoTramos, 2);
-
-        // Recolectar solo los valores de producción válidos
-        $producciones = [];
-        for ($i = 1; $i <= $conteoTramos; $i++) {
-            $produccionKey = "produccion_$i";
-            $producciones[] = isset($fila[$produccionKey]) ? floatval($fila[$produccionKey]) : 0;
-        }
-
-        // Actualizar cada detalle con costo_bono y producción
-        foreach ($detalles as $index => $detalle) {
-            $detalle->update([
-                'costo_bono' => $bonoPorTramo,
-                'produccion' => $producciones[$index] ?? 0
-            ]);
-        }*/
     }
     public static function obtenerTrabajadoresPlanillaPorCampoYLabor($fecha, $campo, $labor)
     {

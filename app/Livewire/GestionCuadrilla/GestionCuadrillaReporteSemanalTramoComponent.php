@@ -262,7 +262,6 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
     public function storeTableDataGuardarHoras($datos)
     {
         try {
-
             if (!$this->tramoLaboral) {
                 throw new Exception("Recargar la página");
             }
@@ -426,6 +425,13 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
                 ->get()
                 ->keyBy(fn($item) => $item->codigo_grupo . '|' . $item->cuadrillero_id);
 
+            // Mapa auxiliar cuadrillero_id -> nombres, para mensajes de error legibles
+            // en el diferencial de bajas (ahí no tenemos la fila completa, solo el id)
+            $nombresPorCuadrilleroId = collect($rows)
+                ->filter(fn($fila) => !empty($fila['cuadrillero_id']))
+                ->keyBy('cuadrillero_id')
+                ->map(fn($fila) => $fila['nombres'] ?? "ID {$fila['cuadrillero_id']}");
+
             // 1) Agrupar filas por grupo
             $grupos = collect($rows)->groupBy(function ($fila) {
                 return trim($fila['codigo_grupo'] ?? '');
@@ -445,6 +451,26 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
 
                 $cuadrillerosAEliminar = $cuadrilleroIdsActuales->diff($cuadrilleroIdsNuevos);
                 if ($cuadrillerosAEliminar->isNotEmpty()) {
+
+                    // 🚨 Verificar que ninguno de los registros a borrar en bloque tenga bono calculado
+                    $registroConBono = CuadRegistroDiario::where('codigo_grupo', $codigoGrupo)
+                        ->where('tramo_laboral_id', $tramoLaboralId)
+                        ->whereBetween('fecha', [$inicioDate, $finDate])
+                        ->whereIn('cuadrillero_id', $cuadrillerosAEliminar)
+                        ->where('total_bono', '>', 0)
+                        ->first();
+
+                    if ($registroConBono) {
+                        $nombre = $nombresPorCuadrilleroId->get($registroConBono->cuadrillero_id)
+                            ?? "Cuadrillero ID {$registroConBono->cuadrillero_id}";
+
+                        throw new Exception(
+                            "No se puede quitar a {$nombre} del grupo {$codigoGrupo}: " .
+                            "tiene un bono de {$registroConBono->total_bono} calculado el " .
+                            "{$registroConBono->fecha->toDateString()}. " .
+                            "Retire o ajuste el bono desde el módulo de bonificaciones antes de eliminarlo del grupo."
+                        );
+                    }
 
                     CuadRegistroDiario::where('codigo_grupo', $codigoGrupo)
                         ->where('tramo_laboral_id', $tramoLaboralId)
@@ -488,7 +514,18 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
                         ];
 
                         if (is_null($total_horas) || $total_horas <= 0) {
-                            // No debe existir registro cuando no hay horas
+                            // No debe existir registro cuando no hay horas...
+                            // salvo que ya tenga un bono calculado: en ese caso, no se borra a ciegas
+                            $registroExistente = CuadRegistroDiario::where($where)->first();
+
+                            if ($registroExistente && $registroExistente->total_bono > 0) {
+                                throw new Exception(
+                                    "No se puede quitar la hora de {$fila['nombres']} el {$fechaStr}: " .
+                                    "tiene un bono de {$registroExistente->total_bono} ya calculado en ese día. " .
+                                    "Retire o ajuste el bono desde el módulo de bonificaciones antes de eliminar el registro."
+                                );
+                            }
+
                             CuadRegistroDiario::where($where)->delete();
                             continue;
                         }

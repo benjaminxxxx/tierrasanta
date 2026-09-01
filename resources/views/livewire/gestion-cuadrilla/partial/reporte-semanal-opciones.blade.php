@@ -53,7 +53,7 @@
                 </x-dropdown-link>
                 <x-dropdown-link class="text-center" href="{{ route('gestion_cuadrilleros.bonificaciones.index') }}"
                     target="_blank">
-                    Adminsitrar bonos
+                    Administrar bonos
                 </x-dropdown-link>
             </div>
         </x-slot>
