@@ -19,6 +19,8 @@ use App\Livewire\GestionPlanilla\AsistenciaMensualComponent;
 use App\Livewire\GestionPlanilla\CargosComponent;
 use App\Livewire\GestionPlanilla\DerechoHabiente\DerechoHabienteListaComponent;
 use App\Livewire\GestionPlanilla\PanelContratoComponent;
+use App\Livewire\GestionReportes\ReporteDiarioComponent;
+use App\Livewire\GestionRiego\ReporteDiarioRiegoComponent;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AsistenciaPlanillaController;
 use App\Http\Controllers\GastoController;
@@ -175,7 +177,7 @@ Route::middleware([
 
     Route::get('/auditoria', [ReporteController::class, 'auditoria'])->name('auditoria')->middleware('can:' . Permisos::REPORTE_AUDITORIA);
     Route::get('/reporte/reporte-diario', [ReporteDiarioController::class, 'index'])->name('reporte.reporte_diario')->middleware('can:' . Permisos::PLANILLA_ACTIVIDAD);
-    Route::get('/riego/reporte-diario', [ReporteDiarioController::class, 'riego'])->name('reporte.reporte_diario_riego')->middleware('can:' . Permisos::CAMPO_RIEGO_REPORTE);
+    Route::get('/riego/reporte-diario', ReporteDiarioRiegoComponent::class)->name('reporte.reporte_diario_riego')->middleware('can:' . Permisos::CAMPO_RIEGO_REPORTE);
     Route::post('/reporte/reporte-diario/importar-empleados', [ReporteDiarioController::class, 'ImportarEmpleados'])->name('reporte.reporte_diario.importar_empleados');
     Route::post('/reporte/reporte-diario/guardar-empleados', [ReporteDiarioController::class, 'GuardarInformacion'])->name('reporte.reporte_diario.guardar_informacion');
     Route::post('/reporte/reporte-diario/actualizar-campos', [ReporteDiarioController::class, 'ActualizarCampos'])->name('reporte.reporte_diario.actualizar_campos');

@@ -121,6 +121,9 @@
     <livewire:gestion-riego.reporte-diario-agregar-regadores-component :fecha="$fecha"
         wire:key="agregarregadores_{{ $fecha }}" />
 
+
+    <livewire:gestion-riego.reporte-diario-riego-horas-acumuladas-component />
+    
     <x-loading wire:loading />
 
 </div>

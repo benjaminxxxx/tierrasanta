@@ -155,11 +155,4 @@ class ConsolidarJornadaRiegoProceso
         return empty($intervalos) ? 0 : CalculoHelper::calcularMinutosJornalParcial($intervalos);
     }
 
-    private function minutosAcumuladoUsadoHoy(ResumenJornada $resumen): int
-    {
-        $reg = $resumen->registrosDiarios()->where('por_acumulacion', true)->first();
-        if (!$reg)
-            return 0;
-        return Carbon::parse($reg->hora_inicio)->diffInMinutes(Carbon::parse($reg->hora_fin));
-    }
 }
