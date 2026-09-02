@@ -15,6 +15,7 @@ use App\Http\Controllers\PermisosRolController;
 use App\Http\Controllers\ReporteDiarioController;
 use App\Livewire\ConfiguracionDescuentoAfpComponent;
 use App\Livewire\ConfiguracionPrimasComisionesComponent;
+use App\Livewire\GestionCampo\CampoCostosComponent;
 use App\Livewire\GestionPlanilla\AsistenciaMensualComponent;
 use App\Livewire\GestionPlanilla\CargosComponent;
 use App\Livewire\GestionPlanilla\DerechoHabiente\DerechoHabienteListaComponent;
@@ -72,6 +73,7 @@ Route::middleware([
         return view('livewire.gestion-campo.index-mano-obra');
     })->name('campo.mano_obra')->middleware('can:' . Permisos::CAMPO_MANO_OBRA);
 
+    Route::get('/campo/costos', CampoCostosComponent::class)->name('campo.costos');
 
     Route::get('/configuracion/tipos-asistencias', function () {
         return view('livewire.gestion-asistencia.tipo-asistencia-indice');

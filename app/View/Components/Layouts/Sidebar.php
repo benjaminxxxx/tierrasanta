@@ -140,6 +140,7 @@ class Sidebar extends Component
                 'children' => [
                     ['title' => 'Labores', 'route' => 'configuracion.labores', 'can' => Permisos::CAMPO_LABOR],
                     ['title' => 'Mano de obra', 'route' => 'campo.mano_obra', 'can' => Permisos::CAMPO_MANO_OBRA],
+                    ['title' => 'Costos (BDD)', 'route' => 'campo.costos'],
                     ['title' => 'Campos', 'route' => 'campo.campos', 'can' => Permisos::CAMPO_PARCELA],
                     ['title' => 'Siembras', 'route' => 'campo.siembra', 'can' => Permisos::CAMPO_SIEMBRA],
                     ['title' => 'Maquinarias', 'route' => 'maquinarias.index', 'can' => Permisos::CAMPO_MAQUINARIA],

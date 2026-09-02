@@ -23,23 +23,7 @@ class ResumenHorasRegadorComponent extends Component
 
     public $desgloseSemanas = [];
 
-    protected $listeners = ['registroConsolidado' => 'calcularTotales'];
-
-    public function mount($trabajadorType, $trabajadorId, $fecha)
-    {
-        $this->trabajadorType = $trabajadorType;
-        $this->trabajadorId = $trabajadorId;
-        $this->fecha = $fecha;
-
-        $this->calcularTotales();
-    }
-
-    protected function baseQuery()
-    {
-        return ConsolidadoRiego::where('trabajador_type', $this->trabajadorType)
-            ->where('trabajador_id', $this->trabajadorId);
-    }
-
+    protected $listeners = ['registroConsolidado' => 'calcularTotales','registroRegadoresActualizado' => 'calcularTotales'];
     public function calcularTotales(): void
     {
         $fecha = Carbon::parse($this->fecha);
@@ -56,6 +40,23 @@ class ResumenHorasRegadorComponent extends Component
             ->whereMonth('fecha', $fecha->month)
             ->sum('minutos_jornal');
     }
+
+    public function mount($trabajadorType, $trabajadorId, $fecha)
+    {
+        $this->trabajadorType = $trabajadorType;
+        $this->trabajadorId = $trabajadorId;
+        $this->fecha = $fecha;
+
+        $this->calcularTotales();
+    }
+
+    protected function baseQuery()
+    {
+        return ConsolidadoRiego::where('trabajador_type', $this->trabajadorType)
+            ->where('trabajador_id', $this->trabajadorId);
+    }
+
+
 
     // Badge "Horas Semana" -> desglose día por día de la semana activa (lunes-domingo)
     public function verDesgloseDias(): void

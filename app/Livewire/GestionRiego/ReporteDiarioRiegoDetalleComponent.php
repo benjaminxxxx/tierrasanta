@@ -99,6 +99,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
                     });
 
                 $registro->delete();
+                app(ConsolidadorServicio::class)->consolidar($this->resumenRiego);
             });
 
             $this->resumenRiego->refresh();
@@ -117,7 +118,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
         if ($resumenRiegoId !== null && (int) $resumenRiegoId !== (int) $this->resumenRiego->id) {
             return; // no es mi consolidado, ignorar
         }
-
+        $this->sincronizarAcumulado();
         $this->obtenerRegistrosDiarios();
         $this->dispatch('actualizarGrilla-' . $this->idTable, $this->registros);
     }
@@ -170,66 +171,11 @@ class ReporteDiarioRiegoDetalleComponent extends Component
     public function storeTableDataRegistroDiarioRiego($data)
     {
         try {
-            /*
-            array:6 [▼ // app\Livewire\GestionRiego\ReporteDiarioRiegoDetalleComponent.php:173
-  0 => array:7 [▼
-    0 => "C2"
-    1 => "05.00"
-    2 => "06.30"
-    3 => 1.5
-    4 => "Riego"
-    5 => null
-    6 => false
-  ]
-  1 => array:7 [▼
-    0 => "C3"
-    1 => "06.30"
-    2 => "08.00"
-    3 => 1.5
-    4 => "Riego"
-    5 => null
-    6 => false
-  ]
-  2 => array:7 [▼
-    0 => "C4"
-    1 => "08.00"
-    2 => "09.30"
-    3 => 1.5
-    4 => "Riego"
-    5 => null
-    6 => false
-  ]
-  3 => array:7 [▼
-    0 => "D4"
-    1 => "09.30"
-    2 => "11.00"
-    3 => 1.5
-    4 => "Riego"
-    5 => null
-    6 => false
-  ]
-  4 => array:7 [▼
-    0 => "D3"
-    1 => "11.00"
-    2 => "12.00"
-    3 => 1
-    4 => "Riego"
-    5 => null
-    6 => false
-  ]
-  5 => array:7 [▼
-    0 => "FDM"
-    1 => "12.00"
-    2 => "15.00"
-    3 => 3
-    4 => "Observacion"
-    5 => "RONDA DE AGUA"
-    6 => true
-  ]
-] */
+          
             app(ConsolidarJornadaRiegoProceso::class)
                 ->ejecutarGuardadoRegistros($this->resumenRiego, $this->fecha, $data);
             $this->sincronizarAcumulado();
+            $this->dispatch('registroRegadoresActualizado', $this->resumenRiego->id);
             
             $this->alert("success", "Registro Guardado");
         } catch (\Throwable $th) {

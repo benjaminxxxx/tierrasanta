@@ -32,6 +32,18 @@
                                 :trabajadorType="$resumenRiego->trabajador_type"
                                 :trabajadorId="$resumenRiego->trabajador_id" :fecha="$fecha"
                                 wire:key="resumen_horas_{{ $resumenRiego->trabajador_type }}_{{ $resumenRiego->trabajador_id }}_{{ $fecha }}" />
+                            @if ($resumenRiego->trabajador_type === \App\Models\PlanEmpleado::class)
+                                @if ($resumenRiego->sincronizado)
+                                    <span class="text-green-600 dark:text-green-400 text-sm">
+                                        <i class="fa fa-check-circle"></i> Sincronizado
+                                    </span>
+                                @else
+                                    <span class="text-amber-600 dark:text-amber-400 text-sm"
+                                        title="Las horas no coinciden con el registro diario de planilla">
+                                        <i class="fa fa-exclamation-triangle"></i> No sincronizado
+                                    </span>
+                                @endif
+                            @endif
                         </div>
                         @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
                             <div>

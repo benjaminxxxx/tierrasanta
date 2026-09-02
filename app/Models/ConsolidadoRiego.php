@@ -33,11 +33,13 @@ class ConsolidadoRiego extends Model
         'trabajador_id',
         'trabajador_type',
         'minutos_regados',
-        'minutos_jornal'
+        'minutos_jornal',
+        'sincronizado',
     ];
     protected $casts = [
         'descuento_horas_almuerzo' => 'boolean',
-        'no_acumular_horas' => 'boolean'
+        'no_acumular_horas' => 'boolean',
+        'sincronizado' => 'boolean',
     ];
     protected $appends = [
         'alias_origen',
@@ -48,17 +50,17 @@ class ConsolidadoRiego extends Model
     ];
     public function getHorasJornalAttribute(): ?string
     {
-        return $this->minutos_jornal/60;
+        return $this->minutos_jornal / 60;
     }
     public function getHorasAcumuladasAttribute(): ?string
     {
-        return $this->minutos_acumulados/60;
+        return $this->minutos_acumulados / 60;
     }
     public function getHorasRegadosAttribute(): ?string
     {
-        return $this->minutos_regados/60;
+        return $this->minutos_regados / 60;
     }
-    
+
     public function getAliasOrigenAttribute(): ?string
     {
         return match ($this->trabajador_type) {

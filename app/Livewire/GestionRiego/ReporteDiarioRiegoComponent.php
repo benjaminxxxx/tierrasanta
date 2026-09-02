@@ -5,13 +5,12 @@ namespace App\Livewire\GestionRiego;
 use App\Livewire\Traits\ConFechaReporteDia;
 use App\Models\ConsolidadoRiego;
 use App\Models\Cuadrillero;
-use App\Models\PlanDetalleHora;
 use App\Models\PlanEmpleado;
-use App\Models\PlanMensual;
 use App\Models\PlanMensualDetalle;
 use App\Models\ReporteDiarioRiego;
 use App\Services\Modulos\Planilla\GestionPlanillaReporteDiario;
 use App\Services\RecursosHumanos\Personal\ActividadServicio;
+use App\Services\Riego\VerificacionSincronizacionRiegoServicio;
 use App\Traits\TieneParametrosTemporales;
 use DateTime;
 use Exception;
@@ -51,6 +50,8 @@ class ReporteDiarioRiegoComponent extends Component
             $this->guardarParametro($propiedad);
         }
     }
+    /*
+    no consideraba las horas acumuladas, solo las horas de la jornada del día
     public function enviarRegistroDiarioRegadores()
     {
 
@@ -85,6 +86,63 @@ class ReporteDiarioRiegoComponent extends Component
                 'labor' => 81,
             ];
         });
+
+        $this->mostrarEnvioAReporteDiario = true;
+    }*/
+    public function enviarRegistroDiarioRegadores()
+    {
+        $this->listaPorEnviarRegadores = collect();
+
+        foreach ($this->consolidados as $item) {
+
+            $nombre = $item->trabajador_nombre;
+
+            $tipo = match ($item->trabajador_type) {
+                Cuadrillero::class => 'cuadrilla',
+                PlanEmpleado::class => 'planilla',
+                default => 'desconocido'
+            };
+
+            // 1. Obtener registro acumulado si existe
+            $registroAcumulado = ReporteDiarioRiego::where('consolidado_id', $item->id)
+                ->where('por_acumulacion', true)
+                ->first();
+
+            // 2. Determinar la HORA INICIO que prevalece (la menor entre el consolidado/detalle y el acumulado)
+            $horaInicioNormal = $item->hora_inicio ? Carbon::parse($item->hora_inicio) : null;
+            $horaInicioAcumulado = $registroAcumulado ? Carbon::parse($registroAcumulado->hora_inicio) : null;
+
+            if ($horaInicioNormal && $horaInicioAcumulado) {
+                // Si existen ambas, tomamos la menor
+                $horaInicioReal = $horaInicioNormal->lt($horaInicioAcumulado) ? $horaInicioNormal : $horaInicioAcumulado;
+            } else {
+                // Si solo existe una de las dos, tomamos la disponible
+                $horaInicioReal = $horaInicioNormal ?? $horaInicioAcumulado;
+            }
+
+            // Si no hay hora de inicio por ningún lado, saltamos el registro
+            if (!$horaInicioReal) {
+                continue;
+            }
+
+            // 3. Minutos totales a reportar en la jornada (Minutos de Riego/Mantenimiento + Minutos Acumulados)
+            $minutosTotales = $item->minutos_jornal;
+
+            // 4. Calcular la HORA FIN sumando los minutos totales a la hora inicio prevalente
+            $horaFinReal = (clone $horaInicioReal)->addMinutes($minutosTotales);
+
+            // 5. PUSH de UN SOLO REGISTRO consolidado
+            $this->listaPorEnviarRegadores->push([
+                'trabajador_id' => $item->trabajador_id,
+                'trabajador_name' => $nombre,
+                'tipo' => $tipo,
+                'hora_inicio' => $horaInicioReal->format('H:i:s'),
+                'hora_fin' => $horaFinReal->format('H:i:s'),
+                'total_horas' => round($minutosTotales / 60, 2),
+                'campo' => 'FDM',
+                'labor' => 81,
+            ]);
+        }
 
         $this->mostrarEnvioAReporteDiario = true;
     }
@@ -260,8 +318,13 @@ class ReporteDiarioRiegoComponent extends Component
             ]);
         }
     }
-    public function verResumenSemanalRiego(){
-        
+    public function verificarSincronizacion()
+    {
+        $resultado = app(VerificacionSincronizacionRiegoServicio::class)->verificarPorFecha($this->fecha);
+
+        $this->dispatch('registroConsolidado'); // refresca cada Detalle para que lea el nuevo valor de sincronizado
+
+        $this->alert('success', "Verificación completa: {$resultado['ok']} sincronizados, {$resultado['desincronizados']} con diferencias, {$resultado['omitidos']} omitidos (cuadrilla).");
     }
     public function render()
     {

@@ -8,6 +8,10 @@
         </div>
 
         <div class="ms-3 relative">
+
+            <x-button wire:click="verificarSincronizacion" wire:loading.attr="disabled">
+                <i class="fa fa-sync"></i> Verificar Sincronización
+            </x-button>
             <x-dropdown align="right" width="60">
                 <x-slot name="trigger">
                     <span class="inline-flex rounded-md">
@@ -90,11 +94,20 @@
                         <x-th>Labor</x-th>
                         <x-th>Hora Inicio</x-th>
                         <x-th>Hora Fin</x-th>
+                        <x-th>Total Horas</x-th>
                     </x-tr>
                 </x-slot>
 
                 <x-slot name="tbody">
                     @foreach ($listaPorEnviarRegadores as $fila)
+                        @php
+                            // Convertir el decimal de total_horas a Horas y Minutos exactos
+                            $minutosTotales = round(($fila['total_horas'] ?? 0) * 60);
+                            $horas = floor($minutosTotales / 60);
+                            $minutos = $minutosTotales % 60;
+
+                            $formatoTiempo = $horas . 'h' . ($minutos > 0 ? ' ' . $minutos . 'm' : '');
+                        @endphp
                         <x-tr>
                             <x-td class="uppercase">{{ $fila['tipo'] }}</x-td>
                             <x-td class="!text-left">{{ $fila['trabajador_name'] }}</x-td>
@@ -102,6 +115,9 @@
                             <x-td>{{ $fila['labor'] }}</x-td>
                             <x-td>{{ $fila['hora_inicio'] }}</x-td>
                             <x-td>{{ $fila['hora_fin'] }}</x-td>
+                            <x-td class="font-semibold text-slate-800 dark:text-slate-200">
+                                {{ $formatoTiempo }}
+                            </x-td>
                         </x-tr>
                     @endforeach
                 </x-slot>
@@ -114,7 +130,7 @@
                 Cerrar
             </x-button>
             <x-button wire:click="confirmarEnvio" wire:loading.attr="disabled">
-                <i class="fa fa-paper-plane"></i>Confirmar Envio
+                <i class="fa fa-paper-plane mr-1"></i>Confirmar Envío
             </x-button>
         </x-slot>
     </x-dialog-modal>
@@ -123,7 +139,7 @@
 
 
     <livewire:gestion-riego.reporte-diario-riego-horas-acumuladas-component />
-    
+
     <x-loading wire:loading />
 
 </div>
