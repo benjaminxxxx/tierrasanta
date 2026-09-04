@@ -22,14 +22,13 @@ class CampaniaServicio
         if (!$campania) {
             throw new Exception("La campaña no existe");
         }
-        
+
         // 1. Recolección de datos de múltiples fuentes
         $informacionPlanilla = app(DataManoObraServicio::class)->generarPlanillerosPor(
-            $campania->campo,
-            $campania->fecha_inicio,
-            $campania->fecha_fin
+            $campania->nombre_campania,
+            $campania->campo
         );
-        
+
         $informacionCuadrilla = app(DataManoObraServicio::class)->generarCuaderillerosPor(
             $campania->campo,
             $campania->fecha_inicio,
@@ -127,7 +126,7 @@ class CampaniaServicio
             ->where('tipo_infestacion', $tipo)
             ->orderBy('fecha')
             ->get();
-            
+
         $data = [];
 
         if ($infestaciones->isNotEmpty()) {

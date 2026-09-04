@@ -25,6 +25,7 @@ return new class extends Migration
             $table->text('descripcion')->nullable();
             $table->boolean('por_acumulacion')->default(false);
             $table->unsignedBigInteger('campo_campania_id')->nullable(); 
+            $table->decimal('horas_ponderadas', 8, 2)->default(0);
             $table->foreign('campo_campania_id')->references('id')->on('campos_campanias')->onDelete('set null');
             $table->timestamps();
         });

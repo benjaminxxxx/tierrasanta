@@ -26,7 +26,8 @@ class ReporteDiarioRiego extends Model
         'tipo_labor',//Riego, Mantenimiento, etc... Aqui podria ir Por Acumulación de Horas
         'descripcion',
         'campo_campania_id',
-        'por_acumulacion'
+        'por_acumulacion',
+        'horas_ponderadas'
     ];
     protected $casts = [
         'por_acumulacion' => 'boolean',

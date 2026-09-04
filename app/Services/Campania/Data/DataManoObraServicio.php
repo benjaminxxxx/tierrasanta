@@ -5,95 +5,45 @@ namespace App\Services\Campania\Data;
 use App\Models\CampoCampania;
 use App\Models\CuadDetalleHora;
 use App\Models\PlanDetalleHora;
+use App\Models\ResumenCostoDiario;
 use App\Support\CalculoHelper;
 use App\Support\DateHelper;
 use Exception;
 
 class DataManoObraServicio
 {
-    public function generarPlanillerosPor($campo, $fechaInicio, $fechaFin = null)
+    /**
+     * Obtiene los registros consolidados de planilla para el reporte BDD Mensual.
+     *
+     * @param string $campania
+     * @param string $campo
+     * @return array
+     */
+    public function generarPlanillerosPor(string $campania, string $campo): array
     {
-        $fechaFin = $fechaFin ?? now();
-
-        $detalleDiarios = PlanDetalleHora::with([
-            'registroDiario.detalleMensual.empleado',
-            'labores'
-        ])
-            ->whereHas('registroDiario', function ($query) use ($fechaInicio, $fechaFin) {
-                $query->whereBetween('fecha', [$fechaInicio, $fechaFin]);
-            })
-            ->where('campo_nombre', $campo)
+        $registros = ResumenCostoDiario::where('campania', $campania)
+            ->where('campo', $campo)
+            ->where('origen_tipo', 'planilla')
+            ->orderBy('fecha', 'asc')
             ->get();
 
         $data = [];
 
-        foreach ($detalleDiarios as $i => $detalleDiario) {
-
-            $registroDiario = $detalleDiario->registroDiario;
-            $detalleMensual = $registroDiario?->detalleMensual;
-            $empleado = $detalleMensual?->empleado;
-
-            // Si falta información crítica, continuar o registrar
-            if (!$registroDiario || !$detalleMensual) {
-
-                logger()->warning('Registro incompleto en generarPlanillerosPor', [
-                    'indice' => $i,
-                    'plan_detalle_hora_id' => $detalleDiario->id,
-                ]);
-
-                continue;
-            }
-
-            $fecha = $registroDiario->fecha;
-
-            $trabajador = $detalleMensual->nombres ?? '-';
-
-            $genero = $empleado?->genero ?? '-';
-
-            $jornalDiario = (float) ($detalleMensual->jornal_diario ?? 0);
-
-            // Relación labores
-            $manoObra = '-';
-
-            if ($detalleDiario->labores) {
-
-                // Si labores es belongsTo
-                if (is_object($detalleDiario->labores)) {
-                    $manoObra = $detalleDiario->labores->nombre_labor ?? '-';
-                }
-
-                // Si labores es hasMany
-                if ($detalleDiario->labores instanceof \Illuminate\Support\Collection) {
-                    $manoObra = $detalleDiario->labores
-                        ->pluck('nombre_labor')
-                        ->filter()
-                        ->implode(', ');
-                }
-            }
-
-            $cantidadJornales = CalculoHelper::calcularJornales2(
-                $detalleDiario->hora_inicio,
-                $detalleDiario->hora_fin
-            );
-
-            $totalHoras = CalculoHelper::obtenerDiferenciaHoras(
-                $detalleDiario->hora_inicio,
-                $detalleDiario->hora_fin
-            );
-
+        foreach ($registros as $row) {
             $data[] = [
-                'fecha' => $fecha,
-                'horas' => $totalHoras,
-                'planilla_nombre' => $trabajador,
-                'sexo' => $genero,
-                'mano_obra' => $manoObra,
-                'cantidad_jornales' => $cantidadJornales,
-                'costo' => $jornalDiario * $cantidadJornales,
+                'fecha' => $row->fecha ? $row->fecha->format('Y-m-d') : null,
+                'horas' => (float) $row->horas,
+                'planilla_nombre' => $row->trabajador ?? '-',
+                'sexo' => '-', // Mantener estructura por compatibilidad
+                'mano_obra' => $row->labor_nombre ?? '-',
+                'cantidad_jornales' => (float) $row->cantidad_jornales,
+                'costo' => (float) $row->costo_total,
             ];
         }
 
         return $data;
     }
+
     public function generarCuaderillerosPor($campo, $fechaInicio, $fechaFin = null)
     {
         $fechaFin = $fechaFin ?? now();

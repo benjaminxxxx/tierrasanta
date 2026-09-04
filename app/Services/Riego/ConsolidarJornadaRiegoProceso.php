@@ -22,9 +22,7 @@ class ConsolidarJornadaRiegoProceso
     ) {
     }
 
-    /**
-     * Guarda los registros diarios normales y reconsolida el resumen.
-     */
+    /*
     public function ejecutarGuardadoRegistros(ResumenJornada $resumen, string $fecha, array $data): void
     {
         // Validaciones fuera del transaction
@@ -37,7 +35,7 @@ class ConsolidarJornadaRiegoProceso
         if ($minutosYaCedidos > 0) {
             // Calcular cuántos minutos acumulados generaría el nuevo set de registros
             $minutosNuevos = $this->calcularMinutosBrutos($data);
-            
+
             $excedente = max(0, $minutosNuevos - 480);
 
             if ($excedente < $minutosYaCedidos) {
@@ -62,6 +60,74 @@ class ConsolidarJornadaRiegoProceso
         DB::transaction(function () use ($resumen, $fecha, $data, $mapaCampos) {
             $this->registros->reemplazarRegistros($resumen, $fecha, $data, $mapaCampos);
             $this->consolidador->consolidar($resumen);
+        });
+    }*/
+    public function ejecutarGuardadoRegistros(array $parametros): void
+    {
+        $resumen = $parametros['resumen_riego'];
+        $fecha = $parametros['fecha'];
+        $data = $parametros['data'];
+        $horaInicioAlmuerzo = $parametros['hora_inicio_almuerzo'];
+        $horaFinAlmuerzo = $parametros['hora_fin_almuerzo'];
+
+        // Validaciones fuera del transaction
+        $mapaCampos = $this->validacion->validarCampos($data);
+
+        // Precálculo: verificar si este resumen ya cedió minutos a otros días
+        $minutosYaCedidos = AcumulacionUso::where(
+            'consolidado_origen_id',
+            $resumen->id
+        )->sum('minutos_consumidos');
+
+        if ($minutosYaCedidos > 0) {
+
+            // Calcular cuántos minutos acumulados generaría
+            // el nuevo set de registros
+            $minutosNuevos = $this->calcularMinutosBrutos($data);
+
+            $excedente = max(0, $minutosNuevos - 480);
+
+            if ($excedente < $minutosYaCedidos) {
+
+                $detalle = AcumulacionUso::where(
+                    'consolidado_origen_id',
+                    $resumen->id
+                )
+                    ->with('consolidadoDestino')
+                    ->get()
+                    ->map(
+                        fn($uso) =>
+                        Carbon::parse($uso->consolidadoDestino->fecha)->format('d/m/Y') .
+                        ' (' .
+                        intdiv($uso->minutos_consumidos, 60) .
+                        'h ' .
+                        ($uso->minutos_consumidos % 60) .
+                        'm)'
+                    )
+                    ->join(', ');
+
+                throw new Exception(
+                    "Este día tiene {$minutosYaCedidos} minutos acumulados " .
+                    "que fueron usados en: {$detalle}. " .
+                    "Debes desvincular esos usos antes de reducir los registros."
+                );
+            }
+        }
+
+        DB::transaction(function () use ($resumen, $fecha, $data, $mapaCampos, $horaInicioAlmuerzo, $horaFinAlmuerzo) {
+
+            $this->registros->reemplazarRegistros(
+                $resumen,
+                $fecha,
+                $data,
+                $mapaCampos
+            );
+
+            $this->consolidador->consolidar(
+                $resumen,
+                $horaInicioAlmuerzo,
+                $horaFinAlmuerzo
+            );
         });
     }
 

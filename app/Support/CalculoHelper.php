@@ -101,6 +101,347 @@ class CalculoHelper
         ];
     }
     /**
+     * Reparte el tiempo total trabajado entre los registros que se solapan,
+     * de forma que cada minuto de presencia real se divida entre la cantidad
+     * de campos atendidos SIMULTÁNEAMENTE en ese instante.
+     *
+     * A diferencia de calcularMinutosJornalParcial() (que solo obtiene el total
+     * de presencia fusionando solapamientos), esta función devuelve CUÁNTO
+     * de ese total le corresponde a CADA registro individual.
+     *
+     * Ejemplo: Si riega 2 campos a la vez de 07:00 a 08:30 (1.5h), cada campo
+     * recibe 0.75h. Si luego pasa a regar 3 campos a la vez, cada uno recibe
+     * un tercio del tiempo de ese tramo. Un registro que dura 3 horas pero
+     * cuya concurrencia cambia a la mitad de su duración, recibe la suma de
+     * sus porciones en cada sub-tramo (no un valor único).
+     *
+     * @param array $intervalos ['clave' => ['hora_inicio' => 'HH:mm', 'hora_fin' => 'HH:mm']]
+     * @return array ['clave' => minutosPonderados] — la suma de todos los valores
+     *               es exactamente igual al total de calcularMinutosJornalParcial()
+     *               sobre los mismos intervalos (no hay doble conteo ni pérdida).
+     */
+    public static function calcularHorasPonderadasPorConcurrenciaSinAlmuerzo(array $intervalos): array
+    {
+
+        if (empty($intervalos)) {
+            return [];
+        }
+
+        $items = [];
+        $puntos = [];
+
+        foreach ($intervalos as $clave => $intervalo) {
+            $inicio = self::horaAMinutos($intervalo['hora_inicio']);
+            $fin = self::horaAMinutos($intervalo['hora_fin']);
+
+            $items[$clave] = ['inicio' => $inicio, 'fin' => $fin];
+            $puntos[$inicio] = true;
+            $puntos[$fin] = true;
+        }
+
+        $limites = array_keys($puntos);
+        sort($limites);
+
+        $resultado = array_fill_keys(array_keys($items), 0.0);
+
+        // Recorrer cada micro-tramo entre dos límites consecutivos
+        for ($i = 0; $i < count($limites) - 1; $i++) {
+            $t1 = $limites[$i];
+            $t2 = $limites[$i + 1];
+            $duracion = $t2 - $t1;
+
+            if ($duracion <= 0) {
+                continue;
+            }
+
+            // ¿Qué registros están activos durante TODO este micro-tramo?
+            $activos = [];
+            foreach ($items as $clave => $item) {
+                if ($item['inicio'] <= $t1 && $item['fin'] >= $t2) {
+                    $activos[] = $clave;
+                }
+            }
+
+            $n = count($activos);
+            if ($n === 0) {
+                continue;
+            }
+
+            $porcion = $duracion / $n;
+
+            foreach ($activos as $clave) {
+                $resultado[$clave] += $porcion;
+            }
+        }
+
+        return $resultado; // minutos por clave
+    }
+    /**
+     * Reparte el tiempo total trabajado entre los registros que se solapan
+     * y compensa los centavos de redondeo (2 decimales) dentro de cada micro-tramo.
+     *
+     * @param array $intervalos ['id' => ['hora_inicio' => 'HH:mm', 'hora_fin' => 'HH:mm']]
+     * @param string|null $horaInicioAlmuerzo 'HH:mm'
+     * @param string|null $horaFinAlmuerzo 'HH:mm'
+     * @return array ['id' => horasPonderadasAjustadasA2Decimales]
+     */
+    public static function calcularHorasPonderadasPorConcurrencia(
+        array $intervalos,
+        ?string $horaInicioAlmuerzo = null,
+        ?string $horaFinAlmuerzo = null
+    ): array {
+        if (empty($intervalos)) {
+            return [];
+        }
+
+        $items = [];
+        $puntos = [];
+
+        $almuerzoInicio = $horaInicioAlmuerzo ? self::horaAMinutos($horaInicioAlmuerzo) : null;
+        $almuerzoFin = $horaFinAlmuerzo ? self::horaAMinutos($horaFinAlmuerzo) : null;
+        $tieneAlmuerzo = (!is_null($almuerzoInicio) && !is_null($almuerzoFin) && $almuerzoFin > $almuerzoInicio);
+
+        foreach ($intervalos as $clave => $intervalo) {
+            $inicio = self::horaAMinutos($intervalo['hora_inicio']);
+            $fin = self::horaAMinutos($intervalo['hora_fin']);
+
+            $items[$clave] = ['inicio' => $inicio, 'fin' => $fin];
+            $puntos[$inicio] = true;
+            $puntos[$fin] = true;
+        }
+
+        if ($tieneAlmuerzo) {
+            $puntos[$almuerzoInicio] = true;
+            $puntos[$almuerzoFin] = true;
+        }
+
+        $limites = array_keys($puntos);
+        sort($limites);
+
+        $resultadoFinal = array_fill_keys(array_keys($items), 0.0);
+
+        // Recorrer cada micro-tramo
+        for ($i = 0; $i < count($limites) - 1; $i++) {
+            $t1 = $limites[$i];
+            $t2 = $limites[$i + 1];
+            $duracionMinutos = $t2 - $t1;
+
+            if ($duracionMinutos <= 0) {
+                continue;
+            }
+
+            // Ignorar tramo de almuerzo
+            if ($tieneAlmuerzo && $t1 >= $almuerzoInicio && $t2 <= $almuerzoFin) {
+                continue;
+            }
+
+            // Identificar registros activos en este tramo
+            $activos = [];
+            foreach ($items as $clave => $item) {
+                if ($item['inicio'] <= $t1 && $item['fin'] >= $t2) {
+                    $activos[] = $clave;
+                }
+            }
+
+            $n = count($activos);
+            if ($n === 0) {
+                continue;
+            }
+
+            // Horas reales exactas a repartir en este grupo (ej. 1.0 hora, 1.5 horas, etc.)
+            $horasGrupoReales = $duracionMinutos / 60;
+
+            // Reparto teórico flotante exacto
+            $cuotaExacta = $horasGrupoReales / $n;
+
+            // --- COMPENSACIÓN DE REDONDEO A 2 DECIMALES EN EL GRUPO ---
+            $asignacionPiso = [];
+            $residuos = [];
+            $sumaPiso = 0.0;
+
+            foreach ($activos as $clave) {
+                // Truncamos a 2 decimales (suelo)
+                $piso = floor($cuotaExacta * 100) / 100;
+                $asignacionPiso[$clave] = $piso;
+                $sumaPiso += $piso;
+
+                // Guardamos el residuo o fracción no asignada
+                $residuos[$clave] = $cuotaExacta - $piso;
+            }
+
+            // Diferencia en centavos de hora que falta para completar el total del grupo
+            // Se escala a enteros (ej. 1 centavo, 2 centavos) para evitar imprecisiones flotantes
+            $centavosFaltantes = (int) round(($horasGrupoReales - $sumaPiso) * 100);
+
+            // Ordenamos las claves del grupo por la mayor fracción de residuo
+            arsort($residuos);
+
+            // Distribuimos los centavos sobrantes uno a uno a los registros con mayor residuo
+            foreach ($residuos as $clave => $residuo) {
+                if ($centavosFaltantes <= 0) {
+                    break;
+                }
+                $asignacionPiso[$clave] = round($asignacionPiso[$clave] + 0.01, 2);
+                $centavosFaltantes--;
+            }
+
+            // Acumular el resultado asignado del grupo al total de cada registro
+            foreach ($activos as $clave) {
+                $resultadoFinal[$clave] += $asignacionPiso[$clave];
+            }
+        }
+
+        // Retorna las horas directamente redondeadas y cuadradas a 2 decimales por registro
+        return array_map(fn($v) => round($v, 2), $resultadoFinal);
+    }
+    /**
+     * Convierte un total de minutos transcurridos en el día al formato de hora 'HH:mm'.
+     *
+     * @param int $minutos
+     * @return string
+     */
+    public static function minutosAHora(int $minutos): string
+    {
+        $horas = floor($minutos / 60);
+        $mins = $minutos % 60;
+
+        return sprintf('%02d:%02d', $horas, $mins);
+    }
+    /**
+     * Reparte el tiempo total trabajado entre los registros que se solapan
+     * y genera una explicación detallada por micro-tramo.
+     *
+     * @return array ['totales' => ['id' => float], 'explicacion' => array]
+     */
+    public static function calcularHorasPonderadasConExplicacion(
+        array $intervalos,
+        ?string $horaInicioAlmuerzo = null,
+        ?string $horaFinAlmuerzo = null
+    ): array {
+        if (empty($intervalos)) {
+            return ['totales' => [], 'explicacion' => []];
+        }
+
+        $items = [];
+        $puntos = [];
+
+        $almuerzoInicio = $horaInicioAlmuerzo ? self::horaAMinutos($horaInicioAlmuerzo) : null;
+        $almuerzoFin = $horaFinAlmuerzo ? self::horaAMinutos($horaFinAlmuerzo) : null;
+        $tieneAlmuerzo = (!is_null($almuerzoInicio) && !is_null($almuerzoFin) && $almuerzoFin > $almuerzoInicio);
+
+        foreach ($intervalos as $clave => $intervalo) {
+            $inicio = self::horaAMinutos($intervalo['hora_inicio']);
+            $fin = self::horaAMinutos($intervalo['hora_fin']);
+
+            $items[$clave] = [
+                'inicio' => $inicio,
+                'fin' => $fin,
+                'nombre' => $intervalo['nombre'] ?? "Registro #{$clave}",
+            ];
+            $puntos[$inicio] = true;
+            $puntos[$fin] = true;
+        }
+
+        if ($tieneAlmuerzo) {
+            $puntos[$almuerzoInicio] = true;
+            $puntos[$almuerzoFin] = true;
+        }
+
+        $limites = array_keys($puntos);
+        sort($limites);
+
+        $resultadoFinal = array_fill_keys(array_keys($items), 0.0);
+        $explicacion = [];
+
+        for ($i = 0; $i < count($limites) - 1; $i++) {
+            $t1 = $limites[$i];
+            $t2 = $limites[$i + 1];
+            $duracionMinutos = $t2 - $t1;
+
+            if ($duracionMinutos <= 0) {
+                continue;
+            }
+
+            $hInicioStr = self::minutosAHora($t1);
+            $hFinStr = self::minutosAHora($t2);
+            $rangoStr = "{$hInicioStr} - {$hFinStr}";
+
+            // Tramo de almuerzo
+            if ($tieneAlmuerzo && $t1 >= $almuerzoInicio && $t2 <= $almuerzoFin) {
+                $explicacion[] = [
+                    'tramo' => $rangoStr,
+                    'duracion' => $duracionMinutos / 60,
+                    'es_almuerzo' => true,
+                    'descripcion' => 'Horario de Almuerzo (0 hrs computables)',
+                    'reparticion' => [],
+                ];
+                continue;
+            }
+
+            $activos = [];
+            foreach ($items as $clave => $item) {
+                if ($item['inicio'] <= $t1 && $item['fin'] >= $t2) {
+                    $activos[] = $clave;
+                }
+            }
+
+            $n = count($activos);
+            if ($n === 0) {
+                continue;
+            }
+
+            $horasGrupoReales = $duracionMinutos / 60;
+            $cuotaExacta = $horasGrupoReales / $n;
+
+            $asignacionPiso = [];
+            $residuos = [];
+            $sumaPiso = 0.0;
+
+            foreach ($activos as $clave) {
+                $piso = floor($cuotaExacta * 100) / 100;
+                $asignacionPiso[$clave] = $piso;
+                $sumaPiso += $piso;
+                $residuos[$clave] = $cuotaExacta - $piso;
+            }
+
+            $centavosFaltantes = (int) round(($horasGrupoReales - $sumaPiso) * 100);
+            arsort($residuos);
+
+            foreach ($residuos as $clave => $residuo) {
+                if ($centavosFaltantes <= 0) {
+                    break;
+                }
+                $asignacionPiso[$clave] = round($asignacionPiso[$clave] + 0.01, 2);
+                $centavosFaltantes--;
+            }
+
+            $reparticionDetalle = [];
+            foreach ($activos as $clave) {
+                $resultadoFinal[$clave] += $asignacionPiso[$clave];
+                $reparticionDetalle[] = [
+                    'campo' => $items[$clave]['nombre'],
+                    'horas' => $asignacionPiso[$clave],
+                ];
+            }
+
+            $nombresCampos = array_map(fn($k) => $items[$k]['nombre'], $activos);
+
+            $explicacion[] = [
+                'tramo' => $rangoStr,
+                'duracion' => $horasGrupoReales,
+                'es_almuerzo' => false,
+                'campos_count' => $n,
+                'descripcion' => "{$horasGrupoReales}h compartidas entre {$n} campo(s): " . implode(', ', $nombresCampos),
+                'reparticion' => $reparticionDetalle,
+            ];
+        }
+
+        return [
+            'totales' => array_map(fn($v) => round($v, 2), $resultadoFinal),
+            'explicacion' => $explicacion,
+        ];
+    }
+    /**
      * Calcula el tiempo total de jornal real eliminando solapamientos.
      * * Casos de uso resueltos:
      * 1. Riegos Simultáneos: Si riega 4 campos de 07:00 a 09:00, cuenta solo 120 min de jornal.

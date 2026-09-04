@@ -18,9 +18,20 @@
                 </div>
                 <div class="space-y-3">
                     @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
-                        <x-input type="checkbox" label="No Descontar Hora de Almuerzo"
-                            wire:model.live="noDescontarHoraAlmuerzo" />
-                        <x-input type="checkbox" label="No Acumular Horas" wire:model.live="noAcumularHoras" />
+                        <x-label>
+                            Hora de almuerzo
+                        </x-label>
+                        <x-flex>
+                            <x-input type="time" label="Inicio" wire:model="hora_inicio_almuerzo" />
+                            <x-input type="time" label="Fin" wire:model="hora_fin_almuerzo" />
+                        </x-flex>
+                        <div class="mt-4">
+                            <x-label>
+                                Acumulación de horas
+                            </x-label>
+                            <x-input type="checkbox" label="No Acumular Horas" wire:model="noAcumularHoras" />
+                        </div>
+
                     @endcan
                 </div>
             </div>
@@ -83,11 +94,23 @@
                                 </div>
                             @endif
                         </div>
-                        @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
-                            <x-button-save @click="sendDataRegistroDiarioRiego" class="mt-5">
-                                Guardar Cambios
-                            </x-button-save>
-                        @endcan
+                        <div class="space-y-4 mt-4 text-right">
+                            @if(!empty($resumenRiego->explicacion_jornal_computable))
+                                <x-button type="button" @click="$wire.set('mostrarExplicacion', ! $wire.mostrarExplicacion)"
+                                    class=""
+                                    title="Ver detalle del cálculo de horas" variant="secondary">
+                                    Jornal Computable {{ $resumenRiego->jornal_computable }} <i
+                                        class="fa-solid fa-circle-question text-lg"></i>
+                                </x-button>
+                            @endif
+
+
+                            @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
+                                <x-button-save @click="sendDataRegistroDiarioRiego">
+                                    Guardar Cambios
+                                </x-button-save>
+                            @endcan
+                        </div>
                     </x-flex>
                 </div>
             </div>
@@ -153,7 +176,57 @@
             @endcan
         </x-slot>
     </x-dialog-modal>
+    <!-- Desglose desplegable con el detalle del cálculo -->
+    @if(!empty($resumenRiego->explicacion_jornal_computable))
+        <x-dialog-modal wire:model="mostrarExplicacion" class="mt-4 text-left">
+            <x-slot name="title">
+                <x-flex class="justify-between">
+                    <div>
+                        <i class="fa-solid fa-calculator text-blue-400"></i> Desglose de Distribución por Concurrencia
+                    </div>
+                    <span class="text-slate-400">Total:
+                        {{ $resumenRiego->jornal_computable }} hrs</span>
+                </x-flex>
+            </x-slot>
 
+            <x-slot name="content">
+
+                <div class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                    @foreach($resumenRiego->explicacion_jornal_computable as $tramo)
+                        <div
+                            class="p-2.5 rounded border {{ $tramo['es_almuerzo'] ? 'bg-amber-950/30 border-amber-800/40' : 'bg-muted border-border' }}">
+                            <div class="flex justify-between items-center font-mono font-bold text-slate-200">
+                                <span>{{ $tramo['tramo'] }} ({{ $tramo['duracion'] }}h)</span>
+                                @if($tramo['es_almuerzo'])
+                                    <span class="text-amber-400 font-sans">Almuerzo</span>
+                                @endif
+                            </div>
+                            <p class="text-slate-400 mt-1">{{ $tramo['descripcion'] }}
+                            </p>
+
+                            @if(!$tramo['es_almuerzo'] && !empty($tramo['reparticion']))
+                                <div class="mt-2 flex flex-wrap gap-2">
+                                    @foreach($tramo['reparticion'] as $rep)
+                                        <x-badge color="indigo">
+                                            <strong>{{ $rep['campo'] }}:</strong>
+                                            {{ $rep['horas'] }}h
+                                        </x-badge>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </x-slot>
+
+            <x-slot name="footer">
+                <x-button @click="$wire.set('mostrarExplicacion', false)">
+                    <i class="fa fa-check"></i> Aceptar
+                </x-button>
+            </x-slot>
+
+        </x-dialog-modal>
+    @endif
 
 
     <x-loading wire:loading />
@@ -240,12 +313,20 @@
             },
             {
                 data: 'sh',
-                width: 40,
+                width: 50,
                 type: 'checkbox',
                 title: 'SIN HABERES',
                 className: '!text-center',
                 checkedTemplate: true,
                 uncheckedTemplate: false
+            },
+            {
+                data: 'horas_ponderadas',
+                width: 60,
+                type: 'text',
+                title: 'JORNAL',
+                readOnly: true,
+                className: '!text-center !bg-muted',
             }
             ];
         },

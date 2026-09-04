@@ -6,6 +6,7 @@ use App\Models\Campania;
 use App\Models\CampoCampania;
 use App\Models\ResumenCostoDiario;
 use App\Services\Campo\Costos\ConsolidarCostoManoObraServicio;
+use App\Services\Produccion\Planificacion\CampaniaServicio;
 use App\Traits\HandlesAlerts;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -25,6 +26,7 @@ class CampoCostosComponent extends Component
     public $filtroCampo = null;
     public $campaniasDelCampo = [];
     public $filtro = '';
+    public $reporteFileCampania = null;
     public function mount()
     {
         $this->campanias = CampoCampania::orderByDesc('fecha_inicio')->get();
@@ -36,23 +38,34 @@ class CampoCostosComponent extends Component
         $this->campaniaId = null;
         $this->fechaInicio = null;
         $this->fechaFin = null;
+        $this->reporteFileCampania = null;
 
-        $this->campaniasDelCampo = $valor
-            ? CampoCampania::where('campo', $valor)->orderByDesc('fecha_inicio')->get()
-            : [];
+        $this->cargarCampaniasPorCampo($valor);
 
         $this->resetPage();
     }
-
-    public function updatedCampaniaId($valor)
+    /**
+     * Carga o refresca la colección de campañas asociadas al campo seleccionado.
+     */
+    private function cargarCampaniasPorCampo($campo): void
     {
-        if ($valor) {
-            $campania = collect($this->campaniasDelCampo)->firstWhere('id', (int) $valor);
+        $this->campaniasDelCampo = $campo
+            ? CampoCampania::where('campo', $campo)->orderByDesc('fecha_inicio')->get()
+            : collect();
+    }
+    /**
+     * Busca los datos de la campaña seleccionada y asigna las fechas y el archivo de reporte.
+     *
+     * @param mixed $campaniaId
+     * @return void
+     */
+    public function buscarReporte($campaniaId): void
+    {
+        if ($campaniaId) {
+            // Consultamos directamente el registro fresco en la BD para evitar datos en caché
+            $campania = CampoCampania::find((int) $campaniaId);
 
             if ($campania) {
-                // Normalizamos el objeto a array si viene como Eloquent Model o stdClass
-                $campania = (object) $campania;
-
                 $this->fechaInicio = $campania->fecha_inicio instanceof \DateTimeInterface
                     ? $campania->fecha_inicio->format('Y-m-d')
                     : ($campania->fecha_inicio ? date('Y-m-d', strtotime($campania->fecha_inicio)) : null);
@@ -60,19 +73,20 @@ class CampoCostosComponent extends Component
                 $this->fechaFin = $campania->fecha_fin instanceof \DateTimeInterface
                     ? $campania->fecha_fin->format('Y-m-d')
                     : ($campania->fecha_fin ? date('Y-m-d', strtotime($campania->fecha_fin)) : null);
+
+                $this->reporteFileCampania = $campania->gasto_resumen_bdd_file ?? null;
+                return;
             }
-        } else {
-            // "TODAS LAS TEMPORADAS": se limpia el rango para que el usuario
-            // pueda acotar manualmente si quiere, o dejarlo abierto
-            $this->fechaInicio = null;
-            $this->fechaFin = null;
         }
 
-        $this->resetPage();
+        $this->fechaInicio = null;
+        $this->fechaFin = null;
+        $this->reporteFileCampania = null;
     }
 
-    public function updatedTiposSeleccionados()
+    public function updatedCampaniaId($valor)
     {
+        $this->buscarReporte($valor);
         $this->resetPage();
     }
 
@@ -86,29 +100,45 @@ class CampoCostosComponent extends Component
             $campania = CampoCampania::findOrFail($this->campaniaId);
             $total = app(ConsolidarCostoManoObraServicio::class)->consolidarPlanilla($campania);
 
-            $this->alert('success', "Se consolidaron {$total} registro(s) de planilla/riego.");
+            // 1. Generar la BDD Mensual y actualizar la ruta del reporte en la BD
+            app(CampaniaServicio::class)->generarBddMensual($campania->id);
+
+            // 2. Refrescar la colección en memoria con los datos recién guardados
+            $this->cargarCampaniasPorCampo($this->filtroCampo);
+
+            // 3. Actualizar los estados locales (fechaInicio, fechaFin, reporteFileCampania)
+            $this->buscarReporte($this->campaniaId);
+
+            $this->alert('success', "Se consolidaron {$total} registro(s) de planilla.");
         } catch (\Throwable $th) {
             $this->errorAlert($th);
         }
     }
-public function aplicarFiltro()
-{
-    $this->resetPage();
-}
+
+    public function updatedTiposSeleccionados()
+    {
+        $this->resetPage();
+    }
+
+
+    public function aplicarFiltro()
+    {
+        $this->resetPage();
+    }
     public function render()
     {
         $query = ResumenCostoDiario::query();
         if ($this->filtro) {
-    $texto = trim($this->filtro);
-    $query->where(function ($q) use ($texto) {
-        $q->where('trabajador', 'like', "%{$texto}%")
-          ->orWhere('labor_nombre', 'like', "%{$texto}%")
-          ->orWhere('labor', 'like', "%{$texto}%");
-    });
-}
+            $texto = trim($this->filtro);
+            $query->where(function ($q) use ($texto) {
+                $q->where('trabajador', 'like', "%{$texto}%")
+                    ->orWhere('labor_nombre', 'like', "%{$texto}%")
+                    ->orWhere('labor', 'like', "%{$texto}%");
+            });
+        }
 
         if ($this->filtroCampo) {
-            
+
             $query->where('campo', $this->filtroCampo);
         }
 

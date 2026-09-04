@@ -8,6 +8,7 @@ use App\Models\ParametroTemporal;
 use App\Services\Campo\Riego\RiegoServicio;
 use App\Services\Riego\ConsolidadorServicio;
 use App\Services\Riego\ConsolidarJornadaRiegoProceso;
+use App\Traits\HandlesAlerts;
 use Exception;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -20,7 +21,7 @@ use Illuminate\Support\Facades\DB;
 
 class ReporteDiarioRiegoDetalleComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, HandlesAlerts;
     //public $regador;
     public $tipoLabores;
     public $campos;
@@ -35,6 +36,9 @@ class ReporteDiarioRiegoDetalleComponent extends Component
     public $noAcumularHoras = false;
     public bool $mostrarDetalleAcumulado = false;
     public array $detalleAcumulado = [];
+    public $hora_inicio_almuerzo;
+    public $hora_fin_almuerzo;
+    public $mostrarExplicacion = false;
     protected $listeners = ["registroConsolidado"];
     public function mount($resumenId)
     {
@@ -48,7 +52,13 @@ class ReporteDiarioRiegoDetalleComponent extends Component
         array_unshift($this->campos, '');
 
         $this->obtenerRegistrosDiarios();
-        $this->horasAcumuladas = $this->resumenRiego->disponible_formateado;
+        if ($this->resumenRiego) {
+
+            $this->hora_inicio_almuerzo = $this->resumenRiego->hora_inicio_almuerzo;
+            $this->hora_fin_almuerzo = $this->resumenRiego->hora_fin_almuerzo;
+            $this->horasAcumuladas = $this->resumenRiego->disponible_formateado;
+        }
+
     }
     public function verDetalleAcumulado(): void
     {
@@ -148,6 +158,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
                     'tipo_labor' => $registro->tipo_labor,
                     'descripcion' => $registro->descripcion,
                     'sh' => $registro->sh ? true : false, // Convertir 0 o 1 a true o false
+                    'horas_ponderadas' => $registro->horas_ponderadas,
                 ];
             })
             ->toArray();
@@ -171,15 +182,22 @@ class ReporteDiarioRiegoDetalleComponent extends Component
     public function storeTableDataRegistroDiarioRiego($data)
     {
         try {
-          
+
+            $parametros = [
+                'resumen_riego' => $this->resumenRiego,
+                'fecha' => $this->fecha,
+                'data' => $data,
+                'hora_inicio_almuerzo' => $this->hora_inicio_almuerzo,
+                'hora_fin_almuerzo' => $this->hora_fin_almuerzo,
+            ];
             app(ConsolidarJornadaRiegoProceso::class)
-                ->ejecutarGuardadoRegistros($this->resumenRiego, $this->fecha, $data);
+                ->ejecutarGuardadoRegistros($parametros);
             $this->sincronizarAcumulado();
             $this->dispatch('registroRegadoresActualizado', $this->resumenRiego->id);
-            
+
             $this->alert("success", "Registro Guardado");
         } catch (\Throwable $th) {
-            return $this->alert("error", $th->getMessage());
+            return $this->errorAlert($th);
         }
     }
 

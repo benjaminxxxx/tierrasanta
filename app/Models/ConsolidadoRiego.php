@@ -18,7 +18,7 @@ class ConsolidadoRiego extends Model
     protected $fillable = [
         'regador_documento',//obsoleto
         'regador_nombre',//obsoleto
-        'descuento_horas_almuerzo',
+        'descuento_horas_almuerzo', //deprecado
         'no_acumular_horas',
         'fecha',
         'hora_inicio',
@@ -35,11 +35,15 @@ class ConsolidadoRiego extends Model
         'minutos_regados',
         'minutos_jornal',
         'sincronizado',
+        'hora_inicio_almuerzo',
+        'hora_fin_almuerzo',
+        'explicacion_jornal_computable',
     ];
     protected $casts = [
         'descuento_horas_almuerzo' => 'boolean',
         'no_acumular_horas' => 'boolean',
         'sincronizado' => 'boolean',
+        'explicacion_jornal_computable' => 'array',
     ];
     protected $appends = [
         'alias_origen',
@@ -48,6 +52,18 @@ class ConsolidadoRiego extends Model
         'horas_acumuladas',
         'horas_regados'
     ];
+    public function getJornalComputableAttribute(): float
+    {
+        return round($this->registrosDiarios->sum('horas_ponderadas'), 2);
+    }
+    public function getAliasOrigenAttribute(): ?string
+    {
+        return match ($this->trabajador_type) {
+            'App\Models\PlanEmpleado' => 'PLANILLA',
+            'App\Models\Cuadrillero' => 'CUADRILLA',
+            default => null,
+        };
+    }
     public function getHorasJornalAttribute(): ?string
     {
         return $this->minutos_jornal / 60;
@@ -61,14 +77,7 @@ class ConsolidadoRiego extends Model
         return $this->minutos_regados / 60;
     }
 
-    public function getAliasOrigenAttribute(): ?string
-    {
-        return match ($this->trabajador_type) {
-            'App\Models\PlanEmpleado' => 'PLANILLA',
-            'App\Models\Cuadrillero' => 'CUADRILLA',
-            default => null,
-        };
-    }
+
     public function getTrabajadorNombreAttribute()
     {
         // Si no hay relación, retornamos el nombre base (regador_nombre)

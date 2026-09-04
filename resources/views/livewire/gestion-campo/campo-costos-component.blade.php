@@ -24,21 +24,29 @@
                 @endif
 
                 <div x-data="{ mostrarBoton: @js(filled($filtro)) }" class="flex items-end gap-2">
-    <x-input type="search" label="Trabajador, nombre o código de labor" wire:model="filtro"
-        class="w-auto"
-        x-on:input="mostrarBoton = $event.target.value.trim().length > 0"
-        x-on:keydown.enter.prevent="if (mostrarBoton) $wire.aplicarFiltro()" />
+                    <x-input type="search" label="Trabajador, nombre o código de labor" wire:model="filtro"
+                        class="w-auto" x-on:input="mostrarBoton = $event.target.value.trim().length > 0"
+                        x-on:keydown.enter.prevent="if (mostrarBoton) $wire.aplicarFiltro()" />
 
-    <x-button x-show="mostrarBoton" x-cloak size="sm"
-        wire:click="aplicarFiltro" wire:loading.attr="disabled" wire:target="aplicarFiltro">
-        <i class="fa fa-search"></i> Buscar
-    </x-button>
-</div>
+                    <x-button x-show="mostrarBoton" x-cloak size="sm" wire:click="aplicarFiltro"
+                        wire:loading.attr="disabled" wire:target="aplicarFiltro">
+                        <i class="fa fa-search"></i> Buscar
+                    </x-button>
+                </div>
             </x-flex>
 
-            <x-button variant="primary" wire:click="consolidar" wire:loading.attr="disabled" wire:target="consolidar">
-                <i class="fa fa-sync"></i> Consolidar
-            </x-button>
+            <div>
+                <x-button variant="primary" wire:click="consolidar" wire:loading.attr="disabled"
+                    wire:target="consolidar">
+                    <i class="fa fa-sync"></i> Consolidar
+                </x-button>
+                @if ($reporteFileCampania)
+                    <x-button variant="secondary" href="{{ Storage::disk('public')->url($reporteFileCampania) }}"
+                        wire:loading.attr="disabled" wire:target="descargarReporte">
+                        <i class="fa fa-download"></i> Descargar Reporte
+                    </x-button>
+                @endif
+            </div>
         </x-flex>
 
         <div>
