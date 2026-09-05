@@ -47,9 +47,6 @@ class ConsolidadorServicio
             ? 0
             : CalculoHelper::calcularMinutosJornalParcial($intervalosJornal);
 
-        if (!$resumen->descuento_horas_almuerzo) {
-            $minutosJornalBruto = max(0, $minutosJornalBruto - 60);
-        }
 
         // Sumar los minutos del registro de acumulación usado hoy
         $minutosAcumuladosUsadosHoy = 0;

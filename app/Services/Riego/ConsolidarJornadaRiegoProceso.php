@@ -2,10 +2,12 @@
 
 namespace App\Services\Riego;
 use App\Models\ConsolidadoRiego as ResumenJornada;
+use App\Models\ParametroTemporal;
 use App\Models\ReporteDiarioRiego as RegistroDiario;
 use App\Models\AcumulacionUso;
 use App\Support\CalculoHelper;
 use App\Support\FormatoHelper;
+use App\Services\Riego\ValidarCruceRiegoServicio;
 use DB;
 use Exception;
 use Illuminate\Support\Carbon;
@@ -61,7 +63,7 @@ class ConsolidarJornadaRiegoProceso
             $this->registros->reemplazarRegistros($resumen, $fecha, $data, $mapaCampos);
             $this->consolidador->consolidar($resumen);
         });
-    }*/
+    }
     public function ejecutarGuardadoRegistros(array $parametros): void
     {
         $resumen = $parametros['resumen_riego'];
@@ -129,6 +131,90 @@ class ConsolidarJornadaRiegoProceso
                 $horaFinAlmuerzo
             );
         });
+    }*/
+    public function ejecutarGuardadoRegistros(array $parametros): array
+    {
+        $resumen = $parametros['resumen_riego'];
+        $fecha = $parametros['fecha'];
+        $data = $parametros['data'];
+        $horaInicioAlmuerzo = $parametros['hora_inicio_almuerzo'];
+        $horaFinAlmuerzo = $parametros['hora_fin_almuerzo'];
+
+        // Validaciones fuera de la transacción
+        $mapaCampos = $this->validacion->validarCampos($data);
+
+        // Ya no detiene el flujo: solo recolecta los mensajes para mostrarlos junto al éxito
+        $conflictos = app(ValidarCruceRiegoServicio::class)->validar($data, $fecha, $resumen->id);
+
+        // Precálculo: verificar si este resumen ya cedió minutos a otros días
+        $minutosYaCedidos = AcumulacionUso::where('consolidado_origen_id', $resumen->id)
+            ->sum('minutos_consumidos');
+
+        if ($minutosYaCedidos > 0) {
+            // 1. Minutos de presencia bruta del nuevo set
+            $minutosBrutos = $this->calcularMinutosBrutos($data);
+
+            // 2. Descuento automático de almuerzo si hay horas registradas
+            if ($horaInicioAlmuerzo && $horaFinAlmuerzo) {
+                $inicioAlm = Carbon::parse($horaInicioAlmuerzo);
+                $finAlm = Carbon::parse($horaFinAlmuerzo);
+
+                if ($finAlm > $inicioAlm) {
+                    $minutosAlmuerzo = $inicioAlm->diffInMinutes($finAlm);
+                    $minutosBrutos = max(0, $minutosBrutos - $minutosAlmuerzo);
+                }
+            }
+
+            // 3. Límite dinámico según la fecha
+            $limiteMinutos = ParametroTemporal::limiteMinutosDiarios($fecha);
+
+            // 4. Calcular el nuevo excedente real generado para la bolsa
+            $excedenteNuevos = 0;
+            if (!$resumen->no_acumular_horas && $minutosBrutos > $limiteMinutos) {
+                $excedenteNuevos = $minutosBrutos - $limiteMinutos;
+            }
+
+            // 5. Validar que la nueva bolsa cubra lo que ya se prestó
+            if ($excedenteNuevos < $minutosYaCedidos) {
+                $detalle = AcumulacionUso::where('consolidado_origen_id', $resumen->id)
+                    ->with('consolidadoDestino')
+                    ->get()
+                    ->map(function ($uso) {
+                        $fechaDestino = Carbon::parse($uso->consolidadoDestino->fecha)->format('d/m/Y');
+                        $hrs = intdiv($uso->minutos_consumidos, 60);
+                        $mins = $uso->minutos_consumidos % 60;
+                        return "{$fechaDestino} ({$hrs}h {$mins}m)";
+                    })
+                    ->join(', ');
+
+                $hrsCedidas = intdiv($minutosYaCedidos, 60);
+                $minsCedidas = $minutosYaCedidos % 60;
+
+                throw new Exception(
+                    "Este día generó {$hrsCedidas}h {$minsCedidas}m de horas acumuladas que ya fueron consumidas en: {$detalle}. " .
+                    "Debes desvincular o ajustar esos usos antes de reducir las horas de este día."
+                );
+            }
+        }
+
+        DB::transaction(function () use ($resumen, $fecha, $data, $mapaCampos, $horaInicioAlmuerzo, $horaFinAlmuerzo) {
+            $this->registros->reemplazarRegistros(
+                $resumen,
+                $fecha,
+                $data,
+                $mapaCampos
+            );
+
+            $this->consolidador->consolidar(
+                $resumen,
+                $horaInicioAlmuerzo,
+                $horaFinAlmuerzo
+            );
+
+
+        });
+
+        return $conflictos;
     }
 
     /**

@@ -65,7 +65,7 @@
             @if ($consolidados && $consolidados->count() > 0)
                 @foreach ($consolidados as $riego)
                     <livewire:gestion-riego.reporte-diario-riego-detalle-component :resumenId="$riego->id" :fecha="$riego->fecha"
-                        wire:key="horas_riego_{{ $riego->id }}_{{ $riego->fecha }}_{{ $key }}" />
+                        wire:key="horas_riego_{{ $riego->id }}_{{ $riego->fecha }}" />
                 @endforeach
             @endif
         @else

@@ -14,6 +14,9 @@ return new class extends Migration
         Schema::create('reg_labores', function (Blueprint $table) {
             $table->id();
             $table->string('nombre_labor');
+            $table->boolean('es_riego')->default(false);
+            $table->boolean('es_apoyo_riego')->default(false);
+            $table->decimal('consumo_m3_hora', 8, 2)->nullable();
             $table->timestamps();
         });
     }

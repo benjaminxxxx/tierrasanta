@@ -97,8 +97,7 @@
                         <div class="space-y-4 mt-4 text-right">
                             @if(!empty($resumenRiego->explicacion_jornal_computable))
                                 <x-button type="button" @click="$wire.set('mostrarExplicacion', ! $wire.mostrarExplicacion)"
-                                    class=""
-                                    title="Ver detalle del cálculo de horas" variant="secondary">
+                                    class="" title="Ver detalle del cálculo de horas" variant="secondary">
                                     Jornal Computable {{ $resumenRiego->jornal_computable }} <i
                                         class="fa-solid fa-circle-question text-lg"></i>
                                 </x-button>
@@ -276,7 +275,7 @@
                 data: 'hora_inicio',
                 type: 'time',
                 width: 60,
-                timeFormat: 'H.mm',
+                timeFormat: 'H:mm',
                 correctFormat: true,
                 className: 'text-center',
                 title: `HORA INICIO`
@@ -285,7 +284,7 @@
                 data: 'hora_fin',
                 type: 'time',
                 width: 60,
-                timeFormat: 'H.mm',
+                timeFormat: 'H:mm',
                 correctFormat: true,
                 className: 'text-center',
                 title: `HORA FIN`
@@ -350,66 +349,73 @@
                 autoColumnSize: true,
                 licenseKey: 'non-commercial-and-evaluation',
                 afterChange: (changes, source) => {
-                    // Verificar que el cambio no sea causado por un "loadData" o evento de Livewire
+                    // Evitar procesar eventos automáticos o cargas iniciales
+                    if (!changes || source === 'loadData' || source === 'internal') return;
 
-                    if (source == 'edit' || source == 'CopyPaste.paste' || source ==
-                        'timeValidator' || source == 'Autofill.fill') {
+                    const sourcesValidas = ['edit', 'CopyPaste.paste', 'timeValidator', 'Autofill.fill'];
+
+                    if (sourcesValidas.includes(source)) {
                         changes.forEach((change) => {
-                            const changedRow = change[0]; // Fila que cambió
-                            const fieldName = change[1]; // Nombre del campo o columna
-                            const oldValue = change[2]; // Valor antiguo
-                            const newValue = change[3]; // Valor nuevo
+                            const changedRow = change[0];
+                            const fieldName = change[1];
+                            const oldValue = change[2];
+                            const newValue = change[3];
 
-                            if (fieldName == 'hora_inicio' || fieldName == 'hora_fin') {
-                                if (oldValue != newValue) {
-                                    const hora_inicio = hot.getDataAtCell(changedRow,
-                                        1);
-                                    const hora_salida = hot.getDataAtCell(changedRow,
-                                        2);
+                            if (fieldName === 'hora_inicio' || fieldName === 'hora_fin') {
+                                if (oldValue !== newValue) {
+                                    const hora_inicio = hot.getDataAtCell(changedRow, 1);
+                                    const hora_salida = hot.getDataAtCell(changedRow, 2);
 
-                                    if (hora_inicio != null && hora_salida != null &&
-                                        hora_inicio.trim() != '' && hora_salida
-                                            .trim() != '') {
+                                    if (
+                                        hora_inicio &&
+                                        hora_salida &&
+                                        String(hora_inicio).trim() !== '' &&
+                                        String(hora_salida).trim() !== ''
+                                    ) {
+                                        const start = this.timeToMinutes(String(hora_inicio));
+                                        const end = this.timeToMinutes(String(hora_salida));
 
+                                        if (end >= start) {
+                                            const totalMinutes = end - start;
 
-                                        const start = this.timeToMinutes(hora_inicio);
-                                        const end = this.timeToMinutes(hora_salida);
+                                            // Si prefieres mostrar el total en horas decimales (ej. 1.5):
+                                            // const totalHours = (totalMinutes / 60).toFixed(2);
 
-                                        // Si las horas son válidas y la hora de inicio es menor que la de fin
-                                        if (start <= end) {
-                                            totalMinutes = end - start;
-                                            const totalHours = this.minutesToTime(
-                                                totalMinutes);
-                                            hot.setDataAtCell(changedRow, 3,
-                                                totalHours);
-
+                                            // Si prefieres formato H:mm (ej. 1:30):
+                                            const totalHoursDecimal = Number((totalMinutes / 60).toFixed(2));
+                                            hot.setDataAtCell(changedRow, 3, totalHoursDecimal, 'internal');
+                                        } else {
+                                            // Si la hora final es menor a la inicial
+                                            hot.setDataAtCell(changedRow, 3, 0, 'internal');
                                         }
                                     } else {
-                                        console.log(hora_inicio);
-                                        hot.setDataAtCell(changedRow, 3, 0);
+                                        hot.setDataAtCell(changedRow, 3, 0, 'internal');
                                     }
                                 }
                             }
                         });
                     }
-
                 }
             });
 
             this.hot = hot;
         },
-        isValidTimeFormat(time) {
-            const timePattern = /^([01]\d|2[0-3]).([0-5]\d)$/;
-            return timePattern.test(time);
-        },
         timeToMinutes(time) {
-            const [hours, minutes] = time.split('.').map(Number);
-            return hours * 60 + minutes;
+            if (!time || typeof time !== 'string' || !time.includes(':')) {
+                return 0;
+            }
+            const [hours, minutes] = time.split(':').map(Number);
+            return (hours || 0) * 60 + (minutes || 0);
         },
+
         minutesToTime(minutes) {
+            if (isNaN(minutes) || minutes <= 0) return '0:00';
+
             const hours = Math.floor(minutes / 60);
             const mins = minutes % 60;
-            return `${String(hours).padStart(2, '0')}.${String(mins).padStart(2, '0')}`;
+
+            // Devuelve horas decimales formateadas en H:mm (o HH:mm)
+            return `${hours}:${String(mins).padStart(2, '0')}`;
         },
         sendDataRegistroDiarioRiego() {
             const rawData = this.hot.getData();

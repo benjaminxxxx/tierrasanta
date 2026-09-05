@@ -18,7 +18,7 @@ class ConsolidadoRiego extends Model
     protected $fillable = [
         'regador_documento',//obsoleto
         'regador_nombre',//obsoleto
-        'descuento_horas_almuerzo', //deprecado
+        //'descuento_horas_almuerzo', //deprecado
         'no_acumular_horas',
         'fecha',
         'hora_inicio',
@@ -40,7 +40,7 @@ class ConsolidadoRiego extends Model
         'explicacion_jornal_computable',
     ];
     protected $casts = [
-        'descuento_horas_almuerzo' => 'boolean',
+        //'descuento_horas_almuerzo' => 'boolean',
         'no_acumular_horas' => 'boolean',
         'sincronizado' => 'boolean',
         'explicacion_jornal_computable' => 'array',

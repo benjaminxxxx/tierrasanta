@@ -7,6 +7,77 @@ use InvalidArgumentException;
 
 class CalculoHelper
 {
+    /**
+     * Fusiona una lista de intervalos (en minutos) en su forma mínima sin solapamientos.
+     * Es una versión "cruda" de calcularMinutosJornalParcial, pero devolviendo
+     * los rangos fusionados en vez de solo el total de minutos.
+     */
+    public static function fusionarIntervalos(array $intervalosMinutos): array
+    {
+        if (empty($intervalosMinutos)) {
+            return [];
+        }
+
+        usort($intervalosMinutos, fn($a, $b) => $a['inicio'] <=> $b['inicio']);
+
+        $fusionados = [$intervalosMinutos[0]];
+
+        for ($i = 1; $i < count($intervalosMinutos); $i++) {
+            $ultimo = &$fusionados[count($fusionados) - 1];
+            $actual = $intervalosMinutos[$i];
+
+            if ($actual['inicio'] <= $ultimo['fin']) {
+                $ultimo['fin'] = max($ultimo['fin'], $actual['fin']);
+            } else {
+                $fusionados[] = $actual;
+            }
+        }
+
+        return $fusionados;
+    }
+
+    /**
+     * Dado un rango [inicio, fin] y una cobertura (lista de intervalos fusionados
+     * que SÍ están cubiertos), devuelve los sub-rangos del rango original que
+     * NO quedan cubiertos por la cobertura. Vacío = el rango está 100% cubierto.
+     */
+    public static function rangosNoCubiertos(array $rango, array $cobertura): array
+    {
+        $inicio = $rango['inicio'];
+        $fin = $rango['fin'];
+        $noCubiertos = [];
+
+        $cursor = $inicio;
+
+        // Ordenar cobertura y quedarnos solo con la parte que intersecta el rango
+        usort($cobertura, fn($a, $b) => $a['inicio'] <=> $b['inicio']);
+
+        foreach ($cobertura as $segmento) {
+            if ($segmento['fin'] <= $cursor) {
+                continue; // segmento totalmente antes del cursor, ignorar
+            }
+            if ($segmento['inicio'] >= $fin) {
+                break; // ya pasamos el rango completo
+            }
+
+            if ($segmento['inicio'] > $cursor) {
+                // Hay un hueco entre el cursor y el inicio de este segmento
+                $noCubiertos[] = ['inicio' => $cursor, 'fin' => min($segmento['inicio'], $fin)];
+            }
+
+            $cursor = max($cursor, min($segmento['fin'], $fin));
+
+            if ($cursor >= $fin) {
+                break;
+            }
+        }
+
+        if ($cursor < $fin) {
+            $noCubiertos[] = ['inicio' => $cursor, 'fin' => $fin];
+        }
+
+        return $noCubiertos;
+    }
     public static function faltasInjustificadas($totalHoras)
     {
         return $totalHoras == 0 ? 1 : 0;
@@ -501,7 +572,7 @@ class CalculoHelper
     /**
      * Convierte "HH:mm" o "HH.mm" a minutos totales desde las 00:00
      */
-    private static function horaAMinutos(string $hora): int
+    public static function horaAMinutos(string $hora): int
     {
         $hora = str_replace('.', ':', $hora);
         $partes = explode(':', $hora);

@@ -31,12 +31,8 @@ class ReporteDiarioRiegoComponent extends Component
         'limiteHorasDiarias' => ['tipo' => 'limite_horas_riego', 'default' => 8]
     ];
     public int $limiteHorasDiarias = 8;
-    public $key = 0; // Para forzar re-render de los componentes hijos cuando cambia la fecha
-    protected $listeners = ["generalActualizado", 'obtenerRiegos', 'registroRiegoEliminado', 'nuevosRegadoresHanSidoAgregados','registroRegadoresActualizado' => 'regenerar'];
-    public function regenerar()
-    {
-        $this->key++;
-    }
+    protected $listeners = ["generalActualizado", 'obtenerRiegos', 'registroRiegoEliminado', 'nuevosRegadoresHanSidoAgregados'];
+   
     public function mount()
     {
         $this->inicializarFecha();

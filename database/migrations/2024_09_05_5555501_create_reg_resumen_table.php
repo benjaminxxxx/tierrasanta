@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->string('regador_documento');
             $table->string('regador_nombre');
-            $table->boolean('descuento_horas_almuerzo')->default(false); //va a quedar deprecado, la logica sera que si tiene hora de almuerzo, es porque se le debe descontar en automatico ese rango
+            //$table->boolean('descuento_horas_almuerzo')->default(false); //va a quedar deprecado, la logica sera que si tiene hora de almuerzo, es porque se le debe descontar en automatico ese rango
             $table->boolean('no_acumular_horas')->default(false);
             $table->date('fecha');
             $table->time('hora_inicio')->nullable();

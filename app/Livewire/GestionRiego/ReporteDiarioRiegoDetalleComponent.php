@@ -28,7 +28,6 @@ class ReporteDiarioRiegoDetalleComponent extends Component
     public $fecha;
     public $registros;
     public $riego;
-    public $noDescontarHoraAlmuerzo;
     public $idTable;
     public $resumenRiego;
     public $horasAcumuladas;
@@ -51,7 +50,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
         $this->campos = Campo::pluck('nombre')->toArray();
         array_unshift($this->campos, '');
 
-        $this->obtenerRegistrosDiarios();
+        $this->obtenerRegistrosDiarios(false);
         if ($this->resumenRiego) {
 
             $this->hora_inicio_almuerzo = $this->resumenRiego->hora_inicio_almuerzo;
@@ -130,16 +129,14 @@ class ReporteDiarioRiegoDetalleComponent extends Component
         }
         $this->sincronizarAcumulado();
         $this->obtenerRegistrosDiarios();
-        $this->dispatch('actualizarGrilla-' . $this->idTable, $this->registros);
     }
 
-    public function obtenerRegistrosDiarios()
+    public function obtenerRegistrosDiarios($dispatchEvent = true)
     {
         if (!$this->fecha || !$this->resumenRiego) {
             return;
         }
 
-        $this->noDescontarHoraAlmuerzo = $this->resumenRiego->descuento_horas_almuerzo;
         $this->noAcumularHoras = $this->resumenRiego->no_acumular_horas;
 
         $this->registros = $this->resumenRiego->registrosDiarios()
@@ -149,28 +146,24 @@ class ReporteDiarioRiegoDetalleComponent extends Component
             ->orderBy('hora_inicio')
             ->get() // Obtienes los resultados como una colección
             ->map(function ($registro) {
-
                 return [
+                    'id' => $registro->id,
                     'campo' => $registro->campo,
-                    'hora_inicio' => str_replace(':', '.', substr($registro->hora_inicio, 0, 5)), // Cambia ":" por "."
-                    'hora_fin' => str_replace(':', '.', substr($registro->hora_fin, 0, 5)),       // Cambia ":" por "."
+                    'hora_inicio' => $registro->hora_inicio ? substr($registro->hora_inicio, 0, 5) : '', // Devuelve "08:00" directamente
+                    'hora_fin' => $registro->hora_fin ? substr($registro->hora_fin, 0, 5) : '',       // Devuelve "10:00" directamente
                     'total_horas' => $registro->total_horas,
                     'tipo_labor' => $registro->tipo_labor,
                     'descripcion' => $registro->descripcion,
-                    'sh' => $registro->sh ? true : false, // Convertir 0 o 1 a true o false
+                    'sh' => (bool) $registro->sh,
                     'horas_ponderadas' => $registro->horas_ponderadas,
                 ];
             })
             ->toArray();
+        if ($dispatchEvent) {
+            $this->dispatch('actualizarGrilla-' . $this->idTable, $this->registros);
+        }
     }
-    public function updatedNoDescontarHoraAlmuerzo($valor)
-    {
-        $this->resumenRiego->update([
-            'descuento_horas_almuerzo' => $valor
-        ]);
-        app(ConsolidadorServicio::class)->consolidar($this->resumenRiego);
 
-    }
     public function updatedNoAcumularHoras($valor)
     {
         $this->resumenRiego->update([
@@ -190,12 +183,18 @@ class ReporteDiarioRiegoDetalleComponent extends Component
                 'hora_inicio_almuerzo' => $this->hora_inicio_almuerzo,
                 'hora_fin_almuerzo' => $this->hora_fin_almuerzo,
             ];
-            app(ConsolidarJornadaRiegoProceso::class)
-                ->ejecutarGuardadoRegistros($parametros);
+
+            $conflictos = app(ConsolidarJornadaRiegoProceso::class)->ejecutarGuardadoRegistros($parametros);
+
             $this->sincronizarAcumulado();
             $this->dispatch('registroRegadoresActualizado', $this->resumenRiego->id);
+            $this->obtenerRegistrosDiarios();
 
-            $this->alert("success", "Registro Guardado");
+            if (!empty($conflictos)) {
+                $this->errorAlert("Registro guardado, pero con avisos:\n" . implode("\n", $conflictos));
+            } else {
+                $this->alert('success', 'Registro Guardado');
+            }
         } catch (\Throwable $th) {
             return $this->errorAlert($th);
         }

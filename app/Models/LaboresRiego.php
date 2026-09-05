@@ -13,5 +13,13 @@ class LaboresRiego extends Model
 
     protected $fillable = [
         'nombre_labor',
+        'es_riego',
+        'es_apoyo_riego',
+        'consumo_m3_hora',
+    ];
+    protected $casts = [
+        'es_riego' => 'boolean',
+        'es_apoyo_riego' => 'boolean',
+        'consumo_m3_hora' => 'decimal:2',
     ];
 }
