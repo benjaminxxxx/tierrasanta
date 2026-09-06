@@ -36,7 +36,7 @@
             </x-flex>
 
             <div>
-                <x-button variant="primary" wire:click="consolidar" wire:loading.attr="disabled"
+                <x-button variant="primary" wire:click="consolidarCostoCampos" wire:loading.attr="disabled"
                     wire:target="consolidar">
                     <i class="fa fa-sync"></i> Consolidar
                 </x-button>
@@ -56,8 +56,7 @@
             <div class="flex flex-wrap gap-3">
                 @foreach ($tiposDisponibles as $tipo)
                     <label class="flex items-center gap-1 text-sm cursor-pointer">
-                        <input type="checkbox" value="{{ $tipo }}" wire:model.live="tiposSeleccionados" />
-                        <span class="capitalize">{{ str_replace('_', ' ', $tipo) }}</span>
+                        <x-input type="checkbox" value="{{ $tipo }}" wire:model.live="tiposSeleccionados" label="{{ str_replace('_', ' ', $tipo) }}" />
                     </label>
                 @endforeach
             </div>

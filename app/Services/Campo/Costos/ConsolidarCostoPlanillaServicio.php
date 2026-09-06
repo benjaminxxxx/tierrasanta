@@ -69,9 +69,59 @@ class ConsolidarCostoPlanillaServicio
 
         return array_merge($filasPlanilla, $filasRiego);
     }
+    private function resolverCostoTrabajador($consolidadoOEmpleado, bool $esPlanilla, Carbon $fecha, float $horas): array
+    {
+        if ($esPlanilla) {
+            $costoInfo = $this->obtenerCostoHoraPlanilla($consolidadoOEmpleado, $fecha);
+            $costoTotal = $costoInfo['costo_por_hora'] !== null
+                ? round($costoInfo['costo_por_hora'] * $horas, 2)
+                : 0;
 
-    // Fuente 1: trabajo de campo tal como quedó registrado en planilla,
-    // excluyendo el marcador FDM/81 (que nunca representa el campo real trabajado)
+            return ['costo_total' => $costoTotal, 'observacion' => $costoInfo['observacion']];
+        }
+
+        // Cuadrilla: lógica de jornal (misma que ya tenías)
+        // $consolidadoOEmpleado aquí es el ConsolidadoRiego completo, para leer precio_jornal
+        $costoTotal = round(($consolidadoOEmpleado->precio_jornal ?? 0) * ($horas / 8), 2);
+
+        return ['costo_total' => $costoTotal, 'observacion' => null];
+    }
+    private function combinarObservaciones(?string ...$partes): ?string
+    {
+        $texto = collect($partes)->filter()->implode(' ');
+        return $texto !== '' ? $texto : null;
+    }
+    private function armarFila(
+        string $campania,
+        string $fecha,
+        string $origenTipo,
+        int $origenId,
+        string $campo,
+        ?string $labor,
+        ?string $laborNombre,
+        string $trabajador,
+        float $horas,
+        float $jornales,
+        float $costoTotal,
+        ?string $observacion
+    ): array {
+        return [
+            'campania' => $campania,
+            'fecha' => $fecha,
+            'origen_tipo' => $origenTipo,
+            'origen_id' => $origenId,
+            'campo' => $campo,
+            'labor' => $labor,
+            'labor_nombre' => $laborNombre,
+            'trabajador' => $trabajador,
+            'horas' => $horas,
+            'cantidad_jornales' => $jornales,
+            'costo_total' => $costoTotal,
+            'observacion' => $observacion,
+        ];
+    }
+    // --- Fuente 1: planilla directa ---
+
     private function generarFilasPlanillaDirecta(string $campania, string $campo, string $fechaInicio, string $fechaFin): array
     {
         $detalleDiarios = PlanDetalleHora::with([
@@ -101,6 +151,9 @@ class ConsolidarCostoPlanillaServicio
             $codigoLabor = $detalleDiario->labores->codigo ?? null;
             $esMarcadorRiego = $campo === 'FDM' && (string) $codigoLabor === '81';
             $fechaCarbon = Carbon::parse($registroDiario->fecha);
+            $horas = CalculoHelper::obtenerDiferenciaHoras($detalleDiario->hora_inicio, $detalleDiario->hora_fin);
+            $jornales = CalculoHelper::calcularJornales2($detalleDiario->hora_inicio, $detalleDiario->hora_fin);
+            $laborNombre = is_object($detalleDiario->labores) ? ($detalleDiario->labores->nombre_labor ?? null) : null;
 
             if ($esMarcadorRiego) {
                 $tieneReporteRiego = ConsolidadoRiego::where('trabajador_type', PlanEmpleado::class)
@@ -109,67 +162,52 @@ class ConsolidarCostoPlanillaServicio
                     ->exists();
 
                 if ($tieneReporteRiego) {
-                    // Este bloque ya se procesa en generarFilasRiegoPorCampo() con su detalle real.
+                    // Ya se procesa en generarFilasRiegoPorCampo() con su detalle real.
                     continue;
                 }
 
-                // Se pagó como marcador FDM/81 pero no existe respaldo de riego ese día.
-                $horas = CalculoHelper::obtenerDiferenciaHoras($detalleDiario->hora_inicio, $detalleDiario->hora_fin);
-                $costoInfo = $this->obtenerCostoHoraPlanilla($detalleMensual->plan_empleado_id, $fechaCarbon);
-                $costoTotal = $costoInfo['costo_por_hora'] !== null ? round($costoInfo['costo_por_hora'] * $horas, 2) : 0;
+                $costo = $this->resolverCostoTrabajador($detalleMensual->plan_empleado_id, true, $fechaCarbon, $horas);
 
-                $observacion = collect([
-                    'No tiene reporte de riego para este día. Verificar.',
-                    $costoInfo['observacion'],
-                ])->filter()->implode(' ');
-
-                $filas[] = [
-                    'campania' => $campania,
-                    'fecha' => $registroDiario->fecha,
-                    'origen_tipo' => 'planilla',
-                    'origen_id' => $detalleDiario->id,
-                    'campo' => $detalleDiario->campo_nombre,
-                    'labor' => $codigoLabor,
-                    'labor_nombre' => is_object($detalleDiario->labores) ? ($detalleDiario->labores->nombre_labor ?? null) : null,
-                    'trabajador' => $detalleMensual->nombres ?? '-',
-                    'horas' => $horas,
-                    'cantidad_jornales' => CalculoHelper::calcularJornales2($detalleDiario->hora_inicio, $detalleDiario->hora_fin),
-                    'costo_total' => $costoTotal,
-                    'observacion' => $observacion,
-                ];
+                $filas[] = $this->armarFila(
+                    $campania,
+                    $registroDiario->fecha,
+                    'planilla',
+                    $detalleDiario->id,
+                    $detalleDiario->campo_nombre,
+                    $codigoLabor,
+                    $laborNombre,
+                    $detalleMensual->nombres ?? '-',
+                    $horas,
+                    $jornales,
+                    $costo['costo_total'],
+                    $this->combinarObservaciones('No tiene reporte de riego para este día. Verificar.', $costo['observacion'])
+                );
                 continue;
             }
 
-            $nombreLabor = is_object($detalleDiario->labores)
-                ? ($detalleDiario->labores->nombre_labor ?? null)
-                : null;
+            $costo = $this->resolverCostoTrabajador($detalleMensual->plan_empleado_id, true, $fechaCarbon, $horas);
 
-            $horas = CalculoHelper::obtenerDiferenciaHoras($detalleDiario->hora_inicio, $detalleDiario->hora_fin);
-            $costoInfo = $this->obtenerCostoHoraPlanilla($detalleMensual->plan_empleado_id, $fechaCarbon);
-            $costoTotal = $costoInfo['costo_por_hora'] !== null ? round($costoInfo['costo_por_hora'] * $horas, 2) : 0;
-
-            $filas[] = [
-                'campania' => $campania,
-                'fecha' => $registroDiario->fecha,
-                'origen_tipo' => 'planilla',
-                'origen_id' => $detalleDiario->id,
-                'campo' => $detalleDiario->campo_nombre,
-                'labor' => $codigoLabor,
-                'labor_nombre' => $nombreLabor,
-                'trabajador' => $detalleMensual->nombres ?? '-',
-                'horas' => $horas,
-                'cantidad_jornales' => CalculoHelper::calcularJornales2($detalleDiario->hora_inicio, $detalleDiario->hora_fin),
-                'costo_total' => $costoTotal,
-                'observacion' => $costoInfo['observacion'],
-            ];
+            $filas[] = $this->armarFila(
+                $campania,
+                $registroDiario->fecha,
+                'planilla',
+                $detalleDiario->id,
+                $detalleDiario->campo_nombre,
+                $codigoLabor,
+                $laborNombre,
+                $detalleMensual->nombres ?? '-',
+                $horas,
+                $jornales,
+                $costo['costo_total'],
+                $costo['observacion']
+            );
         }
 
         return $filas;
     }
 
-    // Fuente 2: trabajo de riego real, consultado directo a ReporteDiarioRiego
-    // (el ÚNICO lugar donde se guarda el campo verdadero), sin depender de si
-    // ese día llegó o no a estar reflejado en registro diario de planilla.
+    // --- Fuente 2: riego real ---
+
     private function generarFilasRiegoPorCampo(string $campania, string $campo, string $fechaInicio, string $fechaFin): array
     {
         $registros = ReporteDiarioRiego::whereBetween('fecha', [$fechaInicio, $fechaFin])
@@ -185,53 +223,55 @@ class ConsolidarCostoPlanillaServicio
                 continue;
             }
 
-            // Determinar dinámicamente si el registro de riego pertenece a Planilla o a Cuadrilla
-            $esPlanilla = $consolidado->trabajador_type === PlanEmpleado::class;
-            $origenTipo = $esPlanilla ? 'planilla' : 'cuadrilla';
-
-            $fechaCarbon = Carbon::parse($registro->fecha);
-
-            $horas = round(
-                Carbon::parse($registro->hora_inicio)->diffInMinutes(Carbon::parse($registro->hora_fin)) / 60,
-                2
-            );
-
-            // Obtener costo según el origen del trabajador
-            if ($esPlanilla) {
-                $costoInfo = $this->obtenerCostoHoraPlanilla($consolidado->trabajador_id, $fechaCarbon);
-                $costoTotal = $costoInfo['costo_por_hora'] !== null
-                    ? round($costoInfo['costo_por_hora'] * $horas, 2)
-                    : 0;
-                $obsCosto = $costoInfo['observacion'];
-            } else {
-                // Lógica para calcular costo por hora/jornal de cuadrilla
-                $costoTotal = round(($consolidado->precio_jornal ?? 0) * ($horas / 8), 2);
-                $obsCosto = null;
+            if ($campo === 'FDM' && $registro->por_acumulacion) {
+                continue;
             }
 
-            $observacion = collect([
-                $consolidado->sincronizado ? null : 'Las horas de riego no coinciden con el registro diario. Verificar.',
-                $obsCosto,
-            ])->filter()->implode(' ');
+            $esPlanilla = $consolidado->trabajador_type === PlanEmpleado::class;
+            $origenTipo = $esPlanilla ? 'planilla' : 'cuadrilla';
+            $fechaCarbon = Carbon::parse($registro->fecha);
 
-            $filas[] = [
-                'campania' => $campania,
-                'fecha' => $registro->fecha,
-                'origen_tipo' => $origenTipo, // Ahora asigna 'planilla' o 'cuadrilla'
-                'origen_id' => $registro->id,
-                'campo' => $registro->campo,
-                'labor' => null, // O el código configurado para la labor de riego
-                'labor_nombre' => $registro->por_acumulacion ? 'Uso de horas acumuladas (Riego)' : ($registro->tipo_labor ?? 'Riego'),
-                'trabajador' => $consolidado->trabajador_nombre,
-                'horas' => $horas,
-                'cantidad_jornales' => CalculoHelper::calcularJornales2($registro->hora_inicio, $registro->hora_fin),
-                'costo_total' => $costoTotal,
-                'observacion' => $observacion !== '' ? $observacion : null,
-            ];
+            $horas = $registro->por_acumulacion
+                ? round(Carbon::parse($registro->hora_inicio)->diffInMinutes(Carbon::parse($registro->hora_fin)) / 60, 2)
+                : (float) ($registro->horas_ponderadas ?? 0);
+
+            // Jornales SIEMPRE derivado de las horas ya resueltas (crudas o ponderadas,
+            // según el caso de arriba) — nunca recalculado desde hora_inicio/hora_fin,
+            // que representarían el tramo completo sin repartir.
+            $jornales = round($horas / 8, 3);
+
+            $costoBase = $esPlanilla ? $consolidado->trabajador_id : $consolidado;
+            $costo = $this->resolverCostoTrabajador($costoBase, $esPlanilla, $fechaCarbon, $horas);
+
+            $laborNombre = $registro->por_acumulacion
+                ? 'Uso de horas acumuladas (Riego)'
+                : ($registro->tipo_labor ?? 'Riego');
+
+            $observacion = $this->combinarObservaciones(
+                $consolidado->sincronizado ? null : 'Las horas de riego no coinciden con el registro diario. Verificar.',
+                $costo['observacion']
+            );
+
+            $filas[] = $this->armarFila(
+                $campania,
+                $registro->fecha,
+                $origenTipo,
+                $registro->id,
+                $registro->campo,
+                null,
+                $laborNombre,
+                $consolidado->trabajador_nombre,
+                $horas,
+                $jornales,
+                $costo['costo_total'],
+                $observacion
+            );
         }
 
         return $filas;
     }
+
+
     /*
     private function generarFilasRiegoPorCampo(string $campania, string $campo, string $fechaInicio, string $fechaFin): array
     {

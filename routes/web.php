@@ -20,13 +20,13 @@ use App\Livewire\GestionPlanilla\AsistenciaMensualComponent;
 use App\Livewire\GestionPlanilla\CargosComponent;
 use App\Livewire\GestionPlanilla\DerechoHabiente\DerechoHabienteListaComponent;
 use App\Livewire\GestionPlanilla\PanelContratoComponent;
+use App\Livewire\GestionProveedor\ProveedoresComponent;
 use App\Livewire\GestionReportes\ReporteDiarioComponent;
 use App\Livewire\GestionRiego\ReporteDiarioRiegoComponent;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AsistenciaPlanillaController;
 use App\Http\Controllers\GastoController;
 use App\Http\Controllers\ProductoController;
-use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\ReporteCampoController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\UsuarioController;
@@ -187,7 +187,7 @@ Route::middleware([
     Route::get('/planilla/resumen-mensual', [ReporteController::class, 'ResumenPlanilla'])->name('reporte.resumen_planilla')->middleware('can:' . Permisos::PLANILLA_RESUMEN_MENSUAL);
 
     //PROVEEDORES
-    Route::get('/proveedores', [ProveedorController::class, 'index'])->name('proveedores.index')->middleware('can:' . Permisos::INSUMO_PROVEEDOR);
+    Route::get('/proveedores', ProveedoresComponent::class)->name('proveedores.index')->middleware('can:' . Permisos::INSUMO_PROVEEDOR);
 
     //PRODUCTOS
     Route::get('/productos', [ProductoController::class, 'index'])->name('productos.index')->middleware('can:' . Permisos::INSUMO_PRODUCTO);

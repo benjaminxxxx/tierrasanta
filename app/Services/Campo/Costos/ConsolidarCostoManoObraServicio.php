@@ -18,9 +18,9 @@ class ConsolidarCostoManoObraServicio
         );
 
         DB::transaction(function () use ($campania, $filas) {
-            // Solo se borra lo que este proceso sabe regenerar (planilla + riego derivado de ella)
+            // Solo se borra lo que este proceso sabe regenerar (planilla derivado de ella)
             ResumenCostoDiario::where('campania', $campania->nombre_campania)
-                ->whereIn('origen_tipo', ['planilla', 'riego'])
+                ->whereIn('origen_tipo', ['planilla'])
                 ->delete();
 
             $ahora = now();

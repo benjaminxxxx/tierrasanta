@@ -5,7 +5,10 @@ namespace App\Livewire\GestionCampo;
 use App\Models\Campania;
 use App\Models\CampoCampania;
 use App\Models\ResumenCostoDiario;
+use App\Services\Campo\Costos\ConsolidarCostoGastosGeneralesServicio;
+use App\Services\Campo\Costos\ConsolidarCostoInsumosServicio;
 use App\Services\Campo\Costos\ConsolidarCostoManoObraServicio;
+use App\Services\Campo\Costos\ConsolidarCostoMaquinariaServicio;
 use App\Services\Produccion\Planificacion\CampaniaServicio;
 use App\Traits\HandlesAlerts;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -21,7 +24,7 @@ class CampoCostosComponent extends Component
     public $fechaInicio = null;
     public $fechaFin = null;
 
-    public $tiposDisponibles = ['planilla', 'cuadrilla', 'maquinaria', 'fertilizante', 'pesticida', 'costo_fijo', 'riego'];
+    public $tiposDisponibles = ['planilla', 'cuadrilla', 'maquinaria', 'fertilizante', 'pesticida', 'costo_fijo', 'costo_operativo'];
     public $tiposSeleccionados = [];
     public $filtroCampo = null;
     public $campaniasDelCampo = [];
@@ -90,7 +93,7 @@ class CampoCostosComponent extends Component
         $this->resetPage();
     }
 
-    public function consolidar()
+    public function consolidarCostoCampos()
     {
         try {
             if (!$this->campaniaId) {
@@ -98,7 +101,10 @@ class CampoCostosComponent extends Component
             }
 
             $campania = CampoCampania::findOrFail($this->campaniaId);
-            $total = app(ConsolidarCostoManoObraServicio::class)->consolidarPlanilla($campania);
+            $totalPlanilla = app(ConsolidarCostoManoObraServicio::class)->consolidarPlanilla($campania);
+            $totalGastosGenerales = app(ConsolidarCostoGastosGeneralesServicio::class)->consolidarGastosGenerales($campania);
+            $totalMaquinaria = app(ConsolidarCostoMaquinariaServicio::class)->consolidarMaquinaria($campania);
+            $totalInsumos = app(ConsolidarCostoInsumosServicio::class)->consolidarInsumos($campania);
 
             // 1. Generar la BDD Mensual y actualizar la ruta del reporte en la BD
             app(CampaniaServicio::class)->generarBddMensual($campania->id);
@@ -109,7 +115,7 @@ class CampoCostosComponent extends Component
             // 3. Actualizar los estados locales (fechaInicio, fechaFin, reporteFileCampania)
             $this->buscarReporte($this->campaniaId);
 
-            $this->alert('success', "Se consolidaron {$total} registro(s) de planilla.");
+            $this->alert('success', "Consolidado: {$totalPlanilla} planilla, {$totalGastosGenerales} gastos generales, {$totalMaquinaria} maquinaria.");
         } catch (\Throwable $th) {
             $this->errorAlert($th);
         }

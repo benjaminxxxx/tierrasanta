@@ -33,7 +33,6 @@ $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(valu
         <main class="flex-1 p-5 overflow-visible ultra-thin-scroll max-w-[calc(100vw-4rem)]">
             {{ $slot }}
         </main>
-        @include('comun.components')
     </div>
 
     @stack('modals')

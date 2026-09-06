@@ -7,31 +7,38 @@ use App\Models\CompraProducto;
 use App\Models\DistribucionCombustible;
 class DataInsumoServicio
 {
-    public function generarCostoMaquinariaPor($campo, $fechaInicio, $fechaFin = null)
+    public function generarCostoMaquinariaPor($campania, $campo, $fechaInicio, $fechaFin = null)
     {
         $fechaFin = $fechaFin ?? now();
 
         $distribuciones = DistribucionCombustible::with(['salidaCombustible.producto', 'maquinaria'])
-            ->where('campo', $campo) // El campo está en la distribución
+            ->where('campo', $campo)
             ->whereBetween('fecha', [$fechaInicio, $fechaFin])
             ->whereHas('salidaCombustible.producto', function ($query) {
                 $query->where('categoria_codigo', 'combustible');
             })
             ->get();
 
-        // Mapeamos los datos usando los Accessors dinámicos
-        $data = $distribuciones->map(function ($dist) {
+        return $distribuciones->map(function ($dist) use ($campania, $campo) {
+            $nombreMaquinaria = $dist->maquinaria_nombre ?? ($dist->maquinaria ? $dist->maquinaria->nombre : 'N/A');
+
             return [
                 'fecha' => $dist->fecha,
-                'maquinaria' => $dist->maquinaria_nombre ?? ($dist->maquinaria ? $dist->maquinaria->nombre : 'N/A'),
-                'actividad' => $dist->actividad,
-                'horas' => $dist->horas, // Accessor dinámico
-                'cantidad_combustible' => $dist->cantidad_combustible, // Accessor dinámico
-                'maquinaria_costo' => $dist->valor_costo, // Accessor dinámico
+                'campania' => $campania,
+                'campo' => $campo,
+                'origen_id' => $dist->id,
+                'tipo_gasto' => 'Maquinaria',
+                'detalle_labor' => $dist->actividad ?? $nombreMaquinaria,
+                'trabajador' => $nombreMaquinaria, // la "maquinaria" ocupa el rol de "quién ejecuta" en esta fila
+                'horas' => $dist->horas !== null ? (float) $dist->horas : null,
+                'cantidad_jornales' => null, // no aplica a maquinaria
+                'cantidad' => $dist->cantidad_combustible !== null ? (float) $dist->cantidad_combustible : null,
+                'proveedor' => null,
+                'n_documento' => null,
+                'costo' => (float) $dist->valor_costo,
+                'observacion' => null,
             ];
-        })
-        ->toArray();
-        return $data;
+        })->toArray();
     }
     /**
      * Obtiene la data base sin formato específico de keys.
@@ -69,32 +76,64 @@ class DataInsumoServicio
     }
 
     /**
-     * Mapeador genérico para cambiar las llaves.
+     * Reemplaza generarCostoPesticidaPor() y generarCostoFertilizantePor().
+     * Ya no depende de listas fijas de categoria_codigo: agrupa dinámicamente
+     * por el grupo_operativo de la categoría del producto, así que una
+     * categoría nueva (ej. "biológico" con grupo_operativo = "pesticida")
+     * cae en su lugar automáticamente sin tocar código.
      */
-    private function formatearData($coleccion, $prefijo)
+    public function generarCostoInsumosPor(string $campania, string $campo, $fechaInicio, $fechaFin = null): array
     {
-        return $coleccion->map(function ($item) use ($prefijo) {
+        $fechaFin = $fechaFin ?? now();
+
+        $salidas = AlmacenProductoSalida::with(['producto.categoria'])
+            ->where('campo_nombre', $campo)
+            ->whereNull('maquinaria_id') // el combustible ligado a maquinaria se procesa aparte
+            ->whereHas('producto.categoria', function ($q) {
+                $q->whereIn('grupo_operativo', ['fertilizante', 'pesticida']);
+            })
+            ->whereBetween('fecha_reporte', [$fechaInicio, $fechaFin])
+            ->get();
+
+        return $salidas->map(function ($salida) use ($campania, $campo) {
+
+            $ultimaCompra = CompraProducto::with(['proveedor'])
+                ->where('producto_id', $salida->producto_id)
+                ->whereDate('fecha_compra', '<=', $salida->fecha_reporte)
+                ->orderBy('fecha_compra', 'desc')
+                ->first();
+
+            $grupoOperativo = $salida->producto->categoria->grupo_operativo ?? 'insumo';
+            $tipoGasto = ucfirst($grupoOperativo); // 'fertilizante' -> 'Fertilizante', 'pesticida' -> 'Pesticida'
+
             return [
-                'fecha' => $item['fecha'],
-                "consumo_{$prefijo}_cantidad" => $item['cantidad'],
-                "consumo_{$prefijo}_nombre_comercial" => $item['nombre'],
-                "consumo_{$prefijo}_orden_compra" => $item['orden'],
-                "consumo_{$prefijo}_tienda_comercial" => $item['tienda'],
-                "consumo_{$prefijo}_factura" => $item['factura'],
-                "consumo_{$prefijo}_costo" => $item['costo'],
+                'fecha' => $salida->fecha_reporte,
+                'campania' => $campania,
+                'campo' => $campo,
+                'origen_id' => $salida->id,
+                'tipo_gasto' => $tipoGasto,
+                'grupo_operativo' => $grupoOperativo, // se usa para el origen_tipo al consolidar
+                'detalle_labor' => $salida->producto->nombre_comercial ?? '-',
+                'trabajador' => null,
+                'horas' => null,
+                'cantidad_jornales' => null,
+                'cantidad' => $salida->cantidad !== null ? (float) $salida->cantidad : null,
+                'proveedor' => $ultimaCompra?->proveedor?->nombre,
+                'n_documento' => $this->armarDocumento($ultimaCompra?->orden_compra, $ultimaCompra?->codigo_comprobante),
+                'costo' => (float) $salida->total_costo,
+                'observacion' => null,
             ];
         })->toArray();
     }
 
-    public function generarCostoPesticidaPor($campo, $fechaInicio, $fechaFin = null)
+    private function armarDocumento(?string $ordenCompra, ?string $factura): ?string
     {
-        $data = $this->obtenerDatosBase($campo, ['pesticida'], $fechaInicio, $fechaFin);
-        return $this->formatearData($data, 'pesticida');
-    }
+        $partes = [];
+        if ($ordenCompra)
+            $partes[] = "OC-{$ordenCompra}";
+        if ($factura)
+            $partes[] = "F-{$factura}";
 
-    public function generarCostoFertilizantePor($campo, $fechaInicio, $fechaFin = null)
-    {
-        $data = $this->obtenerDatosBase($campo, ['corrector_salinidad', 'fertilizante'], $fechaInicio, $fechaFin);
-        return $this->formatearData($data, 'fertilizante');
+        return !empty($partes) ? implode(' / ', $partes) : null;
     }
 }

@@ -14,6 +14,7 @@ class DataCostoServicio
             ->get();
 
         $data = [];
+
         foreach ($costosMensuales as $costoMensual) {
             $fecha = CalculoHelper::obtenerFechaFinalActiva(
                 $costoMensual->anio,
@@ -22,43 +23,59 @@ class DataCostoServicio
                 $costoMensual->campania->fecha_fin
             );
 
-            $data[] = [
-                'fecha' => $fecha,
-                'costo_fijo' => 'COSTO ADMINISTRATIVO',
-                'costo_fijo_costo' => $costoMensual->fijo_administrativo,
-            ];
-            $data[] = [
-                'fecha' => $fecha,
-                'costo_fijo' => 'COSTO FINANCIERO',
-                'costo_fijo_costo' => $costoMensual->fijo_financiero,
-            ];
-            $data[] = [
-                'fecha' => $fecha,
-                'costo_fijo' => 'GASTOS OFICINA',
-                'costo_fijo_costo' => $costoMensual->fijo_gastos_oficina,
-            ];
-            $data[] = [
-                'fecha' => $fecha,
-                'costo_fijo' => 'COSTO TERRENO',
-                'costo_fijo_costo' => $costoMensual->fijo_costo_terreno,
-            ];
-            $data[] = [
-                'fecha' => $fecha,
-                'costo_fijo' => 'DEPRECIACIONES',
-                'costo_fijo_costo' => $costoMensual->fijo_depreciaciones,
+            $campania = $costoMensual->campania->nombre_campania ?? null;
+            $campo = $costoMensual->campania->campo ?? null;
+
+            $conceptosFijos = [
+                'COSTO ADMINISTRATIVO' => $costoMensual->fijo_administrativo,
+                'COSTO FINANCIERO' => $costoMensual->fijo_financiero,
+                'GASTOS OFICINA' => $costoMensual->fijo_gastos_oficina,
+                'COSTO TERRENO' => $costoMensual->fijo_costo_terreno,
+                'DEPRECIACIONES' => $costoMensual->fijo_depreciaciones,
             ];
 
-            $data[] = [
-                'fecha' => $fecha,
-                'costo_operativo' => 'SERVICIOS FUNDO',
-                'costo_operativo_costo' => $costoMensual->operativo_servicios_fundo,
+            foreach ($conceptosFijos as $concepto => $monto) {
+                if (is_null($monto)) {
+                    continue;
+                }
+
+                $data[] = $this->armarFila($fecha, $campania, $campo, $costoMensual->id, 'Costo Fijo', $concepto, $monto);
+            }
+
+            $conceptosOperativos = [
+                'SERVICIOS FUNDO' => $costoMensual->operativo_servicios_fundo,
+                'MANO DE OBRA INDIRECTA' => $costoMensual->operativo_mano_obra_indirecta,
             ];
-            $data[] = [
-                'fecha' => $fecha,
-                'costo_operativo' => 'MANO DE OBRA INDIRECTA',
-                'costo_operativo_costo' => $costoMensual->operativo_mano_obra_indirecta,
-            ];
+
+            foreach ($conceptosOperativos as $concepto => $monto) {
+                if (is_null($monto)) {
+                    continue;
+                }
+
+                $data[] = $this->armarFila($fecha, $campania, $campo, $costoMensual->id, 'Costo Operativo', $concepto, $monto);
+            }
         }
+
         return $data;
+    }
+
+    private function armarFila(?string $fecha, ?string $campania, ?string $campo, int $origenId, string $tipoGasto, string $detalle, float $costo): array
+    {
+        return [
+            'fecha' => $fecha,
+            'campania' => $campania,
+            'campo' => $campo,
+            'origen_id' => $origenId,
+            'tipo_gasto' => $tipoGasto,
+            'detalle_labor' => $detalle,
+            'trabajador' => null,
+            'horas' => null,
+            'cantidad_jornales' => null,
+            'cantidad' => null,
+            'proveedor' => null,
+            'n_documento' => null,
+            'costo' => (float) $costo,
+            'observacion' => null,
+        ];
     }
 }

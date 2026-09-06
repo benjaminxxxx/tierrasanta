@@ -6,7 +6,7 @@ use App\Models\CampoCampania as Campania;
 use App\Models\CochinillaInfestacion;
 use App\Services\Campania\Data\DataCostoServicio;
 use App\Services\Campania\Data\DataInsumoServicio;
-use App\Services\Campania\Data\DataManoObraServicio;
+use App\Services\Campania\Data\DataReporteCampoServicio;
 use App\Services\Campania\Exports\ExportCampaniaServicio;
 use App\Services\Reportes\RptProduccionPlanificacionCampania;
 use Exception;
@@ -24,50 +24,47 @@ class CampaniaServicio
         }
 
         // 1. Recolección de datos de múltiples fuentes
-        $informacionPlanilla = app(DataManoObraServicio::class)->generarPlanillerosPor(
+        $informacionPlanilla = app(DataReporteCampoServicio::class)->generarPlanillerosPor(
             $campania->nombre_campania,
             $campania->campo
         );
 
-        $informacionCuadrilla = app(DataManoObraServicio::class)->generarCuaderillerosPor(
-            $campania->campo,
-            $campania->fecha_inicio,
-            $campania->fecha_fin
+        $informacionMaquinaria = app(DataReporteCampoServicio::class)->generarMaquinariaPor(
+            $campania->nombre_campania,
+            $campania->campo
         );
 
-        $informacionMaquinaria = app(DataInsumoServicio::class)->generarCostoMaquinariaPor(
-            $campania->campo,
-            $campania->fecha_inicio,
-            $campania->fecha_fin
+        $informacionInsumos = app(DataReporteCampoServicio::class)->generarInsumosPor(
+            $campania->nombre_campania,
+            $campania->campo
         );
 
-        $informacionFertilizante = app(DataInsumoServicio::class)->generarCostoFertilizantePor(
-            $campania->campo,
-            $campania->fecha_inicio,
-            $campania->fecha_fin
+        $informacionGastosGenerales = app(DataReporteCampoServicio::class)->generarGastosGeneralesPor(
+            $campania->nombre_campania,
+            $campania->campo
         );
 
-        $informacionPesticida = app(DataInsumoServicio::class)->generarCostoPesticidaPor(
-            $campania->campo,
-            $campania->fecha_inicio,
-            $campania->fecha_fin
-        );
 
-        $informacionCosto = app(DataCostoServicio::class)->generarCostoPor(
-            $campania->id,
-        );
+        /*
+                $informacionCuadrilla = app(DataReporteCampoServicio::class)->generarCuaderillerosPor(
+                    $campania->campo,
+                    $campania->fecha_inicio,
+                    $campania->fecha_fin
+                );
 
+
+
+        */
         $informacionConsumo = [];   // Aquí vendrían tus otros servicios
 
         // 2. Combinar todos los arrays
         $informacionCombinada = array_merge(
             $informacionPlanilla,
-            $informacionCuadrilla,
-            $informacionConsumo,
             $informacionMaquinaria,
-            $informacionFertilizante,
-            $informacionPesticida,
-            $informacionCosto
+            // $informacionCuadrilla,
+            $informacionConsumo,
+            $informacionInsumos,
+            $informacionGastosGenerales
         );
 
         // 3. Definir los valores comunes
@@ -90,7 +87,8 @@ class CampaniaServicio
         // Pasamos un objeto simple con los datos de configuración necesarios
         $config = (object) [
             'campo' => $campania->campo,
-            'nombre_campania' => $campania->nombre_campania
+            'nombre_campania' => $campania->nombre_campania,
+            'area' => $campania->area
         ];
 
         $filePath = app(ExportCampaniaServicio::class)->generarExcelMensual($config, $informacionCombinada);
