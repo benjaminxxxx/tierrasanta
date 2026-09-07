@@ -8,17 +8,15 @@
                 <i class="fa fa-plus"></i> Registrar asistencias
             </x-button>
         @endcan
-
     </x-flex>
-    <div>
-        {{-- Sección de alertas --}}
-        @if(count($codigosInvalidos) > 0)
-            <x-warning>
-                Los siguientes códigos están siendo usados en otras instancias del sistema y deben ser registrados:
-                <strong>{{ implode(', ', $codigosInvalidos) }}</strong>
-            </x-warning>
-        @endif
-    </div>
+
+    @if (count($codigosInvalidos) > 0)
+        <x-warning>
+            Los siguientes códigos están siendo usados en otras instancias del sistema y deben ser registrados:
+            <strong>{{ implode(', ', $codigosInvalidos) }}</strong>
+        </x-warning>
+    @endif
+
     @can(\App\Constants\Permisos::PLANILLA_CONFIG_ASISTENCIA_VER)
         <x-table>
             <x-slot name="thead">
@@ -27,6 +25,7 @@
                     <x-th class="!text-left">Descripción</x-th>
                     <x-th>Horas Jornal</x-th>
                     <x-th>Acumula Asistencia</x-th>
+                    <x-th>Tipo Suspensión (SUNAT)</x-th>
                     <x-th>Color</x-th>
                     <x-th>Acciones</x-th>
                 </x-tr>
@@ -39,17 +38,23 @@
                         <x-td class="!text-left">{{ $tipoAsistencia->descripcion }}</x-td>
                         <x-td class="text-center font-bold text-lg">
                             @if ($tipoAsistencia->horas_jornal == 0)
-                                <span class="text-red-600">
-                                    {{ $tipoAsistencia->horas_jornal }}
-                                </span>
+                                <span class="text-red-600">{{ $tipoAsistencia->horas_jornal }}</span>
                             @else
-                                <span class="text-green-500">
-                                    {{ $tipoAsistencia->horas_jornal }}
-                                </span>
+                                <span class="text-green-500">{{ $tipoAsistencia->horas_jornal }}</span>
                             @endif
                         </x-td>
-                        <x-td>
-                            {{ $tipoAsistencia->acumula_asistencia_label }}
+                        <x-td>{{ $tipoAsistencia->acumula_asistencia_label }}</x-td>
+                        <x-td class="text-center">
+                            @if ($tipoAsistencia->tipoSuspension)
+                                <span class="text-green-600 dark:text-green-400 text-sm">
+                                    <i class="fa fa-check-circle"></i>
+                                    {{ $tipoAsistencia->tipoSuspension->codigo }} - {{ $tipoAsistencia->tipoSuspension->descripcion_corta }}
+                                </span>
+                            @else
+                                <span class="text-amber-500 text-sm" title="No se generará suspensión automática al usar este código">
+                                    <i class="fa fa-exclamation-triangle"></i> Sin vincular
+                                </span>
+                            @endif
                         </x-td>
                         <x-td class="text-center">
                             <div class="m-auto flex flex-col items-center">
@@ -66,16 +71,12 @@
                                     wire:loading.attr="disabled" size="xs">
                                     <i class="fa fa-pencil"></i>
                                 </x-button>
-                                @php
-                                    $filtro = ['A', 'F', 'V'];
-
-                                @endphp
-                                @if (!in_array($tipoAsistencia->codigo, $filtro))
+                                @unless (in_array($tipoAsistencia->codigo, $codigosProtegidos))
                                     <x-button wire:click="eliminarTipoAsistencia({{ $tipoAsistencia->id }})"
                                         wire:loading.attr="disabled" variant="danger" size="xs">
                                         <i class="fa fa-remove"></i>
                                     </x-button>
-                                @endif
+                                @endunless
                             @endcan
                         </x-td>
                     </x-tr>
@@ -87,6 +88,7 @@
             No tiene permisos para ver la siguiente información.
         </x-danger>
     @endcan
+
     @can(\App\Constants\Permisos::PLANILLA_CONFIG_ASISTENCIA_GESTIONAR)
         <div class="flex justify-end mt-5">
             <x-button wire:click="preguntarRestaurar">
@@ -94,5 +96,6 @@
             </x-button>
         </div>
     @endcan
+    <livewire:gestion-asistencia.tipo-asistencia-form-component />
     <x-loading wire:loading wire:target="agregarTipoAsistencia" />
 </div>

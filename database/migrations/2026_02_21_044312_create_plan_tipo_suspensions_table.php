@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->string('codigo', 5); // 01, 02, 20, etc.
             $table->string('grupo', 3);  // SP o SI
             $table->string('descripcion');
+            $table->string('descripcion_corta',100);
             $table->timestamps();
         });
     }

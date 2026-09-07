@@ -15,6 +15,7 @@ use App\Http\Controllers\PermisosRolController;
 use App\Http\Controllers\ReporteDiarioController;
 use App\Livewire\ConfiguracionDescuentoAfpComponent;
 use App\Livewire\ConfiguracionPrimasComisionesComponent;
+use App\Livewire\GestionAsistencia\TipoAsistenciaComponent;
 use App\Livewire\GestionCampo\CampoCostosComponent;
 use App\Livewire\GestionPlanilla\AsistenciaMensualComponent;
 use App\Livewire\GestionPlanilla\CargosComponent;
@@ -75,9 +76,7 @@ Route::middleware([
 
     Route::get('/campo/costos', CampoCostosComponent::class)->name('campo.costos');
 
-    Route::get('/configuracion/tipos-asistencias', function () {
-        return view('livewire.gestion-asistencia.tipo-asistencia-indice');
-    })->name('configuracion.tipo_asistencia')->middleware('can:' . Permisos::PLANILLA_CONFIG_ASISTENCIA);
+    Route::get('/configuracion/tipos-asistencias', TipoAsistenciaComponent::class)->name('configuracion.tipo_asistencia')->middleware('can:' . Permisos::PLANILLA_CONFIG_ASISTENCIA);
 
 
     //CUADRILLA

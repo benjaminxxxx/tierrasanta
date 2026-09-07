@@ -4,93 +4,92 @@ namespace App\Services;
 
 use App\Models\PlanRegistroDiario;
 use App\Models\PlanTipoAsistencia;
+use App\Models\PlanTipoSuspension;
 use DB;
 use Illuminate\Support\Facades\Artisan;
 
 class PlanTipoAsistenciaServicio
 {
-    public function obtenerCodigosNoRegistrados()
+    // Códigos protegidos que no se pueden eliminar ni renombrar su código base
+    public const CODIGOS_PROTEGIDOS = ['A', 'F', 'V'];
+
+    public function obtenerCodigosNoRegistrados(): array
     {
-        // Todos los códigos válidos
         $codigosValidos = PlanTipoAsistencia::pluck('codigo')->toArray();
 
-        // Todos los códigos usados en registros diarios
         $codigosUsados = PlanRegistroDiario::distinct()
             ->pluck('asistencia')
-            ->filter() // elimina null/vacíos
+            ->filter()
             ->toArray();
 
-        // Diferencia → los que NO existen en catálogo
-        $codigosInvalidos = array_diff($codigosUsados, $codigosValidos);
-
-        return array_values($codigosInvalidos); // reindexado limpio
+        return array_values(array_diff($codigosUsados, $codigosValidos));
     }
-    public static function obtenerHorasConsideradas(string $codigoAsistencia)
+
+    public static function obtenerHorasConsideradas(string $codigoAsistencia): float
     {
-        try {
+        $tipoAsistencia = PlanTipoAsistencia::where('codigo', $codigoAsistencia)->first();
 
-            // Buscar el tipo de asistencia
-            $tipoAsistencia = PlanTipoAsistencia::where('codigo', $codigoAsistencia)->first();
-
-            // Si no existe → THROW obligatorio
-            if (!$tipoAsistencia) {
-                throw new \Exception("El código de asistencia '{$codigoAsistencia}' no existe en PlanTipoAsistencia.");
-            }
-
-            // horas_jornal debe ser numérico; si no, retorna 0
-            return is_numeric($tipoAsistencia->horas_jornal)
-                ? (float) $tipoAsistencia->horas_jornal
-                : 0;
-
-        } catch (\Exception $e) {
-            // Re-lanzar excepciones de dominio (como código no existente)
-            throw $e;
-        } catch (\Throwable $t) {
-            // Cualquier otro error NO esperado retorna 0
-            return 0;
+        if (!$tipoAsistencia) {
+            throw new \Exception("El código de asistencia '{$codigoAsistencia}' no existe en PlanTipoAsistencia.");
         }
+
+        return is_numeric($tipoAsistencia->horas_jornal) ? (float) $tipoAsistencia->horas_jornal : 0;
     }
+
     public function listarTodos()
     {
-        return PlanTipoAsistencia::all();
-    }
-    public function obtenerCodigosParaSelector()
-    {
-        return array_merge(
-            [''],
-            PlanTipoAsistencia::pluck('codigo')->toArray()
-        );
+        return PlanTipoAsistencia::with('tipoSuspension')->orderBy('codigo')->get();
     }
 
-    /**
-     * Obtiene un mapa de [codigo => horas_jornal]
-     */
-    public function obtenerMapaHoras()
+    public function obtenerCodigosParaSelector(): array
+    {
+        return array_merge([''], PlanTipoAsistencia::pluck('codigo')->toArray());
+    }
+
+    public function obtenerMapaHoras(): array
     {
         return PlanTipoAsistencia::pluck('horas_jornal', 'codigo')->toArray();
     }
-    /**
-     * Obtiene un diccionario de metadatos (color y descripción) indexado por código
-     */
-    public function obtenerDiccionarioConfiguracion()
+
+    public function obtenerDiccionarioConfiguracion(): array
     {
-        return PlanTipoAsistencia::all()->mapWithKeys(function ($item) {
-            return [
-                $item->codigo => [
-                    'color' => $item->color,
-                    'descripcion' => $item->descripcion
-                ]
-            ];
-        })->toArray();
+        return PlanTipoAsistencia::all()->mapWithKeys(fn($item) => [
+            $item->codigo => [
+                'color' => $item->color,
+                'descripcion' => $item->descripcion,
+            ],
+        ])->toArray();
     }
+
+    /**
+     * Opciones para el <x-select> del formulario, agrupadas por grupo SUNAT (SP/SI).
+     * Formato: ['SP' => [id => "01 - Sanción"], 'SI' => [id => "20 - Descanso médico"]]
+     */
+    public function obtenerOpcionesTipoSuspension(): array
+    {
+        return PlanTipoSuspension::orderBy('grupo')->orderBy('codigo')->get()
+            ->groupBy('grupo')
+            ->map(fn($grupo) => $grupo->mapWithKeys(fn($item) => [
+                $item->id => "{$item->codigo} - {$item->descripcion_corta}",
+            ]))
+            ->toArray();
+    }
+
     public function obtenerPorId($id)
     {
         return PlanTipoAsistencia::findOrFail($id);
     }
+
     public function obtenerPorCodigo($codigo)
     {
         return PlanTipoAsistencia::where('codigo', $codigo)->first();
     }
+
+    public function esCodigoProtegido(string $codigo): bool
+    {
+        return in_array($codigo, self::CODIGOS_PROTEGIDOS);
+    }
+
     public function guardar(array $datos, $id = null)
     {
         if ($id) {
@@ -104,30 +103,25 @@ class PlanTipoAsistenciaServicio
     public function eliminar($id)
     {
         $registro = $this->obtenerPorId($id);
+
+        if ($this->esCodigoProtegido($registro->codigo)) {
+            throw new \Exception("El código '{$registro->codigo}' es protegido y no puede eliminarse.");
+        }
+
         return $registro->delete();
     }
 
     public function restaurarPorDefecto()
     {
         PlanTipoAsistencia::truncate();
-        return Artisan::call('db:seed', [
-            '--class' => 'PlanTipoAsistenciaSeeder'
-        ]);
-    }
-    /**
-     * Registra o actualiza un solo tipo
-     */
-    public function registrarOActualizar(array $datos): PlanTipoAsistencia
-    {
-        return PlanTipoAsistencia::updateOrCreate(
-            ['codigo' => $datos['codigo']],
-            $datos
-        );
+        return Artisan::call('db:seed', ['--class' => 'PlanTipoAsistenciaSeeder']);
     }
 
-    /**
-     * Registra o actualiza múltiples tipos (RECOMENDADO)
-     */
+    public function registrarOActualizar(array $datos): PlanTipoAsistencia
+    {
+        return PlanTipoAsistencia::updateOrCreate(['codigo' => $datos['codigo']], $datos);
+    }
+
     public function registrarOActualizarLote(array $tipos): void
     {
         DB::transaction(function () use ($tipos) {

@@ -4,6 +4,7 @@ namespace App\Livewire\GestionRiego;
 
 use App\Services\Campo\Riego\RiegoServicio;
 use App\Services\RecursosHumanos\Personal\EmpleadoServicio;
+use App\Traits\HandlesAlerts;
 use Exception;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -11,7 +12,7 @@ use Session;
 
 class ReporteDiarioAgregarRegadoresComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, HandlesAlerts;
     public $fecha;
     public $tipoPersonal;
     public $trabajadores = [];
@@ -44,7 +45,7 @@ class ReporteDiarioAgregarRegadoresComponent extends Component
             $this->dispatch('nuevosRegadoresHanSidoAgregados');
             $this->mostrarFormularioAgregarRegador = false;
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function obtenerTrabajadores()

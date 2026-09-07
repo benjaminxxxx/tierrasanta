@@ -2,6 +2,7 @@
 
 namespace App\Services\RecursosHumanos\Planilla;
 
+use App\Exceptions\SplitSuspensionRequeridaException;
 use App\Models\Labores;
 use App\Models\PlanDetalleHora;
 use App\Models\PlanMensualDetalle;
@@ -10,6 +11,7 @@ use App\Models\PlanResumenDiario;
 use App\Models\PlanResumenDiarioTipoAsistencia;
 use App\Models\PlanTipoAsistencia;
 use App\Services\Campo\Gestion\CampoServicio;
+use App\Services\Planilla\SincronizarSuspensionDesdeAsistenciaServicio;
 use App\Services\PlanTipoAsistenciaServicio;
 use App\Support\CalculoHelper;
 use App\Support\FormatoHelper;
@@ -274,20 +276,35 @@ class PlanillaRegistroDiarioServicio
 
         return $datosProcesados;
     }
-
     public function guardarRegistrosDiarios($fecha, $datos, $totalActividades)
     {
-        // 1. Validar y normalizar (Si falla, lanza Exception y no guarda nada)
         $datosLimpios = $this->procesarDatos($datos, $totalActividades);
 
         foreach ($datosLimpios as $item) {
-            // 2. Persistir Cabecera
+
+            // Leer el estado ANTERIOR antes de sobrescribirlo, para detectar el cambio
+            $registroAnterior = PlanRegistroDiario::where('plan_det_men_id', $item['plan_det_men_id'])
+                ->where('fecha', $fecha)
+                ->first();
+
+            $asistenciaAnterior = $registroAnterior?->asistencia;
+
             $registro = PlanRegistroDiario::updateOrCreate(
                 ['plan_det_men_id' => $item['plan_det_men_id'], 'fecha' => $fecha],
                 ['asistencia' => $item['asistencia'], 'total_horas' => $item['total_horas']]
             );
 
-            // 4. Manejo de tramos
+            if ($asistenciaAnterior !== $item['asistencia']) {
+                $planEmpleadoId = $registro->detalleMensual->plan_empleado_id; // ajustar según tu relación real
+
+                app(SincronizarSuspensionDesdeAsistenciaServicio::class)->sincronizar(
+                    $planEmpleadoId,
+                    $fecha,
+                    $asistenciaAnterior,
+                    $item['asistencia'] ?: null
+                );
+            }
+
             if (empty($item['tramos'])) {
                 $registro->detalles()->delete();
                 if ($item['asistencia'] === '')
@@ -295,12 +312,38 @@ class PlanillaRegistroDiarioServicio
                 continue;
             }
 
-            // 5. Sincronización optimizada
             $this->sincronizarTramos($registro, $item['tramos']);
         }
 
         $this->actualizarResumenAsistencia($fecha);
     }
+    /*original, la otra funcion implementara el autosuspensiones de plame
+        public function guardarRegistrosDiarios($fecha, $datos, $totalActividades)
+        {
+            // 1. Validar y normalizar (Si falla, lanza Exception y no guarda nada)
+            $datosLimpios = $this->procesarDatos($datos, $totalActividades);
+
+            foreach ($datosLimpios as $item) {
+                // 2. Persistir Cabecera
+                $registro = PlanRegistroDiario::updateOrCreate(
+                    ['plan_det_men_id' => $item['plan_det_men_id'], 'fecha' => $fecha],
+                    ['asistencia' => $item['asistencia'], 'total_horas' => $item['total_horas']]
+                );
+
+                // 4. Manejo de tramos
+                if (empty($item['tramos'])) {
+                    $registro->detalles()->delete();
+                    if ($item['asistencia'] === '')
+                        $registro->delete();
+                    continue;
+                }
+
+                // 5. Sincronización optimizada
+                $this->sincronizarTramos($registro, $item['tramos']);
+            }
+
+            $this->actualizarResumenAsistencia($fecha);
+        }*/
 
     private function sincronizarTramos($registro, array $tramosNuevos)
     {
@@ -323,7 +366,7 @@ class PlanillaRegistroDiarioServicio
             }
         }
     }
-  
+
     private function actualizarResumenAsistencia($fecha)
     {
         $resumen = PlanResumenDiario::firstOrCreate(['fecha' => $fecha]);

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Livewire\GestionAsistencia;
 
 use App\Services\PlanTipoAsistenciaServicio;
@@ -11,9 +12,10 @@ class TipoAsistenciaFormComponent extends Component
     use LivewireAlert;
 
     public $mostrarFormulario = false;
-    public $formData = [];
     public $codigo, $codigoOriginal, $descripcion, $horasJornal, $color, $tipoAsistenciaId;
     public $acumula_asistencia;
+    public $planTipoSuspensionId;
+    public $opcionesTipoSuspension = [];
 
     protected $listeners = ['nuevoTipoAsistencia', 'editarTipoAsistencia'];
 
@@ -23,19 +25,27 @@ class TipoAsistenciaFormComponent extends Component
             'codigo' => 'required|string|max:10|unique:plan_tipo_asistencias,codigo,' . ($this->tipoAsistenciaId ?? 'NULL'),
             'descripcion' => 'required|string|max:255',
             'horasJornal' => 'required|numeric|min:0',
+            'planTipoSuspensionId' => 'nullable|exists:plan_tipos_suspension,id',
         ];
+    }
+
+    public function mount(PlanTipoAsistenciaServicio $servicio)
+    {
+        $this->opcionesTipoSuspension = $servicio->obtenerOpcionesTipoSuspension();
     }
 
     public function guardarPlanTipoAsistencia(PlanTipoAsistenciaServicio $servicio)
     {
         $this->validate();
+
         try {
             $datos = [
                 'codigo' => $this->codigo,
                 'descripcion' => $this->descripcion,
                 'horas_jornal' => $this->horasJornal,
                 'color' => $this->color,
-                'acumula_asistencia'=>(bool)$this->acumula_asistencia,
+                'acumula_asistencia' => (bool) $this->acumula_asistencia,
+                'plan_tipo_suspension_id' => $this->planTipoSuspensionId ?: null,
             ];
 
             $servicio->guardar($datos, $this->tipoAsistenciaId);
@@ -43,7 +53,7 @@ class TipoAsistenciaFormComponent extends Component
             $mensaje = $this->tipoAsistenciaId ? '¡Actualizado con éxito!' : '¡Creado con éxito!';
             $this->alert('success', $mensaje);
 
-            $this->dispatch("nuevoRegistro");
+            $this->dispatch('nuevoRegistro');
             $this->mostrarFormulario = false;
             $this->resetForm();
         } catch (Exception $e) {
@@ -56,7 +66,7 @@ class TipoAsistenciaFormComponent extends Component
         try {
             $this->resetForm();
             $tipoAsistencia = $servicio->obtenerPorId($tipoAsistenciaId);
-           
+
             $this->tipoAsistenciaId = $tipoAsistencia->id;
             $this->codigo = $tipoAsistencia->codigo;
             $this->codigoOriginal = $tipoAsistencia->codigo;
@@ -64,6 +74,7 @@ class TipoAsistenciaFormComponent extends Component
             $this->horasJornal = $tipoAsistencia->horas_jornal;
             $this->color = $tipoAsistencia->color;
             $this->acumula_asistencia = $tipoAsistencia->acumula_asistencia;
+            $this->planTipoSuspensionId = $tipoAsistencia->plan_tipo_suspension_id;
             $this->mostrarFormulario = true;
         } catch (Exception $e) {
             $this->alert('error', 'No se pudo cargar el registro');
@@ -79,7 +90,7 @@ class TipoAsistenciaFormComponent extends Component
     public function resetForm()
     {
         $this->resetErrorBag();
-        $this->reset(['codigo', 'descripcion', 'tipoAsistenciaId', 'codigoOriginal','acumula_asistencia']);
+        $this->reset(['codigo', 'descripcion', 'tipoAsistenciaId', 'codigoOriginal', 'acumula_asistencia', 'planTipoSuspensionId']);
         $this->horasJornal = 0;
         $this->color = '#ffffff';
     }

@@ -157,10 +157,8 @@ class RiegoServicio
             'fecha' => $fecha,
             'hora_inicio' => null,
             'hora_fin' => null,
-            'total_horas_riego' => 0,
             'total_horas_observaciones' => 0,
             'total_horas_acumuladas' => 0,
-            'total_horas_jornal' => 0,
             'estado' => 'noconsolidado',
             'no_acumular_horas' => $esCuadrilla,
             // Campos morph

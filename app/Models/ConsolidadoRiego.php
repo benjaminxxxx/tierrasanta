@@ -23,11 +23,9 @@ class ConsolidadoRiego extends Model
         'fecha',
         'hora_inicio',
         'hora_fin',
-        'total_horas_riego',
         'total_horas_observaciones',
         'minutos_acumulados',
         'minutos_utilizados',
-        'total_horas_jornal',
         'estado',//obsoleto
 
         'trabajador_id',

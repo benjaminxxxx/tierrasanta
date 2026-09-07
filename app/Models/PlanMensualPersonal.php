@@ -177,6 +177,7 @@ class PlanMensualPersonal extends Model
         'proyectado_sueldo_bruto_negro',
         'proyectado_sueldo_por_dia',
         'proyectado_sueldo_por_hora',
+        'gasto_real_final',
     ];
 
     /**
@@ -502,6 +503,43 @@ class PlanMensualPersonal extends Model
             }
 
             return round($porDia / 8, 5);
+        });
+    }
+    /**
+     * Calcula el gasto real total que asume la empresa al cierre del mes.
+     * Incluye: (Horas trabajadas * Tarifa hora pactada) + Retenciones de Pensión Asumidas + Aportes Patronales PLAME.
+     */
+    /**
+     * Gasto Real Final que desembolsa la empresa por el trabajador en el mes.
+     * Corresponde a: (Monto Pactado Ganado por Horas) + Pensión Abonada + Seguros/Aportes Patronales.
+     */
+    protected function gastoRealFinal(): Attribute
+    {
+        return Attribute::get(function () {
+            $tarifaHora = $this->proyectado_sueldo_por_hora;
+            $horasTrabajadas = (float) $this->plame_total_horas;
+
+            if (is_null($tarifaHora) || $horasTrabajadas <= 0) {
+                return null;
+            }
+
+            // 1. Pago pactado efectivo por las horas reales laboradas
+            $sueldoPactadoGanado = $horasTrabajadas * $tarifaHora;
+
+            // 2. Pensión abonada a la entidad previsional (SNP / SPP)
+            $pensionAbonada = (float) $this->plame_descuento_0601_comision_afp_pct
+                + (float) $this->plame_descuento_0606_prima_seguro_afp
+                + (float) $this->plame_descuento_0607_snp
+                + (float) $this->plame_descuento_0608_spp_aporte_obligatorio;
+
+            // 3. Pago real de Seguros y Aportes Patronales
+            $segurosAportesEmpresa = (float) $this->plame_aporte_empleador_0803_poliza
+                + (float) $this->plame_aporte_empleador_0804_essalud
+                + (float) $this->plame_aporte_empleador_0805_sctr
+                + (float) $this->plame_aporte_empleador_0810_eps;
+
+            // Gasto real desembolsado
+            return round($sueldoPactadoGanado + $pensionAbonada + $segurosAportesEmpresa, 2);
         });
     }
 }

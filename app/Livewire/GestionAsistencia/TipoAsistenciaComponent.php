@@ -13,10 +13,15 @@ class TipoAsistenciaComponent extends Component
 
     public $tipoAsistencias;
     public $codigosInvalidos = [];
+    public $codigosProtegidos = [];
+
     protected $listeners = ['confirmarEliminar', 'resturar', 'nuevoRegistro' => '$refresh'];
+
     public function mount(PlanTipoAsistenciaServicio $servicio)
     {
         $this->codigosInvalidos = $servicio->obtenerCodigosNoRegistrados();
+        
+        $this->codigosProtegidos = PlanTipoAsistenciaServicio::CODIGOS_PROTEGIDOS;
     }
 
     public function eliminarTipoAsistencia($id)
@@ -40,7 +45,7 @@ class TipoAsistenciaComponent extends Component
     public function preguntarRestaurar()
     {
         $this->confirm('Está a punto de restaurar los valores por defecto, ¿desea continuar?', [
-            'onConfirmed' => 'resturar'
+            'onConfirmed' => 'resturar',
         ]);
     }
 
@@ -48,15 +53,16 @@ class TipoAsistenciaComponent extends Component
     {
         try {
             $servicio->restaurarPorDefecto();
-            $this->alert("success", "Registro Restaurado con Éxito");
+            $this->alert('success', 'Registro Restaurado con Éxito');
         } catch (Exception $e) {
-            $this->alert("error", $e->getMessage());
+            $this->alert('error', $e->getMessage());
         }
     }
 
     public function render(PlanTipoAsistenciaServicio $servicio)
     {
         $this->tipoAsistencias = $servicio->listarTodos();
+
         return view('livewire.gestion-asistencia.tipo-asistencia-component');
     }
 }

@@ -27,6 +27,10 @@ return new class extends Migration {
             $table->boolean('acumula_vacaciones')->default(false); // Si cuenta para vacaciones
             $table->boolean('acumula_asistencia')->default(false); // Si se considera asistencia
             $table->boolean('activo')->default(true); // Para control lógico de catálogo
+            $table->foreignId('plan_tipo_suspension_id')
+                ->nullable()
+                ->constrained('plan_tipos_suspension')
+                ->nullOnDelete();
 
             $table->timestamps();
         });

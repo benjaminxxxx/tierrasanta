@@ -139,9 +139,11 @@ class ConsolidarJornadaRiegoProceso
         $data = $parametros['data'];
         $horaInicioAlmuerzo = $parametros['hora_inicio_almuerzo'];
         $horaFinAlmuerzo = $parametros['hora_fin_almuerzo'];
+        
 
         // Validaciones fuera de la transacción
         $mapaCampos = $this->validacion->validarCampos($data);
+        $this->validacion->validarHorarios($data);
 
         // Ya no detiene el flujo: solo recolecta los mensajes para mostrarlos junto al éxito
         $conflictos = app(ValidarCruceRiegoServicio::class)->validar($data, $fecha, $resumen->id);

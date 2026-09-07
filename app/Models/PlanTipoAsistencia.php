@@ -23,9 +23,14 @@ class PlanTipoAsistencia extends Model
         'acumula_vacaciones',
         'acumula_asistencia',
         'activo',
+        'plan_tipo_suspension_id'
     ];
     public function getAcumulaAsistenciaLabelAttribute()
     {
         return $this->acumula_asistencia ? 'SI' : 'NO';
+    }
+    public function tipoSuspension()
+    {
+        return $this->belongsTo(PlanTipoSuspension::class, 'plan_tipo_suspension_id');
     }
 }

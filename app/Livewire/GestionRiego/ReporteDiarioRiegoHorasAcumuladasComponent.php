@@ -5,6 +5,8 @@ namespace App\Livewire\GestionRiego;
 use App\Models\AcumulacionUso;
 use App\Models\ConsolidadoRiego;
 use App\Models\ParametroTemporal;
+use App\Models\ReporteDiarioRiego;
+use App\Services\Riego\ConsolidadorServicio;
 use Exception;
 use Illuminate\Support\Carbon;
 use Livewire\Component;
@@ -123,7 +125,7 @@ class ReporteDiarioRiegoHorasAcumuladasComponent extends Component
             }
 
             // 3. Verificar que no exista ya un registro de acumulación para este consolidado
-            $yaExiste = \App\Models\ReporteDiarioRiego::where('consolidado_id', $this->resumenRiego->id)
+            $yaExiste = ReporteDiarioRiego::where('consolidado_id', $this->resumenRiego->id)
                 ->where('por_acumulacion', true)
                 ->exists();
 
@@ -133,7 +135,7 @@ class ReporteDiarioRiegoHorasAcumuladasComponent extends Component
             }
 
             DB::transaction(function () use ($minutosAUsar, $inicio, $fin) {
-                $registro = \App\Models\ReporteDiarioRiego::create([
+                $registro = ReporteDiarioRiego::create([
                     'consolidado_id' => $this->resumenRiego->id,
                     'campo' => 'FDM',
                     'hora_inicio' => $inicio->format('H:i'),
@@ -154,7 +156,8 @@ class ReporteDiarioRiegoHorasAcumuladasComponent extends Component
                     ->whereRaw('minutos_acumulados > minutos_utilizados')
                     ->orderBy('fecha')
                     ->each(function ($origen) use (&$pendiente, $registro) {
-                        if ($pendiente <= 0) return false;
+                        if ($pendiente <= 0)
+                            return false;
 
                         $disponibleOrigen = $origen->minutos_acumulados - $origen->minutos_utilizados;
                         $consumir = min($disponibleOrigen, $pendiente);
@@ -171,7 +174,9 @@ class ReporteDiarioRiegoHorasAcumuladasComponent extends Component
                         $pendiente -= $consumir;
                     });
 
-                app(\App\Services\Riego\ConsolidadorServicio::class)->consolidar($this->resumenRiego);
+                $horaInicioAlmuerzo = $this->resumenRiego->hora_inicio_almuerzo;
+                $horaFinAlmuerzo = $this->resumenRiego->hora_fin_almuerzo;
+                app(ConsolidadorServicio::class)->consolidar($this->resumenRiego, $horaInicioAlmuerzo, $horaFinAlmuerzo);
             });
 
             $this->resumenRiego->refresh();

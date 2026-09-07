@@ -108,7 +108,9 @@ class ReporteDiarioRiegoDetalleComponent extends Component
                     });
 
                 $registro->delete();
-                app(ConsolidadorServicio::class)->consolidar($this->resumenRiego);
+                $horaInicioAlmuerzo = $this->resumenRiego->hora_inicio_almuerzo;
+                $horaFinAlmuerzo = $this->resumenRiego->hora_fin_almuerzo;
+                app(ConsolidadorServicio::class)->consolidar($this->resumenRiego, $horaInicioAlmuerzo, $horaFinAlmuerzo);
             });
 
             $this->resumenRiego->refresh();
@@ -169,7 +171,9 @@ class ReporteDiarioRiegoDetalleComponent extends Component
         $this->resumenRiego->update([
             'no_acumular_horas' => $valor
         ]);
-        app(ConsolidadorServicio::class)->consolidar($this->resumenRiego);
+        $horaInicioAlmuerzo = $this->resumenRiego->hora_inicio_almuerzo;
+        $horaFinAlmuerzo = $this->resumenRiego->hora_fin_almuerzo;
+        app(ConsolidadorServicio::class)->consolidar($this->resumenRiego, $horaInicioAlmuerzo, $horaFinAlmuerzo);
     }
 
     public function storeTableDataRegistroDiarioRiego($data)
