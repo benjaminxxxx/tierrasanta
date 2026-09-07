@@ -1,4 +1,4 @@
-<div class="space-y-6">
+<div class="space-y-6 mb-[60px]">
     <x-flex class="justify-between">
         <div>
             <x-title>
@@ -28,6 +28,13 @@
     : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300' }}">
                     <i class="fa fa-file-invoice mr-1.5"></i> PLAME
                 </button>
+
+                <button type="button" wire:click="cambiarVista('COSTO')" class="px-4 py-2 text-sm font-semibold rounded-md transition-all duration-150
+                    {{ $vista === 'COSTO'
+    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
+    : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300' }}">
+                    <i class="fa fa-file-invoice mr-1.5"></i> COSTO
+                </button>
             </div>
             <div>
                 @if ($planillaMensual && $planillaMensual->excel)
@@ -42,8 +49,13 @@
     @if ($vista == 'Proyectada')
         <livewire:gestion-planilla.planilla-proyectada-component :mes="$mes" :anio="$anio"
             wire:key="cpm_{{ $mes }}_{{ $anio }}_{{ $vista }}" />
-    @else
+    @endif
+    @if ($vista == 'PLAME')
         <livewire:gestion-planilla.planilla-plame-component :mes="$mes" :anio="$anio"
+            wire:key="cpm_{{ $mes }}_{{ $anio }}_{{ $vista }}" />
+    @endif
+    @if ($vista == 'COSTO')
+        <livewire:gestion-planilla.planilla-costo-component :mes="$mes" :anio="$anio"
             wire:key="cpm_{{ $mes }}_{{ $anio }}_{{ $vista }}" />
     @endif
 

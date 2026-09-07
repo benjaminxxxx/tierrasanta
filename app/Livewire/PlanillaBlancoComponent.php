@@ -4,16 +4,18 @@ namespace App\Livewire;
 
 use App\Models\PlanMensual;
 use App\Traits\Selectores\ConSelectorMes;
+use Illuminate\Support\Facades\Session;
 use Livewire\Component;
 
 class PlanillaBlancoComponent extends Component
 {
     use ConSelectorMes;
-    public $vista = 'Proyectada';
+    public $vista;
     public $planillaMensual = null;
 
     public function mount()
     {
+        $this->vista = Session::get('vista_planilla_blanco', 'Proyectada');
         $this->inicializarMesAnio();
         if($this->mes && $this->anio){
             $this->planillaMensual = PlanMensual::where('mes',$this->mes)->where('anio',$this->anio)->first();
@@ -24,6 +26,7 @@ class PlanillaBlancoComponent extends Component
     }
     public function cambiarVista(string $vista): void
     {
+        Session::put('vista_planilla_blanco', $vista);
         $this->vista = $vista;
     }
     public function render()

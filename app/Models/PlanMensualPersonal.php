@@ -74,14 +74,16 @@ class PlanMensualPersonal extends Model
         'plame_descuento_0607_snp',
         'plame_descuento_0608_spp_aporte_obligatorio',
 
-        // PLAME - Neto
-        'plame_neto_a_pagar',
+
 
         // PLAME - Aportes del empleador
         'plame_aporte_empleador_0803_poliza',
         'plame_aporte_empleador_0804_essalud',
         'plame_aporte_empleador_0805_sctr',
         'plame_aporte_empleador_0810_eps',
+
+        // PLAME - Neto
+        'plame_neto_a_pagar',
     ];
 
     protected function casts(): array
@@ -179,7 +181,62 @@ class PlanMensualPersonal extends Model
         'proyectado_sueldo_por_hora',
         'gasto_real_final',
     ];
+    /**
+     * Calcula el sueldo a pagar proporcionalmente según las horas trabajadas.
+     * Si cumple todas las horas (o no hay horas base), otorga el sueldo neto proyectado total.
+     */
+    protected function sueldoPagado(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $horasMeta = $this->planMensual?->total_horas ?? 0;
+                $horasTrabajadas = $this->plame_total_horas ?? 0;
+                $sueldoNetoProyectado = $this->proyectado_sueldo_neto_total ?? 0;
 
+                // Evitar división entre cero si no se configuraron horas en el mes
+                if ($horasMeta <= 0) {
+                    return $sueldoNetoProyectado;
+                }
+
+                // Cálculo proporcional
+                $sueldoCalculado = ($sueldoNetoProyectado / $horasMeta) * $horasTrabajadas;
+
+                // Retorna redondeado a 2 decimales
+                return $sueldoCalculado;
+            }
+        );
+    }
+    // Total de Descuentos / Aportes que retiene PLAME al trabajador
+    protected function aportesTrabajador(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => 
+                ($this->plame_descuento_0601_comision_afp_pct ?? 0) +
+                ($this->plame_descuento_0605_renta_5ta_retenida ?? 0) +
+                ($this->plame_descuento_0606_prima_seguro_afp ?? 0) +
+                ($this->plame_descuento_0607_snp ?? 0) +
+                ($this->plame_descuento_0608_spp_aporte_obligatorio ?? 0)
+        );
+    }
+
+    // Total de Aportes a cargo del empleador
+    protected function aportesEmpleador(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => ($this->plame_aporte_empleador_0803_poliza ?? 0) +
+            ($this->plame_aporte_empleador_0804_essalud ?? 0) +
+            ($this->plame_aporte_empleador_0805_sctr ?? 0) +
+            ($this->plame_aporte_empleador_0810_eps ?? 0)
+        );
+    }
+    // Gasto Total Real del Empleado para la Empresa
+    protected function costoTotalEmpresa(): Attribute
+    {
+        return Attribute::make(
+            get: fn() =>
+            $this->sueldo_pagado + $this->aportes_trabajador + $this->aportes_empleador
+        );
+    }
     /**
      * D7 + E7 + F7: remuneración básica + bonificación + asignación familiar.
      * Deliberadamente excluye compensación vacacional.
@@ -203,7 +260,7 @@ class PlanMensualPersonal extends Model
                 return null;
             }
 
-            return round($this->sueldoBrutoSinCompensacion() * ($cts / 100), 2);
+            return $this->sueldoBrutoSinCompensacion() * ($cts / 100);
         });
     }
 
@@ -220,7 +277,7 @@ class PlanMensualPersonal extends Model
                 return null;
             }
 
-            return round($this->sueldoBrutoSinCompensacion() * ($porcentaje / 100), 2);
+            return $this->sueldoBrutoSinCompensacion() * ($porcentaje / 100);
         });
     }
 
@@ -238,7 +295,7 @@ class PlanMensualPersonal extends Model
                 return null;
             }
 
-            return round($gratificaciones * ($porcentaje / 100), 2);
+            return $gratificaciones * ($porcentaje / 100);
         });
     }
 
@@ -256,7 +313,7 @@ class PlanMensualPersonal extends Model
                 return null;
             }
 
-            return round($rmv * ($porcentaje / 100), 2);
+            return $rmv * ($porcentaje / 100);
         });
     }
 
@@ -285,7 +342,7 @@ class PlanMensualPersonal extends Model
                 return null;
             }
 
-            return round($this->proyeccion_sueldo_bruto * ($porcentaje / 100), 2);
+            return $this->proyeccion_sueldo_bruto * ($porcentaje / 100);
         });
     }
 
@@ -302,7 +359,7 @@ class PlanMensualPersonal extends Model
                 return null;
             }
 
-            return round($this->proyeccion_sueldo_bruto * ($porcentaje / 100) * self::FACTOR_SEGURO, 2);
+            return $this->proyeccion_sueldo_bruto * ($porcentaje / 100) * self::FACTOR_SEGURO;
         });
     }
 
@@ -318,7 +375,7 @@ class PlanMensualPersonal extends Model
                 return null;
             }
 
-            return round($this->proyeccion_sueldo_bruto * ($porcentaje / 100) * self::FACTOR_SEGURO, 2);
+            return $this->proyeccion_sueldo_bruto * ($porcentaje / 100) * self::FACTOR_SEGURO;
         });
     }
 
@@ -334,7 +391,7 @@ class PlanMensualPersonal extends Model
                 return null;
             }
 
-            return round($this->proyeccion_sueldo_bruto * ($porcentaje / 100) * self::FACTOR_SEGURO, 2);
+            return $this->proyeccion_sueldo_bruto * ($porcentaje / 100) * self::FACTOR_SEGURO;
         });
     }
 
@@ -346,10 +403,7 @@ class PlanMensualPersonal extends Model
     protected function proyectadoSueldoNeto(): Attribute
     {
         return Attribute::get(
-            fn() => round(
-                $this->proyeccion_sueldo_bruto - (float) $this->proyectado_dscto_afp_prima_seguro,
-                2
-            )
+            fn() => $this->proyeccion_sueldo_bruto - (float) $this->proyectado_dscto_afp_prima_seguro
         );
     }
 
@@ -372,7 +426,7 @@ class PlanMensualPersonal extends Model
                 return null;
             }
 
-            return round(array_sum($valores), 2);
+            return array_sum($valores);
         });
     }
 
@@ -398,7 +452,7 @@ class PlanMensualPersonal extends Model
                 return null;
             }
 
-            return round(array_sum($valores), 2);
+            return array_sum($valores);
         });
     }
 
@@ -415,7 +469,7 @@ class PlanMensualPersonal extends Model
                 return null;
             }
 
-            return round($total / $diasLaborables, 2);
+            return $total / $diasLaborables;
         });
     }
 
@@ -431,7 +485,7 @@ class PlanMensualPersonal extends Model
                 return null;
             }
 
-            return round($jornal / 8, 2);
+            return $jornal / 8;
         });
     }
 
@@ -450,7 +504,7 @@ class PlanMensualPersonal extends Model
                 return null;
             }
 
-            return round($netoTotal - $netoBeneficios, 2);
+            return $netoTotal - $netoBeneficios;
         });
     }
 
@@ -458,6 +512,7 @@ class PlanMensualPersonal extends Model
      * =T7+Z7
      * T7 = proyectado_sueldo_bruto_beneficios_aportes
      * Z7 = proyectado_diferencia_bonificacion
+     * proyectado_sueldo_bruto_negro representa el costo total que asume
      */
     protected function proyectadoSueldoBrutoNegro(): Attribute
     {
@@ -469,7 +524,7 @@ class PlanMensualPersonal extends Model
                 return null;
             }
 
-            return round($bruto + $diferencia, 2);
+            return $bruto + $diferencia;
         });
     }
 
@@ -486,7 +541,8 @@ class PlanMensualPersonal extends Model
                 return null;
             }
 
-            return round($total / $diasLaborables, 2);
+            // Se elimina el round() para preservar la precisión completa de la división
+            return $total / $diasLaborables;
         });
     }
 
@@ -502,44 +558,9 @@ class PlanMensualPersonal extends Model
                 return null;
             }
 
-            return round($porDia / 8, 5);
+            // Retorna la división con la precisión nativa completa de PHP
+            return $porDia / 8;
         });
     }
-    /**
-     * Calcula el gasto real total que asume la empresa al cierre del mes.
-     * Incluye: (Horas trabajadas * Tarifa hora pactada) + Retenciones de Pensión Asumidas + Aportes Patronales PLAME.
-     */
-    /**
-     * Gasto Real Final que desembolsa la empresa por el trabajador en el mes.
-     * Corresponde a: (Monto Pactado Ganado por Horas) + Pensión Abonada + Seguros/Aportes Patronales.
-     */
-    protected function gastoRealFinal(): Attribute
-    {
-        return Attribute::get(function () {
-            $tarifaHora = $this->proyectado_sueldo_por_hora;
-            $horasTrabajadas = (float) $this->plame_total_horas;
-
-            if (is_null($tarifaHora) || $horasTrabajadas <= 0) {
-                return null;
-            }
-
-            // 1. Pago pactado efectivo por las horas reales laboradas
-            $sueldoPactadoGanado = $horasTrabajadas * $tarifaHora;
-
-            // 2. Pensión abonada a la entidad previsional (SNP / SPP)
-            $pensionAbonada = (float) $this->plame_descuento_0601_comision_afp_pct
-                + (float) $this->plame_descuento_0606_prima_seguro_afp
-                + (float) $this->plame_descuento_0607_snp
-                + (float) $this->plame_descuento_0608_spp_aporte_obligatorio;
-
-            // 3. Pago real de Seguros y Aportes Patronales
-            $segurosAportesEmpresa = (float) $this->plame_aporte_empleador_0803_poliza
-                + (float) $this->plame_aporte_empleador_0804_essalud
-                + (float) $this->plame_aporte_empleador_0805_sctr
-                + (float) $this->plame_aporte_empleador_0810_eps;
-
-            // Gasto real desembolsado
-            return round($sueldoPactadoGanado + $pensionAbonada + $segurosAportesEmpresa, 2);
-        });
-    }
+  
 }

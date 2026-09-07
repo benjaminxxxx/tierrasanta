@@ -41,7 +41,7 @@ class ResumenCostoDiario extends Model
         'horas' => 'decimal:2',
         'cantidad_jornales' => 'decimal:4',
         'cantidad_insumo' => 'decimal:2',
-        'costo_total' => 'decimal:2',
+        'costo_total' => 'decimal:14',
     ];
 
     /* =====================================================================

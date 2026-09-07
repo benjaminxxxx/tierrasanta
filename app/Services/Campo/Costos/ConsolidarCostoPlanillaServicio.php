@@ -35,7 +35,7 @@ class ConsolidarCostoPlanillaServicio
                 'observacion' => "Aún no se ha generado la planilla del mes de {$nombreMes} del año {$anio}.",
             ];
         }
-
+        //dd($personal->proyectado_sueldo_por_hora);//14.403714353365
         return $this->cacheCostoPorHora[$clave] = [
             'costo_por_hora' => (float) $personal->proyectado_sueldo_por_hora,
             'observacion' => null,
@@ -74,7 +74,7 @@ class ConsolidarCostoPlanillaServicio
         if ($esPlanilla) {
             $costoInfo = $this->obtenerCostoHoraPlanilla($consolidadoOEmpleado, $fecha);
             $costoTotal = $costoInfo['costo_por_hora'] !== null
-                ? round($costoInfo['costo_por_hora'] * $horas, 2)
+                ? $costoInfo['costo_por_hora'] * $horas
                 : 0;
 
             return ['costo_total' => $costoTotal, 'observacion' => $costoInfo['observacion']];
@@ -82,7 +82,7 @@ class ConsolidarCostoPlanillaServicio
 
         // Cuadrilla: lógica de jornal (misma que ya tenías)
         // $consolidadoOEmpleado aquí es el ConsolidadoRiego completo, para leer precio_jornal
-        $costoTotal = round(($consolidadoOEmpleado->precio_jornal ?? 0) * ($horas / 8), 2);
+        $costoTotal = ($consolidadoOEmpleado->precio_jornal ?? 0) * ($horas / 8);
 
         return ['costo_total' => $costoTotal, 'observacion' => null];
     }

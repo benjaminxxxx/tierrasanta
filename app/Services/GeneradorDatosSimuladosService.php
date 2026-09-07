@@ -253,7 +253,7 @@ class GeneradorDatosSimuladosService
 
 			foreach ($planMensualDetalles as $det) {
 				// Asistencia aleatoria (90% "A", 10% "F")
-				$asistencia = $faker->boolean(90) ? 'A' : 'F';
+				$asistencia = 'A';//$faker->boolean(90) ? 'A' : 'F';
 
 				$row = [
 					'plan_men_detalle_id' => $det->plan_men_detalle_id,
@@ -272,7 +272,7 @@ class GeneradorDatosSimuladosService
 					} else {
 						// Lunes a Viernes: Jornada (8 a 9 horas) dividida en 3 a 5 tramos
 						$numTramos = rand(3, 5);
-						$horaFin = $faker->randomElement(['16.00', '17.00']); // 8h o 9h
+						$horaFin = $faker->randomElement(['14.00', '16.00']); // 8h o 9h
 						$tramosGenerados = $this->generarTramosHorario('07.00', $horaFin, $numTramos);
 					}
 

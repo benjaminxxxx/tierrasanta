@@ -4,6 +4,7 @@ namespace App\Livewire\GestionCampo;
 
 use App\Models\Campania;
 use App\Models\CampoCampania;
+use App\Models\PlanMensualPersonal;
 use App\Models\ResumenCostoDiario;
 use App\Services\Campo\Costos\ConsolidarCostoGastosGeneralesServicio;
 use App\Services\Campo\Costos\ConsolidarCostoInsumosServicio;
@@ -131,6 +132,7 @@ class CampoCostosComponent extends Component
     {
         $this->resetPage();
     }
+   
     public function render()
     {
         $query = ResumenCostoDiario::query();

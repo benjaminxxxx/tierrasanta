@@ -44,7 +44,7 @@ return new class extends Migration {
             $table->decimal('cantidad_insumo', 10, 2)->nullable()->default(0.00);
 
             // Costo Total Calculado (Moneda Base)
-            $table->decimal('costo_total', 12, 2)->default(0.00);
+            $table->decimal('costo_total', 24, 14)->default(0.00000000000000);
             $table->string('labor_nombre', 150)->nullable();
             $table->string('observacion', 255)->nullable();
 
