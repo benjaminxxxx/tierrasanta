@@ -1,4 +1,4 @@
-@props(['storageKey' => 'tabActivo', 'defaultValue' => '', 'remember' => true, 'orientation' => 'horizontal'])
+@props(['storageKey' => 'tabActivo', 'defaultValue' => '', 'remember' => true])
 
 <div
     x-data="{
@@ -11,7 +11,6 @@
         }
     }"
     x-on:reset-tab.window="selected = '{{ $defaultValue }}'; {{ $remember ? "localStorage.setItem('$storageKey', '$defaultValue')" : '' }}"
-    {{ $attributes->merge(['class' => $orientation === 'vertical' ? 'flex gap-6 items-start' : '']) }}
 >
     {{ $slot }}
 </div>

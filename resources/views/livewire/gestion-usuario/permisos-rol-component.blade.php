@@ -18,7 +18,7 @@
 
     {{-- Botones --}}
     <x-inferior-derecha>
-        <x-button wire:click="guardar" wire:loading.attr="disabled">
+        <x-button wire:click="guardarPermisos" wire:loading.attr="disabled">
             <i class="fas fa-save"></i> Guardar permisos
         </x-button>
         <span wire:loading class="text-sm text-muted-foreground">Guardando...</span>

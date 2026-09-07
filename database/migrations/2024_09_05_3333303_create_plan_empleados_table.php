@@ -13,6 +13,7 @@ return new class extends Migration {
         Schema::create('plan_empleados', function (Blueprint $table) {
             $table->id();
             $table->uuid();
+            $table->foreignId('persona_id')->nullable()->constrained('personas')->nullOnDelete();
             $table->string('nombres');
             $table->string('apellido_paterno')->nullable();
             $table->string('apellido_materno')->nullable();

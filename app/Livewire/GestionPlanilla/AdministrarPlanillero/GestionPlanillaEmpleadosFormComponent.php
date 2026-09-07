@@ -5,6 +5,7 @@ namespace App\Livewire\GestionPlanilla\AdministrarPlanillero;
 use App\Models\PlanContrato;
 use App\Services\Modulos\Planilla\GestionPlanillaEmpleados;
 use App\Services\RecursosHumanos\Personal\ContratoServicio;
+use App\Services\RecursosHumanos\Planilla\PlanillaEmpleadoServicio;
 use App\Traits\ListasComunes\ConGrupoPlanilla;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
@@ -28,27 +29,36 @@ class GestionPlanillaEmpleadosFormComponent extends Component
     public $fecha_nacimiento;
     public $fecha_ingreso;
     public $mostrarFormularioEmpleados = false;
+    // Placeholders para las futuras pestañas — hoy siempre vacíos, sin efecto
+    public $contratos = [];
+    public $sueldos = [];
+    public $cargos = [];
+    public $familiares = [];
     protected $listeners = ['editarEmpleado', 'abrirFormularioNuevoEmpleado'];
     public function editarEmpleado($id)
     {
         $this->resetForm();
         $empleado = app(GestionPlanillaEmpleados::class)->obtenerEmpleadoPorUuid($id);
-        
-        if ($empleado) {
 
+        if ($empleado) {
             $this->empleadoId = $empleado->id;
             $this->nombres = $empleado->nombres;
             $this->apellido_paterno = $empleado->apellido_paterno;
             $this->apellido_materno = $empleado->apellido_materno;
             $this->documento = $empleado->documento;
             $this->email = $empleado->email;
-            $this->numero = $empleado->numero;
             $this->direccion = $empleado->direccion;
             $this->genero = $empleado->genero;
             $this->fecha_nacimiento = $empleado->fecha_nacimiento;
             $this->fecha_ingreso = $empleado->fecha_ingreso;
-            $this->comentarios = $empleado->comentarios;
-            $this->orden = $empleado->orden;
+
+            // Placeholders — cuando existan, poblar desde aquí
+            $info = app(PlanillaEmpleadoServicio::class)->obtenerInformacion($empleado->id);
+            $this->contratos = $info['contratos'];
+            $this->sueldos = $info['sueldos'];
+            $this->cargos = $info['cargos'];
+            $this->familiares = $info['familiares'];
+
             $this->mostrarFormularioEmpleados = true;
         }
     }
@@ -67,7 +77,7 @@ class GestionPlanillaEmpleadosFormComponent extends Component
                 'fecha_ingreso' => $this->fecha_ingreso,
             ];
 
-            app(GestionPlanillaEmpleados::class)->guardarEmpleado($datos,$this->empleadoId);
+            app(PlanillaEmpleadoServicio::class)->guardar($datos, $this->empleadoId);
             $this->alert('success', 'Los datos fueron guardados correctamente');
             $this->mostrarFormularioEmpleados = false;
             $this->dispatch('empleadoGuardado');
@@ -95,7 +105,11 @@ class GestionPlanillaEmpleadosFormComponent extends Component
             'genero',
             'fecha_nacimiento',
             'fecha_ingreso',
-            'empleadoId'
+            'empleadoId',
+            'contratos',
+            'sueldos',
+            'cargos',
+            'familiares'
         );
     }
     public function render()

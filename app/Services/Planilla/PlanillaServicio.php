@@ -422,7 +422,6 @@ class PlanillaServicio
                     'plame_aporte_empleador_0810_eps' => $plameAporteEmpleador0810Eps,
 
                 ], $columnasSuspension);
-                //dd($dataPlanilla);
 
                 $planillaMensual->planilla()->updateOrCreate(
                     [

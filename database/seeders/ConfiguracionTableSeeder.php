@@ -15,41 +15,11 @@ class ConfiguracionTableSeeder extends Seeder
         // Limpiar la tabla 'configuracion'
         //DB::table('configuracion')->truncate();
 
-        DB::table('configuracion')->insert([
-            [
-                'codigo' => 'rmv',
-                'valor' => '1025', // Almacena como texto
-                'descripcion' => 'Remuneración Mínima Vital',
-            ],
+        DB::table('configuracion')->upsert([
             [
                 'codigo' => 'asignacion_familiar',
-                'valor' => '102.50', // Almacena como texto
+                'valor' => '102.50',
                 'descripcion' => 'Asignación Familiar por Hijo',
-            ],
-            [
-                'codigo' => 'descuento_snp',
-                'valor' => '13',
-                'descripcion' => 'Descuento del SNP',
-            ],
-            [
-                'codigo' => 'remuneracion_basica',
-                'valor' => '34.1666666666667',
-                'descripcion' => 'Remuneración Basica',
-            ],
-            [
-                'codigo' => 'cts_porcentaje',
-                'valor' => '9.72',
-                'descripcion' => 'CTS',
-            ],
-            [
-                'codigo' => 'gratificaciones',
-                'valor' => '16.66',
-                'descripcion' => 'Gratificaciones',
-            ],
-            [
-                'codigo' => 'essalud_gratificaciones',
-                'valor' => '6',
-                'descripcion' => 'Essalud Gratificaciones',
             ],
             [
                 'codigo' => 'beta30',
@@ -57,24 +27,61 @@ class ConfiguracionTableSeeder extends Seeder
                 'descripcion' => 'Beta 30%',
             ],
             [
+                'codigo' => 'cts',
+                'valor' => 'CTS',
+                'descripcion' => '',
+            ],
+            [
+                'codigo' => 'cts_porcentaje',
+                'valor' => '9.72',
+                'descripcion' => 'CTS',
+            ],
+            [
+                'codigo' => 'descuento_snp',
+                'valor' => '13',
+                'descripcion' => 'Descuento del SNP',
+            ],
+            [
                 'codigo' => 'essalud',
                 'valor' => '6',
                 'descripcion' => 'Essalud',
             ],
             [
-                'codigo' => 'vida_ley_porcentaje',
-                'valor' => '0.63',
-                'descripcion' => 'Vida Ley Porcentaje',
+                'codigo' => 'essalud_eps',
+                'valor' => '0.55',
+                'descripcion' => 'Essalud EPS',
             ],
             [
-                'codigo' => 'vida_ley',
-                'valor' => '1.18',
-                'descripcion' => 'Vida Ley',
+                'codigo' => 'essalud_gratificaciones',
+                'valor' => '6',
+                'descripcion' => 'Essalud Gratificaciones',
             ],
             [
-                'codigo' => 'pension_sctr_porcentaje',
-                'valor' => '0.62',
-                'descripcion' => 'Pensión SCTR Porcentaje',
+                'codigo' => 'gratificaciones',
+                'valor' => '16.66',
+                'descripcion' => 'Gratificaciones',
+            ],
+            [
+                'codigo' => 'orden_planilla_asistencia',
+                'valor' => json_encode([
+                    [
+                        'campo' => 'genero',
+                        'direccion' => 'desc',
+                    ],
+                    [
+                        'campo' => 'apellido_paterno',
+                        'direccion' => 'asc',
+                    ],
+                    [
+                        'campo' => 'apellido_materno',
+                        'direccion' => 'asc',
+                    ],
+                    [
+                        'campo' => 'nombres',
+                        'direccion' => 'asc',
+                    ],
+                ]),
+                'descripcion' => 'Orden de visualización de la planilla de asistencia mensual',
             ],
             [
                 'codigo' => 'pension_sctr',
@@ -82,14 +89,9 @@ class ConfiguracionTableSeeder extends Seeder
                 'descripcion' => 'Pensión SCTR',
             ],
             [
-                'codigo' => 'tiempo_almuerzo',
-                'valor' => '60',
-                'descripcion' => 'Tiempo de Almuerzo',
-            ],
-            [
-                'codigo' => 'essalud_eps',
-                'valor' => '0.55',
-                'descripcion' => 'Essalud EPS',
+                'codigo' => 'pension_sctr_porcentaje',
+                'valor' => '0.62',
+                'descripcion' => 'Pensión SCTR Porcentaje',
             ],
             [
                 'codigo' => 'porcentaje_constante',
@@ -100,7 +102,32 @@ class ConfiguracionTableSeeder extends Seeder
                 'codigo' => 'rem_basica_essalud',
                 'valor' => '1.06',
                 'descripcion' => 'Remuneración básica essalud',
-            ]
-        ]);
+            ],
+            [
+                'codigo' => 'remuneracion_basica',
+                'valor' => '34.1666666666667',
+                'descripcion' => 'Remuneración Basica',
+            ],
+            [
+                'codigo' => 'rmv',
+                'valor' => '1025',
+                'descripcion' => 'Remuneración Mínima Vital',
+            ],
+            [
+                'codigo' => 'tiempo_almuerzo',
+                'valor' => '60',
+                'descripcion' => 'Tiempo de Almuerzo',
+            ],
+            [
+                'codigo' => 'vida_ley',
+                'valor' => '1.18',
+                'descripcion' => 'Vida Ley',
+            ],
+            [
+                'codigo' => 'vida_ley_porcentaje',
+                'valor' => '0.63',
+                'descripcion' => 'Vida Ley Porcentaje',
+            ],
+        ], ['codigo'], ['valor', 'descripcion']);
     }
 }

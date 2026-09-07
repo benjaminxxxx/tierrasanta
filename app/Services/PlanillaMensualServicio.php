@@ -125,9 +125,7 @@ class PlanillaMensualServicio
                 [
                     'nombres' => $empleado['nombres'] ?? null,
                     'documento' => $empleado['documento'] ?? null,
-                    //'grupo' => $empleado['grupo'] ?? null,
                     'orden' => $empleado['orden'],
-                    //'spp_snp' => $empleado['spp_snp'],
                 ]
             );
         }

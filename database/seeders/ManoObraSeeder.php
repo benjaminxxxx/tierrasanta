@@ -1,6 +1,7 @@
 <?php
 
 namespace Database\Seeders;
+use App\Models\ManoObra;
 use Illuminate\Support\Facades\DB;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -13,7 +14,7 @@ class ManoObraSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('mano_obras')->insert([
+        $manoObras = [
             ['codigo' => 'cosecha', 'descripcion' => 'Cosecha', 'created_at' => '2025-08-01 09:35:24', 'updated_at' => '2025-08-01 09:35:24'],
             ['codigo' => 'fdm', 'descripcion' => 'FDM', 'created_at' => '2025-08-01 09:36:05', 'updated_at' => '2025-08-01 09:36:05'],
             ['codigo' => 'infestacion', 'descripcion' => 'Infestación', 'created_at' => '2025-08-01 09:34:06', 'updated_at' => '2025-08-01 09:34:06'],
@@ -27,6 +28,10 @@ class ManoObraSeeder extends Seeder
             ['codigo' => 'riego_fertilizacion', 'descripcion' => 'Riego y fertilización', 'created_at' => '2025-08-01 09:35:56', 'updated_at' => '2025-08-01 09:35:56'],
             ['codigo' => 'sanidad', 'descripcion' => 'Sanidad', 'created_at' => '2025-08-01 09:34:54', 'updated_at' => '2025-08-01 09:34:54'],
             ['codigo' => 'siembra', 'descripcion' => 'Siembra', 'created_at' => '2025-08-01 09:33:52', 'updated_at' => '2025-08-01 09:33:52'],
-        ]);
+        ];
+
+        foreach ($manoObras as $manoObra) {
+            ManoObra::create($manoObra);
+        }
     }
 }

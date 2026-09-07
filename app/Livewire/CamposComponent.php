@@ -184,7 +184,7 @@ class CamposComponent extends Component
             'alias'               => $this->alias,
         ];
 
-        $ignorados = ['created_at', 'updated_at', 'pos_x', 'pos_y', 'grupo', 'orden', 'estado', 'etapa'];
+        $ignorados = ['created_at', 'updated_at', 'grupo', 'orden', 'etapa'];
 
         if ($this->estaEditando) {
             $campo = Campo::find($this->campoNombreEditar);

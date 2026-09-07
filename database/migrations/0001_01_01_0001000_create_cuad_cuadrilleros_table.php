@@ -12,6 +12,7 @@ return new class extends Migration {
     {
         Schema::create('cuad_cuadrilleros', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('persona_id')->nullable()->constrained('personas')->nullOnDelete();
             $table->string('nombres')->unique();
             $table->string('codigo_grupo',30)->nullable();
             $table->string('dni')->nullable()->unique();
@@ -19,7 +20,7 @@ return new class extends Migration {
             $table->foreignId('actualizado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('eliminado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
-            $table->softDeletes();;
+            $table->softDeletes();
         });
     }
 

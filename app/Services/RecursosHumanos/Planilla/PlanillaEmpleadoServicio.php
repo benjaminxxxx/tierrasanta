@@ -2,6 +2,7 @@
 
 namespace App\Services\RecursosHumanos\Planilla;
 
+use App\Models\Persona;
 use App\Models\PlanEmpleado;
 use App\Services\Configuracion\ConfiguracionHistorialServicio;
 use DB;
@@ -15,6 +16,104 @@ use Illuminate\Validation\ValidationException;
 
 class PlanillaEmpleadoServicio
 {
+    /**
+     * Único punto de entrada para crear o actualizar un empleado.
+     * Crea/actualiza en plan_empleados y sincroniza (duplicado, a propósito
+     * por ahora) la información base en personas.
+     */
+    public function guardar(array $datos, ?int $empleadoId = null): PlanEmpleado
+    {
+        $validados = $this->validarDatos($datos, $empleadoId);
+
+        return DB::transaction(function () use ($validados, $empleadoId) {
+            if ($empleadoId) {
+                $empleado = PlanEmpleado::findOrFail($empleadoId);
+                $empleado->update($validados);
+            } else {
+                $empleado = PlanEmpleado::create($validados);
+            }
+
+            $this->sincronizarPersona($empleado, $validados);
+
+            return $empleado->fresh();
+        });
+    }
+    /**
+     * Placeholder de lectura unificada: hoy solo trae al empleado, y las
+     * relaciones futuras (contrato, sueldos, cargos, familiares) quedan
+     * como arrays vacíos. Cuando se implementen, cambiar el origen de cada
+     * clave aquí sin tocar el componente Livewire que la consume.
+     */
+    public function obtenerInformacion(?int $empleadoId): array
+    {
+        if (!$empleadoId) {
+            return [
+                'empleado' => null,
+                'contratos' => [],
+                'sueldos' => [],
+                'cargos' => [],
+                'familiares' => [],
+            ];
+        }
+
+        return [
+            'empleado' => PlanEmpleado::findOrFail($empleadoId),
+            'contratos' => [], // TODO: PlanContrato::where('plan_empleado_id', $empleadoId)->get()
+            'sueldos' => [],   // TODO: PlanSueldo::where('plan_empleado_id', $empleadoId)->get()
+            'cargos' => [],    // TODO: historial de EmpleadoCargoServicio
+            'familiares' => [],// TODO: derecho-habientes
+        ];
+    }
+    private function sincronizarPersona(PlanEmpleado $empleado, array $datos): void
+    {
+        $nombreMostrar = trim(implode(' ', array_filter([
+            $datos['apellido_paterno'] ?? null,
+            $datos['apellido_materno'] ?? null,
+            $datos['nombres'] ?? null,
+        ])));
+
+        $datosPersona = [
+            'tipo' => 'individual',
+            'tipo_documento' => 'DNI',
+            'numero_documento' => $datos['documento'] ?? null,
+            'nombres' => $datos['nombres'] ?? null,
+            'apellido_paterno' => $datos['apellido_paterno'] ?? null,
+            'apellido_materno' => $datos['apellido_materno'] ?? null,
+            'nombre_mostrar' => $nombreMostrar,
+            'fecha_nacimiento' => $datos['fecha_nacimiento'] ?? null,
+            'genero' => match ($datos['genero'] ?? null) {
+                'M' => 'masculino',
+                'F' => 'femenino',
+                default => null,
+            },
+            'email' => $datos['email'] ?? null,
+            'direccion' => $datos['direccion'] ?? null,
+        ];
+
+        // Ya enlazado -> solo actualizar
+        if ($empleado->persona_id) {
+            Persona::where('id', $empleado->persona_id)->update($datosPersona);
+            return;
+        }
+
+        // No enlazado aún -> buscar por documento (podría venir de cuadrilla ya vinculada)
+        $persona = !empty($datosPersona['numero_documento'])
+            ? Persona::where('tipo_documento', 'DNI')
+                ->where('numero_documento', $datosPersona['numero_documento'])
+                ->first()
+            : null;
+
+        if ($persona) {
+            $persona->update($datosPersona);
+        } else {
+            $datosPersona['codigo'] = 'PLA-' . $empleado->id;
+            $persona = Persona::create($datosPersona);
+        }
+
+        $empleado->persona_id = $persona->id;
+        $empleado->save();
+    }
+
     // ─── BASE: query reutilizable por tipo de planilla ────────────────────────
     private static function queryPlanilla(int $mes, int $anio, string $tipoPlanilla): Builder
     {
@@ -402,7 +501,7 @@ class PlanillaEmpleadoServicio
         // 🔹 Ordenar y paginar
         return $query->orderBy('orden')->paginate(20);
     }
-//class PlanillaEmpleadoServicio
+    //class PlanillaEmpleadoServicio
     /**
      * Retorna los empleados con contrato agrario vigente en el mes/año indicado.
      */
@@ -507,7 +606,7 @@ class PlanillaEmpleadoServicio
         match ($campo) {
             // Columnas directas en plan_empleados
             'orden', 'nombres', 'apellido_paterno', 'apellido_materno', 'genero', 'documento' =>
-                $query->orderBy($campo, $direccion),
+            $query->orderBy($campo, $direccion),
 
             // TODO: si alguno de estos vive en otra tabla (ej. tabla persona), aquí agregamos
             // el join correspondiente antes del orderBy, ej:

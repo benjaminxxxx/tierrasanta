@@ -30,16 +30,7 @@ class GestionPlanillaEmpleados
         app(PlanillaEmpleadoServicio::class)->actualizarOrdenEmpleados($empleados);
     }
     
-    // Métodos y propiedades genéricos para la gestión de empleados en la planilla
-
-    public function guardarEmpleado($datos,$empleadoId = null)
-    {
-        if($empleadoId){
-            return app(PlanillaEmpleadoServicio::class)->actualizarEmpleado($datos,$empleadoId);
-        }else{
-            return app(PlanillaEmpleadoServicio::class)->registrarEmpleado($datos);
-        }
-    }
+    
 
     // Ejemplo de método genérico
     public function buscarEmpleado(array $filtros = [])

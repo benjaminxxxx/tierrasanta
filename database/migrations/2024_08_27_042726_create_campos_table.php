@@ -17,11 +17,8 @@ return new class extends Migration
             $table->string('campo_parent_nombre')->nullable();
             $table->string('grupo')->nullable();
             $table->integer('orden')->nullable();
-            $table->string('estado')->nullable(); // ej: 'regando', 'sin regar'
             $table->string('etapa')->nullable();
-            $table->float('area')->nullable(); // Área en metros cuadrados
-            $table->decimal('pos_x',10,2)->nullable(); // Posición X en un canvas
-            $table->decimal('pos_y',10,2)->nullable();
+            $table->decimal('area', 10, 4)->nullable(); // Área en metros cuadrados
             $table->string('alias')->nullable();
             $table->timestamps();
             $table->foreign('campo_parent_nombre')->references('nombre')->on('campos')->onDelete('cascade');

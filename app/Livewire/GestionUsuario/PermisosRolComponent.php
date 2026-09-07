@@ -27,7 +27,7 @@ class PermisosRolComponent extends Component
         $this->permisosActivados = PermisosServicio::obtenerPermisosDeRol($rol);
     }
 
-    public function guardar(): void
+    public function guardarPermisos(): void
     {
         try {
             PermisosServicio::guardarPermisosParaRol($this->rolNombre, $this->permisosActivados);

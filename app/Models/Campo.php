@@ -18,10 +18,7 @@ class Campo extends Model
         'campo_parent_nombre',
         'grupo',   // Grupo al que pertenece el campo
         'orden',   // Orden en el grupo
-        'estado',  // Estado actual (e.g., regando, sin regar)
         'area',    // Área del campo en metros cuadrados
-        'pos_x',   // Posición X en un canvas o div
-        'pos_y',   // Posición Y en un canvas o div
     ];
     public static function listar()
     {

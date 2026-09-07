@@ -182,54 +182,6 @@ class PlanillaBlancoDetalleComponent extends Component
             throw $th;
         }
     }
-    public function generarPlanilla()
-    {
-        /*
-        try {
-
-            $parametros = [
-                'mes' => $this->mes,
-                'anio' => $this->anio,
-
-                // Variables principales
-                'diasLaborables' => $this->diasLaborables,
-                'factorRemuneracionBasica' => $this->factorRemuneracionBasica,
-
-                // Porcentajes
-                'asignacionFamiliar' => $this->asignacionFamiliar,
-                'ctsPorcentaje' => $this->ctsPorcentaje,
-                'gratificacionesPorcentaje' => $this->gratificaciones,
-                'essaludGratificacionesPorcentaje' => $this->essaludGratificaciones,
-                'beta30Porcentaje' => $this->beta30,
-                'essaludPorcentaje' => $this->essalud,
-                'vidaLeyPorcentaje' => $this->vidaLeyPorcentaje,
-                'pensionSctrPorcentaje' => $this->pensionSctrPorcentaje,
-                'essaludEpsPorcentaje' => $this->essaludEps,
-                'porcentajeConstante' => $this->porcentajeConstante,
-
-                // Valores fijos o montos
-                'rmv' => $this->rmv,
-                'vidaLey' => $this->vidaLey,
-                'pensionSctr' => $this->pensionSctr,
-                'essaludEps' => $this->essaludEps,
-                'rem_basica_essalud' => $this->remBasicaEssalud,
-            ];
-
-            $excelPath = app(GestionPlanilla::class)->generarPlanilla($parametros);
-
-            $this->planillaMensual->excel = $excelPath;
-            $this->planillaMensual->save();
-
-            PlanillaServicio::procesarExcelPlanillaDetalle($this->planillaMensual);
-
-            $this->obtenerInformacionMensual();
-            $this->dispatch('actualizado');
-            $this->dispatch("renderTable", $this->planillaMensualDetalle);
-            $this->alert('success', "Planilla generada correctamente");
-        } catch (QueryException $th) {
-            throw $th;
-        }*/
-    }
     public function generarPlanillaMensual2($datos)
     {
         try {

@@ -12,7 +12,7 @@ return new class extends Migration {
     {
         Schema::create('tienda_comercials', function (Blueprint $table) {
             $table->id();
-
+            $table->foreignId('persona_id')->nullable()->constrained('personas')->nullOnDelete();
             // Datos básicos
             $table->string('ruc', 11)->nullable()->unique();
             $table->string('contacto')->nullable();

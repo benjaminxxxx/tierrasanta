@@ -18,24 +18,23 @@ return new class extends Migration {
             $table->tinyInteger('mes_contable')->nullable();  // Para el mes contable (1-12)
             $table->string('codigo_grupo');
             $table->timestamp('fecha_gasto')->default(DB::raw('CURRENT_TIMESTAMP'));
-            $table->unsignedBigInteger('cuad_tramo_laboral_id')->nullable();
+
+            // Claves foráneas (declaración simplificada y limpia moderna de Laravel)
+            $table->foreignId('cuad_tramo_laboral_id')
+                ->nullable()
+                ->constrained('cuad_tramos_laborales', 'id', 'fk_gasto_tra_lab1')
+                ->onDelete('cascade');
 
             $table->enum('estado', ['pendiente', 'aprobado', 'en_correccion'])
                 ->default('pendiente');
-            $table->unsignedBigInteger('creado_por')->nullable();
-            $table->unsignedBigInteger('aprobado_por')->nullable();
+
+            // Asumiendo que hacen referencia a la tabla 'users'
+            $table->foreignId('creado_por')->nullable()->constrained('users');
+            $table->foreignId('aprobado_por')->nullable()->constrained('users');
             $table->timestamp('aprobado_en')->nullable();
-            $table->unsignedBigInteger('habilitado_por')->nullable();
+            $table->foreignId('habilitado_por')->nullable()->constrained('users');
             $table->timestamp('habilitado_en')->nullable();
 
-            $table->foreign('creado_por')->references('id');
-            $table->foreign('aprobado_por')->references('id');
-            $table->foreign('habilitado_por')->references('id');
-
-            $table->foreign('cuad_tramo_laboral_id', 'fk_gasto_tra_lab1')
-                ->references('id')
-                ->on('cuad_tramos_laborales')
-                ->onDelete('cascade');
             $table->timestamps();
         });
     }

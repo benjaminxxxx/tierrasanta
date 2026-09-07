@@ -15,18 +15,18 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(CamposSeeder::class);
         $this->call(ManoObraSeeder::class);
-        $this->call(LaborSeeder::class);
-        $this->call(LaborRiegoSeeder::class);
+        $this->call(LaboresSeeder::class);
+        $this->call(RegLaboresSeeder::class);
         $this->call(NutrientesSeeder::class);
         $this->call(PlanTipoAsistenciaSeeder::class);
         $this->call(ConfiguracionTableSeeder::class);
         $this->call(DescuentoSpSeeder::class);
         $this->call(UsersTableSeeder::class);
-        $this->call(CargosSeeder::class);
-        $this->call(GrupoSeeder::class);
-        $this->call(GruposCuadrillaSeeder::class);
-        $this->call(CochinillaObservacionSeeder::class);
-        $this->call(PlanEmpleadosSeeder::class);
+        //$this->call(CargosSeeder::class);
+        //$this->call(GrupoSeeder::class);
+        //$this->call(GruposCuadrillaSeeder::class);
+        //$this->call(CochinillaObservacionSeeder::class);
+        //$this->call(PlanEmpleadosSeeder::class);
         $this->call(MaquinariasSeeder::class);
     }
 }

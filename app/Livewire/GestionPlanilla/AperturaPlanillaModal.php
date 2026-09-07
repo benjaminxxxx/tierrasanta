@@ -4,6 +4,7 @@ namespace App\Livewire\GestionPlanilla;
 
 use App\Models\PlanMensual;
 use App\Services\Planilla\PlanillaServicio;
+use Exception;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -36,7 +37,7 @@ class AperturaPlanillaModal extends Component
     public ?float $essalud_eps = null;
     public ?float $rem_basica_essalud = null;
     public ?float $cts = null;
-    
+
     public ?array $configuracionPendiente = null;
     public ?array $descuentosPreview = null;
 
@@ -210,7 +211,6 @@ class AperturaPlanillaModal extends Component
         try {
             $planMensual = $this->guardarApertura();
             $this->planMensualId = $planMensual->id;
-
             // Persistir configuración general (si el usuario la trajo con el botón)
             if ($this->configuracionPendiente) {
                 PlanillaMensualServicio::guardarConfiguracionEnPlanMensual($planMensual->id, $this->configuracionPendiente);
@@ -221,8 +221,21 @@ class AperturaPlanillaModal extends Component
 
             $resultado = app(PlanillaServicio::class)->generarProyeccion($this->mes, $this->anio);
 
+            if (!empty($resultado['errores']) || $resultado['procesados'] < $resultado['total']) {
+                // Si hay un resumen formateado, lo usamos en el mensaje de error
+                $detallesError = '';
+                if (!empty($resultado['resumen'])) {
+                    $mensajes = array_column($resultado['resumen'], 'mensaje');
+                    $detallesError = implode(' | ', $mensajes);
+                } else {
+                    $detallesError = "Se procesaron {$resultado['procesados']} de {$resultado['total']} empleados.";
+                }
+
+                throw new Exception("Error al generar la proyección de la planilla: {$detallesError}");
+            }
+
             $excelPath = app(PlanillaServicio::class)->generarExcelPlanilla($this->mes, $this->anio);
-            $planMensual->update(['excel'=>$excelPath]);
+            $planMensual->update(['excel' => $excelPath]);
 
             $tieneErrores = !empty($resultado['errores']);
 
