@@ -1,78 +1,85 @@
-<div class="space-y-4">
-    <x-flex class="justify-between">
-        <div>
-            <x-title>
-                Registro Diario de Riego
-            </x-title>
+<div>
+    <div class="space-y-4">
+        <div class="sticky top-0 z-[999] bg-background py-2 space-y-4 shadow-sm">
+            <x-flex class="justify-between">
+                <div>
+                    <x-title>
+                        Registro Diario de Riego
+                    </x-title>
 
-        </div>
+                </div>
+                <x-flex>
+                    <x-button wire:click="verificarSincronizacion" wire:loading.attr="disabled">
+                        <i class="fa fa-sync"></i> Verificar Sincronización
+                    </x-button>
+                    <div class="ms-3 relative">
 
-        <div class="ms-3 relative">
 
-            <x-button wire:click="verificarSincronizacion" wire:loading.attr="disabled">
-                <i class="fa fa-sync"></i> Verificar Sincronización
-            </x-button>
-            <x-dropdown align="right" width="60">
-                <x-slot name="trigger">
-                    <span class="inline-flex rounded-md">
-                        <button type="button"
-                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-card-foreground bg-card transition ease-in-out duration-150">
-                            Opciones
+                        <x-dropdown align="right" width="60">
+                            <x-slot name="trigger">
+                                <span class="inline-flex rounded-md">
+                                    <button type="button"
+                                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-card-foreground bg-card transition ease-in-out duration-150">
+                                        Opciones
 
-                            <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
-                            </svg>
-                        </button>
-                    </span>
-                </x-slot>
+                                        <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                            viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+                                        </svg>
+                                    </button>
+                                </span>
+                            </x-slot>
 
-                <x-slot name="content">
-                    <div class="w-60">
-                        <!-- Team Management -->
-                        <div class="block px-4 py-2 text-xs text-gray-400">
-                            Opciones
-                        </div>
+                            <x-slot name="content">
+                                <div class="w-60">
+                                    <!-- Team Management -->
+                                    <div class="block px-4 py-2 text-xs text-gray-400">
+                                        Opciones
+                                    </div>
 
-                        <!-- Team Settings -->
-                        <x-dropdown-link wire:click="verResumenSemanalRiego">
-                            Ver Resumen Semanal
-                        </x-dropdown-link>
-                        @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
-                            <x-dropdown-link @click="$wire.dispatch('abrirAgregarRegador')">
-                                Agregar Regador
-                            </x-dropdown-link>
-                            <x-dropdown-link wire:click="enviarRegistroDiarioRegadores">
-                                Enviar Registro Diario
-                            </x-dropdown-link>
-                        @endcan
+                                    <!-- Team Settings -->
+                                    <x-dropdown-link wire:click="verResumenSemanalRiego">
+                                        Ver Resumen Semanal
+                                    </x-dropdown-link>
+                                    @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
+                                        <x-dropdown-link @click="$wire.dispatch('abrirAgregarRegador')">
+                                            Agregar Regador
+                                        </x-dropdown-link>
+                                        <x-dropdown-link wire:click="enviarRegistroDiarioRegadores">
+                                            Enviar Registro Diario
+                                        </x-dropdown-link>
+                                    @endcan
 
+                                </div>
+                            </x-slot>
+                        </x-dropdown>
                     </div>
-                </x-slot>
-            </x-dropdown>
+                </x-flex>
+
+            </x-flex>
+            <x-card>
+                <x-flex class="justify-between">
+                    @include('comun.selector-dia-base')
+                    <x-input type="number" wire:model.live="limiteHorasDiarias" label="Limite de Horas" />
+                </x-flex>
+            </x-card>
         </div>
 
-    </x-flex>
-    <x-card>
-        <x-flex class="justify-between">
-            @include('comun.selector-dia-base')
-            <x-input type="number" wire:model.live="limiteHorasDiarias" label="Limite de Horas" />
-        </x-flex>
-    </x-card>
-    <div class="my-4">
-        @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_VER)
-            @if ($consolidados && $consolidados->count() > 0)
-                @foreach ($consolidados as $riego)
-                    <livewire:gestion-riego.reporte-diario-riego-detalle-component :resumenId="$riego->id" :fecha="$riego->fecha"
-                        wire:key="horas_riego_{{ $riego->id }}_{{ $riego->fecha }}" />
-                @endforeach
-            @endif
-        @else
-            <x-danger>
-                No tienes permisos para ver el reporte diario de riego. Por favor, contacta al administrador.
-            </x-danger>
-        @endcan
+        <div>
+            @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_VER)
+                @if ($consolidados && $consolidados->count() > 0)
+                    @foreach ($consolidados as $riego)
+                        <livewire:gestion-riego.reporte-diario-riego-detalle-component :resumenId="$riego->id"
+                            :fecha="$riego->fecha" wire:key="horas_riego_{{ $riego->id }}_{{ $riego->fecha }}" />
+                    @endforeach
+                @endif
+            @else
+                <x-danger>
+                    No tienes permisos para ver el reporte diario de riego. Por favor, contacta al administrador.
+                </x-danger>
+            @endcan
+        </div>
     </div>
     <x-dialog-modal wire:model.live="mostrarEnvioAReporteDiario">
         <x-slot name="title">

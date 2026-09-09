@@ -57,8 +57,10 @@ class ReporteDiarioRiegoHorasAcumuladasComponent extends Component
 
     // Muestra de dónde salen los minutos disponibles ANTES de consumirlos,
     // recorriendo los mismos consolidados con saldo que usa el FIFO real al registrar el uso
+    /*
     public function cargarOrigenesAcumulados(): void
     {
+        dd($this->resumenRiego->fecha);//"2026-01-07"
         $this->origenesAcumulados = ConsolidadoRiego::where('trabajador_type', $this->resumenRiego->trabajador_type)
             ->where('trabajador_id', $this->resumenRiego->trabajador_id)
             ->whereRaw('minutos_acumulados > minutos_utilizados')
@@ -75,8 +77,156 @@ class ReporteDiarioRiegoHorasAcumuladasComponent extends Component
                 ];
             })
             ->toArray();
-    }
+    }*/
+    public function cargarOrigenesAcumulados(): void
+    {
+        // Obtenemos la fecha limite actual
+        $fechaActual = is_string($this->resumenRiego->fecha)
+            ? $this->resumenRiego->fecha
+            : $this->resumenRiego->fecha->format('Y-m-d');
 
+        $this->origenesAcumulados = ConsolidadoRiego::where('trabajador_type', $this->resumenRiego->trabajador_type)
+            ->where('trabajador_id', $this->resumenRiego->trabajador_id)
+            ->whereRaw('minutos_acumulados > minutos_utilizados')
+            ->orderBy('fecha', 'asc')
+            ->get()
+            ->map(function ($origen) use ($fechaActual) {
+                $disponible = $origen->minutos_acumulados - $origen->minutos_utilizados;
+                $horas = intdiv($disponible, 60);
+                $mins = $disponible % 60;
+
+                $fechaOrigen = is_string($origen->fecha)
+                    ? $origen->fecha
+                    : $origen->fecha->format('Y-m-d');
+
+                // Es disponible solo si la fecha del origen es menor a la fecha actual del riego
+                $esDisponible = $fechaOrigen < $fechaActual;
+
+                return [
+                    'fecha' => $fechaOrigen,
+                    'minutos' => $disponible,
+                    'formateado' => $horas > 0 ? "{$horas}h {$mins}min" : "{$mins}min",
+                    'disponible' => $esDisponible,
+                ];
+            })
+            ->toArray();
+    }
+    /*
+    agregamos en la nueva version la validacion de usar solo horas acumuladas de fechas anteriores
+        public function registrarUsoHorasAcumuladas()
+        {
+            try {
+                if (!$this->resumenRiego) {
+                    throw new Exception("No se ha seleccionado un resumen de riego. Recargue la página.");
+                }
+
+                // 1. Calcular minutos a usar desde el formulario
+                $inicio = Carbon::parse($this->acumulado['horaInicio']);
+                $fin = Carbon::parse($this->acumulado['horaFin']);
+
+                if ($fin->lte($inicio)) {
+                    $this->addError('acumulado.horaFin', 'La hora final debe ser mayor a la hora de inicio.');
+                    return;
+                }
+
+                $minutosAUsar = $inicio->diffInMinutes($fin);
+
+                // 2. Verificar que no supere los disponibles
+                $disponibles = $this->resumenRiego->minutos_disponibles;
+
+                if ($minutosAUsar > $disponibles) {
+                    $this->addError('acumulado.horaFin', "Solo tienes {$this->resumenRiego->disponible_formateado} disponibles.");
+                    return;
+                }
+                $minutosJornal = $this->resumenRiego->minutos_jornal;
+
+                $limite = ParametroTemporal::limiteMinutosDiarios($this->resumenRiego->fecha);
+                $total = $minutosJornal + $minutosAUsar;
+
+                if ($total > $limite) {
+                    $horasActuales = intdiv($minutosJornal, 60);
+                    $minsActuales = $minutosJornal % 60;
+                    $horasAgregar = intdiv($minutosAUsar, 60);
+                    $minsAgregar = $minutosAUsar % 60;
+                    $exceso = $total - $limite;
+                    $horasExceso = intdiv($exceso, 60);
+                    $minsExceso = $exceso % 60;
+
+                    $mensaje =
+                        "Actualmente tiene {$horasActuales}h {$minsActuales}m de jornal. " .
+                        "Al intentar añadir {$horasAgregar}h {$minsAgregar}m, " .
+                        "se excede el límite de 8h por {$horasExceso}h {$minsExceso}m.";
+
+                    throw new Exception($mensaje);
+                }
+
+                // 3. Verificar que no exista ya un registro de acumulación para este consolidado
+                $yaExiste = ReporteDiarioRiego::where('consolidado_id', $this->resumenRiego->id)
+                    ->where('por_acumulacion', true)
+                    ->exists();
+
+                if ($yaExiste) {
+                    $this->addError('acumulado.horaFin', 'Ya existe un registro de uso de horas acumuladas para este día.');
+                    return;
+                }
+
+                DB::transaction(function () use ($minutosAUsar, $inicio, $fin) {
+                    $registro = ReporteDiarioRiego::create([
+                        'consolidado_id' => $this->resumenRiego->id,
+                        'campo' => 'FDM',
+                        'hora_inicio' => $inicio->format('H:i'),
+                        'hora_fin' => $fin->format('H:i'),
+                        'fecha' => $this->resumenRiego->fecha,
+                        'documento' => '',
+                        'regador' => '',
+                        'tipo_labor' => 'Por Acumulación',
+                        'descripcion' => 'Uso de horas acumuladas',
+                        'por_acumulacion' => true,
+                        'campo_campania_id' => null,
+                    ]);
+
+                    $pendiente = $minutosAUsar;
+
+                    ConsolidadoRiego::where('trabajador_type', $this->resumenRiego->trabajador_type)
+                        ->where('trabajador_id', $this->resumenRiego->trabajador_id)
+                        ->whereRaw('minutos_acumulados > minutos_utilizados')
+                        ->orderBy('fecha')
+                        ->each(function ($origen) use (&$pendiente, $registro) {
+                            if ($pendiente <= 0)
+                                return false;
+
+                            $disponibleOrigen = $origen->minutos_acumulados - $origen->minutos_utilizados;
+                            $consumir = min($disponibleOrigen, $pendiente);
+
+                            $origen->increment('minutos_utilizados', $consumir);
+
+                            AcumulacionUso::updateOrCreate([
+                                'consolidado_destino_id' => $this->resumenRiego->id,
+                                'consolidado_origen_id' => $origen->id,
+                            ], [
+                                'minutos_consumidos' => $consumir,
+                            ]);
+
+                            $pendiente -= $consumir;
+                        });
+
+                    $horaInicioAlmuerzo = $this->resumenRiego->hora_inicio_almuerzo;
+                    $horaFinAlmuerzo = $this->resumenRiego->hora_fin_almuerzo;
+                    app(ConsolidadorServicio::class)->consolidar($this->resumenRiego, $horaInicioAlmuerzo, $horaFinAlmuerzo);
+                });
+
+                $this->resumenRiego->refresh();
+                $this->cargarOrigenesAcumulados(); // refrescar el desglose por si quedó saldo
+                $this->mostrarHorasAcumuladasForm = false;
+
+                // 👇 se pasa el id para que solo se refresque el Detalle correspondiente, no todos
+                $this->dispatch('registroConsolidado', resumenRiegoId: $this->resumenRiego->id);
+
+                $this->alert('success', 'Uso de horas acumuladas registrado correctamente.');
+            } catch (\Throwable $th) {
+                $this->alert('error', $th->getMessage());
+            }
+        }*/
     public function registrarUsoHorasAcumuladas()
     {
         try {
@@ -95,15 +245,27 @@ class ReporteDiarioRiegoHorasAcumuladasComponent extends Component
 
             $minutosAUsar = $inicio->diffInMinutes($fin);
 
-            // 2. Verificar que no supere los disponibles
-            $disponibles = $this->resumenRiego->minutos_disponibles;
+            // 2. Calcular los minutos disponibles ANTERIORES a la fecha actual
+            $disponiblesPrevios = ConsolidadoRiego::where('trabajador_type', $this->resumenRiego->trabajador_type)
+                ->where('trabajador_id', $this->resumenRiego->trabajador_id)
+                ->where('fecha', '<', $this->resumenRiego->fecha) // ⚠️ Solo fechas anteriores
+                ->whereRaw('minutos_acumulados > minutos_utilizados')
+                ->selectRaw('SUM(minutos_acumulados - minutos_utilizados) as saldo_previo')
+                ->value('saldo_previo') ?? 0;
 
-            if ($minutosAUsar > $disponibles) {
-                $this->addError('acumulado.horaFin', "Solo tienes {$this->resumenRiego->disponible_formateado} disponibles.");
+            if ($disponiblesPrevios <= 0) {
+                $this->addError('acumulado.horaFin', "Anterior a la fecha ({$this->resumenRiego->fecha}) no existen minutos disponibles acumulados.");
                 return;
             }
-            $minutosJornal = $this->resumenRiego->minutos_jornal;
 
+            if ($minutosAUsar > $disponiblesPrevios) {
+                $horasDisp = intdiv($disponiblesPrevios, 60);
+                $minsDisp = $disponiblesPrevios % 60;
+                $this->addError('acumulado.horaFin', "Solo tienes {$horasDisp}h {$minsDisp}m disponibles anteriores a esta fecha.");
+                return;
+            }
+
+            $minutosJornal = $this->resumenRiego->minutos_jornal;
             $limite = ParametroTemporal::limiteMinutosDiarios($this->resumenRiego->fecha);
             $total = $minutosJornal + $minutosAUsar;
 
@@ -151,13 +313,16 @@ class ReporteDiarioRiegoHorasAcumuladasComponent extends Component
 
                 $pendiente = $minutosAUsar;
 
+                // 4. Consumir únicamente registros de fechas anteriores en orden cronológico
                 ConsolidadoRiego::where('trabajador_type', $this->resumenRiego->trabajador_type)
                     ->where('trabajador_id', $this->resumenRiego->trabajador_id)
+                    ->where('fecha', '<', $this->resumenRiego->fecha) // ⚠️ Restricción por fecha
                     ->whereRaw('minutos_acumulados > minutos_utilizados')
-                    ->orderBy('fecha')
-                    ->each(function ($origen) use (&$pendiente, $registro) {
-                        if ($pendiente <= 0)
+                    ->orderBy('fecha', 'asc')
+                    ->each(function ($origen) use (&$pendiente) {
+                        if ($pendiente <= 0) {
                             return false;
+                        }
 
                         $disponibleOrigen = $origen->minutos_acumulados - $origen->minutos_utilizados;
                         $consumir = min($disponibleOrigen, $pendiente);
@@ -168,7 +333,7 @@ class ReporteDiarioRiegoHorasAcumuladasComponent extends Component
                             'consolidado_destino_id' => $this->resumenRiego->id,
                             'consolidado_origen_id' => $origen->id,
                         ], [
-                            'minutos_consumidos' => $consumir,
+                            'minutos_consumidos' => DB::raw("minutos_consumidos + {$consumir}"),
                         ]);
 
                         $pendiente -= $consumir;

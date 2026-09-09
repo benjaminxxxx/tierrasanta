@@ -196,8 +196,6 @@ class SuspensionesPlanillaComponent extends Component
         return ($anio >= 2000 && $anio <= 2100) ? $anio : null;
     }
 
-
-
     public function render()
     {
         return view('livewire.gestion-planilla.suspensiones-planilla-component');
