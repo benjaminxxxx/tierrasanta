@@ -106,6 +106,40 @@ class ConsolidadoRiego extends Model
     // En ConsolidadoRiego
     public function getMinutosDisponiblesAttribute(): int
     {
+        // 1. Sumar minutos acumulados solo de fechas estrictamente anteriores
+        $acumulado = self::where('trabajador_type', $this->trabajador_type)
+            ->where('trabajador_id', $this->trabajador_id)
+            ->where('fecha', '<', $this->fecha) // ⚠️ Filtro por fecha previa
+            ->sum('minutos_acumulados');
+
+        // 2. Sumar minutos consumidos provenientes de orígenes previos a esta fecha
+        $utilizado = AcumulacionUso::whereHas('consolidadoOrigen', function ($q) {
+            $q->where('trabajador_type', $this->trabajador_type)
+                ->where('trabajador_id', $this->trabajador_id)
+                ->where('fecha', '<', $this->fecha); // ⚠️ Filtro por fecha previa
+        })->sum('minutos_consumidos');
+
+        return max(0, $acumulado - $utilizado);
+    }
+
+    public function getDisponibleFormateadoAttribute(): string
+    {
+        $minutos = $this->minutos_disponibles;
+
+        if ($minutos <= 0) {
+            return "0min";
+        }
+
+        $horas = intdiv($minutos, 60);
+        $mins = $minutos % 60;
+
+        return $horas > 0
+            ? "{$horas}h {$mins}min"
+            : "{$mins}min";
+    }
+    /*
+    public function getMinutosDisponiblesAttribute(): int
+    {
         $acumulado = self::where('trabajador_type', $this->trabajador_type)
             ->where('trabajador_id', $this->trabajador_id)
             ->sum('minutos_acumulados');
@@ -127,7 +161,7 @@ class ConsolidadoRiego extends Model
         return $horas > 0
             ? "{$horas}h {$mins}min"
             : "{$mins}min";
-    }
+    }*/
     public function registrosDiarios()
     {
         return $this->hasMany(ReporteDiarioRiego::class, 'consolidado_id');
