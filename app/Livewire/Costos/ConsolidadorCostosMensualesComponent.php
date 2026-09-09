@@ -49,10 +49,10 @@ class ConsolidadorCostosMensualesComponent extends Component
             $fechaInicio = Carbon::create($this->anio, $mesNum, 1)->startOfMonth()->format('Y-m-d');
             $fechaFin = Carbon::create($this->anio, $mesNum, 1)->endOfMonth()->format('Y-m-d');
             $totalPlanilla = 0;
-/*
+
             $totalPlanilla = app(ConsolidarCostoManoObraServicio::class)
                 ->consolidarPlanillaEnRango($fechaInicio, $fechaFin);
-*/
+
             app(ConsolidarReporteMensualCostos::class)
                 ->ejecutar($this->anio, $mesNum);
 
