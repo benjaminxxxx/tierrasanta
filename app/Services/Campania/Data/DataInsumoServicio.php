@@ -30,7 +30,7 @@ class DataInsumoServicio
                 'tipo_gasto' => 'Maquinaria',
                 'detalle_labor' => $dist->actividad ?? $nombreMaquinaria,
                 'trabajador' => $nombreMaquinaria, // la "maquinaria" ocupa el rol de "quién ejecuta" en esta fila
-                'horas' => $dist->horas !== null ? (float) $dist->horas : null,
+                'minutos' => $dist->horas !== null ? (float) $dist->horas*60 : null,
                 'cantidad_jornales' => null, // no aplica a maquinaria
                 'cantidad' => $dist->cantidad_combustible !== null ? (float) $dist->cantidad_combustible : null,
                 'proveedor' => null,

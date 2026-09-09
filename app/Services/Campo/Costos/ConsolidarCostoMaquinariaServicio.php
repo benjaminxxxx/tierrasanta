@@ -36,7 +36,7 @@ class ConsolidarCostoMaquinariaServicio
                 'trabajador' => $f['trabajador'],
                 'cuadrilla_grupo_id' => null,
                 'tipo_cambio' => 1.0000,
-                'horas' => $f['horas'],
+                'minutos' => $f['minutos'],
                 'cantidad_jornales' => null,
                 'insumo_nombre' => null,
                 'orden_compra' => null,

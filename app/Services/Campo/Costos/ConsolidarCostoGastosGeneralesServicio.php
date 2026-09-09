@@ -34,7 +34,7 @@ class ConsolidarCostoGastosGeneralesServicio
                     'trabajador' => null,
                     'cuadrilla_grupo_id' => null,
                     'tipo_cambio' => 1.0000,
-                    'horas' => null,
+                    'minutos' => null,
                     'cantidad_jornales' => null,
                     'insumo_nombre' => null,
                     'orden_compra' => null,
