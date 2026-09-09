@@ -23,7 +23,7 @@ class PlanillaCostoComponent extends Component
     }
     public function cargarProyeccion()
     {
-        $this->empleados = app(PlanillaServicio::class)->obtenerProyeccion($this->mes, $this->anio);
+        $this->empleados = collect(app(PlanillaServicio::class)->obtenerProyeccion($this->mes, $this->anio));
     }
     public function mostrarExplicacionSueldo(int $empleadoId): void
     {

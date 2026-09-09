@@ -41,7 +41,6 @@ class ReporteDiarioAgregarRegadoresComponent extends Component
             RiegoServicio::registrarRegadoresEnFecha($this->fecha, $this->trabajadoresAgregados);
             $this->alert('success', 'Regadores agregados');
             $this->trabajadoresAgregados = [];
-            //$this->obtenerRiegos();
             $this->dispatch('nuevosRegadoresHanSidoAgregados');
             $this->mostrarFormularioAgregarRegador = false;
         } catch (\Throwable $th) {

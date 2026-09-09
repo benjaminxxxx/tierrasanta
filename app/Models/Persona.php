@@ -62,4 +62,8 @@ class Persona extends Model
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
+    public function getNombreCompletoAttribute()
+    {
+        return "{$this->apellido_paterno} {$this->apellido_materno}, {$this->nombres}";
+    }
 }

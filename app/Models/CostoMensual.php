@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CostoMensual extends Model
 {
@@ -32,7 +33,72 @@ class CostoMensual extends Model
         'operativo_servicios_fundo_negro',
         'operativo_mano_obra_indirecta_blanco',
         'operativo_mano_obra_indirecta_negro',
+
+        // Costos base/declarados
+        'costo_planilla',
+        'costo_cuadrilla',
+        'costo_maquinaria',
+        'costo_pesticida',
+        'costo_fertilizante',
+        'costo_gastos_generales',
+
+        // Costos calculados (consolidados por campo)
+        'costo_planilla_calculado',
+        'costo_cuadrilla_calculado',
+        'costo_maquinaria_calculado',
+        'costo_pesticida_calculado',
+        'costo_fertilizante_calculado',
+        'costo_gastos_generales_calculado',
+
+        // Archivos, auditoría y control
+        'reporte_file',
+        'estado',
+        'calculado_en',
+        'calculado_por',
+        'observaciones',
     ];
+
+    protected $casts = [
+        'anio' => 'integer',
+        'mes' => 'integer',
+        'calculado_en' => 'datetime',
+        'fijo_administrativo_blanco' => 'decimal:2',
+        'fijo_administrativo_negro' => 'decimal:2',
+        'fijo_financiero_blanco' => 'decimal:2',
+        'fijo_financiero_negro' => 'decimal:2',
+        'fijo_gastos_oficina_blanco' => 'decimal:2',
+        'fijo_gastos_oficina_negro' => 'decimal:2',
+        'fijo_depreciaciones_blanco' => 'decimal:2',
+        'fijo_depreciaciones_negro' => 'decimal:2',
+        'fijo_costo_terreno_blanco' => 'decimal:2',
+        'fijo_costo_terreno_negro' => 'decimal:2',
+        'operativo_servicios_fundo_blanco' => 'decimal:2',
+        'operativo_servicios_fundo_negro' => 'decimal:2',
+        'operativo_mano_obra_indirecta_blanco' => 'decimal:2',
+        'operativo_mano_obra_indirecta_negro' => 'decimal:2',
+        'costo_planilla' => 'decimal:2',
+        'costo_cuadrilla' => 'decimal:2',
+        'costo_maquinaria' => 'decimal:2',
+        'costo_pesticida' => 'decimal:2',
+        'costo_fertilizante' => 'decimal:2',
+        'costo_gastos_generales' => 'decimal:2',
+        'costo_planilla_calculado' => 'decimal:2',
+        'costo_cuadrilla_calculado' => 'decimal:2',
+        'costo_maquinaria_calculado' => 'decimal:2',
+        'costo_pesticida_calculado' => 'decimal:2',
+        'costo_fertilizante_calculado' => 'decimal:2',
+        'costo_gastos_generales_calculado' => 'decimal:2',
+    ];
+
+    /* =======================
+     |  RELACIONES
+     ======================= */
+
+    public function usuarioCalculadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'calculado_por');
+    }
+
     /* =======================
      |  ATTRIBUTES TOTALES
      ======================= */

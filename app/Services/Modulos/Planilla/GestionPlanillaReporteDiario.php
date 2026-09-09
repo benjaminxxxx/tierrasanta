@@ -9,11 +9,6 @@ use App\Services\RecursosHumanos\Planilla\PlanillaRegistroDiarioServicio;
 
 class GestionPlanillaReporteDiario
 {
-    public function guardarRegistrosDiarios($fecha,$datos,$totalActividades){
-      
-        return app(PlanillaRegistroDiarioServicio::class)->guardarRegistrosDiarios($fecha,$datos,$totalActividades);
-        
-    }
     public function obtenerHandsontableObtenerRegistroDiarioPlanilla($fecha){   
         return app(HSTPlanillaRegistroDiarioActividades::class)->obtenerRegistroDiarioPlanilla($fecha);
     }

@@ -187,6 +187,80 @@ class ReporteDiarioRiegoDetalleComponent extends Component
                 'hora_inicio_almuerzo' => $this->hora_inicio_almuerzo,
                 'hora_fin_almuerzo' => $this->hora_fin_almuerzo,
             ];
+            /*
+            array:5 [▼ // app\Livewire\GestionRiego\ReporteDiarioRiegoDetalleComponent.php:190
+  "resumen_riego" => 
+App\Models
+\
+ConsolidadoRiego
+ {#769 ▶}
+  "fecha" => "2026-08-01"
+  "data" => array:6 [▼
+    0 => array:8 [▼
+      0 => "A3"
+      1 => "6:30"
+      2 => "8:30"
+      3 => 2
+      4 => "Riego"
+      5 => null
+      6 => null
+      7 => null
+    ]
+    1 => array:8 [▼
+      0 => "A1"
+      1 => "8:30"
+      2 => "10:00"
+      3 => 1.5
+      4 => "Riego"
+      5 => null
+      6 => null
+      7 => null
+    ]
+    2 => array:8 [▼
+      0 => "Naranjos"
+      1 => "10:00"
+      2 => "12:00"
+      3 => 2
+      4 => "Riego"
+      5 => null
+      6 => null
+      7 => null
+    ]
+    3 => array:8 [▼
+      0 => "10"
+      1 => "12:00"
+      2 => "14:00"
+      3 => 2
+      4 => "Riego"
+      5 => null
+      6 => null
+      7 => null
+    ]
+    4 => array:8 [▼
+      0 => "9"
+      1 => "14:00"
+      2 => "16:00"
+      3 => 2
+      4 => "Riego"
+      5 => null
+      6 => null
+      7 => null
+    ]
+    5 => array:8 [▼
+      0 => "10"
+      1 => "16:00"
+      2 => "19:00"
+      3 => 3
+      4 => "Riego"
+      5 => "Se dejo regando"
+      6 => true //sin haberes, es cuando el trabajador deja regando por fuera de su hora, se necesa saber cuantas horas de riego hay pero no se considera en su jornal
+      7 => null
+    ]
+  ]
+  "hora_inicio_almuerzo" => "11:00"
+  "hora_fin_almuerzo" => "11:30"
+]
+   */
 
             $conflictos = app(ConsolidarJornadaRiegoProceso::class)->ejecutarGuardadoRegistros($parametros);
 

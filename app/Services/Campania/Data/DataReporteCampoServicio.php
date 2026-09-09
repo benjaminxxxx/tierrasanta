@@ -6,6 +6,122 @@ use App\Models\ResumenCostoDiario;
 
 class DataReporteCampoServicio
 {
+    /**
+     * Consulta unificada a ResumenCostoDiario filtrada por rango de fechas y opcionalmente por campaña/campo.
+     * Mapea cada registro a la estructura exacta de la BDD de Campo.
+     *
+     * @param string $fechaInicio Format: 'Y-m-d'
+     * @param string $fechaFin    Format: 'Y-m-d'
+     * @param string|null $campania
+     * @param string|null $campo
+     * @return array
+     */
+    public function obtenerDataUnificada(string $fechaInicio, string $fechaFin, ?string $campania = null, ?string $campo = null): array
+    {
+        $query = ResumenCostoDiario::whereBetween('fecha', [$fechaInicio, $fechaFin]);
+
+        if (!empty($campania)) {
+            $query->where('campania', $campania);
+        }
+
+        if (!empty($campo)) {
+            $query->where('campo', $campo);
+        }
+
+        $registros = $query->orderBy('fecha', 'asc')->get();
+
+        return $registros->map(fn($row) => $this->mapearFilaGenerica($row))->toArray();
+    }
+    /**
+     * Convierte un registro de ResumenCostoDiario a la estructura plana exigida por el Excel.
+     */
+    private function mapearFilaGenerica(ResumenCostoDiario $row): array
+    {
+        // 1. Resolver dinámica de tipo_gasto y mapeo de campos según el tipo de origen
+        return match ($row->origen_tipo) {
+
+            'planilla' => [
+                'fecha' => $row->fecha ? $row->fecha->format('Y-m-d') : null,
+                'campania' => $row->campania,
+                'campo' => $row->campo,
+                'tipo_gasto' => 'Planilla',
+                'detalle_labor' => $row->labor_nombre ?? '-',
+                'trabajador' => $row->trabajador ?? '-',
+                'horas' => $row->horas !== null ? (float) $row->horas : null,
+                'cantidad_jornales' => $row->cantidad_jornales !== null ? (float) $row->cantidad_jornales : null,
+                'cantidad' => null,
+                'proveedor' => null,
+                'n_documento' => null,
+                'costo' => (float) $row->costo_total,
+                'observacion' => $row->observacion,
+            ],
+
+            'maquinaria' => [
+                'fecha' => $row->fecha ? $row->fecha->format('Y-m-d') : null,
+                'campania' => $row->campania,
+                'campo' => $row->campo,
+                'tipo_gasto' => 'Maquinaria',
+                'detalle_labor' => $row->labor_nombre ?? '-',
+                'trabajador' => $row->trabajador ?? '-',
+                'horas' => $row->horas !== null ? (float) $row->horas : null,
+                'cantidad_jornales' => null,
+                'cantidad' => $row->cantidad_insumo !== null ? (float) $row->cantidad_insumo : null,
+                'proveedor' => null,
+                'n_documento' => null,
+                'costo' => (float) $row->costo_total,
+                'observacion' => $row->observacion,
+            ],
+
+            'fertilizante', 'pesticida' => [
+                'fecha' => $row->fecha ? $row->fecha->format('Y-m-d') : null,
+                'campania' => $row->campania,
+                'campo' => $row->campo,
+                'tipo_gasto' => ucfirst($row->origen_tipo),
+                'detalle_labor' => $row->insumo_nombre ?? '-',
+                'trabajador' => null,
+                'horas' => null,
+                'cantidad_jornales' => null,
+                'cantidad' => $row->cantidad_insumo !== null ? (float) $row->cantidad_insumo : null,
+                'proveedor' => $row->tienda_comercial,
+                'n_documento' => $this->armarDocumento($row->orden_compra, $row->factura),
+                'costo' => (float) $row->costo_total,
+                'observacion' => $row->observacion,
+            ],
+
+            'costo_fijo', 'costo_operativo' => [
+                'fecha' => $row->fecha ? $row->fecha->format('Y-m-d') : null,
+                'campania' => $row->campania,
+                'campo' => $row->campo,
+                'tipo_gasto' => $row->origen_tipo === 'costo_fijo' ? 'Costo Fijo' : 'Costo Operativo',
+                'detalle_labor' => $row->labor_nombre ?? '-',
+                'trabajador' => $row->trabajador ?? '-',
+                'horas' => $row->horas !== null ? (float) $row->horas : null,
+                'cantidad_jornales' => $row->cantidad_jornales !== null ? (float) $row->cantidad_jornales : null,
+                'cantidad' => null,
+                'proveedor' => null,
+                'n_documento' => null,
+                'costo' => (float) $row->costo_total,
+                'observacion' => $row->observacion,
+            ],
+
+            // Mapeo genérico por si entra un origen_tipo no contemplado previamente
+            default => [
+                'fecha' => $row->fecha ? $row->fecha->format('Y-m-d') : null,
+                'campania' => $row->campania,
+                'campo' => $row->campo,
+                'tipo_gasto' => ucfirst($row->origen_tipo ?? 'Otros'),
+                'detalle_labor' => $row->labor_nombre ?? $row->insumo_nombre ?? '-',
+                'trabajador' => $row->trabajador ?? '-',
+                'horas' => $row->horas !== null ? (float) $row->horas : null,
+                'cantidad_jornales' => $row->cantidad_jornales !== null ? (float) $row->cantidad_jornales : null,
+                'cantidad' => $row->cantidad_insumo !== null ? (float) $row->cantidad_insumo : null,
+                'proveedor' => $row->tienda_comercial ?? null,
+                'n_documento' => $this->armarDocumento($row->orden_compra, $row->factura),
+                'costo' => (float) $row->costo_total,
+                'observacion' => $row->observacion,
+            ],
+        };
+    }
     public function generarPlanillerosPor(string $campania, string $campo): array
     {
         $registros = ResumenCostoDiario::where('campania', $campania)

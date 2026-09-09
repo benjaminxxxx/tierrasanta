@@ -27,10 +27,11 @@ class GeneradorSimulacionService
 
         $consolidarManoObraServicio = app(ConsolidarCostoManoObraServicio::class);
         $campaniaServicio = app(CampaniaServicio::class);
-
-        foreach ($campanias as $campania) {
-            $consolidarManoObraServicio->consolidarPlanilla($campania);
-            $campaniaServicio->generarBddMensual($campania->id);
-        }
+        $consolidarManoObraServicio->consolidarPlanillaEnRango('2026-08-01', '2026-08-31');
+        /*
+                foreach ($campanias as $campania) {
+                    $consolidarManoObraServicio->consolidarPlanilla($campania);
+                    $campaniaServicio->generarBddMensual($campania->id);
+                }*/
     }
 }

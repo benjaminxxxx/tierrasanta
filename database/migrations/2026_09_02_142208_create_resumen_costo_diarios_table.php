@@ -33,7 +33,7 @@ return new class extends Migration {
             $table->decimal('tipo_cambio', 8, 4)->default(1.0000);
 
             // Métricas de Mano de Obra
-            $table->decimal('horas', 6, 2)->nullable()->default(0.00);
+            $table->unsignedSmallInteger('minutos')->nullable()->default(0);
             $table->decimal('cantidad_jornales', 6, 4)->nullable()->default(0.00);
 
             // Métricas de Insumos / Servicios / Compras

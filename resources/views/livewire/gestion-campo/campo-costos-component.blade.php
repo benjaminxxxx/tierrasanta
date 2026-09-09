@@ -1,8 +1,13 @@
 <div class="space-y-4">
-    <div>
-        <x-title>Reporte General de Costos</x-title>
-        <x-subtitle>Resumen de costos por campo, fecha y campaña</x-subtitle>
-    </div>
+    <x-flex class="justify-between">
+        <div>
+            <x-title>Reporte General de Costos</x-title>
+            <x-subtitle>Resumen de costos por campo, fecha y campaña</x-subtitle>
+        </div>
+        <x-button @click="$wire.dispatch('abrirConsolidadorCostosMensuales')">
+            <i class="fa fa-check"></i> Consolidar mes
+        </x-button>
+    </x-flex>
 
     <x-card class="space-y-4">
         <x-flex class="justify-between">
@@ -36,16 +41,21 @@
             </x-flex>
 
             <div>
-                <x-button variant="primary" wire:click="consolidarCostoCampos" wire:loading.attr="disabled"
-                    wire:target="consolidar">
-                    <i class="fa fa-sync"></i> Consolidar
-                </x-button>
-                @if ($reporteFileCampania)
-                    <x-button variant="secondary" href="{{ Storage::disk('public')->url($reporteFileCampania) }}"
-                        wire:loading.attr="disabled" wire:target="descargarReporte">
-                        <i class="fa fa-download"></i> Descargar Reporte
+                @if ($campaniaId)
+                    <x-button variant="primary" wire:click="consolidarCostoCampos" wire:loading.attr="disabled"
+                        wire:target="consolidarCostoCampos">
+                        <i class="fa fa-sync"></i>
+                        {{ $reporteFileCampania ? 'Reconsolidar Campaña' : 'Consolidar Campaña' }}
                     </x-button>
+
+                    @if ($reporteFileCampania)
+                        <x-button variant="secondary" href="{{ Storage::disk('public')->url($reporteFileCampania) }}"
+                            target="_blank">
+                            <i class="fa fa-download"></i> Descargar Reporte
+                        </x-button>
+                    @endif
                 @endif
+
             </div>
         </x-flex>
 
@@ -56,7 +66,8 @@
             <div class="flex flex-wrap gap-3">
                 @foreach ($tiposDisponibles as $tipo)
                     <label class="flex items-center gap-1 text-sm cursor-pointer">
-                        <x-input type="checkbox" value="{{ $tipo }}" wire:model.live="tiposSeleccionados" label="{{ str_replace('_', ' ', $tipo) }}" />
+                        <x-input type="checkbox" value="{{ $tipo }}" wire:model.live="tiposSeleccionados"
+                            label="{{ str_replace('_', ' ', $tipo) }}" />
                     </label>
                 @endforeach
             </div>
@@ -93,7 +104,7 @@
                                     <x-td>{{ $fila->campo }}</x-td>
                                     <x-td>{{ $fila->labor_nombre ?? '-' }}</x-td>
                                     <x-td class="!text-left">{{ $fila->trabajador ?? '-' }}</x-td>
-                                    <x-td>{{ $fila->horas }}</x-td>
+                                    <x-td>{{ number_format($fila->horas,2) }}</x-td>
                                     <x-td>{{ $fila->cantidad_jornales }}</x-td>
                                     <x-td>{{ number_format($fila->costo_total, 2) }}</x-td>
                                     <x-td>
@@ -113,4 +124,5 @@
         </div>
     </x-card>
     <x-loading wire:loading />
+    <livewire:costos.consolidador-costos-mensuales-component />
 </div>

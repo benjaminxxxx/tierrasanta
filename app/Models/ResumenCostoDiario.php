@@ -21,7 +21,7 @@ class ResumenCostoDiario extends Model
         'trabajador',
         'cuadrilla_grupo_id',
         'tipo_cambio',
-        'horas',
+        'minutos',
         'cantidad_jornales',
         'insumo_nombre',
         'orden_compra',
@@ -38,7 +38,7 @@ class ResumenCostoDiario extends Model
         'origen_id' => 'integer',
         'labor' => 'integer',
         'tipo_cambio' => 'decimal:4',
-        'horas' => 'decimal:2',
+        'minutos' => 'integer',
         'cantidad_jornales' => 'decimal:4',
         'cantidad_insumo' => 'decimal:2',
         'costo_total' => 'decimal:14',
@@ -71,5 +71,9 @@ class ResumenCostoDiario extends Model
     public function scopePorGrupoCuadrilla($query, string $grupoId)
     {
         return $query->where('cuadrilla_grupo_id', $grupoId);
+    }
+    public function getHorasAttribute()
+    {
+        return $this->minutos / 60;
     }
 }

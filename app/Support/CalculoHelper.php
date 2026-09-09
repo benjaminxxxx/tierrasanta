@@ -582,6 +582,17 @@ class CalculoHelper
 
         return ($h * 60) + $m;
     }
+    public static function obtenerDiferenciaMinutos(string $horaInicio, string $horaFin): int
+    {
+        if (!$horaInicio || !$horaFin) {
+            return 0;
+        }
+
+        $inicio = Carbon::parse($horaInicio);
+        $fin = Carbon::parse($horaFin);
+
+        return $inicio->diffInMinutes($fin); // entero exacto, sin redondear
+    }
     /**
      * Calcula la diferencia en horas decimales entre dos tiempos.
      * Ejemplo: "07:00:00" a "10:30:00" -> 3.5

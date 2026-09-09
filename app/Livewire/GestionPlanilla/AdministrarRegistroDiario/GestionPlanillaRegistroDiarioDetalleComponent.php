@@ -5,6 +5,7 @@ namespace App\Livewire\GestionPlanilla\AdministrarRegistroDiario;
 use App\Models\PlanResumenDiario;
 use App\Services\Modulos\Planilla\GestionPlanillaReporteDiario;
 use App\Services\RecursosHumanos\Personal\ActividadServicio;
+use App\Services\RecursosHumanos\Planilla\PlanillaRegistroDiarioServicio;
 use App\Traits\ListasComunes\ConArrayCampos;
 use App\Traits\ListasComunes\ConArrayPlanTipoAsistencia;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -64,7 +65,7 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
             $this->resumenDiarioPlanilla->update([
                 'total_actividades'=>$this->totalActividades,
             ]);
-            app(GestionPlanillaReporteDiario::class)->guardarRegistrosDiarios($this->fecha,$datos,$this->totalActividades);
+            app(PlanillaRegistroDiarioServicio::class)->guardarRegistrosDiarios($this->fecha,$datos,$this->totalActividades);
             $this->obtenerResumenDiarioPlanilla();
             ActividadServicio::detectarYCrearActividades($this->fecha);
             $this->hasUnsavedChanges = false;

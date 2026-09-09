@@ -33,6 +33,9 @@ class PlanEmpleado extends Model
         'actualizado_por',
         'eliminado_por',
     ];
+    public function persona(){
+        return $this->belongsTo(Persona::class);
+    }
     public function derechoHabientes()
     {
         return $this->hasMany(EmpleadoDerechoHabiente::class, 'empleado_id');

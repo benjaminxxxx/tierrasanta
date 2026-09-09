@@ -3,6 +3,7 @@
 namespace App\Services\RecursosHumanos\Planilla;
 
 use App\Exceptions\SplitSuspensionRequeridaException;
+use App\Models\CampoCampania;
 use App\Models\Labores;
 use App\Models\PlanDetalleHora;
 use App\Models\PlanMensualDetalle;
@@ -193,6 +194,7 @@ class PlanillaRegistroDiarioServicio
             }
         }
     }
+    /*
     private function procesarDatos($datos, $totalActividades): array
     {
         $camposNormalizados = CampoServicio::obtenerMapaCamposNormalizados();
@@ -239,7 +241,6 @@ class PlanillaRegistroDiarioServicio
                 $hInicio = Carbon::parse($inicio);
                 $hFin = Carbon::parse($fin);
 
-
                 $horas = $hInicio->floatDiffInHours($hFin);
 
                 $sumaHorasTramos += $horas;
@@ -275,10 +276,120 @@ class PlanillaRegistroDiarioServicio
         }
 
         return $datosProcesados;
+    }*/
+    private function procesarDatos($datos, $totalActividades, $fecha): array
+    {
+        $camposNormalizados = CampoServicio::obtenerMapaCamposNormalizados();
+        $labores = Labores::pluck('codigo')->toArray();
+        $datosProcesados = [];
+        $camposSinCampaniaVigente = []; // <-- acumulador, para reportar todos juntos
+
+        $camposConCampaniaVigente = CampoCampania::where('fecha_inicio', '<=', $fecha)
+            ->where(function ($q) use ($fecha) {
+                $q->whereNull('fecha_fin')->orWhere('fecha_fin', '>=', $fecha);
+            })
+            ->pluck('campo')
+            ->flip();
+
+        foreach ($datos as $i => $informacion) {
+            $fila = $i + 1;
+            $planillaMensualDetalleId = $informacion['plan_men_detalle_id'] ?? null;
+            $asistencia = trim($informacion['asistencia'] ?? '');
+
+            if (!$planillaMensualDetalleId) {
+                continue;
+            }
+
+            $tramos = [];
+            $sumaHorasTramos = 0;
+
+            for ($x = 1; $x <= $totalActividades; $x++) {
+                $inicio = isset($informacion["entrada_$x"]) ? str_replace('.', ':', $informacion["entrada_$x"]) : null;
+                $fin = isset($informacion["salida_$x"]) ? str_replace('.', ':', $informacion["salida_$x"]) : null;
+                $labor = $informacion["labor_$x"] ?? null;
+                $campo = $informacion["campo_$x"] ?? null;
+
+                if (!$inicio && !$fin && !$campo && !$labor) {
+                    continue;
+                }
+
+                if (!$inicio || !$fin || !$campo || !$labor) {
+                    throw new Exception("Valores incompletos en fila {$fila}, tramo {$x}");
+                }
+
+                $campoKey = mb_strtolower($campo);
+                if (!array_key_exists($campoKey, $camposNormalizados)) {
+                    throw new Exception("El campo '{$campo}' en fila {$fila} no existe o no tiene alias.");
+                }
+
+                if (!in_array($labor, $labores)) {
+                    throw new Exception("La labor '{$labor}' en fila {$fila} no existe.");
+                }
+
+                $nombreCampoReal = $camposNormalizados[$campoKey];
+
+                // Validación de campaña vigente para esta fecha
+                $tieneCampaniaVigente = CampoCampania::where('campo', $nombreCampoReal)
+                    ->where('fecha_inicio', '<=', $fecha)
+                    ->where(function ($q) use ($fecha) {
+                        $q->whereNull('fecha_fin')->orWhere('fecha_fin', '>=', $fecha);
+                    })
+                    ->exists();
+
+                // No entra al IF si existe campaña vigente O si el campo es 'FDM'
+                if (!isset($camposConCampaniaVigente[$nombreCampoReal]) && $nombreCampoReal !== 'FDM') {
+                    $camposSinCampaniaVigente[$nombreCampoReal] = true;
+                    continue;
+                }
+
+                $inicio = FormatoHelper::normalizarHora($inicio);
+                $fin = FormatoHelper::normalizarHora($fin);
+                $hInicio = Carbon::parse($inicio);
+                $hFin = Carbon::parse($fin);
+
+                $horas = $hInicio->floatDiffInHours($hFin);
+
+                $sumaHorasTramos += $horas;
+                $tramos[] = [
+                    'codigo_labor' => $labor,
+                    'campo_nombre' => $nombreCampoReal,
+                    'hora_inicio' => $hInicio->format('H:i'),
+                    'hora_fin' => $hFin->format('H:i'),
+                ];
+            }
+
+            if (!empty($tramos) && trim($asistencia) != 'A') {
+                throw new Exception("Si hay detalle, debe agregar un tipo de asistencia A.");
+            }
+
+            if ($asistencia === 'A') {
+                if (empty($tramos) && empty($camposSinCampaniaVigente)) {
+                    throw new Exception("Debe agregar detalle si tiene asistencia en la fila {$fila}");
+                }
+                $totalFinal = $sumaHorasTramos;
+            } else {
+                $totalFinal = $informacion['total_horas'] ?? 0;
+            }
+
+            $datosProcesados[] = [
+                'plan_det_men_id' => $planillaMensualDetalleId,
+                'asistencia' => $asistencia,
+                'total_horas' => $totalFinal,
+                'tramos' => $tramos
+            ];
+        }
+
+        // Se lanza al final, con TODOS los campos afectados en un solo mensaje
+        if (!empty($camposSinCampaniaVigente)) {
+            $campos = implode(', ', array_keys($camposSinCampaniaVigente));
+            throw new Exception("Los siguientes campos {$campos} no tienen una campaña vigente dentro de la fecha.");
+        }
+
+        return $datosProcesados;
     }
     public function guardarRegistrosDiarios($fecha, $datos, $totalActividades)
     {
-        $datosLimpios = $this->procesarDatos($datos, $totalActividades);
+        $datosLimpios = $this->procesarDatos($datos, $totalActividades, $fecha);
 
         foreach ($datosLimpios as $item) {
 
@@ -317,33 +428,6 @@ class PlanillaRegistroDiarioServicio
 
         $this->actualizarResumenAsistencia($fecha);
     }
-    /*original, la otra funcion implementara el autosuspensiones de plame
-        public function guardarRegistrosDiarios($fecha, $datos, $totalActividades)
-        {
-            // 1. Validar y normalizar (Si falla, lanza Exception y no guarda nada)
-            $datosLimpios = $this->procesarDatos($datos, $totalActividades);
-
-            foreach ($datosLimpios as $item) {
-                // 2. Persistir Cabecera
-                $registro = PlanRegistroDiario::updateOrCreate(
-                    ['plan_det_men_id' => $item['plan_det_men_id'], 'fecha' => $fecha],
-                    ['asistencia' => $item['asistencia'], 'total_horas' => $item['total_horas']]
-                );
-
-                // 4. Manejo de tramos
-                if (empty($item['tramos'])) {
-                    $registro->detalles()->delete();
-                    if ($item['asistencia'] === '')
-                        $registro->delete();
-                    continue;
-                }
-
-                // 5. Sincronización optimizada
-                $this->sincronizarTramos($registro, $item['tramos']);
-            }
-
-            $this->actualizarResumenAsistencia($fecha);
-        }*/
 
     private function sincronizarTramos($registro, array $tramosNuevos)
     {

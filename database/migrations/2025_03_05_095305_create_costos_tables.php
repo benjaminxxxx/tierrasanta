@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -35,6 +34,29 @@ return new class extends Migration
             $table->decimal('operativo_mano_obra_indirecta_blanco', 10, 2)->nullable();
             $table->decimal('operativo_mano_obra_indirecta_negro', 10, 2)->nullable();
 
+
+            $table->decimal('costo_planilla', 10, 2)->nullable();
+            $table->decimal('costo_cuadrilla', 10, 2)->nullable();
+            $table->decimal('costo_maquinaria', 10, 2)->nullable();
+            $table->decimal('costo_pesticida', 10, 2)->nullable();
+            $table->decimal('costo_fertilizante',10,2)->nullable();
+            $table->decimal('costo_gastos_generales', 10, 2)->nullable();
+
+            // Calculado (suma real desde el resumen consolidado por campos)
+            $table->decimal('costo_planilla_calculado', 10, 2)->nullable();
+            $table->decimal('costo_cuadrilla_calculado', 10, 2)->nullable();
+            $table->decimal('costo_maquinaria_calculado', 10, 2)->nullable();
+            $table->decimal('costo_pesticida_calculado', 10, 2)->nullable();
+            $table->decimal('costo_fertilizante_calculado',10,2)->nullable();
+            $table->decimal('costo_gastos_generales_calculado', 10, 2)->nullable();
+
+            $table->string('reporte_file')->nullable();
+
+            // Recomendados
+            $table->enum('estado', ['pendiente', 'consolidado', 'con_diferencias'])->default('pendiente');
+            $table->timestamp('calculado_en')->nullable();
+            $table->foreignId('calculado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->text('observaciones')->nullable();
             $table->timestamps();
         });
     }

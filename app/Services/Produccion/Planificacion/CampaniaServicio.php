@@ -15,6 +15,50 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class CampaniaServicio
 {
+    public function generarBddMensual(int $campaniaId): void
+    {
+        $campania = Campania::find($campaniaId);
+
+        if (!$campania) {
+            throw new Exception("La campaña no existe.");
+        }
+
+        // 1. Validar la fecha de inicio
+        if (!$campania->fecha_inicio) {
+            throw new Exception("La campaña no tiene una fecha de inicio configurada.");
+        }
+        // 2. Determinar la fecha fin: si es nula o futura, se ajusta a la fecha actual
+        $fechaInicio = $campania->fecha_inicio->format('Y-m-d');
+
+        $fechaFin = ($campania->fecha_fin && $campania->fecha_fin->isPast())
+            ? $campania->fecha_fin->format('Y-m-d')
+            : now()->format('Y-m-d');
+
+        // 1. Obtención unificada de datos por el rango de la campaña
+        $informacionCombinada = app(DataReporteCampoServicio::class)->obtenerDataUnificada(
+            $fechaInicio,
+            $fechaFin,
+            $campania->nombre_campania,
+            $campania->campo
+        );
+
+        // 2. Configuración para el generador Excel
+        $config = (object) [
+            'campo' => $campania->campo,
+            'nombre_campania' => $campania->nombre_campania,
+            'area' => $campania->area,
+        ];
+
+        // 3. Generar archivo Excel
+        $filePath = app(ExportCampaniaServicio::class)->generarExcelMensual($config, $informacionCombinada);
+
+        // 4. Actualizar el registro de la campaña
+        $campania->update([
+            'gasto_resumen_bdd_file' => $filePath,
+        ]);
+    }
+    /*
+    esta funcion se cambio a una mejor, porque ahora se ha unificado al cosot mensual que tra todo de golep
     public function generarBddMensual(int $campaniaId)
     {
         $campania = Campania::find($campaniaId);
@@ -44,17 +88,6 @@ class CampaniaServicio
             $campania->campo
         );
 
-
-        /*
-                $informacionCuadrilla = app(DataReporteCampoServicio::class)->generarCuaderillerosPor(
-                    $campania->campo,
-                    $campania->fecha_inicio,
-                    $campania->fecha_fin
-                );
-
-
-
-        */
         $informacionConsumo = [];   // Aquí vendrían tus otros servicios
 
         // 2. Combinar todos los arrays
@@ -97,7 +130,7 @@ class CampaniaServicio
         $campania->update([
             'gasto_resumen_bdd_file' => $filePath
         ]);
-    }
+    }*/
     public function registrarHistorialDeInfestaciones(int $campaniaId, string $tipo = 'infestacion'): void
     {
         // Cargar campaña

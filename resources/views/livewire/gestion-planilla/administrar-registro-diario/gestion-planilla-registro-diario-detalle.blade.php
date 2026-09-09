@@ -455,30 +455,7 @@
             const totalHoras = this.minutesToTime(totalMinutos);
             this.hot.setDataAtCell(row, indiceTotal, totalHoras, 'recalculado');
         },
-        /*
-        enviarRegistrosDiariosPlanilla() {
-            // getSourceData() devuelve TODO el array de datos original, 
-            // incluyendo las filas que están ocultas por el filtro.
-            const todosLosDatos = this.hot.getSourceData();
-            const resultados = [];
-
-            todosLosDatos.forEach((fuente) => {
-                if (!fuente) return;
-
-                // Ignorar filas vacías
-                // Nota: Asegúrate de que 'plan_men_detalle_id' u otro campo clave 
-                // esté presente para no enviar basura.
-                const isEmpty = Object.values(fuente).every(v => v === null || v === '');
-
-                if (!isEmpty) {
-                    resultados.push(fuente);
-                }
-            });
-
-            // Ahora enviamos el total de los datos procesados, no solo los visibles
-            $wire.guardarInformacionRegistroPlanilla(resultados);
-            this.hasUnsavedChanges = false;
-        }*/
+       
         enviarRegistrosDiariosPlanilla() {
             const datos = this.hot.getSourceData();
             const resultados = [];

@@ -114,6 +114,7 @@ class GeneradorDatosSimuladosService
 					'sueldo' => $sueldoAleatorio,
 					'creado_por' => auth()->id() ?? 1,
 				]);
+				
 			});
 		}
 	}
@@ -158,7 +159,7 @@ class GeneradorDatosSimuladosService
 	 * @param int $mes
 	 * @return void
 	 */
-	public function asignarLaboresAleatoriasEnMes(int $anio, int $mes): void
+	public function asignarLaboresAleatoriasEnMes(int $anio, int $mes, bool $completo = false): void
 	{
 		// 0. Asegurar la existencia de las campañas previas
 		$this->crearCampaniasIniciales();
@@ -253,8 +254,11 @@ class GeneradorDatosSimuladosService
 
 			foreach ($planMensualDetalles as $det) {
 				// Asistencia aleatoria (90% "A", 10% "F")
-				$asistencia = 'A';//$faker->boolean(90) ? 'A' : 'F';
 
+				$asistencia = $faker->boolean(90) ? 'A' : 'F';
+				if ($completo) {
+					$asistencia = 'A';
+				}
 				$row = [
 					'plan_men_detalle_id' => $det->plan_men_detalle_id,
 					'documento' => $det->documento,
@@ -268,12 +272,15 @@ class GeneradorDatosSimuladosService
 					if ($fechaCarbon->isSaturday()) {
 						// Sábados: Jornada corta (6:00 a 12:00 -> 6 Horas) dividida en 1 a 2 tramos
 						$numTramos = rand(1, 2);
-						$tramosGenerados = $this->generarTramosHorario('06.00', '12.00', $numTramos);
+						$tramosGenerados = $this->generarTramosHorario('06.00', '14.00', $numTramos);
 					} else {
 						// Lunes a Viernes: Jornada (8 a 9 horas) dividida en 3 a 5 tramos
-						$numTramos = rand(3, 5);
-						$horaFin = $faker->randomElement(['14.00', '16.00']); // 8h o 9h
-						$tramosGenerados = $this->generarTramosHorario('07.00', $horaFin, $numTramos);
+						$numTramos = rand(2, 4);
+						$horaFin = $faker->randomElement(['12.00', '16.00']); // 8h o 9h
+						if ($completo) {
+							$horaFin = '16.00';
+						}
+						$tramosGenerados = $this->generarTramosHorario('08.00', $horaFin, $numTramos);
 					}
 
 					$totalHoras = 0;

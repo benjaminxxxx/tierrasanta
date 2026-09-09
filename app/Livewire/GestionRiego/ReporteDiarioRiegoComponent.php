@@ -8,8 +8,10 @@ use App\Models\Cuadrillero;
 use App\Models\PlanEmpleado;
 use App\Models\PlanMensualDetalle;
 use App\Models\ReporteDiarioRiego;
+use App\Services\Campo\Riego\RiegoServicio;
 use App\Services\Modulos\Planilla\GestionPlanillaReporteDiario;
 use App\Services\RecursosHumanos\Personal\ActividadServicio;
+use App\Services\RecursosHumanos\Planilla\PlanillaRegistroDiarioServicio;
 use App\Services\Riego\VerificacionSincronizacionRiegoServicio;
 use App\Traits\TieneParametrosTemporales;
 use DateTime;
@@ -32,7 +34,7 @@ class ReporteDiarioRiegoComponent extends Component
     ];
     public int $limiteHorasDiarias = 8;
     protected $listeners = ["generalActualizado", 'obtenerRiegos', 'registroRiegoEliminado', 'nuevosRegadoresHanSidoAgregados'];
-   
+
     public function mount()
     {
         $this->inicializarFecha();
@@ -90,7 +92,7 @@ class ReporteDiarioRiegoComponent extends Component
 
         $this->mostrarEnvioAReporteDiario = true;
     }*/
-    public function enviarRegistroDiarioRegadores()
+    /*public function enviarRegistroDiarioRegadores()
     {
         $this->listaPorEnviarRegadores = collect();
 
@@ -146,49 +148,17 @@ class ReporteDiarioRiegoComponent extends Component
         }
 
         $this->mostrarEnvioAReporteDiario = true;
+    }*/
+    public function enviarRegistroDiarioRegadores(RiegoServicio $riegoServicio)
+    {
+        $this->listaPorEnviarRegadores = (array) $riegoServicio->generarRegistroDiarioParaRegadores($this->fecha);
+        $this->mostrarEnvioAReporteDiario = true;
     }
-    public function confirmarEnvio()
+    public function confirmarEnvio(RiegoServicio $riegoServicio)
     {
         try {
+            $riegoServicio->registrarDiarioRegadores($this->fecha, $this->listaPorEnviarRegadores);
 
-            $fecha = $this->fecha;
-            $registrosDiarios = $this->listaPorEnviarRegadores;
-            $dataPlanilla = [];
-            $datosCuadrilla = [];
-            foreach ($registrosDiarios as $registroDiario) {
-                $mes = Carbon::parse($fecha)->month;
-                $anio = Carbon::parse($fecha)->year;
-                if ($registroDiario['tipo'] == 'planilla') {
-                    $planillaMensual = PlanMensualDetalle::where('plan_empleado_id', $registroDiario['trabajador_id'])
-                        ->whereHas('planillaMensual', function ($q) use ($mes, $anio) {
-                            $q->where('mes', $mes)
-                                ->where('anio', $anio);
-                        })
-                        ->first();
-                    if (!$planillaMensual) {
-                        throw new Exception("No se ha generado el registro mensual para {$registroDiario['trabajador_name']} aun");
-
-                    }
-
-                    $dataPlanilla[] = [
-                        "plan_men_detalle_id" => $planillaMensual->id,
-                        //"documento" => "29486118"
-                        //"nombres" => "CALLA GASPAR, GUILLERMINA HORTENCIA"
-                        "asistencia" => "A",
-                        "total_horas" => $registroDiario['total_horas'],
-                        //"total_bono" => ""
-                        "campo_1" => $registroDiario['campo'],
-                        "labor_1" => $registroDiario['labor'],
-                        "entrada_1" => $registroDiario['hora_inicio'],
-                        "salida_1" => $registroDiario['hora_fin']
-                    ];
-                } elseif ($registroDiario['tipo'] == 'cuadrilla') {
-                    //aun no desarrollado, innecesario por el momento
-                }
-            }
-
-            app(GestionPlanillaReporteDiario::class)->guardarRegistrosDiarios($fecha, $dataPlanilla, 1);
-            ActividadServicio::detectarYCrearActividades($fecha);
             $this->alert('success', 'Registros Diarios Enviados Correctamente.');
             $this->mostrarEnvioAReporteDiario = false;
 

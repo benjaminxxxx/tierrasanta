@@ -180,63 +180,9 @@ class PlanMensualPersonal extends Model
         'proyectado_sueldo_por_dia',
         'proyectado_sueldo_por_hora',
         'gasto_real_final',
+        'pagado_sueldo_bruto_negro'
     ];
-    /**
-     * Calcula el sueldo a pagar proporcionalmente según las horas trabajadas.
-     * Si cumple todas las horas (o no hay horas base), otorga el sueldo neto proyectado total.
-     */
-    protected function sueldoPagado(): Attribute
-    {
-        return Attribute::make(
-            get: function () {
-                $horasMeta = $this->planMensual?->total_horas ?? 0;
-                $horasTrabajadas = $this->plame_total_horas ?? 0;
-                $sueldoNetoProyectado = $this->proyectado_sueldo_neto_total ?? 0;
 
-                // Evitar división entre cero si no se configuraron horas en el mes
-                if ($horasMeta <= 0) {
-                    return $sueldoNetoProyectado;
-                }
-
-                // Cálculo proporcional
-                $sueldoCalculado = ($sueldoNetoProyectado / $horasMeta) * $horasTrabajadas;
-
-                // Retorna redondeado a 2 decimales
-                return $sueldoCalculado;
-            }
-        );
-    }
-    // Total de Descuentos / Aportes que retiene PLAME al trabajador
-    protected function aportesTrabajador(): Attribute
-    {
-        return Attribute::make(
-            get: fn() => 
-                ($this->plame_descuento_0601_comision_afp_pct ?? 0) +
-                ($this->plame_descuento_0605_renta_5ta_retenida ?? 0) +
-                ($this->plame_descuento_0606_prima_seguro_afp ?? 0) +
-                ($this->plame_descuento_0607_snp ?? 0) +
-                ($this->plame_descuento_0608_spp_aporte_obligatorio ?? 0)
-        );
-    }
-
-    // Total de Aportes a cargo del empleador
-    protected function aportesEmpleador(): Attribute
-    {
-        return Attribute::make(
-            get: fn() => ($this->plame_aporte_empleador_0803_poliza ?? 0) +
-            ($this->plame_aporte_empleador_0804_essalud ?? 0) +
-            ($this->plame_aporte_empleador_0805_sctr ?? 0) +
-            ($this->plame_aporte_empleador_0810_eps ?? 0)
-        );
-    }
-    // Gasto Total Real del Empleado para la Empresa
-    protected function costoTotalEmpresa(): Attribute
-    {
-        return Attribute::make(
-            get: fn() =>
-            $this->sueldo_pagado + $this->aportes_trabajador + $this->aportes_empleador
-        );
-    }
     /**
      * D7 + E7 + F7: remuneración básica + bonificación + asignación familiar.
      * Deliberadamente excluye compensación vacacional.
@@ -546,6 +492,7 @@ class PlanMensualPersonal extends Model
         });
     }
 
+
     /**
      * =+AC7/8
      */
@@ -562,5 +509,90 @@ class PlanMensualPersonal extends Model
             return $porDia / 8;
         });
     }
-  
+
+    /**
+     * Costo total REAL que asumió la empresa este mes por este trabajador,
+     * ya ajustado a la asistencia real (equivalente "pagado" de proyectadoSueldoBrutoNegro).
+     * pagado_sueldo_bruto_negro
+     */
+    protected function pagadoSueldoBrutoNegro(): Attribute
+    {
+        return Attribute::get(function () {
+            $sueldo = $this->sueldo_pagado; // proporcional real, ya correcto
+            $aportesTrabajador = $this->aportes_trabajador; // real, del PLAME
+            $aportesEmpleador = $this->aportes_empleador; // real, del PLAME
+
+            if (is_null($sueldo)) {
+                return null;
+            }
+
+            return $sueldo + $aportesTrabajador + $aportesEmpleador;
+        });
+    }
+    protected function pagadoSueldoPorHora(): Attribute
+    {
+        return Attribute::get(function () {
+            $total = $this->pagado_sueldo_bruto_negro; // <-- antes: proyectado_sueldo_bruto_negro
+            $totalHoras = $this->plame_total_horas;
+
+            if (is_null($total) || empty($totalHoras)) {
+                return null;
+            }
+
+            return $total / $totalHoras;
+        });
+    }
+    /**
+     * Calcula el sueldo a pagar proporcionalmente según las horas trabajadas.
+     * Si cumple todas las horas (o no hay horas base), otorga el sueldo neto proyectado total.
+     */
+    protected function sueldoPagado(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $horasMeta = $this->planMensual?->total_horas ?? 0;
+                $horasTrabajadas = $this->plame_total_horas ?? 0;
+                $sueldoNetoProyectado = $this->proyectado_sueldo_neto_total ?? 0;
+
+                // Evitar división entre cero si no se configuraron horas en el mes
+                if ($horasMeta <= 0) {
+                    return $sueldoNetoProyectado;
+                }
+
+                // Cálculo proporcional
+                $sueldoCalculado = ($sueldoNetoProyectado / $horasMeta) * $horasTrabajadas;
+
+                // Retorna redondeado a 2 decimales
+                return $sueldoCalculado;
+            }
+        );
+    }
+    // Total de Descuentos / Aportes que retiene PLAME al trabajador
+    protected function aportesTrabajador(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => round(
+                ($this->plame_descuento_0601_comision_afp_pct ?? 0) +
+                ($this->plame_descuento_0605_renta_5ta_retenida ?? 0) +
+                ($this->plame_descuento_0606_prima_seguro_afp ?? 0) +
+                ($this->plame_descuento_0607_snp ?? 0) +
+                ($this->plame_descuento_0608_spp_aporte_obligatorio ?? 0),
+                2
+            )
+        );
+    }
+
+    // Total de Aportes a cargo del empleador
+    protected function aportesEmpleador(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => round(
+                ($this->plame_aporte_empleador_0803_poliza ?? 0) +
+                ($this->plame_aporte_empleador_0804_essalud ?? 0) +
+                ($this->plame_aporte_empleador_0805_sctr ?? 0) +
+                ($this->plame_aporte_empleador_0810_eps ?? 0),
+                2
+            )
+        );
+    }
 }

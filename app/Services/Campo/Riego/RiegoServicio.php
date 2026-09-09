@@ -4,16 +4,132 @@ namespace App\Services\Campo\Riego;
 
 use App\Models\AcumulacionUso;
 use App\Models\ConsolidadoRiego;
+use App\Models\Cuadrillero;
 use App\Models\PlanEmpleado;
+use App\Models\PlanMensualDetalle;
 use App\Models\ReporteDiarioRiego;
 use App\Services\Campo\Gestion\CampoServicio;
+use App\Services\RecursosHumanos\Personal\ActividadServicio;
+use App\Services\RecursosHumanos\Planilla\PlanillaRegistroDiarioServicio;
 use App\Support\FormatoHelper;
 use DB;
 use Exception;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 class RiegoServicio
 {
+    /**
+     * Procesa y guarda los registros diarios de riego para el personal.
+     *
+     * @param string $fecha
+     * @param array|Collection $registrosDiarios
+     * @throws Exception
+     */
+    public function registrarDiarioRegadores(string $fecha, $registrosDiarios): void
+    {
+        DB::transaction(function () use ($fecha, $registrosDiarios) {
+            $fechaCarbon = Carbon::parse($fecha);
+            $mes = $fechaCarbon->month;
+            $anio = $fechaCarbon->year;
+
+            $dataPlanilla = [];
+
+            foreach ($registrosDiarios as $registro) {
+                if ($registro['tipo'] === 'planilla') {
+                    $planillaMensual = PlanMensualDetalle::where('plan_empleado_id', $registro['trabajador_id'])
+                        ->whereHas('planillaMensual', function ($q) use ($mes, $anio) {
+                            $q->where('mes', $mes)
+                                ->where('anio', $anio);
+                        })
+                        ->first();
+
+                    if (!$planillaMensual) {
+                        throw new Exception("No se ha generado el registro mensual para {$registro['trabajador_name']} aún.");
+                    }
+
+                    $dataPlanilla[] = [
+                        "plan_men_detalle_id" => $planillaMensual->id,
+                        "asistencia" => "A",
+                        "total_horas" => $registro['total_horas'],
+                        "campo_1" => $registro['campo'],
+                        "labor_1" => $registro['labor'],
+                        "entrada_1" => $registro['hora_inicio'],
+                        "salida_1" => $registro['hora_fin'],
+                    ];
+                } elseif ($registro['tipo'] === 'cuadrilla') {
+                    // Lógica pendiente para cuadrilla
+                }
+            }
+
+            if (!empty($dataPlanilla)) {
+                app(PlanillaRegistroDiarioServicio::class)->guardarRegistrosDiarios($fecha, $dataPlanilla, 1);
+            }
+
+            ActividadServicio::detectarYCrearActividades($fecha);
+        });
+    }
+    /**
+     * Genera la lista de registros diarios para regadores en una fecha determinada.
+     *
+     * @param string|\DateTimeInterface $fecha
+     * @return Collection
+     */
+    public function generarRegistroDiarioParaRegadores($fecha): Collection
+    {
+        $consolidados = ConsolidadoRiego::whereDate('fecha', $fecha)->get();
+        $listaPorEnviar = collect();
+
+        foreach ($consolidados as $item) {
+            $nombre = $item->trabajador_nombre;
+
+            $tipo = match ($item->trabajador_type) {
+                Cuadrillero::class => 'cuadrilla',
+                PlanEmpleado::class => 'planilla',
+                default => 'desconocido'
+            };
+
+            // 1. Obtener registro acumulado si existe
+            $registroAcumulado = ReporteDiarioRiego::where('consolidado_id', $item->id)
+                ->where('por_acumulacion', true)
+                ->first();
+
+            // 2. Determinar la HORA INICIO que prevalece (la menor entre el consolidado/detalle y el acumulado)
+            $horaInicioNormal = $item->hora_inicio ? Carbon::parse($item->hora_inicio) : null;
+            $horaInicioAcumulado = $registroAcumulado ? Carbon::parse($registroAcumulado->hora_inicio) : null;
+
+            if ($horaInicioNormal && $horaInicioAcumulado) {
+                $horaInicioReal = $horaInicioNormal->lt($horaInicioAcumulado) ? $horaInicioNormal : $horaInicioAcumulado;
+            } else {
+                $horaInicioReal = $horaInicioNormal ?? $horaInicioAcumulado;
+            }
+
+            // Si no hay hora de inicio por ningún lado, saltamos el registro
+            if (!$horaInicioReal) {
+                continue;
+            }
+
+            // 3. Minutos totales a reportar en la jornada
+            $minutosTotales = $item->minutos_jornal;
+
+            // 4. Calcular la HORA FIN sumando los minutos totales a la hora inicio prevalente
+            $horaFinReal = (clone $horaInicioReal)->addMinutes($minutosTotales);
+
+            // 5. Agregar el registro estructurado a la colección
+            $listaPorEnviar->push([
+                'trabajador_id' => $item->trabajador_id,
+                'trabajador_name' => $nombre,
+                'tipo' => $tipo,
+                'hora_inicio' => $horaInicioReal->format('H:i:s'),
+                'hora_fin' => $horaFinReal->format('H:i:s'),
+                'total_horas' => round($minutosTotales / 60, 2),
+                'campo' => 'FDM',
+                'labor' => 81,
+            ]);
+        }
+
+        return $listaPorEnviar;
+    }
 
     public function procesarRegistroDiario(ConsolidadoRiego $resumenRiego, string $fecha, array $data): void
     {
@@ -130,7 +246,7 @@ class RiegoServicio
         if (!$trabajadorType) {
             throw new Exception("Tipo de trabajador inválido: {$regador['tipo']}");
         }
-        
+
         $esCuadrilla = $regador['tipo'] === 'cuadrilleros';
 
         // Buscar por relación polimórfica real
@@ -149,7 +265,7 @@ class RiegoServicio
 
             return $consolidado;
         }
-        
+
         // 🆕 Crear nuevo consolidado
         return ConsolidadoRiego::create([
             'regador_documento' => '',
@@ -158,7 +274,7 @@ class RiegoServicio
             'hora_inicio' => null,
             'hora_fin' => null,
             'total_horas_observaciones' => 0,
-            'total_horas_acumuladas' => 0,
+            //'total_horas_acumuladas' => 0,
             'estado' => 'noconsolidado',
             'no_acumular_horas' => $esCuadrilla,
             // Campos morph

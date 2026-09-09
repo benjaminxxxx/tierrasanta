@@ -55,7 +55,7 @@
 
                     {{-- COSTO TOTAL REAL --}}
                     <x-td class="text-center font-bold">
-                        {{ fmt($empleado->costo_total_empresa, 2) }}
+                        {{ fmt($empleado->pagado_sueldo_bruto_negro,2) }}
                     </x-td>
                 </x-tr>
             @endforeach
@@ -74,7 +74,7 @@
                     {{ fmt($empleados->sum('aportes_empleador'), 2) }}
                 </x-td>
                 <x-td class="text-center text-green-700 dark:text-green-400 font-black">
-                    {{ fmt($empleados->sum('costo_total_empresa'), 2) }}
+                    {{ fmt($empleados->sum('pagado_sueldo_bruto_negro'), 2) }}
                 </x-td>
             </x-tr>
         </x-slot>

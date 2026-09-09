@@ -91,11 +91,32 @@ class Campo extends Model
         return $this->hasMany(ReporteDiarioRiego::class, 'campo', 'nombre');
     }
 
-    
+
     public function getCampaniaActualAttribute()
     {
         $ultimaCampania = self::campanias()->orderBy('fecha_inicio', 'desc')->first();
         return $ultimaCampania;
+    }
+    /**
+     * Retorna la campaña vigente de este campo para una fecha dada, o null si no existe.
+     */
+    public function campaniaVigenteEnFecha($fecha): ?CampoCampania
+    {
+        return $this->campanias()
+            ->where('fecha_inicio', '<=', $fecha)
+            ->where(function ($q) use ($fecha) {
+                $q->whereNull('fecha_fin')->orWhere('fecha_fin', '>=', $fecha);
+            })
+            ->orderBy('fecha_inicio', 'desc')
+            ->first();
+    }
+
+    /**
+     * Azúcar sintáctica para el caso de uso booleano (validaciones).
+     */
+    public function tieneCampaniaVigenteEnFecha($fecha): bool
+    {
+        return $this->campaniaVigenteEnFecha($fecha) !== null;
     }
     public function campanaActiva()
     {
