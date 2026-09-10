@@ -18,13 +18,26 @@
                 </div>
                 <div class="space-y-3">
                     @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
-                        <x-label>
-                            Hora de almuerzo
-                        </x-label>
-                        <x-flex>
-                            <x-input type="time" label="Inicio" wire:model="hora_inicio_almuerzo" />
-                            <x-input type="time" label="Fin" wire:model="hora_fin_almuerzo" />
-                        </x-flex>
+                        <div>
+                            <x-flex class="items-center justify-between mb-1">
+                                <x-label>
+                                    Hora de almuerzo
+                                </x-label>
+
+                                <!-- Botón Limpiador -->
+                                <button type="button"
+                                    @click="$wire.set('hora_inicio_almuerzo', null),$wire.set('hora_fin_almuerzo', null)"
+                                    class="text-xs text-red-500 hover:text-red-700 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+                                    title="Limpiar horas de almuerzo">
+                                    <i class="fa fa-times-circle"></i> Limpiar
+                                </button>
+                            </x-flex>
+
+                            <x-flex class="gap-2">
+                                <x-input type="time" step="60" label="Inicio" wire:model="hora_inicio_almuerzo" />
+                                <x-input type="time" step="60" label="Fin" wire:model="hora_fin_almuerzo" />
+                            </x-flex>
+                        </div>
                         <div class="mt-4">
                             <x-label>
                                 Acumulación de horas

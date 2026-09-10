@@ -43,7 +43,7 @@ $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(valu
     <x-livewire-alert::scripts />
 
     
-
+    <livewire:dashboard.tareas-pendientes-component />
     <script>
         document.addEventListener('livewire:init', () => {
             Livewire.on('log', (event) => {

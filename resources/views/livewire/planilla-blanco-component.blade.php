@@ -1,63 +1,77 @@
-<div class="space-y-6 mb-[60px]">
-    <x-flex class="justify-between">
-        <div>
-            <x-title>
-                Planilla Mensual
-            </x-title>
-            <x-subtitle>
-                Gestión y consolidación de datos mensuales para la generación del PLAME
-            </x-subtitle>
-        </div>
-        @include('comun.selector-mes-base')
-    </x-flex>
-
-    <x-card>
+<div>
+    <div class="space-y-6 mb-[60px]">
         <x-flex class="justify-between">
-            <div
-                class="inline-flex p-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-                <button type="button" wire:click="cambiarVista('Proyectada')" class="px-4 py-2 text-sm font-semibold rounded-md transition-all duration-150
+            <div>
+                <x-title>
+                    Planilla Mensual
+                </x-title>
+                <x-subtitle>
+                    Gestión y consolidación de datos mensuales para la generación del PLAME
+                </x-subtitle>
+            </div>
+            @include('comun.selector-mes-base')
+        </x-flex>
+
+        <x-card>
+            <x-flex class="justify-between">
+                <div
+                    class="inline-flex p-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                    <button type="button" wire:click="cambiarVista('Proyectada')" class="px-4 py-2 text-sm font-semibold rounded-md transition-all duration-150
                     {{ $vista === 'Proyectada'
     ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
     : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300' }}">
-                    <i class="fa fa-chart-line mr-1.5"></i> Proyectada
-                </button>
+                        <i class="fa fa-chart-line mr-1.5"></i> Proyectada
+                    </button>
 
-                <button type="button" wire:click="cambiarVista('PLAME')" class="px-4 py-2 text-sm font-semibold rounded-md transition-all duration-150
+                    <button type="button" wire:click="cambiarVista('PLAME')" class="px-4 py-2 text-sm font-semibold rounded-md transition-all duration-150
                     {{ $vista === 'PLAME'
     ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
     : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300' }}">
-                    <i class="fa fa-file-invoice mr-1.5"></i> PLAME
-                </button>
+                        <i class="fa fa-file-invoice mr-1.5"></i> PLAME
+                    </button>
 
-                <button type="button" wire:click="cambiarVista('COSTO')" class="px-4 py-2 text-sm font-semibold rounded-md transition-all duration-150
+                    <button type="button" wire:click="cambiarVista('COSTO')" class="px-4 py-2 text-sm font-semibold rounded-md transition-all duration-150
                     {{ $vista === 'COSTO'
     ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
     : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300' }}">
-                    <i class="fa fa-file-invoice mr-1.5"></i> COSTO
-                </button>
-            </div>
-            <div>
-                @if ($planillaMensual && $planillaMensual->excel)
-                    <x-button href="{{ Storage::disk('public')->url($planillaMensual->excel) }}">
-                        <i class="fa fa-file-excel"></i> Descargar Planilla
-                    </x-button>
-                @endif
-            </div>
-        </x-flex>
-    </x-card>
+                        <i class="fa fa-file-invoice mr-1.5"></i> Costo
+                    </button>
 
-    @if ($vista == 'Proyectada')
-        <livewire:gestion-planilla.planilla-proyectada-component :mes="$mes" :anio="$anio"
-            wire:key="cpm_{{ $mes }}_{{ $anio }}_{{ $vista }}" />
-    @endif
-    @if ($vista == 'PLAME')
-        <livewire:gestion-planilla.planilla-plame-component :mes="$mes" :anio="$anio"
-            wire:key="cpm_{{ $mes }}_{{ $anio }}_{{ $vista }}" />
-    @endif
-    @if ($vista == 'COSTO')
-        <livewire:gestion-planilla.planilla-costo-component :mes="$mes" :anio="$anio"
-            wire:key="cpm_{{ $mes }}_{{ $anio }}_{{ $vista }}" />
-    @endif
+                    <button type="button" wire:click="cambiarVista('VACACIONESYBONOS')" class="px-4 py-2 text-sm font-semibold rounded-md transition-all duration-150
+                    {{ $vista === 'VACACIONESYBONOS'
+    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
+    : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300' }}">
+                        <i class="fa fa-file-invoice mr-1.5"></i> Vacaciones y Bonos
+                    </button>
+
+                </div>
+                <div>
+                    @if ($planillaMensual && $planillaMensual->excel)
+                        <x-button href="{{ Storage::disk('public')->url($planillaMensual->excel) }}">
+                            <i class="fa fa-file-excel"></i> Descargar Planilla
+                        </x-button>
+                    @endif
+                </div>
+            </x-flex>
+        </x-card>
+
+        @if ($vista == 'Proyectada')
+            <livewire:gestion-planilla.planilla-proyectada-component :mes="$mes" :anio="$anio"
+                wire:key="cpm_{{ $mes }}_{{ $anio }}_{{ $vista }}" />
+        @endif
+        @if ($vista == 'PLAME')
+            <livewire:gestion-planilla.planilla-plame-component :mes="$mes" :anio="$anio"
+                wire:key="cpm_{{ $mes }}_{{ $anio }}_{{ $vista }}" />
+        @endif
+        @if ($vista == 'COSTO')
+            <livewire:gestion-planilla.planilla-costo-component :mes="$mes" :anio="$anio"
+                wire:key="cpm_{{ $mes }}_{{ $anio }}_{{ $vista }}" />
+        @endif
+        @if ($vista == 'VACACIONESYBONOS')
+            <livewire:gestion-planilla.planilla-costo-component :mes="$mes" :anio="$anio"
+                wire:key="cpm_{{ $mes }}_{{ $anio }}_{{ $vista }}" />
+        @endif
+    </div>
 
     <livewire:gestion-planilla.apertura-planilla-modal />
     <x-inferior-derecha>

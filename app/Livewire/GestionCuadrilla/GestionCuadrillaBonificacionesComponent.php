@@ -40,7 +40,10 @@ class GestionCuadrillaBonificacionesComponent extends Component
             return;
         }
         $this->reset(['actividadSeleccionada']);
-        $this->actividades = Actividad::where('fecha', $this->fecha)->get();
+        $this->actividades = Actividad::where('fecha', $this->fecha)
+        ->orderBy('campo','asc')
+        ->orderBy('codigo_labor','asc')
+        ->get();
     }
 
     public function toggleExpander($key)

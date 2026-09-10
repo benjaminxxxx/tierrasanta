@@ -517,25 +517,43 @@
         },
         //Esta funcion esta hecha de forma axuliar para resolver un error critico, total_horas no viene como float, sino viene como time desde la tabla, en redondeo iba a fallar
         convertirHorasDecimal(valor) {
+            if (valor === null || valor === undefined || valor === '') {
+                return 0;
+            }
 
-            if (valor === null || valor === undefined) return 0;
-
-            // si ya es número
+            // Si ya es número
             if (typeof valor === 'number') {
                 return valor;
             }
 
             const str = String(valor).trim();
 
-            // formato HH:MM
-            if (str.includes(':')) {
-                const [h, m] = str.split(':').map(Number);
-                const horas = (h || 0) + ((m || 0) / 60);
-                return horas;
-            }
+            // Puede ser:
+            // "04:00"
+            // "04:00,02:30"
+            // "04:00,02:30,01:15"
+            const valores = str.split(',');
 
-            // formato decimal normal
-            return parseFloat(str) || 0;
+            return valores.reduce((total, item) => {
+                item = item.trim();
+
+                if (!item) {
+                    return total;
+                }
+
+                // HH:MM
+                if (item.includes(':')) {
+                    const [h, m] = item.split(':').map(Number);
+
+                    return total
+                        + (h || 0)
+                        + ((m || 0) / 60);
+                }
+
+                // Decimal
+                return total + (parseFloat(item) || 0);
+
+            }, 0);
         },
         /**
          * MÉTODO: Bonificación por sobreestandar.
@@ -547,7 +565,7 @@
          */
         calcularBonoPorEstandar(trabajador, produccionTotal, metodo) {
             const totalHoras = this.convertirHorasDecimal(trabajador.rango_total_horas);
-            console.log(totalHoras);
+            console.log(totalHoras);//4
             if (!metodo.estandar || metodo.estandar <= 0) {
                 return '0.00';
             }

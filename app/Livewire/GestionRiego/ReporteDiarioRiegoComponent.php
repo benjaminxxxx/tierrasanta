@@ -151,14 +151,16 @@ class ReporteDiarioRiegoComponent extends Component
     }*/
     public function enviarRegistroDiarioRegadores(RiegoServicio $riegoServicio)
     {
-        $this->listaPorEnviarRegadores = (array) $riegoServicio->generarRegistroDiarioParaRegadores($this->fecha);
+        $this->listaPorEnviarRegadores = $riegoServicio->generarRegistroDiarioParaRegadores($this->fecha);
+
         $this->mostrarEnvioAReporteDiario = true;
     }
     public function confirmarEnvio(RiegoServicio $riegoServicio)
     {
         try {
             $riegoServicio->registrarDiarioRegadores($this->fecha, $this->listaPorEnviarRegadores);
-
+            app(VerificacionSincronizacionRiegoServicio::class)->verificarPorFecha($this->fecha);
+            $this->dispatch('registroConsolidado');
             $this->alert('success', 'Registros Diarios Enviados Correctamente.');
             $this->mostrarEnvioAReporteDiario = false;
 

@@ -222,6 +222,10 @@ public function consolidar(
         ?string $horaInicioAlmuerzo = null,
         ?string $horaFinAlmuerzo = null
     ): void {
+
+        $horaInicioAlmuerzo = !empty(trim($horaInicioAlmuerzo ?? '')) ? $horaInicioAlmuerzo : null;
+        $horaFinAlmuerzo = !empty(trim($horaFinAlmuerzo ?? '')) ? $horaFinAlmuerzo : null;
+        
         // 1. Obtener TODOS los registros diarios del resumen
         $todosLosRegistros = $resumen->registrosDiarios()->get();
 

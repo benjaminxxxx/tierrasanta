@@ -11,6 +11,7 @@ use App\Models\ReporteDiarioRiego;
 use App\Services\Campo\Gestion\CampoServicio;
 use App\Services\RecursosHumanos\Personal\ActividadServicio;
 use App\Services\RecursosHumanos\Planilla\PlanillaRegistroDiarioServicio;
+use App\Services\Riego\VerificacionSincronizacionRiegoServicio;
 use App\Support\FormatoHelper;
 use DB;
 use Exception;
@@ -65,6 +66,8 @@ class RiegoServicio
             if (!empty($dataPlanilla)) {
                 app(PlanillaRegistroDiarioServicio::class)->guardarRegistrosDiarios($fecha, $dataPlanilla, 1);
             }
+
+           
 
             ActividadServicio::detectarYCrearActividades($fecha);
         });
