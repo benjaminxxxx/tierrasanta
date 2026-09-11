@@ -39,16 +39,19 @@ return new class extends Migration {
             $table->decimal('costo_cuadrilla', 10, 2)->nullable();
             $table->decimal('costo_maquinaria', 10, 2)->nullable();
             $table->decimal('costo_pesticida', 10, 2)->nullable();
-            $table->decimal('costo_fertilizante',10,2)->nullable();
+            $table->decimal('costo_fertilizante', 10, 2)->nullable();
             $table->decimal('costo_gastos_generales', 10, 2)->nullable();
+            $table->decimal('costo_bono_productividad', 12, 2)->nullable()->default(0);
 
             // Calculado (suma real desde el resumen consolidado por campos)
             $table->decimal('costo_planilla_calculado', 10, 2)->nullable();
             $table->decimal('costo_cuadrilla_calculado', 10, 2)->nullable();
             $table->decimal('costo_maquinaria_calculado', 10, 2)->nullable();
             $table->decimal('costo_pesticida_calculado', 10, 2)->nullable();
-            $table->decimal('costo_fertilizante_calculado',10,2)->nullable();
+            $table->decimal('costo_fertilizante_calculado', 10, 2)->nullable();
             $table->decimal('costo_gastos_generales_calculado', 10, 2)->nullable();
+            $table->decimal('costo_bono_productividad_calculado', 12, 2)->nullable()->default(0);
+            $table->decimal('fdm_costo_bonificacion', 12, 2)->nullable()->default(0);
 
             $table->string('reporte_file')->nullable();
 

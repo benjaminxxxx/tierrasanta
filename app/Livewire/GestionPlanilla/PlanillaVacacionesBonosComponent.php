@@ -4,9 +4,11 @@ namespace App\Livewire\GestionPlanilla;
 
 use App\Models\PlanMensualPersonal;
 use App\Models\PlanTipoAsistencia;
+use App\Services\Campo\Costos\ConsolidarCostoManoObraServicio;
 use App\Services\Planilla\PlanillaServicio;
 use App\Services\Planilla\ResumenAsistenciaMensualServicio;
 use App\Traits\HandlesAlerts;
+use Illuminate\Support\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
@@ -48,6 +50,15 @@ class PlanillaVacacionesBonosComponent extends Component
                         'bonificacion_asistencia' => $fila['bonificacion_asistencia'] ?? null,
                     ]);
             }
+            // Bono por asistencia NO se consolida por campo (irá a "costo FDM
+            // personalizado" más adelante). Lo único que necesita refrescarse
+            // aquí es el bono de productividad, que sí vive por campo.
+            $fechaInicioMes = Carbon::create($this->anio, $this->mes, 1)->startOfMonth()->format('Y-m-d');
+            $fechaFinMes = Carbon::create($this->anio, $this->mes, 1)->endOfMonth()->format('Y-m-d');
+
+            app(ConsolidarCostoManoObraServicio::class)
+                ->consolidarPlanillaEnRango($fechaInicioMes, $fechaFinMes, ['bono_productividad']);
+
 
             $this->modifiedRowIndexes = [];
             $this->hasUnsavedChanges = false;

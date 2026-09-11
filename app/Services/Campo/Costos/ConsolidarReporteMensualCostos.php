@@ -51,9 +51,11 @@ class ConsolidarReporteMensualCostos
      */
     public function recopilarTotalesPorCampo(int $anio, int $mes): array
     {
-        // 1. Obtener la suma del costo real pagado de planilla desde el servicio
+        // 1. Obtener la suma del costo real pagado de planilla y bono desde el servicio
         $planillaMensual = collect(app(PlanillaServicio::class)->obtenerProyeccion($mes, $anio));
+
         $costoPlanillaPagado = (float) $planillaMensual->sum('pagado_sueldo_bruto_negro');
+        $costoBonoProductividadPagado = (float) $planillaMensual->sum('bono_productividad');
 
         // 2. Obtener la suma de los costos asignados a campo desde resumen_costo_diarios
         $fechaInicio = Carbon::createFromDate($anio, $mes, 1)->startOfMonth()->format('Y-m-d');
@@ -63,9 +65,15 @@ class ConsolidarReporteMensualCostos
             ->whereBetween('fecha', [$fechaInicio, $fechaFin])
             ->sum('costo_total');
 
+        $costoBonoProductividadCalculado = (float) ResumenCostoDiario::whereIn('origen_tipo', ['planilla_bono_productividad'])
+            ->whereBetween('fecha', [$fechaInicio, $fechaFin])
+            ->sum('costo_total');
+
         return [
             'costo_planilla' => round($costoPlanillaPagado, 2),
+            'costo_bono_productividad' => round($costoBonoProductividadPagado, 2),
             'costo_planilla_calculado' => round($costoPlanillaCalculado, 2),
+            'costo_bono_productividad_calculado' => round($costoBonoProductividadCalculado, 2),
             'costo_cuadrilla_calculado' => 0.00,
             'costo_maquinaria_calculado' => 0.00,
             'costo_pesticida_calculado' => 0.00,
@@ -110,7 +118,7 @@ class ConsolidarReporteMensualCostos
         $hojaPlanilla->setCellValue("C5", $planillaMensual->sum('pagado_sueldo_bruto_negro'));
         $hojaPlanilla->getStyle("C5")->getNumberFormat()->setFormatCode('#,##0.00');
         $hojaPlanilla->setCellValue("E5", $totalRegistrosPlanilla);
-        $hojaPlanilla->setCellValue("F5", now()->format('d/m/Y H:i:s'));
+        $hojaPlanilla->setCellValue("G5", now()->format('d/m/Y H:i:s'));
 
         // A3. Poblar Tabla de Planilla
         $tablaPlanilla = $hojaPlanilla->getTableByName('tblCostoPlanillaMensual');
@@ -126,6 +134,7 @@ class ConsolidarReporteMensualCostos
             $sueldoPagado = is_array($empleado) ? ($empleado['sueldo_pagado'] ?? 0) : ($empleado->sueldo_pagado ?? 0);
             $aportesTrabajador = is_array($empleado) ? ($empleado['aportes_trabajador'] ?? 0) : ($empleado->aportes_trabajador ?? 0);
             $aportesEmpleador = is_array($empleado) ? ($empleado['aportes_empleador'] ?? 0) : ($empleado->aportes_empleador ?? 0);
+            $bonoProductividad = is_array($empleado) ? ($empleado['bono_productividad'] ?? 0) : ($empleado->bono_productividad ?? 0);
             $costoTotal = is_array($empleado)
                 ? ($empleado['costo_total_empresa'] ?? $empleado['pagado_sueldo_bruto_negro'] ?? 0)
                 : ($empleado->costo_total_empresa ?? $empleado->pagado_sueldo_bruto_negro ?? 0);
@@ -135,7 +144,8 @@ class ConsolidarReporteMensualCostos
             $hojaPlanilla->setCellValue("C{$filaActual}", $sueldoPagado);
             $hojaPlanilla->setCellValue("D{$filaActual}", $aportesTrabajador);
             $hojaPlanilla->setCellValue("E{$filaActual}", $aportesEmpleador);
-            $hojaPlanilla->setCellValue("F{$filaActual}", $costoTotal);
+            $hojaPlanilla->setCellValue("F{$filaActual}", $bonoProductividad);
+            $hojaPlanilla->setCellValue("G{$filaActual}", $costoTotal);
 
             $hojaPlanilla->getStyle("C{$filaActual}:F{$filaActual}")
                 ->getNumberFormat()
@@ -225,6 +235,16 @@ class ConsolidarReporteMensualCostos
         $hojaCostoTotal = $spreadsheet->getSheetByName('COSTO TOTAL');
 
         if ($hojaCostoTotal) {
+            // 1. Obtener la última fila con datos de la hoja 'COSTO POR CAMPO'
+            // Si no hay datos, por defecto apuntará hasta la fila 5
+            $ultimaFilaCampo = isset($filaCampo) ? ($filaCampo - 1) : 5;
+            if ($ultimaFilaCampo < 5) {
+                $ultimaFilaCampo = 5;
+            }
+
+            // 2. Determinar la fila del TOTAL en 'COSTO LABORAL PLANILLA' (por defecto fila 5 si no hay datos)
+            $filaTotalBono = isset($filaTotalesPlanilla) ? $filaTotalesPlanilla : 5;
+
             // C1. Obtener la entidad de costos mensual de la BDD o del servicio
             $costoMensual = CostoMensual::where('anio', $anio)
                 ->where('mes', $mes)
@@ -232,20 +252,25 @@ class ConsolidarReporteMensualCostos
 
             // C2. Mapear Costos Pagados (Fila 5)
             $hojaCostoTotal->setCellValue("B5", (float) ($costoMensual->costo_planilla ?? 0));
-            $hojaCostoTotal->setCellValue("C5", (float) ($costoMensual->costo_cuadrilla ?? 0));
-            $hojaCostoTotal->setCellValue("D5", (float) ($costoMensual->costo_maquinaria ?? 0));
-            $hojaCostoTotal->setCellValue("E5", (float) ($costoMensual->costo_pesticida ?? 0));
-            $hojaCostoTotal->setCellValue("F5", (float) ($costoMensual->costo_fertilizante ?? 0));
-            $hojaCostoTotal->setCellValue("G5", (float) ($costoMensual->costo_gastos_generales ?? 0));
+            //$hojaCostoTotal->setCellValue("C5", (float) ($costoMensual->costo_bono_productividad ?? 0)); // Nueva C5
+            // C5: Apunta a la celda del TOTAL GENERAL de la Columna F en 'COSTO LABORAL PLANILLA'
+            $hojaCostoTotal->setCellValue("C5", "='COSTO LABORAL PLANILLA'!F{$filaTotalBono}");
+            $hojaCostoTotal->setCellValue("D5", (float) ($costoMensual->costo_cuadrilla ?? 0));
+            $hojaCostoTotal->setCellValue("E5", (float) ($costoMensual->costo_maquinaria ?? 0));
+            $hojaCostoTotal->setCellValue("F5", (float) ($costoMensual->costo_pesticida ?? 0));
+            $hojaCostoTotal->setCellValue("G5", (float) ($costoMensual->costo_fertilizante ?? 0));
+            $hojaCostoTotal->setCellValue("H5", (float) ($costoMensual->costo_gastos_generales ?? 0));
 
             // C3. Mapear Costos por Campo Totalizados / Calculados (Fila 6)
             $hojaCostoTotal->setCellValue("B6", (float) ($costoMensual->costo_planilla_calculado ?? 0));
-            $hojaCostoTotal->setCellValue("C6", (float) ($costoMensual->costo_cuadrilla_calculado ?? 0));
-            $hojaCostoTotal->setCellValue("D6", (float) ($costoMensual->costo_maquinaria_calculado ?? 0));
-            $hojaCostoTotal->setCellValue("E6", (float) ($costoMensual->costo_pesticida_calculado ?? 0));
-            $hojaCostoTotal->setCellValue("F6", (float) ($costoMensual->costo_fertilizante_calculado ?? 0));
-            $hojaCostoTotal->setCellValue("G6", (float) ($costoMensual->costo_gastos_generales_calculado ?? 0));
-
+            //$hojaCostoTotal->setCellValue("C6", (float) ($costoMensual->costo_bono_productividad_calculado ?? 0)); // Nueva C6
+            // C6: SUMAR.SI condicional sobre la columna D (tipo_gasto) y columna L (costo) en 'COSTO POR CAMPO'
+            $hojaCostoTotal->setCellValue("C6", "=SUMIF('COSTO POR CAMPO'!D5:D{$ultimaFilaCampo}, \"planilla_bono_productividad\", 'COSTO POR CAMPO'!L5:L{$ultimaFilaCampo})");
+            $hojaCostoTotal->setCellValue("D6", (float) ($costoMensual->costo_cuadrilla_calculado ?? 0));
+            $hojaCostoTotal->setCellValue("E6", (float) ($costoMensual->costo_maquinaria_calculado ?? 0));
+            $hojaCostoTotal->setCellValue("F6", (float) ($costoMensual->costo_pesticida_calculado ?? 0));
+            $hojaCostoTotal->setCellValue("G6", (float) ($costoMensual->costo_fertilizante_calculado ?? 0));
+            $hojaCostoTotal->setCellValue("H6", (float) ($costoMensual->costo_gastos_generales_calculado ?? 0));
 
             // C6. Formato numérico en soles a toda la matriz
             $hojaCostoTotal->getStyle("B5:H7")

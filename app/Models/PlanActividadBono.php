@@ -24,7 +24,7 @@ class PlanActividadBono extends Model
     // Relaciones
     public function registroDiario()
     {
-        return $this->belongsTo(PlanRegistroDiario::class, 'plan_registros_diarios');
+        return $this->belongsTo(PlanRegistroDiario::class, 'registro_diario_id');
     }
     public function metodo()
     {

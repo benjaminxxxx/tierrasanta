@@ -39,6 +39,7 @@ class PlanillaServicio
 
         return is_array($decodificado) ? $decodificado : [];
     }
+    /*se usara otra mejorada
     public function obtenerProyeccion($mes, $anio)
     {
         $planillaMensual = PlanMensual::where('mes', $mes)
@@ -53,6 +54,34 @@ class PlanillaServicio
         }
 
         return $planillaMensual->planilla;
+    }*/
+    public function obtenerProyeccion($mes, $anio)
+    {
+        $planillaMensual = PlanMensual::where('mes', $mes)
+            ->where('anio', $anio)
+            ->with(['planilla.planMensual']) // Carga el padre para reutilizar mes y anio en el Accessor
+            ->first();
+
+        if (!$planillaMensual) {
+            return [];
+        }
+
+        // 1. Consultar todos los bonos del mes agrupados por empleado en UNA sola Query masiva
+        $bonosProductividad = DB::table('plan_registros_diarios')
+            ->join('plan_mensual_detalles', 'plan_mensual_detalles.id', '=', 'plan_registros_diarios.plan_det_men_id')
+            ->join('plan_mensuales', 'plan_mensuales.id', '=', 'plan_mensual_detalles.plan_mensual_id')
+            ->where('plan_mensuales.mes', $mes)
+            ->where('plan_mensuales.anio', $anio)
+            ->select('plan_mensual_detalles.plan_empleado_id', DB::raw('SUM(plan_registros_diarios.total_bono) as total'))
+            ->groupBy('plan_mensual_detalles.plan_empleado_id')
+            ->pluck('total', 'plan_empleado_id');
+
+        // 2. Asignar el valor a cada registro de personal
+        return $planillaMensual->planilla->map(function ($persona) use ($bonosProductividad) {
+            // Asignamos una propiedad dinámica para acelerar la exportación del Excel
+            $persona->bono_productividad = (float) ($bonosProductividad[$persona->plan_empleado_id] ?? 0);
+            return $persona;
+        });
     }
     /**
      * Cuenta días de suspensión por código, para todos los empleados dados,
@@ -972,7 +1001,7 @@ class PlanillaServicio
                 if ($dia <= $diasEnElMes) {
                     $fechaDiaStr = Carbon::createFromDate($anio, $mes, $dia)->format('Y-m-d');
                     $datosDia = $asistenciaPorEmpleado[$empleado->plan_empleado_id][$dia] ?? ['horas' => 0, 'codigo' => 'A'];
-    
+
                     $codigoAsistencia = $datosDia['codigo'];
                     $horas = $datosDia['horas'];
 

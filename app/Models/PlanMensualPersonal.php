@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use DB;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -160,6 +161,32 @@ class PlanMensualPersonal extends Model
         return $this->belongsTo(PlanMensual::class);
     }
     /**
+     * Accesor para obtener el bono de productividad (bonificación laboral) sumado del mes.
+     * Uso: $empleado->bono_productividad
+     */
+    public function getBonoProductividadAttribute(): float
+    {
+        if (!$this->plan_empleado_id || !$this->plan_mensual_id) {
+            return 0.0;
+        }
+
+        // Si ya cargaste la relación planMensual, la usamos para evitar re-consultar
+        $mes = $this->planMensual->mes ?? null;
+        $anio = $this->planMensual->anio ?? null;
+
+        if (!$mes || !$anio) {
+            return 0.0;
+        }
+
+        return (float) DB::table('plan_registros_diarios')
+            ->join('plan_mensual_detalles', 'plan_mensual_detalles.id', '=', 'plan_registros_diarios.plan_det_men_id')
+            ->join('plan_mensuales', 'plan_mensuales.id', '=', 'plan_mensual_detalles.plan_mensual_id')
+            ->where('plan_mensuales.mes', $mes)
+            ->where('plan_mensuales.anio', $anio)
+            ->where('plan_mensual_detalles.plan_empleado_id', $this->plan_empleado_id)
+            ->sum('plan_registros_diarios.total_bono');
+    }
+    /**
      * Factor fijo aplicado a vida ley, pensión SCTR y EsSalud EPS.
      * No es configurable por periodo; ajusta aquí si cambia legalmente.
      */
@@ -274,9 +301,9 @@ class PlanMensualPersonal extends Model
     {
         return Attribute::get(
             fn() => (float) $this->remuneracion_basica
-            + (float) $this->bonificacion
-            + (float) $this->asignacion_familiar
-            + (float) $this->compensacion_vacacional
+                + (float) $this->bonificacion
+                + (float) $this->asignacion_familiar
+                + (float) $this->compensacion_vacacional
         );
     }
 

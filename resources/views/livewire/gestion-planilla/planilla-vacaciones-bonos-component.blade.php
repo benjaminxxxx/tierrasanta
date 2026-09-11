@@ -71,7 +71,7 @@
                     { data: 'vacaciones_neto_pagadas', type: 'numeric', title: 'Vacaciones<br/>Neto<br/>Pagadas' },
                     { data: 'vacaciones_negro', type: 'numeric', title: 'Vacaciones<br/>Negro' },
                     { data: 'bonificacion_asistencia', type: 'numeric', title: 'Bonificacion<br/>100%<br/>Asistencia' },
-                    { data: 'bonificacion_laboral', type: 'numeric', title: 'Bonificacion<br/>Laboral', readOnly: true, className: '!bg-muted' },
+                    { data: 'bonificacion_laboral', type: 'numeric', title: 'Bonificación<br/>Productividad', readOnly: true, className: '!bg-muted' },
                 ],
                 height: 'auto',
                 afterChange: (changes, source) => {
@@ -103,10 +103,6 @@
                     resultados.push(fila);
                 }
             });
-
-            if (resultados.length === 0) {
-                return;
-            }
 
             $wire.guardarInformacionBonoVacaciones(resultados);
         },

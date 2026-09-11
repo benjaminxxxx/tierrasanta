@@ -51,10 +51,8 @@ class ConsolidarCostoManoObraServicio
 
         return count($filas);
     }*/
-    /**
-     * Consolida UNA campaña+campo, en un rango de fechas explícito
-     * (puede ser el ciclo completo de la campaña, o un recorte de él).
-     */
+    /*se agregara en la nueva version soporte de tipos
+
     public function consolidarPorRango(string $nombreCampania, string $campo, string $fechaInicio, ?string $fechaFin = null): int
     {
         $fechaFinEfectiva = $fechaFin ?? now()->format('Y-m-d');
@@ -88,21 +86,70 @@ class ConsolidarCostoManoObraServicio
         });
 
         return count($filas);
+    }*/
+    public function consolidarPorRango(string $nombreCampania, string $campo, string $fechaInicio, ?string $fechaFin = null, ?array $tipos = null): int
+    {
+        $fechaFinEfectiva = $fechaFin ?? now()->format('Y-m-d');
+
+        $filas = app(ConsolidarCostoPlanillaServicio::class)->generarFilas(
+            $nombreCampania,
+            $campo,
+            $fechaInicio,
+            $fechaFinEfectiva,
+            $tipos
+        );
+
+        $origenesADelete = $this->resolverOrigenesTipo($tipos);
+
+        DB::transaction(function () use ($nombreCampania, $campo, $fechaInicio, $fechaFinEfectiva, $filas, $origenesADelete) {
+            ResumenCostoDiario::where('campania', $nombreCampania)
+                ->where('campo', $campo)
+                ->whereIn('origen_tipo', $origenesADelete) // ← solo borra lo del/los tipo(s) pedido(s)
+                ->whereBetween('fecha', [$fechaInicio, $fechaFinEfectiva])
+                ->delete();
+
+            $ahora = now();
+            $filasConTimestamps = collect($filas)->map(fn($f) => array_merge($f, [
+                'tipo_cambio' => 1.0000,
+                'created_at' => $ahora,
+                'updated_at' => $ahora,
+            ]))->toArray();
+
+            foreach (array_chunk($filasConTimestamps, 500) as $chunk) {
+                ResumenCostoDiario::insert($chunk);
+            }
+        });
+
+        return count($filas);
+    }
+    private function resolverOrigenesTipo(?array $tipos): array
+    {
+        $mapa = [
+            'planilla' => ['planilla', 'cuadrilla'],           // horas directas + riego (ya existente)
+            'bono_productividad' => ['planilla_bono_productividad'], // nuevo
+        ];
+
+        if ($tipos === null) {
+            return array_merge(...array_values($mapa));
+        }
+
+        $origenes = [];
+        foreach ($tipos as $tipo) {
+            $origenes = array_merge($origenes, $mapa[$tipo] ?? []);
+        }
+
+        return $origenes;
     }
 
-    /**
-     * Consolida TODAS las campañas activas que se traslapan con un rango
-     * de fechas dado. Genérico a propósito: mes, trimestre, semestre o año
-     * son todos "un rango" — no hay ningún concepto de "mes" hardcodeado aquí.
-     */
-    public function consolidarPlanillaEnRango(string $fechaInicio, string $fechaFin): int
+    /*se añadira en la nueva version $tipos para ser mas selectivo
+    public function consolidarPlanillaEnRango(string $fechaInicio, string $fechaFin, ?array $tipos = null): int
     {
         $campanias = CampoCampania::where('fecha_inicio', '<=', $fechaFin)
             ->where(function ($q) use ($fechaInicio) {
                 $q->whereNull('fecha_fin')->orWhere('fecha_fin', '>=', $fechaInicio);
             })
             ->get();
-            
+
         $totalFilas = 0;
 
         foreach ($campanias as $campania) {
@@ -122,6 +169,36 @@ class ConsolidarCostoManoObraServicio
                 $campania->campo,
                 $inicioEfectivo,
                 $finEfectivo
+            );
+        }
+
+        return $totalFilas;
+    }*/
+    public function consolidarPlanillaEnRango(string $fechaInicio, string $fechaFin, ?array $tipos = null): int
+    {
+        $campanias = CampoCampania::where('fecha_inicio', '<=', $fechaFin)
+            ->where(function ($q) use ($fechaInicio) {
+                $q->whereNull('fecha_fin')->orWhere('fecha_fin', '>=', $fechaInicio);
+            })
+            ->get();
+
+        $totalFilas = 0;
+
+        foreach ($campanias as $campania) {
+            $finCampaniaReal = $campania->fecha_fin ?? now()->format('Y-m-d');
+            $inicioEfectivo = max($campania->fecha_inicio, $fechaInicio);
+            $finEfectivo = min($finCampaniaReal, $fechaFin);
+
+            if ($inicioEfectivo > $finEfectivo) {
+                continue;
+            }
+
+            $totalFilas += $this->consolidarPorRango(
+                $campania->nombre_campania,
+                $campania->campo,
+                $inicioEfectivo,
+                $finEfectivo,
+                $tipos
             );
         }
 

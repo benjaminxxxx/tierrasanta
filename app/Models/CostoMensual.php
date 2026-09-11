@@ -36,6 +36,7 @@ class CostoMensual extends Model
 
         // Costos base/declarados
         'costo_planilla',
+        'costo_bono_productividad',
         'costo_cuadrilla',
         'costo_maquinaria',
         'costo_pesticida',
@@ -44,6 +45,7 @@ class CostoMensual extends Model
 
         // Costos calculados (consolidados por campo)
         'costo_planilla_calculado',
+        'costo_bono_productividad_calculado',
         'costo_cuadrilla_calculado',
         'costo_maquinaria_calculado',
         'costo_pesticida_calculado',
