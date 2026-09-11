@@ -26,6 +26,7 @@
                     <x-th>Horas Jornal</x-th>
                     <x-th>Acumula Asistencia</x-th>
                     <x-th>Tipo Suspensión (SUNAT)</x-th>
+                    <x-th>Criterio para el bono de asistencia</x-th>
                     <x-th>Color</x-th>
                     <x-th>Acciones</x-th>
                 </x-tr>
@@ -55,6 +56,9 @@
                                     <i class="fa fa-exclamation-triangle"></i> Sin vincular
                                 </span>
                             @endif
+                        </x-td>
+                        <x-td>
+                            {{ $tipoAsistencia->criterio_bono_asistencia }}
                         </x-td>
                         <x-td class="text-center">
                             <div class="m-auto flex flex-col items-center">

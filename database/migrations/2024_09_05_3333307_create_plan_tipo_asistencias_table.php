@@ -31,6 +31,8 @@ return new class extends Migration {
                 ->nullable()
                 ->constrained('plan_tipos_suspension')
                 ->nullOnDelete();
+            $table->enum('criterio_bono_asistencia', ['no_afecta', 'afecta', 'revisar'])
+                ->default('no_afecta');
 
             $table->timestamps();
         });

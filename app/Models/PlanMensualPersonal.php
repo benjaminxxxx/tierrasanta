@@ -84,6 +84,10 @@ class PlanMensualPersonal extends Model
 
         // PLAME - Neto
         'plame_neto_a_pagar',
+        'bonificacion_asistencia',
+        'vacaciones_plame_personalizado',
+        'vacaciones_neto_pagadas',
+        'vacaciones_negro'
     ];
 
     protected function casts(): array
@@ -566,6 +570,20 @@ class PlanMensualPersonal extends Model
                 return $sueldoCalculado;
             }
         );
+    }
+    //usado para el calculo de dias vacacionales 
+    protected function pagoJornalDiario(): Attribute
+    {
+        return Attribute::get(function () {
+            $total = $this->proyectado_sueldo_neto_total;
+            $diasLaborables = $this->planMensual?->dias_laborables;
+
+            if (is_null($total) || empty($diasLaborables)) {
+                return null;
+            }
+
+            return $total / $diasLaborables;
+        });
     }
     // Total de Descuentos / Aportes que retiene PLAME al trabajador
     protected function aportesTrabajador(): Attribute

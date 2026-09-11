@@ -14,6 +14,7 @@ class TipoAsistenciaFormComponent extends Component
     public $mostrarFormulario = false;
     public $codigo, $codigoOriginal, $descripcion, $horasJornal, $color, $tipoAsistenciaId;
     public $acumula_asistencia;
+    public $criterio_bono_asistencia;
     public $planTipoSuspensionId;
     public $opcionesTipoSuspension = [];
 
@@ -45,6 +46,7 @@ class TipoAsistenciaFormComponent extends Component
                 'horas_jornal' => $this->horasJornal,
                 'color' => $this->color,
                 'acumula_asistencia' => (bool) $this->acumula_asistencia,
+                'criterio_bono_asistencia' => $this->criterio_bono_asistencia ?? 'no_afecta',
                 'plan_tipo_suspension_id' => $this->planTipoSuspensionId ?: null,
             ];
 
@@ -74,6 +76,7 @@ class TipoAsistenciaFormComponent extends Component
             $this->horasJornal = $tipoAsistencia->horas_jornal;
             $this->color = $tipoAsistencia->color;
             $this->acumula_asistencia = $tipoAsistencia->acumula_asistencia;
+            $this->criterio_bono_asistencia = $tipoAsistencia->criterio_bono_asistencia;
             $this->planTipoSuspensionId = $tipoAsistencia->plan_tipo_suspension_id;
             $this->mostrarFormulario = true;
         } catch (Exception $e) {
@@ -90,7 +93,7 @@ class TipoAsistenciaFormComponent extends Component
     public function resetForm()
     {
         $this->resetErrorBag();
-        $this->reset(['codigo', 'descripcion', 'tipoAsistenciaId', 'codigoOriginal', 'acumula_asistencia', 'planTipoSuspensionId']);
+        $this->reset(['codigo', 'descripcion', 'tipoAsistenciaId', 'codigoOriginal', 'acumula_asistencia','criterio_bono_asistencia', 'planTipoSuspensionId']);
         $this->horasJornal = 0;
         $this->color = '#ffffff';
     }

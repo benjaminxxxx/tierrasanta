@@ -1,82 +1,115 @@
-<x-card>
-    <x-table noScroll>
-        <x-slot name="thead">
-            <x-tr :level="1">
-                <x-th>Nº</x-th>
-                <x-th>NOMBRES</x-th>
-                <x-th>SUELDO PAGADO</x-th>
-                <x-th>APORTES DEL TRABAJADOR</x-th>
-                <x-th>APORTES DEL EMPLEADOR</x-th>
-                <x-th>COSTO TOTAL EMPRESA</x-th>
-            </x-tr>
-        </x-slot>
+<div x-data="planillaVacacionesBonos">
+    <x-card>
+        <div wire:ignore>
+            <div x-ref="tableContainer" class="mt-5"></div>
+        </div>
+    </x-card>
+    <x-inferior-derecha>
+        <x-button @click="$wire.dispatch('abrirCalculoVacaciones', {mes: {{ $mes }}, anio: {{ $anio }}})">
+            <i class="fa fa-calculator"></i> Cálculo de vacaciones
+        </x-button>
+        <x-button @click="guardarInformacionBonoVacaciones">
+            <i class="fa fa-save"></i> Guardar vacaciones y bonos
+        </x-button>
+    </x-inferior-derecha>
+    <livewire:gestion-planilla.calculo-vacaciones-modal-component />
+</div>
 
-        <x-slot name="tbody">
-            @foreach ($empleados as $index => $empleado)
-                <x-tr>
-                    <x-td class="text-center">{{ $index + 1 }}</x-td>
-                    <x-td class="whitespace-nowrap">{{ $empleado->nombres }}</x-td>
 
-                    {{-- SUELDO PAGADO --}}
-                    <x-td class="text-center">
-                        <div class="inline-flex items-center justify-center gap-1.5">
-                            <span>{{ fmt($empleado->sueldo_pagado, 2) }}</span>
-                            <button type="button" wire:click="mostrarExplicacionSueldo({{ $empleado->id }})"
-                                class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-gray-500 bg-gray-200 rounded-full hover:bg-gray-300 hover:text-gray-700 transition-colors focus:outline-none"
-                                title="Ver detalle del sueldo">
-                                ?
-                            </button>
-                        </div>
-                    </x-td>
+@script
+<script>
+    Alpine.data('planillaVacacionesBonos', () => ({
+        tableData: @json($planilla),
+        hot: null,
+        isDark: JSON.parse(localStorage.getItem('darkMode')),
+        modifiedRowIndexes: @entangle('modifiedRowIndexes'),
+        hasUnsavedChanges: @entangle('hasUnsavedChanges'),
+        onBeforeUnload: null,
+        init() {
+            this.initTable();
 
-                    {{-- APORTES TRABAJADOR --}}
-                    <x-td class="text-center">
-                        <div class="inline-flex items-center justify-center gap-1.5">
-                            <span>{{ fmt($empleado->aportes_trabajador, 2) }}</span>
-                            <button type="button" wire:click="mostrarExplicacionAportesTrabajador({{ $empleado->id }})"
-                                class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-blue-500 bg-blue-100 rounded-full hover:bg-blue-200 transition-colors focus:outline-none"
-                                title="Ver retenciones de ley">
-                                ?
-                            </button>
-                        </div>
-                    </x-td>
+            Livewire.on('setplanilla', ({ tableData }) => {
+                this.$nextTick(() => {
+                    this.tableData = tableData;
+                    this.initTable();
+                });
+            });
+            this.onBeforeUnload = (event) => {
+                if (this.hasUnsavedChanges) {
+                    event.preventDefault();
+                    event.returnValue = '';
+                }
+            };
+            window.addEventListener('beforeunload', this.onBeforeUnload);
+        },
+        destroy() {
+            window.removeEventListener('beforeunload', this.onBeforeUnload);
+        },
+        initTable() {
+            if (this.hot) {
+                try { this.hot.destroy(); } catch (e) { }
+                this.hot = null;
+            }
 
-                    {{-- APORTES EMPLEADOR --}}
-                    <x-td class="text-center">
-                        <div class="inline-flex items-center justify-center gap-1.5">
-                            <span>{{ fmt($empleado->aportes_empleador, 2) }}</span>
-                            <button type="button" wire:click="mostrarExplicacionAportesEmpleador({{ $empleado->id }})"
-                                class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-orange-500 bg-orange-100 rounded-full hover:bg-orange-200 transition-colors focus:outline-none"
-                                title="Ver contribuciones patronales">
-                                ?
-                            </button>
-                        </div>
-                    </x-td>
+            const container = this.$refs.tableContainer;
 
-                    {{-- COSTO TOTAL REAL --}}
-                    <x-td class="text-center font-bold">
-                        {{ fmt($empleado->pagado_sueldo_bruto_negro,2) }}
-                    </x-td>
-                </x-tr>
-            @endforeach
-        </x-slot>
+            const hot = new Handsontable(container, {
+                ...window.HstConfig,
+                data: this.tableData,
+                themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
+                columns: [
+                    { data: 'nombres', width: 90, type: 'text', title: 'Empleado', readOnly: true, className: '!bg-muted' },
+                    {
+                        data: 'resumen_asistencia',
+                        title: 'Asistencia<br/>del periodo',
+                        readOnly: true,
+                        renderer: 'html',
+                        className: '!bg-muted',
+                    },
+                    { data: 'vacaciones_plame', type: 'text', title: 'Vacaciones<br/>según<br/>PLAME', readOnly: true, className: '!bg-muted' },
+                    { data: 'vacaciones_plame_personalizado', type: 'numeric', title: 'Vacaciones<br/>personalizadas<br/>PLAME' },
+                    { data: 'vacaciones_neto_pagadas', type: 'numeric', title: 'Vacaciones<br/>Neto<br/>Pagadas' },
+                    { data: 'vacaciones_negro', type: 'numeric', title: 'Vacaciones<br/>Negro' },
+                    { data: 'bonificacion_asistencia', type: 'numeric', title: 'Bonificacion<br/>100%<br/>Asistencia' },
+                    { data: 'bonificacion_laboral', type: 'numeric', title: 'Bonificacion<br/>Laboral', readOnly: true, className: '!bg-muted' },
+                ],
+                height: 'auto',
+                afterChange: (changes, source) => {
+                    if (!changes || source === 'loadData') return;
 
-        <x-slot name="tfoot">
-            <x-tr class="font-bold bg-indigo-100 border-t-2 border-gray-300 dark:bg-indigo-900 dark:border-gray-700">
-                <x-td colspan="2" class="text-right uppercase">TOTALES GENERALES:</x-td>
-                <x-td class="text-center">
-                    {{ fmt($empleados->sum('sueldo_pagado'), 2) }}
-                </x-td>
-                <x-td class="text-center">
-                    {{ fmt($empleados->sum('aportes_trabajador'), 2) }}
-                </x-td>
-                <x-td class="text-center">
-                    {{ fmt($empleados->sum('aportes_empleador'), 2) }}
-                </x-td>
-                <x-td class="text-center text-green-700 dark:text-green-400 font-black">
-                    {{ fmt($empleados->sum('pagado_sueldo_bruto_negro'), 2) }}
-                </x-td>
-            </x-tr>
-        </x-slot>
-    </x-table>
-</x-card>
+                    changes.forEach(([row]) => {
+                        const physicalRow = this.hot.toPhysicalRow(row);
+                        if (!this.modifiedRowIndexes.includes(physicalRow)) {
+                            this.modifiedRowIndexes.push(physicalRow);
+                        }
+                    });
+
+                    if (['edit', 'CopyPaste.paste', 'Autofill.fill'].includes(source)) {
+                        this.hasUnsavedChanges = true;
+                    }
+                },
+            });
+
+            this.hot = hot;
+            this.hot.render();
+        },
+        guardarInformacionBonoVacaciones() {
+            const datos = this.hot.getSourceData();
+            const resultados = [];
+
+            this.modifiedRowIndexes.forEach((rowIndex) => {
+                const fila = datos[rowIndex];
+                if (fila) {
+                    resultados.push(fila);
+                }
+            });
+
+            if (resultados.length === 0) {
+                return;
+            }
+
+            $wire.guardarInformacionBonoVacaciones(resultados);
+        },
+    }));
+</script>
+@endscript

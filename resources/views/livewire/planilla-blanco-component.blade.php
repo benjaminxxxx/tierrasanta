@@ -68,17 +68,19 @@
                 wire:key="cpm_{{ $mes }}_{{ $anio }}_{{ $vista }}" />
         @endif
         @if ($vista == 'VACACIONESYBONOS')
-            <livewire:gestion-planilla.planilla-costo-component :mes="$mes" :anio="$anio"
+            <livewire:gestion-planilla.planilla-vacaciones-bonos-component :mes="$mes" :anio="$anio"
                 wire:key="cpm_{{ $mes }}_{{ $anio }}_{{ $vista }}" />
         @endif
     </div>
 
     <livewire:gestion-planilla.apertura-planilla-modal />
-    <x-inferior-derecha>
-        <x-button @click="$wire.dispatch('abrir-apertura-planilla',{mes: {{ $mes }}, anio: {{ $anio }}})">
-            <i class="fa fa-refresh"></i> Generar Planilla Proyectada
-        </x-button>
-    </x-inferior-derecha>
+    @if($vista != 'VACACIONESYBONOS')
+        <x-inferior-derecha>
+            <x-button @click="$wire.dispatch('abrir-apertura-planilla',{mes: {{ $mes }}, anio: {{ $anio }}})">
+                <i class="fa fa-refresh"></i> Generar Planilla Proyectada
+            </x-button>
+        </x-inferior-derecha>
+    @endif
 
     <x-loading wire:loading />
 </div>

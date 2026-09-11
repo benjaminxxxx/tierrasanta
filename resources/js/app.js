@@ -1,46 +1,69 @@
-import './bootstrap';
+import "./bootstrap";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
-import 'flowbite'
+import "flowbite";
 
 import { Spanish } from "flatpickr/dist/l10n/es.js"; // ✅ importa el idioma
-import { Calendar } from '@fullcalendar/core'
-import resourceTimelinePlugin from '@fullcalendar/resource-timeline'
+import { Calendar } from "@fullcalendar/core";
+import resourceTimelinePlugin from "@fullcalendar/resource-timeline";
 
 // Establece el idioma globalmente
 flatpickr.localize(Spanish);
 flatpickr.setDefaults({
-  dateFormat: "d/m/Y", // ✅ visible al usuario
-  altInput: true,
-  altFormat: "d/m/Y", // ✅ formato visible en input
-  allowInput: true
+    dateFormat: "d/m/Y", // ✅ visible al usuario
+    altInput: true,
+    altFormat: "d/m/Y", // ✅ formato visible en input
+    allowInput: true,
 });
 
 window.FullCalendar = {
     Calendar,
-    resourceTimelinePlugin
-}
+    resourceTimelinePlugin,
+};
 flatpickr(".datepicker", {
-  //mode: "range",
+    //mode: "range",
 });
 
 window.HstConfig = {
     datePickerConfig: {
         i18n: {
-            previousMonth: 'Mes anterior',
-            nextMonth:     'Mes siguiente',
-            months:        ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
-                            'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
-            weekdays:      ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'],
-            weekdaysShort: ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],
+            previousMonth: "Mes anterior",
+            nextMonth: "Mes siguiente",
+            months: [
+                "Enero",
+                "Febrero",
+                "Marzo",
+                "Abril",
+                "Mayo",
+                "Junio",
+                "Julio",
+                "Agosto",
+                "Septiembre",
+                "Octubre",
+                "Noviembre",
+                "Diciembre",
+            ],
+            weekdays: [
+                "Domingo",
+                "Lunes",
+                "Martes",
+                "Miércoles",
+                "Jueves",
+                "Viernes",
+                "Sábado",
+            ],
+            weekdaysShort: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
         },
         firstDay: 1,
     },
-    language: 'es-MX',
-    licenseKey: 'non-commercial-and-evaluation',
+    language: "es-MX",
+    colHeaders: true,
+    rowHeaders: true,
+    width: '100%',
+    licenseKey: "non-commercial-and-evaluation",
     manualColumnResize: false,
     manualRowResize: true,
-    stretchH: 'all',
+    stretchH: "all",
     //minSpareRows: 1,
     autoColumnSize: false,
 };

@@ -86,9 +86,6 @@
                 this.hot.loadData(this.tableData);
             })
             this.initTable();
-
-
-
             $watch('darkMode', value => {
 
                 this.isDark = value;
@@ -101,6 +98,12 @@
         },
 
         initTable() {
+            if (this.hot) {
+                try {
+                    this.hot.destroy();
+                } catch (e) { }
+                this.hot = null;
+            }
             const totalActividades = this.totalActividades;
             const columns = this.generateColumns(totalActividades);
             let primeraCarga = 0;
@@ -161,10 +164,7 @@
                     if (source === 'recalculado' || source === 'loadData') return;
 
                     changes.forEach(([row]) => {
-                        // Solo agrega, nunca elimina
-                        /*if (!this.modifiedRowIndexes.includes(row)) {
-                            this.modifiedRowIndexes.push(row);
-                        }*/
+
                         const physicalRow = this.hot.toPhysicalRow(row);
                         if (!this.modifiedRowIndexes.includes(physicalRow)) {
                             this.modifiedRowIndexes.push(physicalRow);
@@ -178,16 +178,7 @@
                         const filasMap = new Map();
 
                         changes.forEach(([row, prop, oldVal, newVal]) => {
-                            /*if (prop === 'total_horas') {
-                                // Edición manual de total_horas → marcar fila y NO recalcular
-                                this.totalHorasManuales.add(row);
-                                return; // saltar recálculo para este cambio
-                            }
 
-                            if (prop === 'asistencia') {
-                                // Cambió asistencia → limpiar marca manual para que se recalcule
-                                this.totalHorasManuales.delete(row);
-                            }*/
                             if (prop === 'total_horas') {
                                 const physicalRow = this.hot.toPhysicalRow(row);
                                 this.totalHorasManuales.add(physicalRow);
@@ -455,7 +446,7 @@
             const totalHoras = this.minutesToTime(totalMinutos);
             this.hot.setDataAtCell(row, indiceTotal, totalHoras, 'recalculado');
         },
-       
+
         enviarRegistrosDiariosPlanilla() {
             const datos = this.hot.getSourceData();
             const resultados = [];

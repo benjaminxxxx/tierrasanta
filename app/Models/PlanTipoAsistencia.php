@@ -23,7 +23,8 @@ class PlanTipoAsistencia extends Model
         'acumula_vacaciones',
         'acumula_asistencia',
         'activo',
-        'plan_tipo_suspension_id'
+        'plan_tipo_suspension_id',
+        'criterio_bono_asistencia'
     ];
     public function getAcumulaAsistenciaLabelAttribute()
     {

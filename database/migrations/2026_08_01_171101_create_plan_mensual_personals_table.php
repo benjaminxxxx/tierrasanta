@@ -78,6 +78,11 @@ return new class extends Migration {
             $table->decimal('plame_aporte_empleador_0805_sctr', 10, 2)->default(0);
             $table->decimal('plame_aporte_empleador_0810_eps', 10, 2)->default(0);
 
+            $table->decimal('bonificacion_asistencia', 8, 2)->nullable();
+            $table->decimal('vacaciones_plame_personalizado', 8, 2)->nullable();
+            $table->decimal('vacaciones_neto_pagadas', 10, 2)->nullable();
+            $table->decimal('vacaciones_negro', 10, 2)->nullable();
+
             $table->timestamps();
 
 

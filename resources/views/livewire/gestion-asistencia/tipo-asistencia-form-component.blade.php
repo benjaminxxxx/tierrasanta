@@ -17,17 +17,29 @@
                     <x-input type="text" autocomplete="off" label="Código" wire:model="codigo" readonly error="codigo" />
                 @endif
 
-                <x-input type="text" autocomplete="off" label="Descripción" wire:model="descripcion" error="descripcion" />
+                <x-input type="text" autocomplete="off" label="Descripción" wire:model="descripcion"
+                    error="descripcion" />
 
-                <x-input type="text" autocomplete="off" label="Horas Jornal" wire:model="horasJornal" error="horasJornal" />
+                <x-input type="text" autocomplete="off" label="Horas Jornal" wire:model="horasJornal"
+                    error="horasJornal" />
 
                 <x-select label="Cuenta Asistencia" wire:model="acumula_asistencia">
                     <option value="0">No</option>
                     <option value="1">Si</option>
                 </x-select>
 
+                <x-select label="Criterio Bono Asistencia" wire:model="criterio_bono_asistencia"
+                    error="criterio_bono_asistencia">
+                    <option value="no_afecta">No afecta (Permite bono)</option>
+                    <option value="afecta">Afecta (Quita bono)</option>
+                    <option value="revisar">Revisar (Evaluación manual)</option>
+                </x-select>
+
+                <x-color-picker wire:model="color" />
+
                 <div class="md:col-span-2">
-                    <x-select label="Tipo de Suspensión (SUNAT)" wire:model="planTipoSuspensionId" error="planTipoSuspensionId">
+                    <x-select label="Tipo de Suspensión (SUNAT)" wire:model="planTipoSuspensionId"
+                        error="planTipoSuspensionId">
                         <option value="">-- Sin vincular (no genera suspensión automática) --</option>
                         @foreach ($opcionesTipoSuspension as $grupo => $opciones)
                             <optgroup label="{{ $grupo === 'SP' ? 'Sin Pago (SP)' : 'Sujeto a Incapacidad (SI)' }}">
@@ -43,14 +55,15 @@
                     </p>
                 </div>
 
-                <x-color-picker wire:model="color" />
+
 
             </div>
         </x-slot>
 
         <x-slot name="footer">
             <x-flex class="justify-end">
-                <x-button variant="secondary" wire:click="$set('mostrarFormulario', false)" wire:loading.attr="disabled">
+                <x-button variant="secondary" wire:click="$set('mostrarFormulario', false)"
+                    wire:loading.attr="disabled">
                     Cerrar
                 </x-button>
                 <x-button wire:click="guardarPlanTipoAsistencia" wire:loading.attr="disabled">
