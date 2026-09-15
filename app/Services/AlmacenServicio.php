@@ -699,7 +699,7 @@ class AlmacenServicio
         return $query->orderBy('fecha_reporte')         // 1. Ordenar por fecha
             ->orderBy('created_at', 'asc')             // 2. Mantener orden de llegada real
             ->orderByRaw('COALESCE(indice, 0) ASC')    // 3. Manejar null en 'indice'
-            ->get();
+            ->paginate(10);
     }
 
 

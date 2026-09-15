@@ -154,15 +154,22 @@ class Producto extends Model
             ->where('categoria_codigo', 'combustible')
             ->exists();
     }
-
-    public static function deTipo($tipo)
+    public function scopeDeTipo($query, $tipo)
     {
         if ($tipo === 'combustible') {
-            return self::where('categoria_codigo', 'combustible')->with('compras');
-        } else {
-            return self::where('categoria_codigo', '!=', 'combustible')->with('compras');
+            return $query->where('categoria_codigo', 'combustible');
         }
+        return $query->where('categoria_codigo', '!=', 'combustible');
     }
+    /*
+        public static function deTipo($tipo)
+        {
+            if ($tipo === 'combustible') {
+                return self::where('categoria_codigo', 'combustible')->with('compras');
+            } else {
+                return self::where('categoria_codigo', '!=', 'combustible')->with('compras');
+            }
+        }*/
     public function getCategoriaConDescripcionAttribute()
     {
         $categoria = $this->categoria?->descripcion;
