@@ -2,19 +2,22 @@
 
 namespace App\Livewire\GestionProveedor;
 
-use App\Models\TiendaComercial;
+use App\Models\Proveedor;
 use Livewire\Component;
 
 class ProveedorDetalleComponent extends Component
 {
-    public $mostrarDetalle = false;
-    public $proveedor;
+    public bool $mostrarDetalle = false;
+    public ?Proveedor $proveedor = null;
 
     protected $listeners = ['verDetalleProveedor'];
 
-    public function verDetalleProveedor($id)
+    public function verDetalleProveedor($id): void
     {
-        $this->proveedor = TiendaComercial::withTrashed()->find($id);
+        $this->proveedor = Proveedor::withTrashed()
+            ->with('persona')
+            ->find($id);
+
         $this->mostrarDetalle = true;
     }
 

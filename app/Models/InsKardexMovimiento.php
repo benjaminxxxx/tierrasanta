@@ -41,6 +41,9 @@ class InsKardexMovimiento extends Model
 
         // Estado
         'estado',
+        
+        'stock_movimiento_id',      // NUEVO: Vínculo con el movimiento de inventario origen
+    'origen_glosa',
     ];
     public function kardex()
     {

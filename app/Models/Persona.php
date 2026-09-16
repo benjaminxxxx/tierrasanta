@@ -66,4 +66,8 @@ class Persona extends Model
     {
         return "{$this->apellido_paterno} {$this->apellido_materno}, {$this->nombres}";
     }
+    public function proveedor()
+    {
+        return $this->hasOne(Proveedor::class, 'persona_id');
+    }
 }

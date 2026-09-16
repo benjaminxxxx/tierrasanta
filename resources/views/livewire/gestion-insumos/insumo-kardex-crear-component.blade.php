@@ -8,7 +8,7 @@
     <x-card>
 
         {{-- Paso 1: buscador + crear --}}
-        @if(!$producto)
+        @if (!$producto)
             <p class="text-xs font-medium text-card-foreground uppercase tracking-wide mb-4">
                 Paso 1 — Selecciona o crea un producto
             </p>
@@ -40,18 +40,20 @@
             </div>
         @endif
 
-        @if($producto)
+        @if ($producto)
             {{-- Card producto --}}
-            <div class="mt-4 border rounded-xl p-4 space-y-4
+            <div
+                class="mt-4 border rounded-xl p-4 space-y-4
                                 {{ $producto->trashed()
-            ? 'border-red-300 bg-red-50 dark:bg-red-950 dark:border-red-800'
-            : 'border-border bg-muted' }}">
+                                    ? 'border-red-300 bg-red-50 dark:bg-red-950 dark:border-red-800'
+                                    : 'border-border bg-muted' }}">
 
                 {{-- Cabecera --}}
                 <div class="flex justify-between items-start">
                     <div class="space-y-1">
-                        @if($producto->trashed())
-                            <span class="inline-flex items-center gap-1 text-xs font-medium text-red-600
+                        @if ($producto->trashed())
+                            <span
+                                class="inline-flex items-center gap-1 text-xs font-medium text-red-600
                                                                                  bg-red-100 dark:bg-red-900 dark:text-red-300
                                                                                  border border-red-200 dark:border-red-700
                                                                                  px-2 py-0.5 rounded-md">
@@ -65,7 +67,7 @@
                     </div>
 
                     <x-flex class="gap-2 items-center">
-                        @if($producto->trashed())
+                        @if ($producto->trashed())
                             {{-- Caso: Producto Eliminado --}}
                             @can(\App\Constants\Permisos::INSUMO_PRODUCTO_RESTAURAR)
                                 <x-button wire:click="restaurarProducto" variant="success">
@@ -118,12 +120,13 @@
                 </div>
 
                 {{-- Nutrientes --}}
-                @if($producto->nutrientes->isNotEmpty())
+                @if ($producto->nutrientes->isNotEmpty())
                     <div class="border-t border-border pt-3">
                         <p class="text-xs text-muted-foreground mb-2">Nutrientes</p>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            @foreach($producto->nutrientes as $nutriente)
-                                <div class="flex items-center justify-between
+                            @foreach ($producto->nutrientes as $nutriente)
+                                <div
+                                    class="flex items-center justify-between
                                                                                         bg-background border border-border
                                                                                         rounded-lg px-3 py-2 text-sm">
                                     <span class="text-foreground">{{ $nutriente->nombre }}</span>
@@ -139,9 +142,9 @@
                 {{-- Usos --}}
                 <div class="border-t border-border pt-3">
                     <p class="text-xs text-muted-foreground mb-2">Usos</p>
-                    @if($producto->usos->isNotEmpty())
+                    @if ($producto->usos->isNotEmpty())
                         <div class="flex flex-wrap gap-2">
-                            @foreach($producto->usos as $uso)
+                            @foreach ($producto->usos as $uso)
                                 <span
                                     class="text-xs px-2 py-0.5 rounded-md
                                                                                                                          bg-background border border-border text-foreground">
@@ -155,8 +158,9 @@
                 </div>
 
                 {{-- Info eliminación --}}
-                @if($producto->trashed())
-                    <div class="border-t border-red-200 dark:border-red-800 pt-3
+                @if ($producto->trashed())
+                    <div
+                        class="border-t border-red-200 dark:border-red-800 pt-3
                                                                         grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                         <div>
                             <p class="text-xs text-muted-foreground mb-1">Eliminado por</p>
@@ -180,39 +184,44 @@
 
                 <div class="flex flex-wrap gap-3 items-stretch">
 
-                    @foreach($kardexAgrupados as $grupo)
-                            @php
-                                $esAnioActivo = ($grupo['blanco'] && $grupo['blanco']->id === $kardexId)
-                                    || ($grupo['negro'] && $grupo['negro']->id === $kardexId);
-                            @endphp
+                    @foreach ($kardexAgrupados as $grupo)
+                        @php
+                            $esAnioActivo =
+                                ($grupo['blanco'] && $grupo['blanco']->id === $kardexId) ||
+                                ($grupo['negro'] && $grupo['negro']->id === $kardexId);
+                        @endphp
 
-                            <div class="border rounded-xl p-3 flex flex-col gap-2 min-w-[110px] transition
+                        <div
+                            class="border rounded-xl p-3 flex flex-col gap-2 min-w-[110px] transition
                                                                                                                         {{ $esAnioActivo
-                        ? 'border-blue-400 ring-2 ring-blue-100 dark:ring-blue-900'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300' }}">
+                                                                                                                            ? 'border-blue-400 ring-2 ring-blue-100 dark:ring-blue-900'
+                                                                                                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300' }}">
 
-                                <span class="text-sm font-medium">Kardex {{ $grupo['anio'] }}</span>
+                            <span class="text-sm font-medium">Kardex {{ $grupo['anio'] }}</span>
 
-                                <div class="flex gap-2">
-                                    @if($grupo['blanco'])
-                                                <button wire:click="seleccionarKardex({{ $grupo['blanco']->id }}, 'blanco')" class="text-xs px-3 py-1 rounded-lg border font-medium transition
+                            <div class="flex gap-2">
+                                @if ($grupo['blanco'])
+                                    <button wire:click="seleccionarKardex({{ $grupo['blanco']->id }}, 'blanco')"
+                                        class="text-xs px-3 py-1 rounded-lg border font-medium transition
                                                                                                                                                                                                                                         {{ $kardexId === $grupo['blanco']->id && $tipoKardex === 'blanco'
-                                        ? 'bg-blue-100 border-blue-400 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
-                                        : 'border-border hover:bg-blue-50 hover:border-blue-300' }}">B</button>
-                                    @endif
+                                                                                                                                                                                                                                            ? 'bg-blue-100 border-blue-400 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
+                                                                                                                                                                                                                                            : 'border-border hover:bg-blue-50 hover:border-blue-300' }}">B</button>
+                                @endif
 
-                                    @if($grupo['negro'])
-                                                <button wire:click="seleccionarKardex({{ $grupo['negro']->id }}, 'negro')" class="text-xs px-3 py-1 rounded-lg border font-medium transition
+                                @if ($grupo['negro'])
+                                    <button wire:click="seleccionarKardex({{ $grupo['negro']->id }}, 'negro')"
+                                        class="text-xs px-3 py-1 rounded-lg border font-medium transition
                                                                                                                                                                                                                                         {{ $kardexId === $grupo['negro']->id && $tipoKardex === 'negro'
-                                        ? 'bg-gray-800 border-gray-600 text-gray-100'
-                                        : 'border-border hover:bg-gray-800 hover:text-gray-100' }}">N</button>
-                                    @endif
-                                </div>
+                                                                                                                                                                                                                                            ? 'bg-gray-800 border-gray-600 text-gray-100'
+                                                                                                                                                                                                                                            : 'border-border hover:bg-gray-800 hover:text-gray-100' }}">N</button>
+                                @endif
                             </div>
+                        </div>
                     @endforeach
 
                     {{-- Nuevo kardex --}}
-                    <button @click="$wire.dispatch('nuevoInsumoKardex', { productoId: {{ $producto->id }} })" class="border border-dashed border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3
+                    <button @click="$wire.dispatch('nuevoInsumoKardex', { productoId: {{ $producto->id }} })"
+                        class="border border-dashed border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3
                                                            flex flex-col items-center justify-center gap-1 text-gray-400
                                                            hover:text-gray-600 hover:border-gray-400 hover:bg-gray-50
                                                            dark:hover:bg-gray-800 transition min-w-[90px]">
@@ -223,11 +232,12 @@
                 </div>
 
                 {{-- Tag selección --}}
-                @if($kardexId && $tipoKardex)
+                @if ($kardexId && $tipoKardex)
                     @php
-                        $anioSeleccionado = collect($kardexAgrupados)->first(
-                            fn($g) => ($g['blanco']?->id === $kardexId || $g['negro']?->id === $kardexId)
-                        )['anio'] ?? '';
+                        $anioSeleccionado =
+                            collect($kardexAgrupados)->first(
+                                fn($g) => $g['blanco']?->id === $kardexId || $g['negro']?->id === $kardexId,
+                            )['anio'] ?? '';
                     @endphp
                     <div class="mt-3 flex items-center gap-2">
                         <span class="text-xs text-gray-400">Seleccionado:</span>
@@ -246,14 +256,15 @@
         <livewire:gestion-insumos.insumo-kardex-detalle-component :insumoKardexId="$kardexId"
             wire:key="kardex{{ $kardexId }}{{ $tipoKardex }}" />
     @endif
-
+    <livewire:productos-form-component />
+    <livewire:gestion-insumos.insumo-kardex-form-component />
     <x-loading wire:loading />
 </div>
 
 @script
-<script>
-    Alpine.data('insumoKardexCrearComponent', () => ({
-        init() { }
-    }))
-</script>
+    <script>
+        Alpine.data('insumoKardexCrearComponent', () => ({
+            init() {}
+        }))
+    </script>
 @endscript

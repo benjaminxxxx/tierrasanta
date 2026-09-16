@@ -8,6 +8,7 @@ use App\Models\CompraProducto;
 use App\Models\InsKardex;
 use App\Models\Maquinaria;
 use App\Models\Producto;
+use App\Services\Almacen\StockService;
 use App\Services\AlmacenServicio;
 use App\Services\AuditoriaServicio;
 use Carbon\Carbon;
@@ -74,6 +75,23 @@ class AlmacenSalidaDetalleComponent extends Component
     }
     public function preguntarStock(int $productoId): void
     {
+        if (isset($this->stocksProductos[$productoId]))
+            return;
+
+        $producto = Producto::find($productoId, ['id', 'nombre_comercial', 'codigo_unidad_medida']);
+        $stock = StockService::obtenerStockPorTipo($productoId, $this->almacenId);
+
+        $this->stocksProductos[$productoId] = [
+            'producto_id' => $productoId,
+            'nombre' => $producto?->nombre_comercial ?? "Producto {$productoId}",
+            'unidad' => $producto?->codigo_unidad_medida ?? '',
+            'blanco' => $stock['blanco'], // ya no es null-si-no-existe: 0 real es una respuesta válida
+            'negro' => $stock['negro'],
+        ];
+    }
+    /*
+    public function preguntarStock(int $productoId): void
+    {
         // Si ya está cargado, no repetir
         if (isset($this->stocksProductos[$productoId]))
             return;
@@ -99,7 +117,7 @@ class AlmacenSalidaDetalleComponent extends Component
             'blanco' => $kardexBlanco?->stock_actual ?? null,
             'negro' => $kardexNegro?->stock_actual ?? null,
         ];
-    }
+    }*/
     public function actualizarStockInsumo(int $productoId): void
     {
         $anio = $this->anio;

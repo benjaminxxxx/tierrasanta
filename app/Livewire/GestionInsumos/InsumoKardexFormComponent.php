@@ -8,13 +8,14 @@ use App\Models\SunatTabla10TipoComprobantePago;
 use App\Services\Almacen\InsumoKardexServicio;
 use App\Services\KardexServicio;
 use App\Services\ProductoServicio;
+use App\Traits\HandlesAlerts;
 use Livewire\Component;
 use Livewire\Attributes\On;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 
 class InsumoKardexFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, HandlesAlerts;
 
     public $mostrarFormularioKardex = false;
     public $insumoKardexId;
@@ -87,7 +88,7 @@ class InsumoKardexFormComponent extends Component
             $this->alert('success', "Kardex {$textoCreado} correctamente.");
 
         } catch (\Throwable $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 

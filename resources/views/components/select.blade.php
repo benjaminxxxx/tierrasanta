@@ -4,14 +4,13 @@
     'label' => null,
     'error' => null,
     'disabled' => false,
-    'size' => 'default', // small | default | large
+    'size' => 'default',
 ])
 
 @php
     $id = $id ?? 'select-' . Str::uuid();
     $model = $attributes->whereStartsWith('wire:model')->first();
 
-    // Alturas consistentes (h-9 es el estándar)
     $sizeClasses = match ($size) {
         'small' => 'h-8 px-2 text-xs',
         'large' => 'h-11 px-4 text-base',
@@ -22,7 +21,6 @@
                         ->contains(fn ($c) => str_starts_with($c, 'w-'));
     $computedWidth = $hasWidthClass ? '' : 'w-full';
 
-    // Colores semánticos de tu config
     $baseClasses = 'block rounded-md border border-input bg-background text-foreground shadow-xs transition-colors outline-none 
                     focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]
                     disabled:cursor-not-allowed disabled:opacity-50';
@@ -37,7 +35,11 @@
         <x-label for="{{ $id }}">{{ $label }}</x-label>
     @endif
 
-    <select id="{{ $id }}" {{ $disabled ? 'disabled' : '' }} {!! $attributes->merge(['class' => $classes]) !!}>
+    <select 
+        id="{{ $id }}" 
+        {{ $disabled ? 'disabled' : '' }} 
+        {{ $attributes->class([$classes])->except(['disabled']) }}
+    >
         {{ $slot }}
     </select>
 

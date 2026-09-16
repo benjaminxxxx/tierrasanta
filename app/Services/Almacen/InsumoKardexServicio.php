@@ -154,9 +154,6 @@ class InsumoKardexServicio
             $kardex = InsKardex::create($validatedData);
         }
 
-        // recalcular stock
-        //remplazado por un trigger $this->sincronizarStockActual($kardex->id);
-
         return $kardex;
     }
     /*

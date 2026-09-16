@@ -2,13 +2,16 @@
 
 namespace App\Livewire;
 
+use App\Models\Almacen;
 use App\Models\AlmacenProductoSalida;
 use App\Models\Campo;
 use App\Models\InsKardex;
+use App\Models\InsUso;
 use App\Models\Maquinaria;
 use App\Models\Producto;
 use App\Services\AlmacenServicio;
 use DB;
+use Exception;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
@@ -30,14 +33,17 @@ class AlmacenSalidaFormularioComponent extends Component
     public array $listaCampos = [];
 
     /** producto_id => [{id, label}, ...] — opciones de USO permitidas por producto */
-    public array $usosPorProducto = [];
+    public array $listaUsos = [];
 
     public array $stocksProductos = [];
 
     protected $listeners = [
         'abrirFormularioSalida' => 'abrir',
     ];
+    public function mount()
+    {
 
+    }
     public function abrir(string $tipo, $mes, $anio, array $ids = []): void
     {
         $this->tipo = $tipo;
@@ -50,9 +56,17 @@ class AlmacenSalidaFormularioComponent extends Component
         $this->cargarRegistros();
 
         $this->mostrar = true;
-
-        // Empuja los datos ya cargados al Handsontable del modal.
-        $this->dispatch('formularioSalidaAbierto', data: $this->registros, esEdicion: !empty($ids));
+      
+    
+        $this->dispatch(
+            'formularioSalidaAbierto',
+            data: $this->registros,
+            esEdicion: !empty($ids),
+            listaProductos: $this->listaProductos,
+            listaMaquinarias: $this->listaMaquinarias,
+            listaCampos: $this->listaCampos,
+            listaUsos: $this->listaUsos,
+        );
     }
 
     public function cerrar(): void
@@ -80,7 +94,7 @@ class AlmacenSalidaFormularioComponent extends Component
                 $distribuciones = $salida->distribuciones ?? [];
                 return array_merge($salida->toArray(), [
                     'campo_nombre' => $this->tipo === 'combustible' ? $salida->maquina_nombre : $salida->campo_nombre,
-                    'unidad_medida' => $salida->producto?->unidad_medida,
+                    'unidad_medida' => $salida->producto?->codigo_unidad_medida,
                     'categoria' => $salida->producto?->categoria?->descripcion,
                     'distribuciones_count' => count($distribuciones),
                 ]);
@@ -102,24 +116,29 @@ class AlmacenSalidaFormularioComponent extends Component
             $this->listaMaquinarias = Maquinaria::orderBy('nombre')->get()
                 ->map(fn($m) => ['id' => $m->id, 'label' => $m->nombre])
                 ->toArray();
-            $this->usosPorProducto = [];
+            $this->listaUsos = [];
             return;
         }
 
+
         // Un solo query para TODOS los productos de este tipo, agrupado por producto_id.
         // Evita el N+1 de preguntar usos fila por fila en el frontend.
-        $this->usosPorProducto = DB::table('ins_producto_usos')
-            ->join('ins_usos', 'ins_usos.id', '=', 'ins_producto_usos.uso_id')
-            ->select('ins_producto_usos.producto_id', 'ins_usos.id as uso_id', 'ins_usos.nombre')
-            ->get()
-            ->groupBy('producto_id')
-            ->map(fn($grupo) => $grupo->map(fn($u) => ['id' => $u->uso_id, 'label' => $u->nombre])->values())
+        // La etiqueta combina nombre + descripción para que el autocomplete
+        // permita buscar escribiendo cualquiera de los dos.
+        $this->listaUsos = InsUso::get()
+            ->map(fn($u) => [
+                'id' => $u->id,
+                'label' => $u->descripcion
+                    ? "{$u->nombre} — {$u->descripcion}"
+                    : $u->nombre,
+            ])
             ->toArray();
     }
 
     public function preguntarStock(int $productoId): void
     {
-        if (isset($this->stocksProductos[$productoId])) return;
+        if (isset($this->stocksProductos[$productoId]))
+            return;
 
         $kardexBlanco = InsKardex::where('producto_id', $productoId)
             ->where('anio', $this->anio)->where('tipo', 'blanco')
@@ -129,12 +148,12 @@ class AlmacenSalidaFormularioComponent extends Component
             ->where('anio', $this->anio)->where('tipo', 'negro')
             ->first(['stock_actual']);
 
-        $producto = Producto::find($productoId, ['id', 'nombre_comercial', 'unidad_medida']);
+        $producto = Producto::find($productoId, ['id', 'nombre_comercial', 'codigo_unidad_medida']);
 
         $this->stocksProductos[$productoId] = [
             'producto_id' => $productoId,
             'nombre' => $producto?->nombre_comercial ?? "Producto {$productoId}",
-            'unidad' => $producto?->unidad_medida ?? '',
+            'unidad' => $producto?->codigo_unidad_medida ?? '',
             'blanco' => $kardexBlanco?->stock_actual ?? null,
             'negro' => $kardexNegro?->stock_actual ?? null,
         ];
@@ -151,15 +170,22 @@ class AlmacenSalidaFormularioComponent extends Component
      * Guarda todo el grid completo (crear + editar + eliminar-por-vaciado, tal
      * como ya lo resuelve guardarSalidaMasiva leyendo el campo 'id' de cada fila).
      */
-    public function guardar(array $data): void
+    public function guardarSalida(array $data): void
     {
         try {
-            $resultados = AlmacenServicio::guardarSalidaMasiva($data, $this->tipo);
+            $almacen = Almacen::first();
+            if (!$almacen) {
+                throw new Exception('No hay almacén configurado');
+            }
+            $resultados = app(AlmacenServicio::class)->guardarSalidaMasiva($data, $this->tipo, $almacen->id);
 
             $partes = [];
-            if ($resultados['creados'] > 0) $partes[] = "{$resultados['creados']} creados";
-            if ($resultados['actualizados'] > 0) $partes[] = "{$resultados['actualizados']} actualizados";
-            if ($resultados['eliminados'] > 0) $partes[] = "{$resultados['eliminados']} eliminados";
+            if ($resultados['creados'] > 0)
+                $partes[] = "{$resultados['creados']} creados";
+            if ($resultados['actualizados'] > 0)
+                $partes[] = "{$resultados['actualizados']} actualizados";
+            if ($resultados['eliminados'] > 0)
+                $partes[] = "{$resultados['eliminados']} eliminados";
 
             $this->alert('success', count($partes) ? implode(', ', $partes) : 'Sin cambios');
 

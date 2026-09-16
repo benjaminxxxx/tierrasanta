@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -23,7 +24,9 @@ class Producto extends Model
         'editado_por',
         'eliminado_por',
     ];
-    //deprecado kardexProductos
+    public function presentaciones(){
+        return $this->hasMany(Presentacion::class, 'producto_id');
+    }
     // -----------------------
     // RELACIONES AUDITORÍA
     // -----------------------
@@ -84,14 +87,31 @@ class Producto extends Model
             ? "{$tabla6->codigo} - {$tabla6->descripcion}"
             : "-";
     }
-    public function getNombreCompletoAttribute()
+    /**
+     * Retorna solo el nombre comercial del producto.
+     */
+    protected function nombre(): Attribute
     {
-        $nombreComercial = trim($this->nombre_comercial);
-        $ingredienteActivo = trim($this->ingrediente_activo);
+        return Attribute::make(
+            get: fn () => $this->nombre_comercial ?? ''
+        );
+    }
 
-        return $ingredienteActivo
-            ? "{$nombreComercial} - {$ingredienteActivo}"
-            : $nombreComercial;
+    /**
+     * Retorna el nombre comercial más el ingrediente activo (si existe).
+     * Ejemplo: "Paracetamol (Acetaminofén)"
+     */
+    protected function nombreCompleto(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if (!empty($this->ingrediente_activo)) {
+                    return "{$this->nombre_comercial} ({$this->ingrediente_activo})";
+                }
+
+                return $this->nombre_comercial ?? '';
+            }
+        );
     }
     // Reemplazar o modificar nombre_completo
     public function getNombreCompletoKgAttribute(): string

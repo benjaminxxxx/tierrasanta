@@ -1,11 +1,11 @@
 <div class="space-y-4">
-    <x-flex>
+    <x-flex class="justify-between">
         <x-title>
             Gestión de Proveedores
         </x-title>
         @can(\App\Constants\Permisos::INSUMO_PROVEEDOR_GESTIONAR)
-            <x-button type="button" @click="$wire.dispatch('crearProveedor')" class="w-full md:w-auto ">
-                <i class="fa fa-plus"></i> Nuevo Proveedor
+            <x-button type="button" @click="$wire.dispatch('crearProveedor')" class="w-full md:w-auto">
+                <i class="fa fa-plus"></i> Agregar Proveedor
             </x-button>
         @endcan
     </x-flex>
@@ -16,7 +16,7 @@
             <x-flex class="justify-between flex-wrap gap-3">
                 <x-flex class="flex-wrap gap-3">
                     <x-group-field>
-                        <x-label for="search">Buscar por razón social, comercial o RUC</x-label>
+                        <x-label for="search">Buscar por nombre, razón social o N° documento</x-label>
                         <div class="relative">
                             <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none text-primary dark:text-primarydark">
                                 <i class="fa fa-search"></i>
@@ -42,9 +42,9 @@
                 <x-slot name="thead">
                     <tr>
                         <x-th value="N°" class="text-center" />
-                        <x-th value="Razón Social" />
-                        <x-th value="Nombre Comercial" />
-                        <x-th value="Ruc" class="text-center" />
+                        <x-th value="Proveedor / Razón Social" />
+                        <x-th value="Tipo / Doc." />
+                        <x-th value="Documento" class="text-center" />
                         <x-th value="Verificado" class="text-center" />
                         <x-th value="Acciones" class="text-center" />
                     </tr>
@@ -52,37 +52,53 @@
                 <x-slot name="tbody">
                     @if ($proveedores && $proveedores->count() > 0)
                         @foreach ($proveedores as $indice => $proveedor)
+                            @php
+                                $persona = $proveedor->persona;
+                            @endphp
                             <x-tr>
-                                <x-th value="{{ $indice + 1 }}" class="text-center" />
-                                <x-td value="{{ $proveedor->razon_social }}" />
-                                <x-td value="{{ $proveedor->nombre_comercial ?? '-' }}" />
-                                <x-td value="{{ $proveedor->ruc ?? '-' }}" class="text-center" />
+                                <x-th value="{{ $proveedores->firstItem() + $indice }}" class="text-center" />
+                                
+                                {{-- Nombre de la Persona / Empresa --}}
+                                <x-td value="{{ $persona?->nombre_mostrar ?? '-' }}" />
+
+                                {{-- Tipo de Persona --}}
+                                <x-td>
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full {{ $persona?->tipo === 'empresa' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' }}">
+                                        {{ ucfirst($persona?->tipo ?? 'N/A') }}
+                                    </span>
+                                </x-td>
+
+                                {{-- Documento (RUC / DNI) --}}
+                                <x-td value="{{ ($persona?->tipo_documento ? $persona->tipo_documento . ': ' : '') . ($persona?->numero_documento ?? '-') }}" class="text-center" />
+
+                                {{-- Estado Verificado SUNAT --}}
                                 <x-td class="text-center">
                                     @if ($proveedor->verificado)
-                                        <span class="text-green-600 dark:text-green-400"><i class="fa fa-check-circle"></i></span>
+                                        <span class="text-green-600 dark:text-green-400" title="Verificado"><i class="fa fa-check-circle"></i></span>
                                     @else
                                         <span class="text-gray-400">—</span>
                                     @endif
                                 </x-td>
 
+                                {{-- Acciones --}}
                                 <x-td class="text-center">
                                     <div class="flex items-center justify-center gap-2">
-                                        <x-button variant="secondary"
-                                            @click="$wire.dispatch('verDetalleProveedor',{id:{{ $proveedor->id }}})">
+                                        <x-button variant="secondary" size="sm"
+                                            @click="$wire.dispatch('verDetalleProveedor', { id: {{ $proveedor->id }} })">
                                             <i class="fa fa-eye"></i>
                                         </x-button>
 
                                         @can(\App\Constants\Permisos::INSUMO_PROVEEDOR_GESTIONAR)
                                             @if ($verEliminados)
-                                                <x-button variant="success" wire:click="restaurarProveedor({{ $proveedor->id }})">
+                                                <x-button variant="success" size="sm" wire:click="restaurarProveedor({{ $proveedor->id }})">
                                                     <i class="fa fa-undo"></i>
                                                 </x-button>
                                             @else
-                                                <x-button variant="secondary"
-                                                    @click="$wire.dispatch('editarProveedor',{id:{{ $proveedor->id }}})">
+                                                <x-button variant="secondary" size="sm"
+                                                    @click="$wire.dispatch('editarProveedor', { id: {{ $proveedor->id }} })">
                                                     <i class="fa fa-edit"></i>
                                                 </x-button>
-                                                <x-button variant="danger" wire:click="confirmarEliminacion({{ $proveedor->id }})">
+                                                <x-button variant="danger" size="sm" wire:click="confirmarEliminacion({{ $proveedor->id }})">
                                                     <i class="fa fa-trash"></i>
                                                 </x-button>
                                             @endif

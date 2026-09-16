@@ -71,6 +71,12 @@ return new class extends Migration {
             // ESTADO
             $table->enum('estado', ['activo', 'anulado'])->default('activo');
 
+            $table->foreignId('stock_movimiento_id')->nullable(); 
+
+// Glosa o concepto descriptivo
+$table->string('origen_glosa')->nullable();
+
+
             $table->timestamps();
 
             // INDEX PARA LISTAR SUPER RÁPIDO

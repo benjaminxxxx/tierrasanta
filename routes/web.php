@@ -13,10 +13,12 @@ use App\Http\Controllers\MaquinariaController;
 use App\Http\Controllers\NutrienteController;
 use App\Http\Controllers\PermisosRolController;
 use App\Http\Controllers\ReporteDiarioController;
+use App\Livewire\Compras\ListaComprasComponent;
 use App\Livewire\ConfiguracionDescuentoAfpComponent;
 use App\Livewire\ConfiguracionPrimasComisionesComponent;
 use App\Livewire\GestionAsistencia\TipoAsistenciaComponent;
 use App\Livewire\GestionCampo\CampoCostosComponent;
+use App\Livewire\GestionInsumos\InsumoKardexCrearComponent;
 use App\Livewire\GestionPlanilla\AsistenciaMensualComponent;
 use App\Livewire\GestionPlanilla\CargosComponent;
 use App\Livewire\GestionPlanilla\DerechoHabiente\DerechoHabienteListaComponent;
@@ -203,7 +205,7 @@ Route::middleware([
     Route::get('/maquinarias', [MaquinariaController::class, 'index'])->name('maquinarias.index')->middleware('can:' . Permisos::CAMPO_MAQUINARIA);
 
     //ALMACEN
-    Route::get('/almacen/compras/{producto_id?}', [AlmacenController::class, 'compraProductos'])->name('almacen.compras')->middleware('can:' . Permisos::INSUMO_COMPRA);
+    Route::get('/almacen/compras/{producto_id?}', ListaComprasComponent::class)->name('almacen.compras')->middleware('can:' . Permisos::INSUMO_COMPRA);
     Route::get('/almacen/salida_de_productos', [AlmacenController::class, 'salidaProductos'])->name('almacen.salida_productos')->middleware('can:' . Permisos::INSUMO_SALIDA);
     Route::get('/almacen/salida_de_combustible', [AlmacenController::class, 'salidaCombustible'])->name('almacen.salida_combustible')->middleware('can:' . Permisos::INSUMO_COMBUSTIBLE);
     Route::get('/almacen/distribucion_combustible', [AlmacenController::class, 'distribucionCombustible'])->name('almacen.distribucion_combustible')->middleware('can:' . Permisos::INSUMO_DISTRIBUCION);
@@ -216,13 +218,13 @@ Route::middleware([
 
     //INSUMOS
     Route::get('/gestion_insumos/kardex', [GestionInsumosController::class, 'kardex'])->name('gestion_insumos.kardex')->middleware('can:' . Permisos::INSUMO_KARDEX);
-    Route::get('/gestion_insumos/kardex/crear', [GestionInsumosController::class, 'kardexCrear'])->name('gestion_insumos.kardex.crear')->middleware('can:' . Permisos::INSUMO_KARDEX);
+    Route::get('/gestion_insumos/kardex/crear', [InsumoKardexCrearComponent::class])->name('gestion_insumos.kardex.crear')->middleware('can:' . Permisos::INSUMO_KARDEX);
     Route::get('/gestion_insumos/kardex/detalle/{insumoKardexId}', [GestionInsumosController::class, 'kardexDetalle'])->name('gestion_insumos.kardex.detalle')->middleware('can:' . Permisos::INSUMO_KARDEX);
     Route::get('/gestion_insumos/kardex/reportes', [GestionInsumosController::class, 'kardexReportes'])->name('gestion_insumos.kardex.reportes')->middleware('can:' . Permisos::INSUMO_KARDEX_REPORTE);
     Route::get('/gestion_insumos/kardex/reporte/{insumoKardexReporteId}', [GestionInsumosController::class, 'kardexReporte'])->name('gestion_insumos.kardex.reporte')->middleware('can:' . Permisos::INSUMO_KARDEX_REPORTE_VER);
     Route::get('/gestion_insumos/kardex/asignacion/{productoId}/{anio}', [GestionInsumosController::class, 'kardexAsignacion'])->name('gestion_insumos.kardex_asignacion')->middleware('can:' . Permisos::INSUMO_KARDEX_ASIGNAR_MOVIMIENTOS);
     
-
+    
     //GASTOS
     //Route::get('/contabilidad/gasto/general', [GastoController::class, 'general'])->name('gastos.general');
     Route::get('/contabilidad/costo_mensual', [GastoController::class, 'costo_mensual'])->name('contabilidad.costo_mensual')->middleware('can:' . Permisos::CONTABILIDAD_COSTO_MENSUAL);

@@ -2,7 +2,7 @@
 
 namespace App\Livewire\GestionProveedor;
 
-use App\Models\TiendaComercial;
+use App\Models\Proveedor;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -12,7 +12,7 @@ class ProveedoresComponent extends Component
     use WithPagination;
     use LivewireAlert;
 
-    public $search;
+    public $search = '';
     public $verificadoFiltro = ''; // '', '1' (verificados), '0' (no verificados)
     public $verEliminados = false;
 
@@ -44,7 +44,7 @@ class ProveedoresComponent extends Component
     public function eliminacionConfirmada($data)
     {
         try {
-            $proveedor = TiendaComercial::findOrFail($data['id']);
+            $proveedor = Proveedor::findOrFail($data['id']);
             $proveedor->update(['eliminado_por' => auth()->id()]);
             $proveedor->delete();
             $this->alert('success', 'Proveedor Eliminado');
@@ -56,7 +56,7 @@ class ProveedoresComponent extends Component
     public function restaurarProveedor($id)
     {
         try {
-            $proveedor = TiendaComercial::onlyTrashed()->findOrFail($id);
+            $proveedor = Proveedor::onlyTrashed()->findOrFail($id);
             $proveedor->restore();
             $proveedor->update(['eliminado_por' => null, 'editado_por' => auth()->id()]);
             $this->alert('success', 'Proveedor restaurado correctamente.');
@@ -67,23 +67,34 @@ class ProveedoresComponent extends Component
 
     public function render()
     {
-        $query = $this->verEliminados
-            ? TiendaComercial::onlyTrashed()
-            : TiendaComercial::query();
+        // 1. Cargar la relación 'persona' para evitar N+1 queries
+        $query = Proveedor::with('persona');
 
+        // 2. Control de SoftDeletes
+        if ($this->verEliminados) {
+            $query->onlyTrashed();
+        }
+
+        // 3. Filtro de Búsqueda sobre el modelo Persona relacionado
         if ($this->search) {
-            $query->where(function ($q) {
-                $q->where('razon_social', 'like', '%' . $this->search . '%')
-                  ->orWhere('nombre_comercial', 'like', '%' . $this->search . '%')
-                  ->orWhere('ruc', 'like', '%' . $this->search . '%');
+            $search = $this->search;
+            $query->whereHas('persona', function ($q) use ($search) {
+                $q->where('nombre_mostrar', 'like', "%{$search}%")
+                  ->orWhere('razon_social', 'like', "%{$search}%")
+                  ->orWhere('numero_documento', 'like', "%{$search}%");
             });
         }
 
+        // 4. Filtro por estado de verificación
         if ($this->verificadoFiltro !== '') {
             $query->where('verificado', (bool) $this->verificadoFiltro);
         }
 
-        $proveedores = $query->orderBy('razon_social')->paginate(20);
+        // 5. Ordenamiento mediante Join por el campo 'nombre_mostrar' de Persona
+        $proveedores = $query->join('personas', 'proveedores.persona_id', '=', 'personas.id')
+            ->select('proveedores.*')
+            ->orderBy('personas.nombre_mostrar', 'asc')
+            ->paginate(20);
 
         return view('livewire.gestion-proveedor.proveedores-component', [
             'proveedores' => $proveedores,

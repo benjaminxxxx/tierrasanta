@@ -1,17 +1,17 @@
 <div>
     <x-dialog-modal wire:model.live="mostrarFormularioKardex" maxWidth="lg">
         <x-slot name="title">
-            Crear Kardex de Insumos
+            Crear Kardex - Formulario
         </x-slot>
 
         <x-slot name="content">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div x-data="{ tieneSaldoInicial: @entangle('kardex.tiene_saldo_inicial') }" class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                 {{-- PRODUCTO --}}
                 <x-group-field>
-                    <x-label for="kardex.producto_id" value="Selecciona un  Producto" />
-                    <x-select-dropdown wire:model="kardex.producto_id" source="getProductos" placeholder="-- Seleccione Producto --"
-                         />
+                    <x-label for="kardex.producto_id" value="Selecciona un Producto" />
+                    <x-select-dropdown wire:model="kardex.producto_id" source="getProductos"
+                        placeholder="-- Seleccione Producto --" />
                     <x-input-error for="kardex.producto_id" />
                 </x-group-field>
 
@@ -29,29 +29,71 @@
                     <option value="negro">Negro</option>
                 </x-select>
 
-                {{-- STOCK INICIAL --}}
-                <x-input type="number" label="Stock Inicial" wire:model="kardex.stock_inicial" step="0.001"
-                    error="kardex.stock_inicial" />
+                {{-- CHECKBOX: activa/desactiva el bloque de saldo inicial --}}
+                <div class="md:col-span-2 border-t border-border pt-3">
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" x-model="tieneSaldoInicial" class="rounded border-input">
+                        <span class="text-sm font-medium">
+                            Este kardex parte con saldo inicial (stock de apertura)
+                        </span>
+                    </label>
+                    <p class="text-xs text-muted-foreground mt-1" x-show="!tieneSaldoInicial">
+                        Si el producto no tenía stock previo, deja esto desmarcado - el kardex arrancará en cero
+                        y su primer movimiento será la primera compra o salida que registres.
+                    </p>
+                </div>
 
-                {{-- COSTO UNITARIO --}}
-                <x-input type="number" label="Costo Unitario" wire:model="kardex.costo_unitario" step="0.000000000001"
-                    error="kardex.costo_unitario" />
+                {{-- BLOQUE SALDO INICIAL CORREGIDO (Ocupa las 2 columnas base y organiza sub-filas) --}}
+                <div x-show="tieneSaldoInicial" x-cloak x-transition
+                    class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                {{-- COSTO TOTAL --}}
-                <x-input type="number" label="Costo Total" wire:model="kardex.costo_total" step="0.000000000001"
-                    error="kardex.costo_total" />
-                <x-select label="Tipo de comprobante (Tabla 10)" wire:model="kardex.tipo_compra_codigo_inicial"
-                    error="kardex.tipo_compra_codigo_inicial" fullWidth="true">
-                    <option value="">Seleccione</option>
-                    @foreach ($tabla10TipoComprobantePago as $tipoCompra)
-                        <option value="{{ $tipoCompra->codigo }}">{{ $tipoCompra->descripcion }}</option>
-                    @endforeach
-                </x-select>
-                <x-input type="text" label="Serie de Stock Inicial" wire:model="kardex.serie_inicial"
-                    error="kardex.serie_inicial" />
-                <x-input type="text" label="Numero de Stock Inicial" wire:model="kardex.numero_inicial"
-                    error="kardex.numero_inicial" />
+                    {{-- CÁLCULO DE COSTOS EN 3 COLUMNAS INTERNAS --}}
+                    <div class="md:col-span-2" x-data="{
+                        stock: $wire.get('kardex.stock_inicial') || 0,
+                        costoTotal: $wire.get('kardex.costo_total') || 0,
+                        costoUnitario: 0,
+                    
+                        calcularUnitario() {
+                            let cant = parseFloat(this.stock) || 0;
+                            let total = parseFloat(this.costoTotal) || 0;
+                            this.costoUnitario = (cant > 0) ? (total / cant).toFixed(6) : 0;
+                        }
+                    }" x-init="calcularUnitario()">
 
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {{-- STOCK INICIAL --}}
+                            <x-input type="number" label="Stock Inicial" wire:model="kardex.stock_inicial"
+                                x-model="stock" x-on:input="calcularUnitario()" step="0.001"
+                                error="kardex.stock_inicial" />
+
+                            {{-- COSTO TOTAL --}}
+                            <x-input type="number" label="Costo Total" wire:model="kardex.costo_total"
+                                x-model="costoTotal" x-on:input="calcularUnitario()" step="0.000001"
+                                error="kardex.costo_total" />
+
+                            {{-- COSTO UNITARIO (Solo presentación en cliente) --}}
+                            <x-input type="number" label="Costo Unitario" x-model="costoUnitario" readonly
+                                tabindex="-1" step="0.000000000001" />
+                        </div>
+                    </div>
+
+                    {{-- COMPROBANTE Y SERIES EN LA GRILLA SECUNDARIA --}}
+                    <div class="md:col-span-2">
+                        <x-select label="Tipo de comprobante (Tabla 10)" wire:model="kardex.tipo_compra_codigo_inicial"
+                            error="kardex.tipo_compra_codigo_inicial" fullWidth="true">
+                            <option value="">Seleccione</option>
+                            @foreach ($tabla10TipoComprobantePago as $tipoCompra)
+                                <option value="{{ $tipoCompra->codigo }}">{{ $tipoCompra->descripcion }}</option>
+                            @endforeach
+                        </x-select>
+                    </div>
+
+                    <x-input type="text" label="Serie de Stock Inicial" wire:model="kardex.serie_inicial"
+                        error="kardex.serie_inicial" />
+
+                    <x-input type="text" label="Número de Stock Inicial" wire:model="kardex.numero_inicial"
+                        error="kardex.numero_inicial" />
+                </div>
             </div>
         </x-slot>
 

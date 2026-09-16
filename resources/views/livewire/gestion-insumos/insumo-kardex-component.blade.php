@@ -1,23 +1,22 @@
 <div x-data="insumoKardexComponent">
-    <x-card>
-        <x-flex class="justify-between">
-            <div>
-                <x-title>
-                    Kardex de Insumos
-                </x-title>
-                <x-subtitle>
-                    Crea y administra los reportes de kardex para los insumos almacenados.
-                </x-subtitle>
-            </div>
-            <div>
-                @can(\App\Constants\Permisos::INSUMO_KARDEX_CREAR)
+
+    <x-flex class="justify-between">
+        <div>
+            <x-title>
+                Kardex de Insumos
+            </x-title>
+            <x-subtitle>
+                Crea y administra los reportes de kardex para los insumos almacenados.
+            </x-subtitle>
+        </div>
+        <div>
+            @can(\App\Constants\Permisos::INSUMO_KARDEX_CREAR)
                 <x-button @click="$wire.dispatch('nuevoInsumoKardex')">
                     <i class="fa fa-plus"></i> Crear Nuevo Kardex
                 </x-button>
-                @endcan
-            </div>
-        </x-flex>
-    </x-card>
+            @endcan
+        </div>
+    </x-flex>
     <div class="mt-5" x-show="ayudaActivada">
         <x-kardex-proceso :pasoActivo="1" accionCrearKardex="nuevoInsumoKardex" />
     </div>
@@ -32,9 +31,9 @@
     <x-loading wire:loading />
 </div>
 @script
-<script>
-    Alpine.data('insumoKardexComponent',()=>({
-        ayudaActivada:false,
-    }))
-</script>
+    <script>
+        Alpine.data('insumoKardexComponent', () => ({
+            ayudaActivada: false,
+        }))
+    </script>
 @endscript

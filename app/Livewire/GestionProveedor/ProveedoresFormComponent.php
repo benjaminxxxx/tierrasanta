@@ -2,79 +2,82 @@
 
 namespace App\Livewire\GestionProveedor;
 
-use App\Models\TiendaComercial;
-use Illuminate\Database\QueryException;
-use Illuminate\Validation\Rule;
+use App\Models\Persona;
+use App\Models\Proveedor;
+use App\Services\InformacionGeneral\ProveedorServicio;
+use App\Traits\HandlesAlerts;
+use Exception;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
 class ProveedoresFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, HandlesAlerts;
 
     public $mostrarFormularioProveedores = false;
     public $proveedorId;
 
-    public $razonSocial;
-    public $nombreComercial;
-    public $ruc;
-    public $contacto;
+    // Persona ya resuelta (elegida, creada o editada) — solo lectura en esta pantalla.
+    public ?int $personaId = null;
+    public array $personaResumen = [];
+
+    // Búsqueda de persona existente (modo creación)
+    public string $busquedaPersona = '';
+    public array $resultadosBusquedaPersona = [];
+
+    // Campos propios de Proveedor
     public $tipoContribuyente;
     public $condicion;
     public $estadoContribuyente;
     public $estadoDomicilio;
     public $fechaInscripcion;
     public $fechaInicioActividades;
-    public $direccionFiscal;
-    public $distrito;
-    public $provincia;
-    public $departamento;
     public $ciiu;
     public $actividadComercioExterior;
+    public ?string $personaRazonSocial = null;
+    public ?string $personaNumeroDocumento = null;
 
-    protected $listeners = ['editarProveedor', 'crearProveedor'];
+    protected $listeners = [
+        'editarProveedor',
+        'crearProveedor',
+        'personaSeleccionada' => 'alPersonaGuardada'
+    ];
 
     protected function rules()
     {
         return [
-            'razonSocial' => 'required|string',
-            'nombreComercial' => 'nullable|string',
-            'ruc' => [
-                'nullable',
-                'numeric',
-                'digits:11',
-                Rule::unique('tienda_comercials', 'ruc')->ignore($this->proveedorId),
-            ],
-            'contacto' => 'nullable|string',
+            'personaId' => 'required|exists:personas,id',
             'tipoContribuyente' => 'nullable|string',
             'condicion' => 'nullable|string',
             'estadoContribuyente' => 'nullable|string',
             'estadoDomicilio' => 'nullable|string',
             'fechaInscripcion' => 'nullable|date',
             'fechaInicioActividades' => 'nullable|date',
-            'direccionFiscal' => 'nullable|string',
-            'distrito' => 'nullable|string',
-            'provincia' => 'nullable|string',
-            'departamento' => 'nullable|string',
             'ciiu' => 'nullable|string',
             'actividadComercioExterior' => 'nullable|string',
         ];
     }
 
     protected $messages = [
-        'razonSocial.required' => 'La Razón Social es obligatoria.',
-        'ruc.unique' => 'El Ruc ya está en uso.',
-        'ruc.digits' => 'El Ruc debe tener exactamente 11 dígitos.',
-        'ruc.numeric' => 'El Ruc debe ser numérico.',
+        'personaId.required' => 'Debe seleccionar o crear una persona/empresa para este proveedor.',
     ];
 
     public function crearProveedor()
     {
         $this->reset([
-            'proveedorId', 'razonSocial', 'nombreComercial', 'ruc', 'contacto',
-            'tipoContribuyente', 'condicion', 'estadoContribuyente', 'estadoDomicilio',
-            'fechaInscripcion', 'fechaInicioActividades', 'direccionFiscal',
-            'distrito', 'provincia', 'departamento', 'ciiu', 'actividadComercioExterior',
+            'proveedorId',
+            'personaId',
+            'personaResumen',
+            'busquedaPersona',
+            'resultadosBusquedaPersona',
+            'tipoContribuyente',
+            'condicion',
+            'estadoContribuyente',
+            'estadoDomicilio',
+            'fechaInscripcion',
+            'fechaInicioActividades',
+            'ciiu',
+            'actividadComercioExterior',
         ]);
         $this->resetValidation();
         $this->mostrarFormularioProveedores = true;
@@ -82,80 +85,132 @@ class ProveedoresFormComponent extends Component
 
     public function editarProveedor($id)
     {
-        $proveedor = TiendaComercial::find($id);
+        try {
+            $proveedor = Proveedor::with('persona')->find($id);
+            if (!$proveedor)
+                throw new Exception("El registro ya no existe");
 
-        if ($proveedor) {
+
             $this->resetValidation();
             $this->proveedorId = $proveedor->id;
-            $this->razonSocial = $proveedor->razon_social;
-            $this->nombreComercial = $proveedor->nombre_comercial;
-            $this->ruc = $proveedor->ruc;
-            $this->contacto = $proveedor->contacto;
+            $this->cargarPersonaResumen($proveedor->persona);
+
             $this->tipoContribuyente = $proveedor->tipo_contribuyente;
             $this->condicion = $proveedor->condicion;
             $this->estadoContribuyente = $proveedor->estado_contribuyente;
             $this->estadoDomicilio = $proveedor->estado_domicilio;
             $this->fechaInscripcion = optional($proveedor->fecha_inscripcion)->format('Y-m-d');
             $this->fechaInicioActividades = optional($proveedor->fecha_inicio_actividades)->format('Y-m-d');
-            $this->direccionFiscal = $proveedor->direccion_fiscal;
-            $this->distrito = $proveedor->distrito;
-            $this->provincia = $proveedor->provincia;
-            $this->departamento = $proveedor->departamento;
             $this->ciiu = $proveedor->ciiu;
             $this->actividadComercioExterior = $proveedor->actividad_comercio_exterior;
+
             $this->mostrarFormularioProveedores = true;
+        } catch (\Throwable $th) {
+            $this->errorAlert($th);
         }
     }
 
-    public function guardarProveedores()
+    // ────────────────────────────────────────────────────────────
+    // Búsqueda de persona existente (solo aplica al crear un proveedor nuevo)
+    // ────────────────────────────────────────────────────────────
+    public function updatedBusquedaPersona(string $valor, PersonaServicio $servicio): void
+    {
+        $this->resultadosBusquedaPersona = strlen($valor) >= 3
+            ? $servicio->buscarActivasPorTexto($valor)->toArray()
+            : [];
+    }
+
+    public function seleccionarPersona(int $id): void
+    {
+        $persona = Persona::findOrFail($id);
+        $this->cargarPersonaResumen($persona);
+        $this->busquedaPersona = '';
+        $this->resultadosBusquedaPersona = [];
+    }
+
+    public function quitarPersonaSeleccionada(): void
+    {
+        $this->personaId = null;
+        $this->personaResumen = [];
+    }
+
+    // ────────────────────────────────────────────────────────────
+    // Abrir el formulario universal de Persona (crear nueva o editar la actual)
+    // ────────────────────────────────────────────────────────────
+    public function abrirCrearPersona(): void
+    {
+        // Sugiere tipo 'empresa' porque viene del módulo de Proveedores,
+        // pero el formulario universal deja cambiarlo si hiciera falta.
+        $this->dispatch('crearPersona', sugerencia: ['tipo' => 'empresa', 'tipo_documento' => 'RUC']);
+    }
+
+    public function abrirEditarPersona(): void
+    {
+        if (!$this->personaId)
+            return;
+        $this->dispatch('editarPersona', id: $this->personaId);
+    }
+
+    /**
+     * El formulario universal de Persona avisa aquí cuando termina de guardar
+     * (ya sea que se abrió para crear una nueva o para editar la ya asignada).
+     */
+    public function alPersonaGuardada($persona): void
+    {
+        $personaObj = (object) $persona;
+
+        $this->personaId = $personaObj->id;
+        $this->personaRazonSocial = $personaObj->tipo === 'empresa'
+            ? $personaObj->razon_social
+            : $personaObj->nombre_mostrar;
+
+        $this->personaNumeroDocumento = trim(($personaObj->tipo_documento ?? '') . ' ' . ($personaObj->numero_documento ?? ''));
+    }
+
+    public function quitarPersona(): void
+    {
+        $this->personaId = null;
+        $this->personaRazonSocial = null;
+        $this->personaNumeroDocumento = null;
+    }
+
+    private function cargarPersonaResumen($persona): void
+    {
+        $this->personaId = $persona->id;
+        $this->personaResumen = [
+            'nombre' => $persona->tipo === 'empresa' ? $persona->razon_social : $persona->nombre_mostrar,
+            'nombre_comercial' => $persona->nombre_mostrar,
+            'documento' => trim(($persona->tipo_documento ?? '') . ' ' . ($persona->numero_documento ?? '')),
+            'telefono' => $persona->telefono,
+            'direccion' => $persona->direccion,
+            'distrito' => $persona->distrito,
+            'provincia' => $persona->provincia,
+            'departamento' => $persona->departamento,
+        ];
+    }
+
+    public function guardarProveedores(ProveedorServicio $servicio)
     {
         $this->validate();
 
-        if ($this->ruc && !$this->proveedorId) {
-            $eliminado = TiendaComercial::onlyTrashed()->where('ruc', $this->ruc)->first();
-            if ($eliminado) {
-                $this->alert('warning', "Este RUC pertenece a un proveedor eliminado: \"{$eliminado->razon_social}\". Restáurelo en vez de crear uno nuevo.");
-                return;
-            }
-        }
-
         try {
-            $data = [
-                'razon_social' => mb_strtoupper($this->razonSocial),
-                'nombre_comercial' => $this->nombreComercial ? mb_strtoupper($this->nombreComercial) : null,
-                'ruc' => $this->ruc,
-                'contacto' => $this->contacto ? mb_strtoupper($this->contacto) : null,
+            $servicio->guardar([
+                'persona_id' => $this->personaId,
                 'tipo_contribuyente' => $this->tipoContribuyente,
                 'condicion' => $this->condicion,
                 'estado_contribuyente' => $this->estadoContribuyente,
                 'estado_domicilio' => $this->estadoDomicilio,
                 'fecha_inscripcion' => $this->fechaInscripcion,
                 'fecha_inicio_actividades' => $this->fechaInicioActividades,
-                'direccion_fiscal' => $this->direccionFiscal,
-                'distrito' => $this->distrito,
-                'provincia' => $this->provincia,
-                'departamento' => $this->departamento,
                 'ciiu' => $this->ciiu,
                 'actividad_comercio_exterior' => $this->actividadComercioExterior,
-            ];
+            ], $this->proveedorId);
 
-            if ($this->proveedorId) {
-                $proveedor = TiendaComercial::find($this->proveedorId);
-                if ($proveedor) {
-                    $data['editado_por'] = auth()->id();
-                    $proveedor->update($data);
-                    $this->alert('success', 'Registro actualizado exitosamente.');
-                }
-            } else {
-                $data['creado_por'] = auth()->id();
-                TiendaComercial::create($data);
-                $this->alert('success', 'Registro creado exitosamente.');
-            }
-
+            $this->alert('success', $this->proveedorId ? 'Registro actualizado exitosamente.' : 'Registro creado exitosamente.');
             $this->dispatch('ActualizarProveedores');
             $this->mostrarFormularioProveedores = false;
-        } catch (QueryException $e) {
-            $this->alert('error', 'Ocurrió un error inesperado: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
         }
     }
 

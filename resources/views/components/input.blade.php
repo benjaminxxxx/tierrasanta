@@ -16,7 +16,6 @@
     $isDisabled = (bool) ($disabled || $attributes->has('disabled'));
     $isReadOnly = $attributes->has('readonly');
 
-    // Mapeo de alturas idéntico al select
     $sizeClasses = match ($size) {
         'xs'   => 'h-7 px-2 text-xs',
         'sm'   => 'h-8 px-2 text-sm',
@@ -25,7 +24,6 @@
         default => 'h-9 px-3 text-sm',
     };
 
-    // Estilo base Shadcn
     $baseClasses = 'w-full rounded-md border border-input bg-background text-foreground shadow-xs transition-colors outline-none 
                     file:border-0 file:bg-transparent file:text-sm file:font-medium
                     placeholder:text-muted-foreground
@@ -41,8 +39,11 @@
 <x-group-field>
     @if ($type === 'checkbox')
         <div class="flex items-center gap-2">
-            <input id="{{ $id }}" type="checkbox" {{ $isDisabled ? 'disabled' : '' }} 
-                {!! $attributes->merge(['class' => 'h-4 w-4 rounded border-muted-foreground bg-muted focus:ring-ring']) !!} 
+            <input 
+                id="{{ $id }}" 
+                type="checkbox" 
+                {{ $isDisabled ? 'disabled' : '' }} 
+                {{ $attributes->class(['h-4 w-4 rounded border-muted-foreground bg-muted focus:ring-ring'])->except(['type', 'disabled']) }} 
             />
             @if ($label)
                 <x-label for="{{ $id }}" class="cursor-pointer">{{ $label }}</x-label>
@@ -53,10 +54,12 @@
             <x-label for="{{ $id }}">{{ $label }}</x-label>
         @endif
 
-        <input id="{{ $id }}" type="{{ $type }}" 
+        <input 
+            id="{{ $id }}" 
+            type="{{ $type }}" 
             {{ $isDisabled ? 'disabled' : '' }} 
             {{ $isReadOnly && !$isDisabled ? 'readonly' : '' }}
-            {!! $attributes->except(['disabled', 'readonly'])->merge(['class' => $classes]) !!} 
+            {{ $attributes->class([$classes])->except(['type', 'disabled', 'readonly']) }} 
         />
 
         @if ($help)

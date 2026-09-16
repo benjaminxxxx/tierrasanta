@@ -24,7 +24,7 @@ return new class extends Migration {
             $table->foreignId('maquinaria_id')->nullable()
                 ->constrained('maquinarias')
                 ->onDelete('set null');
-        
+
 
             $table->integer('indice')->nullable();
             $table->enum('tipo_kardex', ['blanco', 'negro'])->nullable();
@@ -40,6 +40,8 @@ return new class extends Migration {
             $table->foreign('editado_por')
                 ->references('id')->on('users')
                 ->nullOnDelete();
+
+            $table->foreignId('uso_id')->nullable()->constrained('ins_usos')->nullOnDelete();
 
             $table->timestamps();
         });

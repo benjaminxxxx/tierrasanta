@@ -9,6 +9,7 @@ use App\Models\InsResFertilizanteCampania;
 use App\Models\PesticidaCampania;
 use App\Models\Producto;
 use App\Models\ProductoNutriente;
+use App\Services\Almacen\StockService;
 use Auth;
 use Carbon\Carbon;
 use DB;
@@ -23,6 +24,177 @@ class AlmacenServicio
         'created_at',
         'updated_at',
     ];
+    public function __construct(private StockService $stockService)
+    {
+    }
+    
+    public function guardarSalidaMasiva(array $filas, string $tipo, int $almacenId): array
+    {
+        $resultados = ['creados' => 0, 'actualizados' => 0, 'eliminados' => 0];
+
+        // ── PRE-VALIDACIÓN DE STOCK (fuera del transaction) ──────────────
+        // Ya no interesa si existe un InsKardex generado para el producto/año/tipo;
+        // el saldo real vive en stocks_productos (tiempo real, vía StockService).
+        foreach ($filas as $fila) {
+            $tipoKardex = $fila['tipo_kardex'] ?? null;
+            $productoId = $fila['producto_id'] ?? null;
+            $cantidad = (float) ($fila['cantidad'] ?? 0);
+
+            if (!$tipoKardex || !$productoId || $cantidad <= 0) {
+                continue;
+            }
+
+            $stockDisponible = StockService::disponible($productoId, $almacenId, $tipoKardex);
+
+            $id = $fila['id'] ?? null;
+            if ($id) {
+                $salidaAnterior = AlmacenProductoSalida::find($id);
+                if ($salidaAnterior) {
+                    $mismoProducto = (int) $salidaAnterior->producto_id === (int) $productoId;
+                    $mismoTipo = $salidaAnterior->tipo_kardex === $tipoKardex;
+                    if ($mismoProducto && $mismoTipo) {
+                        // Esta cantidad se revierte antes de recrear el movimiento,
+                        // así que cuenta como disponible para la nueva validación.
+                        $stockDisponible += (float) $salidaAnterior->cantidad;
+                    }
+                }
+            }
+
+            if ($stockDisponible < $cantidad) {
+                $nombreProducto = Producto::find($productoId)?->nombre_comercial ?? "ID {$productoId}";
+                throw new Exception(
+                    "Stock {$tipoKardex} insuficiente para \"{$nombreProducto}\". "
+                    . "Disponible: {$stockDisponible}, solicitado: {$cantidad}."
+                );
+            }
+        }
+
+        DB::transaction(function () use ($filas, $tipo, $almacenId, &$resultados) {
+            $usuarioId = Auth::id();
+
+            foreach ($filas as $fila) {
+                $id = $fila['id'] ?? null;
+                $esCombustible = $tipo === 'combustible';
+
+                $camposBase = ['fecha_reporte', 'producto_id', 'cantidad', 'tipo_kardex']; // tipo_kardex ahora obligatorio aquí también
+                $campoDestino = $esCombustible ? 'maquinaria_id' : 'campo_nombre';
+
+                $camposParaVacioCheck = array_merge($camposBase, [$campoDestino]);
+                $filaVacia = collect($camposParaVacioCheck)
+                    ->every(fn($campo) => is_null($fila[$campo] ?? null) || ($fila[$campo] ?? '') === '');
+
+                if ($filaVacia) {
+                    if ($id) {
+                        $salida = AlmacenProductoSalida::findOrFail($id);
+
+                        // Revertir el movimiento ANTES de borrar el registro
+                        $this->stockService->revertirMovimientosDeOrigen(AlmacenProductoSalida::class, $salida->id);
+
+                        AuditoriaServicio::registrar(
+                            modelo: AlmacenProductoSalida::class,
+                            modeloId: $salida->id,
+                            accion: 'eliminar',
+                            antes: $salida->toArray(),
+                            camposIgnorados: self::CAMPOS_IGNORADOS,
+                        );
+
+                        $salida->delete();
+                        $resultados['eliminados']++;
+                    }
+                    continue;
+                }
+
+                $etiquetas = [
+                    'fecha_reporte' => 'Fecha',
+                    'producto_id' => 'Producto',
+                    'cantidad' => 'Cantidad',
+                    'tipo_kardex' => 'Tipo de kardex',
+                    'campo_nombre' => 'Campo',
+                    'maquinaria_id' => 'Maquinaria',
+                ];
+
+                foreach ($camposBase as $campo) {
+                    if (is_null($fila[$campo] ?? null) || ($fila[$campo] ?? '') === '') {
+                        throw new Exception(
+                            "El campo \"{$etiquetas[$campo]}\" es obligatorio."
+                            . ($id ? " (ID: {$id})" : '')
+                        );
+                    }
+                }
+
+                if (is_null($fila[$campoDestino] ?? null) || ($fila[$campoDestino] ?? '') === '') {
+                    throw new Exception(
+                        "El campo \"{$etiquetas[$campoDestino]}\" es obligatorio."
+                        . ($id ? " (ID: {$id})" : '')
+                    );
+                }
+
+                $datos = [
+                    'fecha_reporte' => $fila['fecha_reporte'],
+                    'producto_id' => $fila['producto_id'],
+                    'cantidad' => $fila['cantidad'],
+                    'campo_nombre' => $esCombustible ? '' : ($fila['campo_nombre'] ?? ''),
+                    'maquinaria_id' => $esCombustible ? ($fila['maquinaria_id'] ?? null) : null,
+                    'uso_id' => $esCombustible ? null : ($fila['uso_id'] ?? null), // NUEVO — faltaba
+                    'costo_por_kg' => $fila['costo_por_kg'] ?? null,
+                    'total_costo' => $fila['total_costo'] ?? null,
+                    'indice' => $fila['indice'] ?? null,
+                    'tipo_kardex' => $fila['tipo_kardex'],
+                ];
+
+                if ($id) {
+                    $salida = AlmacenProductoSalida::findOrFail($id);
+                    $antes = $salida->toArray();
+
+                    // Revertir usando los valores VIEJOS (los que tiene el movimiento
+                    // guardado), antes de sobreescribir el registro con los nuevos.
+                    $this->stockService->revertirMovimientosDeOrigen(AlmacenProductoSalida::class, $salida->id);
+
+                    $salida->update(array_merge($datos, ['editado_por' => $usuarioId]));
+
+                    AuditoriaServicio::registrar(
+                        modelo: AlmacenProductoSalida::class,
+                        modeloId: $salida->id,
+                        accion: 'editar',
+                        antes: $antes,
+                        despues: $salida->fresh()->toArray(),
+                        camposIgnorados: self::CAMPOS_IGNORADOS,
+                    );
+
+                    $resultados['actualizados']++;
+                } else {
+                    $salida = AlmacenProductoSalida::create(
+                        array_merge($datos, ['creado_por' => $usuarioId])
+                    );
+
+                    AuditoriaServicio::registrar(
+                        modelo: AlmacenProductoSalida::class,
+                        modeloId: $salida->id,
+                        accion: 'crear',
+                        despues: $salida->toArray(),
+                        camposIgnorados: self::CAMPOS_IGNORADOS,
+                    );
+
+                    $resultados['creados']++;
+                }
+
+                // Registrar el movimiento con los valores YA guardados (nuevos)
+                $this->stockService->registrarMovimiento(
+                    'salida',
+                    $salida->producto_id,
+                    $almacenId,
+                    (float) $salida->cantidad,
+                    $salida->fecha_reporte,
+                    $salida->tipo_kardex,
+                    AlmacenProductoSalida::class,
+                    $salida->id
+                );
+            }
+        });
+
+        return $resultados;
+    }
+    /*
     public static function guardarSalidaMasiva(array $filas, string $tipo): array
     {
         $resultados = ['creados' => 0, 'actualizados' => 0, 'eliminados' => 0];
@@ -176,7 +348,7 @@ class AlmacenServicio
         });
 
         return $resultados;
-    }
+    }*/
     /*
         public static function guardarSalidaMasiva(array $filas, string $tipo): array
         {
@@ -704,7 +876,7 @@ class AlmacenServicio
 
 
 
-    
+
     public static function registrarSalida($data)
     {
         if (!is_array($data) || empty($data)) {
