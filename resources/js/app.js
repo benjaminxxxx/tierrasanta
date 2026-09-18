@@ -6,6 +6,7 @@ import "flowbite";
 import { Spanish } from "flatpickr/dist/l10n/es.js"; // ✅ importa el idioma
 import { Calendar } from "@fullcalendar/core";
 import resourceTimelinePlugin from "@fullcalendar/resource-timeline";
+import { SumadorSeleccionPlugin } from "./plugins/SumadorSeleccionPlugin";
 
 // Establece el idioma globalmente
 flatpickr.localize(Spanish);
@@ -23,6 +24,10 @@ window.FullCalendar = {
 flatpickr(".datepicker", {
     //mode: "range",
 });
+
+if (typeof window.Handsontable !== "undefined") {
+    window.Handsontable.plugins.registerPlugin("SumadorSeleccion", SumadorSeleccionPlugin);
+}
 
 window.HstConfig = {
     datePickerConfig: {

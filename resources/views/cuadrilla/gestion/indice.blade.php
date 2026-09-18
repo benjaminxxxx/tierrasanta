@@ -79,7 +79,7 @@
                 </div>
                 <div class="p-4">
                     <x-label class="text-lg mb-4">Registrar producción y calcular bonos</x-label>
-                    <x-button-a class="mt-4" href="{{ route('gestion_cuadrilleros.bonificaciones.index') }}">
+                    <x-button-a class="mt-4" href="{{ route('gestion_cuadrilleros.bonificaciones') }}">
                         Acceder
                     </x-button-a>
                 </div>

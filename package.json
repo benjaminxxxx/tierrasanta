@@ -21,6 +21,10 @@
         "@fullcalendar/timegrid": "^6.1.20",
         "alpinejs": "^3.14.1",
         "flatpickr": "^4.6.13",
-        "flowbite": "^2.5.1"
+        "flowbite": "^2.5.1",
+        "handsontable": "^18.1.1"
+    },
+    "allowScripts": {
+        "esbuild@0.21.5": true
     }
 }

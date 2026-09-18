@@ -18,6 +18,7 @@ use App\Livewire\ConfiguracionDescuentoAfpComponent;
 use App\Livewire\ConfiguracionPrimasComisionesComponent;
 use App\Livewire\GestionAsistencia\TipoAsistenciaComponent;
 use App\Livewire\GestionCampo\CampoCostosComponent;
+use App\Livewire\GestionCuadrilla\GestionCuadrillaBonificacionesComponent;
 use App\Livewire\GestionInsumos\InsumoKardexCrearComponent;
 use App\Livewire\GestionPlanilla\AsistenciaMensualComponent;
 use App\Livewire\GestionPlanilla\CargosComponent;
@@ -167,8 +168,8 @@ Route::middleware([
             ->name('gestion_cuadrilleros.resumen_general.index')->middleware('can:' . Permisos::CUADRILLA_RESUMEN_GENERAL);
 
         // Bonificaciones
-        Route::get('/bonificaciones', [CuadrillaController::class, 'bonificaciones'])
-            ->name('gestion_cuadrilleros.bonificaciones.index')->middleware('can:' . Permisos::CUADRILLA_BONIFICACION);
+        Route::get('/bonificaciones', GestionCuadrillaBonificacionesComponent::class)
+            ->name('gestion_cuadrilleros.bonificaciones')->middleware('can:' . Permisos::CUADRILLA_BONIFICACION);
 
         // Resumen anual cuadrilla
         Route::get('/resumen_anual', [CuadrillaController::class, 'resumen_anual'])

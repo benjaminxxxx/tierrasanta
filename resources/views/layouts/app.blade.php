@@ -16,7 +16,7 @@
     <script src="{{ asset('js/flatpickr/es.js') }}"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
-    @include('comun.handsontable')
+    @include('comun.handsontable_deprecado')
 
 </head>
 

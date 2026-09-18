@@ -186,6 +186,11 @@
                 stretchH: 'all',
                 autoColumnSize: true,
                 fixedColumnsLeft: 3,
+                contextMenu: true, 
+                sumadorSeleccion: {
+                    columnaNombre: 1,
+                    columnasOmitir: [0, 1],
+                },
 
                 afterChange: (changes, source) => {
                     if (source === 'loadData' || !changes) return;

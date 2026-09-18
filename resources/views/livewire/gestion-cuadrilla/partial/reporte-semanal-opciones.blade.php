@@ -51,7 +51,7 @@
                     target="_blank">
                     Administrar registros diarios
                 </x-dropdown-link>
-                <x-dropdown-link class="text-center" href="{{ route('gestion_cuadrilleros.bonificaciones.index') }}"
+                <x-dropdown-link class="text-center" href="{{ route('gestion_cuadrilleros.bonificaciones') }}"
                     target="_blank">
                     Administrar bonos
                 </x-dropdown-link>

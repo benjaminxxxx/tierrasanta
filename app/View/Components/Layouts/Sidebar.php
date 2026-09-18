@@ -116,7 +116,7 @@ class Sidebar extends Component
                     ['title' => 'Grupos de cuadrillas', 'route' => 'cuadrilla.grupos', 'can' => Permisos::CUADRILLA_GRUPO],
                     ['title' => 'Reporte semanal (horas)', 'route' => 'gestion_cuadrilleros.reporte-semanal.index', 'can' => Permisos::CUADRILLA_SEMANAL],
                     ['title' => 'Reporte diario (actividades)', 'route' => 'gestion_cuadrilleros.registro-diario.index', 'can' => Permisos::CUADRILLA_DIARIO],
-                    ['title' => 'Bonificaciones', 'route' => 'gestion_cuadrilleros.bonificaciones.index', 'can' => Permisos::CUADRILLA_BONIFICACION],
+                    ['title' => 'Bonificaciones', 'route' => 'gestion_cuadrilleros.bonificaciones', 'can' => Permisos::CUADRILLA_BONIFICACION],
                     ['title' => 'Resumen General', 'route' => 'gestion_cuadrilleros.resumen_general.index', 'can' => Permisos::CUADRILLA_RESUMEN_GENERAL],
                     ['title' => 'Resumen anual', 'route' => 'gestion_cuadrilleros.resumen_anual', 'can' => Permisos::CUADRILLA_RESUMEN_ANUAL],
                 ],

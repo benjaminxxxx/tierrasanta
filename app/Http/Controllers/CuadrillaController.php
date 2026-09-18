@@ -15,9 +15,6 @@ class CuadrillaController extends Controller
     public function pagos(){
         return view("cuadrilla.gestion.pagos");
     }
-    public function bonificaciones(){
-        return view("cuadrilla.gestion.bonificaciones");
-    }
     public function resumen_anual(){
         return view("livewire.gestion-cuadrilla.resumen_anual");
     }
