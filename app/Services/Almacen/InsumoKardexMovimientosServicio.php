@@ -8,6 +8,7 @@ use App\Models\CompraProducto;
 use App\Models\Empresa;
 use App\Models\InsKardex;
 use App\Models\InsKardexMovimiento;
+use App\Models\MovimientoStock;
 use App\Models\Producto;
 use DB;
 use Exception;
@@ -41,7 +42,7 @@ class InsumoKardexMovimientosServicio
     {
         $this->inicializarAcumuladores($insumoKardex);
         $movimientosOrdenados = $this->obtenerMovimientosBase($insumoKardex);
-        
+
         if ($movimientosOrdenados->isEmpty()) {
             throw new Exception("No hay movimientos de Compra ni Salida para generar el Kardex.");
         }
@@ -50,12 +51,19 @@ class InsumoKardexMovimientosServicio
         try {
             InsKardexMovimiento::where('kardex_id', $insumoKardex->id)->delete();
             $this->crearMovimientoSaldoInicial($insumoKardex);
-
-            foreach ($movimientosOrdenados as $movimientoBase) {
-                if ($movimientoBase instanceof CompraProducto) {
-                    $this->procesarEntrada($insumoKardex, $movimientoBase);
-                } elseif ($movimientoBase instanceof AlmacenProductoSalida) {
-                    $this->procesarSalida($insumoKardex, $movimientoBase);
+            /*
+                        foreach ($movimientosOrdenados as $movimientoBase) {
+                            if ($movimientoBase instanceof CompraProducto) {
+                                $this->procesarEntrada($insumoKardex, $movimientoBase);
+                            } elseif ($movimientoBase instanceof AlmacenProductoSalida) {
+                                $this->procesarSalida($insumoKardex, $movimientoBase);
+                            }
+                        }*/
+            foreach ($movimientosOrdenados as $movimiento) {
+                if ($movimiento->direccion === 'entrada') {
+                    $this->procesarEntrada($insumoKardex, $movimiento);
+                } elseif ($movimiento->direccion === 'salida') {
+                    $this->procesarSalida($insumoKardex, $movimiento);
                 }
             }
 
@@ -105,7 +113,7 @@ class InsumoKardexMovimientosServicio
         }
 
         $periodo = Carbon::parse($insumoKardex->anio)->format('Y');
-      
+
         return [
             /*'kardexId' => $this->kardexId,
             'productoId' => $this->kardexProductoId,*/
@@ -183,6 +191,7 @@ class InsumoKardexMovimientosServicio
      *
      * @return Collection
      */
+    /*
     private function obtenerMovimientosBase(InsKardex $insumoKardex): Collection
     {
         $tipoKardex = $insumoKardex->tipo;
@@ -216,6 +225,32 @@ class InsumoKardexMovimientosServicio
                 $ordenSecundario = $mov instanceof CompraProducto ? $mov->id : $mov->indice * 1000 + $mov->id; // Mayor peso al índice de salida
                 return $fecha . '-' . str_pad($ordenSecundario, 10, '0', STR_PAD_LEFT);
             });
+    }*/
+    private function obtenerMovimientosBase(InsKardex $insumoKardex): Collection
+    {
+        $tipoKardex = $insumoKardex->tipo;
+        $productoId = $insumoKardex->producto_id;
+        $anio = (int) $insumoKardex->anio;
+
+        $fechaInicio = "{$anio}-01-01";
+        $fechaFin = "{$anio}-12-31";
+
+        $movimientos = MovimientoStock::where('producto_id', $productoId)
+            ->where('tipo_kardex', $tipoKardex)
+            // ->where('almacen_id', $insumoKardex->almacen_id) // ver nota 1 abajo
+            ->whereBetween('fecha_movimiento', [$fechaInicio, $fechaFin])
+            ->with('origen') // morphTo -> CompraProducto | AlmacenProductoSalida
+            ->get();
+
+        // Orden: fecha, y dentro del mismo día, el "indice" manual de las salidas
+        // pesa más que el orden natural de creación (igual que antes).
+        return $movimientos->sortBy(function (MovimientoStock $mov) {
+            $ordenSecundario = $mov->direccion === 'entrada'
+                ? $mov->id
+                : (($mov->origen->indice ?? 0) * 1000 + $mov->id);
+
+            return $mov->fecha_movimiento . '-' . str_pad($ordenSecundario, 10, '0', STR_PAD_LEFT);
+        })->values();
     }
 
     // --------------------------------------------------------------------------
@@ -228,7 +263,7 @@ class InsumoKardexMovimientosServicio
     private function crearMovimientoSaldoInicial(InsKardex $insumoKardex): void
     {
         if ($insumoKardex->stock_inicial > 0) {
-            
+
             InsKardexMovimiento::create([
                 'kardex_id' => $insumoKardex->id,
                 'fecha' => Carbon::createFromFormat('Y', $insumoKardex->anio)->startOfYear()->format('Y-m-d'),
@@ -244,9 +279,7 @@ class InsumoKardexMovimientosServicio
         }
     }
 
-    /**
-     * Procesa una CompraProducto (Entrada) y actualiza los acumuladores.
-     */
+    /*
     private function procesarEntrada(InsKardex $kardex, CompraProducto $compra): void
     {
         $cantidad = (float) $compra->stock;
@@ -284,13 +317,6 @@ class InsumoKardexMovimientosServicio
         ]);
     }
 
-    /**
-     * Procesa una AlmacenProductoSalida (Salida) y actualiza los acumuladores.
-     *
-     * @param InsKardex $kardex
-     * @param AlmacenProductoSalida $salida
-     * @throws Exception
-     */
     private function procesarSalida(InsKardex $kardex, AlmacenProductoSalida $salida): void
     {
         $cantidadSalida = (float) $salida->cantidad;
@@ -355,7 +381,94 @@ class InsumoKardexMovimientosServicio
             'movimiento_id' => $movimiento->id,
         ]);
     }
+*/
+    private function procesarEntrada(InsKardex $kardex, MovimientoStock $movimiento): void
+    {
+        $compra = $movimiento->origen; // CompraProducto (o null si el origen ya no existe)
 
+        $cantidad = (float) $movimiento->cantidad;
+        if ($cantidad <= 0)
+            return;
+
+        $costoTotal = (float) ($compra->total ?? 0);
+        $costoUnitario = $cantidad > 0 ? $costoTotal / $cantidad : 0.0;
+
+        $this->stockAcumulado += $cantidad;
+        $this->costoTotalAcumulado += $costoTotal;
+
+        if ($kardex->metodo_valuacion === self::METODO_PEPS) {
+            $this->capasPEPS[] = ['stock' => $cantidad, 'costo_unitario' => $costoUnitario];
+        }
+
+        InsKardexMovimiento::create([
+            'kardex_id' => $kardex->id,
+            'fecha' => $movimiento->fecha_movimiento,
+            'tipo_mov' => 'entrada',
+            'tipo_documento' => $compra->tipo_compra_codigo ?? null,
+            'serie' => $compra->serie ?? null,
+            'numero' => $compra->numero ?? null,
+            'tipo_operacion' => $compra->tabla12_tipo_operacion ?? null,
+            'entrada_cantidad' => round($cantidad, 3),
+            'entrada_costo_unitario' => round($costoUnitario, 13),
+            'entrada_costo_total' => round($costoTotal, 13),
+        ]);
+    }
+
+    private function procesarSalida(InsKardex $kardex, MovimientoStock $movimiento): void
+    {
+        $salida = $movimiento->origen; // AlmacenProductoSalida (o null)
+
+        $cantidadSalida = (float) $movimiento->cantidad;
+        if ($cantidadSalida <= 0)
+            return;
+
+        if (($cantidadSalida > $this->stockAcumulado) && abs($cantidadSalida - $this->stockAcumulado) < self::EPSILON) {
+            $cantidadSalida = $this->stockAcumulado;
+        }
+
+        if ($kardex->metodo_valuacion === self::METODO_PEPS) {
+            [$costoUnitarioSalida, $costoTotalSalida] = $this->calcularCostoSalidaPEPS($cantidadSalida);
+        } else {
+            $costoUnitarioSalida = $this->calcularCostoUnitarioPromedio();
+            $costoTotalSalida = $cantidadSalida * $costoUnitarioSalida;
+        }
+
+        $this->stockAcumulado -= $cantidadSalida;
+        $this->costoTotalAcumulado -= $costoTotalSalida;
+
+        if (abs($this->stockAcumulado) < self::EPSILON) {
+            $this->stockAcumulado = 0.0;
+            $this->costoTotalAcumulado = 0.0;
+        }
+
+        $data = [
+            'kardex_id' => $kardex->id,
+            'fecha' => $movimiento->fecha_movimiento,
+            'tipo_mov' => 'salida',
+            'tipo_operacion' => 10,
+            'salida_cantidad' => round($cantidadSalida, 3),
+            'salida_costo_unitario' => round($costoUnitarioSalida, 13),
+            'salida_costo_total' => round($costoTotalSalida, 13),
+        ];
+
+        if (!Producto::esCombustible($kardex->producto_id)) {
+            $data['salida_lote'] = $salida->campo_nombre ?? null;
+            $data['salida_maquinaria'] = null;
+        } else {
+            $data['salida_lote'] = null;
+            $data['salida_maquinaria'] = $salida->maquinaria?->nombre;
+        }
+
+        $movimientoKardex = InsKardexMovimiento::create($data);
+
+        if ($salida) {
+            $salida->update([
+                'costo_por_kg' => round($costoUnitarioSalida, 13),
+                'total_costo' => round($costoTotalSalida, 13),
+                'movimiento_id' => $movimientoKardex->id,
+            ]);
+        }
+    }
     private function recalcularSaldos(InsKardex $kardex): void
     {
         $stock = 0.0;

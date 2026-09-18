@@ -7,6 +7,7 @@ use App\Models\StockProducto;
 use App\Models\MovimientoStock;
 use App\Models\Almacen;
 use App\Models\TransferenciaAlmacen;
+use App\Services\AlmacenService;
 use Illuminate\Support\Facades\DB;
 
 class StockService
@@ -30,7 +31,7 @@ class StockService
 
             // Validación preventiva en salidas manuales
             if ($direccion === 'salida') {
-                $disponible = self::disponible($productoId, $almacenId);
+                $disponible = self::disponible($productoId, $almacenId, $tipoKardex);
                 if ($cantidad > $disponible) {
                     throw new \RuntimeException("Stock insuficiente. Disponible: {$disponible}, solicitado: {$cantidad}.");
                 }
@@ -69,9 +70,9 @@ class StockService
         int $almacenDestinoId,
         float $cantidad,
         string $fechaTransferencia,
-    string $tipoKardex
+        string $tipoKardex
     ): TransferenciaAlmacen {
-        return DB::transaction(function () use ($productoId, $almacenOrigenId, $almacenDestinoId, $cantidad, $fechaTransferencia,$tipoKardex) {
+        return DB::transaction(function () use ($productoId, $almacenOrigenId, $almacenDestinoId, $cantidad, $fechaTransferencia, $tipoKardex) {
 
             $disponible = self::disponible($productoId, $almacenOrigenId);
             if ($cantidad > $disponible) {
@@ -100,7 +101,7 @@ class StockService
     {
         return (float) (StockProducto::where('producto_id', $productoId)
             ->where('almacen_id', $almacenId)
-        ->where('tipo_kardex', $tipoKardex)
+            ->where('tipo_kardex', $tipoKardex)
             ->value('cantidad') ?? 0);
     }
 
@@ -109,30 +110,36 @@ class StockService
      * Se usa solo para arqueo/auditoría.
      */
     public static function recalculadoDesdeMovimientos(int $productoId, int $almacenId, string $tipoKardex): float
-{
-    $entradas = (float) MovimientoStock::where('producto_id', $productoId)
-        ->where('almacen_id', $almacenId)
-        ->where('tipo_kardex', $tipoKardex)
-        ->where('direccion', 'entrada')->sum('cantidad');
+    {
+        $entradas = (float) MovimientoStock::where('producto_id', $productoId)
+            ->where('almacen_id', $almacenId)
+            ->where('tipo_kardex', $tipoKardex)
+            ->where('direccion', 'entrada')->sum('cantidad');
 
-    $salidas = (float) MovimientoStock::where('producto_id', $productoId)
-        ->where('almacen_id', $almacenId)
-        ->where('tipo_kardex', $tipoKardex)
-        ->where('direccion', 'salida')->sum('cantidad');
+        $salidas = (float) MovimientoStock::where('producto_id', $productoId)
+            ->where('almacen_id', $almacenId)
+            ->where('tipo_kardex', $tipoKardex)
+            ->where('direccion', 'salida')->sum('cantidad');
 
-    return $entradas - $salidas;
-}
-public static function obtenerStockPorTipo(int $productoId, int $almacenId): array
-{
-    $filas = StockProducto::where('producto_id', $productoId)
-        ->where('almacen_id', $almacenId)
-        ->pluck('cantidad', 'tipo_kardex');
+        return $entradas - $salidas;
+    }
+    public static function obtenerStockPorTipo(int $productoId, ?int $almacenId = null): array
+    {
+        // Si no se proporciona un almacén, se obtiene el principal desde el servicio
+        if (is_null($almacenId)) {
+            $almacenService = app(AlmacenService::class);
+            $almacenId = $almacenService->obtenerAlmacenPrincipal()->id;
+        }
 
-    return [
-        'blanco' => (float) ($filas['blanco'] ?? 0),
-        'negro' => (float) ($filas['negro'] ?? 0),
-    ];
-}
+        $filas = StockProducto::where('producto_id', $productoId)
+            ->where('almacen_id', $almacenId)
+            ->pluck('cantidad', 'tipo_kardex');
+
+        return [
+            'blanco' => (float) ($filas['blanco'] ?? 0),
+            'negro' => (float) ($filas['negro'] ?? 0),
+        ];
+    }
 
     /**
      * Arqueo: compara el saldo cacheado contra el recalculado.
@@ -179,11 +186,19 @@ public static function obtenerStockPorTipo(int $productoId, int $almacenId): arr
                 }
 
                 $stock = StockProducto::firstOrCreate(
-                    ['producto_id' => $mov->producto_id, 'almacen_id' => $mov->almacen_id],
+                    ['producto_id' => $mov->producto_id, 'almacen_id' => $mov->almacen_id, 'tipo_kardex' => $mov->tipo_kardex],
                     ['cantidad' => 0]
                 );
 
                 $delta = $mov->direccion === 'entrada' ? -$mov->cantidad : $mov->cantidad;
+                // PROTECCIÓN CONTRA STOCK NEGATIVO
+                if ($delta < 0 && ($stock->cantidad + $delta) < 0) {
+                    throw new \RuntimeException(
+                        "No se puede revertir el registro #{$origenId}. " .
+                        "El stock resultante para el producto ID {$mov->producto_id} " .
+                        "sería negativo (" . ($stock->cantidad + $delta) . " unidades)."
+                    );
+                }
                 $stock->increment('cantidad', $delta);
 
                 $mov->delete();

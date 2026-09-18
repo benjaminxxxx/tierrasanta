@@ -24,6 +24,14 @@ class Producto extends Model
         'editado_por',
         'eliminado_por',
     ];
+     public function categoria()
+    {
+        return $this->belongsTo(InsCategoria::class, 'categoria_codigo', 'codigo');
+    }
+    public function subcategoria()
+    {
+        return $this->belongsTo(InsSubcategoria::class, 'subcategoria_id', 'id');
+    }
     public function presentaciones(){
         return $this->hasMany(Presentacion::class, 'producto_id');
     }
@@ -49,14 +57,7 @@ class Producto extends Model
     {
         return $this->belongsToMany(InsUso::class, 'ins_producto_usos', 'producto_id', 'uso_id');
     }
-    public function categoria()
-    {
-        return $this->belongsTo(InsCategoria::class, 'categoria_codigo', 'codigo');
-    }
-    public function subcategoria()
-    {
-        return $this->belongsTo(InsSubcategoria::class, 'subcategoria_id', 'id');
-    }
+   
     public function kardexActual()
     {
         return $this->hasOne(InsKardex::class, 'producto_id', 'id')

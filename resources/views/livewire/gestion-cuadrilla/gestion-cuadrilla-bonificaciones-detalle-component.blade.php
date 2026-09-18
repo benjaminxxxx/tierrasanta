@@ -213,13 +213,37 @@
             const cellProperties = {};
             const colData = this.generarColumnasDinamicas();
             const rowData = this.hot?.getSourceDataAtRow(row);
+            const colProp = colData[col]?.data;
 
-            if (colData[col]?.data === 'metodo_bonificacion' && rowData?.bono_manual) {
+            if (!rowData) return cellProperties;
+
+            // -------------------------------------------------------------
+            // REGISTROS DE TOTALES (Estilos y Bloqueo)
+            // -------------------------------------------------------------
+            if (rowData.tipo === 'TOTAL') {
+                cellProperties.readOnly = true;
+
+                // Om det är kolumnen för metodo_bonificacion eller bono_manual, rensa visningen
+                if (colProp === 'metodo_bonificacion' || colProp === 'bono_manual') {
+                    cellProperties.renderer = (instance, td, r, c, prop, value, cellProps) => {
+                        td.innerHTML = ''; // Lämnar cellen helt tom
+                    };
+                }
+
+                // Estilos visuales para resaltar la fila de totales
+                cellProperties.className = this.isDark
+                    ? '!bg-slate-800 !text-amber-400 font-bold border-t-2 border-slate-600 !text-center'
+                    : '!bg-amber-100 !text-amber-950 font-bold border-t-2 border-amber-300 !text-center';
+
+                return cellProperties;
+            }
+
+            if (colProp === 'metodo_bonificacion' && rowData?.bono_manual) {
                 cellProperties.readOnly = true;
                 cellProperties.className = '!bg-muted !text-center text-muted-foreground italic';
             }
 
-            if (colData[col]?.data === 'total_bono') {
+            if (colProp === 'total_bono') {
                 if (rowData?.bono_manual) {
                     cellProperties.readOnly = false;
                     cellProperties.className = '!text-center font-bold';
@@ -267,9 +291,40 @@
                 columns: columns
             });
         },
-
+        /*
+                toggleManualTodos(checked) {
+                    this.tableDataBonificados.forEach((row, rowIndex) => {
+                        row.bono_manual = checked;
+        
+                        if (checked) {
+                            // Guardar backup y limpiar
+                            if (row.metodo_bonificacion) {
+                                row._metodo_backup = row.metodo_bonificacion;
+                                row.metodo_bonificacion = null;
+                            }
+                        } else {
+                            // Restaurar desde backup
+                            if (!row.metodo_bonificacion && row._metodo_backup) {
+                                row.metodo_bonificacion = row._metodo_backup;
+                                row._metodo_backup = null;
+                            }
+                        }
+        
+                        this.hot.setDataAtRowProp(rowIndex, 'bono_manual', checked, 'toggleManualTodos');
+                    });
+        
+                    if (!checked) {
+                        this.calcularBonos();
+                    } else {
+                        this.hot.render();
+                        this.refrescarCeldas();
+                    }
+                },*/
         toggleManualTodos(checked) {
             this.tableDataBonificados.forEach((row, rowIndex) => {
+                // Ignorar filas de totales
+                if (row.tipo === 'TOTAL') return;
+
                 row.bono_manual = checked;
 
                 if (checked) {

@@ -27,7 +27,39 @@ class AlmacenServicio
     public function __construct(private StockService $stockService)
     {
     }
-    
+    /**
+     * Elimina múltiples salidas, revierte sus movimientos de stock y auditoría.
+     */
+    public static function eliminarSalidasAgrupadas(array $ids): void
+    {
+        DB::transaction(function () use ($ids) {
+            $salidas = AlmacenProductoSalida::whereIn('id', $ids)->get();
+
+            if ($salidas->isEmpty()) {
+                throw new Exception("No se encontraron los registros seleccionados.");
+            }
+
+            foreach ($salidas as $salida) {
+                // 1. Auditoría
+                AuditoriaServicio::registrar(
+                    modelo: AlmacenProductoSalida::class,
+                    modeloId: $salida->id,
+                    accion: 'eliminar',
+                    antes: $salida->toArray(),
+                    camposIgnorados: ['creado_por', 'editado_por', 'created_at', 'updated_at']
+                );
+
+                // 2. Revertir movimientos de stock asociados a esta salida
+                app(StockService::class)->revertirMovimientosDeOrigen(
+                    origenType: AlmacenProductoSalida::class,
+                    origenId: $salida->id
+                );
+
+                // 3. Eliminar la salida
+                $salida->delete();
+            }
+        });
+    }
     public function guardarSalidaMasiva(array $filas, string $tipo, int $almacenId): array
     {
         $resultados = ['creados' => 0, 'actualizados' => 0, 'eliminados' => 0];
@@ -35,6 +67,7 @@ class AlmacenServicio
         // ── PRE-VALIDACIÓN DE STOCK (fuera del transaction) ──────────────
         // Ya no interesa si existe un InsKardex generado para el producto/año/tipo;
         // el saldo real vive en stocks_productos (tiempo real, vía StockService).
+        /*
         foreach ($filas as $fila) {
             $tipoKardex = $fila['tipo_kardex'] ?? null;
             $productoId = $fila['producto_id'] ?? null;
@@ -57,6 +90,47 @@ class AlmacenServicio
                         // así que cuenta como disponible para la nueva validación.
                         $stockDisponible += (float) $salidaAnterior->cantidad;
                     }
+                }
+            }
+
+            if ($stockDisponible < $cantidad) {
+                $nombreProducto = Producto::find($productoId)?->nombre_comercial ?? "ID {$productoId}";
+                throw new Exception(
+                    "Stock {$tipoKardex} insuficiente para \"{$nombreProducto}\". "
+                    . "Disponible: {$stockDisponible}, solicitado: {$cantidad}."
+                );
+            }
+        }*/
+        foreach ($filas as $fila) {
+            $tipoKardex = $fila['tipo_kardex'] ?? null;
+            $productoId = $fila['producto_id'] ?? null;
+            $cantidad = (float) ($fila['cantidad'] ?? 0);
+            $id = $fila['id'] ?? null;
+
+            if (!$tipoKardex || !$productoId || $cantidad <= 0) {
+                continue;
+            }
+
+            $salidaAnterior = $id ? AlmacenProductoSalida::find($id) : null;
+
+            if ($salidaAnterior) {
+                $mismoProducto = (int) $salidaAnterior->producto_id === (int) $productoId;
+                $mismoTipo = $salidaAnterior->tipo_kardex === $tipoKardex;
+                $mismaCantidad = abs((float) $salidaAnterior->cantidad - $cantidad) < 0.0001;
+
+                // Solo cambian campos informativos (fecha, campo, uso, etc.) — no toca stock.
+                if ($mismoProducto && $mismoTipo && $mismaCantidad) {
+                    continue;
+                }
+            }
+
+            $stockDisponible = StockService::disponible($productoId, $almacenId, $tipoKardex);
+
+            if ($salidaAnterior) {
+                $mismoProducto = (int) $salidaAnterior->producto_id === (int) $productoId;
+                $mismoTipo = $salidaAnterior->tipo_kardex === $tipoKardex;
+                if ($mismoProducto && $mismoTipo) {
+                    $stockDisponible += (float) $salidaAnterior->cantidad;
                 }
             }
 
@@ -143,6 +217,7 @@ class AlmacenServicio
                 ];
 
                 if ($id) {
+                    /*
                     $salida = AlmacenProductoSalida::findOrFail($id);
                     $antes = $salida->toArray();
 
@@ -161,8 +236,55 @@ class AlmacenServicio
                         camposIgnorados: self::CAMPOS_IGNORADOS,
                     );
 
+                    $resultados['actualizados']++;*/
+                    $salida = AlmacenProductoSalida::findOrFail($id);
+                    $antes = $salida->toArray();
+
+                    $cambiaProducto = (int) $salida->producto_id !== (int) $fila['producto_id'];
+                    $cambiaTipoKardex = $salida->tipo_kardex !== $fila['tipo_kardex'];
+                    $cambiaCantidad = abs((float) $salida->cantidad - (float) $fila['cantidad']) > 0.0001;
+                    $afectaStock = $cambiaProducto || $cambiaTipoKardex || $cambiaCantidad;
+
+                    if (!$afectaStock) {
+                        // Solo campos informativos: update directo, sin tocar stock ni movimientos.
+                        $salida->update(array_merge($datos, ['editado_por' => $usuarioId]));
+
+                        AuditoriaServicio::registrar(
+                            modelo: AlmacenProductoSalida::class,
+                            modeloId: $salida->id,
+                            accion: 'editar',
+                            antes: $antes,
+                            despues: $salida->fresh()->toArray(),
+                            camposIgnorados: self::CAMPOS_IGNORADOS,
+                        );
+
+                        $resultados['actualizados']++;
+                        continue; // <- no pasa por registrarMovimiento() de más abajo
+                    }
+
+                    try {
+                        $this->stockService->revertirMovimientosDeOrigen(AlmacenProductoSalida::class, $salida->id);
+                    } catch (\RuntimeException $e) {
+                        throw new Exception(
+                            "No se pudo modificar el registro ID {$id} porque no se puede revertir su movimiento de stock actual "
+                            . "({$e->getMessage()}). Si el registro ya no debe existir, elimínelo directamente en vez de editarlo."
+                        );
+                    }
+
+                    $salida->update(array_merge($datos, ['editado_por' => $usuarioId]));
+
+                    AuditoriaServicio::registrar(
+                        modelo: AlmacenProductoSalida::class,
+                        modeloId: $salida->id,
+                        accion: 'editar',
+                        antes: $antes,
+                        despues: $salida->fresh()->toArray(),
+                        camposIgnorados: self::CAMPOS_IGNORADOS,
+                    );
+
                     $resultados['actualizados']++;
                 } else {
+
                     $salida = AlmacenProductoSalida::create(
                         array_merge($datos, ['creado_por' => $usuarioId])
                     );
@@ -836,44 +958,73 @@ class AlmacenServicio
         return 'del ' . $inicio->format('d') . ' al ' . $fin->format('d') . ' de ' . $meses[$inicio->month];
     }
 
-
-
-    public static function obtenerRegistrosPorFecha($mes, $anio, $tipo, $tipoKardex = null)
+    public static function obtenerRegistrosPorFecha($mes, $anio, $tipo, $tipoKardex = null, array $filtros = [])
     {
         $query = AlmacenProductoSalida::with([
             'distribuciones',
             'maquinaria',
+            'uso',
             'producto' => function ($q) {
-                $q->withTrashed(); // 🔥 clave
+                $q->withTrashed();
             }
-        ]) // Incluir 'producto'
+        ])
             ->whereMonth('fecha_reporte', $mes)
             ->whereYear('fecha_reporte', $anio);
 
-        // Filtrar por tipo
+        // 1. Filtrar por tipo (Combustible / Insumos Generales)
         if ($tipo === 'combustible') {
             $query->whereHas('producto', function ($q) {
-                $q->withTrashed()
-                    ->where('categoria_codigo', 'combustible');
+                $q->withTrashed()->where('categoria_codigo', 'combustible');
             });
         } else {
             $query->whereHas('producto', function ($q) {
-                $q->withTrashed()
-                    ->where('categoria_codigo', '!=', 'combustible');
+                $q->withTrashed()->where('categoria_codigo', '!=', 'combustible');
             });
         }
 
-        // Filtrar por tipo_kardex si se proporciona
+        // 2. Filtrar por tipo_kardex
         if (!is_null($tipoKardex)) {
             $query->where('tipo_kardex', $tipoKardex);
         }
 
-        return $query->orderBy('fecha_reporte')         // 1. Ordenar por fecha
-            ->orderBy('created_at', 'asc')             // 2. Mantener orden de llegada real
-            ->orderByRaw('COALESCE(indice, 0) ASC')    // 3. Manejar null en 'indice'
-            ->paginate(10);
-    }
+        // ----------------------------------------------------
+        // 3. APLICACIÓN DE FILTROS DINÁMICOS ($filtros)
+        // ----------------------------------------------------
 
+        // Día específico del mes
+        $query->when(!empty($filtros['dia']), function ($q) use ($filtros) {
+            $q->whereDay('fecha_reporte', $filtros['dia']);
+        });
+
+        // Producto
+        $query->when(!empty($filtros['productoId']), function ($q) use ($filtros) {
+            $q->where('producto_id', $filtros['productoId']);
+        });
+
+        // Destino (Maquinaria para combustibles, Campo para otros insumos)
+        $query->when(!empty($filtros['destinoId']), function ($q) use ($filtros, $tipo) {
+            if ($tipo === 'combustible') {
+                $q->where('maquinaria_id', $filtros['destinoId']);
+            } else {
+                $q->where('campo_nombre', $filtros['destinoId']);
+            }
+        });
+
+
+        // Filtro por Grupo Operativo (reemplaza o ajusta el filtro de categoría previo)
+        $query->when(!empty($filtros['categoria']), function ($q) use ($filtros) {
+            $q->whereHas('producto.categoria', function ($catQuery) use ($filtros) {
+                $catQuery->where('grupo_operativo', $filtros['categoria']);
+            });
+        });
+
+        // ----------------------------------------------------
+
+        return $query->orderBy('fecha_reporte')
+            ->orderBy('created_at', 'asc')
+            ->orderByRaw('COALESCE(indice, 0) ASC')
+            ->paginate(15);
+    }
 
 
 

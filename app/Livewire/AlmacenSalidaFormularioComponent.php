@@ -9,6 +9,7 @@ use App\Models\InsKardex;
 use App\Models\InsUso;
 use App\Models\Maquinaria;
 use App\Models\Producto;
+use App\Services\Almacen\StockService;
 use App\Services\AlmacenServicio;
 use DB;
 use Exception;
@@ -56,8 +57,6 @@ class AlmacenSalidaFormularioComponent extends Component
         $this->cargarRegistros();
 
         $this->mostrar = true;
-      
-    
         $this->dispatch(
             'formularioSalidaAbierto',
             data: $this->registros,
@@ -66,6 +65,7 @@ class AlmacenSalidaFormularioComponent extends Component
             listaMaquinarias: $this->listaMaquinarias,
             listaCampos: $this->listaCampos,
             listaUsos: $this->listaUsos,
+            tipo: $this->tipo
         );
     }
 
@@ -134,28 +134,44 @@ class AlmacenSalidaFormularioComponent extends Component
             ])
             ->toArray();
     }
+    /*
+        public function preguntarStock(int $productoId): void
+        {
+            if (isset($this->stocksProductos[$productoId]))
+                return;
 
+            $kardexBlanco = InsKardex::where('producto_id', $productoId)
+                ->where('anio', $this->anio)->where('tipo', 'blanco')
+                ->first(['stock_actual']);
+
+            $kardexNegro = InsKardex::where('producto_id', $productoId)
+                ->where('anio', $this->anio)->where('tipo', 'negro')
+                ->first(['stock_actual']);
+
+            $producto = Producto::find($productoId, ['id', 'nombre_comercial', 'codigo_unidad_medida']);
+
+            $this->stocksProductos[$productoId] = [
+                'producto_id' => $productoId,
+                'nombre' => $producto?->nombre_comercial ?? "Producto {$productoId}",
+                'unidad' => $producto?->codigo_unidad_medida ?? '',
+                'blanco' => $kardexBlanco?->stock_actual ?? null,
+                'negro' => $kardexNegro?->stock_actual ?? null,
+            ];
+        }*/
     public function preguntarStock(int $productoId): void
     {
         if (isset($this->stocksProductos[$productoId]))
             return;
 
-        $kardexBlanco = InsKardex::where('producto_id', $productoId)
-            ->where('anio', $this->anio)->where('tipo', 'blanco')
-            ->first(['stock_actual']);
-
-        $kardexNegro = InsKardex::where('producto_id', $productoId)
-            ->where('anio', $this->anio)->where('tipo', 'negro')
-            ->first(['stock_actual']);
-
         $producto = Producto::find($productoId, ['id', 'nombre_comercial', 'codigo_unidad_medida']);
+        $stock = StockService::obtenerStockPorTipo($productoId);
 
         $this->stocksProductos[$productoId] = [
             'producto_id' => $productoId,
             'nombre' => $producto?->nombre_comercial ?? "Producto {$productoId}",
-            'unidad' => $producto?->codigo_unidad_medida ?? '',
-            'blanco' => $kardexBlanco?->stock_actual ?? null,
-            'negro' => $kardexNegro?->stock_actual ?? null,
+            'unidad' => $producto?->unidad_medida ?? '',
+            'blanco' => $stock['blanco'], // ya no es null-si-no-existe: 0 real es una respuesta válida
+            'negro' => $stock['negro'],
         ];
     }
 

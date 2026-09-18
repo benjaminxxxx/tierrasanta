@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -22,8 +21,11 @@ return new class extends Migration
             $table->foreignId('almacen_id')->constrained('almacenes');
             $table->nullableMorphs('origen');
             $table->enum('tipo_kardex', ['blanco', 'negro']);
-            $table->index(['producto_id', 'almacen_id', 'tipo_kardex', 'fecha_movimiento']);
+
             $table->timestamps();
+
+            // Índice compuesto optimizado
+            $table->index(['producto_id', 'almacen_id', 'fecha_movimiento', 'tipo_kardex'], 'idx_kardex_busqueda');
         });
     }
 

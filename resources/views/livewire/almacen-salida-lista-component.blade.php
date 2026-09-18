@@ -1,11 +1,4 @@
-<div x-data="{
-    idsPaginaActual: @js($salidas->pluck('id')->toArray()),
-    todosMarcados: false,
-    toggleTodos() {
-        this.todosMarcados = !this.todosMarcados;
-        $wire.toggleSeleccionTodos(this.todosMarcados, this.idsPaginaActual);
-    },
-}" class="space-y-4">
+<div x-data="almacenSalida" class="space-y-4">
 
     <x-card class="space-y-4">
         {{-- FILTROS --}}
@@ -35,79 +28,27 @@
                 </x-select>
             </x-group-field>
 
+            <x-group-field>
+                <label class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Grupo Operativo</label>
+                <x-select wire:model.live="filtros.categoria">
+                    <option value="">Todos</option>
+                    @foreach ($listaGruposOperativos as $grupo)
+                        <option value="{{ $grupo }}">{{ $grupo }}</option>
+                    @endforeach
+                </x-select>
+            </x-group-field>
+
             <button wire:click="limpiarFiltros"
                 class="h-8 px-3 text-sm rounded border border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-1.5">
                 <i class="fa fa-times text-xs"></i>
                 Limpiar
             </button>
 
-            <span class="text-xs text-muted-foreground ml-auto self-end pb-1">
-                {{ $salidas->total() }} resultado{{ $salidas->total() !== 1 ? 's' : '' }}
-                — {{ count($seleccionados) }} seleccionado{{ count($seleccionados) !== 1 ? 's' : '' }}
-            </span>
         </x-flex>
-
-        {{-- TABLA --}}
-        <div class="overflow-x-auto">
-            <table class="w-full text-xs">
-                <thead>
-                    <tr class="border-b border-border text-left text-muted-foreground">
-                        <th class="p-2 w-8">
-                            <input type="checkbox" x-model="todosMarcados" @change="toggleTodos()">
-                        </th>
-                        <th class="p-2">Fecha</th>
-                        <th class="p-2">Producto</th>
-                        <th class="p-2">Cant.</th>
-                        <th class="p-2">{{ $tipo === 'combustible' ? 'Maquinaria' : 'Campo' }}</th>
-                        @if ($tipo !== 'combustible')
-                            <th class="p-2">Uso</th>
-                        @endif
-                        <th class="p-2">Kardex</th>
-                        <th class="p-2">Costo x und</th>
-                        <th class="p-2">Total</th>
-                        <th class="p-2 w-24">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($salidas as $salida)
-                        <tr wire:key="salida-{{ $salida->id }}" class="border-b border-border/50 hover:bg-muted/50">
-                            <td class="p-2">
-                                <input type="checkbox" value="{{ $salida->id }}" wire:model.live="seleccionados">
-                            </td>
-                            <td class="p-2">{{ \Carbon\Carbon::parse($salida->fecha_reporte)->format('d/m/Y') }}</td>
-                            <td class="p-2">{{ $salida->producto?->nombre_comercial }}</td>
-                            <td class="p-2">{{ number_format($salida->cantidad, 3) }}</td>
-                            <td class="p-2">{{ $tipo === 'combustible' ? $salida->maquinaria?->nombre : $salida->campo_nombre }}</td>
-                            @if ($tipo !== 'combustible')
-                                <td class="p-2">{{ $salida->uso?->nombre ?? '—' }}</td>
-                            @endif
-                            <td class="p-2 text-center">{{ $salida->tipo_kardex }}</td>
-                            <td class="p-2">{{ number_format($salida->costo_por_kg ?? 0, 2) }}</td>
-                            <td class="p-2">{{ number_format($salida->total_costo ?? 0, 2) }}</td>
-                            <td class="p-2">
-                                <div class="flex items-center gap-2">
-                                    <button wire:click="verHistorialSalida({{ $salida->id }})" title="Historial"
-                                        class="text-muted-foreground hover:text-foreground">
-                                        <i class="fa fa-history"></i>
-                                    </button>
-                                    <button wire:click="eliminarSalida({{ $salida->id }})"
-                                        wire:confirm="¿Eliminar esta salida? Esta acción no se puede deshacer."
-                                        title="Eliminar" class="text-red-500 hover:text-red-600">
-                                        <i class="fa fa-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="10" class="p-4 text-center text-muted-foreground">
-                                Sin registros para este periodo.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+        <div wire:ignore>
+            <div x-ref="tableContainerLista"></div>
         </div>
+
 
         <div>
             {{ $salidas->links() }}
@@ -126,8 +67,9 @@
             @forelse($auditoriaHistorialSalida as $entrada)
                 <div class="mb-4 border-b border-border pb-3">
                     <div class="flex items-center justify-between text-sm">
-                        <span class="font-semibold uppercase
-                            {{ $entrada['accion'] === 'crear' ? 'text-green-600' : ($entrada['accion'] === 'eliminar' ? 'text-red-600' : 'text-yellow-600') }}">
+                        <span
+                            class="font-semibold uppercase
+                                                                                {{ $entrada['accion'] === 'crear' ? 'text-green-600' : ($entrada['accion'] === 'eliminar' ? 'text-red-600' : 'text-yellow-600') }}">
                             {{ $entrada['accion'] }}
                         </span>
                         <span class="text-gray-400 text-xs">
@@ -167,12 +109,6 @@
 
     @if($puedeGestionar)
         <x-inferior-derecha>
-            <x-button wire:click="abrirEditarSeleccionados">
-                <i class="fa fa-pen"></i> Editar seleccionados ({{ count($seleccionados) }})
-            </x-button>
-            <x-button variant="danger" wire:click="eliminarSeleccionados" wire:confirm="¿Eliminar todas las filas seleccionadas?">
-                <i class="fa fa-trash"></i> Eliminar seleccionados
-            </x-button>
             <x-button wire:click="abrirCrear">
                 <i class="fa fa-plus"></i> Agregar salidas
             </x-button>
@@ -184,3 +120,237 @@
 
     <x-loading wire:loading />
 </div>
+@script
+<script>
+    Alpine.data('almacenSalida', () => ({
+        hotLista: null,
+        isDark: JSON.parse(localStorage.getItem('darkMode')),
+        tableDataLista: [],
+        tipo: @js($tipo),
+        init() {
+            this.initTableLista();
+            Livewire.on('actualizarTabla', ({ data }) => {
+                console.log(data);
+                this.tableDataLista = data;
+                this.initTableLista();
+            })
+        },
+        initTableLista() {
+            if (this.hotLista) {
+                try {
+                    this.hotLista.destroy();
+                } catch (e) { }
+                this.hotLista = null;
+            }
+            const container = this.$refs.tableContainerLista;
+            if (!container) return;
+            const esCombustible = this.tipo === 'combustible';
+
+            const hotLista = new Handsontable(container, {
+                ...window.HstConfig,
+                data: this.tableDataLista,
+                themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
+                columns: this.getColumnsLista(),
+                contextMenu: {
+                    items: {
+                        // Distribución combustible (solo si aplica)
+                        ...(esCombustible ? {
+                            'distribucion': {
+                                name: '<i class="fa fa-list"></i> &nbsp; Distribución combustible',
+                                callback: () => {
+                                    const selected = this.hotLista.getSelected();
+                                    if (!selected) return;
+                                    const fila = this.hotLista.getSourceDataAtRow(selected[0][0]);
+                                    if (!fila?.id) {
+                                        alert('Guarda el registro antes de ver la distribución.');
+                                        return;
+                                    }
+                                    $wire.dispatch('abrirModalDistribucion', {
+                                        salidaId: fila.id
+                                    });
+                                },
+                            },
+                            'sep1': '---------',
+                        } : {}),
+
+                        'historial': {
+                            name: '<i class="fa fa-history"></i> &nbsp; Ver historial',
+                            callback: () => {
+                                const selected = this.hotLista.getSelected();
+                                if (!selected) return;
+                                const fila = this.hotLista.getSourceDataAtRow(selected[0][0]);
+                                if (!fila?.id) {
+                                    alert('Este registro aún no ha sido guardado.');
+                                    return;
+                                }
+                                $wire.verHistorialSalida(fila.id);
+                            },
+                        },
+                        'editar': {
+                            name: '<i class="fa fa-edit text-blue-500"></i> &nbsp; Editar salida(s) seleccionadas',
+                            callback: () => {
+                                const selected = this.hotLista.getSelected(); // [ [row1, col1, row2, col2], ... ]
+                                if (!selected || selected.length === 0) return;
+
+                                const idsAEditar = [];
+
+                                // Recorrer los rangos de selección para soportar selección múltiple o por bloques
+                                selected.forEach(range => {
+                                    const startRow = Math.min(range[0], range[2]);
+                                    const endRow = Math.max(range[0], range[2]);
+
+                                    for (let r = startRow; r <= endRow; r++) {
+                                        const fila = this.hotLista.getSourceDataAtRow(r);
+                                        if (fila?.id && !idsAEditar.includes(fila.id)) {
+                                            idsAEditar.push(fila.id);
+                                        }
+                                    }
+                                });
+
+                                if (idsAEditar.length === 0) {
+                                    alert('No hay registros guardados en la selección.');
+                                    return;
+                                }
+
+                                $wire.editarSalidas(idsAEditar);
+                            }
+                        },
+                        'sep2': '---------',
+
+                        'eliminar': {
+                            name: '<i class="fa fa-trash text-red-500"></i> &nbsp; Eliminar salida(s) seleccionadas',
+                            callback: () => {
+                                const selected = this.hotLista.getSelected(); // [ [row1, col1, row2, col2], ... ]
+                                if (!selected || selected.length === 0) return;
+
+                                const idsAEliminar = [];
+
+                                // Extraer IDs únicos de todas las filas seleccionadas (soporta selecciones múltiples)
+                                selected.forEach(range => {
+                                    const startRow = Math.min(range[0], range[2]);
+                                    const endRow = Math.max(range[0], range[2]);
+
+                                    for (let r = startRow; r <= endRow; r++) {
+                                        const fila = this.hotLista.getSourceDataAtRow(r);
+                                        if (fila?.id && !idsAEliminar.includes(fila.id)) {
+                                            idsAEliminar.push(fila.id);
+                                        }
+                                    }
+                                });
+
+                                if (idsAEliminar.length === 0) {
+                                    alert('No hay registros guardados en la selección.');
+                                    return;
+                                }
+
+                                const mensaje = idsAEliminar.length === 1
+                                    ? '¿Eliminar la salida seleccionada?'
+                                    : `¿Eliminar las ${idsAEliminar.length} salidas seleccionadas?`;
+
+                                if (confirm(mensaje)) {
+                                    $wire.eliminarSalidas(idsAEliminar);
+                                }
+                            }
+                        }
+                    },
+                }
+
+            });
+
+            this.hotLista = hotLista;
+            this.hotLista.render();
+        },
+        getColumnsLista() {
+            const esCombustible = this.tipo === 'combustible';
+
+            const columns = [
+                {
+                    data: 'fecha_reporte',
+                    type: 'date',
+                    dateFormat: 'YYYY-MM-DD',
+                    title: 'FECHA',
+                    className: '!text-center',
+                    readOnly: true
+                },
+                {
+                    data: 'producto',
+                    type: 'text',
+                    title: 'PRODUCTO',
+                    readOnly: true,
+                    width: 120,
+                    readOnly: true
+                },
+                {
+                    data: 'unidad_medida',
+                    type: 'text',
+                    title: 'UND',
+                    readOnly: true,
+                    className: '!text-center',
+                },
+                {
+                    data: 'cantidad',
+                    type: 'numeric',
+                    title: 'CANTIDAD',
+                    className: '!text-right',
+                    readOnly: true,
+                },
+                // Columna DESTINO dinámica arreglada
+                esCombustible ? {
+                    data: 'maquinaria_id',
+                    title: 'MAQUINARIA',
+                    type: 'text',
+                    className: '!text-center',
+                    readOnly: true,
+                } : {
+                    data: 'campo_nombre',
+                    title: 'CAMPO',
+                    type: 'text',
+                    className: '!text-center',
+                    readOnly: true,
+                },
+                {
+                    data: 'tipo_kardex',
+                    title: 'TIPO KARDEX',
+                    type: 'text',
+                    className: '!text-center',
+                    readOnly: true,
+                },
+                {
+                    data: 'categoria',
+                    type: 'text',
+                    title: 'CATEGORIA',
+                    className: '!text-center',
+                    readOnly: true,
+                },
+                {
+                    data: 'costo_por_kg',
+                    type: 'numeric',
+                    title: 'COSTO X UND',
+                    className: '!text-center',
+                    readOnly: true,
+                },
+                {
+                    data: 'total_costo',
+                    type: 'numeric',
+                    title: 'TOTAL COSTO',
+                    className: '!text-center',
+                    readOnly: true,
+                },
+            ];
+
+            if (esCombustible) {
+                columns.push({
+                    data: 'distribuciones_count',
+                    type: 'numeric',
+                    title: 'DISTRIB.',
+                    className: '!text-center',
+                    readOnly: true,
+                });
+            }
+
+            return columns;
+        }
+    }));
+</script>
+
+@endscript

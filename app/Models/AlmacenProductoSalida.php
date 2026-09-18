@@ -22,6 +22,7 @@ class AlmacenProductoSalida extends Model
         'cantidad_stock_inicial',
         'kardex_producto_id',
         'maquinaria_id',
+        'uso_id', //nuevo
         'indice', //cuando se agregan mas de un registro a la vez, es importante saber el orden para que el kardex lo haga igual
         'tipo_kardex',
         'registro_carga',
@@ -42,14 +43,11 @@ class AlmacenProductoSalida extends Model
     }
 
     // Relación con Compra
-    /**
-     * Esta funcion debe quedar obsoleta, la compra ya no se relaciona a compra_proucto_id, sino a salidacomprastock que aun falta verificar
-     */
-    public function compra()
+ 
+    public function uso()
     {
-        return $this->belongsTo(CompraProducto::class, 'compra_producto_id');
+        return $this->belongsTo(InsUso::class, 'uso_id');
     }
-
     public function maquinaria()
     {
         return $this->belongsTo(Maquinaria::class, 'maquinaria_id');

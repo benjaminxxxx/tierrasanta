@@ -10,8 +10,6 @@
             @include('comun.selector-mes-base')
         </x-flex>
 
-
-
         <livewire:almacen-salida-lista-component :tipo="$destino" wire:key="{{ $mes }}.{{ $anio }}" :mes="$mes"
             :anio="$anio" />
     </div>

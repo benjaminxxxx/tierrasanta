@@ -7,7 +7,7 @@
         <x-slot name="content">
             <div class="space-y-4">
                 <div wire:ignore>
-                    <div id="tableContainer" style="min-height: 320px;"></div>
+                    <div id="tableContainer"></div>
                 </div>
 
                 <x-card>
@@ -74,13 +74,16 @@
                     listaProductos,
                     listaMaquinarias,
                     listaCampos,
-                    listaUsos
+                    listaUsos,
+                    tipo
                 }) => {
+                    console.log(1,this.listaMaquinarias);
                     this.esEdicion = esEdicion;
                     this.listaProductos = listaProductos;
                     this.listaMaquinarias = listaMaquinarias;
                     this.listaCampos = listaCampos;
                     this.listaUsos = listaUsos;
+                    this.tipo = tipo;
 
                     this.$nextTick(() => this.initTable(data));
                 });
@@ -105,7 +108,7 @@
                     // Sin paginar: si es edición, exactamente las filas seleccionadas;
                     // si es creación, arranca vacío y crece libremente.
                     minSpareRows: this.esEdicion ? 0 : 1,
-                    height: 400,
+                    height: 200,
                     afterChange: async (changes, source) => {
                         if (source === 'loadData') return;
 
@@ -145,6 +148,7 @@
 
             getColumns() {
                 const esCombustible = this.tipo === 'combustible';
+                console.log(this.tipo);
 
                 const productosLabels = this.listaProductos.map(p => p.label);
                 const productosMap = Object.fromEntries(this.listaProductos.map(p => [p.label, p.id]));

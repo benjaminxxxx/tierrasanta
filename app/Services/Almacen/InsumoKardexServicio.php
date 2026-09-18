@@ -42,7 +42,7 @@ class InsumoKardexServicio
 
             'stock_inicial' => 'required|numeric|min:0',
 
-            'costo_unitario' => 'required|numeric|min:0',
+            //'costo_unitario' => 'required|numeric|min:0', como se calcula dinamicamente no tiene un wire:model que lo enlace
 
             'costo_total' => 'required|numeric|min:0',
 
@@ -104,9 +104,9 @@ class InsumoKardexServicio
             'stock_inicial.numeric' => 'El stock inicial debe ser un número.',
             'stock_inicial.min' => 'El stock inicial no puede ser negativo.',
 
-            'costo_unitario.required' => 'El costo unitario es obligatorio.',
+            /*'costo_unitario.required' => 'El costo unitario es obligatorio.',
             'costo_unitario.numeric' => 'El costo unitario debe ser un número.',
-            'costo_unitario.min' => 'El costo unitario no puede ser negativo.',
+            'costo_unitario.min' => 'El costo unitario no puede ser negativo.',*/
 
             'costo_total.required' => 'El costo total es obligatorio.',
             'costo_total.numeric' => 'El costo total debe ser un número.',
@@ -143,7 +143,12 @@ class InsumoKardexServicio
         $validatedData['metodo_valuacion'] = $validatedData['metodo_valuacion'] ?? 'promedio';
         $validatedData['descripcion'] = Producto::find($validatedData['producto_id'])->nombre_comercial;
         $validatedData['codigo_existencia'] = mb_strtoupper($validatedData['codigo_existencia']);
-
+        $validatedData['costo_unitario'] = null;
+        if (!empty($validatedData['stock_inicial']) && (float) $validatedData['stock_inicial'] != 0) {
+            $validatedData['costo_unitario'] = ($validatedData['costo_total'] ?? 0) / $validatedData['stock_inicial'];
+        } else {
+            $validatedData['costo_unitario'] = 0; // o null, según la lógica de tu negocio
+        }
         if ($kardexId) {
 
             $kardex = InsKardex::findOrFail($kardexId);

@@ -30,6 +30,7 @@ class InsumoKardexFormComponent extends Component
         'costo_unitario' => '',
         'costo_total' => '',
         'tipo_compra_codigo_inicial' => '',
+        'tiene_saldo_inicial',
         'serie_inicial' => '',
         'numero_inicial' => '',
     ];
@@ -44,6 +45,7 @@ class InsumoKardexFormComponent extends Component
         $this->insumoKardexId = null;
         $this->resetForm();
         $this->kardex['producto_id'] = $productoId;
+        $this->dispatch('resetearCalculos');
         $this->mostrarFormularioKardex = true;
     }
     public function getProductos(string $search): array
@@ -55,7 +57,6 @@ class InsumoKardexFormComponent extends Component
     {
         $this->kardex = [
             'producto_id' => null,
-            'descripcion' => '',
             'codigo_existencia' => '',
             'anio' => '',
             'tipo' => '',
@@ -63,6 +64,7 @@ class InsumoKardexFormComponent extends Component
             'costo_unitario' => '',
             'costo_total' => '',
             'tipo_compra_codigo_inicial' => '',
+            'tiene_saldo_inicial' => false,
             'serie_inicial' => '',
             'numero_inicial' => '',
         ];
@@ -80,6 +82,10 @@ class InsumoKardexFormComponent extends Component
     public function guardarKardex()
     {
         try {
+            if (!($this->kardex['tiene_saldo_inicial'] ?? false)) {
+                $this->kardex['stock_inicial'] = 0;
+                $this->kardex['costo_total'] = 0;
+            }
 
             $kardex = app(InsumoKardexServicio::class)->guardarInsumoKardex($this->kardex, $this->insumoKardexId);
             $this->dispatch('insumoKardexRefrescar', kardexId: $kardex->id);
@@ -98,7 +104,6 @@ class InsumoKardexFormComponent extends Component
 
         $this->kardex = [
             'producto_id' => null,
-            'descripcion' => '',
             'codigo_existencia' => '',
             'anio' => '',
             'tipo' => '',

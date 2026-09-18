@@ -12,6 +12,99 @@
 
     <livewire:gestion-cuadrilla.gestion-cuadrilla-reporte-pago-component />
 
+    <x-dialog-modal wire:model="mostrarSumaCalculadaDialog" maxWidth="full">
+        <x-slot name="title">
+            Resumen de Selección y Suma Cuadrada
+        </x-slot>
+
+        <x-slot name="content">
+            <div class="space-y-4">
+                <!-- Gran Total Destacado -->
+                <div class="flex items-center justify-between p-4 rounded-xl bg-primary/10 border border-border">
+                    <div>
+                        <span class="text-xs uppercase font-bold tracking-wider text-primary block">Gran Total
+                            Sumado</span>
+                        <span class="text-xs text-muted-foreground">Suma de todas las filas y columnas
+                            seleccionadas</span>
+                    </div>
+                    <div class="text-3xl font-black text-primary">
+                        {{ $matrizSuma['granTotal'] }}
+                    </div>
+                </div>
+
+                <!-- Tabla Matriz Cruzada -->
+                <div class="overflow-x-auto border border-border rounded-lg max-h-96">
+                    <x-table>
+                        <x-slot name="thead">
+                            <x-tr>
+                                <x-th class="!bg-muted font-bold">Trabajador</x-th>
+                                @foreach($matrizSuma['columnas'] as $col)
+                                    <x-th class="!bg-muted text-center font-bold">{!! $col['titulo'] !!}</x-th>
+                                @endforeach
+                                <x-th class="!bg-muted text-right font-bold">Total Fila</x-th>
+                            </x-tr>
+                        </x-slot>
+
+                        <x-slot name="tbody">
+                            @forelse($matrizSuma['filas'] as $fila)
+                                <x-tr class="hover:bg-muted/50">
+                                    <x-td class="font-medium text-xs">{{ $fila['nombre'] }}</x-td>
+
+                                    @foreach($matrizSuma['columnas'] as $col)
+                                        <x-td class="text-center text-xs font-mono">
+                                            @if(($fila['celdas'][$col['prop']] ?? 0) > 0)
+                                                <span class="px-2 py-0.5 rounded bg-muted">
+                                                    {{ number_format($fila['celdas'][$col['prop']], 2) }}
+                                                </span>
+                                            @else
+                                                <span class="text-muted-foreground/40">-</span>
+                                            @endif
+                                        </x-td>
+                                    @endforeach
+
+                                    <x-td class="text-right font-bold font-mono text-xs text-primary">
+                                        {{ $fila['totalFila'] }}
+                                    </x-td>
+                                </x-tr>
+                            @empty
+                                <x-tr>
+                                    <x-td colspan="{{ count($matrizSuma['columnas']) + 2 }}"
+                                        class="text-center py-4 text-muted-foreground">
+                                        No se encontraron valores numéricos en la selección.
+                                    </x-td>
+                                </x-tr>
+                            @endforelse
+                        </x-slot>
+
+                        <x-slot name="tfoot">
+                            <x-tr class="!bg-muted/80 font-bold border-t-2 border-border">
+                                <x-td class="text-xs uppercase">Total Columna</x-td>
+
+                                @foreach($matrizSuma['columnas'] as $col)
+                                    <x-td class="text-center font-mono text-xs">
+                                        {{ $matrizSuma['totalesColumnas'][$col['prop']] ?? '0.00' }}
+                                    </x-td>
+                                @endforeach
+
+                                <!-- Esquina Final (Gran Total) -->
+                                <x-td
+                                    class="text-right font-mono text-sm !bg-primary !text-primary-foreground font-black">
+                                    {{ $matrizSuma['granTotal'] }}
+                                </x-td>
+                            </x-tr>
+                        </x-slot>
+                    </x-table>
+                </div>
+            </div>
+        </x-slot>
+
+        <x-slot name="footer">
+            <x-button @click="$wire.set('mostrarSumaCalculadaDialog', false)">
+                <i class="fa fa-check mr-2"></i> Aceptar
+            </x-button>
+        </x-slot>
+    </x-dialog-modal>
+
     <x-loading wire:loading />
     <style>
         body .handsontable .htDimmed {
@@ -41,15 +134,10 @@
             this.headersDias = this.generarEncabezados(this.fechaInicio, this.fechaFin);
             this.reporteSemanal = this.datosCompletos;
             this.initTable();
-            /*Livewire.on('recargarTablaTramos', (data) => {
-                this.reporteSemanal = data[0];
-                this.initTable();
-            });*/
+
             Livewire.on('recargarTablaTramos', (data) => {
                 this.datosCompletos = data[0];
                 this.listaGrupos = data[1] ?? this.listaGrupos;
-                // limpiar filtros al cambiar de tramo evita quedarte viendo
-                // un grupo que quizá no exista en el nuevo tramo
                 this.filtroGrupo = '';
                 this.busquedaNombre = '';
                 this.aplicarFiltros();
@@ -158,6 +246,11 @@
                 fixedColumnsLeft: 2,
                 contextMenu: {
                     items: {
+                        "sumar_celdas": {
+                            name: 'Calcular Suma de Selección',
+                            callback: () => this.abrirModalSumaSeleccion(),
+                            disabled: () => !this.tieneRangoSeleccionado()
+                        },
                         "customize_cuadrillero": {
                             name: 'Personalizar costo por día',
                             callback: () => this.customizeCuadrillero(),
@@ -348,7 +441,14 @@
             const rowData = this.hot.getSourceDataAtRow(selected[0]);
             return !!(rowData && rowData.header);
         },
+        tieneRangoSeleccionado() {
+            if (!this.hot) return false;
+            const selected = this.hot.getSelectedLast();
+            if (!selected) return false;
 
+            const [startRow, startCol, endRow, endCol] = selected;
+            return startRow !== endRow || startCol !== endCol;
+        },
         tieneCuadrilleroId() {
             if (!this.hot) return false;
             const selected = this.hot.getSelectedLast();
@@ -367,6 +467,107 @@
                 return new Date(y, m - 1, d);
             }
             throw new Error('Fecha inválida');
+        },
+        abrirModalSumaSeleccion() {
+            if (!this.hot) return;
+
+            // getSelected() obtiene todos los rangos seleccionados (incluso con Ctrl)
+            const selections = this.hot.getSelected();
+            if (!selections || selections.length === 0) return;
+
+            const filasMap = new Map(); // Para agrupar por fila (Trabajador)
+            const columnasSet = new Set(); // Para obtener los títulos de columnas involucradas
+            const titulosColumnasMap = new Map();
+
+            selections.forEach(([startRow, startCol, endRow, endCol]) => {
+                const rMin = Math.min(startRow, endRow);
+                const rMax = Math.max(startRow, endRow);
+                const cMin = Math.min(startCol, endCol);
+                const cMax = Math.max(startCol, endCol);
+
+                for (let r = rMin; r <= rMax; r++) {
+                    // Ignorar filas de totales de la tabla si las hubiera
+                    const rowData = this.hot.getSourceDataAtRow(r);
+                    if (rowData && rowData.tipo === 'TOTAL') continue;
+
+                    const nombreTrabajador = this.hot.getDataAtCell(r, 1) || `Fila ${r + 1}`;
+
+                    if (!filasMap.has(r)) {
+                        filasMap.set(r, {
+                            rowIndex: r,
+                            nombre: nombreTrabajador,
+                            valores: {} // colProp -> suma/valor
+                        });
+                    }
+
+                    const filaObj = filasMap.get(r);
+
+                    for (let c = cMin; c <= cMax; c++) {
+                        // Omitir columnas fijas como Orden (0) o Nombre (1)
+                        if (c <= 1) continue;
+
+                        const colProp = this.hot.colToProp(c);
+                        const colHeader = this.hot.getColHeader(c);
+
+                        columnasSet.add(colProp);
+                        titulosColumnasMap.set(colProp, colHeader);
+
+                        const rawVal = this.hot.getDataAtCell(r, c);
+                        const valNum = parseFloat(rawVal);
+
+                        if (!isNaN(valNum)) {
+                            filaObj.valores[colProp] = (filaObj.valores[colProp] || 0) + valNum;
+                        }
+                    }
+                }
+            });
+
+            // Estructurar columnas finales
+            const columnas = Array.from(columnasSet).map(prop => ({
+                prop: prop,
+                titulo: titulosColumnasMap.get(prop) || prop,
+                totalColumna: 0
+            }));
+
+            // Convertir mapa de filas a Array y calcular totales por fila y columna
+            let granTotal = 0;
+            const filasFinales = [];
+
+            filasMap.forEach((filaObj) => {
+                let totalFila = 0;
+                const celdasValores = {};
+
+                columnas.forEach(col => {
+                    const val = filaObj.valores[col.prop] || 0;
+                    celdasValores[col.prop] = val;
+                    totalFila += val;
+                    col.totalColumna += val;
+                });
+
+                // Solo incluir filas que tengan al menos algún dato seleccionado
+                if (Object.keys(filaObj.valores).length > 0) {
+                    granTotal += totalFila;
+                    filasFinales.push({
+                        nombre: filaObj.nombre,
+                        celdas: celdasValores,
+                        totalFila: totalFila.toFixed(2)
+                    });
+                }
+            });
+
+            // Formatear totales de columna
+            const totalesColumnas = {};
+            columnas.forEach(col => {
+                totalesColumnas[col.prop] = col.totalColumna.toFixed(2);
+            });
+
+            // Emitir hacia Livewire
+            $wire.mostrarSumaCalculadaMatriz({
+                columnas: columnas.map(c => ({ prop: c.prop, titulo: c.titulo })),
+                filas: filasFinales,
+                totalesColumnas: totalesColumnas,
+                granTotal: granTotal.toFixed(2)
+            });
         },
         generarEncabezados(fechaInicio, fechaFin) {
             const fi = this.toLocalDate(fechaInicio);

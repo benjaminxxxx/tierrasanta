@@ -47,6 +47,13 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
     public array $cuadrilleros = [];
     public $cuadrilleroARemplazarSeleccionado;
     public $cuadrilleroPorReemplazar;
+    public array $matrizSuma = [
+        'columnas' => [],
+        'filas' => [],
+        'totalesColumnas' => [],
+        'granTotal' => '0.00'
+    ];
+    public bool $mostrarSumaCalculadaDialog = false;
     protected $listeners = [
         'cuadrillerosAgregadosEnTramo' => 'renovarListaYResumir',
         'costosSemanalesModificados' => 'renovarListaYResumir'
@@ -64,6 +71,11 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
         $this->listarResumenes();
 
     }
+    public function mostrarSumaCalculadaMatriz($matriz)
+{
+    $this->matrizSuma = $matriz;
+    $this->mostrarSumaCalculadaDialog = true;
+}
     public function getCuadrillero($search)
     {
         $query = Cuadrillero::orderBy('nombres');

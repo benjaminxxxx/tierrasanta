@@ -19,7 +19,7 @@ class InsumoKardexComponent extends Component
     public $aniosDisponibles = [];
     // Propiedades de paginación
     public $perPage = 20;
-    public $sortField = 'anio';
+    public $sortField = 'codigo_existencia';
     public $sortDirection = 'desc';
 
     #[Url]

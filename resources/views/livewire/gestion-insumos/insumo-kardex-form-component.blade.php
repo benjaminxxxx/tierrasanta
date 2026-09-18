@@ -5,7 +5,7 @@
         </x-slot>
 
         <x-slot name="content">
-            <div x-data="{ tieneSaldoInicial: @entangle('kardex.tiene_saldo_inicial') }" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div x-data="insumoKardexForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                 {{-- PRODUCTO --}}
                 <x-group-field>
@@ -48,32 +48,20 @@
                     class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
 
                     {{-- CÁLCULO DE COSTOS EN 3 COLUMNAS INTERNAS --}}
-                    <div class="md:col-span-2" x-data="{
-                        stock: $wire.get('kardex.stock_inicial') || 0,
-                        costoTotal: $wire.get('kardex.costo_total') || 0,
-                        costoUnitario: 0,
-                    
-                        calcularUnitario() {
-                            let cant = parseFloat(this.stock) || 0;
-                            let total = parseFloat(this.costoTotal) || 0;
-                            this.costoUnitario = (cant > 0) ? (total / cant).toFixed(6) : 0;
-                        }
-                    }" x-init="calcularUnitario()">
+                    <div class="md:col-span-2">
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {{-- STOCK INICIAL --}}
-                            <x-input type="number" label="Stock Inicial" wire:model="kardex.stock_inicial"
-                                x-model="stock" x-on:input="calcularUnitario()" step="0.001"
-                                error="kardex.stock_inicial" />
+                            <x-input type="number" label="Stock Inicial" x-model="stock" @input="calcularUnitario()"
+                                step="0.001" error="kardex.stock_inicial" />
 
                             {{-- COSTO TOTAL --}}
-                            <x-input type="number" label="Costo Total" wire:model="kardex.costo_total"
-                                x-model="costoTotal" x-on:input="calcularUnitario()" step="0.000001"
-                                error="kardex.costo_total" />
+                            <x-input type="number" label="Costo Total" x-model="costoTotal" @input="calcularUnitario()"
+                                step="0.000001" error="kardex.costo_total" />
 
                             {{-- COSTO UNITARIO (Solo presentación en cliente) --}}
-                            <x-input type="number" label="Costo Unitario" x-model="costoUnitario" readonly
-                                tabindex="-1" step="0.000000000001" />
+                            <x-input type="number" label="Costo Unitario" x-model="costoUnitario" readonly tabindex="-1"
+                                step="0.000000000001" />
                         </div>
                     </div>
 
@@ -113,3 +101,43 @@
 
     <x-loading wire:loading />
 </div>
+@script
+<script>
+    Alpine.data('insumoKardexForm', () => ({
+        tieneSaldoInicial: @entangle('kardex.tiene_saldo_inicial'),
+        stock: @entangle('kardex.stock_inicial'),
+        costoTotal: @entangle('kardex.costo_total'),
+        costoUnitario: 0,
+
+        init() {
+            // Se agrega 'this' para invocar el método local
+            this.calcularUnitario();
+
+            this.$watch('tieneSaldoInicial', (value) => {
+                if (!value) {
+                    this.stock = 0;
+                    this.costoTotal = 0;
+                    this.costoUnitario = 0;
+                }
+            });
+
+            // Pasamos un callback para que el evento ejecute la función al emitirse
+            Livewire.on('resetearCalculos', () => {
+                this.quitarCalculados();
+            });
+        },
+
+        calcularUnitario() {
+            let cant = parseFloat(this.stock) || 0;
+            let total = parseFloat(this.costoTotal) || 0;
+            this.costoUnitario = (cant > 0) ? (total / cant).toFixed(6) : 0;
+        },
+
+        quitarCalculados() {
+            this.stock = 0;
+            this.costoTotal = 0;
+            this.costoUnitario = 0;
+        }
+    }));
+</script>
+@endscript
