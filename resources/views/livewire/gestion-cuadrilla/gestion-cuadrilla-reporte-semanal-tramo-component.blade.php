@@ -443,10 +443,14 @@
         },
         tieneRangoSeleccionado() {
             if (!this.hot) return false;
-            const selected = this.hot.getSelectedLast();
-            if (!selected) return false;
+            const selections = this.hot.getSelected();
+            if (!selections || selections.length === 0) return false;
 
-            const [startRow, startCol, endRow, endCol] = selected;
+            // Si hay más de 1 rango (selección disjunta con Ctrl)
+            if (selections.length > 1) return true;
+
+            // Si es un solo rango, verificar si abarca más de 1 celda
+            const [startRow, startCol, endRow, endCol] = selections[0];
             return startRow !== endRow || startCol !== endCol;
         },
         tieneCuadrilleroId() {
