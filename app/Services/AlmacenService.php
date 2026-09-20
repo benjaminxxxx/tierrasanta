@@ -11,7 +11,7 @@ class AlmacenService
      *
      * @throws Exception
      */
-    public function obtenerAlmacenPrincipal(): Almacen
+    public static function obtenerAlmacenPrincipal(): Almacen
     {
         $almacen = Almacen::where('es_principal', true)
             ->where('activo', true)

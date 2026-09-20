@@ -25,6 +25,7 @@ class CompraDetalle extends Model
         'factor_conversion_usado',
         'cantidad_base',
         'costo_unitario_base',
+        'costo_total_kardex'
     ];
 
     public function compra(): BelongsTo

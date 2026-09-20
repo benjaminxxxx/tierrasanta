@@ -9,6 +9,10 @@ use InvalidArgumentException;
 
 class DateHelper
 {
+    public static function esPeriodoVigente(string $fecha): bool
+    {
+        return (int) date('Y', strtotime($fecha)) === (int) date('Y');
+    }
     public static function convertirHorasADecimal(string $hora): float
     {
         [$horas, $minutos, $segundos] = explode(':', $hora);

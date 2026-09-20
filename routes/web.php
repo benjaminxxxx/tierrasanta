@@ -62,8 +62,8 @@ Route::middleware([
     })->name('empleados')->middleware('can:Planilla Empleados');
 
     Route::get('/descuentos-de-afp', ConfiguracionPrimasComisionesComponent::class)->name('descuentos_afp')->middleware('can:' . Permisos::PLANILLA_CONFIG_AFP);
-    
-    Route::get('/planilla/derecho-habiente',DerechoHabienteListaComponent::class)->name('empleado.derecho_habiente')->middleware('can:' . Permisos::PLANILLA_FAMILIAR);
+
+    Route::get('/planilla/derecho-habiente', DerechoHabienteListaComponent::class)->name('empleado.derecho_habiente')->middleware('can:' . Permisos::PLANILLA_FAMILIAR);
 
     Route::get('/riego/labores', function () {
         return view('configuracion.labores_riego');
@@ -98,10 +98,10 @@ Route::middleware([
     Route::get('/riego/estados', [CampoController::class, 'riego'])->name('campo.riego')->middleware('can:' . Permisos::CAMPO_RIEGO_ESTADO);
     Route::get('/campo/campos', [CampoController::class, 'campos'])->name('campo.campos')->middleware('can:' . Permisos::CAMPO_PARCELA);
     Route::get('/campo/siembras', [CampoController::class, 'siembra'])->name('campo.siembra')->middleware('can:' . Permisos::CAMPO_SIEMBRA);
-    
+
     Route::get('/campania/costos/{campaniaId?}', [CampaniaController::class, 'costos'])
-    ->name('campania.costos')
-    ->middleware('can:' . Permisos::CAMPAÑA_COSTOS);
+        ->name('campania.costos')
+        ->middleware('can:' . Permisos::CAMPAÑA_COSTOS);
 
     Route::get('/campania/calendario', function () {
         return view('livewire.gestion-campania.campania-calendario-indice');
@@ -113,7 +113,7 @@ Route::middleware([
     })->name('consolidado.riego')->middleware('can:' . Permisos::CAMPO_RIEGO_RESUMEN);
 
     //Planilla
-    
+
     //REPORTE
     Route::prefix('planilla')->group(function () {
         // Pantalla principal / dashboard
@@ -220,12 +220,14 @@ Route::middleware([
     //INSUMOS
     Route::get('/gestion_insumos/kardex', [GestionInsumosController::class, 'kardex'])->name('gestion_insumos.kardex')->middleware('can:' . Permisos::INSUMO_KARDEX);
     Route::get('/gestion_insumos/kardex/crear', [InsumoKardexCrearComponent::class])->name('gestion_insumos.kardex.crear')->middleware('can:' . Permisos::INSUMO_KARDEX);
-    Route::get('/gestion_insumos/kardex/detalle/{insumoKardexId}', [GestionInsumosController::class, 'kardexDetalle'])->name('gestion_insumos.kardex.detalle')->middleware('can:' . Permisos::INSUMO_KARDEX);
+
     Route::get('/gestion_insumos/kardex/reportes', [GestionInsumosController::class, 'kardexReportes'])->name('gestion_insumos.kardex.reportes')->middleware('can:' . Permisos::INSUMO_KARDEX_REPORTE);
     Route::get('/gestion_insumos/kardex/reporte/{insumoKardexReporteId}', [GestionInsumosController::class, 'kardexReporte'])->name('gestion_insumos.kardex.reporte')->middleware('can:' . Permisos::INSUMO_KARDEX_REPORTE_VER);
     Route::get('/gestion_insumos/kardex/asignacion/{productoId}/{anio}', [GestionInsumosController::class, 'kardexAsignacion'])->name('gestion_insumos.kardex_asignacion')->middleware('can:' . Permisos::INSUMO_KARDEX_ASIGNAR_MOVIMIENTOS);
-    
-    
+
+    Route::prefix('kardex')->group(function () {
+        Route::get('/detalle/{insumoKardexId}', [GestionInsumosController::class, 'kardexDetalle'])->name('gestion_insumos.kardex.detalle')->middleware('can:' . Permisos::INSUMO_KARDEX);
+    });
     //GASTOS
     //Route::get('/contabilidad/gasto/general', [GastoController::class, 'general'])->name('gastos.general');
     Route::get('/contabilidad/costo_mensual', [GastoController::class, 'costo_mensual'])->name('contabilidad.costo_mensual')->middleware('can:' . Permisos::CONTABILIDAD_COSTO_MENSUAL);

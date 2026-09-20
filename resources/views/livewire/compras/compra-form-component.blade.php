@@ -221,7 +221,7 @@
                 {{ __('Cancelar') }}
             </x-button>
 
-            <x-button variant="primary" wire:click="guardar" wire:loading.attr="disabled">
+            <x-button variant="primary" wire:click="guardarCompraInsumo" wire:loading.attr="disabled">
                 <i class="fa fa-save"></i> {{ $modo === 'editar' ? __('Actualizar Compra') : __('Registrar Compra') }}
             </x-button>
         </x-slot>

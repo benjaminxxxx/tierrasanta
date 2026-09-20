@@ -64,85 +64,6 @@ class AlmacenServicio
     {
         $resultados = ['creados' => 0, 'actualizados' => 0, 'eliminados' => 0];
 
-        // ── PRE-VALIDACIÓN DE STOCK (fuera del transaction) ──────────────
-        // Ya no interesa si existe un InsKardex generado para el producto/año/tipo;
-        // el saldo real vive en stocks_productos (tiempo real, vía StockService).
-        /*
-        foreach ($filas as $fila) {
-            $tipoKardex = $fila['tipo_kardex'] ?? null;
-            $productoId = $fila['producto_id'] ?? null;
-            $cantidad = (float) ($fila['cantidad'] ?? 0);
-
-            if (!$tipoKardex || !$productoId || $cantidad <= 0) {
-                continue;
-            }
-
-            $stockDisponible = StockService::disponible($productoId, $almacenId, $tipoKardex);
-
-            $id = $fila['id'] ?? null;
-            if ($id) {
-                $salidaAnterior = AlmacenProductoSalida::find($id);
-                if ($salidaAnterior) {
-                    $mismoProducto = (int) $salidaAnterior->producto_id === (int) $productoId;
-                    $mismoTipo = $salidaAnterior->tipo_kardex === $tipoKardex;
-                    if ($mismoProducto && $mismoTipo) {
-                        // Esta cantidad se revierte antes de recrear el movimiento,
-                        // así que cuenta como disponible para la nueva validación.
-                        $stockDisponible += (float) $salidaAnterior->cantidad;
-                    }
-                }
-            }
-
-            if ($stockDisponible < $cantidad) {
-                $nombreProducto = Producto::find($productoId)?->nombre_comercial ?? "ID {$productoId}";
-                throw new Exception(
-                    "Stock {$tipoKardex} insuficiente para \"{$nombreProducto}\". "
-                    . "Disponible: {$stockDisponible}, solicitado: {$cantidad}."
-                );
-            }
-        }*/
-        foreach ($filas as $fila) {
-            $tipoKardex = $fila['tipo_kardex'] ?? null;
-            $productoId = $fila['producto_id'] ?? null;
-            $cantidad = (float) ($fila['cantidad'] ?? 0);
-            $id = $fila['id'] ?? null;
-
-            if (!$tipoKardex || !$productoId || $cantidad <= 0) {
-                continue;
-            }
-
-            $salidaAnterior = $id ? AlmacenProductoSalida::find($id) : null;
-
-            if ($salidaAnterior) {
-                $mismoProducto = (int) $salidaAnterior->producto_id === (int) $productoId;
-                $mismoTipo = $salidaAnterior->tipo_kardex === $tipoKardex;
-                $mismaCantidad = abs((float) $salidaAnterior->cantidad - $cantidad) < 0.0001;
-
-                // Solo cambian campos informativos (fecha, campo, uso, etc.) — no toca stock.
-                if ($mismoProducto && $mismoTipo && $mismaCantidad) {
-                    continue;
-                }
-            }
-
-            $stockDisponible = StockService::disponible($productoId, $almacenId, $tipoKardex);
-
-            if ($salidaAnterior) {
-                $mismoProducto = (int) $salidaAnterior->producto_id === (int) $productoId;
-                $mismoTipo = $salidaAnterior->tipo_kardex === $tipoKardex;
-                if ($mismoProducto && $mismoTipo) {
-                    $stockDisponible += (float) $salidaAnterior->cantidad;
-                }
-            }
-
-            if ($stockDisponible < $cantidad) {
-                $nombreProducto = Producto::find($productoId)?->nombre_comercial ?? "ID {$productoId}";
-                throw new Exception(
-                    "Stock {$tipoKardex} insuficiente para \"{$nombreProducto}\". "
-                    . "Disponible: {$stockDisponible}, solicitado: {$cantidad}."
-                );
-            }
-        }
-
         DB::transaction(function () use ($filas, $tipo, $almacenId, &$resultados) {
             $usuarioId = Auth::id();
 
@@ -150,7 +71,7 @@ class AlmacenServicio
                 $id = $fila['id'] ?? null;
                 $esCombustible = $tipo === 'combustible';
 
-                $camposBase = ['fecha_reporte', 'producto_id', 'cantidad', 'tipo_kardex']; // tipo_kardex ahora obligatorio aquí también
+                $camposBase = ['fecha_reporte', 'producto_id', 'cantidad', 'tipo_kardex'];
                 $campoDestino = $esCombustible ? 'maquinaria_id' : 'campo_nombre';
 
                 $camposParaVacioCheck = array_merge($camposBase, [$campoDestino]);
@@ -161,7 +82,6 @@ class AlmacenServicio
                     if ($id) {
                         $salida = AlmacenProductoSalida::findOrFail($id);
 
-                        // Revertir el movimiento ANTES de borrar el registro
                         $this->stockService->revertirMovimientosDeOrigen(AlmacenProductoSalida::class, $salida->id);
 
                         AuditoriaServicio::registrar(
@@ -209,7 +129,7 @@ class AlmacenServicio
                     'cantidad' => $fila['cantidad'],
                     'campo_nombre' => $esCombustible ? '' : ($fila['campo_nombre'] ?? ''),
                     'maquinaria_id' => $esCombustible ? ($fila['maquinaria_id'] ?? null) : null,
-                    'uso_id' => $esCombustible ? null : ($fila['uso_id'] ?? null), // NUEVO — faltaba
+                    'uso_id' => $esCombustible ? null : ($fila['uso_id'] ?? null),
                     'costo_por_kg' => $fila['costo_por_kg'] ?? null,
                     'total_costo' => $fila['total_costo'] ?? null,
                     'indice' => $fila['indice'] ?? null,
@@ -217,36 +137,17 @@ class AlmacenServicio
                 ];
 
                 if ($id) {
-                    /*
-                    $salida = AlmacenProductoSalida::findOrFail($id);
-                    $antes = $salida->toArray();
-
-                    // Revertir usando los valores VIEJOS (los que tiene el movimiento
-                    // guardado), antes de sobreescribir el registro con los nuevos.
-                    $this->stockService->revertirMovimientosDeOrigen(AlmacenProductoSalida::class, $salida->id);
-
-                    $salida->update(array_merge($datos, ['editado_por' => $usuarioId]));
-
-                    AuditoriaServicio::registrar(
-                        modelo: AlmacenProductoSalida::class,
-                        modeloId: $salida->id,
-                        accion: 'editar',
-                        antes: $antes,
-                        despues: $salida->fresh()->toArray(),
-                        camposIgnorados: self::CAMPOS_IGNORADOS,
-                    );
-
-                    $resultados['actualizados']++;*/
                     $salida = AlmacenProductoSalida::findOrFail($id);
                     $antes = $salida->toArray();
 
                     $cambiaProducto = (int) $salida->producto_id !== (int) $fila['producto_id'];
                     $cambiaTipoKardex = $salida->tipo_kardex !== $fila['tipo_kardex'];
                     $cambiaCantidad = abs((float) $salida->cantidad - (float) $fila['cantidad']) > 0.0001;
-                    $afectaStock = $cambiaProducto || $cambiaTipoKardex || $cambiaCantidad;
+                    $cambiaFecha = (string) $salida->fecha_reporte !== (string) $fila['fecha_reporte'];
+                    $afectaStock = $cambiaProducto || $cambiaTipoKardex || $cambiaCantidad || $cambiaFecha;
 
                     if (!$afectaStock) {
-                        // Solo campos informativos: update directo, sin tocar stock ni movimientos.
+                        // Solo campos informativos (campo, uso, maquinaria, costo...): update directo.
                         $salida->update(array_merge($datos, ['editado_por' => $usuarioId]));
 
                         AuditoriaServicio::registrar(
@@ -259,18 +160,15 @@ class AlmacenServicio
                         );
 
                         $resultados['actualizados']++;
-                        continue; // <- no pasa por registrarMovimiento() de más abajo
+                        continue;
                     }
 
-                    try {
-                        $this->stockService->revertirMovimientosDeOrigen(AlmacenProductoSalida::class, $salida->id);
-                    } catch (\RuntimeException $e) {
-                        throw new Exception(
-                            "No se pudo modificar el registro ID {$id} porque no se puede revertir su movimiento de stock actual "
-                            . "({$e->getMessage()}). Si el registro ya no debe existir, elimínelo directamente en vez de editarlo."
-                        );
-                    }
-
+                    // Cambió producto, tipo_kardex, cantidad o fecha: revertir el movimiento
+                    // viejo (con su propio producto/tipo/fecha originales) y luego registrar
+                    // uno nuevo con los valores actuales. No hace falta calcular deltas a mano:
+                    // revertir ya sabe a qué producto/tipo/año devolverle, y registrar ya sabe
+                    // a cuál descontarle — aunque sean distintos entre sí.
+                    $this->stockService->revertirMovimientosDeOrigen(AlmacenProductoSalida::class, $salida->id);
                     $salida->update(array_merge($datos, ['editado_por' => $usuarioId]));
 
                     AuditoriaServicio::registrar(
@@ -284,7 +182,6 @@ class AlmacenServicio
 
                     $resultados['actualizados']++;
                 } else {
-
                     $salida = AlmacenProductoSalida::create(
                         array_merge($datos, ['creado_por' => $usuarioId])
                     );
@@ -300,7 +197,9 @@ class AlmacenServicio
                     $resultados['creados']++;
                 }
 
-                // Registrar el movimiento con los valores YA guardados (nuevos)
+                // Sin validar disponibilidad: registrarMovimiento decide solo si esta
+                // fecha es del año vigente y, de serlo, descuenta sin bloquear aunque
+                // quede negativo.
                 $this->stockService->registrarMovimiento(
                     'salida',
                     $salida->producto_id,

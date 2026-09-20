@@ -210,7 +210,7 @@ class CompraFormComponent extends Component
         $this->productoSeleccionadoId = null;
     }
 
-    public function guardar(CompraService $servicio): void
+    public function guardarCompraInsumo(CompraService $servicio): void
     {
         $this->validate([
             'proveedorId' => ['required', 'exists:proveedores,id'],

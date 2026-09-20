@@ -1,39 +1,3 @@
-{{--
-    Componente: x-kardex-proceso
-    Props:
-      - pasoActivo          (int)         : 1 | 2 | 3
-      - linkEntradasYSalidas(string|null) : URL al módulo de asignaciones
-      - linkResumenBlanco   (string|null) : URL al resumen blanco
-      - linkResumenNegro    (string|null) : URL al resumen negro
-      - accionCrearKardex   (string|null) : nombre del método Livewire para crear kardex
-                                            ej: 'nuevoInsumoKardex' — se dispara con dispatch
-      - accionGenerarResumen(string|null) : nombre del método Livewire para regenerar resumen
-                                            ej: 'generarDetalleKardexInsumo'
-
-    Uso desde módulo de Kardex principal (paso 1 activo, con wire:click):
-      <x-kardex-proceso
-          :pasoActivo="1"
-          accionCrearKardex="nuevoInsumoKardex"
-          linkEntradasYSalidas="{{ route('gestion_insumos.kardex_asignacion', $kardex->id) }}"
-          linkResumenBlanco="{{ route('gestion_insumos.kardex.detalle', [$kardex->id, 'blanco']) }}"
-          linkResumenNegro="{{ route('gestion_insumos.kardex.detalle', [$kardex->id, 'negro']) }}"
-      />
-
-    Uso desde módulo de asignaciones (paso 2 activo, con wire:click para regenerar):
-      <x-kardex-proceso
-          :pasoActivo="2"
-          linkEntradasYSalidas="{{ route('gestion_insumos.kardex_asignacion', $kardex->id) }}"
-          linkResumenBlanco="{{ route('gestion_insumos.kardex.detalle', [$kardex->id, 'blanco']) }}"
-          linkResumenNegro="{{ route('gestion_insumos.kardex.detalle', [$kardex->id, 'negro']) }}"
-          accionGenerarResumen="generarDetalleKardexInsumo"
-      />
-
-    NOTA sobre wire:click dinámico:
-      Los wire:click NO pueden ser dinámicos en Blade (Livewire los compila en build time).
-      La solución es pasar el nombre de la función y usar @this.call() desde Alpine,
-      o bien usar wire:click con @if según el contexto — aquí usamos Alpine @click con $wire.call()
-      para que funcione independientemente del componente Livewire que lo contenga.
---}}
 
 @props([
     'pasoActivo' => 1,

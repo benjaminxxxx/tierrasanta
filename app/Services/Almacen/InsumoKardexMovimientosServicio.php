@@ -13,6 +13,7 @@ use App\Models\Producto;
 use DB;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
@@ -43,22 +44,11 @@ class InsumoKardexMovimientosServicio
         $this->inicializarAcumuladores($insumoKardex);
         $movimientosOrdenados = $this->obtenerMovimientosBase($insumoKardex);
 
-        if ($movimientosOrdenados->isEmpty()) {
-            throw new Exception("No hay movimientos de Compra ni Salida para generar el Kardex.");
-        }
-
         DB::beginTransaction();
         try {
             InsKardexMovimiento::where('kardex_id', $insumoKardex->id)->delete();
             $this->crearMovimientoSaldoInicial($insumoKardex);
-            /*
-                        foreach ($movimientosOrdenados as $movimientoBase) {
-                            if ($movimientoBase instanceof CompraProducto) {
-                                $this->procesarEntrada($insumoKardex, $movimientoBase);
-                            } elseif ($movimientoBase instanceof AlmacenProductoSalida) {
-                                $this->procesarSalida($insumoKardex, $movimientoBase);
-                            }
-                        }*/
+
             foreach ($movimientosOrdenados as $movimiento) {
                 if ($movimiento->direccion === 'entrada') {
                     $this->procesarEntrada($insumoKardex, $movimiento);
@@ -381,18 +371,21 @@ class InsumoKardexMovimientosServicio
             'movimiento_id' => $movimiento->id,
         ]);
     }
-*/
+*//*
     private function procesarEntrada(InsKardex $kardex, MovimientoStock $movimiento): void
     {
-        $compra = $movimiento->origen; // CompraProducto (o null si el origen ya no existe)
+        $detalle = $movimiento->origen; // CompraProducto (o null si el origen ya no existe)
 
         $cantidad = (float) $movimiento->cantidad;
         if ($cantidad <= 0)
             return;
 
-        $costoTotal = (float) ($compra->total ?? 0);
-        $costoUnitario = $cantidad > 0 ? $costoTotal / $cantidad : 0.0;
+        [$costoTotal, $costoUnitario, $tipoDocumento, $serie, $numero, $tipoOperacion] = $this->resolverDatosEntrada($detalle, $cantidad, $movimiento);
 
+
+        $costoTotal = (float) ($compra->total ?? 0); //ahora es total_linea por eso da 0,
+        $costoUnitario = $cantidad > 0 ? $costoTotal / $cantidad : 0.0;
+        dd($costoUnitario, $movimiento, $compra);
         $this->stockAcumulado += $cantidad;
         $this->costoTotalAcumulado += $costoTotal;
 
@@ -413,7 +406,61 @@ class InsumoKardexMovimientosServicio
             'entrada_costo_total' => round($costoTotal, 13),
         ]);
     }
+        */
+    private function procesarEntrada(InsKardex $kardex, MovimientoStock $movimiento): void
+    {
+        $detalle = $movimiento->origen; // CompraDetalle (o null si es un ajuste sin origen)
 
+        $cantidad = (float) $movimiento->cantidad;
+        if ($cantidad <= 0)
+            return;
+
+        [$costoTotal, $costoUnitario, $tipoDocumento, $serie, $numero, $tipoOperacion] = $this->resolverDatosEntrada($detalle, $cantidad, $movimiento);
+
+        $this->stockAcumulado += $cantidad;
+        $this->costoTotalAcumulado += $costoTotal;
+
+        if ($kardex->metodo_valuacion === self::METODO_PEPS) {
+            $this->capasPEPS[] = ['stock' => $cantidad, 'costo_unitario' => $costoUnitario];
+        }
+
+        InsKardexMovimiento::create([
+            'kardex_id' => $kardex->id,
+            'fecha' => $movimiento->fecha_movimiento,
+            'tipo_mov' => 'entrada',
+            'tipo_documento' => $tipoDocumento,
+            'serie' => $serie,
+            'numero' => $numero,
+            'tipo_operacion' => $tipoOperacion,
+            'entrada_cantidad' => round($cantidad, 3),
+            'entrada_costo_unitario' => round($costoUnitario, 13),
+            'entrada_costo_total' => round($costoTotal, 13),
+            'stock_movimiento_id' => $movimiento->id, // confirma que esto se está llenando (lo mencionamos antes)
+        ]);
+    }
+    private function resolverDatosEntrada(?Model $detalle, float $cantidad, MovimientoStock $movimiento): array
+    {
+        if ($detalle instanceof \App\Models\CompraDetalle) {
+            $compra = $detalle->compra;
+            $costoTotal = (float) $detalle->costo_total_kardex; // monto real, no derivado
+            $costoUnitario = $cantidad > 0 ? $costoTotal / $cantidad : (float) $detalle->costo_unitario_base;
+
+            return [
+                $costoTotal,
+                $costoUnitario,
+                $compra?->tipo_comprobante_codigo,
+                $compra?->serie,
+                $compra?->numero,
+                2,
+            ];
+        }
+
+        if ($detalle instanceof AjusteInventario) {
+            return [(float) $detalle->costo_total, (float) $detalle->costo_unitario, null, null, null, 16];
+        }
+
+        throw new Exception("Movimiento de entrada #{$movimiento->id} sin origen de costo reconocido (tipo: " . get_class($detalle ?? $movimiento) . ").");
+    }
     private function procesarSalida(InsKardex $kardex, MovimientoStock $movimiento): void
     {
         $salida = $movimiento->origen; // AlmacenProductoSalida (o null)
@@ -483,19 +530,20 @@ class InsumoKardexMovimientosServicio
         foreach ($movimientos as $mov) {
 
             if ($mov->tipo_mov === 'entrada') {
-
                 $stock += (float) $mov->entrada_cantidad;
                 $costoTotal += (float) $mov->entrada_costo_total;
-
             } elseif ($mov->tipo_mov === 'salida') {
-
                 $stock -= (float) $mov->salida_cantidad;
                 $costoTotal -= (float) $mov->salida_costo_total;
-
             }
 
-            // Costo unitario promedio del saldo actual
-            $costoUnitario = $stock > 0 ? $costoTotal / $stock : 0;
+            // Snap a cero por residuo de coma flotante — mismo criterio que procesarSalida().
+            if (abs($stock) < self::EPSILON) {
+                $stock = 0.0;
+                $costoTotal = 0.0;
+            }
+
+            $costoUnitario = $stock > self::EPSILON ? $costoTotal / $stock : 0.0;
 
             $mov->update([
                 'saldo_cantidad' => round($stock, 3),
@@ -504,8 +552,6 @@ class InsumoKardexMovimientosServicio
             ]);
         }
     }
-
-
     // --------------------------------------------------------------------------
     // Lógica de Valuación (Cálculos de Costo)
     // --------------------------------------------------------------------------

@@ -2,12 +2,14 @@
 // app/Services/StockService.php
 namespace App\Services\Almacen;
 
+use App\Models\InsKardex;
 use App\Models\InsKardexMovimiento;
 use App\Models\StockProducto;
 use App\Models\MovimientoStock;
 use App\Models\Almacen;
 use App\Models\TransferenciaAlmacen;
 use App\Services\AlmacenService;
+use App\Support\DateHelper;
 use Illuminate\Support\Facades\DB;
 
 class StockService
@@ -16,6 +18,7 @@ class StockService
      * Registra un movimiento real (entrada o salida) Y actualiza
      * el saldo materializado en el mismo paso, atómicamente.
      */
+    /*
     public function registrarMovimiento(
         string $direccion,
         int $productoId,
@@ -27,7 +30,11 @@ class StockService
         ?int $origenId = null,
         array $extra = []
     ): MovimientoStock {
-        return DB::transaction(function () use ($direccion, $productoId, $almacenId, $cantidad, $fechaMovimiento, $tipoKardex, $origenType, $origenId, $extra) {
+
+        $vigente = DateHelper::esPeriodoVigente($fechaMovimiento);
+
+
+        return DB::transaction(function () use ($direccion, $productoId, $almacenId, $cantidad, $fechaMovimiento, $tipoKardex, $origenType, $origenId, $extra,$vigente) {
 
             // Validación preventiva en salidas manuales
             if ($direccion === 'salida') {
@@ -55,6 +62,78 @@ class StockService
 
             $delta = $direccion === 'entrada' ? $cantidad : -$cantidad;
             $stock->increment('cantidad', $delta);
+
+            return $movimiento;
+        });
+    }*/
+    public function registrarMovimiento(
+        string $direccion,
+        int $productoId,
+        int $almacenId,
+        float $cantidad,
+        string $fechaMovimiento,
+        string $tipoKardex,
+        ?string $origenType = null,
+        ?int $origenId = null,
+        array $extra = []
+    ): MovimientoStock {
+        $vigente = DateHelper::esPeriodoVigente($fechaMovimiento);
+
+        return DB::transaction(function () use ($direccion, $productoId, $almacenId, $cantidad, $fechaMovimiento, $tipoKardex, $origenType, $origenId, $extra, $vigente) {
+
+            $stock = StockProducto::firstOrCreate(
+                ['producto_id' => $productoId, 'almacen_id' => $almacenId, 'tipo_kardex' => $tipoKardex],
+                ['cantidad' => 0]
+            );
+            $stock = StockProducto::where('id', $stock->id)->lockForUpdate()->first();
+
+            if ($vigente) {
+                $anio = (int) date('Y', strtotime($fechaMovimiento));
+
+                // Único query "extra" real, y solo corre para movimientos vigentes —
+                // rango de fecha (sargable), no whereYear() (eso sí sería pesado sin índice funcional).
+                $esPrimerMovimientoDelAnio = !MovimientoStock::where('producto_id', $productoId)
+                    ->where('tipo_kardex', $tipoKardex)
+                    ->whereBetween('fecha_movimiento', ["{$anio}-01-01", "{$anio}-12-31"])
+                    ->exists();
+
+                if ($esPrimerMovimientoDelAnio) {
+                    $existeKardexDelAnio = InsKardex::where('producto_id', $productoId)
+                        ->where('tipo', $tipoKardex)
+                        ->where('anio', $anio)
+                        ->exists();
+
+                    if (!$existeKardexDelAnio) {
+                        // Año nuevo sin apertura formal: no se hereda en silencio el saldo
+                        // del año anterior (pudo quedar mal por no haberse cerrado). Se
+                        // resetea a 0 para que cualquier desfase se vea como negativo,
+                        // en vez de arrastrar un número que nadie confirmó.
+                        $stock->update(['cantidad' => 0]);
+                    }
+                }
+            }
+
+            // Sin validación bloqueante en ningún caso — vigente o histórico.
+            // El stock negativo es la señal, no un error a impedir.
+
+            $movimiento = MovimientoStock::create(array_merge([
+                'direccion' => $direccion,
+                'producto_id' => $productoId,
+                'almacen_id' => $almacenId,
+                'cantidad' => $cantidad,
+                'fecha_movimiento' => $fechaMovimiento,
+                'tipo_kardex' => $tipoKardex,
+                'origen_type' => $origenType,
+                'origen_id' => $origenId,
+                //'afecta_stock_vigente' => $vigente,
+            ], $extra));
+
+            if ($vigente) {
+                $delta = $direccion === 'entrada' ? $cantidad : -$cantidad;
+                $stock->increment('cantidad', $delta);
+            }
+            // si no es vigente: el movimiento queda registrado para que el Kardex de
+            // ESE año lo recoja al generarse, y StockProducto de hoy no se toca.
 
             return $movimiento;
         });
@@ -125,11 +204,7 @@ class StockService
     }
     public static function obtenerStockPorTipo(int $productoId, ?int $almacenId = null): array
     {
-        // Si no se proporciona un almacén, se obtiene el principal desde el servicio
-        if (is_null($almacenId)) {
-            $almacenService = app(AlmacenService::class);
-            $almacenId = $almacenService->obtenerAlmacenPrincipal()->id;
-        }
+        $almacenId = AlmacenService::obtenerAlmacenPrincipal()->id;
 
         $filas = StockProducto::where('producto_id', $productoId)
             ->where('almacen_id', $almacenId)
@@ -172,7 +247,9 @@ class StockService
                 ->when($productoId, fn($q) => $q->where('producto_id', $productoId))
                 ->get();
 
+            //dd( $movimientos);
             foreach ($movimientos as $mov) {
+              
                 // Validar usando el modelo InsKardexMovimiento y el nuevo campo stock_movimiento_id
                 $tieneKardex = InsKardexMovimiento::where('stock_movimiento_id', $mov->id)
                     ->where('estado', 'activo') // Asegura verificar que el registro no esté anulado
@@ -185,21 +262,16 @@ class StockService
                     );
                 }
 
-                $stock = StockProducto::firstOrCreate(
-                    ['producto_id' => $mov->producto_id, 'almacen_id' => $mov->almacen_id, 'tipo_kardex' => $mov->tipo_kardex],
-                    ['cantidad' => 0]
-                );
-
-                $delta = $mov->direccion === 'entrada' ? -$mov->cantidad : $mov->cantidad;
-                // PROTECCIÓN CONTRA STOCK NEGATIVO
-                if ($delta < 0 && ($stock->cantidad + $delta) < 0) {
-                    throw new \RuntimeException(
-                        "No se puede revertir el registro #{$origenId}. " .
-                        "El stock resultante para el producto ID {$mov->producto_id} " .
-                        "sería negativo (" . ($stock->cantidad + $delta) . " unidades)."
+                if (DateHelper::esPeriodoVigente($mov->fecha_movimiento)) {
+                    $stock = StockProducto::firstOrCreate(
+                        ['producto_id' => $mov->producto_id, 'almacen_id' => $mov->almacen_id, 'tipo_kardex' => $mov->tipo_kardex],
+                        ['cantidad' => 0]
                     );
+                    $stock = StockProducto::where('id', $stock->id)->lockForUpdate()->first();
+
+                    $delta = $mov->direccion === 'entrada' ? -$mov->cantidad : $mov->cantidad;
+                    $stock->increment('cantidad', $delta);
                 }
-                $stock->increment('cantidad', $delta);
 
                 $mov->delete();
             }

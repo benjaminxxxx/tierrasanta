@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="{{ asset('css/fontawesome.min.css') }}" />
     {{-- https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js --}}
     <script src="{{ asset('js/flatpickr/es.js') }}"></script>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
     @include('comun.handsontable_deprecado')

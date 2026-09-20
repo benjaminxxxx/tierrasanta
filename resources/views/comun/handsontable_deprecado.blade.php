@@ -2,7 +2,8 @@
     // Lista de nombres de rutas de Laravel que ya están actualizadas a v18
     $rutasActualizadas = [
         'gestion_cuadrilleros.bonificaciones',
-        'gestion_cuadrilleros.reporte-semanal.index'
+        'gestion_cuadrilleros.reporte-semanal.index',
+        'gestion_insumos.kardex.detalle'
     ];
 
     // Condición: se activa si la ruta actual está en la lista o si se pasa $useV18 = true explícitamente desde la vista

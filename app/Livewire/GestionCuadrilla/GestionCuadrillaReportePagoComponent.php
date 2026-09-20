@@ -5,13 +5,14 @@ namespace App\Livewire\GestionCuadrilla;
 use App\Models\CuadResumenPorTramo;
 use App\Services\Cuadrilla\TramoLaboral\ListaAcumuladaTramos;
 use App\Services\Cuadrilla\TramoLaboral\ResumenTramoServicio;
+use App\Traits\HandlesAlerts;
 use Illuminate\Support\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
 class GestionCuadrillaReportePagoComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, HandlesAlerts;
 
     public $mostrarFormularioReportePago = false;
     public $tituloReporte = '';
@@ -100,11 +101,12 @@ class GestionCuadrillaReportePagoComponent extends Component
     {
         try {
             $resumenTramoServicio = new ResumenTramoServicio();
+            dd($this->resumenPorTramo,$this->listaPago,$this->periodo);
             $resumenTramoServicio->procesarPago($this->resumenPorTramo,$this->listaPago,$this->periodo);
             $this->obtenerListaResumen();
             $this->alert('success', 'Reporte generado correctamente.');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

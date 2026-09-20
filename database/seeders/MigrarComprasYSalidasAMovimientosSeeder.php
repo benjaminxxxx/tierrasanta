@@ -43,13 +43,19 @@ class MigrarComprasYSalidasAMovimientosSeeder extends Seeder
                         continue;
                     }
 
+                    if (is_null($compra->tipo_kardex)) {
+                        $compra->update([
+                            'tipo_kardex' => 'negro',
+                        ]);
+                    }
+
                     MovimientoStock::create([
                         'direccion' => 'entrada',
                         'producto_id' => $detalle->producto_id,
                         'almacen_id' => $compra->almacen_id,
                         'cantidad' => $detalle->cantidad_base,
                         'fecha_movimiento' => $compra->fecha_emision,
-                        'tipo_kardex' => $compra->tipo_kardex,
+                        'tipo_kardex' => $compra->tipo_kardex ?? 'negro',
                         'origen_type' => Compra::class,
                         'origen_id' => $detalle->id,
                     ]);
@@ -78,13 +84,19 @@ class MigrarComprasYSalidasAMovimientosSeeder extends Seeder
                     continue;
                 }
 
+                if (is_null($salida->tipo_kardex)) {
+                    $salida->update([
+                        'tipo_kardex' => 'negro',
+                    ]);
+                }
+
                 MovimientoStock::create([
                     'direccion' => 'salida',
                     'producto_id' => $salida->producto_id,
                     'almacen_id' => $almacenId,
                     'cantidad' => $salida->cantidad,
                     'fecha_movimiento' => $salida->fecha_reporte,
-                    'tipo_kardex' => $salida->tipo_kardex,
+                    'tipo_kardex' => $salida->tipo_kardex ?? 'negro',
                     'origen_type' => AlmacenProductoSalida::class,
                     'origen_id' => $salida->id,
                 ]);

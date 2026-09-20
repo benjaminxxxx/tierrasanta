@@ -10,6 +10,7 @@ use App\Models\InsUso;
 use App\Models\Maquinaria;
 use App\Models\Producto;
 use App\Services\Almacen\StockService;
+use App\Services\AlmacenService;
 use App\Services\AlmacenServicio;
 use DB;
 use Exception;
@@ -189,10 +190,8 @@ class AlmacenSalidaFormularioComponent extends Component
     public function guardarSalida(array $data): void
     {
         try {
-            $almacen = Almacen::first();
-            if (!$almacen) {
-                throw new Exception('No hay almacén configurado');
-            }
+            $almacen = AlmacenService::obtenerAlmacenPrincipal();
+            
             $resultados = app(AlmacenServicio::class)->guardarSalidaMasiva($data, $this->tipo, $almacen->id);
 
             $partes = [];

@@ -13,7 +13,7 @@ return new class extends Migration
     {
        Schema::create('compras', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('proveedor_id')->constrained('proveedores');
+            $table->foreignId('proveedor_id')->nullable()->constrained('proveedores');
             $table->foreignId('almacen_id')->constrained('almacenes');
 
             $table->enum('moneda', ['PEN', 'USD'])->default('PEN');
