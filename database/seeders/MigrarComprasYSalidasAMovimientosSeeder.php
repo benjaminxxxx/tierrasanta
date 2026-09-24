@@ -56,7 +56,7 @@ class MigrarComprasYSalidasAMovimientosSeeder extends Seeder
                         'cantidad' => $detalle->cantidad_base,
                         'fecha_movimiento' => $compra->fecha_emision,
                         'tipo_kardex' => $compra->tipo_kardex ?? 'negro',
-                        'origen_type' => Compra::class,
+                        'origen_type' => CompraDetalle::class,
                         'origen_id' => $detalle->id,
                     ]);
                 }
