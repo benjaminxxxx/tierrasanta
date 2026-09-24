@@ -12,7 +12,7 @@ class ListaAcumuladaTramos
     public function obtenerPagoCuadrillerosPorTramo($resumenTramo, $listaPago)
     {
         $tramos = $this->obtenerTramosAcumulados($resumenTramo);
-      
+        
         $resultado = [];
 
         foreach ($tramos as $tramo) {
@@ -54,17 +54,17 @@ class ListaAcumuladaTramos
     {
         // 1. Obtener todos los tramos acumulados (recursivamente hacia atrás)
         $tramos = $this->obtenerTramosAcumulados($resumenTramo);
-       
+    // dd($tramos);
         // 2. Unificar cuadrilleros
         $listaCuadrilleros = $tramos
             ->flatMap(fn($tramo) => $tramo->cuadrilleros())
             ->unique('id')
             ->sortBy('nombres')
             ->keyBy('id');
-        //Too few arguments to function Illuminate\Support\Collection::get(), 0 passed in C:\laragon\www\tierrasanta\app\Services\Cuadrilla\TramoLaboral\ListaAcumuladaTramos.php on line 19 and at least 1 expected
-
+        $data = $this->construirListaPagos($listaCuadrilleros, $resumenTramo);
+        //dd($data);
         // 3. Construir la lista de pagos (tu lógica de obtenerListaResumen)
-        return $this->construirListaPagos($listaCuadrilleros, $resumenTramo);
+        return $data;
     }
     private function obtenerTramosAcumulados(CuadResumenPorTramo $tramo)
     {
@@ -80,8 +80,9 @@ class ListaAcumuladaTramos
 
             $actual = CuadResumenPorTramo::where('tramo_id', $actual->tramo_acumulado_id)
                 ->where('grupo_codigo', $actual->grupo_codigo)->first();
-           
+
         }
+        //dd($tramos);
         return $tramos->sortBy('fecha_inicio')->values();
     }
     private function construirListaPagos($listaCuadrilleros, CuadResumenPorTramo $resumenTramo): array
@@ -153,6 +154,7 @@ class ListaAcumuladaTramos
                     $costoDia = $registro->costo_dia ?? null;
                     $totalBono = $registro->total_bono ?? 0;
                     $data[$fecha] = [
+                        'id_registro_diario' => $registro->id ?? null,
                         'costo_dia' => $costoDia,
                         'total_bono' => $totalBono,
                         'esta_pagado' => $registro->esta_pagado ?? false,
@@ -167,7 +169,9 @@ class ListaAcumuladaTramos
                 } else {
                     $costoDia = $registro->costo_dia ?? null;
                     $totalBono = $registro->total_bono ?? 0;
+                   
                     $data[$fecha] = [
+                        'id_registro_diario' => $registro->id ?? null,
                         'costo_dia' => $costoDia,
                         'total_bono' => $totalBono,
                         'esta_pagado' => $registro->esta_pagado ?? false,

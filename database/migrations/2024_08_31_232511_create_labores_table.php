@@ -25,6 +25,7 @@ return new class extends Migration {
             $table->foreignId('creado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('actualizado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('eliminado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->boolean('se_paga_con_jornal')->default(false)->comment('true = junto con el jornal, false = se acumula');
             $table->timestamps();
             $table->softDeletes();
         });

@@ -21,6 +21,7 @@ class InsumoKardexDetalleComponent extends Component
     public $tipoOpuesto = null;
     public array $datosImportacionKardex = [];
     public bool $mostrarModalImportacionKardex = false;
+    protected $listeners = ['kardexCerrado'=>'obtenerMovimientos'];
     public function mount($insumoKardexId)
     {
         $this->insumoKardex = InsKardex::with(['producto'])
@@ -39,6 +40,8 @@ class InsumoKardexDetalleComponent extends Component
     }
     public function obtenerMovimientos()
     {
+        $this->insumoKardex->refresh();
+        
         $this->movimientos = $this->insumoKardex
             ->movimientos()
             ->orderBy('fecha')
@@ -72,7 +75,7 @@ class InsumoKardexDetalleComponent extends Component
     public function updatedArchivoExcelKardex()
     {
         try {
-         
+
             $this->datosImportacionKardex = app(InsumoKardexImportarServicio::class)->previsualizar(
                 $this->archivoExcelKardex,
                 $this->insumoKardex
@@ -82,7 +85,8 @@ class InsumoKardexDetalleComponent extends Component
             $this->errorAlert($th);
         }
     }
-    public function generarDetalleKardexInsumo(){
+    public function generarDetalleKardexInsumo()
+    {
         try {
 
             app(InsumoKardexMovimientosServicio::class)->generarMovimientos($this->insumoKardex);
@@ -90,7 +94,7 @@ class InsumoKardexDetalleComponent extends Component
             $this->alert('success', 'Compras y Salidas cargados desde el kardex correctamente.');
         } catch (\Throwable $th) {
             $this->errorAlert($th);
-        } 
+        }
     }
     public function confirmarImportacionKardex()
     {

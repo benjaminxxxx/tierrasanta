@@ -87,6 +87,9 @@ class InsumoKardexImportarServicio
         $compraService = app(CompraService::class);
 
         return DB::transaction(function () use ($datosPropuestos, $insumoKardex, $compraService) {
+
+            $insumoKardex->movimientos()->delete();
+
             $this->eliminarSalidasExistentes($insumoKardex);
             $this->eliminarComprasExistentes($insumoKardex);
 
@@ -138,11 +141,11 @@ class InsumoKardexImportarServicio
 
         $creadas = 0;
         foreach ($grupo['lineas'] as $linea) {
-            
+
             $cantidad = (float) $linea['stock'];
             $total = (float) $linea['total'];
             $costoUnitario = $cantidad > 0 ? $total / $cantidad : 0;
-//dd($linea,$costoUnitario);
+            //dd($linea,$costoUnitario);
             // Misma lógica de costeo y de registro de stock que el módulo
             // principal de Compras — sin duplicar código.
             $compraService->agregarDetalle($compra, [

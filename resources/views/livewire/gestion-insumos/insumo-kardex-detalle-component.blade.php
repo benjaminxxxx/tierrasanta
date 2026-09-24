@@ -40,25 +40,39 @@
                                     </x-dropdown-link>
                                 @endif
 
+                                @if ($insumoKardex->estado == 'activo')
+                                    <div x-data="{ openFileDialog() { $refs.fileInputNegro.click() } }">
+                                        @can(\App\Constants\Permisos::INSUMO_KARDEX_IMPORTAR)
+                                            <x-dropdown-link @click="openFileDialog()">
+                                                Importar Kardex {{ $insumoKardex->tipo }}
+                                            </x-dropdown-link>
+                                        @endcan
 
-                                <div x-data="{ openFileDialog() { $refs.fileInputNegro.click() } }">
-                                    @can(\App\Constants\Permisos::INSUMO_KARDEX_IMPORTAR)
-                                        <x-dropdown-link @click="openFileDialog()">
-                                            Importar Kardex {{ $insumoKardex->tipo }}
+                                        <input type="file"
+                                            accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                                            x-ref="fileInputNegro" style="display: none;"
+                                            wire:model.live="archivoExcelKardex" />
+                                    </div>
+                                @endif
+                                @if ($insumoKardex->estado == 'activo')
+                                    <x-dropdown-link
+                                        @click="$wire.dispatch('cerrarKardexSeleccionado',{kardexId:{{ $insumoKardex->id }}})">
+                                        Cerrar Kardex
+                                    </x-dropdown-link>
+                                @endif
+                                @if ($insumoKardex->estado == 'cerrado')
+                                    <x-dropdown-link
+                                        @click="$wire.dispatch('reabrirKardexSeleccionado',{kardexId:{{ $insumoKardex->id }}})">
+                                        Reabrir Kardex
+                                    </x-dropdown-link>
+                                @endif
+                                @if ($insumoKardex->estado == 'activo')
+                                    @can(\App\Constants\Permisos::INSUMO_KARDEX_GENERAR_RESUMEN)
+                                        <x-dropdown-link wire:click="generarDetalleKardexInsumo">
+                                            Generar Resumen
                                         </x-dropdown-link>
                                     @endcan
-
-                                    <input type="file"
-                                        accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                                        x-ref="fileInputNegro" style="display: none;"
-                                        wire:model.live="archivoExcelKardex" />
-                                </div>
-
-                                @can(\App\Constants\Permisos::INSUMO_KARDEX_GENERAR_RESUMEN)
-                                    <x-dropdown-link wire:click="generarDetalleKardexInsumo">
-                                        Generar Resumen
-                                    </x-dropdown-link>
-                                @endcan
+                                @endif
                                 @if ($insumoKardex->file)
                                     <x-dropdown-link href="{{ Storage::disk('public')->url($insumoKardex->file) }}">
                                         Descargar Reporte
@@ -306,6 +320,8 @@
         </x-slot>
     </x-dialog-modal>
 
+    <livewire:gestion-insumos.cerrar-kardex-component />
+
     <x-loading wire:loading />
 </div>
 @script
@@ -330,7 +346,7 @@
             this.filteredCount = this.filteredData.length;
             this.initTable();
             Livewire.on('regenerarTablaKardex', ({ movimientos }) => {
-               
+
                 this.tableData = movimientos;
                 this.hot.loadData(this.tableData);
             });

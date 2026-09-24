@@ -1,4 +1,4 @@
-@props(['value', 'sticky' => false, 'sortable' => null, 'direction' => null, 'active' => false, 'level' => 2])
+@props(['value', 'sticky' => false, 'sortable' => null, 'direction' => null, 'active' => false, 'level' => 2, 'compact' => false])
 
 @php
     $level = (int) $level;
@@ -6,12 +6,14 @@
     $tone = $level === 1
         ? ['text' => 'text-zinc-700 dark:text-zinc-200 font-extrabold', 'bg' => 'bg-zinc-200 dark:bg-zinc-950']
         : ['text' => 'text-zinc-500 dark:text-zinc-400 font-bold', 'bg' => 'bg-zinc-100 dark:bg-zinc-900'];
+
+    $padding = $compact ? 'px-1.5 py-0.5' : 'px-3 py-2';
 @endphp
 
 <th scope="col"
     {{ $attributes->merge([
         'class' =>
-            'px-3 py-2 text-center align-middle ' . $tone['text'] . ' ' .
+            $padding . ' text-center align-middle ' . $tone['text'] . ' ' .
             ($sticky ? 'sticky left-0 z-20 ' . $tone['bg'] . ' ' : '') .
             ($sortable ? 'cursor-pointer hover:bg-zinc-300/60 dark:hover:bg-zinc-800 transition-colors' : ''),
     ]) }}

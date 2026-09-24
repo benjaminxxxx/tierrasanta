@@ -1,4 +1,4 @@
-@props(['value', 'level' => null])
+@props(['value', 'level' => null, 'compact' => false])
 
 @php
     $rowClasses = match ((int) $level) {

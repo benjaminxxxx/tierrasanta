@@ -5,7 +5,7 @@
     <x-dialog-modal wire:model.live="modalDistribucion" maxWidth="full">
         <x-slot name="title">
             Gestionar las Distribuciones
-           
+
             @if($salida)
                 <span class="ml-2 text-sm font-normal text-muted-foreground">
                     — {{ $salida->maquinaria->nombre }}
@@ -20,15 +20,68 @@
             <div wire:ignore class="w-full h-[300px] overflow-auto">
                 <div id="modalTableContainer"></div>
             </div>
-            <x-checkbox id="respetarSalida" label="Respetar salida (evitar que la distribución se asigne a otra salida)" wire:model="respetarSalida" class="mt-4" />
+
         </x-slot>
 
         <x-slot name="footer">
             <x-button variant="secondary" wire:click="$set('modalDistribucion', false)">
                 Cancelar
             </x-button>
-            <x-button class="ms-3" @click="guardarModal()">
+            <x-button class="ms-3" @click="enviarAGuardarDistribucion()">
                 <i class="fa fa-save mr-1"></i> Guardar
+            </x-button>
+        </x-slot>
+    </x-dialog-modal>
+
+    <x-dialog-modal wire:model="modalConfirmacion" maxWidth="full">
+        <x-slot name="title">
+            Confirmar distribuciones
+        </x-slot>
+
+        <x-slot name="content">
+            <x-subtitle>
+                Revisa la salida de combustible asignada a cada detalle. En verde: coincide con la salida actual.
+                Donde hay cruce con otra salida, elige cuál corresponde (por defecto queda la salida actual).
+            </x-subtitle>
+
+            <x-table>
+                <x-slot name="thead">
+                    <x-tr>
+                        <x-th>Fecha</x-th>
+                        <x-th>Campo</x-th>
+                        <x-th>Labor</x-th>
+                        <x-th>Salida</x-th>
+                    </x-tr>
+                </x-slot>
+                <x-slot name="tbody">
+                    @foreach ($confirmacionPreview as $i => $fila)
+                        <x-tr>
+                            <x-td>{{ \Carbon\Carbon::parse($fila['fecha'])->format('d/m/Y') }}</x-td>
+                            <x-td>{{ $fila['campo_nombre'] }}</x-td>
+                            <x-td>{{ $fila['labor_diaria'] }}</x-td>
+                            <x-td>
+                                @if ($fila['coincide'])
+                                    <span class="text-green-600 font-medium">
+                                        Salida del {{ $fila['candidatas'][0]['fecha'] }}
+                                    </span>
+                                @else
+                                    <x-select wire:model="confirmacionPreview.{{ $i }}.salida_elegida_id" >
+                                        @foreach ($fila['candidatas'] as $c)
+                                            <option value="{{ $c['id'] }}">Salida del {{ $c['fecha'] }}</option>
+                                        @endforeach
+                                    </x-select>
+                                @endif
+                            </x-td>
+                        </x-tr>
+                    @endforeach
+                </x-slot>
+            </x-table>
+        </x-slot>
+
+        <x-slot name="footer">
+            <x-button variant="secondary" wire:click="cerrarModalConfirmacion">Cancelar</x-button>
+            <x-button variant="primary" wire:click="confirmarGuardarDistribuciones" class="ml-2">
+                Confirmar y guardar
             </x-button>
         </x-slot>
     </x-dialog-modal>
@@ -70,7 +123,7 @@
             this.destruirModalTable();
 
             const container = document.getElementById('modalTableContainer');
-            
+
             if (!container) return;
 
             this.filasModificadasModal = [];
@@ -198,7 +251,7 @@
 
         // ── Guardar desde footer del modal ──────────────────────────────────────
 
-        guardarModal() {
+        enviarAGuardarDistribucion() {
             if (!this.hotModal || this.filasModificadasModal.length === 0) {
                 alert('Ninguna fila modificada.');
                 return;

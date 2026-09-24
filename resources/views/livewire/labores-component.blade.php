@@ -38,6 +38,17 @@
                         <option value="{{ $manoObra->codigo }}">{{ $manoObra->descripcion }}</option>
                     @endforeach
                 </x-select>
+                <x-select wire:model.live="afectoBonoFiltro" label="Afecto a bono" class="w-auto">
+                    <option value="">Todos</option>
+                    <option value="con_tramos">Solo afectos a bonos</option>
+                    <option value="sin_tramos">No afectos a bonos</option>
+                </x-select>
+
+                <x-select wire:model.live="metodoBonoFiltro" label="Método de bono" class="w-auto">
+                    <option value="">Todos</option>
+                    <option value="se_paga_con_jornal">Con bonos pagados</option>
+                    <option value="se_acumula">Con bonos acumulados</option>
+                </x-select>
 
             </x-flex>
             <div>
@@ -130,20 +141,23 @@
 
         <x-slot name="content">
             <form wire:submit.prevent="guardarLabor" id="frmLabores">
-                <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                <div class="mt-4 text-sm">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <x-input type="number" wire:model="codigo" label="Código de labor" error="codigo" />
                         <x-input wire:model="nombre_labor" label="Nombre de la labor" error="nombre_labor" />
                         <x-input type="number" wire:model="estandar_produccion" label="Estándar de producción"
                             error="estandar_produccion" />
-                        <x-input wire:model="unidades" label="Unidades" placeholder="Ejem: Kg, Lavaderos"
-                            error="unidades" />
+
+
                         <x-select wire:model="codigo_mano_obra" label="Mano de obra" error="codigo_mano_obra">
                             <option value="">Seleccione un grupo</option>
                             @foreach ($manoObras as $manoObra)
                                 <option value="{{ $manoObra->codigo }}">{{ $manoObra->descripcion }}</option>
                             @endforeach
                         </x-select>
+
+                        <x-input wire:model="unidades" label="Unidades" placeholder="Ejem: Kg, Lavaderos"
+                            error="unidades" />
                     </div>
 
                     <div x-data="{
@@ -180,9 +194,11 @@
                                 </x-button>
                             </div>
                         </template>
+
+
                     </div>
                 </div>
-
+                <x-input type="checkbox" wire:model="se_paga_con_jornal" label="Se paga junto con el costo día" />
             </form>
         </x-slot>
 

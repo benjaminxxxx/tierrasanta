@@ -119,6 +119,7 @@ class Sidebar extends Component
                     ['title' => 'Bonificaciones', 'route' => 'gestion_cuadrilleros.bonificaciones', 'can' => Permisos::CUADRILLA_BONIFICACION],
                     ['title' => 'Resumen General', 'route' => 'gestion_cuadrilleros.resumen_general.index', 'can' => Permisos::CUADRILLA_RESUMEN_GENERAL],
                     ['title' => 'Resumen anual', 'route' => 'gestion_cuadrilleros.resumen_anual', 'can' => Permisos::CUADRILLA_RESUMEN_ANUAL],
+                    ['title' => 'Pagos (desglose)', 'route' => 'gestion_cuadrilleros.pagos', 'can' => Permisos::CUADRILLA], //crear permiso especial mas adelante
                 ],
             ],
 

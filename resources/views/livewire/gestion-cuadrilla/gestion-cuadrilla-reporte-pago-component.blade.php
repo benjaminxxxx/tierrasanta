@@ -23,11 +23,11 @@
                     </div>
                     <x-flex class="justify-end">
                         @if ($resumenPorTramo?->condicion == 'Pendiente')
-                            <x-button variant="default" wire:click="generarExcel">
+                            <x-button variant="default" wire:click="procesarPagoYGenerarExcel">
                                 Registrar pagos <i class="fa fa-money-bill"></i>
                             </x-button>
                         @else
-                            <x-button variant="danger" wire:click="generarExcel">
+                            <x-button variant="danger" wire:click="procesarPagoYGenerarExcel">
                                 Volver a Pendiente <i class="fa-solid fa-rotate-left"></i>
                             </x-button>
 

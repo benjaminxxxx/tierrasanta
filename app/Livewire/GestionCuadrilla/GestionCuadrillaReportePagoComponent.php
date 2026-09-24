@@ -50,8 +50,8 @@ class GestionCuadrillaReportePagoComponent extends Component
                 $this->resumenPorTramo->fecha_acumulada,
                 $this->resumenPorTramo->fecha_fin
             );
-
             $this->obtenerListaResumen();
+            
             $this->nombreCuadrilla = $this->resumenPorTramo->grupo->nombre;
             $this->mostrarFormularioReportePago = true;
         } catch (\Throwable $th) {
@@ -69,6 +69,7 @@ class GestionCuadrillaReportePagoComponent extends Component
     {
 
         $resultado = app(ListaAcumuladaTramos::class)->obtenerListaCuadrilleros($this->resumenPorTramo);
+        //dd($resultado);
         $this->periodo = $resultado['periodo'];
         $this->listaPago = $resultado['listaPago'];
     }
@@ -97,11 +98,10 @@ class GestionCuadrillaReportePagoComponent extends Component
         // Título final
         return 'CUADRILLA ' . mb_strtoupper($modalidadPago, 'UTF-8') . " DEL {$inicioTexto} AL {$finTexto}";
     }
-    public function generarExcel()
+    public function procesarPagoYGenerarExcel()
     {
         try {
             $resumenTramoServicio = new ResumenTramoServicio();
-            dd($this->resumenPorTramo,$this->listaPago,$this->periodo);
             $resumenTramoServicio->procesarPago($this->resumenPorTramo,$this->listaPago,$this->periodo);
             $this->obtenerListaResumen();
             $this->alert('success', 'Reporte generado correctamente.');

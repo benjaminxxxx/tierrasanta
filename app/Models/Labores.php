@@ -20,7 +20,8 @@ class Labores extends Model
         'tramos_bonificacion',
         'creado_por',
         'actualizado_por',
-        'eliminado_por'
+        'eliminado_por',
+        'se_paga_con_jornal'
     ];
     public function manoObra()
     {
@@ -28,5 +29,6 @@ class Labores extends Model
     }
     protected $casts = [
         'tramos_bonificacion' => 'array',
+        'se_paga_con_jornal' => 'boolean'
     ];
 }

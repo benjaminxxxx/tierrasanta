@@ -150,6 +150,82 @@ class ResumenTramoServicio
     }
     private function actualizarRegistrosDiarios(array &$listaPago, array $periodo, string $codigoGrupo, $tramoLaboral)
     {
+        DB::transaction(function () use (&$listaPago, $periodo, $codigoGrupo, $tramoLaboral) {
+            foreach ($listaPago as $cuadrilleroId => &$personal) {
+                if (!is_array($personal)) {
+                    continue;
+                }
+
+                foreach ($periodo as $fecha) {
+                    $valores = $personal[$fecha] ?? null;
+                    if (!$valores || !is_array($valores)) {
+                        continue;
+                    }
+
+                    $idRegistro = $valores['id_registro_diario'] ?? null;
+                    if (!$idRegistro) {
+                        continue; // no hay registro real ese día para este cuadrillero
+                    }
+
+                    $registro = CuadRegistroDiario::find($idRegistro);
+                    if (!$registro) {
+                        continue;
+                    }
+
+                    $estaPagado = filter_var($valores['esta_pagado'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                    $bonoPagado = filter_var($valores['bono_esta_pagado'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+                    // === Jornal === (costo_dia se evalúa en PHP: es calculado, no una columna)
+                    if ($registro->costo_dia > 0) {
+                        if (is_null($registro->tramo_pagado_jornal_id) || $registro->tramo_pagado_jornal_id == $tramoLaboral->id) {
+                            $registro->esta_pagado = $estaPagado ? 1 : 0;
+
+                            if ($estaPagado) {
+                                if (is_null($registro->tramo_pagado_jornal_id)) {
+                                    $registro->tramo_pagado_jornal_id = $tramoLaboral->id;
+                                }
+                            } else {
+                                if ($registro->tramo_pagado_jornal_id == $tramoLaboral->id) {
+                                    $registro->tramo_pagado_jornal_id = null;
+                                }
+                            }
+                        }
+                    }
+
+                    // === Bono ===
+                    if ($registro->total_bono > 0) {
+                        if (is_null($registro->tramo_pagado_bono_id) || $registro->tramo_pagado_bono_id == $tramoLaboral->id) {
+                            $registro->bono_esta_pagado = $bonoPagado ? 1 : 0;
+
+                            if ($bonoPagado) {
+                                if (is_null($registro->tramo_pagado_bono_id)) {
+                                    $registro->tramo_pagado_bono_id = $tramoLaboral->id;
+                                }
+                            } else {
+                                if ($registro->tramo_pagado_bono_id == $tramoLaboral->id) {
+                                    $registro->tramo_pagado_bono_id = null;
+                                }
+                            }
+                        }
+                    }
+
+                    $registro->save();
+
+                    // Sincroniza el array en memoria con el estado real en BD
+                    $personal[$fecha]['esta_pagado'] = (bool) $registro->esta_pagado;
+                    $personal[$fecha]['tramo_pagado_jornal_id'] = $registro->tramo_pagado_jornal_id;
+                    $personal[$fecha]['costo_dia'] = $registro->costo_dia;
+                    $personal[$fecha]['bono_esta_pagado'] = (bool) $registro->bono_esta_pagado;
+                    $personal[$fecha]['tramo_pagado_bono_id'] = $registro->tramo_pagado_bono_id;
+                    $personal[$fecha]['total_bono'] = $registro->total_bono;
+                }
+            }
+            unset($personal);
+        });
+    }
+    /*
+    private function actualizarRegistrosDiarios(array &$listaPago, array $periodo, string $codigoGrupo, $tramoLaboral)
+    {
         // Agrupa todo en una transacción para consistencia
         DB::transaction(function () use (&$listaPago, $periodo, $codigoGrupo, $tramoLaboral) {
             // Recorremos la estructura por referencia para poder mutarla
@@ -234,7 +310,7 @@ class ResumenTramoServicio
             // liberar la referencia
             unset($personal);
         }); // end transaction
-    }
+    }*/
     public function cambiarCondicion($resumenId)
     {
         $resumenPorTramo = CuadResumenPorTramo::findOrFail($resumenId);
@@ -370,7 +446,90 @@ class ResumenTramoServicio
 
         $this->upsertResumenes($dataParaUpsert, $tramoLaboral->id);
     }
+    /**
+     * Lógica específica para el cálculo de sueldos con modalidad 'mensual'.
+     * ESTA VERSIÓN ESTÁ CORREGIDA para arrastrar deudas de meses anteriores aunque no tengan actividad actual.
+     */
+    private function calcularSueldosMensuales($tramoLaboral, $resumenesAnteriores, $grupo, $codigoGrupo, $tramoAnterior, $costosQuery)
+    {
+        $meses = [
+            1 => 'enero',
+            2 => 'febrero',
+            3 => 'marzo',
+            4 => 'abril',
+            5 => 'mayo',
+            6 => 'junio',
+            7 => 'julio',
+            8 => 'agosto',
+            9 => 'septiembre',
+            10 => 'octubre',
+            11 => 'noviembre',
+            12 => 'diciembre'
+        ];
 
+        // 1. Costos actuales agrupados por número de mes → nombre en español fijo
+        $costosActualesPorMes = (clone $costosQuery)->get()
+            ->groupBy(fn($r) => $meses[Carbon::parse($r->fecha)->month])
+            ->map(fn($registros) => $registros->sum('costo_dia'));
+
+        // 2. Unificamos descripciones anteriores + nuevas, comparando en minúsculas
+        $descripcionesAnteriores = $resumenesAnteriores
+            ->where('tipo', 'sueldo')
+            ->pluck('descripcion');
+
+        $descripcionesNuevas = $costosActualesPorMes
+            ->keys()
+            ->map(fn($mes) => "{$grupo->nombre} ({$mes})");
+
+        // Normalizamos en minúsculas para evitar duplicados por capitalización distinta
+        $todasLasDescripciones = $descripcionesAnteriores
+            ->merge($descripcionesNuevas)
+            ->unique(fn($desc) => mb_strtolower($desc))
+            ->values();
+
+        $resultados = [];
+
+        foreach ($todasLasDescripciones as $descripcion) {
+            // Extraemos el mes de la descripción, normalizando a minúsculas
+            preg_match('/\((\p{L}+)\)/u', $descripcion, $matches);
+            $mes = !empty($matches[1]) ? mb_strtolower($matches[1]) : null;
+
+            // Buscamos el costo actual por ese mes (0 si no hubo actividad)
+            $costoActual = $costosActualesPorMes->get($mes, 0);
+
+            // Buscamos deuda anterior comparando en minúsculas
+            $registroAnterior = $resumenesAnteriores->first(
+                fn($r) => mb_strtolower($r->descripcion) === mb_strtolower($descripcion)
+            );
+            $deudaPendienteAnterior = $registroAnterior->deuda_acumulada ?? 0;
+
+            $deudaAcumuladaFinal = $deudaPendienteAnterior + $costoActual;
+
+            if ($deudaAcumuladaFinal <= 0) {
+                continue;
+            }
+
+            $fechaAcumulada = $registroAnterior->fecha_acumulada ?? $tramoLaboral->fecha_inicio;
+
+            $resultados[] = [
+                'grupo_codigo' => $codigoGrupo,
+                'color' => $grupo->color,
+                'tipo' => 'sueldo',
+                'descripcion' => "{$grupo->nombre} ({$mes})", // Siempre guardamos en minúscula normalizada
+                'condicion' => 'Pendiente',
+                'fecha_acumulada' => $fechaAcumulada,
+                'deuda_actual' => $costoActual,
+                'deuda_acumulada' => $deudaAcumuladaFinal,
+                'tramo_id' => $tramoLaboral->id,
+                'tramo_acumulado_id' => $tramoAnterior?->id,
+                'modalidad_pago' => $grupo->modalidad_pago,
+                'fecha_inicio' => $tramoLaboral->fecha_inicio,
+                'fecha_fin' => $tramoLaboral->fecha_fin,
+            ];
+        }
+
+        return $resultados;
+    }
     /**
      * Calcula los sueldos para un grupo, considerando modalidad de pago y acumulados.
      */
@@ -471,90 +630,7 @@ class ResumenTramoServicio
             ]
         ];
     }
-    /**
-     * Lógica específica para el cálculo de sueldos con modalidad 'mensual'.
-     * ESTA VERSIÓN ESTÁ CORREGIDA para arrastrar deudas de meses anteriores aunque no tengan actividad actual.
-     */
-    private function calcularSueldosMensuales($tramoLaboral, $resumenesAnteriores, $grupo, $codigoGrupo, $tramoAnterior, $costosQuery)
-    {
-        $meses = [
-            1 => 'enero',
-            2 => 'febrero',
-            3 => 'marzo',
-            4 => 'abril',
-            5 => 'mayo',
-            6 => 'junio',
-            7 => 'julio',
-            8 => 'agosto',
-            9 => 'septiembre',
-            10 => 'octubre',
-            11 => 'noviembre',
-            12 => 'diciembre'
-        ];
 
-        // 1. Costos actuales agrupados por número de mes → nombre en español fijo
-        $costosActualesPorMes = (clone $costosQuery)->get()
-            ->groupBy(fn($r) => $meses[Carbon::parse($r->fecha)->month])
-            ->map(fn($registros) => $registros->sum('costo_dia'));
-
-        // 2. Unificamos descripciones anteriores + nuevas, comparando en minúsculas
-        $descripcionesAnteriores = $resumenesAnteriores
-            ->where('tipo', 'sueldo')
-            ->pluck('descripcion');
-
-        $descripcionesNuevas = $costosActualesPorMes
-            ->keys()
-            ->map(fn($mes) => "{$grupo->nombre} ({$mes})");
-
-        // Normalizamos en minúsculas para evitar duplicados por capitalización distinta
-        $todasLasDescripciones = $descripcionesAnteriores
-            ->merge($descripcionesNuevas)
-            ->unique(fn($desc) => mb_strtolower($desc))
-            ->values();
-
-        $resultados = [];
-
-        foreach ($todasLasDescripciones as $descripcion) {
-            // Extraemos el mes de la descripción, normalizando a minúsculas
-            preg_match('/\((\p{L}+)\)/u', $descripcion, $matches);
-            $mes = !empty($matches[1]) ? mb_strtolower($matches[1]) : null;
-
-            // Buscamos el costo actual por ese mes (0 si no hubo actividad)
-            $costoActual = $costosActualesPorMes->get($mes, 0);
-
-            // Buscamos deuda anterior comparando en minúsculas
-            $registroAnterior = $resumenesAnteriores->first(
-                fn($r) => mb_strtolower($r->descripcion) === mb_strtolower($descripcion)
-            );
-            $deudaPendienteAnterior = $registroAnterior->deuda_acumulada ?? 0;
-
-            $deudaAcumuladaFinal = $deudaPendienteAnterior + $costoActual;
-
-            if ($deudaAcumuladaFinal <= 0) {
-                continue;
-            }
-
-            $fechaAcumulada = $registroAnterior->fecha_acumulada ?? $tramoLaboral->fecha_inicio;
-
-            $resultados[] = [
-                'grupo_codigo' => $codigoGrupo,
-                'color' => $grupo->color,
-                'tipo' => 'sueldo',
-                'descripcion' => "{$grupo->nombre} ({$mes})", // Siempre guardamos en minúscula normalizada
-                'condicion' => 'Pendiente',
-                'fecha_acumulada' => $fechaAcumulada,
-                'deuda_actual' => $costoActual,
-                'deuda_acumulada' => $deudaAcumuladaFinal,
-                'tramo_id' => $tramoLaboral->id,
-                'tramo_acumulado_id' => $tramoAnterior?->id,
-                'modalidad_pago' => $grupo->modalidad_pago,
-                'fecha_inicio' => $tramoLaboral->fecha_inicio,
-                'fecha_fin' => $tramoLaboral->fecha_fin,
-            ];
-        }
-
-        return $resultados;
-    }
     /*
     private function calcularSueldosMensuales($tramoLaboral, $resumenesAnteriores, $grupo, $codigoGrupo, $tramoAnterior, $costosQuery)
     {

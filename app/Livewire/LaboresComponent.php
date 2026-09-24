@@ -30,7 +30,10 @@ class LaboresComponent extends Component
     public $manoObras;
     public $manoObraFiltro;
     public $fileLabores;
+    public $se_paga_con_jornal;
     public $verEliminados = false;
+    public $afectoBonoFiltro = '';
+    public $metodoBonoFiltro = '';
     // App/Http/Livewire/MiComponente.php
     public array $tramos = [
         ['hasta' => '', 'monto' => '']
@@ -70,6 +73,7 @@ class LaboresComponent extends Component
             $this->estandar_produccion = $labor->estandar_produccion;
             $this->unidades = $labor->unidades;
             $this->codigo_mano_obra = $labor->codigo_mano_obra;
+            $this->se_paga_con_jornal = $labor->se_paga_con_jornal;
             $this->tramos = $labor->tramos_bonificacion != null ? json_decode($labor->tramos_bonificacion, true) : [['hasta' => '', 'monto' => '']];
             $this->mostrarFormularioLabor = true;
         } else {
@@ -87,6 +91,7 @@ class LaboresComponent extends Component
                 'unidades' => $this->unidades,
                 'tramos_bonificacion' => empty($this->tramos) ? null : json_encode($this->tramos),
                 'codigo_mano_obra' => $this->codigo_mano_obra,
+                'se_paga_con_jornal' => $this->se_paga_con_jornal,
             ];
             LaborServicio::guardar($data, $this->laborId);
 
@@ -148,13 +153,13 @@ class LaboresComponent extends Component
     }
     public function render()
     {
-        // Preparamos los filtros en un array
         $filtros = [
             'buscar' => $this->search,
             'mano_obra' => $this->manoObraFiltro,
+            'afecto_bono' => $this->afectoBonoFiltro,
+            'metodo_bono' => $this->metodoBonoFiltro,
         ];
 
-        // Llamamos al servicio (le pasamos 10 para que pagine)
         $labores = LaborServicio::leer($filtros, 10, $this->verEliminados);
 
         return view('livewire.labores-component', [

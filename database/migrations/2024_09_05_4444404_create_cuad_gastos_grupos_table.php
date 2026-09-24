@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->id(); // Clave primaria
             $table->decimal('monto', 10, 2); // Campo para precios con hasta 10 dígitos, 2 decimales
             $table->string('descripcion');
+            $table->boolean('esta_pagado')->default(false);
             $table->year('anio_contable')->nullable();  // Para el año contable
             $table->tinyInteger('mes_contable')->nullable();  // Para el mes contable (1-12)
             $table->string('codigo_grupo');
@@ -27,6 +28,11 @@ return new class extends Migration {
 
             $table->enum('estado', ['pendiente', 'aprobado', 'en_correccion'])
                 ->default('pendiente');
+
+            $table->foreignId('desglose_detalle_id')
+                ->nullable()
+                ->constrained('desglose_detalles')
+                ->nullOnDelete();
 
             // Asumiendo que hacen referencia a la tabla 'users'
             $table->foreignId('creado_por')->nullable()->constrained('users');

@@ -29,17 +29,31 @@ class GastoAdicionalPorGrupoCuadrilla extends Model
         'aprobado_en',
         'habilitado_por',
         'habilitado_en',
+        'esta_pagado',
+        'desglose_detalle_id'
     ];
 
     protected $casts = [
         'fecha_gasto' => 'datetime',
         'aprobado_en' => 'datetime',
         'habilitado_en' => 'datetime',
+        'esta_pagado' => 'boolean'
     ];
+
+    protected function descripcion(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            set: fn(string $value) => mb_strtoupper(trim($value)),
+        );
+    }
 
     public function grupo()
     {
         return $this->belongsTo(CuaGrupo::class, 'codigo_grupo', 'codigo');
+    }
+    public function desgloseDetalle()
+    {
+        return $this->belongsTo(DesgloseDetalle::class, 'desglose_detalle_id');
     }
     public function creadoPor()
     {

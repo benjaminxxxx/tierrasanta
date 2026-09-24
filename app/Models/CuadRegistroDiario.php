@@ -15,7 +15,7 @@ class CuadRegistroDiario extends Model
         'costo_personalizado_dia',
         'total_bono',
         'total_horas',
-        //'costo_dia',
+        //'costo_dia', //ahora calculado
         'esta_pagado',
         'codigo_grupo',
         'bono_esta_pagado',
@@ -25,9 +25,10 @@ class CuadRegistroDiario extends Model
         //nuevo campo triggeado
         'jornal_aplicado',
         'horas_destajo',
-        'tramo_cuadrillero_id'
+        'tramo_cuadrillero_id',
+        'desglose_detalle_id'
     ];
-    protected $append = [
+    protected $appends = [
         'costo_dia'
     ];
     protected $casts = [
@@ -35,6 +36,7 @@ class CuadRegistroDiario extends Model
         'fecha' => 'date',
         'esta_pagado' => 'boolean',
         'bono_esta_pagado' => 'boolean',
+        'se_paga_con_jornal' => 'boolean'
     ];
     /**
      * Calcula el costo del jornal considerando solo horas NO a destajo.
@@ -48,10 +50,10 @@ class CuadRegistroDiario extends Model
     public function getCostoDiaAttribute(): float
     {
         $jornal = $this->costo_personalizado_dia ?: (float) $this->jornal_aplicado;
-        
+
         // Solo se pagan las horas que NO son a destajo
         $horasJornaleadas = max(0, $this->total_horas - $this->horas_destajo);
-        
+
         return ($horasJornaleadas / 8) * $jornal;
     }
 
@@ -69,18 +71,24 @@ class CuadRegistroDiario extends Model
         return $this->costo_dia + $this->total_bono;
     }
     // Relaciones
+    public function desgloseDetalle()
+    {
+
+        return $this->belongsTo(DesgloseDetalle::class, 'desglose_detalle_id');
+    }
     public function tramoLaboral()
     {
         return $this->belongsTo(CuadTramoLaboral::class, 'tramo_laboral_id');
-    }
-    public function grupo()
-    {
-        return $this->belongsTo(CuaGrupo::class, 'codigo_grupo');
     }
     public function actividadesBonos()
     {
         return $this->hasMany(CuadActividadBono::class, 'registro_diario_id');
     }
+    public function grupo()
+    {
+        return $this->belongsTo(CuaGrupo::class, 'codigo_grupo');
+    }
+
     public function cuadrillero()
     {
         return $this->belongsTo(Cuadrillero::class);
@@ -91,7 +99,17 @@ class CuadRegistroDiario extends Model
         return $this->hasMany(CuadDetalleHora::class, 'registro_diario_id');
     }
 
-
+    public function grupos()
+    {
+        return $this->hasManyThrough(
+            CuaGrupo::class,
+            CuadTramoLaboralGrupo::class,
+            'cuad_tramo_laboral_id', // FK en cuad_tramo_grupos
+            'codigo',                // FK/Key en cuad_grupos (codigo)
+            'tramo_laboral_id',      // LK en cuad_registros_diarios
+            'codigo_grupo'           // LK en cuad_tramo_grupos
+        );
+    }
     // Accesor para total_costo calculado
 
 

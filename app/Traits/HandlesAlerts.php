@@ -5,6 +5,9 @@ use Throwable;
 
 trait HandlesAlerts
 {
+    public function successAlert($mensaje, array $options = []){
+        $this->alert('success', $mensaje, $options);
+    }
     /**
      * Muestra una alerta de error personalizada utilizando el método $this->alert().
      */

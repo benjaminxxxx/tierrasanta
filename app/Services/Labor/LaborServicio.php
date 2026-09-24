@@ -12,19 +12,13 @@ class LaborServicio
      */
     public static function leer(array $filtros = [], ?int $porPagina = null, bool $verEliminados = false)
     {
-        // Usamos withTrashed() de inicio si queremos flexibilidad, 
-        // pero onlyTrashed() es más directo para lo que buscas.
         $query = Labores::query();
 
-        // Lógica de visibilidad
         if ($verEliminados) {
-            $query->onlyTrashed(); // Filtra para traer SOLO eliminados
+            $query->onlyTrashed();
         }
-        // Si es false, Laravel por defecto ya aplica whereNull('deleted_at') 
-        // gracias al trait SoftDeletes del modelo.
 
         $query->when($filtros['buscar'] ?? null, function ($q, $buscar) {
-            // Agrupamos el OR para no romper los filtros de SoftDelete o Mano de Obra
             $q->where(function ($sub) use ($buscar) {
                 $sub->where('nombre_labor', 'like', "%{$buscar}%")
                     ->orWhere('codigo', 'like', "%{$buscar}%");
@@ -32,6 +26,28 @@ class LaborServicio
         })
             ->when($filtros['mano_obra'] ?? null, function ($q, $manoObra) {
                 $q->where('codigo_mano_obra', $manoObra);
+            })
+            // 1. Filtro: Afecto a bono (Tiene o no tramos de bonificación)
+            ->when($filtros['afecto_bono'] ?? null, function ($q, $afectoBono) {
+                if ($afectoBono === 'con_tramos') {
+                    $q->whereNotNull('tramos_bonificacion')
+                        ->where('tramos_bonificacion', '!=', '')
+                        ->where('tramos_bonificacion', '!=', '[]');
+                } elseif ($afectoBono === 'sin_tramos') {
+                    $q->where(function ($sub) {
+                        $sub->whereNull('tramos_bonificacion')
+                            ->orWhere('tramos_bonificacion', '')
+                            ->orWhere('tramos_bonificacion', '[]');
+                    });
+                }
+            })
+            // 2. Filtro: Método de bono (Se paga con el jornal o se acumula)
+            ->when($filtros['metodo_bono'] ?? null, function ($q, $metodoBono) {
+                if ($metodoBono === 'se_paga_con_jornal') {
+                    $q->where('se_paga_con_jornal', true);
+                } elseif ($metodoBono === 'se_acumula') {
+                    $q->where('se_paga_con_jornal', false);
+                }
             });
 
         $query->latest();
@@ -81,6 +97,7 @@ class LaborServicio
             'estandar_produccion' => 'nullable|integer|min:0',
             'unidades' => 'nullable|string|max:20',
             'tramos_bonificacion' => 'nullable', // Se limpia abajo
+            'se_paga_con_jornal' => 'boolean'
         ], [
             'required' => 'El campo :attribute es obligatorio.',
             'unique' => 'El :attribute ya existe.',

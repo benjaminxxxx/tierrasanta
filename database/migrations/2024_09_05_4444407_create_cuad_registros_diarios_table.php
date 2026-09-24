@@ -28,6 +28,11 @@ return new class extends Migration {
             $table->boolean('bono_esta_pagado')->default(false);
             $table->string('codigo_grupo');
 
+            $table->foreignId('desglose_detalle_id')
+                ->nullable()
+                ->constrained('desglose_detalles')
+                ->nullOnDelete();
+
             //mas adelante estan
             $table->unsignedBigInteger('tramo_laboral_id')->nullable();
             // Relación principal (cascade)

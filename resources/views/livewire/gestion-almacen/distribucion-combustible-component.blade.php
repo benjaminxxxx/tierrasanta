@@ -45,8 +45,9 @@
                 @forelse($filas as $fila)
                     @if($fila['es_salida'])
                         {{-- ── FILA SALIDA (cabecera de grupo) ─────────── --}}
-                        <tr class="bg-blue-50 dark:bg-blue-900/30 font-semibold
-                                           text-blue-800 dark:text-blue-200 border-t-2 border-blue-300 dark:border-blue-700">
+                        <tr
+                            class="bg-blue-50 dark:bg-blue-900/30 font-semibold
+                                                           text-blue-800 dark:text-blue-200 border-t-2 border-blue-300 dark:border-blue-700">
                             <td class="py-2 px-3 border-b border-blue-200 dark:border-blue-800 whitespace-nowrap">
                                 <span class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1 align-middle"></span>
                                 {{ \Carbon\Carbon::parse($fila['fecha'])->format('d/m/Y') }}
@@ -76,13 +77,12 @@
                             </td>
                             <td class="py-2 px-3 border-b border-blue-200 dark:border-blue-800 text-right">
                                 @can(\App\Constants\Permisos::INSUMO_DISTRIBUCION_GESTIONAR)
-                                     <button wire:click="abrirModalDistribucion({{ $fila['salida_id'] }})"
-                                    class="inline-flex items-center gap-1 rounded px-2 py-1 text-xs
-                                                   bg-blue-600 hover:bg-blue-700 text-white transition-colors whitespace-nowrap">
-                                    <i class="fa fa-sliders"></i> Gestionar
-                                </button>
+                                    <x-button @click="$wire.dispatch('abrirModalDistribucion',{salidaId:{{ $fila['salida_id'] }}})"
+                                        size="xs">
+                                        <i class="fa fa-sliders"></i> Gestionar
+                                    </x-button>
                                 @endcan
-                               
+
                             </td>
                         </tr>
                     @else
@@ -124,10 +124,10 @@
                                 S/ {{ number_format($fila['costo'], 4) }}
                             </td>
                             <td class="py-1.5 px-3 border-b border-border">
-                                 @can(\App\Constants\Permisos::INSUMO_DISTRIBUCION_GESTIONAR)
-                                <x-button wire:click="eliminarDistribucion({{ $fila['id'] }})" size="xs" variant="danger">
-                                    <i class="fa fa-remove"></i>
-                                </x-button>
+                                @can(\App\Constants\Permisos::INSUMO_DISTRIBUCION_GESTIONAR)
+                                    <x-button wire:click="eliminarDistribucion({{ $fila['id'] }})" size="xs" variant="danger">
+                                        <i class="fa fa-remove"></i>
+                                    </x-button>
                                 @endcan
                             </td>
                         </tr>
@@ -143,252 +143,15 @@
         </table>
     </x-card>
 
-    {{-- Modal gestión distribuciones --}}
-    <x-dialog-modal wire:model.live="modalDistribucion" maxWidth="full">
-        <x-slot name="title">
-            Gestionar Distribuciones
-            @php
-                $salidaActiva = collect($filas)->first(
-                    fn($f) => $f['es_salida'] && $f['salida_id'] === $salidaActivaId
-                );
-            @endphp
-            @if($salidaActiva)
-                <span class="ml-2 text-sm font-normal text-muted-foreground">
-                    — {{ $salidaActiva['maquinaria_nombre'] }}
-                    · {{ \Carbon\Carbon::parse($salidaActiva['fecha'])->format('d/m/Y') }}
-                    · {{ number_format($salidaActiva['ingreso_salida'], 2) }} L
-                </span>
-            @endif
-        </x-slot>
-
-        <x-slot name="content">
-            {{-- wire:ignore: Livewire no debe tocar el DOM del Handsontable --}}
-            <div wire:ignore class="w-full h-[300px] overflow-auto mb-4">
-                <div id="modalTableContainer"></div>
-            </div>
-            <x-input type="checkbox" id="respetarSalida" label="Respetar salida (evitar que la distribución se asigne a otra salida)" wire:model="respetarSalida"/>
-        
-        </x-slot>
-
-        <x-slot name="footer">
-            <x-button variant="secondary" wire:click="$set('modalDistribucion', false)">
-                Cancelar
-            </x-button>
-            <x-button class="ms-3" @click="guardarModal()">
-                <i class="fa fa-save mr-1"></i> Guardar
-            </x-button>
-        </x-slot>
-    </x-dialog-modal>
-
     <x-loading wire:loading />
 </div>
 
 @script
 <script>
     Alpine.data('distribucionCombustible', () => ({
-        // Entangle con propiedades Livewire
-        modalAbierto: @entangle('modalDistribucion'),
-        distribucionesActivas: @entangle('distribucionesActivas'),
-
-        // Datos de listas (solo lectura, no necesitan entangle)
-        listaCampos: @js($listaCampos),
-        listaMaquinarias: @js($listaMaquinarias),
-
-        isDark: JSON.parse(localStorage.getItem('darkMode') ?? 'false'),
-        hotModal: null,
-        filasModificadasModal: @entangle('filasModificadasModal'),
-
         init() {
-            // Cuando el modal pasa a true → esperar que el DOM esté pintado → montar Handsontable
-            this.$watch('modalAbierto', (abierto) => {
-                if (abierto) {
-                    // $nextTick espera el re-render de Alpine/Livewire,
-                    // setTimeout da margen para la transición CSS del dialog
-                    this.$nextTick(() => {
-                        setTimeout(() => {
-                            this.initModalTable(this.distribucionesActivas);
-                        }, 100);
-                    });
-                } else {
-                    this.destruirModalTable();
-                }
-            });
 
-            // Si los datos del modal cambian con el modal ya abierto (recarga tras error)
-            /*
-            this.$watch('distribucionesActivas', (datos) => {
-                if (this.modalAbierto && this.hotModal) {
-                    this.hotModal.loadData(JSON.parse(JSON.stringify(datos)));
-                }
-            });*/
-
-            // Sincronizar tema dark/light con el Handsontable del modal
-            this.$watch('isDark', (val) => {
-                if (this.hotModal) {
-                    this.hotModal.updateSettings({
-                        themeName: val ? 'ht-theme-main-dark' : 'ht-theme-main',
-                        columns: this.getModalColumns(),
-                    });
-                }
-            });
-
-            Livewire.on('cargarDistribuciones', ({ distribuciones }) => {
-                this.initModalTable(distribuciones);
-            });
-        },
-
-        // ── Handsontable ────────────────────────────────────────────────────────
-
-        initModalTable(data) {
-            this.destruirModalTable();
-
-            const container = document.getElementById('modalTableContainer');
-         
-            if (!container) return;
-
-            const hot = new Handsontable(container, {
-                ...window.HstConfig,
-                data: JSON.parse(JSON.stringify(data)), // copia para no mutar el entangle
-                themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
-                colHeaders: true,
-                rowHeaders: true,
-                columns: this.getModalColumns(),
-                stretchH: 'all',
-                minSpareRows: 1,
-                autoColumnSize: false,
-                licenseKey: 'non-commercial-and-evaluation',
-
-                afterChange: (changes, source) => {
-                  
-                    if (source === 'loadData' || source === 'recalculado') return;
-                    if (!['edit', 'CopyPaste.paste', 'Autofill.fill'].includes(source)) return;
-
-                    changes?.forEach(([row, prop]) => {
-                        if (prop === 'hora_inicio' || prop === 'hora_fin') {
-                            this.recalcularHoras(row);
-                        }
-                        if (!this.filasModificadasModal.includes(row)) {
-                            this.filasModificadasModal = [...this.filasModificadasModal, row];
-                        }
-                    });
-                    console.log(this.filasModificadasModal);
-                },
-            });
-
-            this.hotModal = hot;
-            this.hotModal.render();
-        },
-
-        destruirModalTable() {
-            if (this.hotModal) {
-                try { this.hotModal.destroy(); } catch (e) { }
-                this.hotModal = null;
-            }
-            this.filasModificadasModal = [];
-        },
-
-        recalcularHoras(row) {
-            const inicio = this.hotModal.getDataAtRowProp(row, 'hora_inicio');
-            const fin = this.hotModal.getDataAtRowProp(row, 'hora_fin');
-            if (!inicio || !fin) return;
-
-            const [h1, m1] = inicio.split(':').map(Number);
-            const [h2, m2] = fin.split(':').map(Number);
-            const horas = ((h2 * 60 + m2) - (h1 * 60 + m1)) / 60;
-
-            if (horas > 0) {
-                this.hotModal.setDataAtRowProp(
-                    row, 'n_horas',
-                    Math.round(horas * 100) / 100,
-                    'recalculado'
-                );
-            }
-        },
-
-        getModalColumns() {
-            const camposLabels = this.listaCampos.map(c => c.label);
-            const camposRevMap = Object.fromEntries(this.listaCampos.map(c => [c.label, c.label]));
-
-            /*
-    
-            const maquinasLabels = this.listaMaquinarias.map(m => m.label);
-            const maquinasMap    = Object.fromEntries(this.listaMaquinarias.map(m => [m.label, m.id]));
-            const maquinasRevMap = Object.fromEntries(this.listaMaquinarias.map(m => [m.id, m.label]));*/
-
-            const autocompleteCol = (labels, map, revMap, prop, title, width) => ({
-                data: prop, title, type: 'autocomplete',
-                source: labels, strict: false, allowInvalid: false, filter: true, width,
-                renderer(instance, td, row, col, p, value) {
-                    td.classList.remove('!text-gray-400', 'italic', '!text-red-500');
-                    if (!value && value !== 0) {
-                        td.classList.add('!text-gray-400', 'italic');
-                        td.innerText = 'Buscar...';
-                        return;
-                    }
-                    const label = revMap[value] ?? revMap[String(value)];
-                    td.innerText = label ?? ('⚠️ ' + value);
-                    if (!label) td.classList.add('!text-red-500');
-                },
-                validator(value, callback) {
-                    if (!value || value === '') return callback(true);
-                    if (revMap[value] || revMap[String(value)]) return callback(true);
-                    if (typeof value === 'string' && map[value]) {
-                        setTimeout(() => {
-                            this.instance.setDataAtCell(this.row, this.col, map[value], 'validator');
-                        }, 0);
-                        return callback(true);
-                    }
-                    callback(false);
-                },
-            });
-
-            const T = Handsontable.renderers;
-
-            return [
-                {
-                    data: 'fecha', title: 'FECHA', width: 100,
-                    type: 'date', dateFormat: 'YYYY-MM-DD', correctFormat: true,
-                    renderer: T.TextRenderer,
-                },
-                {
-                    data: 'hora_inicio', title: 'INICIO', width: 75,
-                    type: 'time', timeFormat: 'HH:mm', correctFormat: true,
-                    renderer: T.TextRenderer,
-                },
-                {
-                    data: 'hora_fin', title: 'FIN', width: 75,
-                    type: 'time', timeFormat: 'HH:mm', correctFormat: true,
-                    renderer: T.TextRenderer,
-                },
-                {
-                    data: 'n_horas', title: 'HORAS', width: 65,
-                    type: 'numeric', numericFormat: { pattern: '0.00' },
-                    readOnly: true, className: '!bg-muted',
-                    renderer: T.NumericRenderer,
-                },
-                autocompleteCol(camposLabels, camposRevMap, camposRevMap, 'campo_nombre', 'CAMPO', 120),
-                {
-                    data: 'labor_diaria', title: 'LABOR DIARIA', width: 200,
-                    type: 'text', renderer: T.TextRenderer,
-                },
-                //autocompleteCol(maquinasLabels, maquinasMap, maquinasRevMap, 'maquinaria_id', 'MAQUINARIA', 130),
-            ];
-        },
-
-        // ── Guardar desde footer del modal ──────────────────────────────────────
-
-        guardarModal() {
-            if (!this.hotModal || this.filasModificadasModal.length === 0) {
-                alert('Ninguna fila modificada.');
-                return;
-            }
-
-            const data = [...this.filasModificadasModal]
-                .map(i => this.hotModal.getSourceDataAtRow(i))
-                .filter(f => f && Object.values(f).some(v => v !== null && v !== ''));
-
-            $wire.guardarDistribuciones(data);
-        },
+        }
     }));
 </script>
 @endscript

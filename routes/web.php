@@ -19,6 +19,7 @@ use App\Livewire\ConfiguracionPrimasComisionesComponent;
 use App\Livewire\GestionAsistencia\TipoAsistenciaComponent;
 use App\Livewire\GestionCampo\CampoCostosComponent;
 use App\Livewire\GestionCuadrilla\GestionCuadrillaBonificacionesComponent;
+use App\Livewire\GestionCuadrilla\GestionCuadrillaPagoComponent;
 use App\Livewire\GestionInsumos\InsumoKardexCrearComponent;
 use App\Livewire\GestionPlanilla\AsistenciaMensualComponent;
 use App\Livewire\GestionPlanilla\CargosComponent;
@@ -166,6 +167,10 @@ Route::middleware([
         // Módulo de Pagos
         Route::get('/resumen-general', [CuadrillaController::class, 'pagos'])
             ->name('gestion_cuadrilleros.resumen_general.index')->middleware('can:' . Permisos::CUADRILLA_RESUMEN_GENERAL);
+
+        Route::get('/pagos', GestionCuadrillaPagoComponent::class)
+            ->name('gestion_cuadrilleros.pagos')->middleware('can:' . Permisos::CUADRILLA_RESUMEN_GENERAL);
+
 
         // Bonificaciones
         Route::get('/bonificaciones', GestionCuadrillaBonificacionesComponent::class)

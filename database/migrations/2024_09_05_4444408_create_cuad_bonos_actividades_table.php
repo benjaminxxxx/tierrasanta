@@ -19,9 +19,19 @@ return new class extends Migration {
             $table->foreignId('actividad_id')
                 ->constrained('actividades')
                 ->cascadeOnDelete();
-
+            //nuevo campo que indique si se paga junto con el jornal o a parte
+            $table->
             $table->decimal('total_bono', 10, 2)->default(0);
             $table->boolean('bono_manual')->default(false);
+
+            // Configuración y Trazabilidad del Pago
+            $table->boolean('se_paga_con_jornal')->default(true)->comment('true = junto con el jornal, false = se acumula');
+            $table->boolean('esta_pagado')->default(false);
+            $table->foreignId('desglose_detalle_id')
+                ->nullable()
+                ->constrained('desglose_detalles')
+                ->nullOnDelete();
+
             $table->timestamps();
 
             // Un registro único por registro_diario y actividad

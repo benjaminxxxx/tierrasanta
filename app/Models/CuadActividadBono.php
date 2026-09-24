@@ -16,7 +16,10 @@ class CuadActividadBono extends Model
         'actividad_id',
         'metodo_id',
         'bono_manual',
-        'total_bono'
+        'total_bono',
+        'se_paga_con_jornal',
+        'esta_pagado',
+        'desglose_detalle_id'
     ];
     protected $casts = [
         'bono_manual' => 'boolean',

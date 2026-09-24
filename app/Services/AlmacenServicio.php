@@ -9,6 +9,7 @@ use App\Models\InsResFertilizanteCampania;
 use App\Models\PesticidaCampania;
 use App\Models\Producto;
 use App\Models\ProductoNutriente;
+use App\Services\Almacen\DistribucionCombustibleServicio;
 use App\Services\Almacen\StockService;
 use Auth;
 use Carbon\Carbon;
@@ -59,17 +60,175 @@ class AlmacenServicio
                 $salida->delete();
             }
         });
-    }
+    }/*
+   public function guardarSalidaMasiva(array $filas, string $tipo, int $almacenId): array
+   {
+       $resultados = ['creados' => 0, 'actualizados' => 0, 'eliminados' => 0];
+       $esCombustible = $tipo === 'combustible';
+       $idsSalidasParaReconciliar = [];
+
+       DB::transaction(function () use ($filas, $tipo, $almacenId, &$resultados, &$idsSalidasParaReconciliar, $esCombustible) {
+           $usuarioId = Auth::id();
+
+           foreach ($filas as $fila) {
+               $id = $fila['id'] ?? null;
+               //$esCombustible = $tipo === 'combustible';
+
+               $camposBase = ['fecha_reporte', 'producto_id', 'cantidad', 'tipo_kardex'];
+               $campoDestino = $esCombustible ? 'maquinaria_id' : 'campo_nombre';
+
+               $camposParaVacioCheck = array_merge($camposBase, [$campoDestino]);
+               $filaVacia = collect($camposParaVacioCheck)
+                   ->every(fn($campo) => is_null($fila[$campo] ?? null) || ($fila[$campo] ?? '') === '');
+
+               if ($filaVacia) {
+                   if ($id) {
+                       $salida = AlmacenProductoSalida::findOrFail($id);
+
+                       $this->stockService->revertirMovimientosDeOrigen(AlmacenProductoSalida::class, $salida->id);
+
+                       AuditoriaServicio::registrar(
+                           modelo: AlmacenProductoSalida::class,
+                           modeloId: $salida->id,
+                           accion: 'eliminar',
+                           antes: $salida->toArray(),
+                           camposIgnorados: self::CAMPOS_IGNORADOS,
+                       );
+
+                       $salida->delete();
+                       $resultados['eliminados']++;
+                   }
+                   continue;
+               }
+
+               $etiquetas = [
+                   'fecha_reporte' => 'Fecha',
+                   'producto_id' => 'Producto',
+                   'cantidad' => 'Cantidad',
+                   'tipo_kardex' => 'Tipo de kardex',
+                   'campo_nombre' => 'Campo',
+                   'maquinaria_id' => 'Maquinaria',
+               ];
+
+               foreach ($camposBase as $campo) {
+                   if (is_null($fila[$campo] ?? null) || ($fila[$campo] ?? '') === '') {
+                       throw new Exception(
+                           "El campo \"{$etiquetas[$campo]}\" es obligatorio."
+                           . ($id ? " (ID: {$id})" : '')
+                       );
+                   }
+               }
+
+               if (is_null($fila[$campoDestino] ?? null) || ($fila[$campoDestino] ?? '') === '') {
+                   throw new Exception(
+                       "El campo \"{$etiquetas[$campoDestino]}\" es obligatorio."
+                       . ($id ? " (ID: {$id})" : '')
+                   );
+               }
+
+               $datos = [
+                   'fecha_reporte' => $fila['fecha_reporte'],
+                   'producto_id' => $fila['producto_id'],
+                   'cantidad' => $fila['cantidad'],
+                   'campo_nombre' => $esCombustible ? '' : ($fila['campo_nombre'] ?? ''),
+                   'maquinaria_id' => $esCombustible ? ($fila['maquinaria_id'] ?? null) : null,
+                   'uso_id' => $esCombustible ? null : ($fila['uso_id'] ?? null),
+                   'costo_por_kg' => $fila['costo_por_kg'] ?? null,
+                   'total_costo' => $fila['total_costo'] ?? null,
+                   'indice' => $fila['indice'] ?? null,
+                   'tipo_kardex' => $fila['tipo_kardex'],
+               ];
+
+               if ($id) {
+                   $salida = AlmacenProductoSalida::findOrFail($id);
+                   $antes = $salida->toArray();
+
+                   $cambiaProducto = (int) $salida->producto_id !== (int) $fila['producto_id'];
+                   $cambiaTipoKardex = $salida->tipo_kardex !== $fila['tipo_kardex'];
+                   $cambiaCantidad = abs((float) $salida->cantidad - (float) $fila['cantidad']) > 0.0001;
+                   $cambiaFecha = (string) $salida->fecha_reporte !== (string) $fila['fecha_reporte'];
+                   $afectaStock = $cambiaProducto || $cambiaTipoKardex || $cambiaCantidad || $cambiaFecha;
+
+                   if (!$afectaStock) {
+                       // Solo campos informativos (campo, uso, maquinaria, costo...): update directo.
+                       $salida->update(array_merge($datos, ['editado_por' => $usuarioId]));
+
+                       AuditoriaServicio::registrar(
+                           modelo: AlmacenProductoSalida::class,
+                           modeloId: $salida->id,
+                           accion: 'editar',
+                           antes: $antes,
+                           despues: $salida->fresh()->toArray(),
+                           camposIgnorados: self::CAMPOS_IGNORADOS,
+                       );
+
+                       $resultados['actualizados']++;
+                       continue;
+                   }
+
+                   // Cambió producto, tipo_kardex, cantidad o fecha: revertir el movimiento
+                   // viejo (con su propio producto/tipo/fecha originales) y luego registrar
+                   // uno nuevo con los valores actuales. No hace falta calcular deltas a mano:
+                   // revertir ya sabe a qué producto/tipo/año devolverle, y registrar ya sabe
+                   // a cuál descontarle — aunque sean distintos entre sí.
+                   $this->stockService->revertirMovimientosDeOrigen(AlmacenProductoSalida::class, $salida->id);
+                   $salida->update(array_merge($datos, ['editado_por' => $usuarioId]));
+
+                   AuditoriaServicio::registrar(
+                       modelo: AlmacenProductoSalida::class,
+                       modeloId: $salida->id,
+                       accion: 'editar',
+                       antes: $antes,
+                       despues: $salida->fresh()->toArray(),
+                       camposIgnorados: self::CAMPOS_IGNORADOS,
+                   );
+
+                   $resultados['actualizados']++;
+               } else {
+                   $salida = AlmacenProductoSalida::create(
+                       array_merge($datos, ['creado_por' => $usuarioId])
+                   );
+
+                   AuditoriaServicio::registrar(
+                       modelo: AlmacenProductoSalida::class,
+                       modeloId: $salida->id,
+                       accion: 'crear',
+                       despues: $salida->toArray(),
+                       camposIgnorados: self::CAMPOS_IGNORADOS,
+                   );
+
+                   $resultados['creados']++;
+               }
+
+               // Sin validar disponibilidad: registrarMovimiento decide solo si esta
+               // fecha es del año vigente y, de serlo, descuenta sin bloquear aunque
+               // quede negativo.
+               $this->stockService->registrarMovimiento(
+                   'salida',
+                   $salida->producto_id,
+                   $almacenId,
+                   (float) $salida->cantidad,
+                   $salida->fecha_reporte,
+                   $salida->tipo_kardex,
+                   AlmacenProductoSalida::class,
+                   $salida->id
+               );
+           }
+       });
+
+       return $resultados;
+   }*/
     public function guardarSalidaMasiva(array $filas, string $tipo, int $almacenId): array
     {
-        $resultados = ['creados' => 0, 'actualizados' => 0, 'eliminados' => 0];
+        $resultados = ['creados' => 0, 'actualizados' => 0, 'eliminados' => 0, 'pendientes_reconciliacion' => 0];
+        $esCombustible = $tipo === 'combustible';
+        $idsSalidasParaReconciliar = [];
 
-        DB::transaction(function () use ($filas, $tipo, $almacenId, &$resultados) {
+        DB::transaction(function () use ($filas, $tipo, $almacenId, &$resultados, &$idsSalidasParaReconciliar, $esCombustible) {
             $usuarioId = Auth::id();
 
             foreach ($filas as $fila) {
                 $id = $fila['id'] ?? null;
-                $esCombustible = $tipo === 'combustible';
 
                 $camposBase = ['fecha_reporte', 'producto_id', 'cantidad', 'tipo_kardex'];
                 $campoDestino = $esCombustible ? 'maquinaria_id' : 'campo_nombre';
@@ -136,6 +295,8 @@ class AlmacenServicio
                     'tipo_kardex' => $fila['tipo_kardex'],
                 ];
 
+                $requiereMovimiento = true;
+
                 if ($id) {
                     $salida = AlmacenProductoSalida::findOrFail($id);
                     $antes = $salida->toArray();
@@ -144,10 +305,11 @@ class AlmacenServicio
                     $cambiaTipoKardex = $salida->tipo_kardex !== $fila['tipo_kardex'];
                     $cambiaCantidad = abs((float) $salida->cantidad - (float) $fila['cantidad']) > 0.0001;
                     $cambiaFecha = (string) $salida->fecha_reporte !== (string) $fila['fecha_reporte'];
+                    $cambiaMaquinaria = $esCombustible && (int) ($salida->maquinaria_id ?? 0) !== (int) ($fila['maquinaria_id'] ?? 0);
                     $afectaStock = $cambiaProducto || $cambiaTipoKardex || $cambiaCantidad || $cambiaFecha;
 
-                    if (!$afectaStock) {
-                        // Solo campos informativos (campo, uso, maquinaria, costo...): update directo.
+                    if (!$afectaStock && !$cambiaMaquinaria) {
+                        // Solo campos informativos (campo, uso, costo...): update directo, sin tocar stock.
                         $salida->update(array_merge($datos, ['editado_por' => $usuarioId]));
 
                         AuditoriaServicio::registrar(
@@ -160,14 +322,18 @@ class AlmacenServicio
                         );
 
                         $resultados['actualizados']++;
+
+                        // No cambió stock, pero si cambió maquinaria, igual es candidata
+                        // a reconciliación aunque no reregistremos su movimiento.
+                        if ($esCombustible && $salida->maquinaria_id) {
+                            $idsSalidasParaReconciliar[] = $salida->id;
+                        }
                         continue;
                     }
 
-                    // Cambió producto, tipo_kardex, cantidad o fecha: revertir el movimiento
-                    // viejo (con su propio producto/tipo/fecha originales) y luego registrar
-                    // uno nuevo con los valores actuales. No hace falta calcular deltas a mano:
-                    // revertir ya sabe a qué producto/tipo/año devolverle, y registrar ya sabe
-                    // a cuál descontarle — aunque sean distintos entre sí.
+                    // Cambió producto, tipo_kardex, cantidad, fecha o maquinaria: revertir
+                    // el movimiento viejo (con su producto/tipo/fecha originales) y
+                    // reregistrar con los valores actuales.
                     $this->stockService->revertirMovimientosDeOrigen(AlmacenProductoSalida::class, $salida->id);
                     $salida->update(array_merge($datos, ['editado_por' => $usuarioId]));
 
@@ -210,8 +376,22 @@ class AlmacenServicio
                     AlmacenProductoSalida::class,
                     $salida->id
                 );
+
+                // Cualquier salida de combustible creada, o editada con cambio real
+                // de stock/maquinaria, es candidata a reconciliar con distribuciones
+                // huérfanas — sin decidir aquí a cuál le corresponde, solo se anota.
+                if ($esCombustible && $salida->maquinaria_id) {
+                    $idsSalidasParaReconciliar[] = $salida->id;
+                }
             }
         });
+
+        if ($esCombustible && !empty($idsSalidasParaReconciliar)) {
+            $reconciliacion = app(DistribucionCombustibleServicio::class)
+                ->reconciliarPorSalidas(array_unique($idsSalidasParaReconciliar));
+
+            $resultados['pendientes_reconciliacion'] = count($reconciliacion['pendientesManual'] ?? []);
+        }
 
         return $resultados;
     }

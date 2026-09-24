@@ -28,6 +28,9 @@ class AlmacenProductoSalida extends Model
         'registro_carga',
         'movimiento_id'
     ];
+    protected $casts = [
+        'fecha_reporte' => 'date:Y-m-d',
+    ];
     public function kardexMovimiento()
     {
         return $this->belongsTo(InsKardexMovimiento::class, 'movimiento_id');
@@ -69,14 +72,5 @@ class AlmacenProductoSalida extends Model
     public function getObservacionAttribute()
     {
         return $this->tipo_kardex == 'negro' ? 'No registra contabilidad' : '';
-    }
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::deleting(function ($registro) {
-            $registro->distribuciones()->delete();
-        });
     }
 }
