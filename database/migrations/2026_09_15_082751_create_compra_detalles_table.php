@@ -33,7 +33,7 @@ return new class extends Migration {
             $table->decimal('cantidad_base', 12, 4); // (cantidad * factor_conversion_usado) -> Va al Kardex
             $table->decimal('costo_unitario_base', 18, 6)->default(0); // (costo_unitario / factor_conversion_usado)
 
-            $table->decimal('costo_total_kardex', 12, 4)->default(0)->after('total_linea');
+            $table->decimal('costo_total_kardex', 12, 4)->default(0);
 
             $table->timestamps();
         });
