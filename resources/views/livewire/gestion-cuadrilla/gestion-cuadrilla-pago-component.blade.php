@@ -93,20 +93,7 @@
                                 <x-subtitle>{{ ucfirst($desglose->estado) }}</x-subtitle>
                             </div>
                         </div>
-                        @php
-                            // Preparamos la colección inicial para pasarla como JSON plano a Alpine
-                            $detallesJson = $desglose->detalles
-                                ->map(
-                                    fn($d) => [
-                                        'id' => $d->id,
-                                        'nro_documento' => $d->nro_documento ?? '',
-                                        'original' => $d->nro_documento ?? '',
-                                    ],
-                                )
-                                ->values();
-                        @endphp
-
-                        <div x-data="gestorCorrelativos(@js($detallesJson))" class="space-y-4">
+                        <div class="space-y-4">
 
                             <x-table>
                                 <x-slot name="thead">
@@ -124,9 +111,7 @@
                                         <x-tr wire:key="detalle-{{ $detalle->id }}">
                                             <x-td compact>
                                                 <x-input type="text"
-                                                    x-model="filas[{{ $index }}].nro_documento"
-                                                    @input="actualizarDesde({{ $index }})"
-                                                    placeholder="Ej: F001-1000" class="font-mono text-xs" />
+                                                    wire:model="nro_documento.{{ $detalle->id }}" placeholder="Ej: F001-1000" class="font-mono text-xs" />
                                             </x-td>
                                             <x-td>{{ $detalle->descripcion }}</x-td>
                                             <x-td class="text-right">S/ {{ number_format($detalle->monto, 2) }}</x-td>
@@ -149,11 +134,11 @@
                             </x-table>
 
                             {{-- Botón Inferior de Guardado --}}
-                            <div x-show="editado" x-transition class="flex justify-end mt-2">
-                                <x-button variant="primary" size="sm" @click="guardarCambios">
+                            <x-flex class="justify-end mt-2">
+                                <x-button variant="primary" size="sm" wire:click="guardarNumeracionCuadrillaDesglose">
                                     <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar Numeración
                                 </x-button>
-                            </div>
+                            </x-flex>
                         </div>
                     </div>
                 </x-card>
@@ -236,68 +221,6 @@
                     }
                 });
             },
-        }));
-
-        Alpine.data('gestorCorrelativos', (detallesIniciales) => ({
-            filas: detallesIniciales,
-            editado: false,
-
-            actualizarDesde(indexInicio) {
-                let valorBase = this.filas[indexInicio].nro_documento.trim();
-
-                // Autocompletar en cascada desde la fila modificada hacia abajo
-                for (let i = indexInicio + 1; i < this.filas.length; i++) {
-                    if (!valorBase) {
-                        this.filas[i].nro_documento = '';
-                        continue;
-                    }
-
-                    let siguiente = this.calcularSiguienteCorrelativo(valorBase);
-                    if (siguiente !== null) {
-                        this.filas[i].nro_documento = siguiente;
-                        valorBase = siguiente; // La fila actual se convierte en la base de la siguiente
-                    } else {
-                        // Si el formato no es correlativo reconocible, se vacían las siguientes
-                        this.filas[i].nro_documento = '';
-                        valorBase = '';
-                    }
-                }
-
-                // Comprobar si hay cambios respecto a los valores originales
-                this.evaluarEstadoEditado();
-            },
-
-            calcularSiguienteCorrelativo(cadena) {
-                // Regex que captura texto con número final (Ej: "F001-1000", "B002-005", "100")
-                let match = cadena.match(/^(.*?)(\d+)$/);
-                if (!match) return null;
-
-                let prefijo = match[1];
-                let numeroStr = match[2];
-                let longitudOriginal = numeroStr.length;
-
-                let siguienteNumero = (parseInt(numeroStr, 10) + 1).toString();
-
-                // Conservar el relleno de ceros a la izquierda (padding)
-                let numeroRellenado = siguienteNumero.padStart(longitudOriginal, '0');
-
-                return prefijo + numeroRellenado;
-            },
-
-            evaluarEstadoEditado() {
-                this.editado = this.filas.some(f => f.nro_documento !== f.original);
-            },
-
-            guardarCambios() {
-                // Prepara el array [{id: 1, nro_documento: 'F001-1000'}, ...]
-                let payload = this.filas.map(f => ({
-                    id: f.id,
-                    nro_documento: f.nro_documento
-                }));
-
-                // Llama a la función del componente Livewire
-                $wire.guardarNumeracionDocumentos(payload);
-            }
         }));
     </script>
 @endscript

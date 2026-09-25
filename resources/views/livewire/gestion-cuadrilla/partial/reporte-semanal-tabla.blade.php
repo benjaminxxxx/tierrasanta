@@ -96,6 +96,9 @@
 </div>
 
 <x-inferior-derecha>
+    <x-button @click="$wire.dispatch('abrirResumenAcumuladoCuadrilla')" variant="primary">
+        <i class="fa fa-eye"></i> Ver resumen acumulado
+    </x-button>
     <x-button @click="registrarHoras">
         <i class="fa fa-save"></i> Guardar cambios
     </x-button>

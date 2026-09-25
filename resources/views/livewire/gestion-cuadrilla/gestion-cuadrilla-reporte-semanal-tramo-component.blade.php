@@ -3,15 +3,10 @@
     <x-card class="my-5 mb-20">
 
         @include('livewire.gestion-cuadrilla.partial.reporte-semanal-tabla')
-        @include('livewire.gestion-cuadrilla.partial.reporte-semanal-resumen')
         @include('livewire.gestion-cuadrilla.partial.personalizar-costo-hora-form')
         @include('livewire.gestion-cuadrilla.partial.reordenar-grupo-form')
         @include('livewire.gestion-cuadrilla.partial.reemplazar-cuadrillero')
     </x-card>
-
-
-    <livewire:gestion-cuadrilla.gestion-cuadrilla-reporte-pago-component />
-
 
     <x-loading wire:loading />
     <style>

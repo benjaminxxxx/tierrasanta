@@ -43,4 +43,8 @@ class CuadActividadBono extends Model
     {
         return $this->hasMany(CuadActividadProduccion::class, 'actividad_bono_id');
     }
+    public function desgloseDetalle()
+    {
+        return $this->belongsTo(DesgloseDetalle::class, 'desglose_detalle_id');
+    }
 }

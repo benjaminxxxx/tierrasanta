@@ -47,6 +47,10 @@
         <livewire:gestion-cuadrilla.gestion-cuadrilla-gastos-adicionales-component :tramoId="$tramoActual->id"
             wire:key="gastosAdicionales{{ $tramoActual->id }}" />
         <livewire:gestion-cuadrilla.administrar-cuadrillero.cuadrilla-grupo-form-component />
+
+        
+        <livewire:gestion-cuadrilla.gestion-cuadrilla-resumen-acumulado-component :tramoLaboralId="$tramoActual->id"
+            :fechaHastaBono="$tramoActual->fecha_hasta_bono" wire:key="tramo{{ $tramoActual->id }}-{{ $cambios }}" />
     @endif
 
     <x-dialog-modal wire:model.live="mostrarFormularioReporteSemanalTramo">

@@ -27,6 +27,7 @@ class CuadResumenPorTramo extends Model
         'orden',
         'deuda_actual',
         'deuda_acumulada',
+        'monto_pagado',
         'tramo_id',
         'tramo_acumulado_id',
         'excel_reporte_file',

@@ -120,8 +120,12 @@ class GastoAdicionalPorGrupoCuadrilla extends Model
 
         return !$fecha->between($inicio, $fin);
     }
-
+    //deprecado
     public function tramo()
+    {
+        return $this->belongsTo(CuadTramoLaboral::class, 'cuad_tramo_laboral_id');
+    }
+    public function tramoLaboral()
     {
         return $this->belongsTo(CuadTramoLaboral::class, 'cuad_tramo_laboral_id');
     }

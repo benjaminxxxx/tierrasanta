@@ -11,7 +11,6 @@ use App\Models\CuadTramoLaboralGrupo;
 use App\Procesos\Cuadrillas\ReemplazarCuadrillero;
 use App\Services\Cuadrilla\CuadrilleroServicio;
 use App\Services\Cuadrilla\RegistroDiarioServicio;
-use App\Services\Cuadrilla\TramoLaboral\ResumenTramoServicio;
 use App\Services\Cuadrilla\TramoLaboralServicio;
 use App\Services\Handsontable\HSTCuadrillaReporteSemanalHoras;
 use App\Support\DateHelper;
@@ -107,7 +106,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
     {
 
         $this->obtenerReporteTramo();
-        $this->procesarCalculoListadoResumen();
+        //$this->procesarCalculoListadoResumen();
     }
     public function abrirPrecioPersonalizado($cuadrilleros)
     {
@@ -273,7 +272,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
             CuadrilleroServicio::registrarTotalesEnResumenDiarioPlanilla($fechaInicio, $fechaFin);
 
             $this->obtenerReporteTramo();
-            $this->procesarCalculoListadoResumen();
+            //$this->procesarCalculoListadoResumen();
             $this->alert('success', 'Información actualizada');
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage(), [
@@ -396,16 +395,6 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
 
             if (!auth()->user()->can(Permisos::CUADRILLA_SEMANAL_GESTIONAR_HORAS)) {
                 throw new Exception("No tiene permisos para editar el reporte semanal");
-            }
-
-            foreach ($resumenes as $id => $resumenData) {
-                // Solo enviar fecha y recibo
-                $payload = [
-                    'fecha' => $resumenData['fecha'] ?? null,
-                    'recibo' => $resumenData['recibo'] ?? null,
-                ];
-
-                ResumenTramoServicio::actualizar($id, $payload);
             }
 
             $inicioDate = Carbon::parse($inicio)->startOfDay();
@@ -551,18 +540,6 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
         }
     }
 
-    public function cambiarEstadoResumen($resumenId)
-    {
-        try {
-
-            app(ResumenTramoServicio::class)->cambiarCondicion($resumenId);
-            $this->listarResumenes();
-            $this->alert('success', 'Estado actualizado correctamente.');
-
-        } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
-        }
-    }
     public function listarResumenes()
     {
         try {
@@ -579,6 +556,7 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
             $this->alert('error', $th->getMessage());
         }
     }
+    /*
     public function procesarCalculoListadoResumen()
     {
         try {
@@ -587,11 +565,11 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
         } catch (\Throwable $th) {
             throw new Exception($th->getMessage());
         }
-    }
+    }*/
     public function recalcularResumenTramo()
     {
         try {
-            $this->procesarCalculoListadoResumen();
+            //$this->procesarCalculoListadoResumen();
             $this->alert('success', 'Resumen actualizado correctamente.');
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());

@@ -220,7 +220,7 @@ class RegistrarPagoWizardComponent extends Component
             // 1. Crear el registro consolidado en desglose_detalles
             $desgloseDetalle = $servicio->agregarDetalle($desglose, [
                 'nro_documento' => $this->documento ?: null,
-                'descripcion' => $this->descripcion,
+                'descripcion' => mb_strtoupper($this->descripcion),
                 'tipo_gasto' => 'PAGO_CUADRILLA', // O el tipo de gasto correspondiente en tu enum
                 'monto' => round($montoTotal, 2),
                 'observaciones' => 'BONO_' . strtoupper($this->tipoPeriodo),
@@ -265,7 +265,7 @@ class RegistrarPagoWizardComponent extends Component
             // (la distinción "extras/turno tarde" queda en la descripción, no en el tipo_gasto)
             $desgloseDetalle = $servicio->agregarDetalle($desglose, [
                 'nro_documento' => $this->documento ?: null,
-                'descripcion' => $this->descripcion,
+                'descripcion' => mb_strtoupper($this->descripcion),
                 'tipo_gasto' => 'PAGO_CUADRILLA',
                 'monto' => round($montoTotalSeleccionado, 2),
                 'observaciones' => $this->tipoPeriodo,
@@ -301,7 +301,7 @@ class RegistrarPagoWizardComponent extends Component
 
                 $desgloseDetalle = $servicio->agregarDetalle($desglose, [
                     'nro_documento' => $fila['nro_documento'] ?: null,
-                    'descripcion' => $fila['descripcion'],
+                    'descripcion' => mb_strtoupper($fila['descripcion']),
                     'tipo_gasto' => 'GASTO_ADICIONAL',
                     'monto' => round($fila['monto'], 2),
                 ]);

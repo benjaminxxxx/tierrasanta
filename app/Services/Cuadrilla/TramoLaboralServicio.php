@@ -3,11 +3,7 @@
 namespace App\Services\Cuadrilla;
 
 use App\Models\CuadCostoDiarioGrupo;
-use App\Models\CuadRegistroDiario;
-use App\Models\CuadResumenPorTramo;
 use App\Models\CuadTramoLaboral;
-use App\Models\GastoAdicionalPorGrupoCuadrilla;
-use App\Services\Cuadrilla\TramoLaboral\ResumenTramoServicio;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
@@ -56,7 +52,7 @@ class TramoLaboralServicio
     public function generarResumen(int $tramoId, $fechaHastaBono): void
     {
 
-        app(ResumenTramoServicio::class)->generarResumen($tramoId, $fechaHastaBono);
+       // app(ResumenTramoServicio::class)->generarResumen($tramoId, $fechaHastaBono);
 
     }
     public function encontrarTramoPorMesAnioLista($mes, $anio)

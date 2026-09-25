@@ -32,6 +32,7 @@ class GestionCuadrillaPagoComponent extends Component
     public $ultimoDesglose;
     public bool $editandoDesglose = false;
     public ?int $desgloseIdEditar = null;
+    public array $nro_documento = [];
     protected $listeners = ['pagoRegistrado' => 'relistar', 'eliminarDesglose', 'eliminarDetalleConfirmado'];
 
     public function mount(): void
@@ -45,12 +46,23 @@ class GestionCuadrillaPagoComponent extends Component
     }
     public function obtenerDesgloses()
     {
-        $this->desgloses = Desglose::with('detalles')
+        $this->desgloses = Desglose::with([
+            'detalles' => function ($query) {
+                $query->orderBy('nro_documento', 'asc');
+            }
+        ])
             ->whereYear('fecha', $this->anio)
             ->whereMonth('fecha', $this->mes)
             ->orderBy('fecha')
             ->orderBy('id')
             ->get();
+
+        $this->desgloses->each(function ($desglose) {
+            $desglose->detalles->each(function ($desgloseDetalle) {
+                $this->nro_documento[$desgloseDetalle->id] = $desgloseDetalle->nro_documento;
+            });
+        });
+
         $this->desglosesIds = $this->desgloses->pluck('id')->toArray();
         $this->ultimoDesglose = optional($this->desgloses->last())->id ?? null;
     }
@@ -161,16 +173,18 @@ class GestionCuadrillaPagoComponent extends Component
             $this->errorAlert($th);
         }
     }
-    public function guardarNumeracionDocumentos(array $items): void
+    public function guardarNumeracionCuadrillaDesglose(): void
     {
+        $items = $this->nro_documento;
         DB::transaction(function () use ($items) {
-            foreach ($items as $item) {
-                DesgloseDetalle::where('id', $item['id'])->update([
-                    'nro_documento' => $item['nro_documento'] ?: null,
+            foreach ($items as $desgloseId => $item) {
+                //dd($desgloseId,$item);
+                DesgloseDetalle::where('id', $desgloseId)->update([
+                    'nro_documento' => $item ?: null,
                 ]);
             }
         });
-
+        $this->obtenerDesgloses();
         $this->successAlert('Numeración de documentos actualizada correctamente.');
     }
     public function render()

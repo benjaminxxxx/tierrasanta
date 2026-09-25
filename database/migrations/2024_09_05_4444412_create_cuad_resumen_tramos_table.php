@@ -29,6 +29,7 @@ return new class extends Migration
             $table->date('fecha_fin')->nullable();
             $table->date('fecha_acumulada')->nullable();
             $table->string('excel_reporte_file')->nullable();
+            $table->decimal('monto_pagado', 12, 2)->default(0.00);
             // Montos
             $table->decimal('deuda_actual', 12, 2)->default(0);
             $table->decimal('deuda_acumulada', 12, 2)->default(0);
