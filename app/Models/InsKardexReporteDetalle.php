@@ -14,6 +14,7 @@ class InsKardexReporteDetalle extends Model
     protected $fillable = [
         'reporte_id',
         'ins_kardex_id',
+        'grupo_operativo',
         'codigo_existencia',
         'nombre_producto',
         'condicion',

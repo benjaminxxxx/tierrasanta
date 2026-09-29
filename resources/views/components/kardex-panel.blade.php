@@ -90,7 +90,7 @@
     @else
         <x-warning>
             No hay {{ $titulo }}
-            <x-button href="{{ route('gestion_insumos.kardex') }}">
+            <x-button href="{{ route('almacen.kardex') }}">
                 Crear Kardex
             </x-button>
         </x-warning>

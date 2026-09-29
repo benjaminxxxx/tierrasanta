@@ -70,7 +70,8 @@ class Producto extends Model
     }
     public function getCompraActivaAttribute()
     {
-        return $this->compras()->where('estado', 1)->exists();
+        // compra_detalles no tiene 'estado' (era de compra_productos): basta con que exista una compra
+        return $this->compras()->exists();
     }
     public function getUnidadMedidaAttribute()
     {
@@ -149,9 +150,13 @@ class Producto extends Model
     {
         return $this->belongsTo(SunatTabla6CodigoUnidadMedida::class, 'codigo_unidad_medida');
     }
+    /**
+     * Líneas de compra del producto (compra_detalles). Antes apuntaba a compra_productos,
+     * que quedó en legacy/.
+     */
     public function compras()
     {
-        return $this->hasMany(CompraProducto::class);
+        return $this->hasMany(CompraDetalle::class);
     }
 
     public static function buscarCombustible(string $nombre)

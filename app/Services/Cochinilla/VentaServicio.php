@@ -7,7 +7,7 @@ use App\Models\CochinillaIngreso;
 use App\Models\VentaCochinilla;
 use App\Models\VentaCochinillaReporte;
 use App\Models\VentaFacturadaCochinilla;
-use App\Services\Campo\Gestion\CampoServicio;
+use App\Services\Campo\CampoServicio;
 use App\Support\CalculoHelper;
 use App\Support\DateHelper;
 use App\Support\FormatoHelper;

@@ -1,0 +1,1 @@
+<livewire:almacen.kardex.insumo-kardex-form-component />

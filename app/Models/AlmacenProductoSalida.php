@@ -9,7 +9,6 @@ class AlmacenProductoSalida extends Model
 {
     use HasFactory;
     protected $table = 'almacen_producto_salidas';
-
     protected $fillable = [
         'item',
         'producto_id',

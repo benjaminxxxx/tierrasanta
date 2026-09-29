@@ -1,0 +1,87 @@
+<div class="space-y-4">
+
+    <x-flex>
+        <x-title>
+            Gestión de Maquinaria
+        </x-title>
+        @can(\App\Constants\Permisos::CAMPO_MAQUINARIA_GESTIONAR)
+            <x-button type="button" @click="$wire.dispatch('RegistrarMaquinaria')">
+                <i class="fa fa-plus"></i> Nueva Maquinaria
+            </x-button>
+        @endcan
+
+    </x-flex>
+    @can(\App\Constants\Permisos::CAMPO_MAQUINARIA_VER)
+        <x-card>
+            <x-table>
+                <x-slot name="thead">
+                    <tr>
+                        <x-th class="text-center">
+                            N°
+                        </x-th>
+                        <x-th class="text-center">Foto</x-th>
+                        <x-th>
+                            Nombre de Maquinaria
+                        </x-th>
+                        <x-th>
+                            Alias para el Kardex Blanco
+                        </x-th>
+                        <x-th class="text-center">Placa</x-th>
+                        <x-th class="text-center">Combustible</x-th>
+                        <x-th class="text-center">Distribuye por campo</x-th>
+                        <x-th class="text-center">Consumo estimado</x-th>
+                        <x-th value="ACCIONES" class="text-center" />
+                    </tr>
+                </x-slot>
+                <x-slot name="tbody">
+                    @if ($maquinarias && $maquinarias->count() > 0)
+                        @foreach ($maquinarias as $indice => $maquinaria)
+                            <x-tr>
+                                <x-th value="{{ $indice + 1 }}" class="text-center" />
+                                <x-td class="text-center">
+                                    @if ($maquinaria->foto_url)
+                                        <img src="{{ $maquinaria->foto_url }}" alt="{{ $maquinaria->nombre }}"
+                                            class="h-10 w-10 rounded object-cover inline-block border border-border">
+                                    @else
+                                        <i class="fa fa-tractor text-muted-foreground"></i>
+                                    @endif
+                                </x-td>
+                                <x-td value="{{ $maquinaria->nombre }}" />
+                                <x-td value="{{ $maquinaria->alias_blanco }}" />
+                                <x-td class="text-center">{{ $maquinaria->placa ?? '—' }}</x-td>
+                                <x-td class="text-center">{{ $maquinaria->combustible?->nombre_comercial ?? '—' }}</x-td>
+                                <x-td class="text-center">
+                                    @if ($maquinaria->usa_distribucion)
+                                        <span class="text-green-700 dark:text-green-400">Sí</span>
+                                    @else
+                                        <span class="text-muted-foreground" title="Su combustible va directo a FDM">No (FDM)</span>
+                                    @endif
+                                </x-td>
+                                <x-td class="text-center text-xs">{{ $maquinaria->consumo_texto ?? '—' }}</x-td>
+
+                                <x-td class="text-center">
+                                    @can(\App\Constants\Permisos::CAMPO_MAQUINARIA_GESTIONAR)
+                                        <div class="flex items-center justify-center gap-2">
+                                            <x-button variant="secondary"
+                                                @click="$wire.dispatch('EditarMaquinaria',{'id':{{ $maquinaria->id }}})">
+                                                <i class="fa fa-edit"></i> Editar
+                                            </x-button>
+                                        </div>
+                                    @endcan
+                                </x-td>
+                            </x-tr>
+                        @endforeach
+                    @else
+                        <x-tr>
+                            <x-td colspan="9">No Hay Maquinarias Registradas.</x-td>
+                        </x-tr>
+                    @endif
+                </x-slot>
+            </x-table>
+        </x-card>
+    @else
+        <x-danger>
+            No tiene permiso para ver la siguiente información.
+        </x-danger>
+    @endcan
+</div>

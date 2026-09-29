@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Services\Campo\Gestion\CampoServicio;
+use App\Services\Campo\CampoServicio;
 use App\Support\ExcelHelper;
 use App\Support\ValidacionHelper;
 use Exception;

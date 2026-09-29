@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\PlanTipoAsistencia;
-use App\Services\PlanTipoAsistenciaServicio;
+use App\Services\Planilla\Asistencia\PlanTipoAsistenciaServicio;
 use Illuminate\Database\Seeder;
 
 class PlanTipoAsistenciaSeeder extends Seeder

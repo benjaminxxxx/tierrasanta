@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Domain\DerechoHabiente\EmpleadoAsignacionFamiliarService;
+use App\Services\Planilla\DerechoHabiente\EmpleadoAsignacionFamiliarService;
 use Auth;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -107,6 +107,31 @@ class PlanEmpleado extends Model
     public function ultimoContrato()
     {
         return $this->hasOne(PlanContrato::class, 'plan_empleado_id')->latestOfMany('fecha_inicio');
+    }
+
+    /**
+     * Contrato vigente a la fecha (hoy por defecto): ya inició y no ha terminado.
+     */
+    public function contratoVigente()
+    {
+        $hoy = now()->toDateString();
+
+        return $this->hasOne(PlanContrato::class, 'plan_empleado_id')->ofMany(
+            ['fecha_inicio' => 'max'],
+            fn($q) => $q->where('fecha_inicio', '<=', $hoy)
+                ->where(fn($q) => $q->whereNull('fecha_fin')->orWhere('fecha_fin', '>=', $hoy))
+        );
+    }
+
+    /**
+     * Empleados con un contrato vigente a la fecha (hoy por defecto).
+     */
+    public function scopeConContratoVigente($query, $fecha = null)
+    {
+        $fecha = $fecha ? Carbon::parse($fecha)->toDateString() : now()->toDateString();
+
+        return $query->whereHas('contratos', fn($q) => $q->where('fecha_inicio', '<=', $fecha)
+            ->where(fn($q) => $q->whereNull('fecha_fin')->orWhere('fecha_fin', '>=', $fecha)));
     }
 
 

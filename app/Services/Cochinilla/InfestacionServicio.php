@@ -5,7 +5,7 @@ namespace App\Services\Cochinilla;
 use App\Models\Campo;
 use App\Models\CochinillaInfestacion;
 use App\Models\CochinillaIngreso;
-use App\Services\AuditoriaServicio;
+use App\Services\Reporte\AuditoriaServicio;
 use DB;
 use Illuminate\Support\Carbon;
 

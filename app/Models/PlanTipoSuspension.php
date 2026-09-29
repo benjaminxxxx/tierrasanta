@@ -11,7 +11,8 @@ class PlanTipoSuspension extends Model
         'codigo',
         'grupo',
         'descripcion',
-        'descripcion_corta'
+        'descripcion_corta',
+        'incluye_domingos', // los domingos intermedios cuentan como parte de la suspensión
     ];
     
 }

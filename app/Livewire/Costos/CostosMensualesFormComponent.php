@@ -1,0 +1,79 @@
+<?php
+
+namespace App\Livewire\Costos;
+use App\Models\CostoMensual;
+use App\Services\Costos\CostosMensualesServicio;
+use Jantinnerezo\LivewireAlert\LivewireAlert;
+use Livewire\Component;
+
+class CostosMensualesFormComponent extends Component
+{
+    use LivewireAlert;
+    public $mostrarFormCostosMensuales = false;
+    public array $aniosDisponibles = [];
+    public $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    public $paso = 1;
+    public $form = [
+        'anio' => null,
+        'mes' => null
+    ];
+    protected $listeners = ['agregarCostoMensual','editarCostosMensuales'];
+    public function mount()
+    {
+
+    }
+    public function agregarCostoMensual()
+    {
+        $anioActual = now()->year;
+
+        $this->aniosDisponibles = [
+            $anioActual - 1,
+            $anioActual,
+        ];
+        $this->reset(['form']);
+        // Opcional: seleccionar por defecto el año actual
+        $this->form['anio'] = $anioActual;
+        $this->form['mes'] = now()->month;
+        $this->paso = 1;
+        $this->mostrarFormCostosMensuales = true;
+    }
+    public function editarCostosMensuales($costoMensualId)
+    {
+        $costo = CostoMensual::findOrFail($costoMensualId);
+        $this->form = array_merge($this->form, $costo->toArray());
+        $this->paso = 2;
+        $this->mostrarFormCostosMensuales = true;
+    }
+    public function cargarCostoMensual(): void
+    {
+        $this->validate([
+            'form.anio' => 'required|integer',
+            'form.mes' => 'required|integer',
+        ]);
+
+        $costo = CostoMensual::where('anio', $this->form['anio'])
+            ->where('mes', $this->form['mes'])
+            ->first();
+
+        if ($costo) {
+            $this->form = array_merge($this->form, $costo->toArray());
+        }
+        $this->paso = 2;
+    }
+    public function guardarCostoMensual()
+    {
+        try {
+
+            app(CostosMensualesServicio::class)->guardar($this->form);
+            $this->mostrarFormCostosMensuales = false;
+            $this->dispatch('actualizarCostosMensualesTable');
+            $this->alert('success', 'Costos guardados correctamente.');
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
+        }
+    }
+    public function render()
+    {
+        return view('livewire.costos.costos-mensuales-form-component');
+    }
+}

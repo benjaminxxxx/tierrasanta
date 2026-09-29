@@ -41,6 +41,16 @@ class SincronizarSuspensionDesdeAsistenciaServicio
         $fechaCarbon = Carbon::parse($fecha);
         $diaAnterior = $fechaCarbon->copy()->subDay()->toDateString();
         $diaSiguiente = $fechaCarbon->copy()->addDay()->toDateString();
+        // Vacaciones, enfermedad, maternidad: el domingo (sin registro) cuenta, así que un lunes
+        // continúa la suspensión que termina el sábado (y un sábado la que empieza el lunes)
+        if (\App\Models\PlanTipoSuspension::whereKey($tipoSuspensionId)->value('incluye_domingos')) {
+            if ($fechaCarbon->isMonday()) {
+                $diaAnterior = $fechaCarbon->copy()->subDays(2)->toDateString();
+            }
+            if ($fechaCarbon->isSaturday()) {
+                $diaSiguiente = $fechaCarbon->copy()->addDays(2)->toDateString();
+            }
+        }
 
         // ¿Ya existe una suspensión de este mismo tipo que ya incluye este día?
         $existente = PlanSuspension::where('plan_empleado_id', $planEmpleadoId)
@@ -113,8 +123,9 @@ class SincronizarSuspensionDesdeAsistenciaServicio
             return;
         }
 
-        $esInicio = $suspension->fecha_inicio === $fecha;
-        $esFin = $suspension->fecha_fin === $fecha;
+        // Con el cast date las fechas son Carbon: comparar como texto (antes nunca coincidían)
+        $esInicio = $suspension->fecha_inicio?->toDateString() === $fecha;
+        $esFin = $suspension->fecha_fin?->toDateString() === $fecha;
 
         if ($esInicio && $esFin) {
             $suspension->delete();

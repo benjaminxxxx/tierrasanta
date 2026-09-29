@@ -1111,6 +1111,8 @@ class CuadrilleroServicio
 
     public static function asignarGrupoPeriodo(int $cuadrilleroId, string $codigoGrupo, string $fechaInicio, string $fechaFin): void
     {
+        // BDD de costos: regenerar la mano de obra de estas fechas al terminar la petición
+        \App\Services\Costos\Consolidacion\BddManoObraServicio::registrarCambio($fechaInicio, $fechaFin);
         $inicio = Carbon::parse($fechaInicio)->startOfDay();
         $fin = Carbon::parse($fechaFin)->endOfDay();
 
@@ -1130,6 +1132,8 @@ class CuadrilleroServicio
 
     public static function guardarCostosDiariosGrupo(array $datos, string $fechaInicio): void
     {
+        // BDD de costos: regenerar la mano de obra de estas fechas al terminar la petición
+        \App\Services\Costos\Consolidacion\BddManoObraServicio::registrarCambio($fechaInicio, \Illuminate\Support\Carbon::parse($fechaInicio)->addDays(6)->toDateString());
         $fechaInicio = Carbon::parse($fechaInicio);
 
         foreach ($datos as $grupo) {
@@ -1391,6 +1395,8 @@ class CuadrilleroServicio
 
     public static function guardarReporteSemanal($inicio, $fin, $rows)
     {
+        // BDD de costos: regenerar la mano de obra de estas fechas al terminar la petición
+        \App\Services\Costos\Consolidacion\BddManoObraServicio::registrarCambio($inicio, $fin);
         DB::beginTransaction();
         try {
 
@@ -1580,6 +1586,8 @@ class CuadrilleroServicio
 
     public static function registrarActividadDiaria($fecha, array $cuadrilleros, array $actividades)
     {
+        // BDD de costos: regenerar la mano de obra de estas fechas al terminar la petición
+        \App\Services\Costos\Consolidacion\BddManoObraServicio::registrarCambio($fecha);
         if (!$fecha) {
             throw ValidationException::withMessages([
                 'fecha' => 'Debe seleccionar una fecha.'
@@ -1677,6 +1685,8 @@ class CuadrilleroServicio
      */
     public static function guardarDesdeHandsontable($fecha, $rows)
     {
+        // BDD de costos: regenerar la mano de obra de estas fechas al terminar la petición
+        \App\Services\Costos\Consolidacion\BddManoObraServicio::registrarCambio($fecha);
         DB::beginTransaction();
         try {
             if (!$fecha) {
@@ -1837,6 +1847,8 @@ class CuadrilleroServicio
     /*
     public static function guardarDesdeHandsontable($fecha, $rows)
     {
+        // BDD de costos: regenerar la mano de obra de estas fechas al terminar la petición
+        \App\Services\Costos\Consolidacion\BddManoObraServicio::registrarCambio($fecha);
         DB::beginTransaction();
         try {
             if (!$fecha) {

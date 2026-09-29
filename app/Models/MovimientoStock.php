@@ -17,6 +17,8 @@ class MovimientoStock extends Model
         'direccion',
         'producto_id',
         'cantidad',
+        'costo_unitario', // solo entradas (compras): costo real, IGV incluido
+        'costo_total',
         'fecha_movimiento',
         'motivo',
         'almacen_id',

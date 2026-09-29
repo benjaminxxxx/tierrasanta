@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Services\PlanTipoAsistenciaServicio;
+use App\Services\Planilla\Asistencia\PlanTipoAsistenciaServicio;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

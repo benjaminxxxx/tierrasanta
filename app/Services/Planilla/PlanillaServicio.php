@@ -10,8 +10,8 @@ use App\Models\PlanMensualSpDesc;
 use App\Models\PlanRegistroDiario;
 use App\Models\PlanSuspension;
 use App\Models\PlanTipoAsistencia;
-use App\Services\PlanillaMensualServicio;
-use App\Services\RecursosHumanos\Planilla\PlanillaEmpleadoServicio;
+use App\Services\Planilla\PlanillaMensualServicio;
+use App\Services\Planilla\PlanillaEmpleadoServicio;
 use App\Support\ExcelHelper;
 use DB;
 use Exception;
@@ -170,6 +170,8 @@ class PlanillaServicio
     }
     public function generarProyeccion($mes, $anio)
     {
+        // BDD de costos: regenerar la mano de obra de estas fechas al terminar la petición
+        \App\Services\Costos\Consolidacion\BddManoObraServicio::registrarCambio(sprintf("%04d-%02d-01", $anio, $mes), \Illuminate\Support\Carbon::create($anio, $mes, 1)->endOfMonth()->toDateString());
         $ordenGuardado = $this->obtenerOrdenGuardado();
 
         $empleados = app(PlanillaEmpleadoServicio::class)

@@ -2,173 +2,313 @@
 
 namespace App\Services\Campania;
 
-use App\Models\Actividad;
-use App\Models\CampoCampania;
-use App\Models\CuadActividadBono;
-use App\Models\CuadDetalleHora;
-use App\Models\CuadRegistroDiario;
-use App\Models\PlanDetalleHora;
-use App\Support\CalculoHelper;
+use App\Models\CampoCampania as Campania;
+use App\Models\CochinillaInfestacion;
+use App\Services\Costos\Data\DataCostoServicio;
+use App\Services\Costos\Data\DataInsumoServicio;
+use App\Services\Costos\Data\DataReporteCampoServicio;
+use App\Services\Campania\ExportCampaniaServicio;
+use App\Services\Reporte\RptProduccionPlanificacionCampania;
 use Exception;
 use Illuminate\Support\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CampaniaServicio
 {
-    
-    public function obtenerCostosManoObra($campania)
+    public function generarBddMensual(int $campaniaId): void
     {
+        $campania = Campania::find($campaniaId);
 
+        if (!$campania) {
+            throw new Exception("La campaña no existe.");
+        }
+
+        // 1. Validar la fecha de inicio
+        if (!$campania->fecha_inicio) {
+            throw new Exception("La campaña no tiene una fecha de inicio configurada.");
+        }
+        // 2. Determinar la fecha fin: si es nula o futura, se ajusta a la fecha actual
+        $fechaInicio = $campania->fecha_inicio->format('Y-m-d');
+
+        $fechaFin = ($campania->fecha_fin && $campania->fecha_fin->isPast())
+            ? $campania->fecha_fin->format('Y-m-d')
+            : now()->format('Y-m-d');
+
+        // 1. Obtención unificada de datos por el rango de la campaña
+        $informacionCombinada = app(DataReporteCampoServicio::class)->obtenerDataUnificada(
+            $fechaInicio,
+            $fechaFin,
+            $campania->nombre_campania,
+            $campania->campo
+        );
+
+        // 2. Configuración para el generador Excel
+        $config = (object) [
+            'campo' => $campania->campo,
+            'nombre_campania' => $campania->nombre_campania,
+            'area' => $campania->area,
+        ];
+
+        // 3. Generar archivo Excel
+        $filePath = app(ExportCampaniaServicio::class)->generarExcelMensual($config, $informacionCombinada);
+
+        // 4. Actualizar el registro de la campaña
+        $campania->update([
+            'gasto_resumen_bdd_file' => $filePath,
+        ]);
+    }
+    /*
+    esta funcion se cambio a una mejor, porque ahora se ha unificado al cosot mensual que tra todo de golep
+    public function generarBddMensual(int $campaniaId)
+    {
+        $campania = Campania::find($campaniaId);
+
+        if (!$campania) {
+            throw new Exception("La campaña no existe");
+        }
+
+        // 1. Recolección de datos de múltiples fuentes
+        $informacionPlanilla = app(DataReporteCampoServicio::class)->generarPlanillerosPor(
+            $campania->nombre_campania,
+            $campania->campo
+        );
+
+        $informacionMaquinaria = app(DataReporteCampoServicio::class)->generarMaquinariaPor(
+            $campania->nombre_campania,
+            $campania->campo
+        );
+
+        $informacionInsumos = app(DataReporteCampoServicio::class)->generarInsumosPor(
+            $campania->nombre_campania,
+            $campania->campo
+        );
+
+        $informacionGastosGenerales = app(DataReporteCampoServicio::class)->generarGastosGeneralesPor(
+            $campania->nombre_campania,
+            $campania->campo
+        );
+
+        $informacionConsumo = [];   // Aquí vendrían tus otros servicios
+
+        // 2. Combinar todos los arrays
+        $informacionCombinada = array_merge(
+            $informacionPlanilla,
+            $informacionMaquinaria,
+            // $informacionCuadrilla,
+            $informacionConsumo,
+            $informacionInsumos,
+            $informacionGastosGenerales
+        );
+
+        // 3. Definir los valores comunes
+        $tipoCambioValor = $campania->tipo_cambio; // Ejemplo: podrías traerlo de un servicio o del objeto campania
+        $nombreCampaniaValor = $campania->nombre_campania;
+
+        // 4. Inyectar campos adicionales a cada elemento
+        $informacionCombinada = array_map(function ($item) use ($tipoCambioValor, $nombreCampaniaValor) {
+            $item['tipo_cambio'] = $tipoCambioValor;
+            $item['campania'] = $nombreCampaniaValor;
+            return $item;
+        }, $informacionCombinada);
+
+        // 2. Ordenamiento
+        usort($informacionCombinada, function ($a, $b) {
+            return strtotime($a['fecha']) - strtotime($b['fecha']);
+        });
+
+        // 3. Delegar generación de Excel al Servicio
+        // Pasamos un objeto simple con los datos de configuración necesarios
+        $config = (object) [
+            'campo' => $campania->campo,
+            'nombre_campania' => $campania->nombre_campania,
+            'area' => $campania->area
+        ];
+
+        $filePath = app(ExportCampaniaServicio::class)->generarExcelMensual($config, $informacionCombinada);
+
+        // 4. Actualizar el modelo con la ruta retornada
+        $campania->update([
+            'gasto_resumen_bdd_file' => $filePath
+        ]);
+    }*/
+    public function registrarHistorialDeInfestaciones(int $campaniaId, string $tipo = 'infestacion'): void
+    {
+        // Cargar campaña
+        $campania = Campania::findOrFail($campaniaId);
+
+        $fechaInicio = Carbon::parse($campania->fecha_inicio);
+        $fechaFin = $campania->fecha_fin ? Carbon::parse($campania->fecha_fin) : null;
         $campo = $campania->campo;
-        $fechaInicio = $campania->fecha_inicio;
-        $fechaFin = $campania->fecha_fin ?? now();
 
-        $detalleHoras = CuadDetalleHora::with(['registroDiario.detalleHoras'])->whereHas('registroDiario', function ($registroDiario) use ($fechaInicio, $fechaFin) {
-            return $registroDiario->whereBetween('fecha', [$fechaInicio, $fechaFin]);
-        })
-            ->where('campo_nombre', $campo)
-            ->get();
+        // 1. Desvincular infestaciones anteriores
+        CochinillaInfestacion::where('campo_campania_id', $campaniaId)
+            ->where('tipo_infestacion', $tipo)
+            ->update(['campo_campania_id' => null]);
 
-        $planDetalleHoras = PlanDetalleHora::with(['registroDiario.detalles'])->whereHas('registroDiario', function ($registroDiario) use ($fechaInicio, $fechaFin) {
-            return $registroDiario->whereBetween('fecha', [$fechaInicio, $fechaFin]);
-        })
+        // 2. Reasignar infestaciones dentro del rango
+        CochinillaInfestacion::where('tipo_infestacion', $tipo)
             ->where('campo_nombre', $campo)
+            ->where('fecha', '>=', $fechaInicio)
+            ->when($fechaFin, fn($q) => $q->where('fecha', '<=', $fechaFin))
+            ->update(['campo_campania_id' => $campaniaId]);
+
+        // 3. Reconsultar infestaciones ya vinculadas
+        $infestaciones = CochinillaInfestacion::where('campo_campania_id', $campaniaId)
+            ->where('tipo_infestacion', $tipo)
+            ->orderBy('fecha')
             ->get();
 
         $data = [];
-        foreach ($detalleHoras as $detalleHora) {
-            $registro = $detalleHora->registroDiario;
 
-            if (!$registro->coincide_total_horas) {
-                throw new Exception("En alguna fecha no se ha detallado las actividades y por ende el total de horas no coincide, corregir para hacer un calculo mas preciso.");
-            }
-            $actividad = Actividad::where('fecha', $registro->fecha)
-                ->where('campo', $detalleHora->campo_nombre)
-                ->where('labor_id', $detalleHora->codigo_labor)->first();
+        if ($infestaciones->isNotEmpty()) {
 
-            if (!$actividad) {
-                throw new Exception("No existe una actividad con campo {$detalleHora->campo_nombre} en codigo de labor {$detalleHora->codigo_labor} en la fecha {$registro->fecha}");
+            // === SUMAS POR METODO ===
+            $data[$tipo . '_kg_totales_madre'] = $infestaciones->sum('kg_madres');
+            $data[$tipo . '_kg_madre_infestador_carton'] = $infestaciones->where('metodo', 'carton')->sum('kg_madres');
+            $data[$tipo . '_kg_madre_infestador_tubos'] = $infestaciones->where('metodo', 'tubo')->sum('kg_madres');
+            $data[$tipo . '_kg_madre_infestador_mallita'] = $infestaciones->where('metodo', 'malla')->sum('kg_madres');
 
-            }
-            $campoNombre = $detalleHora->campo_nombre;
-            $codigoLabor = $detalleHora->codigo_labor;
-            // 🔹 Calcular horas del tramo actual
-            $horaInicio = Carbon::parse($detalleHora->hora_inicio);
-            $horaFin = Carbon::parse($detalleHora->hora_fin);
-            $horasTramo = $horaInicio->diffInMinutes($horaFin) / 60;
+            // === CANTIDAD DE INFESTADORES ===
+            $inf_carton = $infestaciones->where('metodo', 'carton')->sum('infestadores');
+            $inf_tubo = $infestaciones->where('metodo', 'tubo')->sum('infestadores');
+            $inf_malla = $infestaciones->where('metodo', 'malla')->sum('infestadores');
 
-            // 🔹 Buscar el bono total para esta actividad del mismo registro diario
-            $bonoActividad = CuadActividadBono::where('registro_diario_id', $registro->id)
-                ->where('actividad_id', $actividad->id)
-                ->first();
+            $data[$tipo . '_cantidad_infestadores_carton'] = $inf_carton;
+            $data[$tipo . '_cantidad_infestadores_tubos'] = $inf_tubo;
+            $data[$tipo . '_cantidad_infestadores_mallita'] = $inf_malla;
 
-            $totalBono = $bonoActividad->total_bono ?? 0;
+            // === PROCEDENCIA ===
+            $lista = $infestaciones
+                ->groupBy('campo_origen_nombre')
+                ->map(fn($grupo) => [
+                    'campo_origen_nombre' => $grupo->first()->campo_origen_nombre,
+                    'kg_madres' => $grupo->sum('kg_madres'),
+                ])
+                ->values()
+                ->toArray();
 
-            $totalHorasLabor = $registro->detalleHoras
-                ->filter(
-                    fn($h) =>
-                    $h->campo_nombre === $campoNombre &&
-                    $h->codigo_labor === $codigoLabor
-                )
-                ->sum(function ($h) {
-                    $inicio = Carbon::parse($h->hora_inicio);
-                    $fin = Carbon::parse($h->hora_fin);
-                    return $inicio->diffInMinutes($fin) / 60;
-                });
-            // 🔹 Calcular bono proporcional
-            $bonoParcial = $totalHorasLabor > 0
-                ? ($horasTramo / $totalHorasLabor) * $totalBono
-                : 0;
+            $data[$tipo . '_procedencia_madres'] = json_encode($lista);
 
-            // 🔹 Calcular costo total (proporcional + bono)
-            $costo = CalculoHelper::calcularCostoActividad(
-                totalHoras: $registro->total_horas,
-                totalJornal: $registro->costo_dia,
-                horasParcial: $horasTramo,
-                bonoParcial: $bonoParcial
-            );
-            $data[$campoNombre][$codigoLabor][] = [
-                'tipo_empleado' => 'cuadrillero',
-                'empleado' => $registro->cuadrillero->nombres,
-                'hora_inicio' => $detalleHora->hora_inicio,
-                'hora_fin' => $detalleHora->hora_fin,
-                'horas' => round($horasTramo, 2),
-                'total_horas_labor' => round($totalHorasLabor, 2),
-                'bono_parcial' => round($bonoParcial, 2),
-                'total_bono' => $totalBono,
-                'costo' => round($costo, 2),
-                'costo_sin_bono' => round($costo - $bonoParcial, 2),
-                'total_horas_dia' => $registro->total_horas,
-                'jornal_dia' => $registro->costo_dia,
+            // === MADRES POR INFESTADOR ===
+            $data[$tipo . '_cantidad_madres_por_infestador_carton'] =
+                $inf_carton > 0 ? $data[$tipo . '_kg_madre_infestador_carton'] / $inf_carton : 0;
+
+            $data[$tipo . '_cantidad_madres_por_infestador_tubos'] =
+                $inf_tubo > 0 ? $data[$tipo . '_kg_madre_infestador_tubos'] / $inf_tubo : 0;
+
+            $data[$tipo . '_cantidad_madres_por_infestador_mallita'] =
+                $inf_malla > 0 ? $data[$tipo . '_kg_madre_infestador_mallita'] / $inf_malla : 0;
+
+            // Número de pencas (del brote piso del campo)
+            $data[$tipo . '_numero_pencas'] = $campania->brotexpiso_actual_total_brotes_2y3piso;
+        } else {
+            // No hay infestaciones → reset general
+            $data = [
+                $tipo . '_kg_totales_madre' => 0,
+                $tipo . '_kg_madre_infestador_carton' => 0,
+                $tipo . '_kg_madre_infestador_tubos' => 0,
+                $tipo . '_kg_madre_infestador_mallita' => 0,
+                $tipo . '_cantidad_infestadores_carton' => 0,
+                $tipo . '_cantidad_infestadores_tubos' => 0,
+                $tipo . '_cantidad_infestadores_mallita' => 0,
+                $tipo . '_procedencia_madres' => json_encode([]),
+                $tipo . '_cantidad_madres_por_infestador_carton' => 0,
+                $tipo . '_cantidad_madres_por_infestador_tubos' => 0,
+                $tipo . '_cantidad_madres_por_infestador_mallita' => 0,
+                $tipo . '_numero_pencas' => null,
             ];
         }
-        foreach ($planDetalleHoras as $detalleHora) {
-            $registro = $detalleHora->registroDiario;
-            /*
-                        if (!$registro->coincide_total_horas) {
-                            throw new Exception("En alguna fecha no se ha detallado las actividades y por ende el total de horas no coincide, corregir para hacer un calculo mas preciso.");
-                        }*/
-            $actividad = Actividad::where('fecha', $registro->fecha)
-                ->where('campo', $detalleHora->campo_nombre)
-                ->where('labor_id', $detalleHora->codigo_labor)->first();
 
-            if (!$actividad) {
-                throw new Exception("No existe una actividad con campo {$detalleHora->campo_nombre} en codigo de labor {$detalleHora->codigo_labor} en la fecha {$registro->fecha}");
-
-            }
-            $campoNombre = $detalleHora->campo_nombre;
-            $codigoLabor = $detalleHora->codigo_labor;
-            // 🔹 Calcular horas del tramo actual
-            $horaInicio = Carbon::parse($detalleHora->hora_inicio);
-            $horaFin = Carbon::parse($detalleHora->hora_fin);
-            $horasTramo = $horaInicio->diffInMinutes($horaFin) / 60;
-
-            // 🔹 Buscar el bono total para esta actividad del mismo registro diario
-            $bonoActividad = CuadActividadBono::where('registro_diario_id', $registro->id)
-                ->where('actividad_id', $actividad->id)
-                ->first();
-
-            $totalBono = $bonoActividad->total_bono ?? 0;
-
-            $totalHorasLabor = $registro->detalleHoras
-                ->filter(
-                    fn($h) =>
-                    $h->campo_nombre === $campoNombre &&
-                    $h->codigo_labor === $codigoLabor
-                )
-                ->sum(function ($h) {
-                    $inicio = Carbon::parse($h->hora_inicio);
-                    $fin = Carbon::parse($h->hora_fin);
-                    return $inicio->diffInMinutes($fin) / 60;
-                });
-            // 🔹 Calcular bono proporcional
-            $bonoParcial = $totalHorasLabor > 0
-                ? ($horasTramo / $totalHorasLabor) * $totalBono
-                : 0;
-
-            // 🔹 Calcular costo total (proporcional + bono)
-            $costo = CalculoHelper::calcularCostoActividad(
-                totalHoras: $registro->total_horas,
-                totalJornal: $registro->costo_dia,
-                horasParcial: $horasTramo,
-                bonoParcial: $bonoParcial
-            );
-            $data[$campoNombre][$codigoLabor][] = [
-                'tipo_empleado' => 'cuadrillero',
-                'empleado' => $registro->cuadrillero->nombres,
-                'hora_inicio' => $detalleHora->hora_inicio,
-                'hora_fin' => $detalleHora->hora_fin,
-                'horas' => round($horasTramo, 2),
-                'total_horas_labor' => round($totalHorasLabor, 2),
-                'bono_parcial' => round($bonoParcial, 2),
-                'total_bono' => $totalBono,
-                'costo' => round($costo, 2),
-                'costo_sin_bono' => round($costo - $bonoParcial, 2),
-                'total_horas_dia' => $registro->total_horas,
-                'jornal_dia' => $registro->costo_dia,
-            ];
-        }
-        
-
-        return $registrosDiarios;
+        // 4. Guardar usando la función reutilizable
+        $this->actualizarMetricas($campaniaId, $data);
     }
+
+    public function buscarCampaniasPorCampo(string $campo)
+    {
+        return Campania::where('campo', $campo)
+            ->orderBy('nombre_campania', 'desc')
+            ->get();
+    }
+    /**
+     * Elimina una campaña con validaciones previas.
+     *
+     * @param int $campaniaId
+     * @throws \Exception
+     */
+    public function eliminarCampania($campaniaId)
+    {
+        // 1. Buscar campaña
+        $campania = Campania::find($campaniaId);
+
+        if (!$campania) {
+            throw new \Exception("La campaña no existe o ya fue eliminada.");
+        }
+
+        // 2. Validación: no debe tener evaluacionPoblacionPlantas
+        if ($campania->evaluacionPoblacionPlantas()->exists()) {
+            throw new \Exception("No se puede eliminar la campaña porque tiene evaluaciones de población de plantas registradas.");
+        }
+        if ($campania->distribucionesCostosMensuales()->exists()) {
+            throw new \Exception("No se puede eliminar la campaña porque tiene distribuciones de costos mensuales registradas.");
+        }
+
+        // 3. Eliminar campaña
+        try {
+            $campania->delete();
+        } catch (\Throwable $th) {
+            throw new \Exception("Error al eliminar la campaña: " . $th->getMessage());
+        }
+
+        return true;
+    }
+    public function descargarReporteCampania($registros, $campo, $campania)
+    {
+
+        return app(RptProduccionPlanificacionCampania::class)->descargarReporteGeneral($registros, $campo, $campania);
+    }
+    /**
+     * Recalcula los promedios de población (Día 0 y Resiembra) basándose en el historial.
+     */
+    public function actualizarMetricasPoblacion(int $campaniaId): void
+    {
+        // Cargar campaña con su evaluación única
+        $campania = Campania::with('evaluacionPoblacionPlantas')->findOrFail($campaniaId);
+        $evaluacion = $campania->evaluacionPoblacionPlantas; // relación uno-uno
+
+        // Valores por defecto
+        $data = [
+            'pp_dia_cero_fecha_evaluacion' => null,
+            'pp_dia_cero_numero_pencas_madre' => null,
+            'pp_resiembra_fecha_evaluacion' => null,
+            'pp_resiembra_numero_pencas_madre' => null,
+        ];
+
+        if ($evaluacion) {
+
+            // Día cero
+            $data['pp_dia_cero_fecha_evaluacion'] = $evaluacion->fecha_eval_cero;
+            $data['pp_dia_cero_numero_pencas_madre'] = $evaluacion->promedio_plantas_ha_cero;
+            $data['pp_resiembra_fecha_evaluacion'] = $evaluacion->fecha_eval_resiembra;
+            $data['pp_resiembra_numero_pencas_madre'] = $evaluacion->promedio_plantas_ha_resiembra;
+
+        }
+
+        // Guardar métricas en campaña
+        $campania->update($data);
+    }
+
+    /**
+     * Actualiza uno o varios campos de la campaña.
+     * 
+     * @param int   $campaniaId    ID de campaña
+     * @param array $valores       ['campo' => valor, ...]
+     */
+    public function actualizarMetricas(int $campaniaId, array $valores): void
+    {
+        $campania = Campania::findOrFail($campaniaId);
+
+        // Solo actualiza los campos enviados
+        $campania->update($valores);
+    }
+
 }

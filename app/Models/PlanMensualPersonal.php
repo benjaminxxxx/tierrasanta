@@ -566,11 +566,12 @@ class PlanMensualPersonal extends Model
             $total = $this->pagado_sueldo_bruto_negro; // <-- antes: proyectado_sueldo_bruto_negro
             $totalHoras = $this->plame_total_horas;
 
-            if (is_null($total) || empty($totalHoras)) {
+            // (float): el decimal llega como "0.00" y empty("0.00") es false en PHP
+            if (is_null($total) || (float) $totalHoras <= 0) {
                 return null;
             }
 
-            return $total / $totalHoras;
+            return $total / (float) $totalHoras;
         });
     }
     /**

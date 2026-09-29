@@ -24,6 +24,12 @@ trait ConFechaReporteDia
      */
     public function inicializarFecha()
     {
+        // ?fecha=YYYY-MM-DD en la URL (p. ej. desde Tareas pendientes) manda sobre la sesión
+        $desdeUrl = request()->query('fecha');
+        if (is_string($desdeUrl) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $desdeUrl)) {
+            Session::put($this->dateSessionKey, $desdeUrl);
+        }
+
         $this->fecha = Session::get($this->dateSessionKey, Carbon::now()->format('Y-m-d'));
         $this->despuesFechaModificada($this->fecha); // Llama al método de actualización al inicio también
     }

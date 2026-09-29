@@ -105,4 +105,15 @@ class RegistroDiarioServicio
             'costo_dia' => 0,
         ]);
     }
+
+    /**
+     * Pasa los registros diarios de un cuadrillero a otro dentro de un tramo laboral.
+     * (Antes en App\Services\Cuadrillas\RegistroDiarioServicio.)
+     */
+    public function reemplazarCuadrillero(int $tramoLaboralId, int $anteriorId, int $nuevoId): void
+    {
+        CuadRegistroDiario::where('tramo_laboral_id', $tramoLaboralId)
+            ->where('cuadrillero_id', $anteriorId)
+            ->update(['cuadrillero_id' => $nuevoId]);
+    }
 }

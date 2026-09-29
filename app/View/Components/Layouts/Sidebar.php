@@ -36,12 +36,12 @@ class Sidebar extends Component
                 'children' => [
                     [
                         'title' => 'Empleados',
-                        'route' => 'empleados',
+                        'route' => 'planilla.empleados',
                         'can' => Permisos::PERSONAL
                     ],
                     [
                         'title' => 'Actividades Diarias',
-                        'route' => 'reporte.reporte_diario',
+                        'route' => 'planilla.registro_diario',
                         'can' => Permisos::PLANILLA_ACTIVIDAD
                     ],
                     [
@@ -56,12 +56,12 @@ class Sidebar extends Component
                     ],
                     [
                         'title' => 'Resumen Mensual',
-                        'route' => 'reporte.resumen_planilla',
+                        'route' => 'planilla.resumen_mensual',
                         'can' => Permisos::PLANILLA_RESUMEN_MENSUAL
                     ],
                     [
                         'title' => 'Resumen General',
-                        'route' => 'gestion_planilla.reporte_general',
+                        'route' => 'planilla.resumen_general',
                         'can' => Permisos::PLANILLA_RESUMEN_GENERAL
                     ],
                     [
@@ -71,7 +71,7 @@ class Sidebar extends Component
                     ],
                     [
                         'title' => 'Derecho Habientes',
-                        'route' => 'empleado.derecho_habiente',
+                        'route' => 'planilla.derecho_habiente',
                         'can' => Permisos::PLANILLA_FAMILIAR
                     ],
                     [
@@ -96,12 +96,12 @@ class Sidebar extends Component
                     ],
                     [
                         'title' => 'Descuentos de AFP',
-                        'route' => 'descuentos_afp',
+                        'route' => 'planilla.descuentos_afp',
                         'can' => Permisos::PLANILLA_CONFIG_AFP,
                     ],
                     [
                         'title' => 'Tipo de Asistencia',
-                        'route' => 'configuracion.tipo_asistencia',
+                        'route' => 'planilla.tipos_asistencia',
                         'can' => Permisos::PLANILLA_CONFIG_ASISTENCIA,
                     ],
                 ],
@@ -111,15 +111,15 @@ class Sidebar extends Component
                 'icon' => 'fas fa-hard-hat',
                 'can' => Permisos::CUADRILLA,
                 'children' => [
-                    ['title' => 'Panel de cuadrilleros', 'route' => 'cuadrilleros.gestion', 'can' => Permisos::CUADRILLA_PANEL],
+                    ['title' => 'Panel de cuadrilleros', 'route' => 'cuadrilla.panel', 'can' => Permisos::CUADRILLA_PANEL],
                     ['title' => 'Lista de cuadrilleros', 'route' => 'cuadrilla.cuadrilleros', 'can' => Permisos::CUADRILLA_LISTA],
                     ['title' => 'Grupos de cuadrillas', 'route' => 'cuadrilla.grupos', 'can' => Permisos::CUADRILLA_GRUPO],
-                    ['title' => 'Reporte semanal (horas)', 'route' => 'gestion_cuadrilleros.reporte-semanal.index', 'can' => Permisos::CUADRILLA_SEMANAL],
-                    ['title' => 'Reporte diario (actividades)', 'route' => 'gestion_cuadrilleros.registro-diario.index', 'can' => Permisos::CUADRILLA_DIARIO],
-                    ['title' => 'Bonificaciones', 'route' => 'gestion_cuadrilleros.bonificaciones', 'can' => Permisos::CUADRILLA_BONIFICACION],
-                    ['title' => 'Resumen General', 'route' => 'gestion_cuadrilleros.resumen_general.index', 'can' => Permisos::CUADRILLA_RESUMEN_GENERAL],
-                    ['title' => 'Resumen anual', 'route' => 'gestion_cuadrilleros.resumen_anual', 'can' => Permisos::CUADRILLA_RESUMEN_ANUAL],
-                    ['title' => 'Pagos (desglose)', 'route' => 'gestion_cuadrilleros.pagos', 'can' => Permisos::CUADRILLA], //crear permiso especial mas adelante
+                    ['title' => 'Reporte semanal (horas)', 'route' => 'cuadrilla.reporte_semanal', 'can' => Permisos::CUADRILLA_SEMANAL],
+                    ['title' => 'Reporte diario (actividades)', 'route' => 'cuadrilla.registro_diario', 'can' => Permisos::CUADRILLA_DIARIO],
+                    ['title' => 'Bonificaciones', 'route' => 'cuadrilla.bonificaciones', 'can' => Permisos::CUADRILLA_BONIFICACION],
+                    ['title' => 'Resumen General', 'route' => 'cuadrilla.resumen_general', 'can' => Permisos::CUADRILLA_RESUMEN_GENERAL],
+                    ['title' => 'Resumen anual', 'route' => 'cuadrilla.resumen_anual', 'can' => Permisos::CUADRILLA_RESUMEN_ANUAL],
+                    ['title' => 'Pagos (desglose)', 'route' => 'cuadrilla.pagos', 'can' => Permisos::CUADRILLA], //crear permiso especial mas adelante
                 ],
             ],
 
@@ -128,10 +128,10 @@ class Sidebar extends Component
                 'icon' => 'fa fa-water',
                 'can' => Permisos::CAMPO_RIEGO,
                 'children' => [
-                    ['title' => 'Reporte diario regadores', 'route' => 'reporte.reporte_diario_riego', 'can' => Permisos::CAMPO_RIEGO_REPORTE],
-                    ['title' => 'Labores en riego', 'route' => 'configuracion.labores_riego', 'can' => Permisos::CAMPO_RIEGO_LABOR],
-                    ['title' => 'Ver estado de riegos', 'route' => 'campo.riego', 'can' => Permisos::CAMPO_RIEGO_ESTADO],
-                    ['title' => 'Resumen diario de riegos', 'route' => 'consolidado.riego', 'can' => Permisos::CAMPO_RIEGO_RESUMEN],
+                    ['title' => 'Reporte diario regadores', 'route' => 'riego.reporte_diario', 'can' => Permisos::CAMPO_RIEGO_REPORTE],
+                    ['title' => 'Labores en riego', 'route' => 'riego.labores', 'can' => Permisos::CAMPO_RIEGO_LABOR],
+                    ['title' => 'Ver estado de riegos', 'route' => 'riego.estados', 'can' => Permisos::CAMPO_RIEGO_ESTADO],
+                    ['title' => 'Resumen diario de riegos', 'route' => 'riego.resumen_diario', 'can' => Permisos::CAMPO_RIEGO_RESUMEN],
                 ],
             ],
             [
@@ -139,12 +139,13 @@ class Sidebar extends Component
                 'icon' => 'fa fa-leaf',
                 'can' => Permisos::CAMPO,
                 'children' => [
-                    ['title' => 'Labores', 'route' => 'configuracion.labores', 'can' => Permisos::CAMPO_LABOR],
-                    ['title' => 'Mano de obra', 'route' => 'campo.mano_obra', 'can' => Permisos::CAMPO_MANO_OBRA],
-                    ['title' => 'Costos (BDD)', 'route' => 'campo.costos'],
+                    ['title' => 'Labores', 'route' => 'campo.labores', 'can' => Permisos::CAMPO_LABOR],
+                    ['title' => 'Mano de obra', 'route' => 'costos.mano_obra', 'can' => Permisos::CAMPO_MANO_OBRA],
+                    ['title' => 'Costos (BDD)', 'route' => 'costos.campo'],
+                    ['title' => 'Servicios en campo', 'route' => 'campo.servicios', 'can' => Permisos::CAMPO],
                     ['title' => 'Campos', 'route' => 'campo.campos', 'can' => Permisos::CAMPO_PARCELA],
-                    ['title' => 'Siembras', 'route' => 'campo.siembra', 'can' => Permisos::CAMPO_SIEMBRA],
-                    ['title' => 'Maquinarias', 'route' => 'maquinarias.index', 'can' => Permisos::CAMPO_MAQUINARIA],
+                    ['title' => 'Siembras', 'route' => 'campo.siembras', 'can' => Permisos::CAMPO_SIEMBRA],
+                    ['title' => 'Maquinarias', 'route' => 'campo.maquinarias', 'can' => Permisos::CAMPO_MAQUINARIA],
                 ],
             ],
             [
@@ -154,7 +155,7 @@ class Sidebar extends Component
                 'children' => [
                     [
                         'title' => 'Resumen General de Campañas',
-                        'route' => 'campanias',
+                        'route' => 'campania.resumen',
                         'can' => Permisos::CAMPAÑA_RESUMEN,
                     ],
                     [
@@ -164,7 +165,7 @@ class Sidebar extends Component
                     ],
                     [
                         'title' => 'Campañas por campo',
-                        'route' => 'campania.x.campo',
+                        'route' => 'campania.por_campo',
                         'can' => Permisos::CAMPAÑA_POR_CAMPO,
                     ],
                 ],
@@ -187,10 +188,10 @@ class Sidebar extends Component
                 'icon' => 'fa fa-file',
                 'can' => Permisos::EVALUACION,
                 'children' => [
-                    ['title' => 'Población Plantas', 'route' => 'reporte_campo.poblacion_plantas', 'can' => Permisos::PLANTA_EVALUACION],
-                    ['title' => 'Brotes x Piso', 'route' => 'reporte_campo.evaluacion_brotes', 'can' => Permisos::BROTE_EVALUACION],
-                    ['title' => 'Proyección rendimiento: Conteo de cochinilla', 'route' => 'reporte_campo.evaluacion_infestacion_cosecha', 'can' => Permisos::INFESTACION_EVALUACION],
-                    ['title' => 'Proyección Rendimiento Poda', 'route' => 'reporte_campo.evaluacion_proyeccion_rendimiento_poda', 'can' => Permisos::PROYECCION_EVALUACION],
+                    ['title' => 'Población Plantas', 'route' => 'evaluacion.poblacion_plantas', 'can' => Permisos::PLANTA_EVALUACION],
+                    ['title' => 'Brotes x Piso', 'route' => 'evaluacion.brotes', 'can' => Permisos::BROTE_EVALUACION],
+                    ['title' => 'Proyección rendimiento: Conteo de cochinilla', 'route' => 'evaluacion.infestacion_cosecha', 'can' => Permisos::INFESTACION_EVALUACION],
+                    ['title' => 'Proyección Rendimiento Poda', 'route' => 'evaluacion.proyeccion_rendimiento_poda', 'can' => Permisos::PROYECCION_EVALUACION],
                 ],
             ],
             [
@@ -198,13 +199,13 @@ class Sidebar extends Component
                 'icon' => 'fa fa-box',
                 'can' => Permisos::INSUMO_CATALOGO,
                 'children' => [
-                    ['title' => 'Productos', 'route' => 'productos.index', 'can' => Permisos::INSUMO_PRODUCTO],
-                    ['title' => 'Categorias', 'route' => 'categorias.index', 'can' => Permisos::INSUMO_CATEGORIA],
-                    ['title' => 'Subcategorias', 'route' => 'subcategorias.index', 'can' => Permisos::INSUMO_SUBCATEGORIA],
+                    ['title' => 'Productos', 'route' => 'producto.index', 'can' => Permisos::INSUMO_PRODUCTO],
+                    ['title' => 'Categorias', 'route' => 'producto.categorias', 'can' => Permisos::INSUMO_CATEGORIA],
+                    ['title' => 'Subcategorias', 'route' => 'producto.subcategorias', 'can' => Permisos::INSUMO_SUBCATEGORIA],
                     ['title' => 'Usos', 'route' => 'producto.usos', 'can' => Permisos::INSUMO_USO],
-                    ['title' => 'Nutrientes', 'route' => 'nutrientes.index', 'can' => Permisos::INSUMO_NUTRIENTE],
-                    ['title' => 'Tabla de concentración', 'route' => 'tabla_concentracion.index', 'can' => Permisos::INSUMO_CONCENTRACION],
-                    ['title' => 'Proveedores', 'route' => 'proveedores.index', 'can' => Permisos::INSUMO_PROVEEDOR],
+                    ['title' => 'Nutrientes', 'route' => 'producto.nutrientes', 'can' => Permisos::INSUMO_NUTRIENTE],
+                    ['title' => 'Tabla de concentración', 'route' => 'producto.tabla_concentracion', 'can' => Permisos::INSUMO_CONCENTRACION],
+                    ['title' => 'Proveedores', 'route' => 'almacen.proveedores', 'can' => Permisos::INSUMO_PROVEEDOR],
                 ],
             ],
             [
@@ -234,18 +235,18 @@ class Sidebar extends Component
                     ],
                     [
                         'title' => 'Kardex de Insumos',
-                        'route' => 'gestion_insumos.kardex',
+                        'route' => 'almacen.kardex',
                         'can' => Permisos::INSUMO_KARDEX,
                     ],
                     [
                         // Misma guardia que Kardex — comparte permisos hijos
                         'title' => 'Kardex por Insumo',
-                        'route' => 'gestion_insumos.kardex.crear',
+                        'route' => 'almacen.kardex.crear',
                         'can' => Permisos::INSUMO_KARDEX,
                     ],
                     [
                         'title' => 'Reporte de Kardex',
-                        'route' => 'gestion_insumos.kardex.reportes',
+                        'route' => 'almacen.kardex.reportes',
                         'can' => Permisos::INSUMO_KARDEX_REPORTE,
                     ],
                 ],
@@ -257,12 +258,12 @@ class Sidebar extends Component
                 'children' => [
                     [
                         'title' => 'Usuarios',
-                        'route' => 'usuarios',
+                        'route' => 'sistema.usuarios',
                         'can' => Permisos::SISTEMA_USUARIO,
                     ],
                     [
                         'title' => 'Roles y Permisos',
-                        'route' => 'roles_permisos',
+                        'route' => 'sistema.roles',
                         'can' => Permisos::SISTEMA_ROL,
                     ],
                 ],
@@ -272,10 +273,10 @@ class Sidebar extends Component
                 'icon' => 'fa fa-calculator',
                 'can' => Permisos::CONTABILIDAD,
                 'children' => [
-                    ['title' => 'Costos Generales FDM', 'route' => 'fdm.costos_generales', 'can' => Permisos::CONTABILIDAD_FDM],
-                    ['title' => 'Costos Mensuales', 'route' => 'contabilidad.costos_mensuales', 'can' => Permisos::CONTABILIDAD_COSTO_MENSUAL_LISTA],
-                    ['title' => 'Costo Mensual', 'route' => 'contabilidad.costo_mensual', 'can' => Permisos::CONTABILIDAD_COSTO_MENSUAL],
-                    ['title' => 'Costos x Campaña', 'route' => 'campania.costos', 'can' => Permisos::CAMPAÑA_COSTOS],
+                    ['title' => 'Costos Generales FDM', 'route' => 'costos.fdm', 'can' => Permisos::CONTABILIDAD_FDM],
+                    ['title' => 'Costos Mensuales', 'route' => 'costos.mensuales', 'can' => Permisos::CONTABILIDAD_COSTO_MENSUAL_LISTA],
+                    ['title' => 'Costo Mensual', 'route' => 'costos.mensual', 'can' => Permisos::CONTABILIDAD_COSTO_MENSUAL],
+                    ['title' => 'Costos x Campaña', 'route' => 'costos.campania', 'can' => Permisos::CAMPAÑA_COSTOS],
                     
                 ],
             ],
@@ -285,10 +286,10 @@ class Sidebar extends Component
                 'icon' => 'fa fa-file',
                 'can' => Permisos::REPORTE,
                 'children' => [
-                    ['title' => 'Reporte Diario', 'route' => 'reporte_general.reporte_diario', 'can' => Permisos::REPORTE_DIARIO],
-                    ['title' => 'Reporte Mensual', 'route' => 'reporte_general.reporte_mensual', 'can' => Permisos::REPORTE_MENSUAL],
-                    ['title' => 'Reporte Anual', 'route' => 'reporte_general.reporte_anual', 'can' => Permisos::REPORTE_ANUAL],
-                    ['title' => 'Auditoria', 'route' => 'auditoria', 'can' => Permisos::REPORTE_AUDITORIA],
+                    ['title' => 'Reporte Diario', 'route' => 'reporte.diario', 'can' => Permisos::REPORTE_DIARIO],
+                    ['title' => 'Reporte Mensual', 'route' => 'reporte.mensual', 'can' => Permisos::REPORTE_MENSUAL],
+                    ['title' => 'Reporte Anual', 'route' => 'reporte.anual', 'can' => Permisos::REPORTE_ANUAL],
+                    ['title' => 'Auditoria', 'route' => 'reporte.auditoria', 'can' => Permisos::REPORTE_AUDITORIA],
                 ],
             ],
         ];

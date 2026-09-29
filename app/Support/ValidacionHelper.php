@@ -2,7 +2,7 @@
 
 namespace App\Support;
 
-use App\Services\Campo\Gestion\CampoServicio;
+use App\Services\Campo\CampoServicio;
 use Exception;
 
 class ValidacionHelper

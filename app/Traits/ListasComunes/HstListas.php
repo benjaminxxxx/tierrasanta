@@ -6,7 +6,7 @@ use App\Models\Campo;
 use App\Models\Maquinaria;
 use App\Models\Producto;
 use App\Models\SunatTabla10TipoComprobantePago;
-use App\Models\TiendaComercial;
+use App\Models\Proveedor;
 
 trait HstListas
 {
@@ -30,8 +30,9 @@ trait HstListas
             ->toArray();
     }
     public function cargarListaHstProveedores(){
-        return TiendaComercial::get()
-            ->map(fn($p) => ['id' => $p->id, 'label' => $p->nombre])
+        // tienda_comercials quedó en legacy/: los proveedores viven en la tabla proveedores
+        return Proveedor::with('persona')->get()
+            ->map(fn($p) => ['id' => $p->id, 'label' => $p->razon_social ?: ($p->persona?->nombre_mostrar ?? '')])
             ->toArray();
     }
     public function cargarListaHstTipoDocumentos(){

@@ -1,4 +1,5 @@
 import "./bootstrap";
+import Handsontable from "./handsontable";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
 import "flowbite";
@@ -25,9 +26,7 @@ flatpickr(".datepicker", {
     //mode: "range",
 });
 
-if (typeof window.Handsontable !== "undefined") {
-    window.Handsontable.plugins.registerPlugin("SumadorSeleccion", SumadorSeleccionPlugin);
-}
+Handsontable.plugins.registerPlugin("SumadorSeleccion", SumadorSeleccionPlugin);
 
 window.HstConfig = {
     datePickerConfig: {

@@ -1,6 +1,7 @@
 <div x-data="selectSearch({
     source: '{{ $source }}',
-    model: '{{ $attributes->wire('model')->value() }}'
+    model: '{{ $attributes->wire('model')->value() }}',
+    etiqueta: @js($attributes->get('etiqueta', '')) {{-- texto a mostrar si el valor ya viene elegido --}}
 })" class="relative" @click.away="closeDropdown()" @keydown.escape="closeDropdown()">
 
     <div wire:ignore class="relative">
@@ -8,7 +9,7 @@
         <x-input type="text" x-model="search" x-ref="searchInput" @input.debounce.250ms="buscar" @focus="handleFocus()"
             @keydown.arrow-down.prevent="navigateDown()" @keydown.arrow-up.prevent="navigateUp()"
             @keydown.enter.prevent="selectHighlighted()" @keydown.tab="closeDropdown()"
-            {{ $attributes->except('wire:model', 'source') }} />
+            {{ $attributes->except('wire:model', 'source', 'etiqueta') }} />
 
         <div x-show="search.length > 0" class="absolute inset-y-0 right-8 flex items-center pr-1 cursor-pointer"
             @click="clearSelection()" title="Limpiar selección"> <svg
@@ -59,6 +60,18 @@
             isOpen: false,
             highlightedIndex: -1,
             init() {
+                if (config.etiqueta) {
+                    this.search = config.etiqueta
+                }
+                // El servidor puede cambiar la etiqueta después de iniciar (ej. el mismo modal
+                // abre kardex distintos): $this->dispatch('selectDropdownEtiqueta', model: ..., etiqueta: ...)
+                this._quitarEtiqueta = Livewire.on('selectDropdownEtiqueta', ({ model, etiqueta }) => {
+                    if (model === this.model) {
+                        this.search = etiqueta || ''
+                        this.results = []
+                        this.closeDropdown()
+                    }
+                })
                 this.$watch(
                     () => this.getModelValue(),
                     (value) => {
@@ -70,6 +83,9 @@
                         }
                     }
                 )
+            },
+            destroy() {
+                this._quitarEtiqueta?.()
             },
             getModelValue() {
     // Soporta dot notation: 'kardex.producto_id'

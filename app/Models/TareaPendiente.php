@@ -13,6 +13,8 @@ class TareaPendiente extends Model
     protected $fillable = [
         'tipo',
         'clave',
+        'fecha_inicio', // periodo de la tarea (null = sin periodo)
+        'fecha_fin',
         'parent_id',
         'titulo',
         'descripcion',
@@ -33,7 +35,19 @@ class TareaPendiente extends Model
             'acciones' => 'array',
             'ejecutado_en' => 'datetime',
             'detectado_en' => 'datetime',
+            'fecha_inicio' => 'date',
+            'fecha_fin' => 'date',
         ];
+    }
+
+    /**
+     * Tareas sin periodo (siempre visibles) o cuyo periodo se cruza con el rango dado.
+     */
+    public function scopeEnPeriodo($query, string $fechaInicio, string $fechaFin)
+    {
+        return $query->where(fn($q) => $q
+            ->whereNull('fecha_inicio')
+            ->orWhere(fn($q) => $q->where('fecha_inicio', '<=', $fechaFin)->where('fecha_fin', '>=', $fechaInicio)));
     }
 
     public function parent(): BelongsTo

@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Services\Campo\Gestion\CampoServicio;
+use App\Services\Campo\CampoServicio;
 use App\Services\Cochinilla\VentaServicio;
 use App\Support\ExcelHelper;
 use DB;

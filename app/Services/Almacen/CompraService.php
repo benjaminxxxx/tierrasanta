@@ -66,16 +66,41 @@ class CompraService
             });
         }
     */
+    /**
+     * Edita una compra conservando la historia de movimientos:
+     * - línea con id existente: se actualiza; su movimiento de stock se ajusta EN SU LUGAR solo si
+     *   cambia algo que lo afecta (producto, cantidad, fecha, tipo, almacén) o su costo;
+     * - línea sin id: es nueva y genera su propio movimiento;
+     * - línea que ya no viene: se elimina junto con su movimiento.
+     * Cambios de cabecera que no afectan movimientos (proveedor, serie, notas...) no los tocan.
+     * Solo se bloquea si el kardex del periodo afectado está cerrado.
+     *
+     * (Antes se revertía con origen Compra::class, pero los movimientos son de CompraDetalle:
+     * no se revertía nada y cada edición duplicaba el stock.)
+     */
     public function actualizar(Compra $compra, array $cabecera, array $detalles): Compra
     {
         return DB::transaction(function () use ($compra, $cabecera, $detalles) {
-            $this->stockService->revertirMovimientosDeOrigen(Compra::class, $compra->id);
-            $compra->detalles()->delete();
-
             $compra->update($cabecera);
+            $compra->refresh();
+
+            $existentes = $compra->detalles()->get()->keyBy('id');
+            $idsRecibidos = [];
 
             foreach ($detalles as $item) {
-                $this->agregarDetalle($compra, $item);
+                $id = $item['id'] ?? null;
+
+                if ($id && $existentes->has($id)) {
+                    $this->actualizarDetalle($compra, $existentes[$id], $item);
+                    $idsRecibidos[] = (int) $id;
+                } else {
+                    $this->agregarDetalle($compra, $item);
+                }
+            }
+
+            foreach ($existentes->except($idsRecibidos) as $quitado) {
+                $this->stockService->revertirMovimientosDeOrigen(CompraDetalle::class, $quitado->id);
+                $quitado->delete();
             }
 
             $this->recalcularTotales($compra);
@@ -83,17 +108,73 @@ class CompraService
             return $compra->fresh();
         });
     }
-    private function esFactura(?string $codigoComprobante): bool
+
+    /**
+     * Elimina (soft delete) una compra revirtiendo el movimiento de cada línea. Los movimientos
+     * son de CompraDetalle, no de Compra: revertir por Compra::class no revertía nada y el stock
+     * y el kardex seguían contando la compra eliminada. Bloquea si el kardex está cerrado.
+     */
+    public function eliminar(Compra $compra): void
     {
-        // Código SUNAT Tabla 10: '01' = Factura — el único comprobante común que
-        // otorga derecho a crédito fiscal en compras. Si en tu operación otros
-        // códigos (ej. Liquidación de Compra) también dan crédito fiscal, avísame
-        // y amplío esta lista — por ahora solo '01' cuenta como tal.
-        return $codigoComprobante === '01';
+        DB::transaction(function () use ($compra) {
+            foreach ($compra->detalles as $detalle) {
+                $this->stockService->revertirMovimientosDeOrigen(CompraDetalle::class, $detalle->id);
+            }
+            $compra->delete();
+        });
     }
-    public function agregarDetalle(Compra $compra, array $item): CompraDetalle
+
+    /**
+     * Restaura una compra eliminada y vuelve a registrar el movimiento de cada línea.
+     */
+    public function restaurar(Compra $compra): void
     {
-        $factorConversion = (float) ($item['factor_conversion_usado'] ?? $item['conversion_factor'] ?? 1);
+        DB::transaction(function () use ($compra) {
+            $compra->restore();
+
+            foreach ($compra->detalles as $detalle) {
+                $this->stockService->actualizarMovimientoDeOrigen(CompraDetalle::class, $detalle->id, [
+                    'direccion' => 'entrada',
+                    'producto_id' => $detalle->producto_id,
+                    'almacen_id' => $compra->almacen_id,
+                    'cantidad' => (float) $detalle->cantidad_base,
+                    'fecha_movimiento' => $compra->fecha_emision,
+                    'tipo_kardex' => $compra->tipo_kardex,
+                    'costo_unitario' => (float) $detalle->costo_unitario_base,
+                    'costo_total' => (float) $detalle->costo_total_kardex,
+                ]);
+            }
+        });
+    }
+
+    /**
+     * Actualiza una línea existente y ajusta su movimiento solo si algo que lo afecta cambió
+     * (incluye cambios de cabecera como fecha, tipo de kardex o almacén).
+     */
+    private function actualizarDetalle(Compra $compra, CompraDetalle $detalle, array $item): void
+    {
+        $linea = $this->calcularLinea($item);
+        $detalle->update($linea);
+
+        $this->stockService->actualizarMovimientoDeOrigen(CompraDetalle::class, $detalle->id, [
+            'direccion' => 'entrada',
+            'producto_id' => $linea['producto_id'],
+            'almacen_id' => $compra->almacen_id,
+            'cantidad' => $linea['cantidad_base'],
+            'fecha_movimiento' => $compra->fecha_emision,
+            'tipo_kardex' => $compra->tipo_kardex,
+            'costo_unitario' => $linea['costo_unitario_base'],
+            'costo_total' => $linea['costo_total_kardex'],
+        ]);
+    }
+
+    /**
+     * Atributos de una línea de compra a partir de lo ingresado (precio y total con IGV).
+     */
+    private function calcularLinea(array $item): array
+    {
+        // El formulario envía 'factor_conversion' (antes se ignoraba y toda presentación contaba como 1)
+        $factorConversion = (float) ($item['factor_conversion_usado'] ?? $item['factor_conversion'] ?? $item['conversion_factor'] ?? 1) ?: 1;
         $cantidadBase = (float) $item['cantidad'] * $factorConversion;
         $porcentajeDescuento = (float) ($item['porcentaje_descuento'] ?? $item['discount_percent'] ?? 0);
         $porcentajeIgv = (float) ($item['porcentaje_igv'] ?? $item['igv_percent'] ?? 18);
@@ -101,43 +182,54 @@ class CompraService
         $montoBase = (float) $item['cantidad'] * (float) $item['costo_unitario'];
         $montoConDescuento = $montoBase - ($montoBase * ($porcentajeDescuento / 100));
 
-        if ($this->esFactura($compra->tipo_comprobante_codigo)) {
-            $subtotalNeto = $montoConDescuento;
-            $totalLinea = $subtotalNeto * (1 + $porcentajeIgv / 100);
-            $costoTotalKardex = $subtotalNeto; // crédito fiscal: el costo de inventario excluye IGV
-        } else {
-            $totalLinea = $montoConDescuento;
-            $subtotalNeto = $totalLinea / (1 + $porcentajeIgv / 100);
-            $costoTotalKardex = $totalLinea; // sin crédito fiscal: el IGV pagado sí es costo
-        }
+        $totalLinea = isset($item['total_linea']) && (float) $item['total_linea'] > 0
+            ? (float) $item['total_linea']
+            : $montoConDescuento;
+        $costoTotalKardex = $totalLinea; // sin crédito fiscal: el IGV pagado es costo
 
-        $costoUnitarioBase = $cantidadBase > 0 ? round($costoTotalKardex / $cantidadBase, 6) : 0;
-        $costoUnitarioNeto = (float) $item['cantidad'] > 0 ? round($subtotalNeto / $item['cantidad'], 6) : 0;
-
-        $compraDetalle = $compra->detalles()->create([
+        return [
             'producto_id' => $item['producto_id'],
             'presentacion_id' => $item['presentacion_id'] ?? null,
             'nombre_presentacion' => $item['nombre_presentacion'] ?? null,
             'cantidad' => $item['cantidad'],
-            'costo_unitario' => $costoUnitarioNeto,
+            'costo_unitario' => round((float) $item['costo_unitario'], 6), // con IGV, tal como se ingresó
             'porcentaje_descuento' => $porcentajeDescuento,
             'porcentaje_igv' => $porcentajeIgv,
             'total_linea' => round($totalLinea, 4),
             'costo_total_kardex' => round($costoTotalKardex, 4), // monto real guardado, no recalculado
             'factor_conversion_usado' => $factorConversion,
             'cantidad_base' => $cantidadBase,
-            'costo_unitario_base' => $costoUnitarioBase,
-        ]);
+            'costo_unitario_base' => $cantidadBase > 0 ? round($costoTotalKardex / $cantidadBase, 6) : 0,
+        ];
+    }
+    /**
+     * Regla de costo: el precio unitario y el total de línea SIEMPRE incluyen IGV, sea factura,
+     * boleta u otro comprobante. La empresa vende cochinilla exonerada de IGV y no tiene crédito
+     * fiscal, así que el IGV pagado es costo real del inventario. El IGV solo se desglosa como dato.
+     *
+     * $item: cantidad, costo_unitario (con IGV), porcentaje_descuento, porcentaje_igv y,
+     * opcionalmente, total_linea (con IGV): si viene, manda sobre cantidad × precio para no
+     * perder centavos cuando el usuario ingresa el subtotal de la línea.
+     */
+    public function agregarDetalle(Compra $compra, array $item): CompraDetalle
+    {
+        $linea = $this->calcularLinea($item);
+        $compraDetalle = $compra->detalles()->create($linea);
 
+        // El movimiento guarda también el costo: es lo que el kardex valoriza
         $this->stockService->registrarMovimiento(
             'entrada',
             $item['producto_id'],
             $compra->almacen_id,
-            $cantidadBase,
+            $linea['cantidad_base'],
             $compra->fecha_emision,
             $compra->tipo_kardex,
             CompraDetalle::class,
             $compraDetalle->id,
+            [
+                'costo_unitario' => $linea['costo_unitario_base'],
+                'costo_total' => $linea['costo_total_kardex'],
+            ],
         );
 
         return $compraDetalle;
@@ -162,21 +254,15 @@ class CompraService
     }*/
     public function recalcularTotales(Compra $compra): void
     {
-        $totalGeneral = (float) $compra->detalles()->sum('total_linea');
-        $costoKardexGeneral = (float) $compra->detalles()->sum('costo_total_kardex');
+        $detalles = $compra->detalles()->get(['total_linea', 'porcentaje_igv']);
 
-        // Si es factura: costo_total_kardex = subtotal neto -> IGV = total - neto (positivo, como siempre).
-        // Si NO es factura: costo_total_kardex = total_linea (son el mismo número) -> igv = 0 aquí,
-        // pero el IGV sí existía "dentro" del monto, solo que no es crédito fiscal recuperable
-        // así que subtotal_neto se calcula hacia atrás con el mismo criterio de agregarDetalle.
-        if ($this->esFactura($compra->tipo_comprobante_codigo)) {
-            $subtotalNeto = $costoKardexGeneral;
-            $igvTotal = $totalGeneral - $subtotalNeto;
-        } else {
-            $porcentajeIgv = (float) ($compra->detalles()->value('porcentaje_igv') ?? 18);
-            $subtotalNeto = $totalGeneral / (1 + $porcentajeIgv / 100);
-            $igvTotal = $totalGeneral - $subtotalNeto;
-        }
+        // total_linea ya incluye IGV en todos los comprobantes; la base imponible se
+        // calcula hacia atrás por línea (cada una puede tener su propio % de IGV).
+        $totalGeneral = (float) $detalles->sum('total_linea');
+        $subtotalNeto = (float) $detalles->sum(
+            fn($d) => (float) $d->total_linea / (1 + (float) ($d->porcentaje_igv ?? 18) / 100)
+        );
+        $igvTotal = $totalGeneral - $subtotalNeto;
 
         $compra->update([
             'subtotal_neto' => round($subtotalNeto, 4),

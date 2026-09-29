@@ -17,7 +17,6 @@
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
-    @include('comun.handsontable_deprecado')
 
 </head>
 
@@ -44,7 +43,7 @@ $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(valu
     <x-livewire-alert::scripts />
 
     
-    <livewire:dashboard.tareas-pendientes-component />
+    <livewire:sistema.tareas-pendientes-component />
     <script>
         document.addEventListener('livewire:init', () => {
             Livewire.on('log', (event) => {

@@ -3,8 +3,10 @@
 namespace App\Livewire\Costos;
 
 use App\Models\CostoMensual;
-use App\Services\Campo\Costos\ConsolidarCostoManoObraServicio;
-use App\Services\Campo\Costos\ConsolidarReporteMensualCostos;
+use App\Services\Costos\Consolidacion\ConsolidarCostoInsumosServicio;
+use App\Services\Costos\Consolidacion\ConsolidarCostoManoObraServicio;
+use App\Services\Costos\Consolidacion\ConsolidarCostoServiciosCampoServicio;
+use App\Services\Costos\Consolidacion\ConsolidarReporteMensualCostos;
 use App\Traits\HandlesAlerts;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -40,7 +42,11 @@ class ConsolidadorCostosMensualesComponent extends Component
     /**
      * Procesa la consolidación para un mes específico.
      */
-    public function generarMes(int $mesNum): void
+    /**
+     * Consolida el mes. La mano de obra ya la mantiene al día la BDD al guardar cada registro:
+     * aquí solo se rehacen los días que cambiaron después ($reconstruir = rehacer todo el mes).
+     */
+    public function generarMes(int $mesNum, bool $reconstruir = false): void
     {
         try {
             if (!$mesNum || !$this->anio) {
@@ -48,15 +54,33 @@ class ConsolidadorCostosMensualesComponent extends Component
             }
             $fechaInicio = Carbon::create($this->anio, $mesNum, 1)->startOfMonth()->format('Y-m-d');
             $fechaFin = Carbon::create($this->anio, $mesNum, 1)->endOfMonth()->format('Y-m-d');
-            $totalPlanilla = 0;
 
-            $totalPlanilla = app(ConsolidarCostoManoObraServicio::class)
-                ->consolidarPlanillaEnRango($fechaInicio, $fechaFin);
+            // Mano de obra (planilla, cuadrilla, riego, bonos) + mano de obra indirecta
+            $manoObra = app(\App\Services\Costos\Consolidacion\BddManoObraServicio::class)
+                ->asegurarMes($this->anio, $mesNum, $reconstruir);
+            $manoObraIndirecta = ['avisos' => $manoObra['avisos']];
+
+            $totalServicios = app(ConsolidarCostoServiciosCampoServicio::class)
+                ->consolidarEnRango($fechaInicio, $fechaFin);
+
+            // Actualiza los kardex desactualizados antes de leer el costo de las salidas;
+            // si alguno no se puede actualizar, lanza el error y no se genera el reporte.
+            $totalInsumos = app(ConsolidarCostoInsumosServicio::class)
+                ->consolidarEnRango($fechaInicio, $fechaFin);
 
             app(ConsolidarReporteMensualCostos::class)
                 ->ejecutar($this->anio, $mesNum);
 
-            $this->alert('success', "Mes {$mesNum}/{$this->anio} consolidado correctamente ({$totalPlanilla} filas procesadas).");
+            $mensaje = "Mes {$mesNum}/{$this->anio} consolidado correctamente ("
+                . ($reconstruir ? 'mano de obra reconstruida' : "mano de obra: {$manoObra['dias']} día(s) actualizados")
+                . ", {$totalServicios} filas de servicios en campo, {$totalInsumos} de fertilizantes/pesticidas).";
+            if ($manoObraIndirecta['avisos']) {
+                // Vacaciones registradas sin monto pagado: su costo no entra al cuadre
+                $mensaje .= ' Revisar: ' . implode(' ', $manoObraIndirecta['avisos']);
+                $this->alert('warning', $mensaje, ['toast' => false, 'position' => 'center', 'timer' => null, 'showConfirmButton' => true]);
+            } else {
+                $this->alert('success', $mensaje);
+            }
         } catch (\Throwable $th) {
             $this->errorAlert($th);
         }

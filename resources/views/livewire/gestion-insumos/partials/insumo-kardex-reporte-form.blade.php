@@ -1,1 +1,0 @@
-<livewire:gestion-insumos.insumo-kardex-reporte-form-component />

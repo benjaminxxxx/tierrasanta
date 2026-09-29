@@ -6,7 +6,8 @@ use App\Models\ConsolidadoRiego;
 use App\Models\PlanEmpleado;
 use App\Models\PlanMensualDetalle;
 use App\Models\PlanRegistroDiario;
-use App\Services\TareasPendientes\TareaPendienteServicio;
+use App\Models\TareaPendiente;
+use App\Services\Sistema\TareasPendientes\TareaPendienteServicio;
 use Illuminate\Support\Carbon;
 
 class VerificacionSincronizacionRiegoServicio
@@ -52,12 +53,27 @@ class VerificacionSincronizacionRiegoServicio
 
         return $resultado;
     }
+
+    /**
+     * Verifica un día (pantalla de reporte diario de riego) y deja la tarea pendiente al día,
+     * para que el panel de tareas muestre el conteo real sin tener que volver a detectar.
+     */
+    public function verificarFechaYActualizarTareas(string $fecha): array
+    {
+        $resultado = $this->verificarPorFecha($fecha);
+        $this->detectarTareasPendientes();
+
+        return $resultado;
+    }
+
     /**
      * Detecta/actualiza las tareas pendientes de riego desincronizado,
      * agrupadas por mes. Se puede llamar manualmente o desde un scheduler.
      */
-    public function detectarTareasPendientes(): void
+    public function detectarTareasPendientes(?string $fechaInicio = null, ?string $fechaFin = null): void
     {
+        // Revisa todos los meses (la tarea general resume el total); cada mes lleva su periodo
+        // para que el panel lo muestre al elegir ese mes.
         $desincronizados = ConsolidadoRiego::where('sincronizado', false)
             ->where('trabajador_type', PlanEmpleado::class) // mismo criterio que verificarPorFecha
             ->get()
@@ -83,9 +99,13 @@ class VerificacionSincronizacionRiegoServicio
             [$anio, $mes] = explode('-', $mesClave);
             $nombreMes = Carbon::create((int) $anio, (int) $mes, 1)->translatedFormat('F');
 
+            $inicioMes = Carbon::create((int) $anio, (int) $mes, 1);
+
             $registrador->registrarOActualizar([
                 'tipo' => 'riego-desincronizado',
                 'clave' => $mesClave,
+                'fecha_inicio' => $inicioMes->toDateString(),
+                'fecha_fin' => $inicioMes->copy()->endOfMonth()->toDateString(),
                 'parent_id' => $tareaPadre?->id,
                 'titulo' => "Riego desincronizado — {$nombreMes} {$anio}",
                 'descripcion' => "{$items->count()} registro(s) sin sincronizar.",
@@ -98,6 +118,19 @@ class VerificacionSincronizacionRiegoServicio
                 ],
             ]);
         }
+
+        // Meses que ya no tienen registros desincronizados (se corrigieron día por día, desde la
+        // pantalla de riego o la planilla): se cierran. Sin esto su tarea quedaba con el conteo viejo.
+        TareaPendiente::where('tipo', 'riego-desincronizado')
+            ->where('estado', 'pendiente')
+            ->whereNotNull('clave')
+            ->whereNotIn('clave', $desincronizados->keys()->all())
+            ->get()
+            ->each(fn($vieja) => $registrador->registrarOActualizar([
+                'tipo' => 'riego-desincronizado',
+                'clave' => $vieja->clave,
+                'cantidad_afectados' => 0,
+            ]));
     }
 
     /** ⚠️ Ver pregunta abajo sobre qué debe hacer realmente "sincronizar" */

@@ -2,7 +2,7 @@
 
 namespace App\Services\Riego;
 
-use App\Services\Campo\Gestion\CampoServicio;
+use App\Services\Campo\CampoServicio;
 use App\Support\FormatoHelper;
 use Exception;
 use Illuminate\Support\Carbon;

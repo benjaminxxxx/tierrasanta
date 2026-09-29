@@ -1,0 +1,287 @@
+<?php
+
+namespace App\Services\Evaluacion;
+
+use App\Exports\Evaluacion\PoblacionPlantaExport;
+use App\Models\EvalPoblacionPlanta;
+use App\Services\Campania\CampaniaServicio;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Facades\Excel;
+
+class PoblacionPlantaServicio
+{
+    protected CampaniaServicio $campaniaServicio;
+
+    public function __construct(CampaniaServicio $campaniaServicio)
+    {
+        $this->campaniaServicio = $campaniaServicio;
+    }
+    public function exportar($filtros)
+    {
+        $crudos = $this->buscar($filtros, false)->toArray();
+        $ordenado = $this->ordenarDatosExport($filtros, $crudos);
+        return Excel::download(new PoblacionPlantaExport($ordenado), date('Y-m-d') . '_poblacion_plantas.xlsx');
+    }
+    public function ordenarDatosExport(array $filtros, array $datos)
+    {
+        $resultado = [];
+
+        foreach ($datos as $item) {
+            // 1. Obtener campo
+            $campo = $item['campania']['campo'] ?? 'SIN_CAMPO';
+
+            // 2. Obtener la campaña (puede ser código, nombre, id)
+            $campania = $item['campania']['nombre_campania'] ?? 'SIN_CAMPANIA';
+
+            // 3. Crear estructura base
+            $resultado[$campo][$campania] = [
+                'fecha_siembra' => $item['fecha_siembra'],
+                'evaluador' => $item['evaluador'],
+                'metros_cama_ha' => $item['metros_cama_ha'],
+                'fecha_cero' => $item['fecha_eval_cero'],
+                'fecha_resiembra' => $item['fecha_eval_resiembra'],
+                'area_lote' => $item['area_lote'],
+                'detalles' => []
+            ];
+
+            // 4. Procesar detalles
+            foreach ($item['detalles'] as $detalle) {
+                $resultado[$campo][$campania]['detalles'][] = [
+                    'numero_cama' => $detalle['numero_cama'],
+                    'longitud_cama' => $detalle['longitud_cama'],
+                    'cero' => $detalle['eval_cero_plantas_x_hilera'],
+                    'resiembra' => $detalle['eval_resiembra_plantas_x_hilera'],
+                ];
+            }
+        }
+
+        // 5. Ordenar por campo y campaña
+        ksort($resultado);
+        foreach ($resultado as $campo => $list) {
+            ksort($resultado[$campo]);
+        }
+
+        return [
+            'filtros' => $filtros,
+            'datos' => $resultado,
+        ];
+    }
+
+    public static function buscar(array $filtros, $paginado = true)
+    {
+        $query = EvalPoblacionPlanta::query()
+            ->with(['campania', 'detalles']);
+
+        if (!empty($filtros['campo'])) {
+            $query->whereHas('campania', callback: function ($q) use ($filtros) {
+                $q->where('campo', $filtros['campo']);
+            });
+        }
+
+        if (!empty($filtros['campania_id'])) {
+            $query->where('campania_id', $filtros['campania_id']);
+        }
+
+        if (!empty($filtros['evaluador'])) {
+            $query->where('evaluador', 'like', '%' . $filtros['evaluador'] . '%');
+        }
+        if (!empty($filtros['fecha'])) {
+            $query->where(function ($q) use ($filtros) {
+                $q->whereDate('fecha_eval_cero', $filtros['fecha'])
+                    ->orWhereDate('fecha_eval_resiembra', $filtros['fecha']);
+            });
+        }
+        if (!$paginado) {
+            return $query->get();
+        }
+        return $query->paginate(20);
+    }
+    public function eliminar(int $id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $poblacion = EvalPoblacionPlanta::findOrFail($id);
+            $campaniaId = $poblacion->campania_id;
+            $poblacion->delete();
+
+            // 4. Actualizar Campaña (Usando el servicio externo)
+            $this->campaniaServicio->actualizarMetricasPoblacion($campaniaId);
+
+            DB::commit();
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+    public function registrar(array $datos)
+    {
+        DB::beginTransaction();
+
+        try {
+            // 1. Validar todo (Cabecera y Detalles)
+            $this->validarDatos($datos);
+
+            // 2. Guardar Cabecera
+            $poblacion = $this->guardarCabecera($datos);
+
+            // 3. Guardar Detalles
+            $this->guardarDetalles($poblacion, $datos['detalles']);
+
+            // 4. Actualizar Campaña (Usando el servicio externo)
+            $this->campaniaServicio->actualizarMetricasPoblacion($datos['campania_id']);
+
+            DB::commit();
+
+            return $poblacion->id;
+
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            throw $e;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // MÉTODOS PRIVADOS (Internal Helpers)
+    // -------------------------------------------------------------------------
+
+    private function validarDatos(array $datos): void
+    {
+        // -------------------------------
+        // A. Validación general
+        // -------------------------------
+        $validator = Validator::make($datos, [
+            'id' => 'nullable|integer|exists:eval_poblacion_plantas,id',
+            'fecha_eval_cero' => 'required|date',
+            'fecha_eval_resiembra' => 'nullable|date|after_or_equal:fecha_eval_cero',
+            'fecha_siembra' => 'nullable|date',
+            'area_lote' => 'required|numeric|min:0.0001',
+            'evaluador' => 'required|string|max:255',
+            'metros_cama_ha' => 'required|numeric|min:0.1',
+            'campania_id' => 'required|integer|exists:campos_campanias,id',
+            'detalles' => 'required|array|min:1',
+        ], [
+            'detalles.required' => 'Debe ingresar filas en la tabla.',
+            'metros_cama_ha.required' => 'Los metros de cama por hectárea son obligatorios.',
+            'area_lote.required' => 'El área del lote es obligatoria.'
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        // -------------------------------
+        // B. Validación de filas (detalles)
+        // -------------------------------
+
+        foreach ($datos['detalles'] as $i => $fila) {
+
+            $filaValidator = Validator::make($fila, [
+                //'numero_cama' => 'required|integer|min:1',
+                'longitud_cama' => 'required|numeric|min:0.01|max:999999.99',
+                'eval_cero_plantas_x_hilera' => 'required|integer|min:0',
+                'eval_resiembra_plantas_x_hilera' => 'nullable|integer|min:0',
+            ]);
+
+            if ($filaValidator->fails()) {
+                $errores = [];
+
+                foreach ($filaValidator->errors()->getMessages() as $campo => $msgs) {
+                    $errores["detalles.$i.$campo"] = $msgs;
+                }
+
+                throw ValidationException::withMessages($errores);
+            }
+        }
+    }
+
+
+    private function guardarCabecera(array $datos): EvalPoblacionPlanta
+    {
+        // Campos permitidos según tu migración
+        $campos = [
+            'fecha_siembra' => $datos['fecha_siembra'],
+            'area_lote' => $datos['area_lote'],
+            'evaluador' => $datos['evaluador'] ?? null,
+            'metros_cama_ha' => $datos['metros_cama_ha'],
+            'campania_id' => $datos['campania_id'],
+            'fecha_eval_cero' => $datos['fecha_eval_cero'],
+            'fecha_eval_resiembra' => $datos['fecha_eval_resiembra'] ?? null,
+        ];
+
+        // --------------------------------------------------------------------
+        // A. Si viene ID, actualizar (esto permite editar sin romper la regla)
+        // --------------------------------------------------------------------
+        if (!empty($datos['id'])) {
+            $eval = EvalPoblacionPlanta::findOrFail($datos['id']);
+            $eval->update($campos);
+            return $eval;
+        }
+
+        // --------------------------------------------------------------------
+        // B. Validar unicidad por campaña
+        //    Solo puede existir UNA evaluación por campaña.
+        // --------------------------------------------------------------------
+        $existe = EvalPoblacionPlanta::where('campania_id', $datos['campania_id'])->first();
+
+        if ($existe) {
+            // Actualizar si ya existe
+            $existe->update($campos);
+            return $existe;
+        }
+
+        // --------------------------------------------------------------------
+        // C. Crear nuevo registro si no existe
+        // --------------------------------------------------------------------
+        return EvalPoblacionPlanta::create($campos);
+    }
+
+
+    private function guardarDetalles(EvalPoblacionPlanta $evaluacion, array $detalles): void
+    {
+        // 1. Eliminar detalles anteriores
+        $evaluacion->detalles()->delete();
+
+        // 2. Insertar nuevos detalles con cálculos
+        $detallesInsert = collect($detalles)->map(function ($fila, $indice) use ($evaluacion) {
+
+            $longitud = floatval($fila['longitud_cama']);
+            $cero = intval($fila['eval_cero_plantas_x_hilera']);
+            $resiem = isset($fila['eval_resiembra_plantas_x_hilera'])
+                ? intval($fila['eval_resiembra_plantas_x_hilera'])
+                : null;
+
+            // NUEVOS CAMPOS
+            $brazos2 = isset($fila['brazos2_piso_x_hilera_cero'])
+                ? intval($fila['brazos2_piso_x_hilera_cero'])
+                : null;
+
+            $brazos3 = isset($fila['brazos3_piso_x_hilera_cero'])
+                ? intval($fila['brazos3_piso_x_hilera_cero'])
+                : null;
+
+            return [
+                'eval_poblacion_planta_id' => $evaluacion->id,
+                'numero_cama' => $indice + 1,
+                'longitud_cama' => $longitud,
+                'eval_cero_plantas_x_hilera' => $cero,
+                'eval_resiembra_plantas_x_hilera' => $resiem,
+                // GUARDAR NUEVOS
+                'brazos2_piso_x_hilera_cero' => $brazos2,
+                'brazos3_piso_x_hilera_cero' => $brazos3,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        })->toArray();
+
+        // 3. Inserción masiva
+        $evaluacion->detalles()->insert($detallesInsert);
+    }
+
+}

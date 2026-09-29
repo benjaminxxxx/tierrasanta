@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Livewire\Planilla;
+
+use App\Models\PlanMensual;
+use App\Traits\Selectores\ConSelectorMes;
+use Illuminate\Support\Facades\Session;
+use Livewire\Component;
+
+class PlanillaBlancoComponent extends Component
+{
+    use ConSelectorMes;
+    public $vista;
+    public $planillaMensual = null;
+
+    public function mount()
+    {
+        $this->vista = Session::get('vista_planilla_blanco', 'Proyectada');
+        $this->inicializarMesAnio();
+        if($this->mes && $this->anio){
+            $this->planillaMensual = PlanMensual::where('mes',$this->mes)->where('anio',$this->anio)->first();
+        }
+    }
+    protected function despuesMesAnioModificado(string $mes, string $anio)
+    {
+    }
+    public function cambiarVista(string $vista): void
+    {
+        Session::put('vista_planilla_blanco', $vista);
+        $this->vista = $vista;
+    }
+    public function render()
+    {
+
+        return view('livewire.planilla.planilla-blanco-component');
+    }
+}

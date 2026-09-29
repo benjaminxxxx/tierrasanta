@@ -1,0 +1,189 @@
+<div class="space-y-4">
+    <x-flex class="justify-between">
+        <div>
+            <x-title>Reporte General de Costos</x-title>
+            <x-subtitle>Resumen de costos por campo, fecha y campaña</x-subtitle>
+        </div>
+        <x-button @click="$wire.dispatch('abrirConsolidadorCostosMensuales')">
+            <i class="fa fa-check"></i> Consolidar mes
+        </x-button>
+    </x-flex>
+
+    <x-card class="space-y-4">
+        <x-flex class="justify-between">
+            <x-flex>
+                <x-select-campo wire:model.live="filtroCampo" label="Filtrar por campo" class="w-auto" />
+
+                @if ($filtroCampo)
+                    <x-select label="Temporada" wire:model.live="campaniaId" class="w-auto"
+                        wire:key="select_campania_{{ $filtroCampo }}">
+                        <option value="">-- Todas las temporadas --</option>
+                        @foreach ($campaniasDelCampo as $c)
+                            <option value="{{ $c->id }}">{{ $c->nombre_campania }}</option>
+                        @endforeach
+                    </x-select>
+
+                    <x-input type="date" label="Fecha Inicio" wire:model.live="fechaInicio" class="w-auto" :disabled="(bool) $campaniaId" />
+
+                    <x-input type="date" label="Fecha Fin" wire:model.live="fechaFin" class="w-auto" :disabled="(bool) $campaniaId" />
+                @endif
+
+                <div x-data="{ mostrarBoton: @js(filled($filtro)) }" class="flex items-end gap-2">
+                    <x-input type="search" label="Trabajador, nombre o código de labor" wire:model="filtro"
+                        class="w-auto" x-on:input="mostrarBoton = $event.target.value.trim().length > 0"
+                        x-on:keydown.enter.prevent="if (mostrarBoton) $wire.aplicarFiltro()" />
+
+                    <x-button x-show="mostrarBoton" x-cloak size="sm" wire:click="aplicarFiltro"
+                        wire:loading.attr="disabled" wire:target="aplicarFiltro">
+                        <i class="fa fa-search"></i> Buscar
+                    </x-button>
+                </div>
+            </x-flex>
+
+            <div>
+                @if ($campaniaId)
+                    <x-button variant="primary" wire:click="consolidarCostoCampos" wire:loading.attr="disabled"
+                        wire:target="consolidarCostoCampos">
+                        <i class="fa fa-sync"></i>
+                        {{ $reporteFileCampania ? 'Reconsolidar Campaña' : 'Consolidar Campaña' }}
+                    </x-button>
+
+                    @if ($reporteFileCampania)
+                        <x-button variant="secondary" href="{{ Storage::disk('public')->url($reporteFileCampania) }}"
+                            target="_blank">
+                            <i class="fa fa-download"></i> Descargar Reporte
+                        </x-button>
+                    @endif
+                @endif
+
+            </div>
+        </x-flex>
+
+        <div>
+            <div class="flex flex-wrap items-center gap-2 mb-1">
+                <span class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+                    Mostrar tipos ({{ count($tiposSeleccionados) }}/{{ count($tiposDisponibles) }})
+                </span>
+                <x-button size="xs" variant="ghost" wire:click="marcarTodosLosTipos">
+                    <i class="fa fa-check-double"></i> Todos
+                </x-button>
+                <x-button size="xs" variant="ghost" wire:click="desmarcarTodosLosTipos">
+                    <i class="fa fa-times"></i> Ninguno
+                </x-button>
+                <x-button size="xs" variant="outline" wire:click="limpiarFiltros">
+                    <i class="fa fa-eraser"></i> Quitar todos los filtros
+                </x-button>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                @foreach ($tiposDisponibles as $tipo => $etiqueta)
+                    <label class="flex items-center gap-1 text-sm cursor-pointer" wire:key="tipo-{{ $tipo }}">
+                        <x-input type="checkbox" value="{{ $tipo }}" wire:model.live="tiposSeleccionados"
+                            label="{{ $etiqueta }}" />
+                    </label>
+                @endforeach
+            </div>
+            @if (empty($tiposSeleccionados))
+                <p class="text-xs text-amber-600 dark:text-amber-400 mt-1">Marca al menos un tipo para ver resultados.</p>
+            @endif
+        </div>
+    </x-card>
+
+    {{-- Totales de todo lo filtrado (no solo la página visible) --}}
+    <x-card class="space-y-3">
+        <div class="flex flex-wrap gap-6">
+            <div>
+                <span class="text-xs uppercase text-muted-foreground block">Costo total filtrado</span>
+                <span class="text-2xl font-bold tabular-nums">S/ {{ number_format($totales->costo ?? 0, 2) }}</span>
+            </div>
+            <div>
+                <span class="text-xs uppercase text-muted-foreground block">Registros</span>
+                <span class="text-2xl font-semibold tabular-nums">{{ number_format($totales->registros ?? 0) }}</span>
+            </div>
+            <div>
+                <span class="text-xs uppercase text-muted-foreground block">Horas</span>
+                <span class="text-2xl font-semibold tabular-nums">{{ number_format(($totales->minutos ?? 0) / 60, 2) }}</span>
+            </div>
+            <div>
+                <span class="text-xs uppercase text-muted-foreground block">Jornales</span>
+                <span class="text-2xl font-semibold tabular-nums">{{ number_format($totales->jornales ?? 0, 2) }}</span>
+            </div>
+        </div>
+        @if ($totalesPorTipo->count() > 1)
+            <div class="flex flex-wrap gap-2">
+                @foreach ($totalesPorTipo as $t)
+                    <span class="px-2 py-1 rounded bg-muted text-xs">
+                        <strong>{{ \App\Models\ResumenCostoDiario::etiquetaOrigen($t->origen_tipo) }}:</strong>
+                        S/ {{ number_format($t->costo, 2) }}
+                        <span class="text-muted-foreground">({{ number_format($t->registros) }})</span>
+                    </span>
+                @endforeach
+            </div>
+        @endif
+    </x-card>
+
+    <x-card>
+        <x-table>
+            <x-slot name="thead">
+                <x-tr>
+                    <x-th>Fecha</x-th>
+                    <x-th>Tipo</x-th>
+                    <x-th>Campaña</x-th>
+                    <x-th>Campo</x-th>
+                    <x-th>Labor</x-th>
+                    <x-th>Trabajador</x-th>
+                    <x-th>Horas</x-th>
+                    <x-th>Jornales</x-th>
+                    <x-th>Costo</x-th>
+                    <x-th>Observación</x-th>
+                </x-tr>
+            </x-slot>
+            <x-slot name="tbody">
+                @foreach ($resumenes as $fila)
+                                <x-tr class="{{ match ($fila->origen_tipo) {
+                        'planilla' => 'bg-blue-50 dark:bg-blue-900/20',
+                        'riego' => 'bg-cyan-50 dark:bg-cyan-900/20',
+                        'cuadrilla' => 'bg-green-50 dark:bg-green-900/20',
+                        default => '',
+                    } }}">
+                                    <x-td>{{ \Carbon\Carbon::parse($fila->fecha)->format('d/m/Y') }}</x-td>
+                                    <x-td class="uppercase text-xs font-semibold">{{ \App\Models\ResumenCostoDiario::etiquetaOrigen($fila->origen_tipo) }}</x-td>
+                                    <x-td>{{ $fila->campania }}</x-td>
+                                    <x-td>{{ $fila->campo }}</x-td>
+                                    <x-td>
+                                        {{ $fila->labor_nombre ?? '-' }}
+                                        @if ($fila->origen_tipo === 'servicio_campo' && $fila->insumo_nombre)
+                                            <span class="block text-xs text-muted-foreground">{{ $fila->insumo_nombre }}</span>
+                                        @endif
+                                    </x-td>
+                                    <x-td class="!text-left">{{ $fila->trabajador ?? '-' }}</x-td>
+                                    <x-td>{{ number_format($fila->horas,2) }}</x-td>
+                                    <x-td>{{ $fila->cantidad_jornales }}</x-td>
+                                    <x-td>{{ number_format($fila->costo_total, 2) }}</x-td>
+                                    <x-td>
+                                        @if ($fila->observacion)
+                                            <span class="text-amber-600 dark:text-amber-400 text-xs" title="{{ $fila->observacion }}">
+                                                <i class="fa fa-exclamation-triangle"></i> {{ $fila->observacion }}
+                                            </span>
+                                        @endif
+                                    </x-td>
+                                </x-tr>
+                @endforeach
+            </x-slot>
+            <x-slot name="tfoot">
+                <x-tr>
+                    <x-td colspan="6" class="text-right">Total filtrado ({{ number_format($totales->registros ?? 0) }} registros, todas las páginas)</x-td>
+                    <x-td>{{ number_format(($totales->minutos ?? 0) / 60, 2) }}</x-td>
+                    <x-td>{{ number_format($totales->jornales ?? 0, 2) }}</x-td>
+                    <x-td>{{ number_format($totales->costo ?? 0, 2) }}</x-td>
+                    <x-td></x-td>
+                </x-tr>
+            </x-slot>
+        </x-table>
+
+        <div class="mt-4">
+            {{ $resumenes->links() }}
+        </div>
+    </x-card>
+    <x-loading wire:loading />
+    <livewire:costos.consolidador-costos-mensuales-component />
+</div>

@@ -75,7 +75,7 @@ class InformeGeneralCuadrilla
             $writer = new Xlsx($spreadsheet);
             $filename = 'informe_general_cuadrilla.xlsx';
 
-            return ExcelHelper::($spreadsheet, $filename);
+            return ExcelHelper::descargar($spreadsheet, $filename);
 
         } catch (\Throwable $th) {
             throw new Exception("Error al generar informe: " . $th->getMessage());

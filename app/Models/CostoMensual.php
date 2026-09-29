@@ -38,18 +38,23 @@ class CostoMensual extends Model
         'costo_planilla',
         'costo_bono_productividad',
         'costo_cuadrilla',
+        'costo_cuadrilla_bono', // bonos de cuadrilla que se pagan aparte (no con el jornal)
         'costo_maquinaria',
         'costo_pesticida',
         'costo_fertilizante',
+        'costo_servicio_campo',
         'costo_gastos_generales',
 
         // Costos calculados (consolidados por campo)
         'costo_planilla_calculado',
+        'costo_mano_obra_indirecta', // parte de costo_planilla_calculado sin trabajo en campo
         'costo_bono_productividad_calculado',
         'costo_cuadrilla_calculado',
+        'costo_cuadrilla_bono_calculado',
         'costo_maquinaria_calculado',
         'costo_pesticida_calculado',
         'costo_fertilizante_calculado',
+        'costo_servicio_campo_calculado',
         'costo_gastos_generales_calculado',
 
         // Archivos, auditoría y control
@@ -83,12 +88,14 @@ class CostoMensual extends Model
         'costo_maquinaria' => 'decimal:2',
         'costo_pesticida' => 'decimal:2',
         'costo_fertilizante' => 'decimal:2',
+        'costo_servicio_campo' => 'decimal:2',
         'costo_gastos_generales' => 'decimal:2',
         'costo_planilla_calculado' => 'decimal:2',
         'costo_cuadrilla_calculado' => 'decimal:2',
         'costo_maquinaria_calculado' => 'decimal:2',
         'costo_pesticida_calculado' => 'decimal:2',
         'costo_fertilizante_calculado' => 'decimal:2',
+        'costo_servicio_campo_calculado' => 'decimal:2',
         'costo_gastos_generales_calculado' => 'decimal:2',
     ];
 

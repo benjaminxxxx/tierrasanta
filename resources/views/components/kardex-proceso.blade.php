@@ -22,7 +22,7 @@
                 Crear el Kardex
             </x-button>
         @else
-            <x-button href="{{ route('gestion_insumos.kardex') }}">
+            <x-button href="{{ route('almacen.kardex') }}">
                 Ir a Kardexes
             </x-button>
         @endif

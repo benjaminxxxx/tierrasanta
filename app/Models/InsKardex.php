@@ -30,6 +30,7 @@ class InsKardex extends Model
         'closed_at',                // NUEVO: Fecha/hora exacta de cierre
         'creado_por',               // NUEVO: ID del usuario creador
         'editado_por',               // NUEVO
+        'movimientos_actualizados_at', // Fecha de corte: última generación de movimientos
 
     ];
 
@@ -42,6 +43,7 @@ class InsKardex extends Model
         'stock_final' => 'float',
         'costo_final' => 'float',
         'anio' => 'integer',
+        'movimientos_actualizados_at' => 'datetime',
     ];
 
     // Se especifica 'codigo' como la PK referenciada en la tabla de SUNAT

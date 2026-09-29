@@ -1,7 +1,7 @@
 // resources/js/plugins/SumadorSeleccionPlugin.js
+import { BasePlugin } from "handsontable/plugins/base";
 
-export class SumadorSeleccionPlugin
-    extends window.Handsontable.plugins.BasePlugin
+export class SumadorSeleccionPlugin extends BasePlugin
 {
     constructor(hotInstance) {
         super(hotInstance);

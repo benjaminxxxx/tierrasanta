@@ -134,6 +134,8 @@ class ConsolidarJornadaRiegoProceso
     }*/
     public function ejecutarGuardadoRegistros(array $parametros): array
     {
+        // BDD de costos: regenerar la mano de obra de esta fecha al terminar la petición
+        \App\Services\Costos\Consolidacion\BddManoObraServicio::registrarCambio($parametros['fecha']);
         $resumen = $parametros['resumen_riego'];
         $fecha = $parametros['fecha'];
         $data = $parametros['data'];

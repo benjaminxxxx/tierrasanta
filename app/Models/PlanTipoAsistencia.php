@@ -11,6 +11,18 @@ class PlanTipoAsistencia extends Model
 
     protected $table = 'plan_tipo_asistencias';
 
+    /** Roles: le dan al código una función en el sistema (los tipos con rol no se pueden eliminar). */
+    public const ROL_RENUNCIA = 'renuncia';
+    public const ROLES = [
+        self::ROL_RENUNCIA => 'Renuncia / cese (tareas de contrato sin finalizar)',
+    ];
+
+    /** Códigos de asistencia que tienen el rol dado. */
+    public static function codigosConRol(string $rol): array
+    {
+        return static::where('rol', $rol)->pluck('codigo')->all();
+    }
+
     protected $fillable = [
         'codigo',
         'descripcion',
@@ -24,6 +36,8 @@ class PlanTipoAsistencia extends Model
         'acumula_asistencia',
         'activo',
         'plan_tipo_suspension_id',
+        'sin_suspension', // el código no genera suspensión (ej. feriado)
+        'rol', // función en el sistema (ver ROLES); un tipo con rol no se puede eliminar
         'criterio_bono_asistencia'
     ];
     public function getAcumulaAsistenciaLabelAttribute()
