@@ -85,3 +85,40 @@ Segunda parte (29/09/2026):
 | `app/Services/Cuadrilla/CuadrillaServicio.php` | `calcularGastoCuadrilla()` usaba variables que no existían (`$documento`, `$empleadoNombre`, `$horasTotales`, `$horasTrabajadas`, `$costoHora`, `$totalCosto`, `$totalBono`): habría fallado al ejecutarse. `obtenerGruposCuadrilla()` no se usaba. |
 | `app/Services/Campania/CampaniaHistorialServicioGastos.php` | Métodos `actualizarGastosyConsumos()`, `gastoPlanilla()` y `gastoCuadrilla()` que estaban en `App\Services\Campania\CampaniaHistorialServicio`. Nadie llamaba a `actualizarGastosyConsumos()`, que era el único camino hacia `CuadrillaServicio`. |
 | `app/Services/Planilla/PlanillaSueldoGastoServicioGastos.php` | Métodos `calcularGastoPlanilla()`, `procesarExcelGastoPlanilla()`, `obtenerPlanillas()`, `calcularFactor()` y `procesarExcelPlanillaDetalle()` que estaban en `App\Services\Planilla\PlanillaSueldoGastoServicio`. `calcularGastoPlanilla()` solo lo llamaba `CampaniaHistorialServicio::gastoPlanilla()` (retirado arriba); los tres siguientes solo los usaba él y `procesarExcelPlanillaDetalle()` no tenía llamadas. |
+
+### Modales de campaña reemplazados (30/09/2026)
+
+Los modales de campaña de `app/Livewire/GestionCampania/` se habían quitado del menú global (para que no se cargaran
+en todas las páginas) y nadie más escuchaba sus eventos, así que "Registrar nueva campaña" y "Editar campaña" no hacían
+nada. **Siguen aquí como referencia**; los reemplazan:
+
+| En legacy | Reemplazo en app/ |
+|---|---|
+| `app/Livewire/GestionCampania/CampaniasFormNuevoComponent.php` + vista | `App\Livewire\Campania\CampaniaFichaComponent` (wizard de registro) |
+| `app/Livewire/GestionCampania/CampaniasFormComponent.php` + vista | `App\Livewire\Campania\CampaniaFichaComponent` (pestañas de edición) y `CampaniaCerrarComponent` |
+
+Se montan solo en las páginas que los usan (`/campania/resumen`, `/campania/por-campo`, `/campo/campos`) y guardan
+con `App\Services\Campania\Registro\CampaniaRegistroProceso`.
+
+### Reporte diario de actividades (30/09/2026)
+
+El bloque "actividades" de `/reporte/diario` se mostraba pero no se usaba, y dependía de la vista SQL
+`v_reporte_actividades_diario`, tan lenta (minutos incluso con `LIMIT 1`) que bloqueaba la tabla `actividades`.
+
+| Qué | Por qué se retiró |
+|---|---|
+| `app/Livewire/Reporte/ReporteDiarioActividadesComponent.php` + vista `reporte/reporte-diario-actividades-component` | Bloque sin uso de la página Reporte Diario. Se quitó su `<livewire:...>` de `reporte-diario-component` (comentario `LEGACY`); el bloque de asistencias sigue. |
+| `app/Services/Planilla/RegistroDiario/ActividadesResumenServicio.php` | Solo lo usaba ese componente. Era lo único que consultaba la vista (y volcaba el resultado en `rep_actividades_diarias`). |
+| `app/Models/ReporteActividadDiario.php` | Modelo de la vista; no lo usaba nadie. |
+| `app/Models/RepActividadDiaria.php` | Modelo de `rep_actividades_diarias`; solo lo usaba el servicio. |
+| Vista SQL `v_reporte_actividades_diario` | Eliminada de la BD con la migración `2026_09_30_130000_drop_v_reporte_actividades_diario`. Su definición está en `legacy/database/views/v_reporte_actividades_diario.sql` y el `down` de la migración la recrea. |
+
+La tabla `rep_actividades_diarias` (63 filas) no se tocó.
+
+### Cálculos antiguos de plan_mensual_detalles (30/09/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| `app/Models/PlanMensualDetalleCalculosLegacy.php` (trait) | 17 accessors que estaban en `App\Models\PlanMensualDetalle` (`blanco_*`, `costo_total_*`, `sueldo_negro_*`, `remuneracion_basica*`). Calculaban la planilla blanco/negro con columnas que solo tienen datos hasta 01/2026. Nadie los leía, pero estaban en `$appends`: se calculaban al serializar cada detalle, con una consulta por fila, y `getRemuneracionBasicaAttribute` sobrescribía la columna. Hoy esos valores vienen del PLAME (`PlanMensualPersonal`). Para restaurarlos: `use PlanMensualDetalleCalculosLegacy;` en el modelo. |
+
+Las columnas históricas de `plan_mensual_detalles` no se tocaron (ver el docblock del modelo).

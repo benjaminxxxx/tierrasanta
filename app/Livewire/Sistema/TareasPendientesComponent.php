@@ -27,6 +27,8 @@ class TareasPendientesComponent extends Component
         VerificacionHorasCuadrillaServicio::class,
         \App\Services\Planilla\Empleado\VerificacionContratosServicio::class,
         \App\Services\Almacen\VerificacionCombustibleServicio::class,
+        \App\Services\Campania\Cosecha\CampaniaCosechaDetector::class,
+        \App\Services\Campania\Cobertura\CampaniaCoberturaDetector::class,
         //aqui ir agregando mas tareas pendientes
     ];
 

@@ -75,7 +75,8 @@ class ExcelPlanillaMensual
                     'nombres' => $detalleMensual->nombres,
                     'edad' => $edad,
                     'sppSnp' => $contrato->plan_sp_codigo,
-                    'bonificacion' => $detalleMensual->bonificacion,
+                    // plan_mensual_detalles.bonificacion ya no se llena: la bonificación es la del contrato
+                    'bonificacion' => $contrato->bonificacion,
                     'asignacionFamiliar' => $asignacionFamiliar,
                     'compensacionVacacional' => $contrato->compensacion_vacacional,
                     'descuentoSeguro' => $descuentoSeguro,

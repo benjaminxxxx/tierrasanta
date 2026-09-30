@@ -1733,6 +1733,14 @@ class CuadrilleroServicio
                         $inicio = FormatoHelper::normalizarHora($inicio);
                         $fin = FormatoHelper::normalizarHora($fin);
 
+                        // Horas en 24 h: 3:20 de la tarde es 15:20. Un tramo invertido daría minutos negativos.
+                        if ($fin <= $inicio) {
+                            $nombre = $fila['cuadrillero_nombres'] ?? '';
+                            $errores[] = "Fila {$filaOrden}" . ($nombre ? " ({$nombre})" : '') . ", tramo {$j}: la hora de fin ("
+                                . substr($fin, 0, 5) . ') debe ser posterior a la de inicio (' . substr($inicio, 0, 5) . '). Usa formato 24 h (15:20, no 3:20).';
+                            continue;
+                        }
+
                         $tramos[] = [
                             'codigo_labor' => $labor,
                             'campo_nombre' => $campo,

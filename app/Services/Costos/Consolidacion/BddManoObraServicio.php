@@ -39,11 +39,12 @@ class BddManoObraServicio
      * Anota que cambió la mano de obra de una fecha o rango. Se procesa una sola vez al terminar
      * la petición (agrupa varios guardados y no demora la respuesta cuando el servidor lo permite).
      */
-    public static function registrarCambio(string $fechaInicio, ?string $fechaFin = null): void
+    public static function registrarCambio(string $fechaInicio, ?string $fechaFin = null, ?string $campo = null): void
     {
         $inicio = Carbon::parse($fechaInicio)->toDateString();
         $fin = Carbon::parse($fechaFin ?? $fechaInicio)->toDateString();
-        self::$pendientes[] = $inicio <= $fin ? [$inicio, $fin] : [$fin, $inicio];
+        // $campo: solo ese campo (p. ej. cambio de fechas de una campaña); null = todos los campos
+        self::$pendientes[] = ($inicio <= $fin ? [$inicio, $fin] : [$fin, $inicio]) + [2 => $campo];
 
         if (!self::$registrado) {
             self::$registrado = true;
@@ -54,12 +55,19 @@ class BddManoObraServicio
     /** Procesa lo anotado con registrarCambio() (también se puede llamar a mano). */
     public function procesarPendientes(): void
     {
-        $rangos = $this->unirRangos(self::$pendientes);
+        $pendientes = self::$pendientes;
         self::$pendientes = [];
         self::$registrado = false;
 
-        foreach ($rangos as [$inicio, $fin]) {
-            $this->regenerar($inicio, $fin);
+        // Se agrupa por campo ('' = todos) y se unen los rangos de cada grupo
+        $porCampo = [];
+        foreach ($pendientes as $pendiente) {
+            $porCampo[$pendiente[2] ?? ''][] = [$pendiente[0], $pendiente[1]];
+        }
+        foreach ($porCampo as $campo => $rangos) {
+            foreach ($this->unirRangos($rangos) as [$inicio, $fin]) {
+                $this->regenerar($inicio, $fin, $campo !== '' ? (string) $campo : null);
+            }
         }
     }
 
@@ -150,10 +158,10 @@ class BddManoObraServicio
         return $dias;
     }
 
-    private function regenerar(string $inicio, string $fin): void
+    private function regenerar(string $inicio, string $fin, ?string $campo = null): void
     {
         try {
-            $this->manoObra->consolidarPlanillaEnRango($inicio, $fin);
+            $this->manoObra->consolidarPlanillaEnRango($inicio, $fin, null, $campo);
             foreach ($this->mesesDelRango($inicio, $fin) as [$anio, $mes]) {
                 $this->indirecta->consolidarMes($anio, $mes);
             }
@@ -170,6 +178,8 @@ class BddManoObraServicio
     private function abrirTarea(int $anio, int $mes, string $motivo): void
     {
         $nombreMes = Carbon::create($anio, $mes, 1)->translatedFormat('F Y');
+        // El mensaje de una QueryException trae el SQL completo (puede superar el tamaño de la columna): solo el motivo
+        $motivo = mb_strimwidth(trim(preg_replace('/\s*\(Connection:.*$/s', '', $motivo)), 0, 500, '…');
         app(TareaPendienteServicio::class)->registrarOActualizar([
             'tipo' => self::TIPO_TAREA,
             'clave' => sprintf('%04d-%02d', $anio, $mes),

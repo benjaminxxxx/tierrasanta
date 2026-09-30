@@ -2,132 +2,151 @@
 
 namespace App\Livewire\Campania;
 
-use Livewire\Attributes\Title;
-use App\Models\CampoCampania;
 use App\Services\Campania\CampaniaServicio;
+use App\Services\Campania\Registro\CampaniaRegistroProceso;
+use App\Services\Campania\Resumen\CampaniaResumenConsulta;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
-use Session;
 
 #[Title('Resumen de Campaña')]
 class CampaniasComponent extends Component
 {
     use WithPagination, WithoutUrlPagination, LivewireAlert;
+
     public $campoSeleccionado;
-    public $breadcrumb = [];
     public $campaniaSeleccionada;
-    public $campanias = [];
+
+    /** vigentes (por defecto) | cerradas | todas */
+    public string $estado = CampaniaResumenConsulta::ESTADO_VIGENTES;
+
+    /** Solo campañas vigentes a las que se recomienda cerrar (ya cosechadas). */
+    public bool $soloPorCerrar = false;
+
+    public array $breadcrumb = [];
+    public array $campanias = [];
+
+    /** Contadores del encabezado (se recalculan al cambiar de campo o al guardar, no en cada render). */
+    public array $totales = ['vigentes' => 0, 'cerradas' => 0, 'por_cerrar' => 0];
+
     protected $listeners = ['campaniaInsertada' => 'refrescar'];
-    public function mount()
+
+    public function mount(): void
     {
-         $this->breadcrumb = [
-            ['label' => 'Resúmen General de Campañas']
-        ];
+        $this->breadcrumb = [['label' => 'Resumen general de campañas']];
 
+        // Enlaces de tareas pendientes: ?campo=A5 filtra el campo; ?cerrar=123 abre el cierre de esa campaña
+        $campo = request()->query('campo');
+        if (is_string($campo) && $campo !== '') {
+            session(['campo' => $campo]);
+            $this->estado = CampaniaResumenConsulta::ESTADO_TODAS;
+        }
         $this->campoSeleccionado = session('campo');
-        if ($this->campoSeleccionado) {
+        $this->cargarOpciones();
 
-            $this->listarCampanias($this->campoSeleccionado);
+        $cerrar = (int) request()->query('cerrar');
+        if ($cerrar > 0) {
+            $this->dispatch('cerrarCampania', campaniaId: $cerrar);
         }
     }
-   
-    public function updatedCampoSeleccionado($campo)
+
+    public function updatedCampoSeleccionado($campo): void
     {
         session(['campo' => $campo]);
         $this->resetPage();
-        $this->listarCampanias($campo);
+        $this->cargarOpciones();
     }
-    public function updatedCampaniaSeleccionada($campania)
+
+    public function updatedCampaniaSeleccionada($campania): void
     {
         session(['campania' => $campania]);
         $this->resetPage();
     }
-    public function refrescar()
+
+    public function updatedEstado(): void
+    {
+        if ($this->estado !== CampaniaResumenConsulta::ESTADO_VIGENTES) {
+            $this->soloPorCerrar = false;
+        }
+        $this->resetPage();
+    }
+
+    public function updatedSoloPorCerrar(): void
+    {
+        if ($this->soloPorCerrar) {
+            $this->estado = CampaniaResumenConsulta::ESTADO_VIGENTES;
+        }
+        $this->resetPage();
+    }
+
+    /** Atajos de los contadores del encabezado. */
+    public function filtrarEstado(string $estado, bool $porCerrar = false): void
+    {
+        $this->estado = $estado;
+        $this->soloPorCerrar = $porCerrar;
+        $this->resetPage();
+    }
+
+    public function refrescar(): void
     {
         $this->resetPage();
-        $this->listarCampanias($this->campoSeleccionado);
+        $this->cargarOpciones();
     }
-    private function listarCampanias(?string $campo): void
-    {
-        if (empty($campo)) {
-            $this->campanias = [];
-            return;
-        }
 
-        $this->campanias = CampoCampania::query()
-            ->where('campo', $campo)
-            ->orderBy('nombre_campania', 'desc')
-            ->pluck('nombre_campania', 'nombre_campania')
-            ->toArray();
-
-        $campaniaSesion = session('campania');
-      
-        // Si existe en la lista actual, seleccionarla
-        if ($campaniaSesion && array_key_exists($campaniaSesion, $this->campanias)) {
-            $this->campaniaSeleccionada = $campaniaSesion;
-        } else {
-            // Si no pertenece, limpiar selección
-            $this->campaniaSeleccionada = null;
-        }
-    }
-    public function eliminarCampania($campaniaSeleccionada)
+    public function eliminarCampania($campaniaId): void
     {
         try {
-            app(CampaniaServicio::class)->eliminarCampania($campaniaSeleccionada);
-            $this->alert('success', 'Campaña Eliminada Correctamente.');
+            // Auditado: queda en `auditorias` quién eliminó y la campaña completa
+            app(CampaniaRegistroProceso::class)->eliminar((int) $campaniaId);
+            $this->alert('success', 'Campaña eliminada correctamente.');
+            $this->cargarOpciones();
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }
     }
+
     public function descargarReporteCampania()
     {
         try {
-            $campo = $this->campoSeleccionado;
-            $campania = $this->campaniaSeleccionada;
-
-            $query = CampoCampania::query();
-
-            // Filtrar por campo si está seleccionado
-            if ($campo) {
-                $query->where('campo', $campo);
-            }
-
-            // Filtrar por campaña si está seleccionada
-            if ($campania) {
-                $query->where('nombre_campania', $campania);
-            }
-
-            // Obtener registros ordenados
-            $registros = $query->orderBy('nombre_campania', 'desc')
-                ->orderBy('campo', 'asc')
-                ->get();
-
+            $registros = app(CampaniaResumenConsulta::class)->todas($this->filtros());
             return app(CampaniaServicio::class)
-                ->descargarReporteCampania($registros, $campo, $campania);
-
+                ->descargarReporteCampania($registros, $this->campoSeleccionado, $this->campaniaSeleccionada);
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }
+    }
+
+    private function filtros(): array
+    {
+        return [
+            'campo' => $this->campoSeleccionado ?: null,
+            'campania' => $this->campaniaSeleccionada ?: null,
+            'estado' => $this->estado,
+            'por_cerrar' => $this->soloPorCerrar,
+        ];
+    }
+
+    private function cargarOpciones(): void
+    {
+        $consulta = app(CampaniaResumenConsulta::class);
+        $this->totales = $consulta->totales($this->campoSeleccionado ?: null);
+
+        $this->campanias = $this->campoSeleccionado ? $consulta->nombresPorCampo($this->campoSeleccionado) : [];
+        $campaniaSesion = session('campania');
+        $this->campaniaSeleccionada = $campaniaSesion && array_key_exists($campaniaSesion, $this->campanias)
+            ? $campaniaSesion
+            : null;
     }
 
     public function render()
     {
-        $query = CampoCampania::query();
-        if ($this->campoSeleccionado) {
-            $query->where('campo', $this->campoSeleccionado);
-        }
-        if ($this->campaniaSeleccionada) {
-            $query->where('nombre_campania', $this->campaniaSeleccionada);
-        }
-        $campanias = $query->orderBy('nombre_campania', 'desc')
-            ->orderBy('campo')
-            ->orderBy('fecha_inicio', 'desc')
-            ->paginate(20);
+        $resultado = app(CampaniaResumenConsulta::class)->listar($this->filtros());
 
         return view('livewire.campania.campanias-component', [
-            'campaniasGenerales' => $campanias
+            'campaniasGenerales' => $resultado['campanias'],
+            'cosecha' => $resultado['cosecha'],
         ]);
     }
 }

@@ -29,16 +29,13 @@ class PlanillaFdmServicio
             if (!$detallePlanilla) {
                 continue;
             }
-            dd($detallePlanilla);
             // --- CÁLCULO DE COSTOS USANDO EL HELPER ---
-            // Sueldo pactado total = blanco + negro
-            $netoRecibidoReal = (float) $detallePlanilla['sueldo_blanco_pagado'] + (float) $detallePlanilla['sueldo_negro_pagado'];
-
+            // Costos del mes desde el PLAME; se prorratean por las horas del tramo sobre las horas del mes
             $calculo = CalculoHelper::calcularCostoLaborMinimal(
-                $registro['total_horas'],                 // Horas del tramo específico
-                (float) $detallePlanilla['total_horas'],   // Horas totales que el trabajador hizo en el mes
-                $netoRecibidoReal,                        // Pactado real
-                (float) $detallePlanilla['sueldo_blanco_pagado'], // Costo Blanco Empresa
+                (float) $registro['total_horas'],                  // Horas del tramo específico
+                (float) $detallePlanilla['total_horas'],           // Horas totales del mes (PLAME)
+                (float) $detallePlanilla['sueldo_blanco_pagado'],  // Costo blanco del mes
+                (float) $detallePlanilla['sueldo_negro_pagado'],   // Costo negro del mes
             );
 
             // Añadimos los resultados al registro para el Excel

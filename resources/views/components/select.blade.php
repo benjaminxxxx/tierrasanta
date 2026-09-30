@@ -17,7 +17,7 @@
         default => 'h-9 px-3 text-sm',
     };
 
-    $hasWidthClass = collect(explode(' ', $attributes->get('class')))
+    $hasWidthClass = collect(explode(' ', (string) $attributes->get('class')))
                         ->contains(fn ($c) => str_starts_with($c, 'w-'));
     $computedWidth = $hasWidthClass ? '' : 'w-full';
 

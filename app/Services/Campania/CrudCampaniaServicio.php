@@ -76,11 +76,13 @@ class CrudCampaniaServicio
                 }
             }
 
-            $data['infestacion_fecha'] = ($data['infestacion_fecha']==='')? null: $data['infestacion_fecha'];
-            $data['infestacion_fecha_recojo_vaciado_infestadores'] = ($data['infestacion_fecha_recojo_vaciado_infestadores']==='')? null: $data['infestacion_fecha_recojo_vaciado_infestadores'];
-            $data['infestacion_fecha_colocacion_malla'] = ($data['infestacion_fecha_colocacion_malla']==='')? null: $data['infestacion_fecha_colocacion_malla'];
-            $data['infestacion_fecha_retiro_malla'] = ($data['infestacion_fecha_retiro_malla']==='')? null: $data['infestacion_fecha_retiro_malla'];
-            
+            // Fechas vacías del formulario → null (solo las que vienen: al crear no llegan todas)
+            foreach ($data as $campoFecha => $valor) {
+                if ($valor === '' && (str_contains($campoFecha, 'fecha') || $campoFecha === 'cosch_fecha')) {
+                    $data[$campoFecha] = null;
+                }
+            }
+
 
             // 5. Crear o actualizar
             if ($campaniaId) {

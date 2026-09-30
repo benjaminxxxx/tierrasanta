@@ -483,8 +483,8 @@ class Permisos
 
     // =========================================================================
 // DOMINIO: REPORTE (reportes generales + auditoría)
-// Tablas: auditorias, rep_actividades_diarias, reporte_costo_planillas,
-//         rpt_distribucion_combustibles, v_reporte_actividades_diario
+// Tablas: auditorias, reporte_costo_planillas,
+//         rpt_distribucion_combustibles
 // =========================================================================
 
     const REPORTE = 'Reporte y Auditoría';

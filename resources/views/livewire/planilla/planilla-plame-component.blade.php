@@ -1,4 +1,24 @@
+<div>
 <x-card>
+    <x-flex class="justify-between flex-wrap gap-3 mb-4">
+        <div class="w-full md:w-96">
+            <x-input type="search" wire:model.live.debounce.300ms="buscar" placeholder="Buscar por nombre o DNI…" />
+        </div>
+        <p class="text-sm text-muted-foreground">
+            @if ($buscar !== '')
+                {{ $empleados->count() }} de {{ $totalMes }} trabajadores
+            @else
+                {{ $empleados->count() }} trabajadores en el PLAME del mes
+            @endif
+        </p>
+    </x-flex>
+
+    @if ($empleados->isEmpty())
+        <p class="text-center text-muted-foreground py-6">
+            {{ $buscar !== '' ? 'Ningún trabajador coincide con la búsqueda.' : 'Aún no se ha generado el PLAME de este mes.' }}
+        </p>
+    @endif
+
     <x-table noScroll>
         <x-slot name="thead">
             <x-tr :level="1">
@@ -30,13 +50,8 @@
                 <x-th class="[writing-mode:vertical-rl] rotate-180 align-bottom h-40">04 - Inhabilitación administrativa o judicial</x-th>
                 <x-th class="[writing-mode:vertical-rl] rotate-180 align-bottom h-40">05 - Permiso o licencia concedidos por el empleador</x-th>
                 <x-th class="[writing-mode:vertical-rl] rotate-180 align-bottom h-40">06 - Caso fortuito o fuerza mayor</x-th>
-                <x-th class="[writing-mode:vertical-rl] rotate-180 align-bottom h-40">08 - Falta no justificada</x-th>
-                <x-th class="[writing-mode:vertical-rl] rotate-180 align-bottom h-40">
-                    08 - Por temporada o intermitente
-                    {{-- ⚠️ Código duplicado con la columna anterior en la tabla origen de SUNAT.
-                         El modelo no tiene un campo separado para esta columna (sp_07 no existe,
-                         sp_08 ya se usó arriba). Falta confirmar el código real antes de mapear. --}}
-                </x-th>
+                <x-th class="[writing-mode:vertical-rl] rotate-180 align-bottom h-40">07 - Falta no justificada</x-th>
+                <x-th class="[writing-mode:vertical-rl] rotate-180 align-bottom h-40">08 - Por temporada o intermitente</x-th>
 
                 {{-- SUSPENSIÓN IMPERFECTA: texto vertical --}}
                 <x-th class="[writing-mode:vertical-rl] rotate-180 align-bottom h-40">20 - Enfermedad o accidente (primeros veinte días)</x-th>
@@ -83,7 +98,17 @@
             @foreach ($empleados as $index => $empleado)
                 <x-tr>
                     <x-td class="text-center">{{ $index + 1 }}</x-td>
-                    <x-td class="whitespace-nowrap">{{ $empleado->nombres }}</x-td>
+                    <x-td class="whitespace-nowrap">
+                        <div class="flex items-center justify-between gap-2">
+                            <div>
+                                <p>{{ $empleado->nombres }}</p>
+                                <p class="text-xs text-muted-foreground">{{ $empleado->documento }}</p>
+                            </div>
+                            <x-button size="xs" variant="outline" wire:click="verPlame({{ $empleado->id }})" title="Ver PLAME">
+                                <i class="fa fa-eye"></i> Ver PLAME
+                            </x-button>
+                        </div>
+                    </x-td>
                     <x-td class="text-center whitespace-nowrap">{{ $empleado->sistema_pension }}</x-td>
 
                     {{-- INFORMACIÓN --}}
@@ -97,10 +122,8 @@
                     <x-td class="text-center">{{ fmt($empleado->sp_04, 0) }}</x-td>
                     <x-td class="text-center">{{ fmt($empleado->sp_05, 0) }}</x-td>
                     <x-td class="text-center">{{ fmt($empleado->sp_06, 0) }}</x-td>
+                    <x-td class="text-center">{{ fmt($empleado->sp_07, 0) }}</x-td>
                     <x-td class="text-center">{{ fmt($empleado->sp_08, 0) }}</x-td>
-                    <x-td class="text-center">
-                        {{-- ⚠️ Sin campo confirmado, ver comentario en el header --}}
-                    </x-td>
 
                     {{-- SUSPENSIÓN IMPERFECTA --}}
                     <x-td class="text-center">{{ fmt($empleado->si_20, 0) }}</x-td>
@@ -148,3 +171,7 @@
         </x-slot>
     </x-table>
 </x-card>
+
+    {{-- Ficha "Ver PLAME" del trabajador --}}
+    <livewire:planilla.planilla-plame-ficha-component />
+</div>

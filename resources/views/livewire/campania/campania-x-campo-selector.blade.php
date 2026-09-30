@@ -47,6 +47,9 @@
     @endif
 
     <x-loading wire:loading />
+    {{-- Modales de campaña: se montan solo en las páginas que los usan --}}
+    <livewire:campania.campania-ficha-component />
+    <livewire:campania.campania-cerrar-component />
 </div>
 @script
 <script>

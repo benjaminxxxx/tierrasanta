@@ -206,12 +206,17 @@ class ConsolidarCostoManoObraServicio
 
         return $totalFilas;
     }*/
-    public function consolidarPlanillaEnRango(string $fechaInicio, string $fechaFin, ?array $tipos = null): int
+    /**
+     * @param string|null $campo si se indica, solo se regenera ese campo (p. ej. al cambiar las fechas de una
+     *                           campaña: los demás campos no cambian y rehacer toda la empresa tomaba minutos)
+     */
+    public function consolidarPlanillaEnRango(string $fechaInicio, string $fechaFin, ?array $tipos = null, ?string $campo = null): int
     {
         $campanias = CampoCampania::where('fecha_inicio', '<=', $fechaFin)
             ->where(function ($q) use ($fechaInicio) {
                 $q->whereNull('fecha_fin')->orWhere('fecha_fin', '>=', $fechaInicio);
             })
+            ->when($campo, fn($q) => $q->where('campo', $campo))
             ->get();
 
         $totalFilas = 0;
@@ -220,10 +225,14 @@ class ConsolidarCostoManoObraServicio
         // filas duplicadas por campañas superpuestas de consolidaciones anteriores.
         ResumenCostoDiario::whereIn('origen_tipo', $this->resolverOrigenesTipo($tipos))
             ->whereBetween('fecha', [$fechaInicio, $fechaFin])
+            ->when($campo, fn($q) => $q->where('campo', $campo))
             ->delete();
 
         $cubiertos = []; // campo => [[inicio, fin], ...] tramos del periodo que tienen campaña
         $conActividad = self::camposConActividad($fechaInicio, $fechaFin);
+        if ($campo) {
+            $conActividad = array_intersect_key($conActividad, [$campo => true]);
+        }
 
         foreach ($campanias as $campania) {
             // Sin mano de obra en el rango: no genera filas (y sus tramos solo importan en campos con actividad)

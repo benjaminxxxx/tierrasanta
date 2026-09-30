@@ -5,6 +5,7 @@ namespace App\Livewire\Campania;
 use Livewire\Attributes\Title;
 use App\Models\CampoCampania;
 use App\Services\Campania\CampaniaServicio;
+use App\Services\Campania\Registro\CampaniaRegistroProceso;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 use Illuminate\Support\Facades\Session;
@@ -148,7 +149,8 @@ class CampaniaCampoSelectorComponent extends Component
     public function eliminarCampania($id)
     {
         try {
-            app(CampaniaServicio::class)->eliminarCampania($id);
+            // Auditado: queda en `auditorias` quién eliminó y la campaña completa
+            app(CampaniaRegistroProceso::class)->eliminar((int) $id);
             $this->cargarYSeleccionar($this->campoSeleccionado);
             $this->alert('success', 'Campaña Eliminada.');
         } catch (\Throwable $th) {

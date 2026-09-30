@@ -336,6 +336,16 @@ class ConsolidarCostoPlanillaServicio
         float $costoTotal,
         ?string $observacion
     ): array {
+        // Tramo con hora de fin anterior a la de inicio (dato mal cargado): no se inventa un costo ni se rompe
+        // la regeneración de todo el rango (minutos es smallint unsigned). Queda en 0 y marcado para revisar.
+        if ($minutos < 0) {
+            $observacion = $this->combinarObservaciones($observacion,
+                "Horas inválidas en el registro ({$trabajador}): la hora de fin es anterior a la de inicio.");
+            $minutos = 0;
+            $jornales = 0;
+            $costoTotal = 0;
+        }
+
         return [
             'campania' => $campania,
             'fecha' => $fecha,

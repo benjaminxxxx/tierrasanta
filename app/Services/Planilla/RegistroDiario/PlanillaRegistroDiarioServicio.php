@@ -240,6 +240,11 @@ class PlanillaRegistroDiarioServicio
                 }
                 $inicio = FormatoHelper::normalizarHora($inicio);
                 $fin = FormatoHelper::normalizarHora($fin);
+                // Horas en 24 h: 3:20 de la tarde es 15:20. Un tramo invertido daría horas negativas.
+                if ($fin <= $inicio) {
+                    throw new Exception("Fila {$fila}, tramo {$x}: la hora de salida (" . substr($fin, 0, 5)
+                        . ') debe ser posterior a la de entrada (' . substr($inicio, 0, 5) . '). Usa formato 24 h (15:20, no 3:20).');
+                }
                 $hInicio = Carbon::parse($inicio);
                 $hFin = Carbon::parse($fin);
 
@@ -346,6 +351,11 @@ class PlanillaRegistroDiarioServicio
 
                 $inicio = FormatoHelper::normalizarHora($inicio);
                 $fin = FormatoHelper::normalizarHora($fin);
+                // Horas en 24 h: 3:20 de la tarde es 15:20. Un tramo invertido daría horas negativas.
+                if ($fin <= $inicio) {
+                    throw new Exception("Fila {$fila}, tramo {$x}: la hora de salida (" . substr($fin, 0, 5)
+                        . ') debe ser posterior a la de entrada (' . substr($inicio, 0, 5) . '). Usa formato 24 h (15:20, no 3:20).');
+                }
                 $hInicio = Carbon::parse($inicio);
                 $hFin = Carbon::parse($fin);
 

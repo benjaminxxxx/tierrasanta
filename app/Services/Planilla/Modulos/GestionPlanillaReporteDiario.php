@@ -20,14 +20,16 @@ class GestionPlanillaReporteDiario
     public function obtenerPlanillaMensualXFecha($fecha)
     {
         return app(PlanillaMensualServicio::class)->obtenerPlanillaXFecha($fecha)->map(function ($empleado){
+            // spp_snp y grupo de plan_mensual_detalles ya no se llenan (solo hasta 01/2026): se leen del contrato del mes
+            $contrato = $empleado->empleado?->contratos->first();
 
             return [
                 'id' => $empleado->plan_empleado_id,
                 'nombres' => $empleado->nombres,
                 'documento' => $empleado->documento,
                 'orden' => $empleado->orden,
-                'spp_snp' => $empleado->spp_snp,
-                'grupo' => $empleado->grupo
+                'spp_snp' => $contrato?->plan_sp_codigo,
+                'grupo' => $contrato?->grupo_codigo,
             ];
         });
     }

@@ -19,7 +19,8 @@ class HSTPlanillaAsistencia
 
       $empleadoData = [
         'plan_men_detalle_id' => $detalle->id,
-        'grupo' => $detalle->grupo,
+        // grupo de plan_mensual_detalles ya no se llena (solo hasta 01/2026): se lee del contrato del mes
+        'grupo' => $detalle->empleado?->contratos->first()?->grupo_codigo,
         'documento' => $detalle->documento,
         'nombres' => mb_strtoupper($detalle->nombres),
       ];
