@@ -13,8 +13,6 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Illuminate\Support\Facades\Storage;
 use App\Support\ExcelHelper;
 use App\Support\CalculoHelper;
-use App\Services\Cuadrilla\CuadrillaServicio;
-use App\Services\Planilla\PlanillaSueldoGastoServicio;
 use App\Services\Riego\RiegoCampaniaServicio;
 
 class CampaniaHistorialServicio
@@ -100,19 +98,7 @@ class CampaniaHistorialServicio
         RiegoCampaniaServicio::procesarRiegosParaCampania($this->campoCampania);
 
     }
-    
 
-    /**
-     * Actualiza los Gastos y Consumos de una determinada campaña
-     * @param int $campoCampaniaId
-     */
-    public function actualizarGastosyConsumos()
-    {
-        $this->campoCampania->update([
-            'gasto_planilla' => $this->gastoPlanilla(),
-            'gasto_cuadrilla' => $this->gastoCuadrilla()
-        ]);
-    }
     public function generarBddMensual()
     {
 
@@ -576,13 +562,5 @@ class CampaniaHistorialServicio
             }
             CamposCampaniasConsumo::insert($camposCampaniasConsumo);
         }
-    }
-    public function gastoPlanilla()
-    {
-        return PlanillaSueldoGastoServicio::calcularGastoPlanilla($this->campoCampaniaId);
-    }
-    public function gastoCuadrilla()
-    {
-        return CuadrillaServicio::calcularGastoCuadrilla($this->campoCampaniaId);
     }
 }

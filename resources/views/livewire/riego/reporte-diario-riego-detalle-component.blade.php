@@ -286,19 +286,15 @@
             },
             {
                 data: 'hora_inicio',
-                type: 'time',
+                type: 'hora24',
                 width: 60,
-                timeFormat: 'H:mm',
-                correctFormat: true,
                 className: 'text-center',
                 title: `HORA INICIO`
             },
             {
                 data: 'hora_fin',
-                type: 'time',
+                type: 'hora24',
                 width: 60,
-                timeFormat: 'H:mm',
-                correctFormat: true,
                 className: 'text-center',
                 title: `HORA FIN`
             },

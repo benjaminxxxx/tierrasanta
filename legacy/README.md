@@ -77,3 +77,11 @@ Segunda parte (29/09/2026):
   `app/Domain/DerechoHabiente/*` → `App\Services\Planilla\DerechoHabiente\*`.
 
 | `app/Services/Planilla/RegistroDiario/PlanillaRegistroDiarioProcesoSuspensionesPendientes.php` | Sugerencias de suspensiones con año fijo 2026, sin unir domingos y con mapeo fijo en el componente. Reemplazado por `App\Services\Planilla\Asistencia\SugerenciaSuspensionServicio` (usa el vínculo de cada tipo de asistencia). Retirado el 29/09/2026. |
+
+### Gasto de cuadrilla por campaña (30/09/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| `app/Services/Cuadrilla/CuadrillaServicio.php` | `calcularGastoCuadrilla()` usaba variables que no existían (`$documento`, `$empleadoNombre`, `$horasTotales`, `$horasTrabajadas`, `$costoHora`, `$totalCosto`, `$totalBono`): habría fallado al ejecutarse. `obtenerGruposCuadrilla()` no se usaba. |
+| `app/Services/Campania/CampaniaHistorialServicioGastos.php` | Métodos `actualizarGastosyConsumos()`, `gastoPlanilla()` y `gastoCuadrilla()` que estaban en `App\Services\Campania\CampaniaHistorialServicio`. Nadie llamaba a `actualizarGastosyConsumos()`, que era el único camino hacia `CuadrillaServicio`. |
+| `app/Services/Planilla/PlanillaSueldoGastoServicioGastos.php` | Métodos `calcularGastoPlanilla()`, `procesarExcelGastoPlanilla()`, `obtenerPlanillas()`, `calcularFactor()` y `procesarExcelPlanillaDetalle()` que estaban en `App\Services\Planilla\PlanillaSueldoGastoServicio`. `calcularGastoPlanilla()` solo lo llamaba `CampaniaHistorialServicio::gastoPlanilla()` (retirado arriba); los tres siguientes solo los usaba él y `procesarExcelPlanillaDetalle()` no tenía llamadas. |

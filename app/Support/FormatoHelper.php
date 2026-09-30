@@ -92,8 +92,15 @@ class FormatoHelper
         if (empty($hora))
             return '00:00:00';
 
+        $hora = trim($hora);
+
+        // Sistema de punto (Excel): los dígitos tras el punto son minutos, no decimales → 5.5 = 05:50
+        if (preg_match('/^(\d{1,2})[.,](\d)$/', $hora, $m)) {
+            $hora = $m[1] . ':' . $m[2] . '0';
+        }
+
         // Reemplazar punto por dos puntos para estandarizar
-        $hora = str_replace('.', ':', trim($hora));
+        $hora = str_replace('.', ':', $hora);
 
         // Si solo enviaron el número de hora (ej: "14"), completar con minutos
         if (!str_contains($hora, ':')) {

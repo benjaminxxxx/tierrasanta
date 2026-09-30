@@ -227,12 +227,12 @@
                 },
                 {
                     data: 'hora_inicio', title: 'INICIO', width: 75,
-                    type: 'time', timeFormat: 'HH:mm', correctFormat: true,
+                    type: 'hora24',
                     renderer: T.TextRenderer,
                 },
                 {
                     data: 'hora_fin', title: 'FIN', width: 75,
-                    type: 'time', timeFormat: 'HH:mm', correctFormat: true,
+                    type: 'hora24',
                     renderer: T.TextRenderer,
                 },
                 {

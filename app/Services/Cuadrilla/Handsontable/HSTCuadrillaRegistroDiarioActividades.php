@@ -44,8 +44,8 @@ class HSTCuadrillaRegistroDiarioActividades
                     $todasActividades->push([
                         'campo' => $detalle->campo_nombre,
                         'labor' => $detalle->codigo_labor,
-                        'hora_inicio' => Carbon::parse($detalle->hora_inicio)->format('G.i'),
-                        'hora_fin' => Carbon::parse($detalle->hora_fin)->format('G.i'),
+                        'hora_inicio' => Carbon::parse($detalle->hora_inicio)->format('H:i'),
+                        'hora_fin' => Carbon::parse($detalle->hora_fin)->format('H:i'),
                     ]);
                 }
 
@@ -70,8 +70,8 @@ class HSTCuadrillaRegistroDiarioActividades
                     $fila["hora_fin_$n"] = $actividad['hora_fin'];
 
                     // Sumar diferencia en horas
-                    $inicio = Carbon::createFromFormat('G.i', $actividad['hora_inicio']);
-                    $fin = Carbon::createFromFormat('G.i', $actividad['hora_fin']);
+                    $inicio = Carbon::createFromFormat('H:i', $actividad['hora_inicio']);
+                    $fin = Carbon::createFromFormat('H:i', $actividad['hora_fin']);
                     $horas = $inicio->diffInMinutes($fin) / 60;
                     $totalHoras += $horas;
                 }

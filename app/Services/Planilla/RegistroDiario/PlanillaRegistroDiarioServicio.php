@@ -217,8 +217,8 @@ class PlanillaRegistroDiarioServicio
 
             // Procesamiento de tramos/actividades
             for ($x = 1; $x <= $totalActividades; $x++) {
-                $inicio = isset($informacion["entrada_$x"]) ? str_replace('.', ':', $informacion["entrada_$x"]) : null;
-                $fin = isset($informacion["salida_$x"]) ? str_replace('.', ':', $informacion["salida_$x"]) : null;
+                $inicio = $informacion["entrada_$x"] ?? null;
+                $fin = $informacion["salida_$x"] ?? null;
                 $labor = $informacion["labor_$x"] ?? null;
                 $campo = $informacion["campo_$x"] ?? null;
 
@@ -306,8 +306,8 @@ class PlanillaRegistroDiarioServicio
             $sumaHorasTramos = 0;
 
             for ($x = 1; $x <= $totalActividades; $x++) {
-                $inicio = isset($informacion["entrada_$x"]) ? str_replace('.', ':', $informacion["entrada_$x"]) : null;
-                $fin = isset($informacion["salida_$x"]) ? str_replace('.', ':', $informacion["salida_$x"]) : null;
+                $inicio = $informacion["entrada_$x"] ?? null;
+                $fin = $informacion["salida_$x"] ?? null;
                 $labor = $informacion["labor_$x"] ?? null;
                 $campo = $informacion["campo_$x"] ?? null;
 

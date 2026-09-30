@@ -126,16 +126,6 @@
                 dropdownMenu: false,
                 fixedColumnsLeft: 3,
                 licenseKey: 'non-commercial-and-evaluation',
-                // v18 solo acepta horas HH:mm: lo pegado desde Excel como "7.30" o "7:30" se normaliza
-                beforeChange: (changes) => {
-                    (changes || []).forEach((change) => {
-                        if (!change || !/^(entrada|salida)_\d+$/.test(String(change[1]))) return;
-                        const m = String(change[3] ?? '').trim().match(/^(\d{1,2})[.:,](\d{1,2})$/);
-                        if (m && +m[1] < 24 && +m[2] < 60) {
-                            change[3] = `${m[1].padStart(2, '0')}:${m[2].padEnd(2, '0')}`;
-                        }
-                    });
-                },
                 cells: function (row, col) {
                     const cellProperties = {};
                     // 'this' aquí se refiere a la instancia de Handsontable
@@ -340,18 +330,14 @@
                     title: `LAB. ${indice}`
                 }, {
                     data: "entrada_" + indice,
-                    type: 'time',
+                    type: 'hora24',
                     width: 50,
-                    timeFormat: { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }, // v18: la hora llega como HH:mm
-                    correctFormat: true,
                     className: `text-center ${intercalado}`,
                     title: `ENT. ${indice}`
                 }, {
                     data: "salida_" + indice,
-                    type: 'time',
+                    type: 'hora24',
                     width: 50,
-                    timeFormat: { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }, // v18: la hora llega como HH:mm
-                    correctFormat: true,
                     className: `text-center ${intercalado}`,
                     title: `SAL. ${indice}`
                 });

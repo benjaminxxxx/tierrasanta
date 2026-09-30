@@ -21,6 +21,15 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'photo' => ['nullable', 'mimes:jpg,jpeg,png', 'max:1024'],
+        ], [
+            'name.required' => 'El nombre es obligatorio.',
+            'name.max' => 'El nombre no debe superar los :max caracteres.',
+            'email.required' => 'El correo electrónico es obligatorio.',
+            'email.email' => 'Ingresa un correo electrónico válido.',
+            'email.max' => 'El correo electrónico no debe superar los :max caracteres.',
+            'email.unique' => 'Este correo electrónico ya está registrado.',
+            'photo.mimes' => 'La foto debe ser una imagen JPG o PNG.',
+            'photo.max' => 'La foto no debe pesar más de 1 MB.',
         ])->validateWithBag('updateProfileInformation');
 
         if (isset($input['photo'])) {

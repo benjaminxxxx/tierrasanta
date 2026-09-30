@@ -150,28 +150,11 @@
                 manualRowResize: true,
                 autoColumnSize: true,
                 afterChange: (changes, source) => {
-                    if (source === 'recalculado' || source === 'loadData') {
-                        return; // evitar loops infinitos
-                    }
-
                     if (source === 'edit' ||
                         source === 'CopyPaste.paste' ||
-                        source === 'timeValidator' ||
                         source === 'Autofill.fill') {
-
+                        // TOTAL y DEBE se calculan en sus renderers desde las horas de la fila
                         this.hasUnsavedChanges = true;
-
-                        const filasMap = new Map();
-                        changes.forEach(([row]) => {
-
-                            if (!filasMap.has(row)) {
-                                filasMap.set(row, this.hot.getDataAtRow(row));
-                            }
-                        });
-                        filasMap.forEach((data, row) => {
-                            this.recalcularTotales(data, row);
-                        });
-
                     }
                 },
                 licenseKey: 'non-commercial-and-evaluation',
@@ -231,8 +214,10 @@
             for (let n = 1; n <= this.totalColumnas; n++) {
                 const inicio = fila[`hora_inicio_${n}`];
                 const fin = fila[`hora_fin_${n}`];
-                if (!inicio || !fin) continue;
-                const minutos = this.timeToMinutes(fin) - this.timeToMinutes(inicio);
+                const ini = this.timeToMinutes(inicio);
+                const fn = this.timeToMinutes(fin);
+                if (ini === null || fn === null) continue;
+                const minutos = fn - ini;
                 if (minutos > 0) total += minutos;
             }
             return total;
@@ -243,36 +228,21 @@
             if (isNaN(registrado)) return null;
             return Math.abs(this.minutosDetalleFila(fila) - registrado * 60) <= 1;
         },
-        recalcularTotales(data, row) {
-            const fila = this.hot.getSourceDataAtRow(row) || {};
-            const totalHoras = this.minutesToTime(this.minutosDetalleFila(fila));
-            this.hot.setDataAtRowProp(row, 'total_horas', totalHoras, 'recalculado');
-        },
+        /** "HH:mm" → minutos. Las celdas hora24 ya llegan normalizadas; null si es inválido. */
         timeToMinutes(time) {
-            if (!time || typeof time !== 'string') return 0;
-
-            // Reemplazamos dos puntos por punto por si acaso viene en formato HH:mm
-            const limpio = time.replace(':', '.');
-            const partes = limpio.split('.');
-
-            const hours = parseInt(partes[0], 10) || 0;
-            const minutes = parseInt(partes[1], 10) || 0;
-
-            // Validamos que sean números finitos
-            if (isNaN(hours) || isNaN(minutes)) return 0;
-
-            return (hours * 60) + minutes;
+            const m = typeof time === 'string' ? time.match(/^(\d{1,2}):(\d{2})$/) : null;
+            if (!m) return null;
+            return (parseInt(m[1], 10) * 60) + parseInt(m[2], 10);
         },
         minutesToTime(minutes) {
-            // Si por algún error llega NaN o Infinite, devolvemos 00.00
             if (isNaN(minutes) || !isFinite(minutes) || minutes < 0) {
-                return "00.00";
+                return "00:00";
             }
 
             const hours = Math.floor(minutes / 60);
-            const mins = Math.round(minutes % 60); // Usamos round para evitar decimales en los minutos
+            const mins = Math.round(minutes % 60);
 
-            return `${String(hours).padStart(2, '0')}.${String(mins).padStart(2, '0')}`;
+            return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
         },
         generarColumnasDinamicas() {
             const cols = [{
@@ -314,22 +284,14 @@
                     title: `Lab. ${i}`
                 }, {
                     data: `hora_inicio_${i}`,
-                    type: 'time',
+                    type: 'hora24',
                     width: 60,
-                    timeFormat: 'H.mm',
-                    correctFormat: true,
-                    allowInvalid: false,
-                    strict: true,
                     className: `text-center ${bgClass}`,
                     title: `Hora<br/>Ini. ${i}`
                 }, {
                     data: `hora_fin_${i}`,
-                    type: 'time',
+                    type: 'hora24',
                     width: 60,
-                    timeFormat: 'H.mm',
-                    correctFormat: true,
-                    allowInvalid: false,
-                    strict: true,
                     className: `text-center ${bgClass}`,
                     title: `Hora<br/>Fin ${i}`
                 });
@@ -337,10 +299,7 @@
 
             cols.push({
                 data: 'total_horas',
-                type: 'time',
                 width: 60,
-                timeFormat: 'HH.mm',
-                correctFormat: true,
                 readOnly: true,
                 className: this.isDark ? '!font-bold !bg-stone-700 !text-center' :
                     '!font-bold !bg-yellow-300 !text-center',
@@ -348,9 +307,10 @@
                 // Rojo = la suma del detalle (esta fila) no coincide con las horas registradas del día.
                 // Se calcula desde las horas de la fila, así también avisa mientras se edita.
                 renderer: (instance, td, row, col, prop, value, cellProperties) => {
-                    // Renderer base del tipo "time" (mantiene el formato HH.mm de la columna)
-                    Handsontable.renderers.getRenderer('time')(instance, td, row, col, prop, value, cellProperties);
+                    // El total se calcula siempre desde las horas de la fila (HH:mm)
                     const fila = instance.getSourceDataAtRow(row) || {};
+                    const total = this.minutesToTime(this.minutosDetalleFila(fila));
+                    Handsontable.renderers.TextRenderer(instance, td, row, col, prop, total, cellProperties);
                     td.style.setProperty('color', '', '');
                     if (this.detalleCuadra(fila) === false) {
                         td.style.setProperty('color', '#dc2626', 'important');
