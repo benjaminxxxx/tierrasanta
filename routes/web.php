@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 // Almacén
 use App\Livewire\Almacen\Kardex\InsumoKardexComponent;
 use App\Livewire\Almacen\Kardex\InsumoKardexCrearComponent;
+use App\Livewire\Almacen\Kardex\KardexCargaComponent;
 use App\Livewire\Almacen\Kardex\InsumoKardexDetalleComponent;
 use App\Livewire\Almacen\Kardex\InsumoKardexReporteComponent;
 use App\Livewire\Almacen\Kardex\InsumoKardexReporteDetalleComponent;
@@ -265,6 +266,8 @@ Route::middleware([
                 ->middleware('can:' . Permisos::INSUMO_KARDEX);
             Route::get('/crear', InsumoKardexCrearComponent::class)
                 ->name('.crear')->middleware('can:' . Permisos::INSUMO_KARDEX);
+            Route::get('/carga-anual', KardexCargaComponent::class)
+                ->name('.carga')->middleware('can:' . Permisos::INSUMO_KARDEX);
             Route::get('/detalle/{insumoKardexId}', InsumoKardexDetalleComponent::class)
                 ->name('.detalle')->middleware('can:' . Permisos::INSUMO_KARDEX);
             Route::get('/reportes', InsumoKardexReporteComponent::class)

@@ -30,8 +30,23 @@
 
     @if ($campaniaSeleccionada)
         @can(\App\Constants\Permisos::CAMPAÑA_POR_CAMPO_VER)
+            <div class="inline-flex p-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                @foreach (\App\Livewire\Campania\CampaniaCampoSelectorComponent::PESTANIAS as $clave => $etiqueta)
+                    <button type="button" wire:click="$set('pestania', '{{ $clave }}')" @class([
+                        'px-4 py-2 text-sm font-semibold rounded-md transition-all duration-150',
+                        'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm' => $pestania === $clave,
+                        'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300' => $pestania !== $clave,
+                    ])>{{ $etiqueta }}</button>
+                @endforeach
+            </div>
+
+            @if ($pestania === 'costos')
+                <livewire:campania.campania-costo-produccion-component :campania-id="(int) $campaniaSeleccionada"
+                    wire:key="Costos{{ $campaniaSeleccionada }}" />
+            @else
             <livewire:campania.campania-por-campo-informe-component :campania="$campaniaSeleccionada"
                 wire:key="Camp{{ $campaniaSeleccionada }}" />
+            @endif
         @else
             <x-danger>
                 No tienes permisos para ver la información de la campaña. Por favor, contacta al administrador.

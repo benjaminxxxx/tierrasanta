@@ -29,6 +29,8 @@ class TareasPendientesComponent extends Component
         \App\Services\Almacen\VerificacionCombustibleServicio::class,
         \App\Services\Campania\Cosecha\CampaniaCosechaDetector::class,
         \App\Services\Campania\Cobertura\CampaniaCoberturaDetector::class,
+        \App\Services\Almacen\Kardex\AlmacenKardexCostoCeroDetector::class,
+        \App\Services\Campo\Labor\CampoLaborManoObraDetector::class,
         //aqui ir agregando mas tareas pendientes
     ];
 
@@ -80,19 +82,23 @@ class TareasPendientesComponent extends Component
             return;
         }
 
-        app($tarea->servicio)->{$accion['metodo']}(...($accion['parametros'] ?? []));
+        try {
+            app($tarea->servicio)->{$accion['metodo']}(...($accion['parametros'] ?? []));
 
-        $tarea->update([
-            'ejecutado_por' => auth()->id(),
-            'ejecutado_en' => now(),
-        ]);
+            $tarea->update([
+                'ejecutado_por' => auth()->id(),
+                'ejecutado_en' => now(),
+            ]);
+            $this->alert('success', 'Acción ejecutada.');
+        } catch (\Throwable $th) {
+            // Una acción puede fallar a medias (p. ej. regenerar varios kardex): se informa y se refresca igual
+            $this->errorAlert($th);
+        }
 
         if ($tarea->metodo_detectar) {
             // refresca estado inmediatamente, con el periodo elegido en el panel
             app($tarea->servicio)->{$tarea->metodo_detectar}(...$this->rango());
         }
-
-        $this->alert('success', 'Acción ejecutada.');
     }
 
     public function render()

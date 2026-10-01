@@ -20,6 +20,7 @@ class ConsolidarCostoMaquinariaServicio
 
         DB::transaction(function () use ($campania, $filas) {
             ResumenCostoDiario::where('campania', $campania->nombre_campania)
+                ->where('campo', $campania->campo) // el nombre (T.2025) se repite en todos los campos
                 ->where('origen_tipo', 'maquinaria')
                 ->delete();
 

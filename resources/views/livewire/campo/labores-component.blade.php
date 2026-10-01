@@ -34,6 +34,7 @@
                 </x-group-field>
                 <x-select wire:model.live="manoObraFiltro" label="Mano de obra" class="w-auto">
                     <option value="">Todos</option>
+                    <option value="sin">— Sin mano de obra —</option>
                     @foreach ($manoObras as $manoObra)
                         <option value="{{ $manoObra->codigo }}">{{ $manoObra->descripcion }}</option>
                     @endforeach

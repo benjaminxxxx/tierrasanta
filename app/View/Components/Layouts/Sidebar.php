@@ -245,6 +245,11 @@ class Sidebar extends Component
                         'can' => Permisos::INSUMO_KARDEX,
                     ],
                     [
+                        'title' => 'Carga de KARDEX anual',
+                        'route' => 'almacen.kardex.carga',
+                        'can' => Permisos::INSUMO_KARDEX,
+                    ],
+                    [
                         'title' => 'Reporte de Kardex',
                         'route' => 'almacen.kardex.reportes',
                         'can' => Permisos::INSUMO_KARDEX_REPORTE,

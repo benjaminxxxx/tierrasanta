@@ -46,6 +46,7 @@ class ConsolidarCostoInsumosServicio
         DB::transaction(function () use ($campania, $filas) {
             // Borra ambos tipos derivados de esta fuente en una sola pasada
             ResumenCostoDiario::where('campania', $campania->nombre_campania)
+                ->where('campo', $campania->campo) // el nombre (T.2025) se repite en todos los campos
                 ->whereIn('origen_tipo', self::ORIGENES)
                 ->delete();
 
@@ -60,13 +61,16 @@ class ConsolidarCostoInsumosServicio
      * Las salidas cuyo campo no tiene campaña en esa fecha se consolidan como 'FDM'
      * o 'SIN CAMPAÑA' (ver ConsolidarCostoManoObraServicio::campaniaSinCobertura).
      */
-    public function consolidarEnRango(string $fechaInicio, string $fechaFin): int
+    /**
+     * @param string|null $campo solo las salidas de ese campo (regenerar los costos de una campaña sin tocar el resto)
+     */
+    public function consolidarEnRango(string $fechaInicio, string $fechaFin, ?string $campo = null): int
     {
         $this->kardexActualizacion->asegurarActualizados(
-            $this->dataInsumo->salidasInsumos($fechaInicio, $fechaFin)
+            $this->dataInsumo->salidasInsumos($fechaInicio, $fechaFin, $campo)
         );
 
-        $salidas = $this->dataInsumo->salidasInsumos($fechaInicio, $fechaFin);
+        $salidas = $this->dataInsumo->salidasInsumos($fechaInicio, $fechaFin, $campo);
 
         $campanias = CampoCampania::whereIn('campo', $salidas->pluck('campo_nombre')->unique())
             ->where('fecha_inicio', '<=', $fechaFin)
@@ -95,9 +99,10 @@ class ConsolidarCostoInsumosServicio
             ->values()
             ->all();
 
-        DB::transaction(function () use ($fechaInicio, $fechaFin, $filas) {
+        DB::transaction(function () use ($fechaInicio, $fechaFin, $filas, $campo) {
             ResumenCostoDiario::whereIn('origen_tipo', self::ORIGENES)
                 ->whereBetween('fecha', [$fechaInicio, $fechaFin])
+                ->when($campo, fn($q) => $q->where('campo', $campo))
                 ->delete();
 
             $this->insertar($filas);

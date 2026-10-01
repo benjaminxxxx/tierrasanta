@@ -42,6 +42,11 @@ class LaboresComponent extends Component
     public function mount()
     {
         $this->manoObras = ManoObra::all();
+        // ?mano_obra=sin → labores sin mano de obra (enlace de tareas pendientes)
+        $manoObra = request()->query('mano_obra');
+        if (is_string($manoObra) && $manoObra !== '') {
+            $this->manoObraFiltro = $manoObra;
+        }
     }
     public function updatedFileLabores($file)
     {

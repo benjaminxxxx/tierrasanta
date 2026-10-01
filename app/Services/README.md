@@ -59,6 +59,10 @@ Campania/
     CampaniaRegistroValidador.php  solapamiento de fechas, nombre único
     CampaniaRegistroImpactoConsulta.php  qué se mueve si cambian las fechas
     CampaniaRegistroProceso.php    crear, actualizar datos, cambiar fechas, cerrar, eliminar
+  CostoProduccion/
+    CampaniaCostoProduccionReglas.php    secciones del reporte y qué origen va en cada una
+    CampaniaCostoProduccionConsulta.php  partidas desde resumen_costo_diarios y reporte por ha en US$
+    CampaniaCostoProduccionProceso.php   guarda una versión (historial) de los costos de la campaña
   Resumen/
     CampaniaResumenConsulta.php    listado de /campania/resumen
 ```

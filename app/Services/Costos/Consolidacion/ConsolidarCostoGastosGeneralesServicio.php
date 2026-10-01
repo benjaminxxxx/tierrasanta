@@ -16,6 +16,7 @@ class ConsolidarCostoGastosGeneralesServicio
         DB::transaction(function () use ($campania, $filas) {
             // Solo borra lo que este proceso regenera: costo_fijo y costo_operativo
             ResumenCostoDiario::where('campania', $campania->nombre_campania)
+                ->where('campo', $campania->campo) // el nombre (T.2025) se repite en todos los campos
                 ->whereIn('origen_tipo', ['costo_fijo', 'costo_operativo'])
                 ->delete();
 

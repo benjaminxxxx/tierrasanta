@@ -25,7 +25,10 @@ class LaborServicio
             });
         })
             ->when($filtros['mano_obra'] ?? null, function ($q, $manoObra) {
-                $q->where('codigo_mano_obra', $manoObra);
+                // 'sin' = labores sin mano de obra asignada (tarea pendiente)
+                $manoObra === 'sin'
+                    ? $q->where(fn($q2) => $q2->whereNull('codigo_mano_obra')->orWhere('codigo_mano_obra', ''))
+                    : $q->where('codigo_mano_obra', $manoObra);
             })
             // 1. Filtro: Afecto a bono (Tiene o no tramos de bonificación)
             ->when($filtros['afecto_bono'] ?? null, function ($q, $afectoBono) {
@@ -90,6 +93,14 @@ class LaborServicio
      */
     protected static function validarYLimpiar(array $data, ?int $id = null)
     {
+        // "Seleccione un grupo" llega como '' (Livewire no pasa por ConvertEmptyStringsToNull): 'nullable|exists'
+        // deja pasar el '' y la FK labores.codigo_mano_obra → mano_obras.codigo lo rechaza. Vacío = sin mano de obra.
+        foreach (['codigo_mano_obra', 'estandar_produccion', 'unidades'] as $campo) {
+            if (array_key_exists($campo, $data) && $data[$campo] === '') {
+                $data[$campo] = null;
+            }
+        }
+
         $validator = Validator::make($data, [
             'nombre_labor' => 'required|string|max:255',
             'codigo' => 'required|integer|unique:labores,codigo,' . $id,

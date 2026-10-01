@@ -87,6 +87,19 @@ class FormatoHelper
     /**
      * Normaliza formatos como "14.30", "14:30" o "14" a "14:30:00"
      */
+    /**
+     * Clave para comparar nombres escritos a mano (labores, mano de obra…): minúsculas, sin tildes, espacios simples,
+     * sin espacios alrededor de ( ) - , / y sin puntos ni espacios al final.
+     * "Poda Barrido ( Ranqueo) Sin Bono" y "poda barrido (ranqueo) sin bono." dan lo mismo.
+     */
+    public static function normalizarNombre(?string $texto): string
+    {
+        $texto = \Illuminate\Support\Str::lower(\Illuminate\Support\Str::ascii((string) $texto));
+        $texto = preg_replace('/\s+/', ' ', $texto);
+        $texto = preg_replace('/\s*([()\-,\/])\s*/', '$1', $texto);
+        return rtrim(trim($texto), '. ');
+    }
+
     public static function normalizarHora(?string $hora): string
     {
         if (empty($hora))

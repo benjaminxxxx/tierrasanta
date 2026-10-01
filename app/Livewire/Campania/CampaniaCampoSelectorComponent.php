@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Campania;
 
+use App\Traits\HandlesAlerts;
 use Livewire\Attributes\Title;
 use App\Models\CampoCampania;
 use App\Services\Campania\CampaniaServicio;
@@ -13,20 +14,34 @@ use Illuminate\Support\Facades\Session;
 #[Title('Campaña por Campo')]
 class CampaniaCampoSelectorComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, HandlesAlerts;
     public $breadcrumb = [];
     public $campoSeleccionado;
     public $campaniaSeleccionada; // El ID
     public $campanias = [];
     public $campania; // El Objeto Model
 
+    public const PESTANIAS = ['informe' => 'Informe', 'costos' => 'Costos de producción'];
+
+    /** Pestaña activa (se recuerda en la sesión). */
+    public string $pestania = 'informe';
+
     protected $listeners = ['campaniaInsertada' => 'relistarNuevaCampania'];
+
+    public function updatedPestania(string $valor): void
+    {
+        $this->pestania = array_key_exists($valor, self::PESTANIAS) ? $valor : 'informe';
+        session(['campania_por_campo.pestania' => $this->pestania]);
+    }
 
     /**
      * Página completa: /campanias_x_campo/{campania?}. Si la campaña no existe, vuelve al listado.
      */
     public function mount($campania = null, $campaniaId = null)
     {
+        $pestania = session('campania_por_campo.pestania', 'informe');
+        $this->pestania = array_key_exists($pestania, self::PESTANIAS) ? $pestania : 'informe';
+
         $campaniaId = $campaniaId ?? $campania;
         if ($campaniaId && !CampoCampania::whereKey($campaniaId)->exists()) {
             $this->redirectRoute('campania.por_campo');
@@ -134,15 +149,30 @@ class CampaniaCampoSelectorComponent extends Component
             $this->alert('error', $th->getMessage());
         }
     }
-    public function generarBdd($campaniaId)
+    /**
+     * @param bool $regenerar antes de armar el Excel, regenera la BDD de costos solo de este campo en el rango de
+     *                        la campaña (mismas fuentes que la consolidación mensual, filtradas por campo)
+     */
+    public function generarBdd($campaniaId, bool $regenerar = false)
     {
         try {
+            $mensaje = 'Datos generados correctamente.';
+            
+            if ($regenerar) {
+                $r = app(\App\Services\Costos\Consolidacion\CostosConsolidacionCampaniaProceso::class)->regenerar((int) $campaniaId);
+                $mensaje = 'Costos regenerados del ' . formatear_fecha($r['desde']) . ' al ' . formatear_fecha($r['hasta'])
+                    . " (mano de obra: {$r['mano_obra']} filas, insumos: {$r['insumos']}, servicios: {$r['servicios']}, "
+                    . "maquinaria: {$r['maquinaria']}, gastos generales: {$r['gastos_generales']}) y reporte BDD generado.";
+                if ($r['avisos']) {
+                    $mensaje .= ' Revisar: ' . implode(' ', array_unique($r['avisos']));
+                }
+            }
             app(CampaniaServicio::class)->generarBddMensual($campaniaId);
-            $this->alert('success', 'Datos generados correctamente.');
+            $this->successAlert($mensaje);
             // Refrescar el objeto por si cambió la ruta del archivo
             $this->campania = CampoCampania::find($campaniaId);
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

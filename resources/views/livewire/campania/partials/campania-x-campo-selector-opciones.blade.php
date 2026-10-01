@@ -28,8 +28,13 @@
                                 @click="$wire.dispatch('editarCampania',{campaniaId:{{ $campaniaSeleccionada }}})">
                                 Editar Campaña
                             </x-dropdown-link>
-                            <x-dropdown-link class="text-center" wire:click="generarBdd({{ $campaniaSeleccionada }})">
+                            <x-dropdown-link class="text-center" wire:click="generarBdd({{ $campaniaSeleccionada }})"
+                                title="Arma el Excel con la BDD de costos tal como está ahora">
                                 Generar Reporte BDD
+                            </x-dropdown-link>
+                            <x-dropdown-link class="text-center" wire:click="generarBdd({{ $campaniaSeleccionada }}, true)"
+                                title="Vuelve a leer las fuentes solo de este campo en el rango de la campaña, actualiza la BDD de costos y arma el Excel">
+                                Regenerar costos y generar BDD
                             </x-dropdown-link>
                             <x-dropdown-link class="text-center"
                                 wire:click="generarReporteConsumo({{ $campaniaSeleccionada }})">

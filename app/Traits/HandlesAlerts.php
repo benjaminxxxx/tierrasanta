@@ -5,8 +5,21 @@ use Throwable;
 
 trait HandlesAlerts
 {
-    public function successAlert($mensaje, array $options = []){
-        $this->alert('success', $mensaje, $options);
+    /**
+     * Alerta de éxito centrada, sin temporizador y que no se cierra sola (para resultados largos que hay que leer).
+     * Para avisos rápidos que se cierran solos, usar $this->alert('success', ...).
+     */
+    public function successAlert($mensaje, array $options = []): void
+    {
+        $configuracion = array_merge([
+            'position' => 'center',
+            'toast' => false,
+            'timer' => null,
+            'showConfirmButton' => true,
+            'confirmButtonText' => 'Aceptar',
+        ], $options);
+
+        $this->alert('success', $mensaje, $configuracion);
     }
     /**
      * Muestra una alerta de error personalizada utilizando el método $this->alert().

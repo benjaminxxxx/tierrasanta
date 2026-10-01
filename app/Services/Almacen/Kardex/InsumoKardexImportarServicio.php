@@ -33,8 +33,16 @@ class InsumoKardexImportarServicio
 
     public function previsualizar($archivoExcelKardex, InsKardex $insumoKardex): array
     {
-        $ruta = $archivoExcelKardex->getRealPath();
-        $codigoExistencia = $insumoKardex->codigo_existencia;
+        return $this->previsualizarDesdeRuta($archivoExcelKardex->getRealPath(), $insumoKardex);
+    }
+
+    /**
+     * Igual que previsualizar(), pero desde un archivo ya guardado y, opcionalmente, una hoja concreta (el macro
+     * anual trae una hoja por código de existencia, que puede no coincidir con el del kardex del sistema).
+     */
+    public function previsualizarDesdeRuta(string $ruta, InsKardex $insumoKardex, ?string $hoja = null): array
+    {
+        $codigoExistencia = $hoja ?? $insumoKardex->codigo_existencia;
 
         $this->validarHojaExiste($ruta, $codigoExistencia);
 

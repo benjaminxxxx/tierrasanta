@@ -18,6 +18,7 @@ class ConsolidarCostoManoObraServicio
         // Todo lo de esta campaña se regenera: si antes se consolidó con un rango más largo
         // (campaña superpuesta con la siguiente), no quedan filas sobrantes.
         ResumenCostoDiario::where('campania', $campania->nombre_campania)
+                ->where('campo', $campania->campo) // el nombre (T.2025) se repite en todos los campos
             ->where('campo', $campania->campo)
             ->whereIn('origen_tipo', $this->resolverOrigenesTipo(null))
             ->delete();
@@ -66,6 +67,7 @@ class ConsolidarCostoManoObraServicio
         DB::transaction(function () use ($campania, $filas) {
             // Solo se borra lo que este proceso sabe regenerar (planilla derivado de ella)
             ResumenCostoDiario::where('campania', $campania->nombre_campania)
+                ->where('campo', $campania->campo) // el nombre (T.2025) se repite en todos los campos
                 ->whereIn('origen_tipo', ['planilla'])
                 ->delete();
 

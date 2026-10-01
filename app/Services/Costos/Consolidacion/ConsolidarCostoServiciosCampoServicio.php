@@ -30,6 +30,7 @@ class ConsolidarCostoServiciosCampoServicio
 
         return DB::transaction(function () use ($campania, $detalles) {
             ResumenCostoDiario::where('campania', $campania->nombre_campania)
+                ->where('campo', $campania->campo) // el nombre (T.2025) se repite en todos los campos
                 ->where('origen_tipo', self::ORIGEN)
                 ->delete();
 
@@ -40,20 +41,25 @@ class ConsolidarCostoServiciosCampoServicio
     /**
      * Botón "generarMes" de la consolidación anual: reemplaza todo lo del rango.
      */
-    public function consolidarEnRango(string $fechaInicio, string $fechaFin): int
+    /**
+     * @param string|null $campo solo los servicios de ese campo (regenerar los costos de una campaña sin tocar el resto)
+     */
+    public function consolidarEnRango(string $fechaInicio, string $fechaFin, ?string $campo = null): int
     {
         $detalles = ServicioCampoDetalle::with('servicio')
             ->whereNotNull('campania_id')
             ->whereBetween('fecha', [$fechaInicio, $fechaFin])
+            ->when($campo, fn($q) => $q->where('campo', $campo))
             ->get();
 
         $nombresCampania = CampoCampania::whereIn('id', $detalles->pluck('campania_id')->unique())
             ->pluck('nombre_campania', 'id')
             ->all();
 
-        return DB::transaction(function () use ($fechaInicio, $fechaFin, $detalles, $nombresCampania) {
+        return DB::transaction(function () use ($fechaInicio, $fechaFin, $detalles, $nombresCampania, $campo) {
             ResumenCostoDiario::where('origen_tipo', self::ORIGEN)
                 ->whereBetween('fecha', [$fechaInicio, $fechaFin])
+                ->when($campo, fn($q) => $q->where('campo', $campo))
                 ->delete();
 
             return $this->insertar($detalles, $nombresCampania);

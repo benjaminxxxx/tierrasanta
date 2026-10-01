@@ -467,10 +467,15 @@ class InsumoKardexMovimientosServicio
     {
         if ($detalle instanceof \App\Models\CompraDetalle) {
             $compra = $detalle->compra;
-            // El costo vive en el movimiento (historia real); la línea de compra es el respaldo
-            $costoTotal = $movimiento->costo_total !== null
-                ? (float) $movimiento->costo_total
-                : (float) $detalle->costo_total_kardex;
+            // El costo vive en el movimiento (historia real); la línea de compra es el respaldo.
+            // Un 0 no cuenta como costo: las compras anteriores a costo_total_kardex quedaron con 0
+            // (columna con default 0) y el movimiento lo copió; el monto real está en total_linea.
+            $costoTotal = collect([
+                (float) $movimiento->costo_total,
+                (float) $detalle->costo_total_kardex,
+                (float) $detalle->total_linea,
+                $cantidad * (float) $detalle->costo_unitario_base,
+            ])->first(fn($valor) => $valor > 0, 0.0);
             $costoUnitario = $cantidad > 0 ? $costoTotal / $cantidad : (float) $detalle->costo_unitario_base;
 
             return [
