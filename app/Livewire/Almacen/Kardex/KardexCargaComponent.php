@@ -79,16 +79,26 @@ class KardexCargaComponent extends Component
         }
     }
 
-    /** Para Alpine: filas pendientes, con error o sin producto, en orden del índice. */
-    public function idsPorProcesar(): array
+    /** Para Alpine: filas de cada botón (verificar, importar_verificados, ejecutar_pendientes, ejecutar_todos). */
+    public function idsPara(string $modo): array
     {
-        return $this->cargaId ? app(AlmacenKardexCargaProceso::class)->idsPorProcesar($this->cargaId) : [];
+        return $this->cargaId ? app(AlmacenKardexCargaProceso::class)->idsPara($this->cargaId, $modo) : [];
     }
 
-    /** Para Alpine (y el botón de cada fila): importa un kardex y devuelve su resultado. */
+    /** Verificación previa de una fila: no escribe nada; junta todas las observaciones de la hoja. */
+    public function verificar(int $detalleId): array
+    {
+        return $this->resultado(app(AlmacenKardexCargaProceso::class)->verificar($detalleId));
+    }
+
+    /** Importa (verificando antes) y regenera el kardex de una fila. */
     public function procesar(int $detalleId): array
     {
-        $detalle = app(AlmacenKardexCargaProceso::class)->procesar($detalleId);
+        return $this->resultado(app(AlmacenKardexCargaProceso::class)->procesar($detalleId));
+    }
+
+    private function resultado(KardexCargaDetalle $detalle): array
+    {
         return ['estado' => $detalle->estado, 'mensaje' => $detalle->mensaje, 'nombre' => $detalle->nombre];
     }
 

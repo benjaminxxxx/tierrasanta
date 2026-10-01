@@ -59,6 +59,7 @@
                         <x-badge color="green">Éxito: {{ $conteo['exito'] ?? 0 }}</x-badge>
                         <x-badge color="red">Error: {{ $conteo['error'] ?? 0 }}</x-badge>
                         <x-badge color="yellow">Sin producto: {{ $conteo['sin_producto'] ?? 0 }}</x-badge>
+                        <x-badge color="indigo">Verificados: {{ $conteo['verificado'] ?? 0 }}</x-badge>
                         <x-badge color="blue">Pendientes: {{ $conteo['pendiente'] ?? 0 }}</x-badge>
                         <x-badge color="gray">Sin movimientos: {{ $conteo['sin_movimientos'] ?? 0 }}</x-badge>
                     </div>
@@ -70,8 +71,22 @@
                         <input type="file" wire:model="archivoCorregido" accept=".xlsm,.xlsx" class="hidden" />
                     </label>
                     <span wire:loading wire:target="archivoCorregido" class="text-xs text-muted-foreground">Subiendo…</span>
-                    <x-button variant="success" x-show="!procesando" @click="iniciar()">
-                        <i class="fa fa-play"></i> Procesar pendientes y fallidos
+                    <x-button variant="outline" x-show="!procesando" @click="iniciar('verificar')"
+                        title="Revisa producto, hoja y todas las observaciones de cada hoja, sin importar nada">
+                        <i class="fa fa-check-double"></i> Verificar
+                    </x-button>
+                    <x-button variant="success" x-show="!procesando" @click="iniciar('importar_verificados')"
+                        title="Importa y regenera solo los kardex verificados sin observaciones">
+                        <i class="fa fa-file-import"></i> Importar verificados ({{ $conteo['verificado'] ?? 0 }})
+                    </x-button>
+                    <x-button x-show="!procesando" @click="iniciar('ejecutar_pendientes')"
+                        title="Verifica e importa todo lo que aún no se importó con éxito">
+                        <i class="fa fa-play"></i> Ejecutar pendientes
+                    </x-button>
+                    <x-button variant="warning" x-show="!procesando"
+                        @click="if (confirmarTodos) { iniciar('ejecutar_todos'); confirmarTodos = false } else { confirmarTodos = true; setTimeout(() => confirmarTodos = false, 4000) }"
+                        title="Vuelve a importar TODOS, incluidos los que ya se importaron con éxito">
+                        <i class="fa fa-redo"></i> <span x-text="confirmarTodos ? '¿Seguro? pulsa otra vez' : 'Ejecutar todos'"></span>
                     </x-button>
                     <x-button variant="danger" x-show="procesando" x-cloak @click="detener = true">
                         <i class="fa fa-stop"></i> Detener
@@ -84,7 +99,7 @@
             <div class="mt-4" x-show="total > 0" x-cloak>
                 <div class="flex justify-between text-sm mb-1">
                     <span x-text="procesando ? ('Procesando… ' + (actual ? 'último: ' + actual : '')) : (detener ? 'Detenido' : 'Terminado')"></span>
-                    <span x-text="hechos + ' / ' + total + ' · ' + exitos + ' con éxito · ' + fallos + ' con observaciones'"></span>
+                    <span x-text="hechos + ' / ' + total + ' · ' + exitos + ' sin observaciones · ' + fallos + ' con observaciones'"></span>
                 </div>
                 <div class="w-full h-3 rounded-full bg-muted overflow-hidden">
                     <div class="h-3 bg-green-600 transition-all" x-bind:style="'width:' + (total ? (hechos / total * 100) : 0) + '%'"></div>
@@ -100,6 +115,7 @@
                     <option value="exito">Éxito</option>
                     <option value="error">Error</option>
                     <option value="sin_producto">Sin producto</option>
+                    <option value="verificado">Verificados</option>
                     <option value="pendiente">Pendientes</option>
                     <option value="sin_movimientos">Sin movimientos</option>
                 </x-select>
@@ -123,11 +139,12 @@
                             @php
                                 $color = [
                                     'exito' => 'bg-green-50 dark:bg-green-950/40',
+                                    'verificado' => 'bg-indigo-50 dark:bg-indigo-950/40',
                                     'error' => 'bg-red-50 dark:bg-red-950/40',
                                     'sin_producto' => 'bg-amber-50 dark:bg-amber-950/40',
                                 ][$d->estado] ?? '';
                                 $etiqueta = [
-                                    'exito' => ['green', 'Éxito'], 'error' => ['red', 'Error'], 'sin_producto' => ['yellow', 'Sin producto'],
+                                    'exito' => ['green', 'Éxito'], 'verificado' => ['indigo', 'Verificado'], 'error' => ['red', 'Error'], 'sin_producto' => ['yellow', 'Sin producto'],
                                     'pendiente' => ['blue', 'Pendiente'], 'sin_movimientos' => ['gray', 'Sin movimientos'],
                                 ][$d->estado] ?? ['gray', $d->estado];
                             @endphp
@@ -150,7 +167,8 @@
                                 </td>
                                 <td class="p-1.5 border border-border text-center"><x-badge :color="$etiqueta[0]">{{ $etiqueta[1] }}</x-badge></td>
                                 <td class="p-1.5 border border-border text-xs">
-                                    {{ $d->mensaje }}
+                                    {{-- Observaciones del importador: una por línea, con **negritas** --}}
+                                    <div class="whitespace-pre-line max-h-64 overflow-y-auto">{!! preg_replace('/\*\*(.+?)\*\*/', '<b>$1</b>', e($d->mensaje)) !!}</div>
                                     @if ($d->procesado_at)
                                         <span class="block text-muted-foreground">
                                             {{ $d->procesado_at->format('d/m/Y H:i') }} · intento {{ $d->intentos }} · macro v{{ $d->version_archivo }}
@@ -159,9 +177,15 @@
                                 </td>
                                 <td class="p-1.5 border border-border text-center whitespace-nowrap">
                                     @if ($d->estado !== 'sin_movimientos')
+                                        @if ($d->estado !== 'exito')
+                                            <x-button size="xs" variant="ghost" x-bind:disabled="procesando"
+                                                wire:click="verificar({{ $d->id }})" target="verificar({{ $d->id }})">
+                                                Verificar
+                                            </x-button>
+                                        @endif
                                         <x-button size="xs" variant="outline" x-bind:disabled="procesando"
                                             wire:click="procesar({{ $d->id }})" target="procesar({{ $d->id }})">
-                                            {{ $d->estado === 'exito' ? 'Regenerar' : 'Procesar' }}
+                                            {{ $d->estado === 'exito' ? 'Regenerar' : 'Importar' }}
                                         </x-button>
                                     @endif
                                     @if ($d->kardex_id && $d->estado === 'exito')
@@ -193,19 +217,23 @@
         exitos: 0,
         fallos: 0,
         actual: '',
-        async iniciar() {
-            const ids = await $wire.idsPorProcesar();
+        confirmarTodos: false,
+        // modo: verificar | importar_verificados | ejecutar_pendientes | ejecutar_todos
+        async iniciar(modo) {
+            const ids = await $wire.idsPara(modo);
             if (!ids.length) {
                 this.total = 0;
                 return;
             }
+            const soloVerificar = modo === 'verificar';
+            const ok = soloVerificar ? 'verificado' : 'exito';
             Object.assign(this, { procesando: true, detener: false, total: ids.length, hechos: 0, exitos: 0, fallos: 0, actual: '' });
             for (const id of ids) {
                 if (this.detener) break;
                 try {
-                    const r = await $wire.procesar(id);
+                    const r = soloVerificar ? await $wire.verificar(id) : await $wire.procesar(id);
                     this.actual = r.nombre;
-                    r.estado === 'exito' ? this.exitos++ : this.fallos++;
+                    r.estado === ok ? this.exitos++ : this.fallos++;
                 } catch (e) {
                     this.fallos++;
                 }

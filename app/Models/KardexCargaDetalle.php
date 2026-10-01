@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class KardexCargaDetalle extends Model
 {
     public const PENDIENTE = 'pendiente';
+    /** Verificación previa sin observaciones (todavía no importado). */
+    public const VERIFICADO = 'verificado';
     public const EXITO = 'exito';
     public const ERROR = 'error';
     public const SIN_PRODUCTO = 'sin_producto';

@@ -113,6 +113,20 @@
             @if ($datosImportacionKardex)
                 <div class="space-y-6">
 
+                    {{-- ── ADVERTENCIAS (no impiden importar) ───────── --}}
+                    @if (!empty($datosImportacionKardex['advertencias']))
+                        <x-warning>
+                            <div class="text-sm">
+                                <p class="font-semibold">{{ count($datosImportacionKardex['advertencias']) }} advertencia(s), se puede importar:</p>
+                                <ul class="list-disc list-inside max-h-40 overflow-y-auto">
+                                    @foreach ($datosImportacionKardex['advertencias'] as $aviso)
+                                        <li>{!! preg_replace('/\*\*(.+?)\*\*/', '<b>$1</b>', e($aviso)) !!}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </x-warning>
+                    @endif
+
                     {{-- ── SALDO INICIAL ─────────────────────────────── --}}
                     @if ($datosImportacionKardex['saldo_inicial']['propuesto'])
                         <div>

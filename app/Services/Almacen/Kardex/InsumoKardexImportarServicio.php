@@ -30,6 +30,16 @@ class InsumoKardexImportarServicio
     private const COLUMNA_FECHA = 0; // Columna A
     private const COLUMNA_TIPO_OPERACION = 4; // Columna E (Tabla 12)
     private const COLUMNA_CAMPO_LOTE = 9; // Columna J (Campo/Lote en la cabecera)
+    private const MAX_OBSERVACIONES = 100;
+
+    /** Errores por fila de la hoja: se juntan todos y se informan de una vez (no se corta en el primero). */
+    private array $observaciones = [];
+
+    /** Avisos que no impiden importar (p. ej. tipo de comprobante deducido de la serie). */
+    private array $advertencias = [];
+
+    /** Códigos válidos de la tabla 10 (tipo de comprobante), sin '00' (Otros): se deduce de la serie. */
+    private ?array $codigosTabla10 = null;
 
     public function previsualizar($archivoExcelKardex, InsKardex $insumoKardex): array
     {
@@ -43,6 +53,8 @@ class InsumoKardexImportarServicio
     public function previsualizarDesdeRuta(string $ruta, InsKardex $insumoKardex, ?string $hoja = null): array
     {
         $codigoExistencia = $hoja ?? $insumoKardex->codigo_existencia;
+        $this->observaciones = [];
+        $this->advertencias = [];
 
         $this->validarHojaExiste($ruta, $codigoExistencia);
 
@@ -69,12 +81,15 @@ class InsumoKardexImportarServicio
         $this->validarRangoFechas($hoja, $filas, $insumoKardex);
 
         [$comprasPropuestas, $salidasPropuestas] = $this->extraerDatosTransacciones($hoja, $filas, $insumoKardex, $filtroCampos);
+        $this->lanzarObservaciones($codigoExistencia);
 
         // Agrupar entradas por documento (fecha+serie+numero) — es lo que en el Excel
         // representa "un solo comprobante", aunque acá solo tenga la línea de este producto.
         $comprasAgrupadas = $this->agruparComprasPorDocumento($comprasPropuestas);
 
         return [
+            // Avisos que no impiden importar (tipo de comprobante deducido de la serie…)
+            'advertencias' => $this->advertencias,
             'saldo_inicial' => [
                 'actual' => [
                     'stock_inicial' => (float) $insumoKardex->stock_inicial,
@@ -363,14 +378,17 @@ class InsumoKardexImportarServicio
                 continue;
             }
 
-            $fechaPura = $this->obtenerFechaPuraDesdeCelda($valorCeldaFecha, $numFilaExcel);
+            try {
+                $fechaPura = $this->obtenerFechaPuraDesdeCelda($valorCeldaFecha, $numFilaExcel);
+            } catch (Exception $e) {
+                $this->observaciones[] = $e->getMessage();
+                continue;
+            }
 
             // Validación de rangos usando between
             if (!$fechaPura->between($fechaMinima, $fechaMaxima, true)) {
-                throw new Exception(
-                    "Error en la fila **{$numFilaExcel}**: La fecha **{$fechaPura->toDateString()}** está fuera del rango permitido "
-                    . "({$fechaMinima->toDateString()} - {$fechaMaxima->toDateString()})."
-                );
+                $this->observaciones[] = "Fila **{$numFilaExcel}**: la fecha **{$fechaPura->toDateString()}** está fuera del rango permitido "
+                    . "({$fechaMinima->toDateString()} - {$fechaMaxima->toDateString()}).";
             }
         }
     }
@@ -410,12 +428,25 @@ class InsumoKardexImportarServicio
                 continue;
             }
 
-            $tipoOperacion = trim($fila[self::COLUMNA_TIPO_OPERACION]);
+            $tipoOperacion = trim((string) $fila[self::COLUMNA_TIPO_OPERACION]);
             $valorCeldaFecha = $hoja->getCell('A' . $numFilaExcel)->getValue();
-            $fechaPura = $this->obtenerFechaPuraDesdeCelda($valorCeldaFecha, $numFilaExcel);
 
-            $datosCompra = array_merge($datosCompra, $this->procesarEntrada($fila, $hoja, $numFilaExcel, $insumoKardex, $fechaPura, $tipoOperacion));
-            $datosSalida = array_merge($datosSalida, $this->procesarSalida($hoja, $numFilaExcel, $insumoKardex, $fechaPura, $filtroCampos, $tipoOperacion));
+            // Cada fila se valida por separado: su error se anota y se sigue con la siguiente
+            try {
+                $fechaPura = $this->obtenerFechaPuraDesdeCelda($valorCeldaFecha, $numFilaExcel);
+            } catch (Exception) {
+                continue; // ya anotado en validarRangoFechas()
+            }
+            try {
+                $datosCompra = array_merge($datosCompra, $this->procesarEntrada($fila, $hoja, $numFilaExcel, $insumoKardex, $fechaPura, $tipoOperacion));
+            } catch (Exception $e) {
+                $this->observaciones[] = $e->getMessage();
+            }
+            try {
+                $datosSalida = array_merge($datosSalida, $this->procesarSalida($hoja, $numFilaExcel, $insumoKardex, $fechaPura, $filtroCampos, $tipoOperacion));
+            } catch (Exception $e) {
+                $this->observaciones[] = $e->getMessage();
+            }
         }
 
         return [$datosCompra, $datosSalida];
@@ -440,18 +471,15 @@ class InsumoKardexImportarServicio
 
         if ($entradaCantidad > 0 && $entradaCostoTotal > 0) {
             // Compra (Entrada)
-            $tabla10 = trim($fila[1]);
-            $serie = trim($fila[2]);
-            $numero = trim($fila[3]);
+            $tabla10 = trim((string) $fila[1]);
+            $serie = trim((string) $fila[2]);
+            $numero = trim((string) $fila[3]);
 
-            if (!$tabla10) {
-                throw new Exception("Falta el tipo de compra (Tabla 10) en la fila **{$numFilaExcel}**.");
-            }
             if ((int) $tipoOperacion !== 2) {
-                throw new Exception("Existen valores para una compra, pero el código registrado en la fila **{$numFilaExcel}** no es **2**.");
+                throw new Exception("Fila **{$numFilaExcel}**: hay valores de compra, pero el tipo de operación (Tabla 12) no es **2**.");
             }
 
-            $tipoCompraCodigo = isset($tabla10) ? str_pad($tabla10, 2, '0', STR_PAD_LEFT) : null;
+            $tipoCompraCodigo = $this->resolverTipoComprobante($tabla10, $serie, $numFilaExcel);
 
             $datosCompra[] = [
                 'producto_id' => $insumoKardex->producto_id,
@@ -469,6 +497,59 @@ class InsumoKardexImportarServicio
         }
 
         return $datosCompra;
+    }
+
+    /**
+     * Tipo de comprobante (Tabla 10) de una compra:
+     * 1. El código de la columna, si es uno válido de la tabla 10 (no '00' Otros).
+     * 2. Si está vacío, es 0 o no se reconoce: se deduce de la serie (B… = 03 boleta, F… = 01 factura).
+     * 3. Si tampoco se puede deducir: error.
+     */
+    private function resolverTipoComprobante(string $tabla10, string $serie, int $numFilaExcel): string
+    {
+        $this->codigosTabla10 ??= DB::table('sunat_tabla10_tipo_comprobantes_pago')
+            ->where('codigo', '<>', '00')
+            ->pluck('codigo')
+            ->all();
+
+        $codigo = $tabla10 !== '' && is_numeric($tabla10) ? str_pad((string) (int) $tabla10, 2, '0', STR_PAD_LEFT) : $tabla10;
+        $inicial = mb_strtoupper(mb_substr(trim($serie), 0, 1));
+        $deducido = ['B' => ['03', 'boleta'], 'F' => ['01', 'factura']][$inicial] ?? null;
+
+        if ($codigo !== '' && in_array($codigo, $this->codigosTabla10, true)) {
+            // Código válido: se respeta, pero se avisa si contradice la serie (p. ej. 01 factura con serie B…)
+            if ($deducido && $deducido[0] !== $codigo) {
+                $this->advertencias[] = "Fila **{$numFilaExcel}**: tipo de comprobante **{$codigo}** con serie \"{$serie}\" "
+                    . "(por la serie sería {$deducido[0]} {$deducido[1]}); se usa {$codigo}, revísalo.";
+            }
+            return $codigo;
+        }
+        if ($deducido) {
+            // Se puede deducir: no bloquea, solo se avisa
+            $this->advertencias[] = "Fila **{$numFilaExcel}**: tipo de comprobante (Tabla 10) "
+                . ($tabla10 === '' ? 'vacío' : "\"{$tabla10}\" no válido")
+                . "; se usa **{$deducido[0]}** ({$deducido[1]}) por la serie \"{$serie}\".";
+            return $deducido[0];
+        }
+
+        throw new Exception("Fila **{$numFilaExcel}**: tipo de comprobante (Tabla 10) "
+            . ($tabla10 === '' ? 'vacío' : "\"{$tabla10}\" no válido")
+            . " y la serie \"{$serie}\" no permite deducirlo (B… = boleta 03, F… = factura 01).");
+    }
+
+    /** Lanza todas las observaciones de la hoja juntas (si hay). */
+    private function lanzarObservaciones(string $hoja): void
+    {
+        if (!$this->observaciones) {
+            return;
+        }
+        $total = count($this->observaciones);
+        $lista = array_slice($this->observaciones, 0, self::MAX_OBSERVACIONES);
+        $mensaje = "Se encontraron {$total} observación(es) en la hoja **{$hoja}**:\n- " . implode("\n- ", $lista)
+            . ($total > self::MAX_OBSERVACIONES ? "\n- … y " . ($total - self::MAX_OBSERVACIONES) . ' más.' : '');
+        $this->observaciones = [];
+
+        throw new Exception($mensaje);
     }
 
     /**
@@ -493,7 +574,7 @@ class InsumoKardexImportarServicio
         if ($salidaCantidad > 0 && $salidaLoteNombre != '') {
             // Salida a Producción
             if ((int) $tipoOperacion !== 10) {
-                throw new Exception("Existen valores para una salida a producción, pero el código registrado en la fila **{$numFilaExcel}** no es **10**.");
+                throw new Exception("Fila **{$numFilaExcel}**: hay valores de salida, pero el tipo de operación (Tabla 12) no es **10**.");
             }
 
             // Aplicar el filtro de alias de campo si existe
