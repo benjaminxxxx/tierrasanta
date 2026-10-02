@@ -3,6 +3,7 @@
 namespace App\Services\Caja\Cierre;
 
 use App\Models\CajaCierre;
+use App\Models\CajaCierreEvento;
 use App\Models\CajaMovimiento;
 use App\Services\Caja\Movimiento\CajaMovimientoConsulta;
 use App\Services\Reporte\AuditoriaServicio;
@@ -12,7 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Cierre y reapertura del mes de caja. Cerrado, nada del mes se puede crear, editar ni eliminar.
- * Reabrir es un caso raro (corregir un error) y exige un motivo, que queda en la auditoría.
+ * Reabrir es un caso raro (corregir un error) y exige un motivo.
+ *
+ * caja_cierres guarda el estado actual del mes; cada cierre y reapertura queda además como evento en
+ * caja_cierre_eventos (quién, cuándo, con qué saldo y por qué), para el historial de caja.
  */
 class CajaCierreProceso
 {
@@ -20,7 +24,7 @@ class CajaCierreProceso
     {
     }
 
-    public function cerrar(int $anio, int $mes): CajaCierre
+    public function cerrar(int $anio, int $mes, ?string $observacion = null): CajaCierre
     {
         $inicio = Carbon::create($anio, $mes, 1);
         if ($inicio->gt(now()->startOfMonth())) {
@@ -29,18 +33,23 @@ class CajaCierreProceso
         if ($this->cierres->estaCerrado($anio, $mes)) {
             throw ValidationException::withMessages(['mes' => 'La caja de ese mes ya está cerrada.']);
         }
+        $observacion = trim((string) $observacion) ?: null;
 
-        return DB::transaction(function () use ($anio, $mes, $inicio) {
+        return DB::transaction(function () use ($anio, $mes, $inicio, $observacion) {
             $fin = $inicio->copy()->endOfMonth()->toDateString();
+            $saldo = $this->consulta->disponibleAl($fin);
+            $movimientos = CajaMovimiento::whereBetween('fecha', [$inicio->toDateString(), $fin])->count();
+
             $cierre = CajaCierre::updateOrCreate(['anio' => $anio, 'mes' => $mes], [
                 'estado' => CajaCierre::CERRADO,
-                'saldo_final' => $this->consulta->disponibleAl($fin),
-                'movimientos' => CajaMovimiento::whereBetween('fecha', [$inicio->toDateString(), $fin])->count(),
+                'saldo_final' => $saldo,
+                'movimientos' => $movimientos,
                 'cerrado_por' => auth()->id(),
                 'cerrado_at' => now(),
             ]);
+            $this->evento($cierre, 'cerrado', $saldo, $movimientos, $observacion);
             AuditoriaServicio::registrar(CajaCierre::class, $cierre->id, 'editar', ['estado' => CajaCierre::ABIERTO],
-                ['estado' => CajaCierre::CERRADO, 'saldo_final' => $cierre->saldo_final], "Cierre de caja {$mes}/{$anio}");
+                ['estado' => CajaCierre::CERRADO, 'saldo_final' => $saldo], "Cierre de caja {$mes}/{$anio}" . ($observacion ? ": {$observacion}" : ''));
             return $cierre;
         });
     }
@@ -63,9 +72,26 @@ class CajaCierreProceso
                 'reabierto_at' => now(),
                 'motivo_reapertura' => $motivo,
             ]);
+            $fin = Carbon::create($anio, $mes, 1)->endOfMonth()->toDateString();
+            $this->evento($cierre, 'reabierto', $this->consulta->disponibleAl($fin), (int) $cierre->movimientos, $motivo);
             AuditoriaServicio::registrar(CajaCierre::class, $cierre->id, 'editar', ['estado' => CajaCierre::CERRADO],
                 ['estado' => CajaCierre::ABIERTO], "Reapertura de caja {$mes}/{$anio}: {$motivo}");
             return $cierre;
         });
+    }
+
+    private function evento(CajaCierre $cierre, string $accion, float $saldo, int $movimientos, ?string $motivo): void
+    {
+        CajaCierreEvento::create([
+            'caja_cierre_id' => $cierre->id,
+            'anio' => $cierre->anio,
+            'mes' => $cierre->mes,
+            'accion' => $accion,
+            'saldo' => $saldo,
+            'movimientos' => $movimientos,
+            'motivo' => $motivo ? mb_substr($motivo, 0, 500) : null,
+            'usuario_id' => auth()->id(),
+            'usuario_nombre' => auth()->user()?->name,
+        ]);
     }
 }

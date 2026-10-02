@@ -287,11 +287,57 @@
         <x-slot name="title">Eliminar movimiento</x-slot>
         <x-slot name="content">
             <p class="text-sm">{{ $eliminarResumen }}</p>
-            <p class="text-xs text-muted-foreground mt-2">Queda registrado en la auditoría. El disponible de las filas siguientes cambia.</p>
+            <div class="mt-3">
+                <x-textarea label="Motivo de la eliminación" wire:model="motivoEliminacion" error="motivo" rows="2"
+                    placeholder="Ej.: registrado dos veces, monto equivocado…" />
+            </div>
+            <p class="text-xs text-muted-foreground mt-2">Queda en el historial de caja: quién lo eliminó, cuándo y por qué. El disponible de las filas siguientes cambia.</p>
         </x-slot>
         <x-slot name="footer">
             <x-button variant="secondary" wire:click="$set('modalEliminar', false)">Cancelar</x-button>
             <x-button variant="danger" wire:click="eliminar"><i class="fa fa-trash"></i> Eliminar</x-button>
+        </x-slot>
+    </x-dialog-modal>
+
+    {{-- Modal: historial de una fila --}}
+    <x-dialog-modal wire:model="modalHistorial" maxWidth="2xl">
+        <x-slot name="title">Historial del movimiento</x-slot>
+        <x-slot name="content">
+            @if ($historial)
+                <p class="text-sm font-medium">{{ $historial['movimiento']['resumen'] }}</p>
+                <dl class="grid grid-cols-[auto,1fr] gap-x-3 gap-y-1 text-sm mt-3">
+                    <dt class="text-muted-foreground">Registrado</dt><dd>{{ $historial['movimiento']['creado'] }}</dd>
+                    @if ($historial['movimiento']['editado'])
+                        <dt class="text-muted-foreground">Última edición</dt><dd>{{ $historial['movimiento']['editado'] }}</dd>
+                    @endif
+                    @if ($historial['movimiento']['eliminado'])
+                        <dt class="text-muted-foreground">Eliminado</dt><dd class="text-red-700 dark:text-red-400">{{ $historial['movimiento']['eliminado'] }} — {{ $historial['movimiento']['motivo_eliminacion'] }}</dd>
+                    @endif
+                </dl>
+                <ol class="mt-4 space-y-2 border-l-2 border-border pl-4">
+                    @forelse ($historial['eventos'] as $e)
+                        <li class="text-sm">
+                            <span class="font-medium">{{ ['crear' => 'Registró', 'editar' => 'Editó', 'eliminar' => 'Eliminó'][$e['accion']] ?? $e['accion'] }}</span>
+                            {{ $e['usuario'] }} · <span class="text-muted-foreground tabular-nums">{{ $e['fecha'] }}</span>
+                            @if ($e['observacion'])
+                                <span class="block text-xs text-muted-foreground">{{ $e['observacion'] }}</span>
+                            @endif
+                            @foreach ($e['cambios'] as $c)
+                                <span class="block text-xs">
+                                    <span class="text-muted-foreground">{{ $c['campo'] }}:</span>
+                                    <span class="line-through text-red-700 dark:text-red-400">{{ $c['antes'] ?? '—' }}</span>
+                                    → <span class="text-green-700 dark:text-green-400">{{ $c['despues'] ?? '—' }}</span>
+                                </span>
+                            @endforeach
+                        </li>
+                    @empty
+                        <li class="text-sm text-muted-foreground">Sin cambios desde que se importó del Excel.</li>
+                    @endforelse
+                </ol>
+            @endif
+        </x-slot>
+        <x-slot name="footer">
+            <x-button variant="secondary" wire:click="$set('modalHistorial', false)">Cerrar</x-button>
         </x-slot>
     </x-dialog-modal>
 
@@ -301,6 +347,9 @@
         <x-slot name="content">
             <p class="text-sm">Disponible al cierre: <b>S/ {{ $fmt($datos['saldo_final']) }}</b>.</p>
             <p class="text-sm mt-2">Cerrado el mes no se podrá registrar, editar, pintar ni eliminar nada de él (ni sus arqueos). Si luego hay un error, se puede reabrir indicando el motivo.</p>
+            <div class="mt-3">
+                <x-textarea label="Observación (opcional)" wire:model="observacionCierre" rows="2" placeholder="Ej.: cuadra con el arqueo del 30/09" />
+            </div>
         </x-slot>
         <x-slot name="footer">
             <x-button variant="secondary" wire:click="$set('modalCerrar', false)">Cancelar</x-button>
@@ -355,15 +404,24 @@
         <x-slot name="content">
             <p class="text-sm mb-3">
                 Lee la hoja <b>BASE</b> (movimientos), <b>Valida</b> (clasificadores), <b>Tipo de Cambio</b> y las notas de saldos por
-                fuente (columnas AB/AE) como arqueos. Es para la carga inicial o para rehacer un periodo: en el día a día se registra aquí.
+                fuente (columnas AB/AE) como arqueos. Los clasificadores se reconocen aunque estén escritos distinto ("Venta Naranja" = "VENTA DE NARANJA").
             </p>
             <input type="file" wire:model="archivoImportar" accept=".xlsx,.xlsm" class="text-sm">
             @error('archivoImportar') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
             @error('archivo') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
-            <label class="flex items-center gap-2 text-sm mt-3">
-                <input type="checkbox" wire:model="reemplazarImportacion" class="rounded">
-                Reemplazar los movimientos y arqueos que ya existen en las fechas del archivo
-            </label>
+            <div class="mt-4 space-y-2 text-sm">
+                <label class="flex items-start gap-2">
+                    <input type="radio" wire:model="modoImportacion" value="diferencia" class="mt-1">
+                    <span><b>Solo lo nuevo</b> (recomendado). Agrega las filas del Excel que aún no están; no borra nada. Se puede
+                        subir el mismo Excel las veces que sea: lo que ya está no se duplica.</span>
+                </label>
+                <label class="flex items-start gap-2">
+                    <input type="radio" wire:model="modoImportacion" value="reemplazar" class="mt-1">
+                    <span><b>Reemplazar los meses abiertos</b>. Borra los movimientos y arqueos de los meses del archivo que no están
+                        cerrados y los vuelve a cargar tal como están en el Excel (también borra lo registrado a mano en esos meses).</span>
+                </label>
+                <p class="text-xs text-muted-foreground">En ambos casos los meses cerrados no se tocan.</p>
+            </div>
         </x-slot>
         <x-slot name="footer">
             <x-button variant="secondary" wire:click="$set('modalImportar', false)">Cancelar</x-button>
@@ -489,6 +547,10 @@
                         name: '<i class="fa fa-trash text-red-500"></i> &nbsp; Eliminar',
                         hidden: () => !this.editable,
                         callback: () => { const [id] = this.idsSeleccionados(); if (id) $wire.confirmarEliminar(id); },
+                    },
+                    historial: {
+                        name: '<i class="fa fa-history"></i> &nbsp; Ver historial (quién y cuándo)',
+                        callback: () => { const [id] = this.idsSeleccionados(); if (id) $wire.verHistorial(id); },
                     },
                     copy: { name: '<i class="fa fa-clipboard"></i> &nbsp; Copiar' },
                 },

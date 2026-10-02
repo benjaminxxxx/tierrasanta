@@ -512,6 +512,12 @@ return [
                     ['nombre' => Permisos::CAJA_MOVIMIENTO_GESTIONAR],
                 ],
             ],
+            [
+                'nombre' => Permisos::CAJA_HISTORIAL,
+                'hijos' => [
+                    ['nombre' => Permisos::CAJA_HISTORIAL_VER],
+                ],
+            ],
         ],
     ],
 

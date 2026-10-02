@@ -32,7 +32,7 @@
                                 <option value="{{ $s }}">SEM-{{ $s }}</option>
                             @endforeach
                         </x-select>
-                        <x-input type="number" label="N° de caja" wire:model="numero_caja" error="numero_caja" :disabled="$es_contable" />
+                        <x-input type="number" label="N° de caja (opcional)" wire:model="numero_caja" error="numero_caja" :disabled="$es_contable" />
                         <x-select label="Condición" wire:model="condicion" error="condicion" :disabled="$es_contable">
                             <option value="NEG">NEG.</option>
                             <option value="BLA">BLA.</option>

@@ -55,14 +55,19 @@ class CajaMovimientoCrud
         });
     }
 
-    public function eliminar(int $id): void
+    /** Se elimina con soft delete: queda quién lo eliminó, cuándo (deleted_at) y por qué. */
+    public function eliminar(int $id, ?string $motivo): void
     {
+        $motivo = trim((string) $motivo);
+        if (mb_strlen($motivo) < 5) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['motivo' => 'Indica el motivo de la eliminación.']);
+        }
         $movimiento = CajaMovimiento::findOrFail($id);
         $this->validador->asegurarMesAbierto($movimiento->fecha, 'eliminar sus movimientos');
 
-        DB::transaction(function () use ($movimiento) {
-            AuditoriaServicio::registrar(CajaMovimiento::class, $movimiento->id, 'eliminar', $movimiento->toArray());
-            $movimiento->update(['actualizado_por' => auth()->id()]);
+        DB::transaction(function () use ($movimiento, $motivo) {
+            AuditoriaServicio::registrar(CajaMovimiento::class, $movimiento->id, 'eliminar', $movimiento->toArray(), null, "Motivo: {$motivo}");
+            $movimiento->update(['eliminado_por' => auth()->id(), 'motivo_eliminacion' => mb_substr($motivo, 0, 500)]);
             $movimiento->delete();
         });
     }
@@ -126,7 +131,7 @@ class CajaMovimientoCrud
         return [
             'empresa' => Empresa::value('razon_social') ?? 'TSH SAC',
             'es_contable' => $esContable,
-            'numero_caja' => $esContable ? null : (int) $v['numero_caja'],
+            'numero_caja' => $esContable || empty($v['numero_caja']) ? null : (int) $v['numero_caja'],
             'condicion' => $esContable ? 'BLA' : $v['condicion'],
             'categoria' => $this->texto($v['categoria'] ?? null) ?? ($esContable ? 'Contable' : null),
             'codigo' => $this->texto($v['codigo'] ?? null),

@@ -20,7 +20,7 @@ class CajaMovimiento extends Model
         'descripcion', 'caja_clasificador_id', 'clasificador_1', 'clasificador_2', 'subgrupo_ng', 'subgrupo_bl',
         'moneda', 'fecha', 'semana', 'tipo_documento', 'numero_documento', 'situacion_cheque',
         'importe_usd', 'tipo_cambio_operacion', 'importe', 'importe_detalle', 'tipo_cambio',
-        'color_fondo', 'color_texto', 'negrita', 'orden', 'creado_por', 'actualizado_por',
+        'color_fondo', 'color_texto', 'negrita', 'orden', 'creado_por', 'actualizado_por', 'eliminado_por', 'motivo_eliminacion',
     ];
 
     protected $casts = [
@@ -36,6 +36,21 @@ class CajaMovimiento extends Model
     public function clasificador()
     {
         return $this->belongsTo(CajaClasificador::class, 'caja_clasificador_id');
+    }
+
+    public function creadoPor()
+    {
+        return $this->belongsTo(User::class, 'creado_por');
+    }
+
+    public function actualizadoPor()
+    {
+        return $this->belongsTo(User::class, 'actualizado_por');
+    }
+
+    public function eliminadoPor()
+    {
+        return $this->belongsTo(User::class, 'eliminado_por');
     }
 
     public function getTipoAttribute(): string

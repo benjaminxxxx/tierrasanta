@@ -60,9 +60,7 @@ class CajaMovimientoValidador
             if ($clasificador && isset($datos['tipo']) && $clasificador->tipo !== $datos['tipo']) {
                 $v->errors()->add('caja_clasificador_id', "El clasificador es de {$clasificador->tipo}, pero el movimiento es {$datos['tipo']}.");
             }
-            if (!($datos['es_contable'] ?? false) && empty($datos['numero_caja'])) {
-                $v->errors()->add('numero_caja', 'Indica el N° de caja (o marca el movimiento como contable).');
-            }
+            // El N° de caja se sugiere pero no es obligatorio: en el Excel hay ventas e ingresos sin número
         });
 
         return $validator->validate();

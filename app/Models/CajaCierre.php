@@ -23,6 +23,11 @@ class CajaCierre extends Model
         'saldo_final' => 'decimal:2',
     ];
 
+    public function eventos()
+    {
+        return $this->hasMany(CajaCierreEvento::class)->orderBy('created_at')->orderBy('id');
+    }
+
     public function cerradoPor()
     {
         return $this->belongsTo(User::class, 'cerrado_por');

@@ -475,6 +475,10 @@ class Permisos
     const CAJA_MOVIMIENTO_VER = 'Caja Movimientos Ver';            // ver y exportar, sin modificar
     const CAJA_MOVIMIENTO_GESTIONAR = 'Caja Movimientos Gestionar'; // registrar, editar, colores, arqueos, cerrar/reabrir mes
 
+    // — Historial de caja (cierres/reaperturas y actividad de la auditoría; solo lectura)
+    const CAJA_HISTORIAL = 'Caja Historial';
+    const CAJA_HISTORIAL_VER = 'Caja Historial Ver';
+
     // =========================================================================
 // DOMINIO: INSUMO — Proveedores
 // Tablas: proveedores (vinculados a compra_productos)

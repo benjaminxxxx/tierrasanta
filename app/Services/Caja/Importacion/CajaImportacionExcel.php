@@ -41,35 +41,86 @@ class CajaImportacionExcel
     /** Fuentes de las notas "Saldo AQP S/ … Naranja S/ … Aqp-Flavia S/ … y CUADRILLAS S/ …" (en ese orden). */
     private const FUENTES = ['AQP', 'Naranja', 'Aqp-Flavia', 'Cuadrillas', 'Caja Bancos'];
 
+    /** Agrega solo las filas del Excel que aún no están en el sistema; no borra nada. */
+    public const MODO_DIFERENCIA = 'diferencia';
+    /** Borra y vuelve a cargar los meses abiertos del archivo. */
+    public const MODO_REEMPLAZAR = 'reemplazar';
+
     /**
-     * @return array{movimientos:int, clasificadores_nuevos:int, tipos_cambio:int, arqueos:int, desde:string, hasta:string,
-     *               saldo_final:float, saldo_final_excel:?float, semanas_distintas:int, avisos:string[]}
+     * Se procesa mes por mes: los meses cerrados nunca se tocan (se informan como omitidos).
+     *
+     * - diferencia: una fila se reconoce por fecha + importe + beneficiario + descripción (contando repetidas). Se
+     *   agregan las que faltan; las que están en el sistema y no en el Excel (registradas a mano o corregidas) se
+     *   dejan y se informan. Subir el mismo Excel varias veces no duplica nada.
+     * - reemplazar: los meses abiertos del archivo se borran y se cargan de nuevo tal como están en el Excel.
+     *
+     * @return array{movimientos:int, existentes:int, solo_sistema:int, meses_omitidos:string[], clasificadores_nuevos:int,
+     *               tipos_cambio:int, arqueos:int, desde:string, hasta:string, saldo_final:float, saldo_final_excel:?float,
+     *               semanas_distintas:int, avisos:string[]}
      */
-    public function importar(string $ruta, bool $reemplazar = false): array
+    public function importar(string $ruta, string|bool $modo = self::MODO_DIFERENCIA): array
     {
         @ini_set('memory_limit', '4096M');
         @set_time_limit(600);
+        if (is_bool($modo)) {
+            $modo = $modo ? self::MODO_REEMPLAZAR : self::MODO_DIFERENCIA;
+        }
 
         $libro = $this->cargar($ruta);
         $base = $libro->getSheetByName(self::HOJA_BASE) ?? throw ValidationException::withMessages(['archivo' => 'El archivo no tiene la hoja BASE.']);
 
-        $filas = $this->leerBase($base);
-        if (!$filas) {
+        $todas = $this->leerBase($base);
+        if (!$todas) {
             throw ValidationException::withMessages(['archivo' => 'La hoja BASE no tiene movimientos.']);
         }
-        $desde = min(array_column($filas, 'fecha'));
-        $hasta = max(array_column($filas, 'fecha'));
+        $desde = min(array_column($todas, 'fecha'));
+        $hasta = max(array_column($todas, 'fecha'));
 
-        $this->asegurarRangoLibre($desde, $hasta, $reemplazar);
+        // Meses cerrados: fuera
+        $cierres = app(CajaCierreConsulta::class);
+        $omitidos = [];
+        $filas = array_values(array_filter($todas, function ($f) use ($cierres, &$omitidos) {
+            $m = substr($f['fecha'], 0, 7);
+            if (!array_key_exists($m, $omitidos)) {
+                $omitidos[$m] = $cierres->fechaCerrada($f['fecha']);
+            }
+            return !$omitidos[$m];
+        }));
+        $mesesOmitidos = array_keys(array_filter($omitidos));
+        $mesesAbiertos = array_keys(array_filter($omitidos, fn($cerrado) => !$cerrado));
 
         $avisos = [];
-        return DB::transaction(function () use ($libro, $base, $filas, $desde, $hasta, $reemplazar, &$avisos) {
-            $clasificadoresNuevos = $this->importarClasificadores($libro->getSheetByName(self::HOJA_VALIDA), $filas);
+        return DB::transaction(function () use ($libro, $base, $todas, $filas, $desde, $hasta, $modo, $mesesOmitidos, $mesesAbiertos, &$avisos) {
+            $clasificadoresNuevos = $this->importarClasificadores($libro->getSheetByName(self::HOJA_VALIDA), $todas);
             $tipos = $this->importarTiposCambio($libro->getSheetByName(self::HOJA_TC));
 
-            if ($reemplazar) {
-                CajaMovimiento::withTrashed()->whereBetween('fecha', [$desde, $hasta])->forceDelete();
-                CajaArqueo::whereBetween('fecha', [$desde, $hasta])->delete();
+            $existentes = 0;
+            $soloSistema = 0;
+            if ($modo === self::MODO_REEMPLAZAR) {
+                foreach ($mesesAbiertos as $mes) {
+                    [$ini, $fin] = [Carbon::parse("{$mes}-01")->toDateString(), Carbon::parse("{$mes}-01")->endOfMonth()->toDateString()];
+                    CajaMovimiento::withTrashed()->whereBetween('fecha', [$ini, $fin])->forceDelete();
+                    CajaArqueo::whereBetween('fecha', [$ini, $fin])->delete();
+                }
+            } else {
+                // Solo lo que falta: se descuentan las filas que ya están (por huella, contando repetidas)
+                // Las eliminadas también cuentan: si se borró en el sistema (con motivo), volver a subir el Excel no la revive
+                // Solo los meses abiertos del archivo (los cerrados quedaron fuera del Excel leído)
+                $enSistema = CajaMovimiento::withTrashed()->whereBetween('fecha', [$desde, $hasta])
+                    ->whereIn(DB::raw("DATE_FORMAT(fecha, '%Y-%m')"), $mesesAbiertos ?: ['-'])->get()
+                    ->countBy(fn($m) => $this->huella($m->fecha->toDateString(), (float) $m->importe, $m->beneficiario, $m->descripcion))->all();
+                $nuevas = [];
+                foreach ($filas as $f) {
+                    $h = $this->huella($f['fecha'], $f['importe'], $f['beneficiario'], $f['descripcion']);
+                    if (($enSistema[$h] ?? 0) > 0) {
+                        $enSistema[$h]--;
+                        $existentes++;
+                    } else {
+                        $nuevas[] = $f;
+                    }
+                }
+                $soloSistema = array_sum($enSistema);
+                $filas = $nuevas;
             }
 
             $clasificadores = CajaClasificador::get()->keyBy(fn($c) => $this->clave($c->clasificador_1, $c->clasificador_2));
@@ -99,8 +150,9 @@ class CajaImportacionExcel
                     'beneficiario' => $f['beneficiario'],
                     'descripcion' => $f['descripcion'],
                     'caja_clasificador_id' => $clasificador?->id,
-                    'clasificador_1' => $f['clasificador_1'],
-                    'clasificador_2' => $f['clasificador_2'],
+                    // El nombre oficial (hoja Valida), aunque en BASE esté escrito distinto
+                    'clasificador_1' => $clasificador?->clasificador_1 ?? $f['clasificador_1'],
+                    'clasificador_2' => $clasificador?->clasificador_2 ?? $f['clasificador_2'],
                     'subgrupo_ng' => $f['subgrupo_ng'],
                     'subgrupo_bl' => $f['subgrupo_bl'],
                     'moneda' => CajaMovimientoReglas::MONEDA,
@@ -127,16 +179,20 @@ class CajaImportacionExcel
                 CajaMovimiento::insert($lote);
             }
 
-            $arqueos = $this->importarArqueos($base, $filas, $avisos);
+            $arqueos = $this->importarArqueos($base, $todas, $avisos);
 
             $sinClasificador = count(array_filter($insertar, fn($m) => $m['caja_clasificador_id'] === null));
             if ($sinClasificador) {
                 $avisos[] = "{$sinClasificador} movimiento(s) sin clasificador 1/2.";
             }
 
-            $ultima = end($filas);
+            $ultima = end($todas);
             $resultado = [
+                'modo' => $modo,
                 'movimientos' => count($insertar),
+                'existentes' => $existentes,
+                'solo_sistema' => $soloSistema,
+                'meses_omitidos' => array_map(fn($m) => Carbon::parse("{$m}-01")->locale('es')->translatedFormat('F Y'), $mesesOmitidos),
                 'clasificadores_nuevos' => $clasificadoresNuevos,
                 'tipos_cambio' => $tipos,
                 'arqueos' => $arqueos,
@@ -235,20 +291,11 @@ class CajaImportacionExcel
         return $filas;
     }
 
-    private function asegurarRangoLibre(string $desde, string $hasta, bool $reemplazar): void
+    /** Huella de una fila para reconocerla entre el Excel y el sistema (sin mayúsculas, tildes ni espacios de más). */
+    private function huella(string $fecha, float $importe, ?string $beneficiario, ?string $descripcion): string
     {
-        $cierres = app(CajaCierreConsulta::class);
-        for ($m = Carbon::parse($desde)->startOfMonth(); $m->lte(Carbon::parse($hasta)); $m->addMonth()) {
-            if ($cierres->estaCerrado($m->year, $m->month)) {
-                throw ValidationException::withMessages(['archivo' => 'La caja de ' . $m->locale('es')->translatedFormat('F Y')
-                    . ' está cerrada: no se puede importar sobre ella.']);
-            }
-        }
-        $existentes = CajaMovimiento::whereBetween('fecha', [$desde, $hasta])->count();
-        if ($existentes && !$reemplazar) {
-            throw ValidationException::withMessages(['archivo' => "Ya hay {$existentes} movimiento(s) entre {$desde} y {$hasta}. "
-                . 'Marca "Reemplazar" para borrarlos y cargar los del archivo.']);
-        }
+        $n = fn($t) => trim(preg_replace('/\s+/', ' ', mb_strtoupper(\Illuminate\Support\Str::ascii((string) $t))));
+        return $fecha . '|' . number_format($importe, 2, '.', '') . '|' . $n($beneficiario) . '|' . $n($descripcion);
     }
 
     /** Hoja Valida + combinaciones usadas en BASE que no están en Valida (el tipo sale del signo de sus importes). */
@@ -384,13 +431,20 @@ class CajaImportacionExcel
             }
         }
 
+        $cierres = app(CajaCierreConsulta::class);
+        $creados = 0;
         foreach ($arqueos as $fecha => $montos) {
+            // Meses cerrados no se tocan; un día que ya tiene arqueo se conserva (al reemplazar, los del mes ya se borraron)
+            if ($cierres->fechaCerrada($fecha) || CajaArqueo::whereDate('fecha', $fecha)->exists()) {
+                continue;
+            }
+            $creados++;
             $arqueo = CajaArqueo::create(['fecha' => $fecha, 'observacion' => 'Importado del Excel', 'creado_por' => auth()->id()]);
             foreach ($montos as $fuenteId => $monto) {
                 CajaArqueoDetalle::create(['caja_arqueo_id' => $arqueo->id, 'caja_fuente_id' => $fuenteId, 'monto' => round($monto, 2)]);
             }
         }
-        return count($arqueos);
+        return $creados;
     }
 
     private function fechaCercana(array $fechaPorFila, int $fila): ?string
@@ -439,9 +493,17 @@ class CajaImportacionExcel
         return true;
     }
 
+    /**
+     * Clave para reconocer un clasificador aunque esté escrito distinto: sin mayúsculas, tildes, espacios de más
+     * ni la palabra "DE" ("Venta Naranja" = "VENTA DE NARANJA").
+     */
     private function clave(?string $c1, ?string $c2): string
     {
-        $n = fn($t) => preg_replace('/\s+/', ' ', mb_strtoupper(trim((string) $t)));
+        $n = function ($t) {
+            $t = mb_strtoupper(\Illuminate\Support\Str::ascii(trim((string) $t)));
+            $t = preg_replace('/\bDE\b/', ' ', $t);
+            return trim(preg_replace('/\s+/', ' ', $t));
+        };
         return $n($c1) . '|' . $n($c2);
     }
 }

@@ -52,11 +52,17 @@ class CajaMovimientosComponent extends Component
     public bool $modalEliminar = false;
     public ?int $eliminarId = null;
     public string $eliminarResumen = '';
+    public string $motivoEliminacion = '';
+
+    // Historial de una fila
+    public bool $modalHistorial = false;
+    public array $historial = [];
 
     // Cierre
     public bool $modalCerrar = false;
     public bool $modalReabrir = false;
     public string $motivoReapertura = '';
+    public string $observacionCierre = '';
 
     // Arqueo
     public bool $modalArqueo = false;
@@ -69,7 +75,7 @@ class CajaMovimientosComponent extends Component
     // Importación
     public bool $modalImportar = false;
     public $archivoImportar;
-    public bool $reemplazarImportacion = false;
+    public string $modoImportacion = CajaImportacionExcel::MODO_DIFERENCIA;
 
     private ?array $datosCache = null;
 
@@ -192,6 +198,8 @@ class CajaMovimientosComponent extends Component
         $this->eliminarId = $id;
         $this->eliminarResumen = $m->fecha->format('d/m/Y') . ' · ' . ($m->beneficiario ?: '—') . ' · ' . $m->descripcion
             . ' · S/ ' . number_format((float) $m->importe, 2);
+        $this->motivoEliminacion = '';
+        $this->resetErrorBag();
         $this->modalEliminar = true;
     }
 
@@ -199,7 +207,7 @@ class CajaMovimientosComponent extends Component
     {
         $this->soloGestion();
         try {
-            app(CajaMovimientoCrud::class)->eliminar($this->eliminarId);
+            app(CajaMovimientoCrud::class)->eliminar($this->eliminarId, $this->motivoEliminacion);
             $this->modalEliminar = false;
             $this->alert('success', 'Movimiento eliminado.');
             $this->refrescarTabla();
@@ -208,14 +216,23 @@ class CajaMovimientosComponent extends Component
         }
     }
 
+    // ------------------------------------------------------------------ historial
+
+    /** Quién registró, editó o eliminó la fila y qué cambió (también para quien solo puede ver). */
+    public function verHistorial(int $id): void
+    {
+        $this->historial = app(\App\Services\Caja\Historial\CajaHistorialConsulta::class)->deMovimiento($id);
+        $this->modalHistorial = true;
+    }
+
     // ------------------------------------------------------------------ cierre
 
     public function cerrarMes(): void
     {
         $this->soloGestion();
         try {
-            $cierre = app(CajaCierreProceso::class)->cerrar((int) $this->anio, (int) $this->mes);
-            $this->modalCerrar = false;
+            $cierre = app(CajaCierreProceso::class)->cerrar((int) $this->anio, (int) $this->mes, $this->observacionCierre);
+            $this->reset(['modalCerrar', 'observacionCierre']);
             $this->successAlert('Caja cerrada. Saldo final: S/ ' . number_format((float) $cierre->saldo_final, 2) . '.');
             $this->refrescarTabla();
         } catch (\Throwable $e) {
@@ -309,11 +326,19 @@ class CajaMovimientosComponent extends Component
             'archivoImportar.extensions' => 'El archivo debe ser .xlsx o .xlsm.',
         ]);
         try {
-            $r = app(CajaImportacionExcel::class)->importar($this->archivoImportar->getRealPath(), $this->reemplazarImportacion);
-            $this->reset(['modalImportar', 'archivoImportar', 'reemplazarImportacion']);
-            $mensaje = "Se importaron {$r['movimientos']} movimientos ({$r['desde']} a {$r['hasta']}), {$r['arqueos']} arqueos, "
-                . "{$r['tipos_cambio']} tipos de cambio y {$r['clasificadores_nuevos']} clasificadores nuevos. "
-                . 'Disponible final: S/ ' . number_format($r['saldo_final'], 2) . '.';
+            $r = app(CajaImportacionExcel::class)->importar($this->archivoImportar->getRealPath(), $this->modoImportacion);
+            $this->reset(['modalImportar', 'archivoImportar', 'modoImportacion']);
+            $mensaje = "Excel del {$r['desde']} al {$r['hasta']}: se agregaron {$r['movimientos']} movimiento(s) y {$r['arqueos']} arqueo(s).";
+            if ($r['modo'] === CajaImportacionExcel::MODO_DIFERENCIA) {
+                $mensaje .= " {$r['existentes']} ya estaban en el sistema y no se tocaron.";
+                if ($r['solo_sistema']) {
+                    $mensaje .= " {$r['solo_sistema']} están en el sistema pero no en el Excel (registradas a mano o corregidas en uno de los dos): revísalas.";
+                }
+            }
+            if ($r['meses_omitidos']) {
+                $mensaje .= ' Meses cerrados, omitidos: ' . implode(', ', $r['meses_omitidos']) . '.';
+            }
+            $mensaje .= ' Disponible final: S/ ' . number_format($r['saldo_final'], 2) . '.';
             if ($r['saldo_final_excel'] !== null && abs($r['saldo_final'] - $r['saldo_final_excel']) >= 0.01) {
                 $mensaje .= ' El Excel muestra S/ ' . number_format($r['saldo_final_excel'], 2)
                     . ': revisa su columna DISPONIBLE (alguna fórmula se salta filas).';

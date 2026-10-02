@@ -193,6 +193,8 @@ Route::middleware([
     Route::prefix('caja')->name('caja.')->group(function () {
         Route::get('/movimientos', \App\Livewire\Caja\CajaMovimientosComponent::class)
             ->name('movimientos')->middleware('can:' . Permisos::CAJA_MOVIMIENTO);
+        Route::get('/historial', \App\Livewire\Caja\CajaHistorialComponent::class)
+            ->name('historial')->middleware('can:' . Permisos::CAJA_HISTORIAL);
     });
 
     // ================================================================ COSTOS
