@@ -168,6 +168,29 @@ class PlanillaServicio
             ->pluck('total_horas', 'plan_empleado_id')
             ->toArray();
     }
+    /** Horas de una jornada: lo que se descuenta por cada día de suspensión que tiene horas registradas. */
+    private const HORAS_JORNADA = 8;
+
+    /**
+     * Horas registradas en días de suspensión (descanso médico, licencia con goce…), como máximo una jornada
+     * por día. Esos días se pagan (entran al jornal básico) pero no son jornada trabajada en el PLAME.
+     *
+     * @return array<int, float> plan_empleado_id => horas
+     */
+    protected function obtenerHorasEnSuspensionPorEmpleado(int $planMensualId): array
+    {
+        return PlanRegistroDiario::query()
+            ->join('plan_mensual_detalles', 'plan_registros_diarios.plan_det_men_id', '=', 'plan_mensual_detalles.id')
+            ->join('plan_tipo_asistencias', 'plan_tipo_asistencias.codigo', '=', 'plan_registros_diarios.asistencia')
+            ->where('plan_mensual_detalles.plan_mensual_id', $planMensualId)
+            ->whereNotNull('plan_tipo_asistencias.plan_tipo_suspension_id')
+            ->groupBy('plan_mensual_detalles.plan_empleado_id')
+            ->selectRaw('plan_mensual_detalles.plan_empleado_id, SUM(LEAST(?, plan_registros_diarios.total_horas)) as horas', [self::HORAS_JORNADA])
+            ->pluck('horas', 'plan_empleado_id')
+            ->map(fn($h) => (float) $h)
+            ->toArray();
+    }
+
     public function generarProyeccion($mes, $anio)
     {
         // BDD de costos: regenerar la mano de obra de estas fechas al terminar la petición
@@ -194,12 +217,13 @@ class PlanillaServicio
         $todosLosIds = $empleados->pluck('id')->toArray();
         $suspensionesPorEmpleado = $this->contarSuspensionesPorEmpleado($todosLosIds, $mes, $anio);
         $horasPorEmpleado = $this->obtenerTotalHorasPorEmpleado($planillaMensual->id);
+        $horasSuspensionPorEmpleado = $this->obtenerHorasEnSuspensionPorEmpleado($planillaMensual->id);
 
         // Días calendario reales del mes (28-31), NO los días laborables configurados
         $diasDelMes = Carbon::create($anio, $mes, 1)->daysInMonth;
 
 
-        return DB::transaction(function () use ($mes, $anio, $empleados, $planillaMensual, $suspensionesPorEmpleado, $horasPorEmpleado, $diasDelMes) {
+        return DB::transaction(function () use ($mes, $anio, $empleados, $planillaMensual, $suspensionesPorEmpleado, $horasPorEmpleado, $horasSuspensionPorEmpleado, $diasDelMes) {
 
             $empleadosIds = [];
             $errores = []; // agrupado por tipo de error
@@ -430,6 +454,8 @@ class PlanillaServicio
                     'plame_dias_no_laborados' => $diasNoLaborados,
                     'plame_dias_laborados' => $diasLaborados,
                     'plame_total_horas' => round($totalHorasEmpleado, 2),
+                    // Lo que se declara como jornada: sin las horas de los días de suspensión (se pagan, no se trabajaron)
+                    'plame_horas_jornada' => round($totalHorasEmpleado - ($horasSuspensionPorEmpleado[$empleado->id] ?? 0), 2),
 
                     'plame_0117_comp_vacacional' => $plame0117CompVacacional,
                     'plame_0118_rem_vacacional' => $plame0118RemVacacional,
@@ -470,6 +496,8 @@ class PlanillaServicio
             $planillaMensual->planilla()
                 ->whereNotIn('plan_empleado_id', $empleadosIds)
                 ->delete();
+
+            $this->actualizarCostosDiarios($planillaMensual, (int) $mes, (int) $anio);
 
             return [
                 'procesados' => $procesados,
@@ -1319,8 +1347,8 @@ class PlanillaServicio
             // W: días laborados = días del mes - días no laborados
             $hoja->setCellValue("W{$f}", "=\$AP\$3-V{$f}");
 
-            // X: total horas, viene de REPORTE DIARIO (se llenará cuando esa hoja se complete)
-            $hoja->setCellValue("X{$f}", "='REPORTE DIARIO'!AI{$f}");
+            // X: horas de jornada ordinaria del PLAME (las registradas sin los días de suspensión)
+            $hoja->setCellValue("X{$f}", $empleado->plame_horas_jornada ?? "='REPORTE DIARIO'!AI{$f}");
 
             // Y: 0117 COMP. VACACIONAL, viene tal cual de PROYECTADA
             $hoja->setCellValue("Y{$f}", "=PROYECTADA!G{$f}");
@@ -1328,8 +1356,8 @@ class PlanillaServicio
             // Z: 0118 REM. VAC. = rmv/30 * dias vacacionales (si_23, columna Q de esta misma hoja)
             $hoja->setCellValue("Z{$f}", "={$rmv}/30*Q{$f}");
 
-            // AA: 0121 REM. JORN. BAS.
-            $hoja->setCellValue("AA{$f}", "=SUM(PROYECTADA!D{$f}:E{$f})/\$AP\$1*PLAME!X{$f}");
+            // AA: 0121 REM. JORN. BAS. Con las horas registradas (incluyen descanso médico y licencias con goce), no las de X
+            $hoja->setCellValue("AA{$f}", "=SUM(PROYECTADA!D{$f}:E{$f})/\$AP\$1*'REPORTE DIARIO'!AI{$f}");
 
             // AB: 0201 ASIG. FAMILIAR
             $hoja->setCellValue("AB{$f}", "=PROYECTADA!F{$f}/\$AP\$3*W{$f}");
@@ -1484,77 +1512,32 @@ class PlanillaServicio
 
         return $resumen;
     }
-    public function calcularGastosMensuales($mes, int $anio)
+    /**
+     * Costo de cada día de cada empleado (plan_registros_diarios.costo_dia), a partir de sus horas registradas.
+     * Corre al generar la planilla (antes era el botón "Recalcular pagos en planilla" de la asistencia mensual).
+     *
+     * Valor hora = sueldo acordado / horas del mes (plan_mensuales.total_horas), igual que el sueldo
+     * pagado de la planilla (PlanMensualPersonal::sueldo_pagado).
+     */
+    private function actualizarCostosDiarios(PlanMensual $planillaMensual, int $mes, int $anio): void
     {
-        $planillaMensual = PlanMensual::where('mes', $mes)
-            ->where('anio', $anio)
-            ->with(['detalle.empleado', 'detalle.registrosDiarios'])
-            ->first();
-
-        if (!$planillaMensual) {
-            throw new Exception('No hay planilla mensual generada');
+        $horasMes = (float) ($planillaMensual->total_horas ?: $planillaMensual->dias_laborables * 8);
+        if ($horasMes <= 0) {
+            return;
         }
-
-        $horasEsperadasMes = $planillaMensual->dias_laborables * 8;
 
         foreach ($planillaMensual->detalle as $detalleMensual) {
-            $empleado = $detalleMensual->empleado;
-
-            if (!$empleado) {
+            $sueldo = $detalleMensual->empleado?->sueldo($mes, $anio);
+            if (!$sueldo) {
                 continue;
             }
+            $valorHora = $sueldo / $horasMes;
 
-            // 1. Obtener Sueldo Pactado / Proyectado
-            $sueldoProyectado = $empleado->sueldo($mes, $anio);
-
-            if ($sueldoProyectado && $horasEsperadasMes > 0) {
-                // Valor de 1 hora de trabajo con precisión decimal
-                $valorHora = $sueldoProyectado / $horasEsperadasMes;
-
-                // 2. Procesar y actualizar los costos diarios
-                $this->procesarCostosDiarios($detalleMensual, $valorHora);
-
-                // 3. Calcular Sueldos de Planilla (Real Proyectado vs. Liquidado)
-                $sueldoLiquidado = $this->calcularSueldoRealLiquidado($detalleMensual, $valorHora);
-
-                // 4. Guardar datos consolidados en el detalle mensual
-                $detalleMensual->sueldo_real_proyectado = $sueldoProyectado;
-                $detalleMensual->sueldo_real_liquidado = $sueldoLiquidado;
-                $detalleMensual->save();
+            foreach ($detalleMensual->registrosDiarios as $registroDiario) {
+                $registroDiario->costo_dia = round($valorHora * (float) $registroDiario->total_horas, 2);
+                $registroDiario->save(); // solo escribe si cambió
             }
         }
-    }
-
-    /**
-     * Calcula el costo exacto de cada día según sus horas y actualiza el registro diario.
-     * Retorna la suma total de esos días para control general.
-     */
-    private function procesarCostosDiarios($detalleMensual, float $valorHora): float
-    {
-        $sumaCostosDiarios = 0;
-
-        foreach ($detalleMensual->registrosDiarios as $registroDiario) {
-            // Costo del día redondeado a 2 decimales para el registro diario individual
-            $costoDia = round($valorHora * $registroDiario->total_horas, 2);
-
-            $registroDiario->costo_dia = $costoDia;
-            $registroDiario->save();
-
-            $sumaCostosDiarios += $costoDia;
-        }
-
-        return round($sumaCostosDiarios, 2);
-    }
-
-    /**
-     * Calcula el sueldo liquidado directo a partir del total exacto de horas
-     * para evitar imprecisiones por redondeos acumulados.
-     */
-    private function calcularSueldoRealLiquidado($detalleMensual, float $valorHora): float
-    {
-        $totalHorasTrabajadas = $detalleMensual->registrosDiarios->sum('total_horas');
-
-        return round($valorHora * $totalHorasTrabajadas, 2);
     }
 }
 

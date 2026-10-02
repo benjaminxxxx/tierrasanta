@@ -3,6 +3,7 @@
 namespace App\Livewire\Riego;
 
 use App\Livewire\Traits\ConFechaReporteDia;
+use App\Livewire\Traits\ConReporteDiarioExcel;
 use App\Models\ConsolidadoRiego;
 use App\Models\Cuadrillero;
 use App\Models\PlanEmpleado;
@@ -23,7 +24,7 @@ use Session;
 
 class ReporteDiarioRiegoComponent extends Component
 {
-    use LivewireAlert, ConFechaReporteDia, TieneParametrosTemporales;
+    use LivewireAlert, ConFechaReporteDia, TieneParametrosTemporales, ConReporteDiarioExcel;
     public $consolidados;
     public $archivoBackupHoy;
     public $tipoLabores;

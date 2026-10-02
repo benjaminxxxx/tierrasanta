@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
  */
 class CajaMovimientoCrud
 {
-    private const IGNORAR_AUDITORIA = ['updated_at', 'created_at', 'actualizado_por'];
+    private const IGNORAR_AUDITORIA = ['updated_at', 'created_at', 'actualizado_por', 'editado_manual'];
 
     public function __construct(private CajaMovimientoValidador $validador)
     {
@@ -49,6 +49,8 @@ class CajaMovimientoCrud
                 $limpios['orden'] = (int) CajaMovimiento::whereDate('fecha', $limpios['fecha'])->max('orden') + 1;
             }
             $limpios['actualizado_por'] = auth()->id();
+            // Vino de la caja de oficina y se corrige aquí: un inverso ya corregido no se pisa con otro envío
+            $limpios['editado_manual'] = $movimiento->editado_manual || $movimiento->caja_oficina_movimiento_id !== null;
             $movimiento->update($limpios);
             AuditoriaServicio::registrar(CajaMovimiento::class, $movimiento->id, 'editar', $antes, $movimiento->fresh()->toArray(), null, self::IGNORAR_AUDITORIA);
             return $movimiento;
@@ -152,6 +154,7 @@ class CajaMovimientoCrud
             'tipo_cambio_operacion' => $enDolares ? (float) $v['tipo_cambio_operacion'] : null,
             'importe' => $importe,
             'importe_detalle' => $detalle,
+            'es_saldo_inicial' => CajaMovimientoReglas::esSaldoInicial($clasificador->clasificador_1),
             'tipo_cambio' => isset($v['tipo_cambio']) && $v['tipo_cambio'] !== '' ? (float) $v['tipo_cambio'] : $this->tipoCambioDelDia($v['fecha']),
         ];
     }

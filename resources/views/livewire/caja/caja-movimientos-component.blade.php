@@ -34,6 +34,15 @@
         </x-warning>
     @endif
 
+    @if (count($enviosPendientes))
+        <x-warning>
+            <b>{{ collect($enviosPendientes)->pluck('quien')->unique()->implode(', ') }}</b> ha actualizado la caja de oficina:
+            {{ count($enviosPendientes) }} envío(s) con {{ collect($enviosPendientes)->sum('cambios') }} cambio(s) sin anexar
+            (el último, {{ collect($enviosPendientes)->last()['fecha'] }}).
+            <button type="button" class="underline font-semibold" wire:click="$set('modalEnvios', true)">Ver detalles</button>
+        </x-warning>
+    @endif
+
     {{-- Filtros --}}
     <x-card class="space-y-3">
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
@@ -176,6 +185,10 @@
         </div>
     </x-card>
 
+    @if ($cuadre && $cuadre['iniciada'])
+        @include('livewire.caja.partials.cuadre', ['cuadre' => $cuadre, 'nombreMes' => $nombreMes])
+    @endif
+
     {{-- Arqueos --}}
     <x-card class="space-y-2">
         <div class="flex items-center justify-between">
@@ -233,6 +246,25 @@
             <p class="text-sm text-muted-foreground">Sin arqueos en este periodo.</p>
         @endif
     </x-card>
+
+    {{-- Modal: envíos de la caja de oficina --}}
+    <x-dialog-modal wire:model="modalEnvios" maxWidth="full">
+        <x-slot name="title">Envíos de la caja de oficina</x-slot>
+        <x-slot name="content">
+            @if (count($enviosPendientes))
+                <p class="text-sm mb-3">Al anexar, las filas nuevas entran a esta caja (sin clasificador: complétalas) y las modificadas actualizan su misma fila. Un inverso que ya corregiste aquí no se vuelve a tocar. Se anexan en orden, del más antiguo al más reciente.</p>
+                @include('livewire.caja.partials.envios', ['envios' => $enviosPendientes, 'puedeAnexar' => $puede])
+                <h4 class="font-semibold text-sm mt-5 mb-2">Ya anexados</h4>
+            @endif
+            @include('livewire.caja.partials.envios', ['envios' => collect($enviosRecientes)->where('estado', 'anexado')->all(), 'puedeAnexar' => false])
+        </x-slot>
+        <x-slot name="footer">
+            <x-button variant="secondary" wire:click="$set('modalEnvios', false)">Cerrar</x-button>
+            @if ($puede && count($enviosPendientes) > 1)
+                <x-button wire:click="anexarTodos"><i class="fa fa-link"></i> Anexar todos ({{ count($enviosPendientes) }})</x-button>
+            @endif
+        </x-slot>
+    </x-dialog-modal>
 
     {{-- Modal: color personalizado --}}
     <x-dialog-modal wire:model="modalColor" maxWidth="md">
@@ -346,6 +378,12 @@
         <x-slot name="title">Cerrar la caja de {{ $nombreMes }}</x-slot>
         <x-slot name="content">
             <p class="text-sm">Disponible al cierre: <b>S/ {{ $fmt($datos['saldo_final']) }}</b>.</p>
+            @if ($cuadre && $cuadre['iniciada'])
+                <p class="text-sm mt-2 {{ $cuadre['cuadra'] ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400' }}">
+                    {{ $cuadre['cuadra'] ? 'Cuadra con la caja de oficina.' : 'No cuadra con la caja de oficina: diferencia S/ ' . $fmt($cuadre['diferencia']) . '. Para cerrar así hay que explicar por qué en la observación.' }}
+                </p>
+            @endif
+            @error('mes') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
             <p class="text-sm mt-2">Cerrado el mes no se podrá registrar, editar, pintar ni eliminar nada de él (ni sus arqueos). Si luego hay un error, se puede reabrir indicando el motivo.</p>
             <div class="mt-3">
                 <x-textarea label="Observación (opcional)" wire:model="observacionCierre" rows="2" placeholder="Ej.: cuadra con el arqueo del 30/09" />
@@ -430,7 +468,7 @@
     </x-dialog-modal>
 
     <livewire:caja.caja-movimiento-form-component />
-    <x-loading wire:loading wire:target="irAMes,anio,mes,semana,tipo,condicion,contable,clasificador1,clasificador2,subgrupo,buscar,limpiarFiltros,importar,cerrarMes,reabrirMes,guardarColor,quitarColor,eliminar" />
+    <x-loading wire:loading wire:target="irAMes,anio,mes,semana,tipo,condicion,contable,clasificador1,clasificador2,subgrupo,buscar,limpiarFiltros,importar,cerrarMes,reabrirMes,anexarEnvio,anexarTodos,guardarColor,quitarColor,eliminar" />
 </div>
 
 @script
@@ -506,6 +544,7 @@
                 { data: 'descripcion', title: 'Gastos B+N', width: 280, renderer: texto },
                 { data: 'importe', title: 'Importe S/', width: 105, renderer: importe },
                 { data: 'disponible', title: 'Disponible', width: 110, renderer: numero(2) },
+                { data: 'origen', title: 'Oficina', width: 68, renderer: texto },
                 { data: 'clasificador_1', title: 'Clasificador 1', width: 190, renderer: texto },
                 { data: 'clasificador_2', title: 'Clasificador 2', width: 200, renderer: texto },
                 { data: 'subgrupo_ng', title: 'Sub-grupo NG', width: 120, renderer: texto },

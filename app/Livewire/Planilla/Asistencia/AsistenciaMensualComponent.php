@@ -2,40 +2,47 @@
 
 namespace App\Livewire\Planilla\Asistencia;
 
+use App\Constants\Permisos;
 use App\Models\Configuracion;
-use App\Services\Planilla\PlanillaServicio;
-use App\Services\Planilla\Asistencia\PlanillaAsistenciaServicio;
+use App\Services\Planilla\Asistencia\PlanillaAsistenciaMensualConsulta;
 use App\Services\Planilla\PlanillaEmpleadoServicio;
 use App\Traits\Selectores\ConSelectorMes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Session;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 
+/**
+ * Asistencia mensual de la planilla: horas, sueldo pagado y costo para la empresa de cada empleado, día por
+ * día (Handsontable de solo lectura). Los filtros, las tarjetas y el cambio de vista se resuelven en el
+ * navegador; el servidor solo entrega los datos del mes.
+ */
+#[Title('Asistencia Mensual')]
 class AsistenciaMensualComponent extends Component
 {
     use ConSelectorMes;
-    public $empleados = [];
-    public $dias = [];
+
     const CODIGO_CONFIG_ORDEN = 'orden_planilla_asistencia';
     public $ordenGuardado = [];
     public $mostrandoModalOrden = false;
-    public function mount()
+
+    private ?array $datos = null;
+
+    public function mount($anio = null, $mes = null)
     {
-        $this->inicializarMesAnio();
-        $this->ordenGuardado = $this->obtenerOrdenGuardado();
-        $this->cargarDatos();
-    }
-    public function recalcularPagoPlanilla(){
-        try {
-            app(PlanillaServicio::class)->calcularGastosMensuales($this->mes,$this->anio);
-            $this->cargarDatos();
-        } catch (\Throwable $th) {
-            $this->alert($th->getMessage());
+        // /planilla/asistencia/2026/2 abre ese mes (y lo deja como el mes de trabajo)
+        if (ctype_digit((string) $anio) && ctype_digit((string) $mes) && (int) $mes >= 1 && (int) $mes <= 12) {
+            Session::put($this->dateSessionKey, ['mes' => (int) $mes, 'anio' => (int) $anio]);
         }
+        $this->ordenGuardado = $this->obtenerOrdenGuardado();
+        $this->inicializarMesAnio();
     }
-    protected function despuesMesAnioModificado(string $mes, string $anio)
+
+    protected function despuesMesAnioModificado(string $anio, string $mes)
     {
-        $this->cargarDatos();
+        $this->enviarDatos();
     }
+
     protected function obtenerOrdenGuardado(): array
     {
         $config = Configuracion::where('codigo', self::CODIGO_CONFIG_ORDEN)->first();
@@ -70,85 +77,33 @@ class AsistenciaMensualComponent extends Component
 
         $this->ordenGuardado = $ordenLimpio;
         $this->mostrandoModalOrden = false;
-        $this->cargarDatos();
+        $this->enviarDatos();
     }
-    public function cargarDatos()
+
+    private function datos(): array
     {
-        $mes = (int) $this->mes;
-        $anio = (int) $this->anio;
-
-        $this->dias = $this->obtenerDiasDelMesConTitulo($anio, $mes);
-
-        $planilla = app(PlanillaEmpleadoServicio::class)
-            ->obtenerPlanillaAgraria($mes, $anio, $this->ordenGuardado);
-
-        $mapaAsistencia = app(PlanillaAsistenciaServicio::class)->obtenerMapaAsistenciaMensual($mes, $anio);
-        $codigosFiltros = app(PlanillaAsistenciaServicio::class)->obtenerCodigosFiltros();
-
-        $this->empleados = $planilla->map(function ($empleado) use ($mapaAsistencia, $codigosFiltros) {
-            $contrato = $empleado->contratos->first();
-            $infoAsistencia = $mapaAsistencia[$empleado->id] ?? null;
-            $diasRegistrados = $infoAsistencia['dias'] ?? [];
-           
-            $diasAsistencia = [];
-            $codigosDelMes = [];
-
-            foreach ($this->dias as $dia) {
-                $registro = $diasRegistrados[$dia['indice']] ?? null;
-              
-                $diasAsistencia[$dia['indice']] = [
-                    'horas' => $registro['horas'] ?? null,
-                    'sueldo' => $registro['costo_dia'] ?? null,
-                    'color' => $registro['color'] ?? ($dia['es_domingo'] ? '#FFC000' : null),
-                    'tipo' => $registro['tipo'] ?? null,
-                    'descripcion' => $registro['descripcion'] ?? null,
-                ];
-
-                if ($registro['tipo'] ?? null) {
-                    $codigosDelMes[] = $registro['tipo'];
-                }
-            }
-            
-                
-            return [
-                'id' => $empleado->id,
-                'grupo' => $contrato?->grupo?->codigo,
-                'nombre_completo' => mb_strtoupper($empleado->nombre_completo ?? ''),
-                'documento' => $empleado->documento ?? null,
-                'cargo' => $contrato->cargo ?? null,
-                'dias' => $diasAsistencia,
-                'total_horas' => $infoAsistencia['total_horas'] ?? 0,
-                'sueldo_real_liquidado' => $infoAsistencia['sueldo_real_liquidado'] ?? 0,
-                'tiene_permiso' => (bool) array_intersect($codigosDelMes, $codigosFiltros['permiso']),
-                'tiene_descanso_medico' => (bool) array_intersect($codigosDelMes, $codigosFiltros['descanso_medico']),
-                'tiene_vacaciones' => (bool) array_intersect($codigosDelMes, $codigosFiltros['vacaciones']),
-            ];
-        })->values()->toArray();
-        $this->dispatch('empleados-actualizados', empleados: $this->empleados, dias: $this->dias);
+        return $this->datos ??= app(PlanillaAsistenciaMensualConsulta::class)->obtener((int) $this->mes, (int) $this->anio, $this->ordenGuardado);
     }
-    protected function obtenerDiasDelMesConTitulo(int $anio, int $mes): array
+
+    /** El mes o el orden cambiaron: la tabla se vuelve a armar en el navegador con los datos nuevos. */
+    private function enviarDatos(): void
     {
-        $diasConTitulo = [];
-        $ultimoDiaMes = Carbon::createFromDate($anio, $mes)->endOfMonth()->day;
-        $diasTitulo = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
-
-        for ($dia = 1; $dia <= $ultimoDiaMes; $dia++) {
-            $fecha = Carbon::createFromDate($anio, $mes, $dia);
-            $diaSemana = (int) $fecha->format('N');
-
-            $diasConTitulo[] = [
-                'titulo' => $diasTitulo[$diaSemana - 1],
-                'indice' => $dia,
-                'es_domingo' => $diaSemana === 7,
-            ];
-        }
-
-        return $diasConTitulo;
+        $this->datos = null;
+        $this->dispatch('asistencia-datos', datos: $this->datos());
     }
+
     public function render()
     {
+        $usuario = auth()->user();
+
         return view('livewire.planilla.asistencia.asistencia-mensual-component', [
+            'datos' => $this->datos(),
             'camposOrdenables' => PlanillaEmpleadoServicio::camposOrdenables(),
+            'nombreMes' => ucfirst(Carbon::create((int) $this->anio, (int) $this->mes, 1)->locale('es')->translatedFormat('F Y')),
+            'enlaces' => [
+                'detalle' => $usuario?->can(Permisos::PLANILLA_ACTIVIDAD) ? route('planilla.registro_diario') : null,
+                'riego' => $usuario?->can(Permisos::CAMPO_RIEGO_REPORTE) ? route('riego.reporte_diario') : null,
+            ],
         ]);
     }
 }

@@ -292,6 +292,7 @@ class Sidebar extends Component
                 'can' => Permisos::CAJA,
                 'children' => [
                     ['title' => 'Movimientos de caja', 'route' => 'caja.movimientos', 'can' => Permisos::CAJA_MOVIMIENTO],
+                    ['title' => 'Caja de oficina', 'route' => 'caja.oficina', 'can' => Permisos::CAJA_OFICINA],
                     ['title' => 'Historial de caja', 'route' => 'caja.historial', 'can' => Permisos::CAJA_HISTORIAL],
                 ],
             ],

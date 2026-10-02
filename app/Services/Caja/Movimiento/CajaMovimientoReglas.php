@@ -54,6 +54,20 @@ class CajaMovimientoReglas
         return $grupo[$f->copy()->startOfWeek(Carbon::MONDAY)->toDateString()] ?? 1;
     }
 
+    /** "SALDO DE CAJA ANTERIOR": el saldo con que empieza el año. No es un ingreso, es el saldo anterior. */
+    public static function esSaldoInicial(?string $clasificador1): bool
+    {
+        $c = mb_strtoupper(\Illuminate\Support\Str::ascii((string) $clasificador1));
+        return str_contains($c, 'SALDO') && str_contains($c, 'ANTERIOR');
+    }
+
+    /** Huella de una fila para reconocerla entre el Excel y el sistema, o entre las dos cajas (sin mayúsculas, tildes ni espacios de más). */
+    public static function huella(string $fecha, float $importe, ?string $beneficiario, ?string $descripcion): string
+    {
+        $n = fn($t) => trim(preg_replace('/\s+/', ' ', mb_strtoupper(\Illuminate\Support\Str::ascii((string) $t))));
+        return $fecha . '|' . number_format($importe, 2, '.', '') . '|' . $n($beneficiario) . '|' . $n($descripcion);
+    }
+
     public static function etiquetaSemana(?int $semana): string
     {
         return $semana ? "SEM-{$semana}" : '';

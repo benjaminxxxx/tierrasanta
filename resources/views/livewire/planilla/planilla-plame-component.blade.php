@@ -138,7 +138,7 @@
                     {{-- DÍAS / HORAS --}}
                     <x-td class="text-center">{{ fmt($empleado->plame_dias_no_laborados, 2) }}</x-td>
                     <x-td class="text-center">{{ fmt($empleado->plame_dias_laborados, 2) }}</x-td>
-                    <x-td class="text-center">{{ fmt($empleado->plame_total_horas, 2) }}</x-td>
+                    <x-td class="text-center">{{ fmt($empleado->plame_horas_jornada ?? $empleado->plame_total_horas, 2) }}</x-td>
 
                     {{-- INGRESOS --}}
                     <x-td class="text-center">{{ fmt($empleado->plame_0117_comp_vacacional) }}</x-td>

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Planilla\RegistroDiario;
 use App\Livewire\Traits\ConFechaReporteDia;
+use App\Livewire\Traits\ConReporteDiarioExcel;
 use App\Services\Planilla\Modulos\GestionPlanillaReporteDiario;
 use App\Services\Planilla\PlanillaMensualDetalleServicio;
 use Illuminate\Support\Carbon;
@@ -10,7 +11,7 @@ use Livewire\Component;
 
 class GestionPlanillaRegistroDiarioComponent extends Component
 {
-    use ConFechaReporteDia, LivewireAlert;
+    use ConFechaReporteDia, LivewireAlert, ConReporteDiarioExcel;
     public $listaPlanilla = [];
     public $mes;
     public $anio;

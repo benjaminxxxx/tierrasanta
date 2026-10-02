@@ -9,6 +9,10 @@
 
                 </div>
                 <x-flex>
+                    <x-button variant="success" wire:click="descargarReporteDiario" wire:loading.attr="disabled" wire:target="descargarReporteDiario"
+                        title="Descarga el Excel del reporte diario (planilla, cuadrilla y riego) de la fecha seleccionada">
+                        <i class="fa fa-file-excel"></i> Enviar reporte diario
+                    </x-button>
                     <x-button wire:click="verificarSincronizacion" wire:loading.attr="disabled">
                         <i class="fa fa-sync"></i> Verificar Sincronización
                     </x-button>

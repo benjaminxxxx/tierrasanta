@@ -9,7 +9,7 @@ class CajaFuente extends Model
 {
     protected $table = 'caja_fuentes';
 
-    protected $fillable = ['nombre', 'orden', 'activo'];
+    protected $fillable = ['nombre', 'es_oficina', 'orden', 'activo'];
 
-    protected $casts = ['activo' => 'boolean'];
+    protected $casts = ['activo' => 'boolean', 'es_oficina' => 'boolean'];
 }

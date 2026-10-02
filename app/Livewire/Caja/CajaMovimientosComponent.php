@@ -11,6 +11,8 @@ use App\Services\Caja\Cierre\CajaCierreProceso;
 use App\Services\Caja\Importacion\CajaImportacionExcel;
 use App\Services\Caja\Movimiento\CajaMovimientoConsulta;
 use App\Services\Caja\Movimiento\CajaMovimientoCrud;
+use App\Services\Caja\Oficina\CajaOficinaConsulta;
+use App\Services\Caja\Oficina\CajaOficinaProceso;
 use App\Services\Caja\Reporte\CajaReporteExcel;
 use App\Traits\HandlesAlerts;
 use Illuminate\Support\Carbon;
@@ -71,6 +73,9 @@ class CajaMovimientosComponent extends Component
     public array $arqueoMontos = [];
     public string $arqueoObservacion = '';
     public string $nuevaFuente = '';
+
+    // Envíos de la caja de oficina
+    public bool $modalEnvios = false;
 
     // Importación
     public bool $modalImportar = false;
@@ -225,6 +230,37 @@ class CajaMovimientosComponent extends Component
         $this->modalHistorial = true;
     }
 
+    // ------------------------------------------------------------------ caja de oficina
+
+    /** Anexa un envío de la caja de oficina: sus filas entran (o se actualizan) en esta caja. */
+    public function anexarEnvio(int $id): void
+    {
+        $this->soloGestion();
+        try {
+            $this->avisarAnexado(app(CajaOficinaProceso::class)->anexar($id));
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+        }
+    }
+
+    public function anexarTodos(): void
+    {
+        $this->soloGestion();
+        try {
+            $this->avisarAnexado(app(CajaOficinaProceso::class)->anexarTodos());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+        }
+    }
+
+    private function avisarAnexado(array $r): void
+    {
+        $this->successAlert("Se anexaron {$r['anexados']} cambio(s) de la caja de oficina."
+            . ($r['omitidos'] ? " {$r['omitidos']} no se aplicaron (ya corregidos o eliminados aquí): revisa el detalle en los envíos." : '')
+            . ' Las filas nuevas llegan sin clasificador: complétalas.');
+        $this->refrescarTabla();
+    }
+
     // ------------------------------------------------------------------ cierre
 
     public function cerrarMes(): void
@@ -355,8 +391,12 @@ class CajaMovimientosComponent extends Component
         $consulta = app(CajaMovimientoConsulta::class);
         $datos = $this->datos();
         $cierres = app(CajaCierreConsulta::class);
+        $oficina = app(CajaOficinaConsulta::class);
 
         return view('livewire.caja.caja-movimientos-component', [
+            'enviosPendientes' => $oficina->envios(),
+            'enviosRecientes' => $this->modalEnvios ? $oficina->envios(false, 15) : [],
+            'cuadre' => $this->mes ? $oficina->cuadre((int) $this->anio, (int) $this->mes) : null,
             'datos' => $datos,
             'opciones' => $consulta->opciones(),
             'arqueos' => $consulta->arqueos($datos['desde'], $datos['hasta']),

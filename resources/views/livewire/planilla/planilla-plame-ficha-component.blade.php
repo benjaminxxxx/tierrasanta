@@ -56,12 +56,14 @@
                     </div>
 
                     {{-- ============================ Días --}}
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
                         @foreach ([
                             ['Días laborados', $d['laborados']],
                             ['Días no laborados', $d['no_laborados']],
                             ['Días subsidiados', $d['subsidiados']],
                             ['Horas jornada ordinaria', rtrim(rtrim(number_format($d['total_horas'], 2), '0'), '.')],
+                            // Con estas se calculan el jornal básico y lo pagado (incluyen descanso médico y licencias con goce)
+                            ['Horas registradas (pagadas)', rtrim(rtrim(number_format($d['horas_registradas'], 2), '0'), '.')],
                             ['Horas meta del mes', rtrim(rtrim(number_format($d['horas_meta_mes'], 2), '0'), '.')],
                         ] as [$etiqueta, $valor])
                             <div class="rounded-lg border p-3">

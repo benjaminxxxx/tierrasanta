@@ -21,6 +21,8 @@ class CajaHistorialConsulta
         CajaMovimiento::class => 'Movimiento',
         CajaArqueo::class => 'Arqueo',
         CajaCierre::class => 'Cierre de mes',
+        \App\Models\CajaOficinaMovimiento::class => 'Caja de oficina',
+        \App\Models\CajaOficinaEnvio::class => 'Envío de oficina',
     ];
 
     /** Campos que no se muestran en "qué cambió" (internos o repetidos). */
@@ -163,6 +165,13 @@ class CajaHistorialConsulta
             }
             $datos = $cambios['creado'] ?? $cambios['eliminado'] ?? [];
             return $datos ? $this->resumenMovimiento((object) $datos) : "Movimiento #{$a->modelo_id}";
+        }
+        if ($a->modelo === \App\Models\CajaOficinaMovimiento::class) {
+            $fila = \App\Models\CajaOficinaMovimiento::withTrashed()->find($a->modelo_id);
+            return 'Oficina · ' . ($fila ? $this->resumenMovimiento($fila) : "fila #{$a->modelo_id}");
+        }
+        if ($a->modelo === \App\Models\CajaOficinaEnvio::class) {
+            return "Envío #{$a->modelo_id} de la caja de oficina";
         }
         if ($a->modelo === CajaArqueo::class) {
             $fecha = $cambios['creado']['fecha'] ?? $cambios['eliminado']['fecha'] ?? null;

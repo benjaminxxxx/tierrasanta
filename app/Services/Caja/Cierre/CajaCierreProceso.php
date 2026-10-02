@@ -35,6 +35,22 @@ class CajaCierreProceso
         }
         $observacion = trim((string) $observacion) ?: null;
 
+        // El cierre vale para las dos cajas: nada pendiente entre ellas y, si no cuadran, que quede escrito por qué
+        $cuadre = app(\App\Services\Caja\Oficina\CajaOficinaConsulta::class)->cuadre($anio, $mes);
+        if ($cuadre['iniciada']) {
+            if ($cuadre['por_enviar'] || $cuadre['envios_pendientes']) {
+                throw ValidationException::withMessages(['mes' => "La caja de oficina tiene {$cuadre['por_enviar']} cambio(s) del mes sin enviar y "
+                    . "{$cuadre['envios_pendientes']} envío(s) sin anexar: envíalos y anéxalos antes de cerrar."]);
+            }
+            if (!$cuadre['cuadra'] && !$observacion) {
+                throw ValidationException::withMessages(['mes' => 'Las dos cajas no cuadran (diferencia S/ ' . number_format($cuadre['diferencia'], 2)
+                    . '). Corrige la diferencia o indica en la observación por qué se cierra así.']);
+            }
+            $observacion = trim(($observacion ? "{$observacion} · " : '') . ($cuadre['cuadra']
+                ? 'Cuadra con la caja de oficina (S/ ' . number_format($cuadre['oficina'], 2) . ').'
+                : 'No cuadra con la caja de oficina: diferencia S/ ' . number_format($cuadre['diferencia'], 2) . '.'));
+        }
+
         return DB::transaction(function () use ($anio, $mes, $inicio, $observacion) {
             $fin = $inicio->copy()->endOfMonth()->toDateString();
             $saldo = $this->consulta->disponibleAl($fin);

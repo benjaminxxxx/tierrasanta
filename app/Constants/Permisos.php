@@ -475,6 +475,11 @@ class Permisos
     const CAJA_MOVIMIENTO_VER = 'Caja Movimientos Ver';            // ver y exportar, sin modificar
     const CAJA_MOVIMIENTO_GESTIONAR = 'Caja Movimientos Gestionar'; // registrar, editar, colores, arqueos, cerrar/reabrir mes
 
+    // — Caja de oficina (dinero físico de la oficina; se envía a la caja de movimientos y se cuadra cada mes)
+    const CAJA_OFICINA = 'Caja Oficina';
+    const CAJA_OFICINA_VER = 'Caja Oficina Ver';
+    const CAJA_OFICINA_GESTIONAR = 'Caja Oficina Gestionar'; // importar, registrar, generar inverso, enviar
+
     // — Historial de caja (cierres/reaperturas y actividad de la auditoría; solo lectura)
     const CAJA_HISTORIAL = 'Caja Historial';
     const CAJA_HISTORIAL_VER = 'Caja Historial Ver';

@@ -3,6 +3,7 @@
 namespace App\Livewire\Cuadrilla;
 use App\Livewire\Traits\ConFechaReporteDia;
 use App\Livewire\Traits\ConManejarErrores;
+use App\Livewire\Traits\ConReporteDiarioExcel;
 use App\Models\Campo;
 use App\Models\Labores;
 use App\Services\Cuadrilla\CuadrilleroServicio;
@@ -13,7 +14,7 @@ use Livewire\Component;
 
 class GestionCuadrillaReporteDiarioComponent extends Component
 {
-    use LivewireAlert, ConFechaReporteDia, ConManejarErrores;
+    use LivewireAlert, ConFechaReporteDia, ConManejarErrores, ConReporteDiarioExcel;
 
     #region VARIABLES E INICIALIZACION
     public $trabajadores = [];

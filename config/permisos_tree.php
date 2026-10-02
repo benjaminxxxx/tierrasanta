@@ -513,6 +513,13 @@ return [
                 ],
             ],
             [
+                'nombre' => Permisos::CAJA_OFICINA,
+                'hijos' => [
+                    ['nombre' => Permisos::CAJA_OFICINA_VER],
+                    ['nombre' => Permisos::CAJA_OFICINA_GESTIONAR],
+                ],
+            ],
+            [
                 'nombre' => Permisos::CAJA_HISTORIAL,
                 'hijos' => [
                     ['nombre' => Permisos::CAJA_HISTORIAL_VER],

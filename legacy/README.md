@@ -122,3 +122,15 @@ La tabla `rep_actividades_diarias` (63 filas) no se tocó.
 | `app/Models/PlanMensualDetalleCalculosLegacy.php` (trait) | 17 accessors que estaban en `App\Models\PlanMensualDetalle` (`blanco_*`, `costo_total_*`, `sueldo_negro_*`, `remuneracion_basica*`). Calculaban la planilla blanco/negro con columnas que solo tienen datos hasta 01/2026. Nadie los leía, pero estaban en `$appends`: se calculaban al serializar cada detalle, con una consulta por fila, y `getRemuneracionBasicaAttribute` sobrescribía la columna. Hoy esos valores vienen del PLAME (`PlanMensualPersonal`). Para restaurarlos: `use PlanMensualDetalleCalculosLegacy;` en el modelo. |
 
 Las columnas históricas de `plan_mensual_detalles` no se tocaron (ver el docblock del modelo).
+
+### Asistencia mensual antigua (02/10/2026)
+
+`/planilla/asistencia` ahora abre la versión que era beta en `/planilla/asistencias` (`AsistenciaMensualComponent`, con
+Handsontable y los sueldos de la planilla generada); `/planilla/asistencias` redirige ahí.
+
+| Qué | Por qué se retiró |
+|---|---|
+| `app/Livewire/Planilla/Asistencia/GestionPlanillaAsistenciasComponent.php`, `.../GestionPlanillaDetalleAsistenciasComponent.php` y vistas `planilla/asistencia/gestion-planilla-asistencias`, `gestion-planilla-detalle-asistencias` | Pantalla antigua de asistencia mensual (solo horas). La ruta `planilla.asistencia` apunta al componente nuevo (comentario `LEGACY` en `routes/web.php`). |
+| `app/Services/Planilla/PlanillaServicioGastosMensuales.php` | Métodos `calcularGastosMensuales()`, `procesarCostosDiarios()` y `calcularSueldoRealLiquidado()` que estaban en `App\Services\Planilla\PlanillaServicio`: el botón "Recalcular pagos en planilla". Fallaba al guardar (escribía dos columnas que no existen en `plan_mensual_detalles`). El costo de cada día (`plan_registros_diarios.costo_dia`) ahora se calcula solo al generar la planilla (`PlanillaServicio::actualizarCostosDiarios`). |
+
+`App\Services\Planilla\Handsontable\HSTPlanillaAsistencia` se queda en `app/`: lo usa el Excel de la planilla mensual.

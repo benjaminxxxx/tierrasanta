@@ -108,10 +108,10 @@ class CajaImportacionExcel
                 // Solo los meses abiertos del archivo (los cerrados quedaron fuera del Excel leído)
                 $enSistema = CajaMovimiento::withTrashed()->whereBetween('fecha', [$desde, $hasta])
                     ->whereIn(DB::raw("DATE_FORMAT(fecha, '%Y-%m')"), $mesesAbiertos ?: ['-'])->get()
-                    ->countBy(fn($m) => $this->huella($m->fecha->toDateString(), (float) $m->importe, $m->beneficiario, $m->descripcion))->all();
+                    ->countBy(fn($m) => CajaMovimientoReglas::huella($m->fecha->toDateString(), (float) $m->importe, $m->beneficiario, $m->descripcion))->all();
                 $nuevas = [];
                 foreach ($filas as $f) {
-                    $h = $this->huella($f['fecha'], $f['importe'], $f['beneficiario'], $f['descripcion']);
+                    $h = CajaMovimientoReglas::huella($f['fecha'], $f['importe'], $f['beneficiario'], $f['descripcion']);
                     if (($enSistema[$h] ?? 0) > 0) {
                         $enSistema[$h]--;
                         $existentes++;
@@ -165,6 +165,7 @@ class CajaImportacionExcel
                     'tipo_cambio_operacion' => $f['tipo_cambio_operacion'],
                     'importe' => $f['importe'],
                     'importe_detalle' => $f['importe_detalle'],
+                    'es_saldo_inicial' => CajaMovimientoReglas::esSaldoInicial($f['clasificador_1']),
                     'tipo_cambio' => $f['tipo_cambio'],
                     'color_fondo' => $fondo,
                     'color_texto' => $texto,
@@ -180,6 +181,8 @@ class CajaImportacionExcel
             }
 
             $arqueos = $this->importarArqueos($base, $todas, $avisos);
+            // Las filas que ya están en la caja de oficina quedan vinculadas (al reemplazar se crearon de nuevo)
+            app(\App\Services\Caja\Oficina\CajaOficinaProceso::class)->vincularPorHuella();
 
             $sinClasificador = count(array_filter($insertar, fn($m) => $m['caja_clasificador_id'] === null));
             if ($sinClasificador) {
@@ -206,6 +209,19 @@ class CajaImportacionExcel
             AuditoriaServicio::registrar(CajaMovimiento::class, 0, 'crear', null, $resultado, 'Importación de caja desde Excel');
             return $resultado;
         });
+    }
+
+    /**
+     * Las filas de la hoja BASE tal como se leen (para la caja de oficina, que importa el mismo Excel).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function leerMovimientos(string $ruta): array
+    {
+        @ini_set('memory_limit', '4096M');
+        @set_time_limit(600);
+        $base = $this->cargar($ruta)->getSheetByName(self::HOJA_BASE) ?? throw ValidationException::withMessages(['archivo' => 'El archivo no tiene la hoja BASE.']);
+        return $this->leerBase($base);
     }
 
     private function cargar(string $ruta)
@@ -289,13 +305,6 @@ class CajaImportacionExcel
             ];
         }
         return $filas;
-    }
-
-    /** Huella de una fila para reconocerla entre el Excel y el sistema (sin mayúsculas, tildes ni espacios de más). */
-    private function huella(string $fecha, float $importe, ?string $beneficiario, ?string $descripcion): string
-    {
-        $n = fn($t) => trim(preg_replace('/\s+/', ' ', mb_strtoupper(\Illuminate\Support\Str::ascii((string) $t))));
-        return $fecha . '|' . number_format($importe, 2, '.', '') . '|' . $n($beneficiario) . '|' . $n($descripcion);
     }
 
     /** Hoja Valida + combinaciones usadas en BASE que no están en Valida (el tipo sale del signo de sus importes). */

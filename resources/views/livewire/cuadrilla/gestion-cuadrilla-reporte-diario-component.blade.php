@@ -10,7 +10,13 @@
                 Registro Diario Cuadrilla
             </x-h3>
         </x-flex>
-        <x-selector-dia wire:model.live="fecha" label="Seleccionar Fecha" class="w-auto" />
+        <x-flex>
+            <x-selector-dia wire:model.live="fecha" label="Seleccionar Fecha" class="w-auto" />
+            <x-button variant="success" wire:click="descargarReporteDiario" wire:loading.attr="disabled" wire:target="descargarReporteDiario"
+                title="Descarga el Excel del reporte diario (planilla, cuadrilla y riego) de la fecha seleccionada">
+                <i class="fa fa-file-excel"></i> Enviar reporte diario
+            </x-button>
+        </x-flex>
     </x-flex>
 
     <x-flex class="justify-center mb-4">

@@ -35,7 +35,6 @@ use App\Livewire\Evaluacion\EvaluacionInfestacionCosechaComponent;
 use App\Livewire\Evaluacion\ProyeccionRendimientoPodaComponent;
 // Planilla
 use App\Livewire\Planilla\Asistencia\AsistenciaMensualComponent;
-use App\Livewire\Planilla\Asistencia\GestionPlanillaAsistenciasComponent;
 use App\Livewire\Planilla\Asistencia\TipoAsistenciaComponent;
 use App\Livewire\Planilla\ConfiguracionPrimasComisionesComponent;
 use App\Livewire\Planilla\DerechoHabiente\DerechoHabienteListaComponent;
@@ -104,10 +103,10 @@ Route::middleware([
 
         Route::view('/registro-diario', 'livewire.planilla.registro-diario.indice-reporte-diario-planilla')
             ->name('registro_diario')->middleware('can:' . Permisos::PLANILLA_ACTIVIDAD);
-        Route::get('/asistencia/{anio?}/{mes?}', GestionPlanillaAsistenciasComponent::class)
+        // LEGACY: la versión antigua (GestionPlanillaAsistenciasComponent) está en legacy/; esta era la beta /asistencias
+        Route::get('/asistencia/{anio?}/{mes?}', AsistenciaMensualComponent::class)
             ->name('asistencia')->middleware('can:' . Permisos::PLANILLA_ASISTENCIA);
-        Route::get('/asistencias', AsistenciaMensualComponent::class)
-            ->name('asistencias')->middleware('can:' . Permisos::PLANILLA_ASISTENCIA_VER);
+        Route::redirect('/asistencias', '/planilla/asistencia')->name('asistencias');
         Route::view('/suspensiones', 'livewire.planilla.asistencia.suspensiones-planilla-indice')
             ->name('suspensiones')->middleware('can:' . Permisos::PLANILLA_SUSPENSION);
 
@@ -193,6 +192,8 @@ Route::middleware([
     Route::prefix('caja')->name('caja.')->group(function () {
         Route::get('/movimientos', \App\Livewire\Caja\CajaMovimientosComponent::class)
             ->name('movimientos')->middleware('can:' . Permisos::CAJA_MOVIMIENTO);
+        Route::get('/oficina', \App\Livewire\Caja\CajaOficinaComponent::class)
+            ->name('oficina')->middleware('can:' . Permisos::CAJA_OFICINA);
         Route::get('/historial', \App\Livewire\Caja\CajaHistorialComponent::class)
             ->name('historial')->middleware('can:' . Permisos::CAJA_HISTORIAL);
     });

@@ -7,6 +7,10 @@
             <x-button variant="secondary" @click="$wire.dispatch('verLabores')">
                 <i class="fa fa-eye"></i> Ver Labores
             </x-button>
+            <x-button variant="success" wire:click="descargarReporteDiario" wire:loading.attr="disabled" wire:target="descargarReporteDiario"
+                title="Descarga el Excel del reporte diario (planilla, cuadrilla y riego) de la fecha seleccionada">
+                <i class="fa fa-file-excel"></i> Enviar reporte diario
+            </x-button>
         </x-flex>
         <div>
             {{-- -mostrar flag de que es domingo --}}

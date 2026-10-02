@@ -21,11 +21,14 @@ class CajaMovimiento extends Model
         'moneda', 'fecha', 'semana', 'tipo_documento', 'numero_documento', 'situacion_cheque',
         'importe_usd', 'tipo_cambio_operacion', 'importe', 'importe_detalle', 'tipo_cambio',
         'color_fondo', 'color_texto', 'negrita', 'orden', 'creado_por', 'actualizado_por', 'eliminado_por', 'motivo_eliminacion',
+        'es_saldo_inicial', 'caja_oficina_movimiento_id', 'editado_manual',
     ];
 
     protected $casts = [
         'fecha' => 'date',
         'es_contable' => 'boolean',
+        'es_saldo_inicial' => 'boolean',
+        'editado_manual' => 'boolean',
         'negrita' => 'boolean',
         'importe' => 'decimal:2',
         'importe_usd' => 'decimal:2',

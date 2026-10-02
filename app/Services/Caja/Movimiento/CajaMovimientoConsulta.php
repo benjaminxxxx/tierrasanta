@@ -5,6 +5,7 @@ namespace App\Services\Caja\Movimiento;
 use App\Models\CajaArqueo;
 use App\Models\CajaClasificador;
 use App\Models\CajaMovimiento;
+use App\Models\CajaOficinaMovimiento;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -26,13 +27,15 @@ class CajaMovimientoConsulta
     {
         [$desde, $hasta] = $this->rango($filtros);
 
-        $saldoAnterior = (float) CajaMovimiento::where('fecha', '<', $desde)->sum('importe');
+        // El saldo del año anterior es una fila fechada dentro del periodo: es saldo anterior, no un ingreso
+        $previo = (float) CajaMovimiento::where('fecha', '<', $desde)->sum('importe');
+        $saldoAnterior = $previo + (float) CajaMovimiento::whereBetween('fecha', [$desde, $hasta])->where('es_saldo_inicial', true)->sum('importe');
 
         // Disponible: acumulado de todos los movimientos del periodo (sin filtros), partiendo del saldo anterior
         $delPeriodo = CajaMovimiento::whereBetween('fecha', [$desde, $hasta])
             ->orderBy('fecha')->orderBy('orden')->orderBy('id')
             ->get();
-        $disponible = $saldoAnterior;
+        $disponible = $previo;
         $disponiblePorId = [];
         foreach ($delPeriodo as $m) {
             $disponible += (float) $m->importe;
@@ -41,8 +44,11 @@ class CajaMovimientoConsulta
 
         $filtrados = $delPeriodo->filter(fn($m) => $this->cumple($m, $filtros));
         $clasificadores = CajaClasificador::get()->keyBy('id');
+        // De la caja de oficina: cuáles son el inverso de una fila (dinero que no entró a la oficina)
+        $inversos = CajaOficinaMovimiento::withTrashed()->whereIn('id', $filtrados->pluck('caja_oficina_movimiento_id')->filter())
+            ->whereNotNull('inverso_de_id')->pluck('id')->flip();
 
-        $filas = $filtrados->values()->map(function (CajaMovimiento $m) use ($disponiblePorId, $clasificadores) {
+        $filas = $filtrados->values()->map(function (CajaMovimiento $m) use ($disponiblePorId, $clasificadores, $inversos) {
             $clasificador = $clasificadores->get($m->caja_clasificador_id);
             $estilo = CajaMovimientoReglas::estilo($m->only(['color_fondo', 'color_texto', 'negrita', 'subgrupo_ng']), $clasificador?->toArray());
             $importe = (float) $m->importe;
@@ -70,7 +76,8 @@ class CajaMovimientoConsulta
                 'importe' => $importe,
                 'importe_detalle' => $m->importe_detalle,
                 'disponible' => $disponiblePorId[$m->id],
-                'tipo' => $importe >= 0 ? 'INGRESO' : 'EGRESO',
+                'tipo' => $m->es_saldo_inicial ? 'SALDO' : ($importe >= 0 ? 'INGRESO' : 'EGRESO'),
+                'origen' => !$m->caja_oficina_movimiento_id ? '' : (isset($inversos[$m->caja_oficina_movimiento_id]) ? 'Inverso' : 'Oficina'),
                 'anio' => $m->fecha->year,
                 'mes' => $m->fecha->month,
                 'semana_anio' => (int) $m->fecha->format('W'),
@@ -80,7 +87,7 @@ class CajaMovimientoConsulta
             ];
         })->all();
 
-        $ingresos = $filtrados->filter(fn($m) => (float) $m->importe > 0)->sum(fn($m) => (float) $m->importe);
+        $ingresos = $filtrados->filter(fn($m) => (float) $m->importe > 0 && !$m->es_saldo_inicial)->sum(fn($m) => (float) $m->importe);
         $egresos = $filtrados->filter(fn($m) => (float) $m->importe < 0)->sum(fn($m) => (float) $m->importe);
 
         return [

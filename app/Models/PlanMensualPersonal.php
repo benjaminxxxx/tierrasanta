@@ -55,7 +55,8 @@ class PlanMensualPersonal extends Model
         // PLAME - Días y horas
         'plame_dias_no_laborados',
         'plame_dias_laborados',
-        'plame_total_horas',
+        'plame_total_horas', // horas registradas: base del jornal básico y de lo pagado
+        'plame_horas_jornada', // horas de jornada que se declaran en el PLAME
 
         // PLAME - Ingresos
         'plame_0117_comp_vacacional',
@@ -122,6 +123,7 @@ class PlanMensualPersonal extends Model
             'plame_dias_no_laborados' => 'integer',
             'plame_dias_laborados' => 'integer',
             'plame_total_horas' => 'decimal:2',
+            'plame_horas_jornada' => 'decimal:2',
 
             // Ingresos
             'plame_0117_comp_vacacional' => 'decimal:2',
