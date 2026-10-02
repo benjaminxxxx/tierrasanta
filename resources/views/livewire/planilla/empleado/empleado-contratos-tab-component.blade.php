@@ -109,7 +109,8 @@
                 <x-input label="Remuneración Básica (opcional)" type="number" step="0.1" wire:model="remuneracion_basica"
                     placeholder="Monto en soles" help="Colocar si tiene un sueldo fijo personalizado en el plame" />
 
-                <x-input label="Bonificación" type="number" step="0.1" wire:model="bonificacion" placeholder="Monto en soles" />
+                <x-input label="Bonificación" type="number" step="0.1" wire:model="bonificacion" placeholder="Monto en soles"
+                    help="Se suma a la remuneración básica mensual (0121 del PLAME) y entra al costo" />
 
                 <x-input label="Compensación Vacacional" type="number" step="0.01" wire:model="compensacion_vacacional" placeholder="Monto en soles" />
 

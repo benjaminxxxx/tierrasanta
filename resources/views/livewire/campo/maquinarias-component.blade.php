@@ -60,14 +60,18 @@
                                 <x-td class="text-center text-xs">{{ $maquinaria->consumo_texto ?? '—' }}</x-td>
 
                                 <x-td class="text-center">
-                                    @can(\App\Constants\Permisos::CAMPO_MAQUINARIA_GESTIONAR)
-                                        <div class="flex items-center justify-center gap-2">
+                                    <div class="flex items-center justify-center gap-2">
+                                        <x-button variant="secondary" title="Galones consumidos vs horas distribuidas, mes a mes"
+                                            @click="$wire.dispatch('verConsumoMaquinaria',{'id':{{ $maquinaria->id }}})">
+                                            <i class="fa fa-chart-line"></i> Consumo
+                                        </x-button>
+                                        @can(\App\Constants\Permisos::CAMPO_MAQUINARIA_GESTIONAR)
                                             <x-button variant="secondary"
                                                 @click="$wire.dispatch('EditarMaquinaria',{'id':{{ $maquinaria->id }}})">
                                                 <i class="fa fa-edit"></i> Editar
                                             </x-button>
-                                        </div>
-                                    @endcan
+                                        @endcan
+                                    </div>
                                 </x-td>
                             </x-tr>
                         @endforeach

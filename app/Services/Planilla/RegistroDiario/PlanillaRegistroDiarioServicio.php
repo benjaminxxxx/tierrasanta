@@ -14,6 +14,7 @@ use App\Models\PlanTipoAsistencia;
 use App\Services\Campo\CampoServicio;
 use App\Services\Planilla\SincronizarSuspensionDesdeAsistenciaServicio;
 use App\Services\Planilla\Asistencia\PlanTipoAsistenciaServicio;
+use App\Services\Planilla\Asistencia\PlanillaAsistenciaLaborConsulta;
 use App\Support\CalculoHelper;
 use App\Support\FormatoHelper;
 use Carbon\CarbonPeriod;
@@ -288,6 +289,7 @@ class PlanillaRegistroDiarioServicio
     {
         $camposNormalizados = CampoServicio::obtenerMapaCamposNormalizados();
         $labores = Labores::pluck('codigo')->toArray();
+        $laboresSuspension = app(PlanillaAsistenciaLaborConsulta::class)->asistenciaPorLabor();
         $datosProcesados = [];
         $camposSinCampaniaVigente = []; // <-- acumulador, para reportar todos juntos
 
@@ -334,6 +336,12 @@ class PlanillaRegistroDiarioServicio
                 }
 
                 $nombreCampoReal = $camposNormalizados[$campoKey];
+
+                // Labor de suspensión (DM, vacaciones, feriado…): no es trabajo en un campo, su costo va a FDM
+                $codigoSuspension = $laboresSuspension[(string) $labor] ?? null;
+                if ($codigoSuspension && $nombreCampoReal !== 'FDM') {
+                    throw new Exception("Fila {$fila}, tramo {$x}: la labor {$labor} es de suspensión ({$codigoSuspension}), su campo debe ser FDM (está en {$nombreCampoReal}).");
+                }
 
                 // Validación de campaña vigente para esta fecha
                 $tieneCampaniaVigente = CampoCampania::where('campo', $nombreCampoReal)
@@ -412,21 +420,30 @@ class PlanillaRegistroDiarioServicio
                 ->where('fecha', $fecha)
                 ->first();
 
-            $asistenciaAnterior = $registroAnterior?->asistencia;
+            // Código efectivo: A con todo el detalle en una labor de suspensión (8 h de 97) cuenta como DM
+            $laborAsistencia = app(PlanillaAsistenciaLaborConsulta::class);
+            $asistenciaAnterior = $registroAnterior ? $laborAsistencia->codigoEfectivo(
+                $registroAnterior->asistencia,
+                $registroAnterior->detalles()->get()->map(fn($d) => ['codigo_labor' => $d->codigo_labor, 'minutos' => $this->minutosTramo($d->hora_inicio, $d->hora_fin)])
+            ) : null;
+            $asistenciaNueva = $laborAsistencia->codigoEfectivo(
+                $item['asistencia'] ?: null,
+                array_map(fn($t) => ['codigo_labor' => $t['codigo_labor'], 'minutos' => $this->minutosTramo($t['hora_inicio'], $t['hora_fin'])], $item['tramos'])
+            );
 
             $registro = PlanRegistroDiario::updateOrCreate(
                 ['plan_det_men_id' => $item['plan_det_men_id'], 'fecha' => $fecha],
                 ['asistencia' => $item['asistencia'], 'total_horas' => $item['total_horas']]
             );
 
-            if ($asistenciaAnterior !== $item['asistencia']) {
+            if ($asistenciaAnterior !== $asistenciaNueva) {
                 $planEmpleadoId = $registro->detalleMensual->plan_empleado_id; // ajustar según tu relación real
 
                 app(SincronizarSuspensionDesdeAsistenciaServicio::class)->sincronizar(
                     $planEmpleadoId,
                     $fecha,
                     $asistenciaAnterior,
-                    $item['asistencia'] ?: null
+                    $asistenciaNueva
                 );
             }
 
@@ -441,6 +458,11 @@ class PlanillaRegistroDiarioServicio
         }
 
         $this->actualizarResumenAsistencia($fecha);
+    }
+
+    private function minutosTramo($inicio, $fin): int
+    {
+        return (int) Carbon::parse($inicio)->diffInMinutes(Carbon::parse($fin), false);
     }
 
     private function sincronizarTramos($registro, array $tramosNuevos)

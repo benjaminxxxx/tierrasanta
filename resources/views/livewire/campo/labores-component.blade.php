@@ -39,6 +39,11 @@
                         <option value="{{ $manoObra->codigo }}">{{ $manoObra->descripcion }}</option>
                     @endforeach
                 </x-select>
+                <x-select wire:model.live="tipoFiltro" label="Tipo" class="w-auto">
+                    <option value="">Todas</option>
+                    <option value="trabajo">Labores de trabajo</option>
+                    <option value="suspension">De suspensión (DM, V, FR…)</option>
+                </x-select>
                 <x-select wire:model.live="afectoBonoFiltro" label="Afecto a bono" class="w-auto">
                     <option value="">Todos</option>
                     <option value="con_tramos">Solo afectos a bonos</option>
@@ -63,6 +68,7 @@
                         <x-th value="Código" class="text-center" />
                         <x-th value="Nombre de la Labor" />
                         <x-th value="Mano de obra" />
+                        <x-th value="Suspensión" class="text-center" />
                         <x-th value="Estándar de producción" class="text-center" />
                         <x-th value="Tramos de bonificación" class="text-center" />
                         <x-th value="Acciones" class="text-center" />
@@ -75,6 +81,18 @@
                                 <x-th valign="top" value="{{ $labor->codigo }}" class="text-center" />
                                 <x-td valign="top" value="{{ $labor->nombre_labor }}" />
                                 <x-td valign="top" value="{{ $labor->manoObra?->descripcion }}" />
+                                <x-td valign="top" class="text-center">
+                                    @if ($labor->tipo_asistencia_codigo)
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold text-gray-900 border border-black/10"
+                                            style="background-color: {{ $labor->tipoAsistencia?->color ?? '#FDE68A' }}"
+                                            title="Representa la asistencia {{ $labor->tipoAsistencia?->descripcion }}: sus horas van a FDM y cuentan para suspensiones">
+                                            {{ $labor->tipo_asistencia_codigo }}
+                                            <span class="font-normal">{{ $labor->tipoAsistencia?->descripcion }}</span>
+                                        </span>
+                                    @else
+                                        <span class="text-muted-foreground">—</span>
+                                    @endif
+                                </x-td>
                                 <x-td valign="top" value="{{ $labor->estandar_produccion . ' ' . $labor->unidades }}"
                                     class="text-center" />
                                 <x-td valign="top" class="text-center">
@@ -159,6 +177,20 @@
 
                         <x-input wire:model="unidades" label="Unidades" placeholder="Ejem: Kg, Lavaderos"
                             error="unidades" />
+
+                        <div class="md:col-span-2">
+                            <x-select wire:model="tipo_asistencia_codigo" label="Representa una asistencia (labor de suspensión)"
+                                error="tipo_asistencia_codigo">
+                                <option value="">No — es una labor de trabajo</option>
+                                @foreach ($tiposAsistencia as $t)
+                                    <option value="{{ $t['codigo'] }}">{{ $t['codigo'] }} — {{ $t['descripcion'] }}</option>
+                                @endforeach
+                            </x-select>
+                            <p class="text-xs text-muted-foreground mt-1">
+                                Ej.: 97 Descanso médico → DM. En el registro diario solo se usa con campo FDM; sus horas
+                                entran al costo en FDM con este código y el día cuenta para las suspensiones del PLAME.
+                            </p>
+                        </div>
                     </div>
 
                     <div x-data="{

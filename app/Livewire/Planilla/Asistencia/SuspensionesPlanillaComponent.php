@@ -78,6 +78,8 @@ class SuspensionesPlanillaComponent extends Component
     public array $sugerencias = [];
     public array $porDecidir = [];
     public array $conflictos = [];
+    /** Días A con parte del detalle en labores de suspensión (solo informativo). */
+    public array $parciales = [];
     /** Claves de las sugerencias marcadas para aceptar (por defecto todas). */
     public array $seleccionadas = [];
     /** codigo de asistencia => id de tipo de suspensión elegido, o 'sin' (no genera suspensión). */
@@ -88,7 +90,7 @@ class SuspensionesPlanillaComponent extends Component
         $mes = $this->normalizarMes($this->mes);
         $anio = $this->normalizarAnio($this->anio);
         if (!$mes || !$anio) {
-            $this->sugerencias = $this->porDecidir = $this->conflictos = $this->seleccionadas = [];
+            $this->sugerencias = $this->porDecidir = $this->conflictos = $this->parciales = $this->seleccionadas = [];
             return;
         }
 
@@ -96,6 +98,7 @@ class SuspensionesPlanillaComponent extends Component
         $this->sugerencias = $resultado['sugerencias'];
         $this->porDecidir = $resultado['por_decidir'];
         $this->conflictos = $resultado['conflictos'];
+        $this->parciales = $resultado['parciales'];
         $this->seleccionadas = array_column($this->sugerencias, 'clave');
     }
 

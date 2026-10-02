@@ -189,6 +189,12 @@ Route::middleware([
             ->name('calendario')->middleware('can:' . Permisos::CAMPAÑA_CALENDARIO);
     });
 
+    // ================================================================ CAJA
+    Route::prefix('caja')->name('caja.')->group(function () {
+        Route::get('/movimientos', \App\Livewire\Caja\CajaMovimientosComponent::class)
+            ->name('movimientos')->middleware('can:' . Permisos::CAJA_MOVIMIENTO);
+    });
+
     // ================================================================ COSTOS
     Route::prefix('costos')->name('costos.')->group(function () {
         Route::get('/campo', CampoCostosComponent::class)->name('campo');

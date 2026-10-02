@@ -64,9 +64,12 @@ class CampoCostosComponent extends Component
 
     public function updatedFiltroCampo($valor)
     {
+        // Las fechas puestas por la campaña se limpian; un rango elegido a mano se conserva
+        if ($this->campaniaId) {
+            $this->fechaInicio = null;
+            $this->fechaFin = null;
+        }
         $this->campaniaId = null;
-        $this->fechaInicio = null;
-        $this->fechaFin = null;
         $this->reporteFileCampania = null;
 
         $this->cargarCampaniasPorCampo($valor);
@@ -153,6 +156,16 @@ class CampoCostosComponent extends Component
         $this->resetPage();
     }
 
+    public function updatedFechaInicio()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedFechaFin()
+    {
+        $this->resetPage();
+    }
+
 
     public function aplicarFiltro()
     {
@@ -205,8 +218,11 @@ class CampoCostosComponent extends Component
             $query->where('campania', CampoCampania::find($this->campaniaId)?->nombre_campania);
         }
 
-        if ($this->fechaInicio && $this->fechaFin) {
-            $query->whereBetween('fecha', [$this->fechaInicio, $this->fechaFin]);
+        if ($this->fechaInicio) {
+            $query->where('fecha', '>=', $this->fechaInicio);
+        }
+        if ($this->fechaFin) {
+            $query->where('fecha', '<=', $this->fechaFin);
         }
 
         if (count($this->tiposSeleccionados) < count($this->tiposDisponibles)) {

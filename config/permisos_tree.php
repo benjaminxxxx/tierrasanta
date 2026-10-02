@@ -503,6 +503,19 @@ return [
     ],
 
     [
+        'nombre' => Permisos::CAJA,
+        'hijos' => [
+            [
+                'nombre' => Permisos::CAJA_MOVIMIENTO,
+                'hijos' => [
+                    ['nombre' => Permisos::CAJA_MOVIMIENTO_VER],
+                    ['nombre' => Permisos::CAJA_MOVIMIENTO_GESTIONAR],
+                ],
+            ],
+        ],
+    ],
+
+    [
         'nombre' => Permisos::REPORTE,
         'hijos' => [
             [

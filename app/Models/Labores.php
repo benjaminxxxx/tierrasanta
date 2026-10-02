@@ -14,6 +14,7 @@ class Labores extends Model
     protected $fillable = [
         'nombre_labor',
         'codigo_mano_obra',
+        'tipo_asistencia_codigo', // labor de suspensión: DM, V, FR… (plan_tipo_asistencias.codigo)
         'codigo',
         'estandar_produccion',
         'unidades',
@@ -26,6 +27,14 @@ class Labores extends Model
     public function manoObra()
     {
         return $this->belongsTo(ManoObra::class, 'codigo_mano_obra', 'codigo');
+    }
+    public function tipoAsistencia()
+    {
+        return $this->belongsTo(PlanTipoAsistencia::class, 'tipo_asistencia_codigo', 'codigo');
+    }
+    public function getEsSuspensionAttribute(): bool
+    {
+        return filled($this->tipo_asistencia_codigo);
     }
     protected $casts = [
         'tramos_bonificacion' => 'array',

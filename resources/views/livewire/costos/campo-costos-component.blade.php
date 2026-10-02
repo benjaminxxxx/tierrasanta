@@ -22,11 +22,11 @@
                             <option value="{{ $c->id }}">{{ $c->nombre_campania }}</option>
                         @endforeach
                     </x-select>
-
-                    <x-input type="date" label="Fecha Inicio" wire:model.live="fechaInicio" class="w-auto" :disabled="(bool) $campaniaId" />
-
-                    <x-input type="date" label="Fecha Fin" wire:model.live="fechaFin" class="w-auto" :disabled="(bool) $campaniaId" />
                 @endif
+
+                <x-input type="date" label="Fecha Inicio" wire:model.live="fechaInicio" class="w-auto" :disabled="(bool) $campaniaId" />
+
+                <x-input type="date" label="Fecha Fin" wire:model.live="fechaFin" class="w-auto" :disabled="(bool) $campaniaId" />
 
                 <div x-data="{ mostrarBoton: @js(filled($filtro)) }" class="flex items-end gap-2">
                     <x-input type="search" label="Trabajador, nombre o código de labor" wire:model="filtro"

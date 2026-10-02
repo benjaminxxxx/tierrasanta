@@ -31,6 +31,7 @@ class TareasPendientesComponent extends Component
         \App\Services\Campania\Cobertura\CampaniaCoberturaDetector::class,
         \App\Services\Almacen\Kardex\AlmacenKardexCostoCeroDetector::class,
         \App\Services\Campo\Labor\CampoLaborManoObraDetector::class,
+        \App\Services\Caja\Cierre\CajaCierreDetector::class,
         //aqui ir agregando mas tareas pendientes
     ];
 

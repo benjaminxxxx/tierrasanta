@@ -12,8 +12,10 @@ app/Services/{Dominio}/{Concepto}/{Dominio}{Concepto}{Tipo}.php
 Ejemplo: `app/Services/Campania/Cosecha/CampaniaCosechaConsulta.php`
 → `App\Services\Campania\Cosecha\CampaniaCosechaConsulta`
 
-- **Dominio**: uno de los 12 existentes (Planilla, Cuadrilla, Riego, Campo, Campania, Cochinilla, Evaluacion,
-  Producto, Almacen, Costos, Reporte, Sistema).
+- **Dominio**: uno de los 13 existentes (Planilla, Cuadrilla, Riego, Campo, Campania, Cochinilla, Evaluacion,
+  Producto, Almacen, Costos, Caja, Reporte, Sistema).
+  - **Caja** es la fuente de verdad del dinero que entra y sale: ningún otro dominio escribe en `caja_*`; solo se
+    cuadra contra ellos (Caja/Movimiento, Caja/Cierre, Caja/Arqueo, Caja/Importacion, Caja/Reporte).
 - **Concepto**: la idea de negocio (Cosecha, Registro, Resumen, Tramo, Asistencia…). Es una carpeta: todas las
   piezas de un concepto cambian juntas y quedan juntas. **No** se crean carpetas por tipo (`Handsontable/`,
   `Procesos/`…): el tipo va en el nombre.

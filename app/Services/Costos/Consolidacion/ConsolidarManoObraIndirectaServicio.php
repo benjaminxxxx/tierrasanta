@@ -5,6 +5,7 @@ namespace App\Services\Costos\Consolidacion;
 use App\Models\PlanMensualPersonal;
 use App\Models\PlanTipoAsistencia;
 use App\Models\ResumenCostoDiario;
+use App\Services\Planilla\Asistencia\PlanillaAsistenciaLaborConsulta;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -18,12 +19,20 @@ use Illuminate\Support\Facades\DB;
  *
  *   costo en campo (origen 'planilla') + mano de obra indirecta = total pagado a los trabajadores
  *
- * Las filas van con campo vacío y campaña MANO DE OBRA INDIRECTA.
+ * Todo entra a la BDD como campo FDM (campaña FDM), igual que hacía la macro antigua: un día DM de 8 h
+ * es "FDM, 8 h, labor 97 (Descanso médico)"; un feriado, "FDM, labor 199". El código de labor sale de la
+ * labor vinculada al tipo de asistencia (labores.tipo_asistencia_codigo). Así las horas de la BDD por
+ * trabajador cuadran con las horas PLAME.
+ *
+ * Los tramos del detalle con labor de suspensión (A + 4 h de 97) ya entran como 'planilla' en FDM.
  */
 class ConsolidarManoObraIndirectaServicio
 {
     public const ORIGEN = 'mano_obra_indirecta';
-    public const CAMPANIA = 'MANO DE OBRA INDIRECTA';
+    public const CAMPO = 'FDM';
+    public const CAMPANIA = 'FDM';
+    /** Campaña con la que se guardaba antes de ir a FDM (filas viejas aún no regeneradas). */
+    public const CAMPANIA_ANTERIOR = 'MANO DE OBRA INDIRECTA';
 
     /** Conceptos que no dependen de horas (columnas de plan_mensual_personals). */
     public const CONCEPTOS_MONTO = [
@@ -47,6 +56,7 @@ class ConsolidarManoObraIndirectaServicio
         $avisos = [];
         $ahora = now();
         $descripciones = PlanTipoAsistencia::pluck('descripcion', 'codigo');
+        $laborPorAsistencia = app(PlanillaAsistenciaLaborConsulta::class)->laborPorAsistencia();
 
         $personal = PlanMensualPersonal::whereHas('planMensual', fn($q) => $q->where('mes', $mes)->where('anio', $anio))
             ->get()
@@ -74,6 +84,7 @@ class ConsolidarManoObraIndirectaServicio
             $persona = $personal->get($r->plan_empleado_id);
             $tarifa = $persona?->pagado_sueldo_por_hora;
 
+            $codigoLabor = null;
             if ($r->asistencia === 'A') {
                 $horas = (float) $r->total_horas - ((float) ($r->minutos_detalle ?? 0)) / 60;
                 if ($horas < 0.01) {
@@ -83,8 +94,11 @@ class ConsolidarManoObraIndirectaServicio
                 $observacion = 'Revisar: el registro diario tiene más horas que su detalle por campo.';
             } else {
                 $horas = (float) $r->total_horas;
-                $concepto = ($descripciones[$r->asistencia] ?? $r->asistencia) . " ({$r->asistencia})";
-                $observacion = null;
+                $labor = $laborPorAsistencia[$r->asistencia] ?? null;
+                $codigoLabor = $labor['codigo'] ?? null;
+                $concepto = $labor['nombre'] ?? (($descripciones[$r->asistencia] ?? $r->asistencia) . " ({$r->asistencia})");
+                $observacion = $labor ? null
+                    : "El tipo de asistencia {$r->asistencia} no tiene una labor vinculada (Campo → Labores).";
             }
 
             if ($tarifa === null) {
@@ -95,20 +109,28 @@ class ConsolidarManoObraIndirectaServicio
                 Carbon::parse($r->fecha)->toDateString(),
                 $r->id,
                 $concepto,
-                $persona?->nombres ?? $r->nombres,
+                // Mismo nombre que las filas de campo (registro diario): en planilla puede estar sin tildes
+                $r->nombres ?? $persona?->nombres,
                 $horas,
                 $tarifa !== null ? (float) $tarifa * $horas : 0.0,
                 $observacion,
-                $ahora
+                $ahora,
+                $codigoLabor
             );
         }
 
-        // Pagos del mes que no dependen de horas
+        // Pagos del mes que no dependen de horas (las vacaciones pagadas llevan la labor de vacaciones)
+        $nombresRegistro = DB::table('plan_mensual_detalles as d')
+            ->join('plan_mensuales as m', 'm.id', '=', 'd.plan_mensual_id')
+            ->where('m.mes', $mes)->where('m.anio', $anio)
+            ->pluck('d.nombres', 'd.plan_empleado_id');
         foreach ($personal as $persona) {
             foreach (self::CONCEPTOS_MONTO as $columna => $concepto) {
                 $monto = (float) ($persona->{$columna} ?? 0);
                 if ($monto > 0) {
-                    $filas[] = $this->fila($fin, $persona->id, $concepto, $persona->nombres, null, $monto, null, $ahora);
+                    $codigoLabor = $columna === 'vacaciones_neto_pagadas' ? ($laborPorAsistencia['V']['codigo'] ?? null) : null;
+                    $nombre = $nombresRegistro[$persona->plan_empleado_id] ?? $persona->nombres;
+                    $filas[] = $this->fila($fin, $persona->id, $concepto, $nombre, null, $monto, null, $ahora, $codigoLabor);
                 }
             }
         }
@@ -229,15 +251,15 @@ class ConsolidarManoObraIndirectaServicio
         return $resultado;
     }
 
-    private function fila(string $fecha, int $origenId, string $concepto, string $trabajador, ?float $horas, float $costo, ?string $observacion, $ahora): array
+    private function fila(string $fecha, int $origenId, string $concepto, string $trabajador, ?float $horas, float $costo, ?string $observacion, $ahora, ?string $codigoLabor = null): array
     {
         return [
             'campania' => self::CAMPANIA,
             'fecha' => $fecha,
             'origen_tipo' => self::ORIGEN,
             'origen_id' => $origenId,
-            'campo' => null,
-            'labor' => null,
+            'campo' => self::CAMPO,
+            'labor' => $codigoLabor,
             'labor_nombre' => $concepto,
             'trabajador' => $trabajador,
             'cuadrilla_grupo_id' => null,

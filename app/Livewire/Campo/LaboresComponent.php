@@ -4,6 +4,7 @@ namespace App\Livewire\Campo;
 
 use App\Models\Labores;
 use App\Models\ManoObra;
+use App\Models\PlanTipoAsistencia;
 use App\Services\Campo\Labor\ImportarLaborProceso;
 use App\Services\Campo\Labor\LaborServicio;
 use Illuminate\Validation\ValidationException;
@@ -31,6 +32,9 @@ class LaboresComponent extends Component
     public $manoObraFiltro;
     public $fileLabores;
     public $se_paga_con_jornal;
+    public $tipo_asistencia_codigo;
+    public $tiposAsistencia = [];
+    public $tipoFiltro = '';
     public $verEliminados = false;
     public $afectoBonoFiltro = '';
     public $metodoBonoFiltro = '';
@@ -42,6 +46,9 @@ class LaboresComponent extends Component
     public function mount()
     {
         $this->manoObras = ManoObra::all();
+        // Asistencias que una labor puede representar (labores de suspensión: DM, V, FR…)
+        $this->tiposAsistencia = PlanTipoAsistencia::where('codigo', '<>', 'A')->orderBy('codigo')
+            ->get(['codigo', 'descripcion'])->toArray();
         // ?mano_obra=sin → labores sin mano de obra (enlace de tareas pendientes)
         $manoObra = request()->query('mano_obra');
         if (is_string($manoObra) && $manoObra !== '') {
@@ -79,6 +86,7 @@ class LaboresComponent extends Component
             $this->unidades = $labor->unidades;
             $this->codigo_mano_obra = $labor->codigo_mano_obra;
             $this->se_paga_con_jornal = $labor->se_paga_con_jornal;
+            $this->tipo_asistencia_codigo = $labor->tipo_asistencia_codigo;
             $this->tramos = $labor->tramos_bonificacion != null ? json_decode($labor->tramos_bonificacion, true) : [['hasta' => '', 'monto' => '']];
             $this->mostrarFormularioLabor = true;
         } else {
@@ -97,6 +105,7 @@ class LaboresComponent extends Component
                 'tramos_bonificacion' => empty($this->tramos) ? null : json_encode($this->tramos),
                 'codigo_mano_obra' => $this->codigo_mano_obra,
                 'se_paga_con_jornal' => $this->se_paga_con_jornal,
+                'tipo_asistencia_codigo' => $this->tipo_asistencia_codigo,
             ];
             LaborServicio::guardar($data, $this->laborId);
 
@@ -113,7 +122,7 @@ class LaboresComponent extends Component
     public function resetForm()
     {
         $this->resetErrorBag();
-        $this->reset(['laborId', 'codigo', 'nombre_labor', 'codigo_mano_obra', 'estandar_produccion', 'unidades', 'tramos']);
+        $this->reset(['laborId', 'codigo', 'nombre_labor', 'codigo_mano_obra', 'estandar_produccion', 'unidades', 'tramos', 'tipo_asistencia_codigo']);
 
     }
     public function confirmarEliminarLabor($id)
@@ -142,6 +151,10 @@ class LaboresComponent extends Component
     {
         $this->resetPage();
     }
+    public function updatedTipoFiltro()
+    {
+        $this->resetPage();
+    }
     public function updatedVerEliminados()
     {
         $this->resetPage();
@@ -163,6 +176,7 @@ class LaboresComponent extends Component
             'mano_obra' => $this->manoObraFiltro,
             'afecto_bono' => $this->afectoBonoFiltro,
             'metodo_bono' => $this->metodoBonoFiltro,
+            'tipo' => $this->tipoFiltro,
         ];
 
         $labores = LaborServicio::leer($filtros, 10, $this->verEliminados);

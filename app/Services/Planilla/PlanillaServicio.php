@@ -300,10 +300,12 @@ class PlanillaServicio
                 $diasVacacionales = $columnasSuspension['si_23'] ?? 0;
                 $plame0118RemVacacional = round(($planillaMensual->rmv / 30) * $diasVacacionales, 2);
 
-                // 0121: remuneracionBasica / total_horas configuradas * total_horas trabajadas por el empleado
+                // 0121: (remuneracionBasica + bonificación del contrato) / total_horas configuradas * total_horas trabajadas.
+                // La bonificación del contrato no es un pago suelto: legalmente es parte de su básico mensual,
+                // así que entra al 0121 y con él a gratificación, CTS, AFP y EsSalud (como en el PLAME real).
                 $totalHorasConfiguradas = $planillaMensual->total_horas;
                 $plame0121RemJornalBasico = $totalHorasConfiguradas > 0
-                    ? round(($remuneracionBasica / $totalHorasConfiguradas) * $totalHorasEmpleado, 2)
+                    ? round((($remuneracionBasica + $bonificacion) / $totalHorasConfiguradas) * $totalHorasEmpleado, 2)
                     : 0;
 
                 // 0201: montoAsignacionFamiliar / dias del mes * dias laborados

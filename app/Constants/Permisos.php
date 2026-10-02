@@ -462,6 +462,20 @@ class Permisos
     
 
     // =========================================================================
+    // DOMINIO: CAJA (registro real de ingresos y salidas de dinero)
+    // Tablas: caja_movimientos, caja_clasificadores, caja_arqueos, caja_cierres, caja_tipos_cambio
+    // Caja es su propia fuente de verdad: ningún otro módulo escribe en ella.
+    // =========================================================================
+
+    // — Módulo raíz (menú Caja; más submódulos vendrán después)
+    const CAJA = 'Caja';
+
+    // — Movimientos de caja
+    const CAJA_MOVIMIENTO = 'Caja Movimientos';
+    const CAJA_MOVIMIENTO_VER = 'Caja Movimientos Ver';            // ver y exportar, sin modificar
+    const CAJA_MOVIMIENTO_GESTIONAR = 'Caja Movimientos Gestionar'; // registrar, editar, colores, arqueos, cerrar/reabrir mes
+
+    // =========================================================================
 // DOMINIO: INSUMO — Proveedores
 // Tablas: proveedores (vinculados a compra_productos)
 // =========================================================================

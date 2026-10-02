@@ -287,6 +287,15 @@ class Sidebar extends Component
             ],
 
             [
+                'title' => 'Caja',
+                'icon' => 'fa fa-cash-register',
+                'can' => Permisos::CAJA,
+                'children' => [
+                    ['title' => 'Movimientos de caja', 'route' => 'caja.movimientos', 'can' => Permisos::CAJA_MOVIMIENTO],
+                ],
+            ],
+
+            [
                 'title' => 'Reporte y Auditoria',
                 'icon' => 'fa fa-file',
                 'can' => Permisos::REPORTE,

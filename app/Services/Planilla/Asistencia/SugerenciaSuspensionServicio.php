@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\DB;
  * Sugiere las suspensiones (PLAME) que faltan registrar a partir del registro diario del mes.
  *
  * - Cada código de asistencia usa la suspensión vinculada en su tipo (plan_tipo_asistencias).
+ * - Un día A cuyo detalle es todo de una labor de suspensión (labores.tipo_asistencia_codigo) cuenta como
+ *   ese código. Los días que mezclan trabajo y suspensión se devuelven en "parciales" (solo informativo).
  *   Si no tiene vínculo, queda "por decidir" (se vincula una vez y aplica siempre).
  * - Los días ya cubiertos por una suspensión del mismo tipo no se sugieren; si los cubre una
  *   suspensión de OTRO tipo, se informa como conflicto.
@@ -26,7 +28,8 @@ class SugerenciaSuspensionServicio
      * @return array{
      *   sugerencias: array<int, array>,
      *   por_decidir: array<string, array{codigo:string, descripcion:string, dias:int, trabajadores:int}>,
-     *   conflictos: array<int, array>
+     *   conflictos: array<int, array>,
+     *   parciales: array<int, array{trabajador:string, fecha:string, codigo:string, descripcion:string, horas_suspension:float, horas_trabajo:float}>
      * }
      */
     public function sugerir(int $mes, int $anio): array
@@ -42,7 +45,48 @@ class SugerenciaSuspensionServicio
             ->whereBetween('r.fecha', [$inicio, $fin])
             ->whereNotNull('r.asistencia')->where('r.asistencia', '<>', '')
             ->orderBy('d.plan_empleado_id')->orderBy('r.fecha')
-            ->get(['d.plan_empleado_id', 'd.nombres', 'r.fecha', 'r.asistencia']);
+            ->get(['r.id', 'd.plan_empleado_id', 'd.nombres', 'r.fecha', 'r.asistencia']);
+
+        // El detalle también puede traer labores de suspensión (A + 8 h de 97 = día DM). El día cuenta con
+        // su código efectivo; si mezcla trabajo y suspensión se informa aparte (el PLAME declara días completos).
+        $laborAsistencia = app(PlanillaAsistenciaLaborConsulta::class);
+        $parciales = [];
+        $codigosLaborSuspension = array_keys($laborAsistencia->asistenciaPorLabor());
+        $tramosPorRegistro = $codigosLaborSuspension
+            ? DB::table('plan_detalles_horas as h')
+                ->join('plan_registros_diarios as r', 'r.id', '=', 'h.plan_reg_dia_id')
+                ->whereBetween('r.fecha', [$inicio, $fin])
+                ->where('r.asistencia', 'A')
+                // Solo los días que tienen al menos un tramo de suspensión
+                ->whereExists(fn($q) => $q->from('plan_detalles_horas as s')->whereColumn('s.plan_reg_dia_id', 'r.id')
+                    ->whereIn('s.codigo_labor', $codigosLaborSuspension))
+                ->get(['h.plan_reg_dia_id', 'h.codigo_labor', DB::raw('TIMESTAMPDIFF(MINUTE, h.hora_inicio, h.hora_fin) as minutos')])
+                ->groupBy('plan_reg_dia_id')
+            : collect();
+        foreach ($registros as $r) {
+            $tramos = $tramosPorRegistro->get($r->id);
+            if (!$tramos) {
+                continue;
+            }
+            $tramos = $tramos->map(fn($t) => ['codigo_labor' => $t->codigo_labor, 'minutos' => (int) $t->minutos]);
+            $efectivo = $laborAsistencia->codigoEfectivo($r->asistencia, $tramos);
+            if ($efectivo !== $r->asistencia) {
+                $r->asistencia = $efectivo;
+                $r->desde_detalle = true;
+                continue;
+            }
+            $reparto = $laborAsistencia->repartirHoras($tramos);
+            foreach ($reparto['suspension'] as $codigo => $horas) {
+                $parciales[] = [
+                    'trabajador' => $r->nombres,
+                    'fecha' => $this->dia($r->fecha),
+                    'codigo' => $codigo,
+                    'descripcion' => $tiposAsistencia->get($codigo)?->descripcion ?? $codigo,
+                    'horas_suspension' => round($horas, 2),
+                    'horas_trabajo' => round($reparto['trabajo'], 2),
+                ];
+            }
+        }
 
         // Suspensiones existentes alrededor del mes (±7 días para detectar las adyacentes)
         $existentes = PlanSuspension::whereIn('plan_empleado_id', $registros->pluck('plan_empleado_id')->unique())
@@ -93,7 +137,7 @@ class SugerenciaSuspensionServicio
                     ];
                     continue;
                 }
-                $porTipo[$tipoSuspensionId][$fecha] = $codigo;
+                $porTipo[$tipoSuspensionId][$fecha] = !empty($r->desde_detalle) ? "{$codigo} (en detalle)" : $codigo;
             }
 
             foreach ($porTipo as $tipoSuspensionId => $fechas) {
@@ -139,7 +183,9 @@ class SugerenciaSuspensionServicio
 
         usort($sugerencias, fn($x, $y) => [$x['trabajador'], $x['fecha_inicio']] <=> [$y['trabajador'], $y['fecha_inicio']]);
 
-        return ['sugerencias' => $sugerencias, 'por_decidir' => array_values($porDecidir), 'conflictos' => $conflictos];
+        usort($parciales, fn($x, $y) => [$x['trabajador'], $x['fecha']] <=> [$y['trabajador'], $y['fecha']]);
+
+        return ['sugerencias' => $sugerencias, 'por_decidir' => array_values($porDecidir), 'conflictos' => $conflictos, 'parciales' => $parciales];
     }
 
     /**

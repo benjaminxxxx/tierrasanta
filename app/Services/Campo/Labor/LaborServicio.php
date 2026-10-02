@@ -44,6 +44,11 @@ class LaborServicio
                     });
                 }
             })
+            ->when($filtros['tipo'] ?? null, function ($q, $tipo) {
+                $tipo === 'suspension'
+                    ? $q->whereNotNull('tipo_asistencia_codigo')->where('tipo_asistencia_codigo', '<>', '')
+                    : $q->where(fn($q2) => $q2->whereNull('tipo_asistencia_codigo')->orWhere('tipo_asistencia_codigo', ''));
+            })
             // 2. Filtro: Método de bono (Se paga con el jornal o se acumula)
             ->when($filtros['metodo_bono'] ?? null, function ($q, $metodoBono) {
                 if ($metodoBono === 'se_paga_con_jornal') {
@@ -53,7 +58,7 @@ class LaborServicio
                 }
             });
 
-        $query->latest();
+        $query->with('tipoAsistencia:codigo,descripcion,color')->latest();
 
         return $porPagina ? $query->paginate($porPagina) : $query->get();
     }
@@ -95,7 +100,7 @@ class LaborServicio
     {
         // "Seleccione un grupo" llega como '' (Livewire no pasa por ConvertEmptyStringsToNull): 'nullable|exists'
         // deja pasar el '' y la FK labores.codigo_mano_obra → mano_obras.codigo lo rechaza. Vacío = sin mano de obra.
-        foreach (['codigo_mano_obra', 'estandar_produccion', 'unidades'] as $campo) {
+        foreach (['codigo_mano_obra', 'estandar_produccion', 'unidades', 'tipo_asistencia_codigo'] as $campo) {
             if (array_key_exists($campo, $data) && $data[$campo] === '') {
                 $data[$campo] = null;
             }
@@ -105,6 +110,8 @@ class LaborServicio
             'nombre_labor' => 'required|string|max:255',
             'codigo' => 'required|integer|unique:labores,codigo,' . $id,
             'codigo_mano_obra' => 'nullable|exists:mano_obras,codigo',
+            // Labor de suspensión: representa ese tipo de asistencia (DM, V, FR…). No se usa con A (trabajo).
+            'tipo_asistencia_codigo' => 'nullable|not_in:A|exists:plan_tipo_asistencias,codigo',
             'estandar_produccion' => 'nullable|integer|min:0',
             'unidades' => 'nullable|string|max:20',
             'tramos_bonificacion' => 'nullable', // Se limpia abajo
@@ -117,6 +124,7 @@ class LaborServicio
             'nombre_labor' => 'nombre de labor',
             'codigo' => 'código',
             'codigo_mano_obra' => 'mano de obra',
+            'tipo_asistencia_codigo' => 'asistencia que representa',
         ]);
 
         if ($validator->fails()) {

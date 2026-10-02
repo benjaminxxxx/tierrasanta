@@ -130,6 +130,23 @@
                         @endforeach
                     </ul>
                 @endif
+
+                @if (count($parciales))
+                    <h4 class="font-semibold text-sm text-foreground mt-4">Días mezclados ({{ count($parciales) }})</h4>
+                    <p class="text-xs text-muted-foreground mb-2">
+                        Asistencia A con parte del detalle en una labor de suspensión. El PLAME declara días completos, así
+                        que no se sugieren; sus horas igual entran al costo en FDM con el código de la labor.
+                    </p>
+                    <ul class="text-xs space-y-1 max-h-48 overflow-auto">
+                        @foreach ($parciales as $p)
+                            <li>
+                                {{ \Illuminate\Support\Carbon::parse($p['fecha'])->format('d/m') }} · {{ $p['trabajador'] }}:
+                                <b>{{ $p['codigo'] }}</b> {{ $p['descripcion'] }} {{ rtrim(rtrim(number_format($p['horas_suspension'], 2), '0'), '.') }} h
+                                + {{ rtrim(rtrim(number_format($p['horas_trabajo'], 2), '0'), '.') }} h de trabajo
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
             </x-card>
         </div>
     @endif
