@@ -35,6 +35,8 @@ class CochinillaIngresoDetalleComponent extends Component
     public $campania; // instancia de CampoCampania
     public $fecha;
     public $observacionSeleccionada;
+    /** Cochinilla de infestadores: campo de origen (dueño de la venta) que confirma quien registra */
+    public $origenElegido;
 
     // Paso 3 (handsontable)
     public $idTable;
@@ -80,6 +82,7 @@ class CochinillaIngresoDetalleComponent extends Component
         $this->resetErrorBag();
         $this->reset([
             'step',
+            'origenElegido',
             'loteBuscado',
             'cochinillaIngreso',
             'esNuevo',
@@ -115,6 +118,7 @@ class CochinillaIngresoDetalleComponent extends Component
 
     protected function cargarIngresoExistente(CochinillaIngreso $ingreso)
     {
+        $this->origenElegido = null;
         $this->cochinillaIngreso = $ingreso;
         $this->esNuevo = false;
 
@@ -277,8 +281,35 @@ class CochinillaIngresoDetalleComponent extends Component
         }
     }
 
+    /**
+     * Quien registra confirma (o cambia) de qué campo es la cochinilla de los infestadores: el sistema sugiere por el
+     * orden de recojo, pero en campo se sabe de qué tanda son las cajitas. Queda elegido a mano.
+     */
+    public function confirmarOrigen(): void
+    {
+        if (!$this->cochinillaIngreso || !$this->origenElegido) {
+            return;
+        }
+        $proceso = app(\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::class);
+        $opciones = $proceso->opciones($this->cochinillaIngreso)['opciones'];
+        if ($opciones && !array_key_exists($this->origenElegido, $opciones)) {
+            $this->alert('error', 'Elige uno de los campos que infestaron este campo.');
+            return;
+        }
+        $proceso->confirmar($this->cochinillaIngreso, $this->origenElegido);
+        $this->cochinillaIngreso->refresh();
+        $this->alert('success', "Origen confirmado: la venta de este lote va a la campaña de {$this->origenElegido}.");
+        $this->dispatch('detalleIngresoAgregado');
+    }
+
     public function render()
     {
-        return view('livewire.cochinilla.cochinilla-ingreso-detalle-component');
+        $origen = null;
+        if ($this->step === 3 && $this->cochinillaIngreso
+            && \App\Services\Cochinilla\Origen\CochinillaOrigenProceso::esDeInfestador($this->cochinillaIngreso->observacion)) {
+            $origen = app(\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::class)->opciones($this->cochinillaIngreso);
+            $this->origenElegido ??= $this->cochinillaIngreso->campo_origen ?: $origen['sugerido'];
+        }
+        return view('livewire.cochinilla.cochinilla-ingreso-detalle-component', ['origen' => $origen]);
     }
 }

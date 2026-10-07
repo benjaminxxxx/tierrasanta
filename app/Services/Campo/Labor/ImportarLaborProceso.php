@@ -43,7 +43,12 @@ class ImportarLaborProceso
                 $nombreMO = $fila['mano de obra'] ?? null;
                 $codigoLabor = $fila['codigo'] ?? null;
 
-                // 1. Validar que la mano de obra exista en el sistema
+                // 1. Validar que la mano de obra venga y exista en el sistema
+                if (empty($nombreMO) && !empty($fila['labor'])) {
+                    throw ValidationException::withMessages([
+                        'archivo' => "Error en la Fila {$numFila}: La mano de obra es obligatoria (labor {$codigoLabor})."
+                    ]);
+                }
                 if (!empty($nombreMO) && !isset($manoObraMap[$nombreMO])) {
                     throw ValidationException::withMessages([
                         'archivo' => "Error en la Fila {$numFila}: La mano de obra '" . ($nombreMO) . "' no está registrada en el sistema. Por favor, verifíquela o créela antes de importar."

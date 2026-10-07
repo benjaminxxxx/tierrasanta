@@ -41,10 +41,15 @@ class CochinillaServicio
 
         return $query->orderBy('fecha', 'desc')
             ->get()
+            // La mamá que fue a infestar no se vende: vuelve como ingreso de infestadores (sería vender dos veces)
+            ->filter(fn($ingreso) => $ingreso->kg_vendibles > 0)
+            ->values()
             ->map(function ($ultimoIngreso) {
+                $noVendible = round((float) $ultimoIngreso->total_kilos - $ultimoIngreso->kg_vendibles, 2);
                 return [
                     'ingreso_id' => $ultimoIngreso->id,
-                    'campo' => $ultimoIngreso->campo,
+                    // El dueño de la cochinilla (en la de infestadores, el campo de origen; no donde estaban las cajitas)
+                    'campo' => $ultimoIngreso->campo_origen ?: $ultimoIngreso->campo,
                     'fecha_ingreso' => $ultimoIngreso->fecha,
                     'fecha_filtrado' => $ultimoIngreso->fecha_proceso_filtrado,
                     'cantidad_fresca' => $ultimoIngreso->total_kilos,
@@ -55,7 +60,10 @@ class CochinillaServicio
                     'venta_cliente' => null,
                     'venta_item' => null,
                     'venta_fecha' => null,
-                    'detalle' => "Campo: $ultimoIngreso->campo\nFecha Ingreso: $ultimoIngreso->fecha\nFecha Filtrado: $ultimoIngreso->fecha_proceso_filtrado\nCant. fresca: $ultimoIngreso->total_kilos",
+                    'detalle' => "Campo: " . ($ultimoIngreso->campo_origen ?: $ultimoIngreso->campo)
+                        . ($ultimoIngreso->campos_infestados ? " (infestadores recogidos en {$ultimoIngreso->campos_infestados})" : '')
+                        . "\nFecha Ingreso: $ultimoIngreso->fecha\nFecha Filtrado: $ultimoIngreso->fecha_proceso_filtrado\nCant. fresca: $ultimoIngreso->total_kilos"
+                        . ($noVendible > 0 ? "\nNo vendible (fue a infestación): {$noVendible} kg" : ''),
                     'detalle_stock' => "Cant. Seca: $ultimoIngreso->total_filtrado_primera\nCant. Vendida: $ultimoIngreso->cantidad_vendida"
                 ];
             })->toArray();

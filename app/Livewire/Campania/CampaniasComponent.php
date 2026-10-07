@@ -147,6 +147,8 @@ class CampaniasComponent extends Component
         return view('livewire.campania.campanias-component', [
             'campaniasGenerales' => $resultado['campanias'],
             'cosecha' => $resultado['cosecha'],
+            // Etapa en que está cada campaña de la página (por sus fechas registradas)
+            'etapas' => app(\App\Services\Campania\Etapa\CampaniaEtapaConsulta::class)->etapasActuales(collect($resultado['campanias']->items())),
         ]);
     }
 }

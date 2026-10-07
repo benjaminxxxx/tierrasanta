@@ -4,7 +4,7 @@
             Labores para planilla y cuadrilla
         </x-title>
         @can(\App\Constants\Permisos::CAMPO_LABOR_GESTIONAR)
-            <x-button wire:click="crearNuevaLabor">
+            <x-button wire:click="$dispatch('crearLabor')">
                 <i class="fa fa-plus"></i> Crear nueva labor
             </x-button>
             <div x-data="{ openFileDialog() { $refs.fileLabores.click() } }">
@@ -17,6 +17,40 @@
         @endcan
 
     </x-flex>
+    @can(\App\Constants\Permisos::CAMPO_LABOR_GESTIONAR)
+        <x-card class="mt-3">
+            <button type="button" class="w-full flex items-center justify-between text-left" wire:click="$toggle('verDisponibles')">
+                <span>
+                    <span class="font-semibold text-foreground"><i class="fa fa-recycle"></i> Códigos disponibles para reutilizar</span>
+                    <span class="block text-xs text-muted-foreground">Códigos sin registros hace más de {{ $mesesReutilizar }} mes(es) (se ajusta en Sistema → Configuración). En vez de crear un código nuevo, uno de estos puede pasar a ser otra labor desde una fecha, sin cambiar sus reportes antiguos.</span>
+                </span>
+                <i class="fa fa-chevron-down text-muted-foreground transition-transform {{ $verDisponibles ? 'rotate-180' : '' }}"></i>
+            </button>
+            @if ($verDisponibles)
+                <div class="mt-3 flex flex-wrap gap-2">
+                    @forelse ($disponibles as $d)
+                        <button type="button" wire:click="$dispatch('reasignarCodigoLabor', { id: {{ $d['id'] }} })"
+                            class="px-2 py-1 rounded-md border border-border text-xs hover:bg-muted text-left"
+                            title="Último registro: {{ \Illuminate\Support\Carbon::parse($d['ultimo_uso'])->format('d/m/Y') }}. Clic para reasignarlo a otra labor.">
+                            <b>{{ $d['codigo'] }}</b> {{ \Illuminate\Support\Str::limit($d['nombre_labor'], 35) }}
+                            <span class="text-muted-foreground">· {{ $d['meses_sin_uso'] }} mes(es){{ $d['desactivada'] ? ' · desactivada' : '' }}</span>
+                        </button>
+                    @empty
+                        <p class="text-sm text-muted-foreground">No hay códigos sin uso hace más de {{ $mesesReutilizar }} mes(es).</p>
+                    @endforelse
+                </div>
+            @endif
+        </x-card>
+    @endcan
+    @if ($sinManoObra)
+        <x-warning class="mt-3">
+            {{ $sinManoObra }} labor(es) aún sin mano de obra asignada. La mano de obra ahora es obligatoria: sin ella sus costos caen en
+            "Sin mano de obra asignada" en los costos de producción de las campañas.
+            @if ($manoObraFiltro !== 'sin')
+                <button type="button" class="underline font-semibold" wire:click="$set('manoObraFiltro', 'sin')">Ver cuáles</button>
+            @endif
+        </x-warning>
+    @endif
     <x-card class="mt-3 space-y-4">
 
         <x-flex class="justify-between">
@@ -58,7 +92,7 @@
 
             </x-flex>
             <div>
-                <x-toggle-switch :checked="$verEliminados" label="Ver eliminados" wire:model.live="verEliminados" />
+                <x-toggle-switch :checked="$verEliminados" label="Ver desactivadas" wire:model.live="verEliminados" />
             </div>
         </x-flex>
         @can(\App\Constants\Permisos::CAMPO_LABOR_VER)
@@ -79,7 +113,16 @@
                         @foreach ($labores as $indice => $labor)
                             <x-tr>
                                 <x-th valign="top" value="{{ $labor->codigo }}" class="text-center" />
-                                <x-td valign="top" value="{{ $labor->nombre_labor }}" />
+                                <x-td valign="top">
+                                    {{ $labor->nombre_labor }}
+                                    @if ($labor->vigente_desde || ($historias[$labor->codigo] ?? 0))
+                                        <span class="block text-xs text-muted-foreground" title="El código se reutilizó: antes era otra labor (ver Reasignar)">
+                                            <i class="fa fa-clock-rotate-left"></i>
+                                            {{ $labor->vigente_desde ? 'desde ' . $labor->vigente_desde->format('d/m/Y') : '' }}
+                                            {{ ($historias[$labor->codigo] ?? 0) ? '· ' . $historias[$labor->codigo] . ' labor(es) anterior(es)' : '' }}
+                                        </span>
+                                    @endif
+                                </x-td>
                                 <x-td valign="top" value="{{ $labor->manoObra?->descripcion }}" />
                                 <x-td valign="top" class="text-center">
                                     @if ($labor->tipo_asistencia_codigo)
@@ -122,15 +165,29 @@
                                         @can(\App\Constants\Permisos::CAMPO_LABOR_GESTIONAR)
                                             @if ($labor->trashed())
                                                 <x-button class="secondary" wire:click="restaurarLabor({{ $labor->id }})">
-                                                    <i class="fa fa-undo"></i> Restaurar
+                                                    <i class="fa fa-undo"></i> Reactivar
+                                                </x-button>
+                                                <x-button variant="outline" wire:click="$dispatch('reasignarCodigoLabor', { id: {{ $labor->id }} })" title="Reutilizar el código para otra labor">
+                                                    <i class="fa fa-right-left"></i> Reutilizar
                                                 </x-button>
                                             @else
-                                                <x-button wire:click="editarLabor({{ $labor->id }})">
+                                                <x-button variant="outline" wire:click="$dispatch('reasignarCodigoLabor', { id: {{ $labor->id }} })"
+                                                    title="Reasignar el código a otra labor desde una fecha (los registros anteriores no cambian)">
+                                                    <i class="fa fa-right-left"></i>
+                                                </x-button>
+                                                <x-button wire:click="$dispatch('editarLabor', { id: {{ $labor->id }} })" title="Editar (corregir el nombre cambia también cómo se ven sus registros antiguos)">
                                                     <i class="fa fa-edit"></i>
                                                 </x-button>
-                                                <x-button variant="danger" wire:click="confirmarEliminarLabor({{ $labor->id }})">
-                                                    <i class="fa fa-trash"></i>
-                                                </x-button>
+                                                @if ($usos[$labor->codigo] ?? 0)
+                                                    <x-button variant="secondary" wire:click="confirmarEliminarLabor({{ $labor->id }})"
+                                                        title="Tiene {{ number_format($usos[$labor->codigo]) }} registros: solo se puede desactivar">
+                                                        <i class="fa fa-ban"></i>
+                                                    </x-button>
+                                                @else
+                                                    <x-button variant="danger" wire:click="confirmarEliminarLabor({{ $labor->id }})" title="Sin registros: se puede eliminar">
+                                                        <i class="fa fa-trash"></i>
+                                                    </x-button>
+                                                @endif
                                             @endif
                                         @endcan
                                     </x-flex>
@@ -153,97 +210,5 @@
             </x-danger>
         @endcan
     </x-card>
-    <x-dialog-modal maxWidth="lg" wire:model="mostrarFormularioLabor">
-        <x-slot name="title">
-            Registro de labores
-        </x-slot>
-
-        <x-slot name="content">
-            <form wire:submit.prevent="guardarLabor" id="frmLabores">
-                <div class="mt-4 text-sm">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <x-input type="number" wire:model="codigo" label="Código de labor" error="codigo" />
-                        <x-input wire:model="nombre_labor" label="Nombre de la labor" error="nombre_labor" />
-                        <x-input type="number" wire:model="estandar_produccion" label="Estándar de producción"
-                            error="estandar_produccion" />
-
-
-                        <x-select wire:model="codigo_mano_obra" label="Mano de obra" error="codigo_mano_obra">
-                            <option value="">Seleccione un grupo</option>
-                            @foreach ($manoObras as $manoObra)
-                                <option value="{{ $manoObra->codigo }}">{{ $manoObra->descripcion }}</option>
-                            @endforeach
-                        </x-select>
-
-                        <x-input wire:model="unidades" label="Unidades" placeholder="Ejem: Kg, Lavaderos"
-                            error="unidades" />
-
-                        <div class="md:col-span-2">
-                            <x-select wire:model="tipo_asistencia_codigo" label="Representa una asistencia (labor de suspensión)"
-                                error="tipo_asistencia_codigo">
-                                <option value="">No — es una labor de trabajo</option>
-                                @foreach ($tiposAsistencia as $t)
-                                    <option value="{{ $t['codigo'] }}">{{ $t['codigo'] }} — {{ $t['descripcion'] }}</option>
-                                @endforeach
-                            </x-select>
-                            <p class="text-xs text-muted-foreground mt-1">
-                                Ej.: 97 Descanso médico → DM. En el registro diario solo se usa con campo FDM; sus horas
-                                entran al costo en FDM con este código y el día cuenta para las suspensiones del PLAME.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div x-data="{
-                        tramos: @entangle('tramos'),
-                        addTramo() {
-                            this.tramos.push({ hasta: '', monto: '' });
-                        },
-                        removeTramo(index) {
-                            this.tramos.splice(index, 1);
-                        }
-                    }" class="space-y-4">
-                        <x-flex class="mt-3 mb-2">
-                            <x-h3>Tramos de Bonificación</x-h3>
-                            <x-button variant="secondary" @click="addTramo">
-                                <i class="fa fa-plus"></i> Agregar Tramo
-                            </x-button>
-                        </x-flex>
-
-                        <template x-for="(tramo, index) in tramos" :key="index">
-                            <div class="flex items-center space-x-4 p-2">
-                                <!-- Hasta -->
-                                <div class="flex flex-col">
-                                    <x-input type="number" label="Hasta (unidades)" x-model="tramo.hasta" />
-                                </div>
-
-                                <!-- Monto -->
-                                <div class="flex flex-col">
-                                    <x-input type="number" step="0.1" label="Se paga S/." x-model="tramo.monto" />
-                                </div>
-
-                                <!-- Remove button -->
-                                <x-button variant="danger" @click="removeTramo(index)">
-                                    <i class="fa fa-trash"></i>
-                                </x-button>
-                            </div>
-                        </template>
-
-
-                    </div>
-                </div>
-                <x-input type="checkbox" wire:model="se_paga_con_jornal" label="Se paga junto con el costo día" />
-            </form>
-        </x-slot>
-
-        <x-slot name="footer">
-            <x-button variant="secondary" @click="$wire.set('mostrarFormularioLabor', false)">
-                Cancelar
-            </x-button>
-            <x-button type="submit" form="frmLabores">
-                <i class="fa fa-save"></i> Guardar Labor
-            </x-button>
-        </x-slot>
-
-    </x-dialog-modal>
     <x-loading wire:loading />
 </div>

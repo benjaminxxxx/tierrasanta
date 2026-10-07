@@ -196,9 +196,15 @@ class CampoCampania extends Model
         return $this->hasOne(EvalPoblacionPlanta::class, 'campania_id');
     }
 
+    /** La última evaluación de brotes por piso (una campaña puede tener varias, una por fecha). */
     public function evaluacionBrotesXPiso()
     {
-        return $this->hasOne(EvalBrotesPorPiso::class, 'campania_id');
+        return $this->hasOne(EvalBrotesPorPiso::class, 'campania_id')->latestOfMany('fecha');
+    }
+
+    public function evaluacionesBrotesXPiso()
+    {
+        return $this->hasMany(EvalBrotesPorPiso::class, 'campania_id')->orderBy('fecha');
     }
 
     public function proyeccionesRendimientosPoda()
@@ -229,9 +235,9 @@ class CampoCampania extends Model
     {
         return self::query()
             ->where('campo', $campo)
-            ->whereNotNull('cosch_fecha')
-            ->whereDate('cosch_fecha', '<=', $fechaVenta)
-            ->orderByDesc('cosch_fecha')
+            ->whereRaw('COALESCE(cosch_fecha, fecha_fin) IS NOT NULL')
+            ->whereRaw('COALESCE(cosch_fecha, fecha_fin) <= ?', [$fechaVenta->toDateString()])
+            ->orderByRaw('COALESCE(cosch_fecha, fecha_fin) DESC')
             ->first();
     }
     public function getAnalisisFinancieroCostoAttribute(): float

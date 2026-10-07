@@ -217,6 +217,9 @@ class Permisos
     const SISTEMA_ROL_VER = 'Roles Ver';
     const SISTEMA_ROL_GESTIONAR = 'Roles Gestionar';
 
+    // — Configuración del sistema (parámetros de negocio guardados en la tabla configuracion)
+    const SISTEMA_CONFIGURACION = 'Configuración del Sistema';
+
     // =========================================================================
     // DOMINIO: PLANILLA (asistencia, registros diarios, resúmenes, liquidaciones)
     // Tablas: plan_mensuales, plan_registros_diarios, plan_periodos,

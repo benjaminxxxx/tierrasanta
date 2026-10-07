@@ -16,7 +16,11 @@ class CochinillaIngreso extends Model
         'fecha',
         'campo',
         'area',
-        'campo_campania_id',
+        'campo_campania_id', // campaña del campo donde se recogió (costo del trabajo, cosecha)
+        'campo_origen', // campo de donde es la cochinilla
+        'campania_origen_id', // campaña dueña de la cochinilla: a la que se carga la venta
+        'origen_estado',
+        'origen_detalle',
         'observacion',
         'proveedor_kg_exportado',
         'kg_ha',
@@ -72,34 +76,19 @@ class CochinillaIngreso extends Model
             ->withTimestamps();
     }
 
+    /**
+     * "Infestadores del campo" del reporte de venta: el campo donde estaban los infestadores de los que se recogió
+     * esta cochinilla (su dueño es campo_origen). En cosechas no aplica.
+     *
+     * Antes buscaba las infestaciones que ESTE campo hizo a otros y mostraba su origen, que es el mismo campo.
+     */
     public function getCamposInfestadosAttribute()
     {
-        // Si ya tiene infestaciones asociadas (caso moderno)
-        if ($this->infestaciones && $this->infestaciones->isNotEmpty()) {
-           
-            $campos = $this->infestaciones
-                ->pluck('campo_origen_nombre')
-                ->unique()
-                ->implode(',');
-
-            return $campos !== '' ? $campos : null;
+        if (!\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::esDeInfestador($this->observacion)) {
+            return null;
         }
-
-        // Búsqueda en caliente (caso antiguo sin relaciones)
-        $campo = $this->campo;
-        $fecha = Carbon::parse($this->fecha);
-        
-        $infestaciones = CochinillaInfestacion::where('campo_origen_nombre', $campo)
-            ->whereDate('fecha', '<=', $fecha)
-            ->whereDate('fecha', '>=', $fecha->copy()->subDays(60))
-            ->get();
-
-        $campos = $infestaciones
-            ->pluck('campo_origen_nombre')
-            ->unique()
-            ->implode(',');
-
-        return $campos !== '' ? $campos : null;
+        // Registrado con el campo de origen (forma antigua): no se sabe en qué campo estaban
+        return $this->campo_origen && $this->campo_origen !== $this->campo ? $this->campo : null;
     }
 
     public function campoRelacionada()
@@ -123,6 +112,12 @@ class CochinillaIngreso extends Model
     public function campoCampania()
     {
         return $this->belongsTo(CampoCampania::class);
+    }
+
+    /** Campaña dueña de la cochinilla (a la que se le carga la venta). Ver CochinillaOrigenProceso. */
+    public function campaniaOrigen()
+    {
+        return $this->belongsTo(CampoCampania::class, 'campania_origen_id');
     }
     
     protected $appends = [
@@ -374,10 +369,37 @@ class CochinillaIngreso extends Model
     }
     #endregion
     #region Ventas
+    /**
+     * Kilos frescos que se pueden vender: los de los sublotes de tipo vendible. La mamá que va a infestar no se vende
+     * (vuelve después como ingreso de infestadores); un lote puede ir parte a venta y parte a infestación.
+     */
+    public function getKgVendiblesAttribute(): float
+    {
+        $vendible = fn(?string $codigo) => $codigo === null
+            || (CochinillaObservacion::vendibles()[$codigo] ?? true);
+        if ($this->detalles->isEmpty()) {
+            return $vendible($this->observacion) ? (float) $this->total_kilos : 0.0;
+        }
+        return (float) $this->detalles->sum(fn($d) => $vendible($d->observacion ?? $this->observacion) ? (float) $d->total_kilos : 0);
+    }
+
     public function getCantidadVendidaAttribute()
     {
         return $this->ventas_cochinillas->sum('cantidad_seca');
     }
     #endregion
 
+
+    /**
+     * La campaña dueña de la cochinilla se recalcula sola al registrar o cambiar el ingreso (campo, fecha, tipo o
+     * campaña), por cualquier pantalla. Ver CochinillaOrigenProceso.
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (self $ingreso) {
+            if ($ingreso->wasRecentlyCreated || $ingreso->wasChanged(['campo', 'fecha', 'observacion', 'campo_campania_id'])) {
+                app(\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::class)->recalcular($ingreso);
+            }
+        });
+    }
 }

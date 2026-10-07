@@ -2,197 +2,212 @@
 
 namespace App\Livewire\Evaluacion;
 
+use App\Constants\Permisos;
 use App\Models\CampoCampania;
 use App\Models\Cuadrillero;
 use App\Models\EvalBrotesPorPiso;
 use App\Models\PlanEmpleado;
-use App\Services\Evaluacion\BrotesPorPisoServicio;
 use App\Services\Campania\CampaniaServicio;
+use App\Services\Evaluacion\BrotesPorPisoServicio;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
+use Livewire\Attributes\On;
 use Livewire\Component;
-use Illuminate\Support\Str;
 
+/**
+ * Evaluaciones de brotes por piso de una campaña:
+ * 1. Campo y campaña.
+ * 2. Metros de cama/ha (los mismos para todas las evaluaciones de la campaña) y todas las evaluaciones por fecha,
+ *    con sus promedios y la diferencia contra la anterior (para ver la evolución).
+ * 3. Al elegir una (o "Nueva evaluación"): fecha, evaluador y la tabla de camas.
+ *
+ * Hay una sola tabla de camas a la vez. Sus eventos llevan el id de este componente ($idTable) para no
+ * confundirse con otra tabla de la página.
+ */
 class EvaluacionBrotesFormComponent extends Component
 {
     use LivewireAlert;
+
     public $mostrarFormulario = false;
-    public $evaluacionBrotesXPisoId;
-    public $evaluacionBrotesXPiso;
     public $idTable;
-    public $campania;
     public $evaluadoresNombres = [];
-    public $evaluador;
-    public $campaniasDisponibles = [];
-    public $fecha;
-    public $detalleBrotesPorPiso = [];
-    public $fileNameReporteBroteXPiso = "EVALUACION BROTE X PISO";
+
     public $campoSeleccionado;
-    public $metros_cama_ha;
+    public $campaniasDisponibles = [];
     public $campaniaSeleccionada;
-    public $modoEdicion = false;
-    protected $listeners = ["editarEvaluacionBrotesPorPiso", "agregarEvaluacionBrote", "storeTableDataBrotesXPiso"];
+    public $metros_cama_ha;
+
+    /** Evaluación abierta en el editor: null = ninguna; 'nueva' o el id */
+    public $editando = null;
+    public $fecha;
+    public $evaluador;
+
     public function mount()
     {
-        $this->idTable = "table" . Str::random(15);
+        $this->idTable = 'brotes' . Str::random(10);
         $planilla = PlanEmpleado::pluck('nombres')->toArray();
         $cuadrilla = Cuadrillero::pluck('nombres')->toArray();
         $this->evaluadoresNombres = array_values(array_unique(array_merge($planilla, $cuadrilla)));
-
     }
-    public function updatedCampoSeleccionado()
+
+    private function servicio(): BrotesPorPisoServicio
     {
-        $this->cargarCampanias();
+        return app(BrotesPorPisoServicio::class);
     }
-    public function updatedCampaniaSeleccionada()
+
+    private function puede(string $permiso): bool
     {
-        $this->cargarInformacionEvaluacion();
+        return auth()->user()?->can($permiso) ?? false;
     }
-    public function cargarInformacionEvaluacion()
+
+    // ------------------------------------------------------------------ abrir
+
+    /** Desde la lista o desde la campaña: con campaña, abre directo su panel y una evaluación nueva. */
+    #[On('agregarEvaluacionBrote')]
+    public function agregarEvaluacionBrote($campaniaId = null)
     {
-        try {
-            $this->campania = CampoCampania::findOrFail($this->campaniaSeleccionada);
-            $evaluacionBrotes = $this->campania->evaluacionBrotesXPiso;
-
-            $this->evaluacionBrotesXPisoId = null;
-            $this->metros_cama_ha = null;
-            $this->fecha = null;
-            $this->evaluador = null;
-            if ($evaluacionBrotes) {
-                $this->evaluacionBrotesXPisoId = $evaluacionBrotes->id;
-                $this->metros_cama_ha = $evaluacionBrotes->metros_cama_ha;
-                $this->fecha = $evaluacionBrotes->fecha;
-                $this->evaluador = $evaluacionBrotes->evaluador;
-
-                $this->detalleBrotesPorPiso = [];
-
-                if ($evaluacionBrotes->detalles->count() > 0) {
-                    $this->detalleBrotesPorPiso = $evaluacionBrotes->detalles->map(function ($detalle) {
-                        return [
-                            'numero_cama' => $detalle->numero_cama,
-                            'longitud_cama' => $detalle->longitud_cama,
-
-                            // valores base
-                            'brotes_aptos_2p_actual' => $detalle->brotes_aptos_2p_actual,
-                            'brotes_aptos_2p_despues_n_dias' => round($detalle->brotes_aptos_2p_despues_n_dias, 0),
-                            'brotes_aptos_3p_actual' => round($detalle->brotes_aptos_3p_actual, 0),
-                            'brotes_aptos_3p_despues_n_dias' => round($detalle->brotes_aptos_3p_despues_n_dias, 0),
-
-                            // valores calculados desde los accessors
-                            'brotes_2p_actual_por_mt' => round($detalle->brotes_2p_actual_por_mt, 2),
-                            'brotes_2p_despues_por_mt' => round($detalle->brotes_2p_despues_por_mt, 2),
-                            'brotes_3p_actual_por_mt' => round($detalle->brotes_3p_actual_por_mt, 2),
-                            'brotes_3p_despues_por_mt' => round($detalle->brotes_3p_despues_por_mt, 2),
-                            'total_actual_por_mt' => round($detalle->total_actual_por_mt, 2),
-                            'total_despues_por_mt' => round($detalle->total_despues_por_mt, 2),
-                        ];
-                    })->toArray();
-                }
-
-                $this->dispatch('cargarDataBrotesXPiso', $this->detalleBrotesPorPiso);
-            } else {
-                $this->dispatch('cargarDataBrotesXPiso', []);
-            }
-        } catch (\Throwable $th) {
-            $this->fecha_siembra = null;
-            $this->alert('error', 'La campaña seleccionada no es válida.');
+        abort_unless($this->puede(Permisos::BROTE_EVALUACION_CREAR), 403);
+        $this->limpiar();
+        $this->mostrarFormulario = true;
+        if ($campania = $campaniaId ? CampoCampania::find($campaniaId) : null) {
+            $this->elegirCampania($campania);
+            $this->nuevaEvaluacion();
         }
     }
-    public function cargarCampanias()
-    {
-        $this->campaniaSeleccionada = null;
-        $this->campania = null;
 
-        if (!$this->campoSeleccionado) {
-            return;
-        }
-
-        $this->campaniasDisponibles = app(CampaniaServicio::class)
-            ->buscarCampaniasPorCampo($this->campoSeleccionado);
-
-        if ($this->campaniasDisponibles->count() > 0) {
-            $this->campania = $this->campaniasDisponibles->first();
-        }
-    }
+    /** Editar desde la lista: abre la campaña con esa evaluación en el editor (y las demás en el panel). */
+    #[On('editarEvaluacionBrotesPorPiso')]
     public function editarEvaluacionBrotesPorPiso($evaluacionBrotesXPisoId)
     {
-        try {
-            $this->resetForm();
-            $this->modoEdicion = true;
-            $evaluacionBrotesXPiso = EvalBrotesPorPiso::findOrFail($evaluacionBrotesXPisoId);
-
-            $this->campoSeleccionado = $evaluacionBrotesXPiso->campania->campo;
-            $this->cargarCampanias();
-            $this->campaniaSeleccionada = $evaluacionBrotesXPiso->campania->id;
-            $this->cargarInformacionEvaluacion();
-            $this->mostrarFormulario = true;
-
-        } catch (\Throwable $th) {
-            $this->evaluacionBrotesXPiso = null;
-            $this->alert('error', $th->getMessage());
-        }
+        abort_unless($this->puede(Permisos::BROTE_EVALUACION_EDITAR), 403);
+        $this->limpiar();
+        $evaluacion = EvalBrotesPorPiso::with('campania')->findOrFail($evaluacionBrotesXPisoId);
+        $this->mostrarFormulario = true;
+        $this->elegirCampania($evaluacion->campania);
+        $this->abrirEvaluacion($evaluacion->id);
     }
-    public function storeTableDataBrotesXPiso($datos)
+
+    private function elegirCampania(CampoCampania $campania): void
     {
+        $this->campoSeleccionado = $campania->campo;
+        $this->campaniasDisponibles = app(CampaniaServicio::class)->buscarCampaniasPorCampo($campania->campo);
+        $this->campaniaSeleccionada = $campania->id;
+        $this->metros_cama_ha = $this->servicio()->metrosCamaDeCampania($campania->id);
+    }
+
+    public function updatedCampoSeleccionado()
+    {
+        $this->reset(['campaniaSeleccionada', 'metros_cama_ha', 'editando', 'fecha', 'evaluador']);
+        $this->campaniasDisponibles = $this->campoSeleccionado
+            ? app(CampaniaServicio::class)->buscarCampaniasPorCampo($this->campoSeleccionado) : [];
+        $this->cargarTabla([]);
+    }
+
+    public function updatedCampaniaSeleccionada()
+    {
+        $this->reset(['editando', 'fecha', 'evaluador']);
+        $this->resetErrorBag();
+        $this->metros_cama_ha = $this->campaniaSeleccionada ? $this->servicio()->metrosCamaDeCampania((int) $this->campaniaSeleccionada) : null;
+        $this->cargarTabla([]);
+    }
+
+    // ------------------------------------------------------------------ editor
+
+    public function abrirEvaluacion(int $id): void
+    {
+        $evaluacion = EvalBrotesPorPiso::findOrFail($id);
+        abort_unless((int) $evaluacion->campania_id === (int) $this->campaniaSeleccionada, 404);
+        $this->resetErrorBag();
+        $this->editando = $evaluacion->id;
+        $this->fecha = $evaluacion->fecha?->toDateString();
+        $this->evaluador = $evaluacion->evaluador;
+        $this->cargarTabla($this->servicio()->detallesDeEvaluacion($evaluacion->id));
+    }
+
+    public function nuevaEvaluacion(): void
+    {
+        abort_unless($this->puede(Permisos::BROTE_EVALUACION_CREAR), 403);
+        $this->resetErrorBag();
+        $this->editando = 'nueva';
+        $this->fecha = Carbon::now()->toDateString();
+        $this->evaluador = null;
+        $this->cargarTabla([]);
+    }
+
+    public function cerrarEditor(): void
+    {
+        $this->reset(['editando', 'fecha', 'evaluador']);
+        $this->resetErrorBag();
+        $this->cargarTabla([]);
+    }
+
+    /** La tabla de camas manda sus filas (Alpine) para guardar la evaluación abierta. */
+    public function guardarEvaluacion(array $filas): void
+    {
+        $esNueva = $this->editando === 'nueva';
+        abort_unless($this->puede($esNueva ? Permisos::BROTE_EVALUACION_CREAR : Permisos::BROTE_EVALUACION_EDITAR), 403);
         try {
-            $datosGenerales = [
-                'id' => $this->evaluacionBrotesXPisoId, // puede ser null
-                'campo' => $this->campoSeleccionado,
+            $id = $this->servicio()->registrar([
+                'id' => $esNueva ? null : $this->editando,
+                'campania_id' => $this->campaniaSeleccionada,
                 'fecha' => $this->fecha,
                 'evaluador' => $this->evaluador,
                 'metros_cama_ha' => $this->metros_cama_ha,
-                'campania_id' => $this->campania->id,
-                'detalles' => $datos
-            ];
-            $this->evaluacionBrotesXPisoId = app(BrotesPorPisoServicio::class)->registrar($datosGenerales);
+                'detalles' => $filas,
+            ]);
             $this->resetErrorBag();
             $this->dispatch('brotesPorPisoRegistrado');
-            $this->cargarInformacionEvaluacion();
-            $this->alert('success', 'Registro exitoso de brotes por piso.');
+            $this->abrirEvaluacion($id); // la tabla vuelve con los valores por hectárea recalculados
+            $this->alert('success', $esNueva ? 'Evaluación registrada.' : 'Evaluación actualizada.');
         } catch (ValidationException $ve) {
-            $this->alert('error', $ve->getMessage());
+            $this->alert('error', 'No se guardó: ' . implode(' ', $ve->validator->errors()->all()), ['timer' => 6000]);
             throw $ve;
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }
     }
 
-
-    public function agregarEvaluacionBrote($campaniaId = null)
+    public function eliminarEvaluacion(int $id): void
     {
-        $this->resetForm();
-        
-        if ($campaniaId) {
-            $campania = CampoCampania::find($campaniaId);
-            if ($campania) {
-                $this->campoSeleccionado = $campania->campo;
-                $this->campania = $campania;
+        abort_unless($this->puede(Permisos::BROTE_EVALUACION_ELIMINAR), 403);
+        try {
+            abort_unless((int) EvalBrotesPorPiso::whereKey($id)->value('campania_id') === (int) $this->campaniaSeleccionada, 404);
+            $this->servicio()->eliminar($id);
+            if ((string) $this->editando === (string) $id) {
+                $this->cerrarEditor();
             }
+            $this->dispatch('brotesPorPisoRegistrado');
+            $this->alert('success', 'Evaluación eliminada (queda en la auditoría).');
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
         }
+    }
 
-        $this->mostrarFormulario = true;
-    }
-    public function resetForm()
+    private function cargarTabla(array $filas): void
     {
-        $this->modoEdicion = false;
-        $this->resetErrorBag();
-        $this->reset([
-            'evaluador',
-            'metros_cama_ha',
-            'fecha',
-            'evaluacionBrotesXPisoId',
-            'evaluacionBrotesXPiso',
-            'campoSeleccionado',
-            'campaniaSeleccionada',
-            'campania'
-        ]);
-        $this->dispatch('cargarDataBrotesXPiso', []);
-        $this->detalleBrotesPorPiso = [];
-        $this->fecha = Carbon::now()->format('Y-m-d');
+        $this->dispatch("cargarDataBrotesXPiso-{$this->idTable}", filas: $filas);
     }
+
+    private function limpiar(): void
+    {
+        $this->resetErrorBag();
+        $this->reset(['campoSeleccionado', 'campaniasDisponibles', 'campaniaSeleccionada', 'metros_cama_ha', 'editando', 'fecha', 'evaluador']);
+        $this->cargarTabla([]);
+    }
+
     public function render()
     {
-        return view('livewire.evaluacion.evaluacion-brotes-form-component');
+        $campania = $this->campaniaSeleccionada ? CampoCampania::find($this->campaniaSeleccionada) : null;
+
+        return view('livewire.evaluacion.evaluacion-brotes-form-component', [
+            'campania' => $campania,
+            'evaluaciones' => $campania ? $this->servicio()->evaluacionesDeCampania($campania->id) : [],
+            'promedios' => BrotesPorPisoServicio::PROMEDIOS,
+            'puedeCrear' => $this->puede(Permisos::BROTE_EVALUACION_CREAR),
+            'puedeEditar' => $this->puede(Permisos::BROTE_EVALUACION_EDITAR),
+            'puedeEliminar' => $this->puede(Permisos::BROTE_EVALUACION_ELIMINAR),
+        ]);
     }
 }

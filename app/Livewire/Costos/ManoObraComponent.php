@@ -1,111 +1,105 @@
 <?php
 
 namespace App\Livewire\Costos;
+
+use App\Constants\Permisos;
 use App\Models\ManoObra;
-use Illuminate\Validation\Rule;
+use App\Services\Campo\ManoObra\CampoManoObraCrud;
+use Illuminate\Validation\ValidationException;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
+/**
+ * Mano de obra (grupos de labores para los costos de producción). Con labores, no se elimina ni cambia de código:
+ * solo se corrige su descripción (ver CampoManoObraCrud).
+ */
 class ManoObraComponent extends Component
 {
     use LivewireAlert;
-    public $manoObras;
-    public $manoObraCodigo; //usado para editar y cambio el codigo de la mano de obra
+    public $manoObraCodigo; // código de la que se edita (null = nueva)
     public $codigo;
     public $descripcion;
+    /** Por qué el código no se puede cambiar (null = editable) */
+    public ?string $codigoFijo = null;
     public $mostrarFormularioManoObra = false;
     protected $listeners = [
         'confirmarEliminarManoObra',
     ];
-    public function mount()
+
+    private function crud(): CampoManoObraCrud
     {
-        $this->obtenerManoObras();
+        return app(CampoManoObraCrud::class);
     }
-    public function obtenerManoObras()
+
+    private function soloGestion(): void
     {
-        $this->manoObras = ManoObra::all();
+        abort_unless(auth()->user()?->can(Permisos::CAMPO_MANO_OBRA_GESTIONAR), 403);
     }
+
     public function abrirFormManoObra($codigo = null)
     {
-        try {
-            $this->reset('manoObraCodigo', 'codigo', 'descripcion');
-            $this->resetErrorBag();
-
-            if ($codigo) {
-                $manoObra = ManoObra::where('codigo', $codigo)->firstOrFail();
-
-                $this->manoObraCodigo = $codigo;
-                $this->codigo = $manoObra->codigo;
-                $this->descripcion = $manoObra->descripcion;
-            }
-            $this->mostrarFormularioManoObra = true;
-        } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+        $this->soloGestion();
+        $this->reset('manoObraCodigo', 'codigo', 'descripcion', 'codigoFijo');
+        $this->resetErrorBag();
+        if ($codigo) {
+            $manoObra = ManoObra::findOrFail($codigo);
+            $this->manoObraCodigo = $manoObra->codigo;
+            $this->codigo = $manoObra->codigo;
+            $this->descripcion = $manoObra->descripcion;
+            $this->codigoFijo = $this->crud()->motivoFijo($manoObra->codigo);
         }
+        $this->mostrarFormularioManoObra = true;
     }
+
     public function guardarManoObra()
     {
-        $this->validate([
-            'codigo' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('mano_obras', 'codigo')->ignore($this->manoObraCodigo, 'codigo')
-            ],
-            'descripcion' => [
-                'required',
-                'string',
-                'max:500',
-                Rule::unique('mano_obras', 'descripcion')->ignore($this->manoObraCodigo, 'codigo')
-            ]
-        ], [
-            'codigo.required' => 'El campo código es obligatorio.',
-            'codigo.max' => 'El código no puede exceder los 255 caracteres.',
-            'codigo.unique' => 'El código ya está registrado.',
-            'descripcion.required' => 'El campo descripción es obligatorio.',
-            'descripcion.max' => 'La descripción no puede exceder los 500 caracteres.',
-            'descripcion.unique' => 'La descripción ya está registrada.',
-        ]);
-
+        $this->soloGestion();
         try {
-            ManoObra::updateOrCreate(
-                ['codigo' => $this->manoObraCodigo],
-                ['codigo' => $this->codigo, 'descripcion' => $this->descripcion]
-            );
-
+            $this->crud()->guardar($this->manoObraCodigo, ['codigo' => $this->codigo, 'descripcion' => $this->descripcion]);
             $this->alert('success', 'Datos guardados correctamente.');
             $this->mostrarFormularioManoObra = false;
-            $this->obtenerManoObras();
-            $this->reset('manoObraCodigo', 'codigo', 'descripcion');
+            $this->reset('manoObraCodigo', 'codigo', 'descripcion', 'codigoFijo');
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }
     }
+
     public function eliminarManoObra($codigo)
     {
-
-        $this->confirm('¿Está seguro(a) que desea eliminar el registro?', [
+        $this->soloGestion();
+        $manoObra = ManoObra::findOrFail($codigo);
+        if ($motivo = $this->crud()->motivoFijo($manoObra->codigo)) {
+            $this->alert('warning', "No se puede eliminar \"{$manoObra->descripcion}\": {$motivo}. Si ya no se usa, pasa antes sus labores a otra mano de obra.", [
+                'position' => 'center', 'toast' => false, 'timer' => null, 'showConfirmButton' => true,
+            ]);
+            return;
+        }
+        $this->confirm("¿Eliminar la mano de obra \"{$manoObra->descripcion}\"? No tiene labores.", [
             'onConfirmed' => 'confirmarEliminarManoObra',
-            'data' => [
-                'codigo' => $codigo,
-            ],
+            'data' => ['codigo' => $codigo],
         ]);
     }
+
     public function confirmarEliminarManoObra($data)
     {
-        $codigo = $data['codigo'];
-
+        $this->soloGestion();
         try {
-            $manoObra = ManoObra::where('codigo', $codigo)->firstOrFail();
-            $manoObra->delete();
-            $this->alert('success', 'Registro eliminado correctamente.');
-            $this->obtenerManoObras();
+            $this->crud()->eliminar($data['codigo']);
+            $this->alert('success', 'Mano de obra eliminada.');
+        } catch (ValidationException $e) {
+            $this->alert('error', implode(' ', $e->validator->errors()->all()));
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }
     }
+
     public function render()
     {
-        return view('livewire.costos.mano-obra-component');
+        return view('livewire.costos.mano-obra-component', [
+            'manoObras' => ManoObra::orderBy('descripcion')->get(),
+            'labores' => $this->crud()->laboresPorCodigo(),
+        ]);
     }
 }

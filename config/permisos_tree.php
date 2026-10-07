@@ -465,6 +465,7 @@ return [
                     ['nombre' => Permisos::SISTEMA_ROL_GESTIONAR],
                 ],
             ],
+            ['nombre' => Permisos::SISTEMA_CONFIGURACION],
         ],
     ],
 

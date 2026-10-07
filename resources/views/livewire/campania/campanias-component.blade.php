@@ -209,7 +209,8 @@
                 <x-button size="xs" variant="outline" @click="todos(false)">Ocultar todo</x-button>
             </div>
 
-            <div class="mt-3 overflow-x-auto">
+            {{-- Sin scroll propio: la tabla va a su ancho completo y se recorre con el scroll de la página --}}
+            <div class="mt-3 w-max min-w-full">
                 <table class="border border-border rounded-lg shadow-sm w-full text-sm text-left rtl:text-right">
                     <thead class="text-xs uppercase bg-muted text-card-foreground">
                         <x-tr>
@@ -221,6 +222,7 @@
                             <x-th class="text-center" rowspan="2">Siembra</x-th>
                             <x-th class="text-center" rowspan="2">Inicio</x-th>
                             <x-th class="text-center" rowspan="2">Cierre</x-th>
+                            <x-th class="text-center" rowspan="2">Etapa</x-th>
                             <x-th class="text-center" rowspan="2">Cosecha</x-th>
 
                             @foreach ($columnBlocks as $block)
@@ -299,6 +301,13 @@
                                         <x-badge color="green">Vigente</x-badge>
                                     @endif
                                 </x-td>
+                                <x-td class="text-center whitespace-nowrap">
+                                    @if ($e = $etapas[$campania->id] ?? null)
+                                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold text-white" style="background: {{ $e['color'] }}">{{ $e['nombre'] }}</span>
+                                    @else
+                                        <span class="text-muted-foreground">—</span>
+                                    @endif
+                                </x-td>
                                 <x-td class="text-left min-w-56">
                                     @include('livewire.campania.partials.campanias-estado-cosecha', ['estado' => $c])
                                 </x-td>
@@ -312,7 +321,7 @@
                             </x-tr>
                         @empty
                             <x-tr>
-                                <x-td colspan="9" class="text-center text-muted-foreground py-6">
+                                <x-td colspan="10" class="text-center text-muted-foreground py-6">
                                     No hay campañas con estos filtros.
                                 </x-td>
                             </x-tr>

@@ -2,6 +2,7 @@
 namespace App\Services\Campo\Labor;
 
 use App\Models\Labores;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -78,19 +79,75 @@ class LaborServicio
 
     public static function actualizar(int $id, array $data)
     {
-        $validados = self::validarYLimpiar($data, $id);
         $labor = Labores::findOrFail($id);
+        // El código es lo que guardan los registros: si ya se usa (o tiene historia), cambiarlo cambiaría la labor de
+        // esos registros. Para que el código pase a ser otra labor está "Reasignar código".
+        if (array_key_exists('codigo', $data) && (string) $data['codigo'] !== (string) $labor->codigo && ($motivo = self::motivoCodigoFijo($labor))) {
+            throw ValidationException::withMessages(['codigo' => "No se puede cambiar el código {$labor->codigo}: {$motivo}. Para que este código sea otra labor usa Reasignar código."]);
+        }
+        $validados = self::validarYLimpiar($data, $id);
         $validados['actualizado_por'] = auth()->id();
 
         $labor->update($validados);
         return $labor;
     }
 
-    public static function eliminar(int $id)
+    /**
+     * Dónde se usa el código de la labor. Los registros guardan el código (no hay llave foránea), así que una
+     * labor con registros no se puede borrar: sus reportes antiguos dejarían de mostrar qué labor era.
+     *
+     * @return array<string, int> origen => filas (solo los que tienen)
+     */
+    public static function usos(int $codigo): array
+    {
+        $usos = [
+            'registro diario de planilla' => DB::table('plan_detalles_horas')->where('codigo_labor', $codigo)->count(),
+            'registro diario de cuadrilla' => DB::table('cuad_detalles_horas')->where('codigo_labor', $codigo)->count(),
+            'actividades (bonos)' => DB::table('actividades')->where('codigo_labor', $codigo)->count(),
+            'costos (BDD)' => DB::table('resumen_costo_diarios')->where('labor', $codigo)->count(),
+        ];
+        return array_filter($usos);
+    }
+
+    /** Cuántas filas usan cada código (para la lista, en una consulta por tabla). @return array<int, int> */
+    /** Por qué el código de la labor ya no se puede cambiar (null = sí se puede: no tiene registros ni historia). */
+    public static function motivoCodigoFijo(Labores $labor): ?string
+    {
+        if ($usos = self::usos((int) $labor->codigo)) {
+            return 'tiene registros (' . collect($usos)->map(fn($n, $o) => number_format($n) . " en {$o}")->implode(', ') . ')';
+        }
+        if ($labor->vigente_desde || \App\Models\LaborVigencia::where('codigo', $labor->codigo)->exists()) {
+            return 'tiene historia de labores anteriores';
+        }
+        return null;
+    }
+
+    public static function usosPorCodigo(array $codigos): array
+    {
+        $total = [];
+        foreach ([['plan_detalles_horas', 'codigo_labor'], ['cuad_detalles_horas', 'codigo_labor'], ['actividades', 'codigo_labor'], ['resumen_costo_diarios', 'labor']] as [$tabla, $col]) {
+            DB::table($tabla)->whereIn($col, $codigos)->groupBy($col)->selectRaw("{$col} as codigo, COUNT(*) as n")->get()
+                ->each(function ($r) use (&$total) { $total[(int) $r->codigo] = ($total[(int) $r->codigo] ?? 0) + (int) $r->n; });
+        }
+        return $total;
+    }
+
+    /**
+     * Una labor sin registros se elimina de verdad (su código queda libre). Una con registros solo se desactiva:
+     * deja de ofrecerse para registrar, pero sigue existiendo para que los reportes antiguos muestren su nombre.
+     *
+     * @return string 'eliminada' | 'desactivada'
+     */
+    public static function eliminar(int $id): string
     {
         $labor = Labores::findOrFail($id);
-        $labor->update(['eliminado_por' => auth()->id()]);
-        return $labor->delete();
+        if (self::usos((int) $labor->codigo)) {
+            $labor->update(['eliminado_por' => auth()->id()]);
+            $labor->delete(); // soft delete = desactivada
+            return 'desactivada';
+        }
+        $labor->forceDelete();
+        return 'eliminada';
     }
 
     /**
@@ -98,18 +155,24 @@ class LaborServicio
      */
     protected static function validarYLimpiar(array $data, ?int $id = null)
     {
-        // "Seleccione un grupo" llega como '' (Livewire no pasa por ConvertEmptyStringsToNull): 'nullable|exists'
-        // deja pasar el '' y la FK labores.codigo_mano_obra → mano_obras.codigo lo rechaza. Vacío = sin mano de obra.
+        // "Seleccione un grupo" llega como '' (Livewire no pasa por ConvertEmptyStringsToNull): vacío = null, y la
+        // mano de obra es obligatoria (es el grupo con que se arman los costos de producción de cada campaña).
         foreach (['codigo_mano_obra', 'estandar_produccion', 'unidades', 'tipo_asistencia_codigo'] as $campo) {
             if (array_key_exists($campo, $data) && $data[$campo] === '') {
                 $data[$campo] = null;
             }
         }
 
+        // Casilla nunca marcada (labor nueva): llega null y la columna no admite null. Si no viene (importación),
+        // no se toca: así no se apaga en las labores que ya la tenían marcada
+        if (array_key_exists('se_paga_con_jornal', $data) && $data['se_paga_con_jornal'] === null) {
+            $data['se_paga_con_jornal'] = false;
+        }
+
         $validator = Validator::make($data, [
             'nombre_labor' => 'required|string|max:255',
             'codigo' => 'required|integer|unique:labores,codigo,' . $id,
-            'codigo_mano_obra' => 'nullable|exists:mano_obras,codigo',
+            'codigo_mano_obra' => 'required|exists:mano_obras,codigo',
             // Labor de suspensión: representa ese tipo de asistencia (DM, V, FR…). No se usa con A (trabajo).
             'tipo_asistencia_codigo' => 'nullable|not_in:A|exists:plan_tipo_asistencias,codigo',
             'estandar_produccion' => 'nullable|integer|min:0',
@@ -118,13 +181,20 @@ class LaborServicio
             'se_paga_con_jornal' => 'boolean'
         ], [
             'required' => 'El campo :attribute es obligatorio.',
+            'codigo_mano_obra.required' => 'Elige la mano de obra de la labor.',
             'unique' => 'El :attribute ya existe.',
             'exists' => 'La :attribute no es válida.',
+            'integer' => 'El :attribute debe ser un número entero.',
+            'min' => 'El :attribute no puede ser negativo.',
+            'max' => 'El :attribute admite como máximo :max caracteres.',
+            'boolean' => 'El campo :attribute debe ser sí o no.',
         ], [
             'nombre_labor' => 'nombre de labor',
             'codigo' => 'código',
             'codigo_mano_obra' => 'mano de obra',
             'tipo_asistencia_codigo' => 'asistencia que representa',
+            'estandar_produccion' => 'estándar de producción',
+            'se_paga_con_jornal' => 'se paga junto con el costo día',
         ]);
 
         if ($validator->fails()) {

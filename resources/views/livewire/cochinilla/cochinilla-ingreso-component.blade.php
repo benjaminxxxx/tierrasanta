@@ -104,7 +104,20 @@
                         <x-th class="text-center">{{ $cochinillaIngreso->filtrado123 }}</x-th>
                         <x-th class="text-center">{{ $cochinillaIngreso->filtrado123_x_ha }}</x-th>
                         <x-th class="text-center">{{ $cochinillaIngreso->total_kilos }}</x-th>
-                        <x-th class="text-center">{{ $cochinillaIngreso->observacionRelacionada->descripcion }}</x-th>
+                        <x-th class="text-center">
+                            {{ $cochinillaIngreso->observacionRelacionada?->descripcion }}
+                            @if (\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::esDeInfestador($cochinillaIngreso->observacion))
+                                <span class="block text-xs font-normal text-muted-foreground" title="{{ $cochinillaIngreso->origen_detalle }}">
+                                    Cochinilla de {{ $cochinillaIngreso->campo_origen ?? '?' }}
+                                </span>
+                                @if ($cochinillaIngreso->origen_estado !== 'manual' && $cochinillaIngreso->origen_estado !== 'infestacion')
+                                    <button type="button" class="text-xs font-semibold text-amber-700 dark:text-amber-400 underline"
+                                        @click="$wire.dispatch('editarIngreso', { lote: {{ $cochinillaIngreso->lote }} })" title="{{ $cochinillaIngreso->origen_detalle }}">
+                                        Confirmar origen
+                                    </button>
+                                @endif
+                            @endif
+                        </x-th>
                         <x-th class="text-center">{{ $cochinillaIngreso->diferencia_filtrado }}</x-th>
                         <x-th
                             class="text-center">{{ number_format($cochinillaIngreso->porcentaje_diferencia_filtrado, 2) }}%</x-th>

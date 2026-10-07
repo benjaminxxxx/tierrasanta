@@ -33,7 +33,7 @@ class CampaniaCostoProduccionConsulta
 
         $agrupado = (clone $base)
             ->groupBy('origen_tipo', 'labor', 'labor_nombre', 'insumo_nombre')
-            ->selectRaw('origen_tipo, labor, labor_nombre, insumo_nombre,
+            ->selectRaw('origen_tipo, labor, labor_nombre, insumo_nombre, MIN(fecha) as fecha,
                 SUM(costo_total) as costo, SUM(cantidad_jornales) as jornales, SUM(cantidad_insumo) as cantidad_insumo')
             ->get();
 
@@ -41,6 +41,7 @@ class CampaniaCostoProduccionConsulta
         $labores = [
             'codigo' => $todasLabores->keyBy(fn($l) => (string) $l->codigo),
             'nombre' => $todasLabores->keyBy(fn($l) => FormatoHelper::normalizarNombre($l->nombre_labor)),
+            'vigencias' => new \App\Services\Campo\Labor\CampoLaborVigenciaConsulta(),
         ];
         $manoObras = ManoObra::pluck('descripcion', 'codigo');
 
@@ -159,7 +160,8 @@ class CampaniaCostoProduccionConsulta
         if ($seccion === 'mano_obra') {
             $codigo = $fila->labor !== null && $fila->labor !== '' ? (string) $fila->labor : null;
             if ($codigo !== null) {
-                $labor = $labores['codigo']->get($codigo);
+                // La labor que era el código en la fecha de esos costos (un código reutilizado no mezcla labores)
+                $labor = $labores['vigencias']->labor($codigo, $fila->fecha) ?? $labores['codigo']->get($codigo);
                 $grupoCodigo = $labor?->codigo_mano_obra;
             } else {
                 // Sin código de labor = viene del registro de riego (tipo de labor escrito a mano): se busca la labor

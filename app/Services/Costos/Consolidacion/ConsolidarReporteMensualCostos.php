@@ -181,6 +181,8 @@ class ConsolidarReporteMensualCostos
         };
 
         $filas = [];
+        // Qué labor era cada código en cada fecha (un código reutilizado conserva su nombre de entonces)
+        $vigencias = new \App\Services\Campo\Labor\CampoLaborVigenciaConsulta();
         foreach ($registros as $rd) {
             $fecha = Carbon::parse($rd->fecha)->toDateString();
             $cuadrillero = $rd->cuadrillero?->nombres ?? '-';
@@ -223,7 +225,7 @@ class ConsolidarReporteMensualCostos
                     'fecha' => $fecha,
                     'cuadrillero' => $cuadrillero,
                     'campo' => $d->campo_nombre,
-                    'labor' => trim((is_object($d->labores) ? ($d->labores->nombre_labor ?? $d->codigo_labor) : $d->codigo_labor) . ' ' . implode(' ', $marcas)),
+                    'labor' => trim(($vigencias->nombre($d->codigo_labor, $fecha) ?? $d->codigo_labor) . ' ' . implode(' ', $marcas)),
                     // Sin redondear: la suma de miles de filas debe dar exacto lo pagado
                     'jornal' => $costoJornal,
                     'bono' => $bono,

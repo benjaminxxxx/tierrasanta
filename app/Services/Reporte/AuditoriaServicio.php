@@ -93,7 +93,9 @@ class AuditoriaServicio
             $valorAntes = $antes[$clave] ?? null;
             $valorDespues = $despues[$clave] ?? null;
 
-            if ((string) $valorAntes !== (string) $valorDespues) {
+            // Listas (p. ej. las filas de detalle) se comparan por contenido: como texto todas valían "Array"
+            $comparable = fn($v) => is_array($v) ? json_encode($v) : (string) $v;
+            if ($comparable($valorAntes) !== $comparable($valorDespues)) {
                 $resultado['antes'][$clave] = $valorAntes;
                 $resultado['despues'][$clave] = $valorDespues;
             }

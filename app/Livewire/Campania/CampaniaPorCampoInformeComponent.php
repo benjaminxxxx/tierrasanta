@@ -14,7 +14,8 @@ class CampaniaPorCampoInformeComponent extends Component
     public $campania;
     protected $listeners = [
         'poblacionPlantasRegistrado' => 'refrescar', 
-        'evaluacionInfestacionGuardada' => 'refrescar', 
+        'evaluacionInfestacionGuardada' => 'refrescar',
+        'brotesPorPisoRegistrado' => 'refrescar',
         'riegoCampaniaModificado' => 'sincronizarRiegos',
         'campaniaInsertada' => 'refrescar', 
         'refrescarInformeCampaniaXCampo' => 'refrescar',
@@ -53,6 +54,9 @@ class CampaniaPorCampoInformeComponent extends Component
     }
     public function render()
     {
-        return view('livewire.campania.campania-por-campo-informe-component');
+        return view('livewire.campania.campania-por-campo-informe-component', [
+            // En qué etapa está la campaña y qué evaluaciones de brotes le tocarían
+            'lineaTiempo' => $this->campania ? app(\App\Services\Campania\Etapa\CampaniaEtapaConsulta::class)->lineaDeTiempo($this->campania) : null,
+        ]);
     }
 }

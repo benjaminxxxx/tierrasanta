@@ -134,3 +134,9 @@ Handsontable y los sueldos de la planilla generada); `/planilla/asistencias` red
 | `app/Services/Planilla/PlanillaServicioGastosMensuales.php` | Métodos `calcularGastosMensuales()`, `procesarCostosDiarios()` y `calcularSueldoRealLiquidado()` que estaban en `App\Services\Planilla\PlanillaServicio`: el botón "Recalcular pagos en planilla". Fallaba al guardar (escribía dos columnas que no existen en `plan_mensual_detalles`). El costo de cada día (`plan_registros_diarios.costo_dia`) ahora se calcula solo al generar la planilla (`PlanillaServicio::actualizarCostosDiarios`). |
 
 `App\Services\Planilla\Handsontable\HSTPlanillaAsistencia` se queda en `app/`: lo usa el Excel de la planilla mensual.
+
+### Acordeón del informe de campaña por campo (06/10/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| `resources/views/livewire/campania/partials/accordion-section.blade.php` | Fila de encabezado del acordeón antiguo de `/campania/por-campo`. Las secciones ahora son tarjetas ordenables (arrastrar o flechas) con vista compacta, dentro de `campania-por-campo-informe-component` (Alpine `informeCampania`). Los parciales de cada sección no cambiaron. |

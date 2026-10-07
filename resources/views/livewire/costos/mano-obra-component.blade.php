@@ -25,6 +25,7 @@
                         <x-th>#</x-th>
                         <x-th>Código</x-th>
                         <x-th>Descripción</x-th>
+                        <x-th class="text-center">Labores</x-th>
                         <x-th class="w-80 text-center">Acciones</x-th>
                     </x-tr>
                 </x-slot>
@@ -35,15 +36,29 @@
                             <x-td>{{ $manoObra->codigo }}</x-td>
                             <x-td>{{ $manoObra->descripcion }}</x-td>
                             <x-td class="text-center">
+                                @if ($labores[$manoObra->codigo] ?? 0)
+                                    <a href="{{ route('campo.labores', ['mano_obra' => $manoObra->codigo]) }}" class="underline" title="Ver sus labores">{{ $labores[$manoObra->codigo] }}</a>
+                                @else
+                                    <span class="text-muted-foreground">0</span>
+                                @endif
+                            </x-td>
+                            <x-td class="text-center">
                                 @can(\App\Constants\Permisos::CAMPO_MANO_OBRA_GESTIONAR)
                                     <x-flex class="justify-center">
                                         <x-button wire:click="abrirFormManoObra('{{ $manoObra->codigo }}')" title="Editar">
                                             <i class="fa fa-edit"></i>
                                         </x-button>
-                                        <x-button variant="danger" wire:click="eliminarManoObra('{{ $manoObra->codigo }}')"
-                                            title="Eliminar">
-                                            <i class="fa fa-trash"></i>
-                                        </x-button>
+                                        @if ($labores[$manoObra->codigo] ?? 0)
+                                            <x-button variant="secondary" wire:click="eliminarManoObra('{{ $manoObra->codigo }}')"
+                                                title="Tiene labores: no se puede eliminar">
+                                                <i class="fa fa-lock"></i>
+                                            </x-button>
+                                        @else
+                                            <x-button variant="danger" wire:click="eliminarManoObra('{{ $manoObra->codigo }}')"
+                                                title="Eliminar">
+                                                <i class="fa fa-trash"></i>
+                                            </x-button>
+                                        @endif
                                     </x-flex>
                                 @endcan
                             </x-td>
@@ -65,7 +80,12 @@
 
         <x-slot name="content">
             <div class="space-y-4">
-                <x-input label="Código" wire:model="codigo" error="codigo" />
+                <div>
+                    <x-input label="Código" wire:model="codigo" error="codigo" :disabled="(bool) $codigoFijo" />
+                    @if ($codigoFijo)
+                        <p class="text-xs text-muted-foreground mt-1"><i class="fa fa-lock"></i> El código no se puede cambiar: {{ $codigoFijo }}. La descripción sí se puede corregir.</p>
+                    @endif
+                </div>
                 <x-input label="Descripción" wire:model="descripcion" error="descripcion" />
 
             </div>

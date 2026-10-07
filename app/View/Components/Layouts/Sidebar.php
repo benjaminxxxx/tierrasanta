@@ -271,6 +271,11 @@ class Sidebar extends Component
                         'route' => 'sistema.roles',
                         'can' => Permisos::SISTEMA_ROL,
                     ],
+                    [
+                        'title' => 'Configuración',
+                        'route' => 'sistema.configuracion',
+                        'can' => Permisos::SISTEMA_CONFIGURACION,
+                    ],
                 ],
             ],
             [

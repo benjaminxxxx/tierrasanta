@@ -4,51 +4,38 @@ namespace App\Livewire\Campo;
 
 use App\Models\Labores;
 use App\Models\ManoObra;
-use App\Models\PlanTipoAsistencia;
 use App\Services\Campo\Labor\ImportarLaborProceso;
 use App\Services\Campo\Labor\LaborServicio;
-use Illuminate\Validation\ValidationException;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
 
+/**
+ * Lista de labores (filtros, importación, eliminar y restaurar). El registro y la edición están en
+ * LaborFormComponent: esta lista le pide abrirse con crearLabor / editarLabor y se refresca con laborGuardada.
+ */
 class LaboresComponent extends Component
 {
     use WithPagination;
     use WithoutUrlPagination;
     use LivewireAlert;
     use WithFileUploads;
-    public $laborId;
     public $search = '';
-    public $mostrarFormularioLabor = false;
-    public $codigo;
-    public $nombre_labor;
-    public $estandar_produccion;
-    public $unidades;
-    public $codigo_mano_obra;
     public $manoObras;
     public $manoObraFiltro;
     public $fileLabores;
-    public $se_paga_con_jornal;
-    public $tipo_asistencia_codigo;
-    public $tiposAsistencia = [];
     public $tipoFiltro = '';
     public $verEliminados = false;
     public $afectoBonoFiltro = '';
     public $metodoBonoFiltro = '';
-    // App/Http/Livewire/MiComponente.php
-    public array $tramos = [
-        ['hasta' => '', 'monto' => '']
-    ];
+    public bool $verDisponibles = false;
     protected $listeners = ['eliminarLabor'];
     public function mount()
     {
         $this->manoObras = ManoObra::all();
-        // Asistencias que una labor puede representar (labores de suspensión: DM, V, FR…)
-        $this->tiposAsistencia = PlanTipoAsistencia::where('codigo', '<>', 'A')->orderBy('codigo')
-            ->get(['codigo', 'descripcion'])->toArray();
         // ?mano_obra=sin → labores sin mano de obra (enlace de tareas pendientes)
         $manoObra = request()->query('mano_obra');
         if (is_string($manoObra) && $manoObra !== '') {
@@ -69,65 +56,20 @@ class LaboresComponent extends Component
             ]);
         }
     }
-    public function crearNuevaLabor()
+    /** El formulario guardó: render() vuelve a leer la página actual con los cambios. */
+    #[On('laborGuardada')]
+    public function refrescar(): void
     {
-        $this->resetForm();
-        $this->mostrarFormularioLabor = true;
-    }
-    public function editarLabor($laborId)
-    {
-        $this->resetForm();
-        $this->laborId = $laborId;
-        $labor = Labores::find($this->laborId);
-        if ($labor) {
-            $this->codigo = $labor->codigo;
-            $this->nombre_labor = $labor->nombre_labor;
-            $this->estandar_produccion = $labor->estandar_produccion;
-            $this->unidades = $labor->unidades;
-            $this->codigo_mano_obra = $labor->codigo_mano_obra;
-            $this->se_paga_con_jornal = $labor->se_paga_con_jornal;
-            $this->tipo_asistencia_codigo = $labor->tipo_asistencia_codigo;
-            $this->tramos = $labor->tramos_bonificacion != null ? json_decode($labor->tramos_bonificacion, true) : [['hasta' => '', 'monto' => '']];
-            $this->mostrarFormularioLabor = true;
-        } else {
-            $this->alert('error', 'Labor no encontrada.');
-        }
-    }
-    public function guardarLabor()
-    {
-        try {
-
-            $data = [
-                'codigo' => $this->codigo,
-                'nombre_labor' => $this->nombre_labor,
-                'estandar_produccion' => $this->estandar_produccion,
-                'unidades' => $this->unidades,
-                'tramos_bonificacion' => empty($this->tramos) ? null : json_encode($this->tramos),
-                'codigo_mano_obra' => $this->codigo_mano_obra,
-                'se_paga_con_jornal' => $this->se_paga_con_jornal,
-                'tipo_asistencia_codigo' => $this->tipo_asistencia_codigo,
-            ];
-            LaborServicio::guardar($data, $this->laborId);
-
-            $this->resetForm();
-            $this->mostrarFormularioLabor = false;
-            $this->alert('success', 'Labor guardada correctamente.');
-
-        } catch (ValidationException $ve) {
-            throw $ve;
-        } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
-        }
-    }
-    public function resetForm()
-    {
-        $this->resetErrorBag();
-        $this->reset(['laborId', 'codigo', 'nombre_labor', 'codigo_mano_obra', 'estandar_produccion', 'unidades', 'tramos', 'tipo_asistencia_codigo']);
-
     }
     public function confirmarEliminarLabor($id)
     {
-        $this->confirm('¿Está seguro(a) que desea eliminar el registro?.', [
+        $labor = Labores::find($id);
+        $usos = $labor ? LaborServicio::usos((int) $labor->codigo) : [];
+        $mensaje = $usos
+            ? "La labor {$labor->codigo} tiene registros (" . collect($usos)->map(fn($n, $o) => number_format($n) . " en {$o}")->implode(', ')
+                . '). No se puede eliminar: se desactivará (ya no se podrá registrar, pero los reportes antiguos la siguen mostrando). ¿Continuar?'
+            : '¿Eliminar la labor? No tiene registros: se elimina y su código queda libre.';
+        $this->confirm($mensaje, [
             'onConfirmed' => 'eliminarLabor',
             'data' => [
                 'laborId' => $id,
@@ -137,8 +79,8 @@ class LaboresComponent extends Component
     public function eliminarLabor($data)
     {
         try {
-            LaborServicio::eliminar($data['laborId']);
-            $this->alert('success', 'Registro eliminado correctamente.');
+            $resultado = LaborServicio::eliminar($data['laborId']);
+            $this->alert('success', $resultado === 'desactivada' ? 'Labor desactivada: sus registros y reportes se conservan.' : 'Labor eliminada.');
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }
@@ -182,7 +124,16 @@ class LaboresComponent extends Component
         $labores = LaborServicio::leer($filtros, 10, $this->verEliminados);
 
         return view('livewire.campo.labores-component', [
-            'labores' => $labores
+            'labores' => $labores,
+            // Filas que usan cada código: con registros, "eliminar" solo desactiva
+            'usos' => LaborServicio::usosPorCodigo(collect($labores->items())->pluck('codigo')->filter()->all()),
+            // Cuántas labores anteriores tuvo cada código (se reutilizó)
+            'historias' => \App\Models\LaborVigencia::whereIn('codigo', collect($labores->items())->pluck('codigo')->filter())
+                ->selectRaw('codigo, COUNT(*) n')->groupBy('codigo')->pluck('n', 'codigo'),
+            'disponibles' => $this->verDisponibles ? app(\App\Services\Campo\Labor\CampoLaborVigenciaConsulta::class)->disponibles() : [],
+            'mesesReutilizar' => \App\Services\Campo\Labor\CampoLaborVigenciaConsulta::mesesParaReutilizar(),
+            // La mano de obra es obligatoria, pero labores antiguas pueden seguir sin ella
+            'sinManoObra' => Labores::where(fn($q) => $q->whereNull('codigo_mano_obra')->orWhere('codigo_mano_obra', ''))->count(),
         ]);
     }
 }

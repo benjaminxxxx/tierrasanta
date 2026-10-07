@@ -16,6 +16,7 @@ class Labores extends Model
         'codigo_mano_obra',
         'tipo_asistencia_codigo', // labor de suspensión: DM, V, FR… (plan_tipo_asistencias.codigo)
         'codigo',
+        'vigente_desde', // desde cuándo el código significa esta labor (antes: labor_vigencias)
         'estandar_produccion',
         'unidades',
         'tramos_bonificacion',
@@ -32,11 +33,18 @@ class Labores extends Model
     {
         return $this->belongsTo(PlanTipoAsistencia::class, 'tipo_asistencia_codigo', 'codigo');
     }
+    /** Lo que significó este código antes de reasignarse, de lo más reciente a lo más antiguo. */
+    public function vigenciasAnteriores()
+    {
+        return $this->hasMany(LaborVigencia::class, 'codigo', 'codigo')->orderByDesc('hasta');
+    }
+
     public function getEsSuspensionAttribute(): bool
     {
         return filled($this->tipo_asistencia_codigo);
     }
     protected $casts = [
+        'vigente_desde' => 'date',
         'tramos_bonificacion' => 'array',
         'se_paga_con_jornal' => 'boolean'
     ];

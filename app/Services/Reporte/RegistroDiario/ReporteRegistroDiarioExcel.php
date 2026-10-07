@@ -66,7 +66,7 @@ class ReporteRegistroDiarioExcel
         $cuadrilla = $this->cuadrilla($fecha);
         $regadores = $this->regadores($fecha);
 
-        $this->hojaLabores($libro->getSheetByName('LABORES'), $planilla, $cuadrilla, $regadores);
+        $this->hojaLabores($libro->getSheetByName('LABORES'), $fecha, $planilla, $cuadrilla, $regadores);
         $this->hojaPlanillaYCuadrilla($libro->getSheetByName('PLANILLA Y CUADRILLA'), $fecha, $planilla, $cuadrilla);
         $this->hojaCuadrilla($libro->getSheetByName('CUADRILLA'), $fecha, $cuadrilla);
         $this->hojaRegadores($libro->getSheetByName('REGADORES'), $fecha, $regadores);
@@ -168,11 +168,12 @@ class ReporteRegistroDiarioExcel
 
     // ------------------------------------------------------------------ labores
 
-    private function hojaLabores(Worksheet $hoja, array $planilla, array $cuadrilla, array $regadores): void
+    private function hojaLabores(Worksheet $hoja, Carbon $fecha, array $planilla, array $cuadrilla, array $regadores): void
     {
-        $codigos = collect([...$planilla, ...$cuadrilla])->flatMap(fn($p) => array_column($p['actividades'], 'labor'))->filter()->unique();
-        $labores = Labores::withTrashed()->whereIn('codigo', $codigos)->orderBy('codigo')->get(['codigo', 'nombre_labor'])
-            ->map(fn($l) => [$l->codigo, $l->nombre_labor])->all();
+        // La labor que era cada código ese día (un código reutilizado después conserva su nombre de entonces)
+        $vigencias = app(\App\Services\Campo\Labor\CampoLaborVigenciaConsulta::class);
+        $labores = collect([...$planilla, ...$cuadrilla])->flatMap(fn($p) => array_column($p['actividades'], 'labor'))->filter()->unique()->sort()
+            ->map(fn($codigo) => [$codigo, $vigencias->nombre($codigo, $fecha)])->values()->all();
 
         $riego = collect($regadores)->flatMap(fn($r) => array_column([...$r['riegos'], ...$r['otras']], 'labor'))
             ->filter()->unique()->sort(SORT_NATURAL | SORT_FLAG_CASE)->values()

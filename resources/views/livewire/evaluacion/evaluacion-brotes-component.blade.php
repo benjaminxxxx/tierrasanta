@@ -67,7 +67,7 @@
                 <x-tr>
                     <x-th class="text-center">#</x-th>
                     <x-th class="text-center">Campo / Campaña</x-th>
-                    <x-th class="text-center">Fecha</x-th>
+                    <x-th class="text-center">Última evaluación</x-th>
                     <x-th class="text-center">Evaluador</x-th>
                     <x-th class="text-center">Mts Cama/Ha</x-th>
 
@@ -97,13 +97,21 @@
                         </x-td>
 
                         {{-- Fecha --}}
-                        <x-td class="text-center">{{ formatear_fecha($e->fecha) }}</x-td>
+                        <x-td class="text-center">
+                            {{ formatear_fecha($e->fecha) }}
+                            @if ($e->evaluaciones_campania > 1)
+                                <span class="block text-xs text-muted-foreground">de {{ $e->evaluaciones_campania }} evaluaciones</span>
+                            @endif
+                        </x-td>
 
                         {{-- Evaluador --}}
-                        <x-td class="text-center">{{ $e->evaluador }}</x-td>
+                        <x-td class="text-center">
+                            {{ $e->evaluador }}
+                            <span class="block text-xs text-muted-foreground">{{ $e->actualizadoPor?->name ? 'Editó ' . $e->actualizadoPor->name : ($e->creadoPor?->name ? 'Registró ' . $e->creadoPor->name : '') }}</span>
+                        </x-td>
 
                         {{-- Mts cama --}}
-                        <x-td class="text-center">{{ $e->metros_cama }}</x-td>
+                        <x-td class="text-center">{{ number_format((float) $e->metros_cama_ha, 0) }}</x-td>
 
                         {{-- Promedios 2° piso --}}
                         <x-td class="text-center">{{ number_format($e->promedio_actual_brotes_2piso, 0) }}</x-td>

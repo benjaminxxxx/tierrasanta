@@ -23,8 +23,12 @@ class CuadDetalleHora extends Model
     {
         return $this->belongsTo(CuadRegistroDiario::class, 'registro_diario_id');
     }
-     public function labores()
+    /**
+     * La labor del código registrado. Por código, no por id (en algunas labores no coinciden), e incluye las
+     * desactivadas: un registro antiguo conserva el nombre de su labor aunque ya no se use.
+     */
+    public function labores()
     {
-        return $this->belongsTo(Labores::class, 'codigo_labor');
+        return $this->belongsTo(Labores::class, 'codigo_labor', 'codigo')->withTrashed();
     }
 }

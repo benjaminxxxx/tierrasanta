@@ -18,6 +18,14 @@ use Illuminate\Support\Carbon;
 
 class ConsolidarCostoPlanillaServicio
 {
+    private ?\App\Services\Campo\Labor\CampoLaborVigenciaConsulta $vigencias = null;
+
+    /** Qué labor era cada código en cada fecha (se carga una vez por consolidación). */
+    private function vigencias(): \App\Services\Campo\Labor\CampoLaborVigenciaConsulta
+    {
+        return $this->vigencias ??= new \App\Services\Campo\Labor\CampoLaborVigenciaConsulta();
+    }
+
     private array $cacheCostoPorHora = [];
     private function obtenerCostoHoraPlanilla(int $planEmpleadoId, Carbon $fecha): array
     {
@@ -273,7 +281,7 @@ class ConsolidarCostoPlanillaServicio
                 $detalle->id,
                 $campo,
                 $codigoLabor,
-                is_object($detalle->labores) ? ($detalle->labores->nombre_labor ?? null) : null,
+                $this->vigencias()->nombre($codigoLabor, $fecha),
                 $rd->cuadrillero?->nombres ?? '-',
                 $minutos,
                 round($minutos / 480, 3),
@@ -389,12 +397,13 @@ class ConsolidarCostoPlanillaServicio
                 continue;
             }
 
-            $codigoLabor = $detalleDiario->labores->codigo ?? null;
+            $codigoLabor = $detalleDiario->codigo_labor;
             $esMarcadorRiego = $campo === 'FDM' && (string) $codigoLabor === '81';
             $fechaCarbon = Carbon::parse($registroDiario->fecha);
             $minutos = CalculoHelper::obtenerDiferenciaMinutos($detalleDiario->hora_inicio, $detalleDiario->hora_fin);
             $jornales = round($minutos / 480, 3);
-            $laborNombre = is_object($detalleDiario->labores) ? ($detalleDiario->labores->nombre_labor ?? null) : null;
+            // La labor de su fecha: si el código se reutilizó después, conserva el nombre de entonces
+            $laborNombre = $this->vigencias()->nombre($codigoLabor, $registroDiario->fecha);
 
             if ($esMarcadorRiego) {
                 $tieneReporteRiego = ConsolidadoRiego::where('trabajador_type', PlanEmpleado::class)

@@ -115,4 +115,24 @@ class CochinillaInfestacion extends Model
         return number_format($infestadores_por_ha, 0) . ' infest';
     }
     #endregion
+
+    /**
+     * Una infestación nueva, corregida o eliminada cambia de quién es la cochinilla de los infestadores que luego se
+     * recogen en ese campo: se recalculan sus ingresos de infestador.
+     */
+    protected static function booted(): void
+    {
+        $recalcular = function (self $infestacion) {
+            $proceso = app(\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::class);
+            foreach (array_unique(array_filter([$infestacion->campo_nombre, $infestacion->getOriginal('campo_nombre')])) as $campo) {
+                $proceso->recalcularPorCampo($campo);
+            }
+        };
+        static::saved(function (self $infestacion) use ($recalcular) {
+            if ($infestacion->wasRecentlyCreated || $infestacion->wasChanged(['campo_nombre', 'campo_origen_nombre', 'fecha', 'kg_madres'])) {
+                $recalcular($infestacion);
+            }
+        });
+        static::deleted($recalcular);
+    }
 }

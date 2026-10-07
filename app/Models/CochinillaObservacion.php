@@ -15,7 +15,18 @@ class CochinillaObservacion extends Model
         'codigo',
         'descripcion',
         'es_cosecha_mama',
+        'es_vendible', // false = va a infestación y vuelve como ingreso de infestadores
     ];
+
+    protected $casts = ['es_cosecha_mama' => 'boolean', 'es_vendible' => 'boolean'];
+
+    private static ?array $vendibles = null;
+
+    /** codigo => si es vendible (cacheado por petición). */
+    public static function vendibles(): array
+    {
+        return self::$vendibles ??= self::pluck('es_vendible', 'codigo')->map(fn($v) => (bool) $v)->all();
+    }
 
     public function ingresos()
     {

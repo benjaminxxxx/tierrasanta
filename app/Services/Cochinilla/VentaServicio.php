@@ -118,15 +118,11 @@ class VentaServicio
                 $total_kilos = $cochinillaIngreso?->total_kilos;
                 $fechaFiltrado = $cochinillaIngreso?->fecha_proceso_filtrado;
 
-                $campoOriginalEntrega = $entregaCochinilla->campo;
-
-                // Validar infestaciones
-                $camposInfestados = $cochinillaIngreso?->infestaciones->map(function ($infestacion) use ($campoOriginalEntrega) {
-                    if ($infestacion->campo_origen_nombre !== $campoOriginalEntrega) {
-                        throw new \Exception("El campo de infestación '{$infestacion->campo_origen_nombre}' no coincide con el campo de la entrega '{$campoOriginalEntrega}'.");
-                    }
-                    return $infestacion->campo_origen_nombre;
-                })->unique()->implode(',');
+                // El campo del reporte es el dueño de la cochinilla (a quien se le carga la venta); en la cochinilla
+                // de infestadores, "infestadores del campo" es donde estaban las cajitas. Antes se exigía que la
+                // infestación viniera del campo de la entrega y un solo caso cortaba todo el reporte con un error.
+                $campoOriginalEntrega = $cochinillaIngreso?->campo_origen ?: $entregaCochinilla->campo;
+                $camposInfestados = $cochinillaIngreso?->campos_infestados;
 
                 return [
                     'cochinilla_ingreso_id' => $entregaCochinilla->cochinilla_ingreso_id,
@@ -154,9 +150,11 @@ class VentaServicio
 
             $fechaVenta = Carbon::parse($venta['venta_fecha_venta']);
 
-            $ingreso = CochinillaIngreso::where('campo', $venta['cosecha_campo'])
+            // El campo del reporte es el dueño de la cochinilla: puede ser el campo cosechado o el de origen de los
+            // infestadores recogidos en otro campo. La de infestadores se vende hasta meses después de la cosecha.
+            $ingreso = CochinillaIngreso::where(fn($q) => $q->where('campo', $venta['cosecha_campo'])->orWhere('campo_origen', $venta['cosecha_campo']))
                 ->whereDate('fecha', '<=', $fechaVenta)
-                ->whereDate('fecha', '>=', $fechaVenta->copy()->subDays(60))
+                ->whereDate('fecha', '>=', $fechaVenta->copy()->subDays(\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::DIAS_INFESTADORES))
                 ->with('infestaciones', 'observacionRelacionada')
                 ->orderByDesc('fecha')
                 ->first();
@@ -445,6 +443,12 @@ class VentaServicio
 
             if (!empty($faltantes)) {
                 $errores[] = "Registro #" . ($index + 1) . " incompleto. Faltan: " . implode(', ', $faltantes);
+                continue;
+            }
+
+            // La mamá que fue a infestar no se vende: vuelve después como ingreso de infestadores
+            if (!empty($registro['ingreso_id']) && ($ingreso = CochinillaIngreso::with('detalles')->find($registro['ingreso_id'])) && $ingreso->kg_vendibles <= 0) {
+                $errores[] = "Registro #" . ($index + 1) . ": el lote {$ingreso->lote} no es vendible (su cochinilla fue a infestación y vuelve como ingreso de infestadores).";
                 continue;
             }
 

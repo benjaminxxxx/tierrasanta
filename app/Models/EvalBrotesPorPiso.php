@@ -13,7 +13,11 @@ class EvalBrotesPorPiso extends Model
         'fecha',
         'metros_cama_ha',
         'evaluador',
+        'creado_por',
+        'actualizado_por',
     ];
+
+    protected $casts = ['fecha' => 'date'];
 
     protected $appends = [
         'promedio_actual_brotes_2piso',
@@ -27,6 +31,16 @@ class EvalBrotesPorPiso extends Model
     {
         return $this->belongsTo(CampoCampania::class, 'campania_id');
     }
+    public function creadoPor()
+    {
+        return $this->belongsTo(User::class, 'creado_por');
+    }
+
+    public function actualizadoPor()
+    {
+        return $this->belongsTo(User::class, 'actualizado_por');
+    }
+
     public function detalles()
     {
         return $this->hasMany(EvalBrotesPorPisoDetalle::class, 'brotes_x_piso_id');

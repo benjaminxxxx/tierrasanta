@@ -80,6 +80,8 @@ Route::middleware([
 
     // ================================================================ SISTEMA
     Route::prefix('sistema')->name('sistema.')->group(function () {
+        Route::get('/configuracion', \App\Livewire\Sistema\ConfiguracionSistemaComponent::class)
+            ->name('configuracion')->middleware('can:' . Permisos::SISTEMA_CONFIGURACION);
         Route::view('/usuarios', 'livewire.sistema.usuarios-indice')
             ->name('usuarios')->middleware('can:' . Permisos::SISTEMA_USUARIO);
         Route::get('/roles', RolesPermisosFormComponent::class)

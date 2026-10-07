@@ -44,7 +44,8 @@ class EvaluacionBrotesComponent extends Component
     }
     public function eliminarBrotesXPiso($brotesId)
     {
-        $this->confirm('¿Está seguro(a) que desea eliminar el registro?', [
+        $e = \App\Models\EvalBrotesPorPiso::find($brotesId);
+        $this->confirm('¿Eliminar la evaluación del ' . $e?->fecha?->format('d/m/Y') . '? Es la última de la campaña; queda registrada en la auditoría.', [
             'onConfirmed' => 'confirmareliminarBrotesXPiso',
             'data' => [
                 'evaluacionBrotesXPisoId' => $brotesId,
@@ -55,7 +56,7 @@ class EvaluacionBrotesComponent extends Component
     {
         try {
             app(BrotesPorPisoServicio::class)->eliminar($data['evaluacionBrotesXPisoId']);
-            $this->alert('success', 'Registro eliminado correctamente.');
+            $this->alert('success', 'Evaluación eliminada (queda en la auditoría).');
         } catch (\Throwable $th) {
             $this->alert('error', $th->getMessage());
         }

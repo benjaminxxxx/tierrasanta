@@ -93,6 +93,35 @@
                     </x-success>
                 @endif
 
+                {{-- Cochinilla de infestadores: de qué campo es (a su campaña se le carga la venta) --}}
+                @if ($origen)
+                    <div class="mt-4 rounded-lg border p-3 {{ $cochinillaIngreso->origen_estado === 'manual' ? 'border-border' : 'border-amber-400 bg-amber-50 dark:bg-amber-900/20' }}">
+                        <p class="text-sm font-semibold">¿De qué campo es esta cochinilla?</p>
+                        <p class="text-xs text-muted-foreground">
+                            Las cajitas se recogieron en {{ $cochinillaIngreso->campo }} (ahí va el costo del recojo), pero la cochinilla es del campo que
+                            se cosechó para infestarlo: a su campaña se le carga la venta.
+                            @if (count($origen['opciones']) > 1)
+                                {{ $cochinillaIngreso->campo }} se infestó desde varios campos; por el orden de recojo se sugiere <b>{{ $origen['sugerido'] }}</b>.
+                            @endif
+                        </p>
+                        @if ($origen['opciones'])
+                            <div class="flex flex-wrap items-end gap-2 mt-2">
+                                <x-select wire:model="origenElegido" label="Cochinilla del campo" class="w-auto">
+                                    @foreach ($origen['opciones'] as $campoOrigen => $texto)
+                                        <option value="{{ $campoOrigen }}">{{ $texto }}{{ (string) $campoOrigen === (string) $origen['sugerido'] ? ' (sugerido)' : '' }}</option>
+                                    @endforeach
+                                </x-select>
+                                <x-button wire:click="confirmarOrigen"><i class="fa fa-check"></i> Confirmar origen</x-button>
+                            </div>
+                            <p class="text-xs mt-1 {{ $cochinillaIngreso->origen_estado === 'manual' ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400' }}">
+                                {{ $cochinillaIngreso->origen_estado === 'manual' ? 'Confirmado: ' . $cochinillaIngreso->campo_origen . ' · ' . $cochinillaIngreso->campaniaOrigen?->nombre_campania : 'Sin confirmar.' }}
+                            </p>
+                        @else
+                            <p class="text-xs text-red-600 mt-1">No se encontró una infestación de {{ $cochinillaIngreso->campo }} en los meses anteriores: revisa la fecha del ingreso o registra la infestación.</p>
+                        @endif
+                    </div>
+                @endif
+
                 <ul class="space-y-1 text-gray-500 list-disc list-inside dark:text-gray-400 mt-4">
                     <li>No es necesario digitar el sublote, el sistema le dará su código automáticamente.</li>
                     <li>Todos los campos son obligatorios, sino esa fila no se registrará.</li>
