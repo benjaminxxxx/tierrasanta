@@ -75,6 +75,62 @@ class CampaniaEtapaReglas
         ]);
     }
 
+    // ------------------------------------------------------------------ evaluaciones de infestación
+
+    public const CONFIG_DIAS_EVALUACION_INFESTACION = 'campania_evaluacion_infestacion_dias';
+    public const CONFIG_INFESTACION_AVISAR_CERRADAS = 'campania_evaluacion_infestacion_avisar_cerradas';
+    /** Lo que decía la pantalla de evaluación de infestación antes de ser configurable. */
+    public const DIAS_EVALUACION_INFESTACION = [60, 75, 100];
+    /** La pantalla registra hasta tres evaluaciones por campaña (1ª, 2ª y 3ª). */
+    public const EVALUACIONES_INFESTACION_REGISTRABLES = 3;
+
+    /**
+     * Días después de la infestación en que se hace cada evaluación de infestación (1ª, 2ª…), de menor a mayor.
+     *
+     * @return int[]
+     */
+    public static function diasEvaluacionInfestacion(): array
+    {
+        $guardado = Configuracion::find(self::CONFIG_DIAS_EVALUACION_INFESTACION)?->valor;
+        if ($guardado === null) {
+            return self::DIAS_EVALUACION_INFESTACION;
+        }
+        $valor = json_decode((string) $guardado, true);
+        return is_array($valor) ? self::limpiarDias($valor) : [];
+    }
+
+    public static function avisarInfestacionEnCerradas(): bool
+    {
+        return (bool) Configuracion::find(self::CONFIG_INFESTACION_AVISAR_CERRADAS)?->valor;
+    }
+
+    /** "60, 75 y 100" (para los textos de pantalla). */
+    public static function textoDias(array $dias): string
+    {
+        if (count($dias) <= 1) {
+            return (string) ($dias[0] ?? '');
+        }
+        return implode(', ', array_slice($dias, 0, -1)) . ' y ' . end($dias);
+    }
+
+    /** @param array<int, mixed> $dias */
+    public static function guardarInfestacion(array $dias, bool $avisarCerradas): void
+    {
+        $limpios = self::limpiarDias($dias);
+        $originales = array_values(array_filter($dias, fn($d) => $d !== null && $d !== ''));
+        if (count($limpios) !== count($originales)) {
+            throw ValidationException::withMessages(['dias_infestacion' => 'Cada evaluación necesita un número de días mayor que cero y distinto de los demás.']);
+        }
+        Configuracion::updateOrCreate(['codigo' => self::CONFIG_DIAS_EVALUACION_INFESTACION], [
+            'valor' => json_encode($limpios),
+            'descripcion' => 'Días después de la infestación de cada evaluación de infestación (1ª, 2ª…)',
+        ]);
+        Configuracion::updateOrCreate(['codigo' => self::CONFIG_INFESTACION_AVISAR_CERRADAS], [
+            'valor' => $avisarCerradas ? '1' : '0',
+            'descripcion' => 'Avisar evaluaciones de infestación pendientes también en campañas cerradas',
+        ]);
+    }
+
     /** @return int[] enteros positivos, sin repetir, de menor a mayor */
     private static function limpiarDias(array $dias): array
     {

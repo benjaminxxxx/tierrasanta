@@ -12,6 +12,7 @@ use App\Models\PlanSuspension;
 use App\Models\PlanTipoAsistencia;
 use App\Services\Planilla\PlanillaMensualServicio;
 use App\Services\Planilla\PlanillaEmpleadoServicio;
+use App\Services\Planilla\Plame\PlanillaPlameProceso;
 use App\Support\ExcelHelper;
 use DB;
 use Exception;
@@ -320,9 +321,9 @@ class PlanillaServicio
                 // 0117: se duplica de compensación vacacional, ya calculada arriba
                 $plame0117CompVacacional = $compensacionVacacional ?? 0;
 
-                // 0118: rmv/30 * si_23 (descanso vacacional es suspensión IMPERFECTA, no perfecta)
+                // 0118: valor hora (RMV / 240, a 3 decimales) × 8 × días de descanso vacacional (si_23), como la planilla oficial
                 $diasVacacionales = $columnasSuspension['si_23'] ?? 0;
-                $plame0118RemVacacional = round(($planillaMensual->rmv / 30) * $diasVacacionales, 2);
+                $plame0118RemVacacional = PlanillaPlameProceso::remuneracionVacacional((float) $planillaMensual->rmv, $diasVacacionales);
 
                 // 0121: (remuneracionBasica + bonificación del contrato) / total_horas configuradas * total_horas trabajadas.
                 // La bonificación del contrato no es un pago suelto: legalmente es parte de su básico mensual,
@@ -332,74 +333,11 @@ class PlanillaServicio
                     ? round((($remuneracionBasica + $bonificacion) / $totalHorasConfiguradas) * $totalHorasEmpleado, 2)
                     : 0;
 
-                // 0201: montoAsignacionFamiliar / dias del mes * dias laborados
-                $plame0201AsignacionFamiliar = $diasDelMes > 0
-                    ? round(($montoAsignacionFamiliar / $diasDelMes) * $diasLaborados, 2)
-                    : 0;
+                // 0201: asignación / días del mes × (días del mes − suspensión perfecta). El descanso médico y las
+                // licencias con goce (imperfecta) se pagan y no la reducen
+                $plame0201AsignacionFamiliar = PlanillaPlameProceso::asignacionFamiliar((float) $montoAsignacionFamiliar, $diasDelMes, $sumaSuspensionPerfecta);
 
-                // Remuneración bruta = SUMA(0118 : 0121 : 0201)
-                $plameRemuneracionBruta = round(
-                    $plame0118RemVacacional + $plame0121RemJornalBasico + $plame0201AsignacionFamiliar,
-                    2
-                );
-
-                // 0406: 16.66% de la remuneración bruta
-                $plame0406GratifFiestasNavidad = round($plameRemuneracionBruta * 0.1666, 2);
-
-                // 0312: 6% de la gratificación (0406), no de la remuneración bruta directamente
-                $plame0312BonifExtTemp = round($plame0406GratifFiestasNavidad * 0.06, 2);
-
-                // 0904: 9.72% de la remuneración bruta
-                $plame0904Cts = round($plameRemuneracionBruta * 0.0972, 2);
-
-                // BETA 30%: ((30% * rmv) / dias_del_mes) * (dias_del_mes - suma_suspension_perfecta)
-                $plame0314Beta30 = round(
-                    ((0.30 * $planillaMensual->rmv) / $diasDelMes) * ($diasDelMes - $sumaSuspensionPerfecta),
-                    2
-                );
-
-                // Base imponible para AFP: 0117 + 0118 + 0121 + 0201 (Y7:AB7 en tu Excel)
-                $baseImponibleAfp = $plame0117CompVacacional
-                    + $plame0118RemVacacional
-                    + $plame0121RemJornalBasico
-                    + $plame0201AsignacionFamiliar;
-
-                $esSnp = $codigoSp === 'SNP';
-
-                $plameDescuento0601ComisionAfpPct = 0;
-                $plameDescuento0606PrimaSeguroAfp = 0;
-                $plameDescuento0607Snp = 0;
-                $plameDescuento0608SppAporteObligatorio = 0;
-
-                if (!$esPensionista) {
-                    // $descuentoSp ya fue obtenido más arriba para proyectado_dscto_afp_prima_seguro,
-                    // se reutiliza aquí sin volver a consultar la BD.
-
-                    // 0601: comisión AFP (0 si es SNP)
-                    if (!$esSnp) {
-                        $plameDescuento0601ComisionAfpPct = round($descuentoSp->comision / 100 * $baseImponibleAfp, 2);
-                    }
-
-                    // 0606: prima de seguro AFP. Mayores de 65 NO pagan prima (regla fija, no configurable).
-                    if (!$esSnp && !$esMayor65) {
-                        $plameDescuento0606PrimaSeguroAfp = round($descuentoSp->prima_seguros / 100 * $baseImponibleAfp, 2);
-                    }
-
-                    // 0607: SNP, solo aplica si el código ES SNP
-                    if ($esSnp) {
-                        $plameDescuento0607Snp = round($descuentoSp->aporte_obligatorio / 100 * $baseImponibleAfp, 2);
-                    }
-
-                    // 0608: aporte obligatorio SPP (0 si es SNP), sobre remuneración bruta + comp. vacacional
-                    if (!$esSnp) {
-                        $plameDescuento0608SppAporteObligatorio = round($descuentoSp->aporte_obligatorio / 100 * ($plameRemuneracionBruta + $plame0117CompVacacional), 2);
-                    }
-                }
-
-                // 0605: siempre 0, según tu especificación
-                $plameDescuento0605Renta5taRetenida = 0;
-
-                // Aportes del empleador — usan proyeccion_sueldo_bruto (= $sueldoBrutoBase, ya calculado arriba)
+                // Aportes del empleador: sobre el sueldo bruto proyectado ($sueldoBrutoBase)
                 $plameAporteEmpleador0803Poliza = is_null($planillaMensual->vida_ley)
                     ? 0
                     : round($sueldoBrutoBase * ($planillaMensual->vida_ley / 100) * PlanMensualPersonal::FACTOR_SEGURO, 2);
@@ -412,30 +350,29 @@ class PlanillaServicio
                     ? 0
                     : round($sueldoBrutoBase * ($planillaMensual->essalud_eps / 100) * PlanMensualPersonal::FACTOR_SEGURO, 2);
 
-                // 0804 EsSalud del PLAME: OJO, usa $baseImponibleAfp (0117+0118+0121+0201), NO $sueldoBrutoBase.
-// Es una base distinta a la de vida_ley/sctr/eps, según tu fórmula =6%*SUMA(Y34:AB34)
-                $plameAporteEmpleador0804Essalud = is_null($planillaMensual->essalud)
-                    ? 0
-                    : round($baseImponibleAfp * ($planillaMensual->essalud / 100), 2);
+                // Conceptos en cadena (bruta, gratificación, CTS, BETA, descuentos, EsSalud, neto) con los ajustes manuales
+                // del trabajador (Ajustes PLAME), que se conservan al regenerar
+                $existente = $planillaMensual->planilla->firstWhere('plan_empleado_id', $empleado->id);
+                $plame = PlanillaPlameProceso::calcular([
+                    'calculados' => [
+                        '0117' => (float) $plame0117CompVacacional,
+                        '0118' => $plame0118RemVacacional,
+                        '0121' => $plame0121RemJornalBasico,
+                        '0201' => $plame0201AsignacionFamiliar,
+                        '0803' => $plameAporteEmpleador0803Poliza,
+                        '0805' => $plameAporteEmpleador0805Sctr,
+                        '0810' => $plameAporteEmpleador0810Eps,
+                    ],
+                    'rmv' => (float) $planillaMensual->rmv,
+                    'dias_mes' => $diasDelMes,
+                    'dias_suspension_perfecta' => $sumaSuspensionPerfecta,
+                    'codigo_sp' => $codigoSp,
+                    'es_pensionista' => $esPensionista,
+                    'es_mayor_65' => $esMayor65,
+                    'descuento_sp' => $esPensionista ? null : $descuentoSp,
+                    'pct_essalud' => $planillaMensual->essalud === null ? null : (float) $planillaMensual->essalud,
+                ], $existente?->plame_ajustes ?? []);
 
-                // Neto a pagar: (0117+0118+0121+0201) + (0312+0314+0406+0904) - (0601+0605+0606+0607+0608)
-                $plameNetoAPagar = round(
-                    round($plame0117CompVacacional, 2)
-                    + round($plame0118RemVacacional, 2)
-                    + round($plame0121RemJornalBasico, 2)
-                    + round($plame0201AsignacionFamiliar, 2)
-                    + round($plame0312BonifExtTemp, 2)
-                    + round($plame0314Beta30, 2)
-                    + round($plame0406GratifFiestasNavidad, 2)
-                    + round($plame0904Cts, 2)
-                    - round($plameDescuento0601ComisionAfpPct, 2)
-                    - round($plameDescuento0605Renta5taRetenida, 2)
-                    - round($plameDescuento0606PrimaSeguroAfp, 2)
-                    - round($plameDescuento0607Snp, 2)
-                    - round($plameDescuento0608SppAporteObligatorio, 2),
-                    2
-                );
-                // dd($proyectadoDsctoAfpPrimaSeguro);
                 $dataPlanilla = array_merge([
                     'orden' => $key + 1,
                     'nombres' => $empleado->nombre_completo,
@@ -457,30 +394,14 @@ class PlanillaServicio
                     // Lo que se declara como jornada: sin las horas de los días de suspensión (se pagan, no se trabajaron)
                     'plame_horas_jornada' => round($totalHorasEmpleado - ($horasSuspensionPorEmpleado[$empleado->id] ?? 0), 2),
 
-                    'plame_0117_comp_vacacional' => $plame0117CompVacacional,
-                    'plame_0118_rem_vacacional' => $plame0118RemVacacional,
-                    'plame_0121_rem_jornal_basico' => $plame0121RemJornalBasico,
-                    'plame_0201_asignacion_familiar' => $plame0201AsignacionFamiliar,
-                    'plame_remuneracion_bruta' => $plameRemuneracionBruta,
-                    'plame_0312_bonif_ext_temp' => $plame0312BonifExtTemp,
-                    'plame_0314_beta_30' => $plame0314Beta30,
-                    'plame_0406_gratif_fiestas_navidad' => $plame0406GratifFiestasNavidad,
-                    'plame_0904_cts' => $plame0904Cts,
+                    // Lo que calcula el sistema de cada concepto (las columnas guardan el valor final, con ajustes)
+                    'plame_calculados' => $plame['calculados'],
+                ], $plame['columnas'], $columnasSuspension);
 
-                    'plame_descuento_0601_comision_afp_pct' => $plameDescuento0601ComisionAfpPct,
-                    'plame_descuento_0605_renta_5ta_retenida' => $plameDescuento0605Renta5taRetenida,
-                    'plame_descuento_0606_prima_seguro_afp' => $plameDescuento0606PrimaSeguroAfp,
-                    'plame_descuento_0607_snp' => $plameDescuento0607Snp,
-                    'plame_descuento_0608_spp_aporte_obligatorio' => $plameDescuento0608SppAporteObligatorio,
-
-                    'plame_neto_a_pagar' => $plameNetoAPagar,
-
-                    'plame_aporte_empleador_0803_poliza' => $plameAporteEmpleador0803Poliza,
-                    'plame_aporte_empleador_0804_essalud' => $plameAporteEmpleador0804Essalud,
-                    'plame_aporte_empleador_0805_sctr' => $plameAporteEmpleador0805Sctr,
-                    'plame_aporte_empleador_0810_eps' => $plameAporteEmpleador0810Eps,
-
-                ], $columnasSuspension);
+                // Vacaciones: espejo del ajuste 0118 y exceso pagado en negro (sobre el 0118 final)
+                if ($existente) {
+                    $dataPlanilla += app(PlanillaPlameProceso::class)->camposVacaciones($existente, $plame['columnas']);
+                }
 
                 $planillaMensual->planilla()->updateOrCreate(
                     [
@@ -1284,6 +1205,14 @@ class PlanillaServicio
             ],
         ]);
     }
+    /** Columna de cada concepto en la hoja PLAME de la plantilla */
+    private const COLUMNAS_HOJA_PLAME = [
+        '0117' => 'Y', '0118' => 'Z', '0121' => 'AA', '0201' => 'AB',
+        '0312' => 'AD', '0314' => 'AE', '0406' => 'AF', '0904' => 'AG',
+        '0601' => 'AH', '0605' => 'AI', '0606' => 'AJ', '0607' => 'AK', '0608' => 'AL',
+        '0803' => 'AN', '0804' => 'AO', '0805' => 'AP', '0810' => 'AQ',
+    ];
+
     protected function llenarHojaPlame($spreadsheet, PlanMensual $planillaMensual, $empleados): void
     {
         $hoja = $spreadsheet->getSheetByName('PLAME');
@@ -1353,14 +1282,15 @@ class PlanillaServicio
             // Y: 0117 COMP. VACACIONAL, viene tal cual de PROYECTADA
             $hoja->setCellValue("Y{$f}", "=PROYECTADA!G{$f}");
 
-            // Z: 0118 REM. VAC. = rmv/30 * dias vacacionales (si_23, columna Q de esta misma hoja)
-            $hoja->setCellValue("Z{$f}", "={$rmv}/30*Q{$f}");
+            // Z: 0118 REM. VAC. = valor hora (RMV/240 a 3 decimales) × 8 × días vacacionales (si_23, columna Q)
+            $hoja->setCellValue("Z{$f}", "=ROUND({$rmv}/240,3)*8*Q{$f}");
 
             // AA: 0121 REM. JORN. BAS. Con las horas registradas (incluyen descanso médico y licencias con goce), no las de X
             $hoja->setCellValue("AA{$f}", "=SUM(PROYECTADA!D{$f}:E{$f})/\$AP\$1*'REPORTE DIARIO'!AI{$f}");
 
             // AB: 0201 ASIG. FAMILIAR
-            $hoja->setCellValue("AB{$f}", "=PROYECTADA!F{$f}/\$AP\$3*W{$f}");
+            // (solo descuenta la suspensión perfecta, F:M; descanso médico y licencia con goce no la reducen)
+            $hoja->setCellValue("AB{$f}", "=PROYECTADA!F{$f}/\$AP\$3*(\$AP\$3-SUM(F{$f}:M{$f}))");
 
             // AC: REMUNERACIÓN BRUTA = SUMA(Y:AB)
             $hoja->setCellValue("AC{$f}", "=SUM(Z{$f}:AB{$f})");
@@ -1405,6 +1335,25 @@ class PlanillaServicio
 
             // AQ: 0810 EPS — tal cual, viene de PROYECTADA
             $hoja->setCellValue("AQ{$f}", "=PROYECTADA!R{$f}");
+
+            // Ajustes manuales (Ajustes PLAME / vacaciones personalizadas): va el monto en vez de la fórmula, resaltado
+            // y con una nota que dice que no es fórmula y cuánto calculaba el sistema
+            foreach ($empleado->plame_ajustes ?? [] as $codigo => $ajuste) {
+                $columna = self::COLUMNAS_HOJA_PLAME[$codigo] ?? null;
+                if (!$columna) {
+                    continue;
+                }
+                $celda = "{$columna}{$f}";
+                $hoja->setCellValue($celda, (float) $ajuste['monto']);
+                $hoja->getStyle($celda)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FFF2CC');
+                $comentario = $hoja->getComment($celda);
+                $comentario->setWidth('280pt')->setHeight('80pt');
+                $comentario->getText()->createTextRun(
+                    "MONTO PERSONALIZADO (no es fórmula).\n"
+                    . ($ajuste['motivo'] ?? null ? "Motivo: {$ajuste['motivo']}\n" : '')
+                    . 'Calculado por el sistema: S/ ' . number_format((float) ($empleado->calculadoPlame((string) $codigo) ?? 0), 2)
+                );
+            }
 
             $fila++;
         }

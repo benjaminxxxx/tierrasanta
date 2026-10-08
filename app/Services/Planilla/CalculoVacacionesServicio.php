@@ -94,9 +94,8 @@ class CalculoVacacionesServicio
                 continue;
             }
 
-            $vacacionesPlameEfectivo = $personaMes->vacaciones_plame_personalizado
-                ?? $personaMes->plame_0118_rem_vacacional
-                ?? 0;
+            // El 0118 guardado ya es el final (con el ajuste de vacaciones personalizadas si lo tiene)
+            $vacacionesPlameEfectivo = (float) ($personaMes->plame_0118_rem_vacacional ?? 0);
 
             $netoPagado = (float) ($fila['vacaciones_neto_pagadas'] ?? 0);
 

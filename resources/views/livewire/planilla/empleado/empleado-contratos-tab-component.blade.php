@@ -130,6 +130,67 @@
                 </x-group-field>
             </div>
 
+            {{-- Cómo y dónde se le paga (lo usa la planilla oficina y su hoja ADM) --}}
+            <div class="mt-5 border-t border-border pt-4">
+                <h4 class="text-sm font-semibold text-foreground mb-1">Pago</h4>
+                <p class="text-xs text-muted-foreground mb-3">
+                    Planilla (5ta categoría) o recibo por honorarios (4ta). La cuenta principal recibe lo de planilla (blanco); la secundaria, la diferencia.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <x-select label="Forma de ingreso" wire:model.live="tipo_ingreso">
+                        <option value="planilla">PLANILLA (5ta categoría)</option>
+                        <option value="honorarios">RECIBO POR HONORARIOS (4ta)</option>
+                    </x-select>
+                    @if ($tipo_ingreso === 'honorarios')
+                        <x-group-field>
+                            <x-label>Retención de 4ta</x-label>
+                            <label class="flex items-center gap-2 mt-2 text-sm">
+                                <x-checkbox wire:model="suspension_cuarta" /> Tiene suspensión de retenciones (no se le retiene el 8%)
+                            </label>
+                        </x-group-field>
+                    @else
+                        <x-select label="CTS y gratificación" wire:model="beneficios_mensuales">
+                            <option value="0">EN DOS TRAMOS (may/nov y jul/dic)</option>
+                            <option value="1">CADA MES CON EL SUELDO</option>
+                        </x-select>
+                    @endif
+                    <x-select label="Método de pago" wire:model="metodo_pago">
+                        <option value="">SELECCIONAR</option>
+                        <option value="transferencia">TRANSFERENCIA</option>
+                        <option value="efectivo">EFECTIVO</option>
+                        <option value="cheque">CHEQUE</option>
+                    </x-select>
+
+                    <x-input label="Banco (cuenta principal)" wire:model="banco" placeholder="BCP, BBVA, Interbank…" />
+                    <div class="grid grid-cols-2 gap-2">
+                        <x-select label="Tipo de cuenta" wire:model="tipo_cuenta">
+                            <option value="">—</option>
+                            <option value="ahorros">AHORROS</option>
+                            <option value="corriente">CORRIENTE</option>
+                        </x-select>
+                        <x-select label="Moneda" wire:model="moneda_cuenta">
+                            <option value="PEN">SOLES</option>
+                            <option value="USD">DÓLARES</option>
+                        </x-select>
+                    </div>
+                    <x-input label="N° de cuenta principal (blanco)" wire:model="numero_cuenta" placeholder="215-00000000-0-00" />
+
+                    <x-input label="Banco (cuenta secundaria)" wire:model="banco_secundario" placeholder="Donde se paga la diferencia" />
+                    <div class="grid grid-cols-2 gap-2">
+                        <x-select label="Tipo de cuenta" wire:model="tipo_cuenta_secundaria">
+                            <option value="">—</option>
+                            <option value="ahorros">AHORROS</option>
+                            <option value="corriente">CORRIENTE</option>
+                        </x-select>
+                        <x-select label="Moneda" wire:model="moneda_cuenta_secundaria">
+                            <option value="PEN">SOLES</option>
+                            <option value="USD">DÓLARES</option>
+                        </x-select>
+                    </div>
+                    <x-input label="N° de cuenta secundaria (diferencia)" wire:model="numero_cuenta_secundaria" />
+                </div>
+            </div>
+
             <div class="flex justify-end gap-2 mt-4">
                 <x-button variant="secondary" wire:click="cerrarForm">Cancelar</x-button>
                 <x-button wire:click="guardarContrato" wire:loading.attr="disabled">

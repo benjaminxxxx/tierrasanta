@@ -30,7 +30,13 @@ class PlanMensual extends Model
         'pension_sctr',
         'essalud_eps',
         'rem_basica_essalud',
-        'cts'
+        'cts',
+        // Planilla oficina (régimen general)
+        'excel_oficina',
+        'essalud_general',
+        'bonif_extraordinaria_general',
+        'retencion_cuarta',
+        'tope_retencion_cuarta',
     ];
    
     public function detalle()

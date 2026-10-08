@@ -66,12 +66,12 @@ class ResumenAsistenciaMensualServicio
                     'plan_empleado_id' => $persona->plan_empleado_id,
                     'nombres' => $persona->nombres,
                     'resumen_asistencia' => implode(', ', $partes) ?: '-',
-                    'vacaciones_plame' => $persona->plame_0118_rem_vacacional,
+                    'vacaciones_plame' => $persona->calculadoPlame('0118') ?? $persona->plame_0118_rem_vacacional, // lo calculado por el sistema
                     'vacaciones_neto_pagadas' => $persona->vacaciones_neto_pagadas,
                     'vacaciones_negro' => $persona->vacaciones_negro,
                     'calificable_automatico' => $totalAfecta === 0 && $totalRevisar === 0,
                     'bonificacion_asistencia' => $persona->bonificacion_asistencia,
-                    'vacaciones_plame_personalizado' => $persona->vacaciones_plame_personalizado,
+                    'vacaciones_plame_personalizado' => $persona->ajustePlame('0118')['monto'] ?? null,
                     'bonificacion_laboral' => (float) ($bonosProductividad[$persona->plan_empleado_id] ?? 0),
                 ];
             })

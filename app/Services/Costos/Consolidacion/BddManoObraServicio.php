@@ -81,6 +81,8 @@ class BddManoObraServicio
         $inicio = Carbon::create($anio, $mes, 1)->toDateString();
         $fin = Carbon::create($anio, $mes, 1)->endOfMonth()->toDateString();
 
+        // Mes consolidado con la versión anterior (permisos en mano de obra indirecta): se rehace completo
+        $forzar = $forzar || $this->tieneFormatoAnterior($inicio, $fin);
         $dias = $forzar ? $this->diasDelRango($inicio, $fin) : $this->diasDesactualizados($anio, $mes);
         $filas = 0;
         foreach ($this->rangosContiguos($dias) as [$a, $b]) {
@@ -163,6 +165,12 @@ class BddManoObraServicio
         try {
             $this->manoObra->consolidarPlanillaEnRango($inicio, $fin, null, $campo);
             foreach ($this->mesesDelRango($inicio, $fin) as [$anio, $mes]) {
+                // Si el resto del mes sigue con el formato anterior, se rehace completo (si no, sus permisos se perderían)
+                $iniMes = Carbon::create($anio, $mes, 1)->toDateString();
+                $finMes = Carbon::create($anio, $mes, 1)->endOfMonth()->toDateString();
+                if ($this->tieneFormatoAnterior($iniMes, $finMes)) {
+                    $this->manoObra->consolidarPlanillaEnRango($iniMes, $finMes);
+                }
                 $this->indirecta->consolidarMes($anio, $mes);
             }
         } catch (\Throwable $e) {
@@ -193,6 +201,18 @@ class BddManoObraServicio
             'metodo_detectar' => null,
             'acciones' => [['titulo' => 'Reconstruir mes', 'metodo' => 'reconstruirMes', 'parametros' => ['anio' => $anio, 'mes' => $mes]]],
         ]);
+    }
+
+    /**
+     * Filas de la versión anterior: planilla sin trabajador vinculado, o permisos (descanso médico, feriado…) como
+     * mano de obra indirecta con horas. Hoy los permisos son planilla en FDM y cada fila lleva el trabajador.
+     */
+    public function tieneFormatoAnterior(string $inicio, string $fin): bool
+    {
+        return ResumenCostoDiario::whereBetween('fecha', [$inicio, $fin])
+            ->where(fn($q) => $q->where(fn($q2) => $q2->where('origen_tipo', 'planilla')->whereNull('plan_empleado_id'))
+                ->orWhere(fn($q2) => $q2->where('origen_tipo', ConsolidarManoObraIndirectaServicio::ORIGEN)->whereNotNull('minutos')))
+            ->exists();
     }
 
     /** Acción de la tarea pendiente. */

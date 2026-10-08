@@ -33,6 +33,19 @@ class PlanContrato extends Model
         'finalizado_por',
         'estado',
         'eliminado_por',
+        // Planilla oficina: cómo y dónde se le paga
+        'tipo_ingreso',
+        'suspension_cuarta',
+        'beneficios_mensuales',
+        'metodo_pago',
+        'banco',
+        'tipo_cuenta',
+        'moneda_cuenta',
+        'numero_cuenta',
+        'banco_secundario',
+        'tipo_cuenta_secundaria',
+        'moneda_cuenta_secundaria',
+        'numero_cuenta_secundaria',
     ];
 
     protected $casts = [
@@ -40,6 +53,8 @@ class PlanContrato extends Model
         'fecha_fin' => 'datetime',
         'fecha_fin_prueba' => 'datetime',
         'esta_jubilado' => 'boolean',
+        'suspension_cuarta' => 'boolean',
+        'beneficios_mensuales' => 'boolean',
         'compensacion_vacacional' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

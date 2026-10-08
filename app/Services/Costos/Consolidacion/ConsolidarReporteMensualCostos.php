@@ -606,8 +606,10 @@ class ConsolidarReporteMensualCostos
         return $filePath;
     }
     /**
-     * Hoja 'CUADRE PLANILLA': lo pagado a los trabajadores de planilla contra lo que llega a la BDD
-     * (costo en campo + mano de obra indirecta por concepto), con el detalle de lo que no cuadra.
+     * Hoja 'CUADRE PLANILLA': lo pagado a los trabajadores de planilla contra lo que llega a la BDD, por trabajador,
+     * con la causa de cada diferencia y cómo se corrige.
+     *   planilla en campos + planilla en FDM (permisos, feriados, labores de FDM) = sueldo + aportes
+     *   mano de obra indirecta (pagos sin horas)                                  = vacaciones pagadas + bono de asistencia
      */
     private function escribirHojaCuadrePlanilla(\PhpOffice\PhpSpreadsheet\Spreadsheet $spreadsheet, int $anio, int $mes): void
     {
@@ -616,9 +618,13 @@ class ConsolidarReporteMensualCostos
         $fin = Carbon::create($anio, $mes, 1)->endOfMonth()->toDateString();
 
         $pagado = $moi->totalPagado($anio, $mes);
-        $campo = (float) ResumenCostoDiario::where('origen_tipo', 'planilla')->whereBetween('fecha', [$inicio, $fin])->sum('costo_total');
-        $conceptos = $moi->totalesPorConcepto($inicio, $fin);
-        $diferencias = $moi->diferenciasPorTrabajador($anio, $mes);
+        $planilla = ResumenCostoDiario::where('origen_tipo', 'planilla')->whereBetween('fecha', [$inicio, $fin]);
+        $enCampos = (clone $planilla)->where('campo', '<>', 'FDM')->selectRaw('SUM(costo_total) as costo, SUM(minutos) as minutos')->first();
+        $enFdm = (clone $planilla)->where('campo', 'FDM')
+            ->selectRaw("COALESCE(labor_nombre, 'Sin labor') as concepto, SUM(costo_total) as costo, SUM(minutos) as minutos")
+            ->groupBy('concepto')->orderByDesc('costo')->get();
+        $sinHoras = $moi->totalesPorConcepto($inicio, $fin);
+        $trabajadores = $moi->cuadrePorTrabajador($anio, $mes);
 
         if ($existente = $spreadsheet->getSheetByName('CUADRE PLANILLA')) {
             $spreadsheet->removeSheetByIndex($spreadsheet->getIndex($existente));
@@ -637,7 +643,7 @@ class ConsolidarReporteMensualCostos
         $nombreMes = Carbon::create($anio, $mes, 1)->translatedFormat('F Y');
         $hoja->setCellValue('A1', 'CUADRE DE PLANILLA — ' . mb_strtoupper($nombreMes));
         $hoja->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-        $hoja->setCellValue('A2', 'Costo en campo + mano de obra indirecta debe ser igual a lo pagado a los trabajadores de planilla.');
+        $hoja->setCellValue('A2', 'Lo pagado a cada trabajador (sueldo + aportes) debe ser igual a lo que suma la BDD como planilla: horas en campos y en FDM (permisos, feriados, licencias), al céntimo.');
         $hoja->getStyle('A2')->getFont()->setItalic(true)->getColor()->setRGB('7F7F7F');
 
         // 1) Pagado
@@ -671,65 +677,73 @@ class ConsolidarReporteMensualCostos
         $titulo("A{$f}:C{$f}");
         $f++;
         $iniCosto = $f;
-        $hoja->setCellValue("A{$f}", 'Costo en campo (horas asistidas con detalle por campo y riego)');
-        $hoja->setCellValue("C{$f}", round($campo, 2));
+        $hoja->setCellValue("A{$f}", 'Planilla en campos (detalle por campo y riego repartido)');
+        $hoja->setCellValue("B{$f}", round(((float) ($enCampos->minutos ?? 0)) / 60, 2));
+        $hoja->setCellValue("C{$f}", round((float) ($enCampos->costo ?? 0), 2));
         $hoja->getStyle("A{$f}")->getFont()->setBold(true);
         $f++;
-        $hoja->setCellValue("A{$f}", 'Mano de obra indirecta:');
+        $hoja->setCellValue("A{$f}", 'Planilla en FDM (por labor: permisos, feriados, licencias y labores de FDM):');
         $hoja->getStyle("A{$f}")->getFont()->setBold(true);
-        foreach ($conceptos as $concepto => $t) {
+        foreach ($enFdm as $c) {
+            $f++;
+            $hoja->setCellValue("A{$f}", '   ' . $c->concepto);
+            $hoja->setCellValue("B{$f}", round(((float) $c->minutos) / 60, 2));
+            $hoja->setCellValue("C{$f}", round((float) $c->costo, 2));
+        }
+        $f++;
+        $hoja->setCellValue("A{$f}", 'Pagos sin horas (mano de obra indirecta):');
+        $hoja->getStyle("A{$f}")->getFont()->setBold(true);
+        foreach ($sinHoras as $concepto => $t) {
             $f++;
             $hoja->setCellValue("A{$f}", '   ' . $concepto);
-            $hoja->setCellValue("B{$f}", $t['horas'] > 0 ? round($t['horas'], 2) : null);
             $hoja->setCellValue("C{$f}", round($t['costo'], 2));
         }
         $f++;
         $filaTotalCosto = $f;
-        $hoja->setCellValue("A{$f}", 'TOTAL COSTO (campo + mano de obra indirecta)');
+        $hoja->setCellValue("A{$f}", 'TOTAL EN LA BDD');
         $hoja->setCellValue("C{$f}", "=SUM(C{$iniCosto}:C" . ($f - 1) . ')');
         $hoja->getStyle("A{$f}:C{$f}")->getFont()->setBold(true);
         $bordes("A{$inicioCosto}:C{$f}");
 
         // 3) Diferencia
         $f += 2;
-        $hoja->setCellValue("A{$f}", 'DIFERENCIA (pagado − costo)');
+        $filaDiferencia = $f;
+        $hoja->setCellValue("A{$f}", 'DIFERENCIA (pagado − BDD)');
         $hoja->setCellValue("C{$f}", "=C{$filaTotalPagado}-C{$filaTotalCosto}");
         $hoja->getStyle("A{$f}:C{$f}")->getFont()->setBold(true)->setSize(12);
-        $hoja->getStyle("A{$f}:C{$f}")->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-            ->getStartColor()->setRGB('FFF2CC');
+        $hoja->getStyle("A{$f}:C{$f}")->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('FFF2CC');
         $bordes("A{$f}:C{$f}");
 
-        // 4) Trabajadores cuyo costo en campo no es tarifa × horas asistidas
-        if ($diferencias) {
-            $f += 2;
-            $hoja->setCellValue("A{$f}", 'Banco de horas de riego: horas trabajadas en campo por encima de las pagadas este mes (explica la diferencia)');
-            $hoja->getStyle("A{$f}")->getFont()->setBold(true);
+        // 4) Por trabajador: quiénes no cuadran, por qué y cómo se corrige
+        $f += 2;
+        $hoja->setCellValue("A{$f}", $trabajadores
+            ? 'TRABAJADORES QUE NO CUADRAN (la diferencia de arriba se explica aquí)'
+            : 'Todos los trabajadores cuadran: lo pagado a cada uno es igual a lo que suma en la BDD.');
+        $hoja->getStyle("A{$f}")->getFont()->setBold(true);
+        if ($trabajadores) {
             $f++;
             $inicioTabla = $f;
-            foreach (['TRABAJADOR', 'HORAS EN CAMPO', 'HORAS PAGADAS', 'COSTO EN CAMPO', 'COSTO PAGADO', 'PROVISIÓN (A PAGAR)'] as $i => $cab) {
+            foreach (['TRABAJADOR', 'HORAS PAGADAS', 'HORAS EN BDD', 'PAGADO', 'EN BDD', 'DIFERENCIA (BDD − PAGADO)', 'CAUSA Y CÓMO CORREGIR'] as $i => $cab) {
                 $hoja->setCellValue(chr(65 + $i) . $f, $cab);
             }
-            $titulo("A{$f}:F{$f}");
-            foreach ($diferencias as $d) {
+            $titulo("A{$f}:G{$f}");
+            foreach ($trabajadores as $t) {
                 $f++;
-                $hoja->fromArray([
-                    $d['trabajador'], round($d['horas_campo'], 2), round($d['horas_asistidas'], 2),
-                    round($d['costo_campo'], 2), round($d['costo_esperado'], 2), round($d['diferencia'], 2),
-                ], null, "A{$f}");
+                $hoja->fromArray([$t['trabajador'], round($t['horas_pagadas'], 2), round($t['horas_bdd'], 2), $t['pagado'], $t['bdd'], $t['diferencia'],
+                    implode("\n", $t['causas'])], null, "A{$f}");
+                $hoja->getStyle("G{$f}")->getAlignment()->setWrapText(true);
             }
             $hoja->getStyle("D{$inicioTabla}:F{$f}")->getNumberFormat()->setFormatCode($soles);
-            $bordes("A{$inicioTabla}:F{$f}");
-            $f++;
-            $hoja->setCellValue("A{$f}", 'Las horas de riego que pasan el jornal van al banco de horas y se pagan otro día (uso de horas acumuladas). Positivo = trabajadas y aún no pagadas; negativo = pagadas este mes por horas trabajadas antes.');
-            $hoja->getStyle("A{$f}")->getFont()->setItalic(true)->setSize(9)->getColor()->setRGB('7F7F7F');
+            $bordes("A{$inicioTabla}:G{$f}");
         }
 
-        $hoja->getStyle("C4:C{$filaTotalCosto}")->getNumberFormat()->setFormatCode($soles);
-        $hoja->getStyle("C" . ($filaTotalCosto + 2))->getNumberFormat()->setFormatCode($soles);
+        $hoja->getStyle("B4:C{$filaTotalCosto}")->getNumberFormat()->setFormatCode('#,##0.00');
+        $hoja->getStyle("C4:C{$filaDiferencia}")->getNumberFormat()->setFormatCode($soles);
         $hoja->getColumnDimension('A')->setWidth(62);
         foreach (['B', 'C', 'D', 'E', 'F'] as $col) {
             $hoja->getColumnDimension($col)->setWidth(18);
         }
+        $hoja->getColumnDimension('G')->setWidth(90);
     }
 
     /**

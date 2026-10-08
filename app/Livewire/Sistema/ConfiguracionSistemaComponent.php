@@ -23,11 +23,16 @@ class ConfiguracionSistemaComponent extends Component
     public $mesesReutilizar;
     /** @var array<string, bool> tipo de ingreso de cochinilla => vendible */
     public array $vendibles = [];
+    /** @var array<int, mixed> días después de la infestación de la 1ª, 2ª… evaluación de infestación */
+    public array $diasInfestacion = [];
+    public bool $avisarInfestacionCerradas = false;
 
     public function mount(): void
     {
         $this->diasBrotes = CampaniaEtapaReglas::diasEvaluacionBrotes();
         $this->diasMaximo = CampaniaEtapaReglas::diasMaximoSugerencia();
+        $this->diasInfestacion = CampaniaEtapaReglas::diasEvaluacionInfestacion();
+        $this->avisarInfestacionCerradas = CampaniaEtapaReglas::avisarInfestacionEnCerradas();
         $this->mesesReutilizar = \App\Services\Campo\Labor\CampoLaborVigenciaConsulta::mesesParaReutilizar();
         $this->vendibles = \App\Models\CochinillaObservacion::orderBy('descripcion')->pluck('es_vendible', 'codigo')->map(fn($v) => (bool) $v)->all();
     }
@@ -56,6 +61,26 @@ class ConfiguracionSistemaComponent extends Component
         } catch (\Throwable $e) {
             $this->alert('error', $e->getMessage());
         }
+    }
+
+    public function agregarEvaluacionInfestacion(): void
+    {
+        $ultimo = (int) (end($this->diasInfestacion) ?: 45);
+        $this->diasInfestacion[] = $ultimo + 15;
+    }
+
+    public function quitarEvaluacionInfestacion(int $i): void
+    {
+        unset($this->diasInfestacion[$i]);
+        $this->diasInfestacion = array_values($this->diasInfestacion);
+    }
+
+    public function guardarInfestacion(): void
+    {
+        CampaniaEtapaReglas::guardarInfestacion($this->diasInfestacion, $this->avisarInfestacionCerradas);
+        $this->diasInfestacion = CampaniaEtapaReglas::diasEvaluacionInfestacion();
+        $this->resetErrorBag();
+        $this->alert('success', 'Configuración guardada. Los avisos se actualizan al revisar las tareas pendientes.');
     }
 
     public function guardarLabores(): void

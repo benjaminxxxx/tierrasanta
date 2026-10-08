@@ -140,3 +140,9 @@ Handsontable y los sueldos de la planilla generada); `/planilla/asistencias` red
 | Qué | Por qué se retiró |
 |---|---|
 | `resources/views/livewire/campania/partials/accordion-section.blade.php` | Fila de encabezado del acordeón antiguo de `/campania/por-campo`. Las secciones ahora son tarjetas ordenables (arrastrar o flechas) con vista compacta, dentro de `campania-por-campo-informe-component` (Alpine `informeCampania`). Los parciales de cada sección no cambiaron. |
+
+### Permisos y suspensiones (08/10/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| `app/Livewire/Planilla/Asistencia/SuspensionesPlanillaComponent.php` (versión Handsontable), su vista y `app/Services/Planilla/PlanillaSuspensionProceso.php` | Tabla editable de suspensiones: cada fila se validaba contra la base por separado, así que correr el límite entre dos rangos seguidos obligaba a guardar uno, luego el otro (o eliminar y volver a crear). Además solo dejaba fechas de inicio dentro del mes. El componente nuevo (mismo nombre) agrupa por trabajador, edita en un modal y valida el conjunto (`App\Services\Planilla\Suspension\PlanillaSuspensionCrud`); permite rangos futuros. |

@@ -47,4 +47,22 @@ class PlanillaPlameReglas
 
     /** Suspensiones que SUNAT cuenta como días subsidiados (pagados por EsSalud). */
     public const CODIGOS_SUBSIDIADOS = ['21', '22'];
+
+    /** Columna de plan_mensual_personals que guarda el concepto (valor final, con ajuste si lo tiene). */
+    public static function columna(string $codigo): ?string
+    {
+        return (self::INGRESOS + self::DESCUENTOS + self::APORTES_EMPLEADOR)[$codigo][0] ?? null;
+    }
+
+    /** Conceptos que se pueden ajustar a mano: código => "0803 PÓLIZA DE SEGURO…" */
+    public static function ajustables(): array
+    {
+        $lista = [];
+        foreach (self::INGRESOS + self::DESCUENTOS + self::APORTES_EMPLEADOR as $codigo => [, $concepto]) {
+            if ($codigo !== '0605') {
+                $lista[(string) $codigo] = $codigo . ' ' . $concepto;
+            }
+        }
+        return $lista;
+    }
 }

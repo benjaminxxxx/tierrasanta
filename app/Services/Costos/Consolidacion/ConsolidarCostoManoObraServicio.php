@@ -9,6 +9,13 @@ use DB;
 
 class ConsolidarCostoManoObraServicio
 {
+    private ?ConsolidarCostoPlanillaServicio $generador = null;
+
+    /** Mismo generador para todas las campañas de una consolidación (carga el rango una sola vez). */
+    private function generador(): ConsolidarCostoPlanillaServicio
+    {
+        return $this->generador ??= new ConsolidarCostoPlanillaServicio();
+    }
     /**
      * Se mantiene para no romper el botón actual "Consolidar" por campaña.
      * Internamente ya delega al método por rango.
@@ -125,7 +132,7 @@ class ConsolidarCostoManoObraServicio
     {
         $fechaFinEfectiva = $fechaFin ?? now()->format('Y-m-d');
 
-        $filas = app(ConsolidarCostoPlanillaServicio::class)->generarFilas(
+        $filas = $this->generador()->generarFilas(
             $nombreCampania,
             $campo,
             $fechaInicio,
@@ -231,7 +238,10 @@ class ConsolidarCostoManoObraServicio
             ->delete();
 
         $cubiertos = []; // campo => [[inicio, fin], ...] tramos del periodo que tienen campaña
-        $conActividad = self::camposConActividad($fechaInicio, $fechaFin);
+        // Todo el rango se calcula una vez; los campos con filas salen de ahí (FDM entra aunque solo tenga
+        // horas sin detalle: feriados, descansos médicos, licencias…)
+        $this->generador()->precargar(\Illuminate\Support\Carbon::parse($fechaInicio)->toDateString(), \Illuminate\Support\Carbon::parse($fechaFin)->toDateString());
+        $conActividad = $this->generador()->camposPrecargados();
         if ($campo) {
             $conActividad = array_intersect_key($conActividad, [$campo => true]);
         }

@@ -1,199 +1,121 @@
-<div x-data="{{ $idTable }}" class="space-y-4">
+@php
+    $mostrarTabla = $campania && $campoSeleccionado && $ultimaInfestacion;
+    $promedios = [1 => $campania?->promedio_individuos_primera_eval, 2 => $campania?->promedio_individuos_segunda_eval, 3 => $campania?->promedio_individuos_tercera_eval];
+    $fechasModelo = [1 => 'primeraEvalFecha', 2 => 'segundaEvalFecha', 3 => 'terceraEvalFecha'];
+@endphp
+<div x-data="{{ $idTable }}" class="space-y-3">
     <div>
         <x-title>Evaluación de Infestación</x-title>
-        <x-subtitle>Monitoreo del crecimiento de cochinilla en pencas después de la infestación</x-subtitle>
+        <x-subtitle>Cochinilla por penca después de la infestación y proyección de cosecha</x-subtitle>
     </div>
-    <x-card>
 
-        @can(\App\Constants\Permisos::INFESTACION_EVALUACION_VER)
-            <x-flex class="mt-4">
-                <x-select-campo wire:model.live="campoSeleccionado" label="Seleccionar Campo" class="w-auto" />
-                <x-select wire:model.live="campaniaSeleccionada" label="Seleccionar Campaña" class="w-auto">
-                    <option value="">Seleccione campaña</option>
+    <x-card class="space-y-3">
+        <div class="flex flex-wrap items-end gap-3">
+            @can(\App\Constants\Permisos::INFESTACION_EVALUACION_VER)
+                <x-select-campo wire:model.live="campoSeleccionado" label="Campo" class="w-auto" />
+                <x-select wire:model.live="campaniaSeleccionada" label="Campaña" class="w-auto">
+                    <option value="">{{ $campoSeleccionado ? 'Seleccione campaña' : 'Primero elija el campo' }}</option>
                     @foreach ($campaniasPorCampo as $campaniaPorCampo)
                         <option value="{{ $campaniaPorCampo->id }}">
-                            {{ $campaniaPorCampo->nombre_campania }}
+                            {{ $campaniaPorCampo->nombre_campania }}{{ $campaniaPorCampo->fecha_fin ? ' (cerrada)' : '' }}
                         </option>
                     @endforeach
                 </x-select>
-            </x-flex>
-        @endcan
+            @endcan
 
+            @if ($mostrarTabla)
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-md bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300">
+                    <i class="fa fa-calendar"></i>
+                    <span>
+                        Infestación <b>{{ \Carbon\Carbon::parse($ultimaInfestacion->fecha)->format('d/m/Y') }}</b>
+                        · {{ ucfirst($ultimaInfestacion->metodo) }}
+                        · {{ number_format($ultimaInfestacion->infestadores, 0) }} infestadores
+                    </span>
+                </div>
+                <div class="w-36">
+                    <x-input id="cochinillas_gramo" type="number" wire:model="proyeccionCochinillaXGramo" placeholder="Ej: 500" label="Cochinillas por gramo" />
+                </div>
+            @endif
+        </div>
 
-        @if ($campania && $campoSeleccionado)
-            <div class="mt-6">
-
-                @if (!$ultimaInfestacion)
-                    {{-- NO HAY INFESTACIÓN --}}
-                    <x-warning>
-                        No hay infestaciones realizadas en
-                        <b>{{ $campoSeleccionado }}</b> –
-                        <b>{{ strtoupper($campania->nombre_campania) }}</b>.
-                        No se puede realizar la evaluación.
-                    </x-warning>
-                @else
-                    {{-- ÚLTIMA INFESTACIÓN --}}
-                    <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
-                                <i class="w-5 h-5 text-white fa fa-calendar"></i>
-                            </div>
-
-                            <div>
-                                <p class="font-semibold text-emerald-900">
-                                    Última infestación registrada
-                                </p>
-                                <p class="text-sm text-emerald-700">
-                                    {{ \Carbon\Carbon::parse($ultimaInfestacion->fecha)->format('d/m/Y') }}
-                                    • {{ ucfirst($ultimaInfestacion->metodo) }}
-                                    • {{ number_format($ultimaInfestacion->infestadores, 0) }} infestadores
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
+        @if ($campania && $campoSeleccionado && !$ultimaInfestacion)
+            <x-warning>
+                No hay infestaciones registradas en <b>{{ $campoSeleccionado }}</b> – <b>{{ strtoupper($campania->nombre_campania) }}</b>.
+                No se puede registrar la evaluación.
+            </x-warning>
+        @elseif ($mostrarTabla)
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <span>
+                    <i class="fa fa-info-circle"></i>
+                    Complete las cochinillas por penca en cada columna.
+                    @if ($textoDias !== '')
+                        Las evaluaciones se hacen a los <b>{{ $textoDias }} días</b> después de la infestación.
+                    @endif
+                </span>
+                @foreach ($calendario as $e)
+                    @php
+                        $vencida = $e['fecha'] && $e['fecha']->lte(now());
+                        $color = !$e['registrable'] ? 'border-border'
+                            : ($e['registrada'] ? 'border-green-500 text-green-700 dark:text-green-400'
+                            : ($vencida ? 'border-amber-500 text-amber-700 dark:text-amber-400' : 'border-border'));
+                    @endphp
+                    <span class="px-2 py-0.5 rounded-full border {{ $color }}"
+                        title="{{ !$e['registrable'] ? 'La tabla registra hasta 3 evaluaciones' : ($e['registrada'] ? 'Registrada' : ($vencida ? 'Ya tocaba: falta registrarla' : 'Próxima')) }}">
+                        {{ $e['numero'] }}ª · {{ $e['dias'] }} d · {{ $e['fecha']?->format('d/m/Y') }}
+                        @if ($e['registrada']) <i class="fa fa-check"></i> @elseif ($e['registrable'] && $vencida) <i class="fa fa-clock"></i> @endif
+                    </span>
+                @endforeach
             </div>
+        @elseif (!$campania)
+            <p class="text-sm text-muted-foreground">Elija el campo y la campaña para registrar la evaluación.</p>
         @endif
     </x-card>
-    @if ($campoSeleccionado && $campaniaSeleccionada && $ultimaInfestacion)
-        <x-alert type="info" class="mt-4">
-            Complete los datos de cochinillas por penca en cada columna.
-            Las evaluaciones se realizan a los
-            <strong>60, 75 y 100 días</strong>
-            después de la infestación.
-        </x-alert>
-    @endif
-    <x-card class="mt-4">
-        <div wire:ignore>
-            <div x-ref="tableContainer"></div>
-        </div>
-    </x-card>
-    <x-card>
-        {{-- Primera fila: Cochinillas por gramo --}}
-       
-            <x-input id="cochinillas_gramo" type="number" wire:model="proyeccionCochinillaXGramo"
-                class="text-lg font-semibold" placeholder="Ej: 500" label="N° Cochinillas por Gramo" />
-        
-    </x-card>
-    @if ($campoSeleccionado && $campaniaSeleccionada && $ultimaInfestacion)
-        <x-card class="mt-4">
-            <x-h3>
-                Promedios Calculados
-            </x-h3>
 
-            <div class="grid md:grid-cols-3 gap-4 mt-5">
-
-                {{-- Primera evaluación --}}
-                <div class="rounded-lg border border-border bg-muted text-muted-foreground p-4 space-y-3">
-
-                    <div class="text-sm font-medium">
-                        1° Evaluación
-                    </div>
-
-                    <div class="text-2xl font-semibold">
-                        {{ $campania->promedio_individuos_primera_eval }}
-                    </div>
-
-                    <div class="text-xs">
-                        Promedio general (2° y 3° piso)
-                    </div>
-
-                    <x-input type="date" wire:model="primeraEvalFecha" class="w-full text-sm" label="Fecha" />
-                </div>
-
-                {{-- Segunda evaluación --}}
-                <div class="rounded-lg border border-border bg-muted text-muted-foreground p-4 space-y-3">
-
-                    <div class="text-sm font-medium">
-                        2° Evaluación
-                    </div>
-
-                    <div class="text-2xl font-semibold">
-                        {{ $campania->promedio_individuos_segunda_eval }}
-                    </div>
-
-                    <div class="text-xs">
-                        Promedio general (2° y 3° piso)
-                    </div>
-
-                    <x-input type="date" wire:model="segundaEvalFecha" class="w-full text-sm" label="Fecha" />
-                </div>
-
-                {{-- Tercera evaluación --}}
-                <div class="rounded-lg border border-border bg-muted text-muted-foreground p-4 space-y-3">
-
-                    <div class="text-sm font-medium">
-                        3° Evaluación
-                    </div>
-
-                    <div class="text-2xl font-semibold">
-                        {{ $campania->promedio_individuos_tercera_eval }}
-                    </div>
-
-                    <div class="text-xs">
-                        Promedio general (2° y 3° piso)
-                    </div>
-
-                    <x-input type="date" wire:model="terceraEvalFecha" class="w-full text-sm" label="Fecha" />
-                </div>
-
-            </div>
-
-        </x-card>
-
-
-        <x-card class="mt-4">
-            <x-h3>
-                Proyección de Cosecha
-            </x-h3>
-
-
-
-            {{-- Segunda fila: Resultados calculados --}}
-            <div class="grid md:grid-cols-3 gap-4">
-
-                {{-- Gramos por penca --}}
-                <div class="p-4 rounded-md border border-border bg-muted text-muted-foreground">
-                    <p class="text-sm font-medium  mb-1">
-                        Gramos Cochinilla por Penca
-                    </p>
-                    <p class="text-xs mb-2">
-                        Promedio individuos / n° de cochinillas por gramo
-                    </p>
-                    <p class="text-2xl font-semibold">
-                        {{ formatear_numero($campania->eval_proj_gramos_cochinilla_x_penca ?? 0) }} g
-                    </p>
-                </div>
-
-                {{-- Número de pencas infestadas --}}
-                <div class="p-4 rounded-md border border-border bg-muted text-muted-foreground">
-                    <p class="text-sm font-medium  mb-1">
-                        Número de Pencas Infestadas
-                    </p>
-                    <p class="text-xs mb-2">
-                        Total de pencas
-                    </p>
-                    <p class="text-2xl font-semibold">
-                        {{ formatear_numero($campania->eval_cosch_proj_penca_inf ?? 0) }}
-                    </p>
-                </div>
-
-                {{-- Rendimiento por hectárea --}}
-                <div class="p-4 rounded-md border border-border bg-muted text-muted-foreground">
-                    <p class="text-sm font-medium mb-1">
-                        Rendimiento por Hectárea
-                    </p>
-                    <p class="text-xs mb-2">
-                        (Gramos × Pencas) ÷ 1000
-                    </p>
-                    <p class="text-3xl font-semibold">
-                        {{ formatear_numero($campania->eval_cosch_proj_rdto_ha ?? 0) }} kg
-                    </p>
-                </div>
-
+    {{-- La tabla existe siempre (Handsontable vive fuera de Livewire), pero solo se ve con campaña elegida e infestada:
+         así no se llena por error antes de elegir y se pierde al cambiar de campo. --}}
+    <div @class(['hidden' => !$mostrarTabla])>
+        <x-card class="p-2">
+            <div wire:ignore>
+                <div x-ref="tableContainer"></div>
             </div>
         </x-card>
+    </div>
+
+    @if ($mostrarTabla)
+        <x-card class="space-y-3">
+            <div class="grid md:grid-cols-3 gap-3">
+                @foreach ([1, 2, 3] as $n)
+                    <div class="rounded-lg border border-border bg-muted text-muted-foreground p-3 space-y-2" wire:key="eval-{{ $n }}">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <div class="text-xs font-medium">{{ $n }}ª evaluación · promedio ponderado</div>
+                                <div class="text-xl font-semibold text-foreground">{{ formatear_numero($promedios[$n] ?? 0, 0) }}</div>
+                            </div>
+                            <div class="w-36">
+                                <x-input type="date" wire:model="{{ $fechasModelo[$n] }}" class="text-sm" />
+                            </div>
+                        </div>
+                        @include('livewire.evaluacion.partials.desglose-infestacion', ['d' => $campania->desgloseEvaluacionInfestacion($n)])
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-border pt-3">
+                <div title="Promedio individuos / n° de cochinillas por gramo">
+                    <p class="text-xs text-muted-foreground">Gramos de cochinilla por penca</p>
+                    <p class="text-lg font-semibold">{{ formatear_numero($campania->eval_proj_gramos_cochinilla_x_penca ?? 0) }} g</p>
+                </div>
+                <div title="Total de pencas">
+                    <p class="text-xs text-muted-foreground">Pencas infestadas</p>
+                    <p class="text-lg font-semibold">{{ formatear_numero($campania->eval_cosch_proj_penca_inf ?? 0) }}</p>
+                </div>
+                <div title="(Gramos × Pencas) ÷ 1000">
+                    <p class="text-xs text-muted-foreground">Rendimiento proyectado por hectárea</p>
+                    <p class="text-lg font-semibold">{{ formatear_numero($campania->eval_cosch_proj_rdto_ha ?? 0) }} kg</p>
+                </div>
+            </div>
+        </x-card>
+
         @can(\App\Constants\Permisos::INFESTACION_EVALUACION_REGISTRAR)
             <x-inferior-derecha>
                 <x-button type="button" @click="sendDataEvaluacionInfestacion()">
@@ -201,7 +123,6 @@
                 </x-button>
             </x-inferior-derecha>
         @endcan
-
     @endif
 
     <x-loading wire:loading />
@@ -210,6 +131,7 @@
 <script>
     Alpine.data('{{ $idTable }}', () => ({
         tableData: @json($table),
+        encabezados: @json($encabezados),
         isDark: JSON.parse(localStorage.getItem('darkMode')),
         hot: null,
         init() {
@@ -226,12 +148,12 @@
             });
             Livewire.on('recargarEvaluacion', (data) => {
                 this.tableData = data[0].table;
-                this.hot.destroy();
-                this.initTable();
-                this.hot.loadData(this.tableData);
-            });
-            Livewire.on('guardadoConfirmado', () => {
-                this.sendDataPoblacionPlanta();
+                this.encabezados = data[0].encabezados;
+                // Esperar a que la tabla se muestre (estaba oculta sin campaña) para que tome su ancho
+                requestAnimationFrame(() => {
+                    this.hot?.destroy();
+                    this.initTable();
+                });
             });
         },
         initTable() {
@@ -318,18 +240,7 @@
             return [
                 [
                     'N° PENCA',
-                    {
-                        label: 'Evaluación 1<br><small>60–70 días</small>',
-                        colspan: 2
-                    },
-                    {
-                        label: 'Evaluación 2<br><small>75–85 días</small>',
-                        colspan: 2
-                    },
-                    {
-                        label: 'Evaluación 3<br><small>100–120 días</small>',
-                        colspan: 2
-                    },
+                    ...this.encabezados.map(label => ({ label, colspan: 2 })),
                 ],
                 [
                     '', // simula rowspan de "N° PENCA"

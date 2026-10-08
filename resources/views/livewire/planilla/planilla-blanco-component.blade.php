@@ -3,10 +3,10 @@
         <x-flex class="justify-between">
             <div>
                 <x-title>
-                    Planilla Mensual
+                    Planilla Agraria
                 </x-title>
                 <x-subtitle>
-                    Gestión y consolidación de datos mensuales para la generación del PLAME
+                    Régimen agrario: proyección, PLAME, costos, vacaciones y ajustes del mes
                 </x-subtitle>
             </div>
             @include('comun.selector-mes-base')
@@ -44,6 +44,13 @@
                         <i class="fa fa-file-invoice mr-1.5"></i> Vacaciones y Bonos
                     </button>
 
+                    <button type="button" wire:click="cambiarVista('AJUSTES')" class="px-4 py-2 text-sm font-semibold rounded-md transition-all duration-150
+                    {{ $vista === 'AJUSTES'
+    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
+    : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300' }}">
+                        <i class="fa fa-pen mr-1.5"></i> Ajustes PLAME
+                    </button>
+
                 </div>
                 <div>
                     @if ($planillaMensual && $planillaMensual->excel)
@@ -71,10 +78,14 @@
             <livewire:planilla.planilla-vacaciones-bonos-component :mes="$mes" :anio="$anio"
                 wire:key="cpm_{{ $mes }}_{{ $anio }}_{{ $vista }}" />
         @endif
+        @if ($vista == 'AJUSTES')
+            <livewire:planilla.planilla-plame-ajustes-component :mes="$mes" :anio="$anio"
+                wire:key="cpm_{{ $mes }}_{{ $anio }}_{{ $vista }}" />
+        @endif
     </div>
 
     <livewire:planilla.apertura-planilla-modal />
-    @if($vista != 'VACACIONESYBONOS')
+    @if(!in_array($vista, ['VACACIONESYBONOS', 'AJUSTES']))
         <x-inferior-derecha>
             <x-button @click="$wire.dispatch('abrir-apertura-planilla',{mes: {{ $mes }}, anio: {{ $anio }}})">
                 <i class="fa fa-refresh"></i> Generar Planilla Proyectada

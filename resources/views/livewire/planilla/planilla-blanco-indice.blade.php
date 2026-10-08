@@ -1,4 +1,4 @@
-<x-app-layout title="Planilla - Blanco">
+<x-app-layout title="Planilla Agraria">
 
 
     <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css">

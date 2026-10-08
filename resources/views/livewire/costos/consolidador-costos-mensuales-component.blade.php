@@ -1,147 +1,124 @@
 <div>
-    <x-dialog-modal wire:model="mostrarModal" maxWidth="full">
+    <x-dialog-modal wire:model="mostrarModal" maxWidth="2xl">
         <x-slot name="title">
-            <div class="flex items-center justify-between pr-6">
-                <span class="text-lg font-bold">Consolidación Anual de Costos y Reportes</span>
-                <div class="flex items-center gap-2">
-                    <x-label for="anio_select" value="Año:" class="font-bold" />
-                    <x-input type="number" id="anio_select" wire:model.live="anio" class="w-28 text-center" min="2000"
-                        max="2100" />
-                </div>
+            <div class="flex items-center justify-between gap-3 pr-6">
+                <span class="text-lg font-bold">Consolidar costos del mes</span>
+                <x-input type="number" wire:model.live="anio" class="w-24 text-center" min="2000" max="2100" />
             </div>
         </x-slot>
 
         <x-slot name="content">
-            <div class="overflow-x-auto">
-                <x-table class="w-full text-xs border-collapse">
-                    <x-slot name="thead">
-                        <x-tr>
-                            <x-th class="p-2 border border-border font-bold text-left whitespace-nowrap">Concepto / Mes</x-th>
-                            @foreach ($mesesNombres as $numMes => $nombreMes)
-                                <x-th class="p-2 border border-border text-center uppercase text-xs whitespace-nowrap">
-                                    {{ substr($nombreMes, 0, 3) }}
-                                </x-th>
-                            @endforeach
-                        </x-tr>
-                    </x-slot>
+            @php
+                $m = fn($v) => $v === null ? '—' : number_format((float) $v, 2);
+                $nombres = [1 => 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
+                $colorEstado = [
+                    'ok' => 'bg-green-500', 'diferencia' => 'bg-red-500', 'sin' => 'bg-zinc-300 dark:bg-zinc-600',
+                ];
+            @endphp
+            <div class="space-y-4">
+                {{-- Tira de meses: el color dice si cuadra --}}
+                <div class="grid grid-cols-6 sm:grid-cols-12 gap-1">
+                    @foreach ($nombres as $num => $nombre)
+                        <button type="button" wire:click="elegirMes({{ $num }})"
+                            class="relative px-1 py-1.5 rounded text-xs font-semibold border transition
+                                {{ $mes === $num ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:bg-muted' }}"
+                            title="{{ ['ok' => 'Cuadra', 'diferencia' => 'Tiene diferencias', 'sin' => 'Sin consolidar'][$estados[$num] ?? 'sin'] }}">
+                            {{ $nombre }}
+                            <span class="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full {{ $colorEstado[$estados[$num] ?? 'sin'] }}"></span>
+                        </button>
+                    @endforeach
+                </div>
 
-                    <x-slot name="tbody">
-                        @php
-                            $conceptos = [
-                                'costo_planilla' => ['label' => 'Planilla', 'calc' => 'costo_planilla_calculado'],
-                                'costo_bono_productividad' => ['label' => 'Bono Prod.', 'calc' => 'costo_bono_productividad_calculado'],
-                                'costo_cuadrilla' => ['label' => 'Cuadrilla', 'calc' => 'costo_cuadrilla_calculado'],
-                                'costo_cuadrilla_bono' => ['label' => 'Cuadrilla bono', 'calc' => 'costo_cuadrilla_bono_calculado'],
-                                'costo_maquinaria' => ['label' => 'Maquinaria', 'calc' => 'costo_maquinaria_calculado'],
-                                'costo_pesticida' => ['label' => 'Pesticidas', 'calc' => 'costo_pesticida_calculado'],
-                                'costo_fertilizante' => ['label' => 'Fertilizantes', 'calc' => 'costo_fertilizante_calculado'],
-                                'costo_servicio_campo' => ['label' => 'Servicios Campos', 'calc' => 'costo_servicio_campo_calculado'],
-                                'costo_gastos_generales' => ['label' => 'Gastos Grales.', 'calc' => 'costo_gastos_generales_calculado'],
-                            ];
-                        @endphp
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="text-sm">
+                        <b>{{ \Illuminate\Support\Carbon::create($anio ?: date('Y'), $mes ?: 1, 1)->translatedFormat('F Y') }}</b>
+                        <span class="text-muted-foreground">
+                            · {{ $costo ? 'consolidado ' . $costo->updated_at?->format('d/m/Y H:i') : 'sin consolidar' }}
+                        </span>
+                    </div>
+                    <div class="flex gap-2">
+                        @if ($urlExcel)
+                            <x-button variant="secondary" href="{{ $urlExcel }}" target="_blank"><i class="fa fa-file-excel"></i> Excel</x-button>
+                        @endif
+                        <x-button wire:click="consolidar" title="Lee la BDD (ya al día), calcula los totales y genera el Excel">
+                            <i class="fa fa-check"></i> Consolidar mes
+                        </x-button>
+                    </div>
+                </div>
 
-                        {{-- Filas de Conceptos de Costo --}}
-                        @foreach ($conceptos as $keyField => $meta)
-                            <x-tr>
-                                <x-td class="p-2 border border-border font-medium whitespace-nowrap bg-muted text-foreground">
-                                    {{ $meta['label'] }}
-                                </x-td>
-                                @foreach ($mesesNombres as $numMes => $nombreMes)
-                                    @php
-                                        $costo = $costosAnio->get($numMes);
-                                        $pagado = $costo->{$keyField} ?? null;
-                                        $calculado = $costo->{$meta['calc']} ?? null;
-                                        $dif = ($pagado !== null && $calculado !== null) ? ($pagado - $calculado) : null;
-                                    @endphp
-                                    <x-td class="p-1.5 border border-border text-right font-mono text-xs">
-                                        @if($costo)
-                                            <div class="text-foreground"><span class="text-muted-foreground text-[10px]">P:</span>
-                                                {{ fmt($pagado, 2) }}</div>
-                                            <div class="text-blue-700 dark:text-blue-400"><span class="text-blue-400 dark:text-blue-500 text-[10px]">C:</span>
-                                                {{ fmt($calculado, 2) }}</div>
-                                            {{-- Diferencia: verde si cuadra, rojo si no --}}
-                                            <div @class([
-                                                'text-muted-foreground' => $dif === null,
-                                                'text-green-600 dark:text-green-400' => $dif !== null && abs($dif) < 0.01,
-                                                'text-red-600 dark:text-red-400 font-semibold' => $dif !== null && abs($dif) >= 0.01,
-                                            ])><span class="opacity-70 text-[10px]">D:</span>
-                                                {{ fmt($dif, 2) }}</div>
-                                        @else
-                                            <span class="text-muted-foreground">-</span>
-                                        @endif
-                                    </x-td>
-                                @endforeach
-                            </x-tr>
-                            @if ($keyField === 'costo_planilla')
-                                {{-- Parte del calculado de planilla que no tiene trabajo en campo (hoja CUADRE PLANILLA) --}}
-                                <x-tr>
-                                    <x-td class="p-2 pl-5 border border-border whitespace-nowrap bg-muted text-muted-foreground text-xs">
-                                        ↳ Mano de obra indirecta
-                                    </x-td>
-                                    @foreach ($mesesNombres as $numMes => $nombreMes)
-                                        @php $costo = $costosAnio->get($numMes); @endphp
-                                        <x-td class="p-1.5 border border-border text-right font-mono text-xs text-muted-foreground">
-                                            {{ $costo && $costo->costo_mano_obra_indirecta !== null ? fmt($costo->costo_mano_obra_indirecta, 2) : '-' }}
-                                        </x-td>
-                                    @endforeach
-                                </x-tr>
-                            @endif
-                        @endforeach
+                @if ($desactualizados > 0)
+                    <x-warning>
+                        {{ $desactualizados }} día(s) con cambios en registros diarios, planilla o campañas después de la última actualización de la
+                        mano de obra. Reconstruye la mano de obra para que entren.
+                    </x-warning>
+                @endif
 
-                        {{-- Fila: Reportes Excel --}}
-                        <x-tr class="bg-muted border-t-2 border-border">
-                            <x-td class="p-2 border border-border font-medium whitespace-nowrap text-foreground">Reporte Excel</x-td>
-                            @foreach ($mesesNombres as $numMes => $nombreMes)
-                                @php
-                                    $costo = $costosAnio->get($numMes);
-                                    $fileUrl = ($costo && $costo->reporte_file && Storage::disk('public')->exists($costo->reporte_file))
-                                        ? Storage::disk('public')->url($costo->reporte_file)
-                                        : null;
-                                @endphp
-                                <x-td class="p-1 border border-border text-center">
-                                    @if($fileUrl)
-                                        <a href="{{ $fileUrl }}" target="_blank"
-                                            class="inline-flex items-center px-1.5 py-0.5 text-[11px] font-medium text-blue-700 bg-blue-100 rounded hover:bg-blue-200 dark:text-blue-300 dark:bg-blue-900/40 dark:hover:bg-blue-900/70">
-                                            <i class="fa fa-file-excel mr-1"></i> Ver
-                                        </a>
-                                    @else
-                                        <span class="text-muted-foreground text-[10px]">-</span>
+                {{-- Conceptos por grupo: pagado (fuente) vs calculado (BDD) y su botón de reconstruir --}}
+                <div class="border border-border rounded-lg divide-y divide-border">
+                    @foreach ($grupos as $clave => $g)
+                        <div class="p-3 space-y-1">
+                            <div class="flex items-center justify-between gap-2">
+                                <div>
+                                    <p class="font-semibold text-sm">{{ $g['nombre'] }}</p>
+                                    @if ($g['fuente'])
+                                        <p class="text-[11px] text-muted-foreground">Fuente: {{ $g['fuente'] }}</p>
                                     @endif
-                                </x-td>
-                            @endforeach
-                        </x-tr>
-
-                        {{-- Fila: Acciones / Consolidar --}}
-                        <x-tr class="bg-muted">
-                            <x-td class="p-2 border border-border font-medium whitespace-nowrap text-foreground">Acción</x-td>
-                            @foreach ($mesesNombres as $numMes => $nombreMes)
-                                <x-td class="p-1 border border-border text-center">
-                                    <div class="flex justify-center gap-1">
-                                        <button wire:click="generarMes({{ $numMes }})" wire:loading.attr="disabled"
-                                            title="Consolidar (la mano de obra ya está al día; solo rehace los días que cambiaron)"
-                                            class="px-2 py-0.5 text-[11px] font-medium text-white bg-indigo-600 rounded hover:bg-indigo-700 disabled:opacity-50">
-                                            <i class="fa fa-sync-alt"></i>
-                                        </button>
-                                        <button wire:click="generarMes({{ $numMes }}, true)" wire:loading.attr="disabled"
-                                            wire:confirm="¿Reconstruir toda la mano de obra de {{ $nombreMes }}? Tarda más; úsalo solo si algo no cuadra."
-                                            title="Reconstruir toda la mano de obra del mes"
-                                            class="px-2 py-0.5 text-[11px] font-medium text-foreground bg-muted border border-border rounded hover:bg-accent disabled:opacity-50">
-                                            <i class="fa fa-wrench"></i>
-                                        </button>
-                                    </div>
-                                </x-td>
-                            @endforeach
-                        </x-tr>
-                    </x-slot>
-                </x-table>
+                                </div>
+                                @if ($g['fuente'])
+                                    <x-button size="sm" variant="outline" wire:click="reconstruir('{{ $clave }}')"
+                                        wire:confirm="¿Reconstruir {{ mb_strtolower($g['nombre']) }} del mes desde {{ $g['fuente'] }}?"
+                                        title="Vuelve a leer las fuentes de este grupo y consolida el mes">
+                                        <i class="fa fa-wrench"></i> Reconstruir
+                                    </x-button>
+                                @endif
+                            </div>
+                            <table class="w-full text-xs">
+                                <thead class="text-muted-foreground">
+                                    <tr>
+                                        <th class="text-left font-normal py-0.5">Concepto</th>
+                                        <th class="text-right font-normal">Pagado / fuente</th>
+                                        <th class="text-right font-normal">En la BDD</th>
+                                        <th class="text-right font-normal">Diferencia</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($g['conceptos'] as $campo => $nombre)
+                                        @php
+                                            $pagado = $costo?->{$campo};
+                                            $calculado = $costo?->{$campo . '_calculado'};
+                                            $dif = $pagado !== null && $calculado !== null ? (float) $pagado - (float) $calculado : null;
+                                        @endphp
+                                        <tr>
+                                            <td class="py-0.5">{{ $nombre }}</td>
+                                            <td class="text-right font-mono">{{ $m($pagado) }}</td>
+                                            <td class="text-right font-mono">{{ $m($calculado) }}</td>
+                                            <td class="text-right font-mono {{ $dif === null ? 'text-muted-foreground' : (abs($dif) < 0.01 ? 'text-green-600 dark:text-green-400' : 'text-red-600 font-semibold') }}">
+                                                {{ $dif === null ? '—' : (abs($dif) < 0.01 ? 'cuadra' : $m($dif)) }}
+                                            </td>
+                                        </tr>
+                                        @if ($campo === 'costo_planilla' && $costo?->costo_mano_obra_indirecta !== null)
+                                            <tr class="text-muted-foreground">
+                                                <td class="pl-3">↳ pagos sin horas (vacaciones pagadas, bono asistencia)</td>
+                                                <td></td>
+                                                <td class="text-right font-mono">{{ $m($costo->costo_mano_obra_indirecta) }}</td>
+                                                <td></td>
+                                            </tr>
+                                        @endif
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endforeach
+                </div>
+                <p class="text-[11px] text-muted-foreground">
+                    Si la planilla no cuadra, el Excel (hoja CUADRE PLANILLA) dice qué trabajador, por qué y cómo corregirlo.
+                </p>
             </div>
         </x-slot>
 
         <x-slot name="footer">
-            <x-button wire:click="cerrarModal" variant="secondary">
-                Aceptar
-            </x-button>
+            <x-button wire:click="cerrarModal" variant="secondary">Cerrar</x-button>
         </x-slot>
     </x-dialog-modal>
-    <x-loading wire:loading/>
+    <x-loading wire:loading wire:target="consolidar,reconstruir" />
 </div>

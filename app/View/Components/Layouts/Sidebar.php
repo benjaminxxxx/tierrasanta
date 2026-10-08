@@ -65,9 +65,14 @@ class Sidebar extends Component
                         'can' => Permisos::PLANILLA_RESUMEN_GENERAL
                     ],
                     [
-                        'title' => 'Planilla B+N',
+                        'title' => 'Planilla Agraria',
                         'route' => 'planilla.blanco',
                         'can' => Permisos::PLANILLA_BLANCO
+                    ],
+                    [
+                        'title' => 'Planilla Oficina',
+                        'route' => 'planilla.oficina',
+                        'can' => Permisos::PLANILLA_OFICINA
                     ],
                     [
                         'title' => 'Derecho Habientes',
@@ -190,7 +195,7 @@ class Sidebar extends Component
                 'children' => [
                     ['title' => 'Población Plantas', 'route' => 'evaluacion.poblacion_plantas', 'can' => Permisos::PLANTA_EVALUACION],
                     ['title' => 'Brotes x Piso', 'route' => 'evaluacion.brotes', 'can' => Permisos::BROTE_EVALUACION],
-                    ['title' => 'Proyección rendimiento: Conteo de cochinilla', 'route' => 'evaluacion.infestacion_cosecha', 'can' => Permisos::INFESTACION_EVALUACION],
+                    ['title' => 'Evaluación Infestación Cosecha', 'route' => 'evaluacion.infestacion_cosecha', 'can' => Permisos::INFESTACION_EVALUACION],
                     ['title' => 'Proyección Rendimiento Poda', 'route' => 'evaluacion.proyeccion_rendimiento_poda', 'can' => Permisos::PROYECCION_EVALUACION],
                 ],
             ],

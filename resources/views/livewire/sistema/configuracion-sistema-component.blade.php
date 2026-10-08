@@ -42,6 +42,42 @@
     </x-card>
     <x-card class="space-y-4 max-w-3xl">
         <div>
+            <h3 class="font-semibold text-foreground">Evaluaciones de infestación</h3>
+            <p class="text-sm text-muted-foreground">
+                Días después de la infestación en que se cuenta la cochinilla por penca. Con ellos se arma el texto de la pantalla de evaluación
+                (Evaluación → Infestación) y, si una campaña pasa esos días sin la evaluación registrada, aparece un aviso en tareas pendientes.
+                La pantalla registra hasta {{ \App\Services\Campania\Etapa\CampaniaEtapaReglas::EVALUACIONES_INFESTACION_REGISTRABLES }} evaluaciones por campaña.
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-end gap-3">
+            @forelse ($diasInfestacion as $i => $dia)
+                <div class="w-32" wire:key="dia-inf-{{ $i }}">
+                    <x-label>{{ $i + 1 }}ª evaluación</x-label>
+                    <div class="flex items-center gap-1">
+                        <x-input type="number" min="1" wire:model="diasInfestacion.{{ $i }}" class="text-right" />
+                        <button type="button" class="text-red-600 px-1" title="Quitar" wire:click="quitarEvaluacionInfestacion({{ $i }})"><i class="fa fa-times"></i></button>
+                    </div>
+                    <span class="text-xs text-muted-foreground">días</span>
+                </div>
+            @empty
+                <p class="text-sm text-muted-foreground">Sin evaluaciones configuradas: no se avisa ninguna.</p>
+            @endforelse
+            <x-button variant="secondary" wire:click="agregarEvaluacionInfestacion"><i class="fa fa-plus"></i> Agregar evaluación</x-button>
+        </div>
+        @error('dias_infestacion') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
+
+        <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" wire:model="avisarInfestacionCerradas" class="rounded">
+            Avisar también en campañas cerradas
+        </label>
+
+        <div class="flex justify-end">
+            <x-button wire:click="guardarInfestacion"><i class="fa fa-save"></i> Guardar</x-button>
+        </div>
+    </x-card>
+    <x-card class="space-y-4 max-w-3xl">
+        <div>
             <h3 class="font-semibold text-foreground">Labores: reutilizar códigos</h3>
             <p class="text-sm text-muted-foreground">
                 Un código de labor que ya no se usa puede pasar a ser otra labor desde una fecha (Campo → Labores → Reasignar), sin cambiar sus
@@ -76,5 +112,5 @@
             <x-button wire:click="guardarVendibles"><i class="fa fa-save"></i> Guardar</x-button>
         </div>
     </x-card>
-    <x-loading wire:loading wire:target="guardarBrotes,guardarLabores,guardarVendibles" />
+    <x-loading wire:loading wire:target="guardarBrotes,guardarInfestacion,guardarLabores,guardarVendibles" />
 </div>

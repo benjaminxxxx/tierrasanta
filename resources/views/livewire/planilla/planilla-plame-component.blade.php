@@ -141,31 +141,31 @@
                     <x-td class="text-center">{{ fmt($empleado->plame_horas_jornada ?? $empleado->plame_total_horas, 2) }}</x-td>
 
                     {{-- INGRESOS --}}
-                    <x-td class="text-center">{{ fmt($empleado->plame_0117_comp_vacacional) }}</x-td>
-                    <x-td class="text-center">{{ fmt($empleado->plame_0118_rem_vacacional) }}</x-td>
-                    <x-td class="text-center">{{ fmt($empleado->plame_0121_rem_jornal_basico) }}</x-td>
-                    <x-td class="text-center">{{ fmt($empleado->plame_0201_asignacion_familiar) }}</x-td>
+                    @include('livewire.planilla.partials.celda-plame', ['p' => $empleado, 'codigo' => '0117'])
+                    @include('livewire.planilla.partials.celda-plame', ['p' => $empleado, 'codigo' => '0118'])
+                    @include('livewire.planilla.partials.celda-plame', ['p' => $empleado, 'codigo' => '0121'])
+                    @include('livewire.planilla.partials.celda-plame', ['p' => $empleado, 'codigo' => '0201'])
                     <x-td class="text-center font-semibold">{{ fmt($empleado->plame_remuneracion_bruta) }}</x-td>
-                    <x-td class="text-center">{{ fmt($empleado->plame_0312_bonif_ext_temp) }}</x-td>
-                    <x-td class="text-center">{{ fmt($empleado->plame_0314_beta_30) }}</x-td>
-                    <x-td class="text-center">{{ fmt($empleado->plame_0406_gratif_fiestas_navidad) }}</x-td>
-                    <x-td class="text-center">{{ fmt($empleado->plame_0904_cts) }}</x-td>
+                    @include('livewire.planilla.partials.celda-plame', ['p' => $empleado, 'codigo' => '0312'])
+                    @include('livewire.planilla.partials.celda-plame', ['p' => $empleado, 'codigo' => '0314'])
+                    @include('livewire.planilla.partials.celda-plame', ['p' => $empleado, 'codigo' => '0406'])
+                    @include('livewire.planilla.partials.celda-plame', ['p' => $empleado, 'codigo' => '0904'])
 
                     {{-- DESCUENTOS --}}
-                    <x-td class="text-center">{{ fmt($empleado->plame_descuento_0601_comision_afp_pct) }}</x-td>
-                    <x-td class="text-center">{{ fmt($empleado->plame_descuento_0605_renta_5ta_retenida) }}</x-td>
-                    <x-td class="text-center">{{ fmt($empleado->plame_descuento_0606_prima_seguro_afp) }}</x-td>
-                    <x-td class="text-center">{{ fmt($empleado->plame_descuento_0607_snp) }}</x-td>
-                    <x-td class="text-center">{{ fmt($empleado->plame_descuento_0608_spp_aporte_obligatorio) }}</x-td>
+                    @include('livewire.planilla.partials.celda-plame', ['p' => $empleado, 'codigo' => '0601'])
+                    @include('livewire.planilla.partials.celda-plame', ['p' => $empleado, 'codigo' => '0605'])
+                    @include('livewire.planilla.partials.celda-plame', ['p' => $empleado, 'codigo' => '0606'])
+                    @include('livewire.planilla.partials.celda-plame', ['p' => $empleado, 'codigo' => '0607'])
+                    @include('livewire.planilla.partials.celda-plame', ['p' => $empleado, 'codigo' => '0608'])
 
                     {{-- NETO A PAGAR --}}
                     <x-td class="text-center font-semibold">{{ fmt($empleado->plame_neto_a_pagar) }}</x-td>
 
                     {{-- APORTES DEL EMPLEADOR --}}
-                    <x-td class="text-center">{{ fmt($empleado->plame_aporte_empleador_0803_poliza) }}</x-td>
-                    <x-td class="text-center">{{ fmt($empleado->plame_aporte_empleador_0804_essalud) }}</x-td>
-                    <x-td class="text-center">{{ fmt($empleado->plame_aporte_empleador_0805_sctr) }}</x-td>
-                    <x-td class="text-center">{{ fmt($empleado->plame_aporte_empleador_0810_eps) }}</x-td>
+                    @include('livewire.planilla.partials.celda-plame', ['p' => $empleado, 'codigo' => '0803'])
+                    @include('livewire.planilla.partials.celda-plame', ['p' => $empleado, 'codigo' => '0804'])
+                    @include('livewire.planilla.partials.celda-plame', ['p' => $empleado, 'codigo' => '0805'])
+                    @include('livewire.planilla.partials.celda-plame', ['p' => $empleado, 'codigo' => '0810'])
                 </x-tr>
             @endforeach
         </x-slot>

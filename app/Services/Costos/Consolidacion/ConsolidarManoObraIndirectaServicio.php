@@ -10,21 +10,17 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Mano de obra indirecta de planilla: lo que se paga al trabajador sin que haya trabajo en campo.
+ * Mano de obra indirecta de planilla: pagos del mes que no dependen de horas (vacaciones pagadas, bono de
+ * asistencia). Van a FDM como en la BDD de la empresa.
  *
- * El costo por hora pagado de planilla (pagado_sueldo_por_hora) reparte el costo del mes entre
- * TODAS las horas PLAME (asistidas, feriados, descansos médicos, licencias con goce…), pero solo
- * las horas asistidas tienen detalle por campo. Aquí se registran las demás, más los pagos que
- * no dependen de horas (vacaciones pagadas, bono de asistencia), para que se cumpla:
+ * Las horas pagadas sin trabajo en campo (descanso médico, feriado, licencias con goce, horas asistidas sin
+ * detalle) ya no van aquí: las genera la planilla en FDM con la labor de su tipo de asistencia
+ * (ConsolidarCostoPlanillaServicio), como si se hubiera trabajado en FDM. Así:
  *
- *   costo en campo (origen 'planilla') + mano de obra indirecta = total pagado a los trabajadores
+ *   planilla (campos + FDM) = sueldo proporcional + aportes pagados, por trabajador
+ *   mano de obra indirecta  = vacaciones pagadas + bono de asistencia
  *
- * Todo entra a la BDD como campo FDM (campaña FDM), igual que hacía la macro antigua: un día DM de 8 h
- * es "FDM, 8 h, labor 97 (Descanso médico)"; un feriado, "FDM, labor 199". El código de labor sale de la
- * labor vinculada al tipo de asistencia (labores.tipo_asistencia_codigo). Así las horas de la BDD por
- * trabajador cuadran con las horas PLAME.
- *
- * Los tramos del detalle con labor de suspensión (A + 4 h de 97) ya entran como 'planilla' en FDM.
+ * cuadrePorTrabajador() explica las diferencias de cada trabajador para el arqueo.
  */
 class ConsolidarManoObraIndirectaServicio
 {
@@ -40,8 +36,6 @@ class ConsolidarManoObraIndirectaServicio
         'bonificacion_asistencia' => 'Bonificación 100% asistencia',
     ];
 
-    public const CONCEPTO_SIN_DETALLE = 'Horas asistidas sin detalle de campo';
-
     /**
      * Regenera las filas del mes. Devuelve la cantidad de filas y avisos para el cuadre.
      *
@@ -55,69 +49,11 @@ class ConsolidarManoObraIndirectaServicio
         $filas = [];
         $avisos = [];
         $ahora = now();
-        $descripciones = PlanTipoAsistencia::pluck('descripcion', 'codigo');
         $laborPorAsistencia = app(PlanillaAsistenciaLaborConsulta::class)->laborPorAsistencia();
 
         $personal = PlanMensualPersonal::whereHas('planMensual', fn($q) => $q->where('mes', $mes)->where('anio', $anio))
             ->get()
             ->keyBy('plan_empleado_id');
-
-        // Registros diarios del mes con horas: los no asistidos completos y los asistidos con
-        // horas que no llegan al detalle por campo
-        $registros = DB::table('plan_registros_diarios as r')
-            ->join('plan_mensual_detalles as d', 'd.id', '=', 'r.plan_det_men_id')
-            ->join('plan_mensuales as m', 'm.id', '=', 'd.plan_mensual_id')
-            ->where('m.mes', $mes)->where('m.anio', $anio)
-            ->where('r.total_horas', '>', 0)
-            ->leftJoinSub(
-                DB::table('plan_detalles_horas')
-                    ->selectRaw('plan_reg_dia_id, SUM(TIMESTAMPDIFF(MINUTE, hora_inicio, hora_fin)) as minutos_detalle')
-                    ->groupBy('plan_reg_dia_id'),
-                'dh',
-                'dh.plan_reg_dia_id',
-                '=',
-                'r.id'
-            )
-            ->get(['r.id', 'r.fecha', 'r.asistencia', 'r.total_horas', 'd.plan_empleado_id', 'd.nombres', 'dh.minutos_detalle']);
-
-        foreach ($registros as $r) {
-            $persona = $personal->get($r->plan_empleado_id);
-            $tarifa = $persona?->pagado_sueldo_por_hora;
-
-            $codigoLabor = null;
-            if ($r->asistencia === 'A') {
-                $horas = (float) $r->total_horas - ((float) ($r->minutos_detalle ?? 0)) / 60;
-                if ($horas < 0.01) {
-                    continue; // el detalle cubre el día: todo ya está en campo
-                }
-                $concepto = self::CONCEPTO_SIN_DETALLE;
-                $observacion = 'Revisar: el registro diario tiene más horas que su detalle por campo.';
-            } else {
-                $horas = (float) $r->total_horas;
-                $labor = $laborPorAsistencia[$r->asistencia] ?? null;
-                $codigoLabor = $labor['codigo'] ?? null;
-                $concepto = $labor['nombre'] ?? (($descripciones[$r->asistencia] ?? $r->asistencia) . " ({$r->asistencia})");
-                $observacion = $labor ? null
-                    : "El tipo de asistencia {$r->asistencia} no tiene una labor vinculada (Campo → Labores).";
-            }
-
-            if ($tarifa === null) {
-                $observacion = trim(($observacion ?? '') . ' Aún no se ha generado la planilla del mes.');
-            }
-
-            $filas[] = $this->fila(
-                Carbon::parse($r->fecha)->toDateString(),
-                $r->id,
-                $concepto,
-                // Mismo nombre que las filas de campo (registro diario): en planilla puede estar sin tildes
-                $r->nombres ?? $persona?->nombres,
-                $horas,
-                $tarifa !== null ? (float) $tarifa * $horas : 0.0,
-                $observacion,
-                $ahora,
-                $codigoLabor
-            );
-        }
 
         // Pagos del mes que no dependen de horas (las vacaciones pagadas llevan la labor de vacaciones)
         $nombresRegistro = DB::table('plan_mensual_detalles as d')
@@ -130,7 +66,7 @@ class ConsolidarManoObraIndirectaServicio
                 if ($monto > 0) {
                     $codigoLabor = $columna === 'vacaciones_neto_pagadas' ? ($laborPorAsistencia['V']['codigo'] ?? null) : null;
                     $nombre = $nombresRegistro[$persona->plan_empleado_id] ?? $persona->nombres;
-                    $filas[] = $this->fila($fin, $persona->id, $concepto, $nombre, null, $monto, null, $ahora, $codigoLabor);
+                    $filas[] = $this->fila($fin, $persona->id, $concepto, $nombre, null, $monto, null, $ahora, $codigoLabor, (int) $persona->plan_empleado_id);
                 }
             }
         }
@@ -200,58 +136,98 @@ class ConsolidarManoObraIndirectaServicio
     }
 
     /**
-     * Trabajadores cuyo costo en campo no es tarifa pagada × horas asistidas del registro diario.
-     * Pasa sobre todo con regadores: su costo en campo sale del reporte de riego (horas ponderadas
-     * y horas acumuladas), que puede registrar más horas de las que se pagan en planilla.
+     * Cuadre por trabajador: lo pagado (sueldo proporcional + aportes) contra lo que tiene en la BDD como
+     * planilla (campos + FDM), con la causa de cada diferencia y cómo se corrige.
      *
-     * @return array<int, array{trabajador:string, horas_campo:float, horas_asistidas:float, costo_campo:float, costo_esperado:float, diferencia:float}>
+     * @return array<int, array{trabajador:string, pagado:float, bdd:float, diferencia:float, horas_pagadas:float,
+     *   horas_bdd:float, causas:string[]}> solo los que no cuadran (|dif| >= tolerancia), de mayor a menor
      */
-    public function diferenciasPorTrabajador(int $anio, int $mes, float $tolerancia = 0.5): array
+    public function cuadrePorTrabajador(int $anio, int $mes, float $tolerancia = 0.05): array
     {
         $inicio = Carbon::create($anio, $mes, 1)->toDateString();
         $fin = Carbon::create($anio, $mes, 1)->endOfMonth()->toDateString();
-        $normalizar = fn(?string $n) => preg_replace('/\s+/', ' ', mb_strtoupper(trim(\Illuminate\Support\Str::ascii((string) $n))));
 
-        $horasAsistidas = DB::table('plan_registros_diarios as r')
-            ->join('plan_mensual_detalles as d', 'd.id', '=', 'r.plan_det_men_id')
-            ->join('plan_mensuales as m', 'm.id', '=', 'd.plan_mensual_id')
-            ->where('m.mes', $mes)->where('m.anio', $anio)->where('r.asistencia', 'A')
-            ->groupBy('d.plan_empleado_id')
-            ->selectRaw('d.plan_empleado_id, SUM(r.total_horas) as horas')
-            ->pluck('horas', 'plan_empleado_id');
-
-        $campo = ResumenCostoDiario::where('origen_tipo', 'planilla')
-            ->whereBetween('fecha', [$inicio, $fin])
-            ->selectRaw('trabajador, SUM(costo_total) as costo, SUM(minutos) as minutos')
-            ->groupBy('trabajador')
-            ->get()
-            ->groupBy(fn($r) => $normalizar($r->trabajador))
-            ->map(fn($g) => ['costo' => (float) $g->sum('costo'), 'horas' => ((float) $g->sum('minutos')) / 60]);
+        $bdd = ResumenCostoDiario::where('origen_tipo', 'planilla')->whereBetween('fecha', [$inicio, $fin])
+            ->selectRaw('plan_empleado_id, SUM(costo_total) as costo, SUM(minutos) as minutos, MIN(created_at) as generado')
+            ->groupBy('plan_empleado_id')->get()->keyBy('plan_empleado_id');
+        // Días en que la BDD no suma las horas pagadas (riego desincronizado, detalle de más…), desde las fuentes
+        $dias = collect((new ConsolidarCostoPlanillaServicio())->diasConDiferencia($inicio, $fin))->groupBy('plan_empleado_id');
+        $ultimoCambio = DB::table('plan_registros_diarios as r')->join('plan_mensual_detalles as d', 'd.id', '=', 'r.plan_det_men_id')
+            ->whereBetween('r.fecha', [$inicio, $fin])->groupBy('d.plan_empleado_id')
+            ->selectRaw('d.plan_empleado_id, MAX(r.updated_at) as modificado')->pluck('modificado', 'plan_empleado_id');
 
         $resultado = [];
-        $personal = PlanMensualPersonal::whereHas('planMensual', fn($q) => $q->where('mes', $mes)->where('anio', $anio))->get();
+        $personal = PlanMensualPersonal::with('planMensual')->whereHas('planMensual', fn($q) => $q->where('mes', $mes)->where('anio', $anio))->get();
         foreach ($personal as $p) {
-            $horas = (float) ($horasAsistidas[$p->plan_empleado_id] ?? 0);
-            $esperado = (float) ($p->pagado_sueldo_por_hora ?? 0) * $horas;
-            $enCampo = $campo->get($normalizar($p->nombres), ['costo' => 0.0, 'horas' => 0.0]);
-            $diferencia = $enCampo['costo'] - $esperado;
-            if (abs($diferencia) >= $tolerancia) {
-                $resultado[] = [
-                    'trabajador' => $p->nombres,
-                    'horas_campo' => $enCampo['horas'],
-                    'horas_asistidas' => $horas,
-                    'costo_campo' => $enCampo['costo'],
-                    'costo_esperado' => $esperado,
-                    'diferencia' => $diferencia,
-                ];
+            $pagado = (float) ($p->pagado_sueldo_bruto_negro ?? 0);
+            $fila = $bdd->get($p->plan_empleado_id);
+            $enBdd = (float) ($fila->costo ?? 0);
+            $diferencia = round($enBdd - $pagado, 2);
+            if (abs($diferencia) < $tolerancia) {
+                continue;
             }
+            $causas = [];
+            if ((float) $p->plame_total_horas <= 0) {
+                $causas[] = 'Se le paga en planilla pero no tiene horas en el registro diario: no hay a qué campo cargar su costo. Registrar sus días (o su suspensión).';
+            }
+            if (!$fila && (float) $p->plame_total_horas > 0) {
+                $causas[] = 'No tiene filas en la BDD: reconstruir la mano de obra del mes.';
+            } elseif ($fila && $fila->generado && ($p->updated_at > $fila->generado || ($ultimoCambio[$p->plan_empleado_id] ?? null) > $fila->generado)) {
+                $causas[] = 'La planilla o el registro diario cambiaron después de la última consolidación: reconstruir la mano de obra del mes.';
+            }
+            $explicado = 0.0;
+            $porTipo = $dias->get($p->plan_empleado_id, collect())->groupBy('tipo');
+            $nombresTipo = [
+                'banco' => 'Banco de horas de riego (horas regadas por encima del jornal, aún sin usar)',
+                'desincronizado' => 'Riego desincronizado (el registro diario no paga el jornal de riego): corregir',
+                'sin_ponderar' => 'Reporte de riego sin horas por campo calculadas: consolidar el riego de esos días',
+                'detalle' => 'Detalle por campo con más horas que las pagadas: corregir el registro diario',
+                'otro' => 'Otras diferencias de horas',
+            ];
+            foreach ($nombresTipo as $tipo => $texto) {
+                if ($porTipo->has($tipo)) {
+                    $g = $porTipo[$tipo];
+                    $causas[] = sprintf('RESUMEN · %s: %d día(s), %s h, S/ %s.', $texto, $g->count(),
+                        number_format($g->sum('diferencia_horas'), 2), number_format($g->sum('costo'), 2));
+                }
+            }
+            foreach ($dias->get($p->plan_empleado_id, collect())->sortBy('fecha') as $d) {
+                $explicado += $d['costo'];
+                $causas[] = sprintf('%s: %s %s %s h → S/ %s.%s', Carbon::parse($d['fecha'])->format('d/m'), $d['causa'],
+                    $d['diferencia_horas'] > 0 ? 'Sobran' : 'Faltan', number_format(abs($d['diferencia_horas']), 2), number_format($d['costo'], 2),
+                    $d['sincronizado'] === false ? ' Corregir el registro diario o el reporte de riego de ese día.' : '');
+            }
+            if ($dias->has($p->plan_empleado_id) && abs($explicado - $diferencia) >= 0.05 && $fila) {
+                $causas[] = sprintf('Los días listados explican S/ %s de S/ %s: el resto, consolidación desactualizada (reconstruir).',
+                    number_format($explicado, 2), number_format($diferencia, 2));
+            }
+            if (!$causas) {
+                $causas[] = 'Sin causa detectada: revisar las filas del trabajador en la BDD.';
+            }
+            $resultado[] = [
+                'trabajador' => $p->nombres,
+                'pagado' => round($pagado, 2),
+                'bdd' => round($enBdd, 2),
+                'diferencia' => $diferencia,
+                'horas_pagadas' => (float) $p->plame_total_horas,
+                'horas_bdd' => ((float) ($fila->minutos ?? 0)) / 60,
+                'causas' => $causas,
+            ];
+        }
+        // Filas de planilla sin trabajador vinculado (consolidadas antes de guardar el trabajador)
+        $sinTrabajador = $bdd->get('');
+        if ($sinTrabajador && (float) $sinTrabajador->costo != 0.0) {
+            $resultado[] = [
+                'trabajador' => '(filas sin trabajador vinculado)', 'pagado' => 0.0, 'bdd' => round((float) $sinTrabajador->costo, 2),
+                'diferencia' => round((float) $sinTrabajador->costo, 2), 'horas_pagadas' => 0.0, 'horas_bdd' => ((float) $sinTrabajador->minutos) / 60,
+                'causas' => ['Filas consolidadas con la versión anterior: reconstruir la mano de obra del mes.'],
+            ];
         }
         usort($resultado, fn($a, $b) => abs($b['diferencia']) <=> abs($a['diferencia']));
 
         return $resultado;
     }
-
-    private function fila(string $fecha, int $origenId, string $concepto, string $trabajador, ?float $horas, float $costo, ?string $observacion, $ahora, ?string $codigoLabor = null): array
+    private function fila(string $fecha, int $origenId, string $concepto, string $trabajador, ?float $horas, float $costo, ?string $observacion, $ahora, ?string $codigoLabor = null, ?int $planEmpleadoId = null): array
     {
         return [
             'campania' => self::CAMPANIA,
@@ -262,6 +238,7 @@ class ConsolidarManoObraIndirectaServicio
             'labor' => $codigoLabor,
             'labor_nombre' => $concepto,
             'trabajador' => $trabajador,
+            'plan_empleado_id' => $planEmpleadoId,
             'cuadrilla_grupo_id' => null,
             'tipo_cambio' => 1.0000,
             'minutos' => $horas !== null ? (int) round($horas * 60) : null,

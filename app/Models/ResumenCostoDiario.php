@@ -58,6 +58,7 @@ class ResumenCostoDiario extends Model
         'campo',
         'labor',
         'trabajador',
+        'plan_empleado_id', // trabajador de planilla (para cuadrar por persona, no por nombre)
         'cuadrilla_grupo_id',
         'tipo_cambio',
         'minutos',

@@ -32,6 +32,7 @@ use App\Livewire\Cuadrilla\Pago\GestionCuadrillaPagoComponent;
 use App\Livewire\Cuadrilla\Pago\GestionCuadrillaPagosComponent;
 // Evaluación
 use App\Livewire\Evaluacion\EvaluacionInfestacionCosechaComponent;
+use App\Livewire\Planilla\PlanillaOficinaComponent;
 use App\Livewire\Evaluacion\ProyeccionRendimientoPodaComponent;
 // Planilla
 use App\Livewire\Planilla\Asistencia\AsistenciaMensualComponent;
@@ -116,8 +117,11 @@ Route::middleware([
             ->name('resumen_mensual')->middleware('can:' . Permisos::PLANILLA_RESUMEN_MENSUAL);
         Route::view('/resumen-general', 'livewire.planilla.reporte-general-index')
             ->name('resumen_general')->middleware('can:' . Permisos::PLANILLA_RESUMEN_GENERAL);
+        // Planilla agraria (antes "Planilla B+N"); la ruta /bn se mantiene
         Route::view('/bn', 'livewire.planilla.planilla-blanco-indice')
             ->name('blanco')->middleware('can:' . Permisos::PLANILLA_BLANCO);
+        Route::get('/oficina', PlanillaOficinaComponent::class)
+            ->name('oficina')->middleware('can:' . Permisos::PLANILLA_OFICINA);
 
         // Configuración
         Route::view('/conceptos', 'livewire.planilla.conceptos-planilla-indice')

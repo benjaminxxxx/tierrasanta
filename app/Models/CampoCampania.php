@@ -380,6 +380,28 @@ class CampoCampania extends Model
 
         return (int) $total;
     }
+    /**
+     * Desglose de una evaluación de infestación (1, 2 o 3) por piso: total de individuos, pencas y promedio.
+     * Los promedios por evaluación (promedio_individuos_*_eval) son el promedio PONDERADO de los dos pisos por su
+     * número de pencas: total de individuos ÷ total de pencas (no el promedio simple de los dos pisos).
+     *
+     * @return array{piso_2: array{total:int, pencas:int, promedio:?float}, piso_3: array{total:int, pencas:int, promedio:?float}}
+     */
+    public function desgloseEvaluacionInfestacion(int $numero): array
+    {
+        $prefijo = ['1' => 'eval_primera', '2' => 'eval_segunda', '3' => 'eval_tercera'][(string) $numero];
+        $resultado = [];
+        foreach (['piso_2', 'piso_3'] as $piso) {
+            $valores = $this->evalInfestacionPencas->pluck("{$prefijo}_{$piso}")->filter(fn($v) => is_numeric($v));
+            $resultado[$piso] = [
+                'total' => (int) $valores->sum(),
+                'pencas' => $valores->count(),
+                'promedio' => $valores->count() ? round($valores->sum() / $valores->count(), 2) : null,
+            ];
+        }
+        return $resultado;
+    }
+
     public function getPromedioIndividuosPrimeraEvalAttribute()
     {
         $valores = [];

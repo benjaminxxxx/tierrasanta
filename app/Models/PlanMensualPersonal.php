@@ -89,7 +89,9 @@ class PlanMensualPersonal extends Model
         'bonificacion_asistencia',
         'vacaciones_plame_personalizado',
         'vacaciones_neto_pagadas',
-        'vacaciones_negro'
+        'vacaciones_negro',
+        'plame_ajustes',
+        'plame_calculados',
     ];
 
     protected function casts(): array
@@ -151,6 +153,9 @@ class PlanMensualPersonal extends Model
             'plame_aporte_empleador_0804_essalud' => 'decimal:2',
             'plame_aporte_empleador_0805_sctr' => 'decimal:2',
             'plame_aporte_empleador_0810_eps' => 'decimal:2',
+
+            'plame_ajustes' => 'array',
+            'plame_calculados' => 'array',
         ];
     }
 
@@ -163,11 +168,33 @@ class PlanMensualPersonal extends Model
         return $this->belongsTo(PlanMensual::class);
     }
     /**
+     * Ajustes manuales del PLAME: las columnas plame_* guardan el valor final; si un concepto se ajustó a mano,
+     * plame_ajustes tiene su monto y motivo, y plame_calculados lo que habría calculado el sistema.
+     *
+     * @return array{monto: float, motivo: ?string}|null
+     */
+    public function ajustePlame(string $codigo): ?array
+    {
+        return $this->plame_ajustes[$codigo] ?? null;
+    }
+
+    /** Lo que calcula el sistema para el concepto (sin el ajuste). */
+    public function calculadoPlame(string $codigo): ?float
+    {
+        $valor = $this->plame_calculados[$codigo] ?? null;
+        return $valor === null ? null : (float) $valor;
+    }
+
+    /**
      * Accesor para obtener el bono de productividad (bonificación laboral) sumado del mes.
      * Uso: $empleado->bono_productividad
      */
     public function getBonoProductividadAttribute(): float
     {
+        // Ya calculado en bloque (PlanillaServicio::obtenerProyeccion): no se consulta de nuevo por persona
+        if (array_key_exists('bono_productividad', $this->attributes)) {
+            return (float) $this->attributes['bono_productividad'];
+        }
         if (!$this->plan_empleado_id || !$this->plan_mensual_id) {
             return 0.0;
         }

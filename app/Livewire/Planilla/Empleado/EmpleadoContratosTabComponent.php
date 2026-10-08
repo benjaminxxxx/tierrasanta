@@ -36,6 +36,19 @@ class EmpleadoContratosTabComponent extends Component
     public $esta_jubilado = 0;
     public $modalidad_pago = '';
     public $fecha_fin_prueba = '';
+    // Cómo y dónde se le paga (planilla oficina)
+    public $tipo_ingreso = 'planilla';
+    public $suspension_cuarta = false;
+    public $beneficios_mensuales = 0; // select 0/1
+    public $metodo_pago = '';
+    public $banco = '';
+    public $tipo_cuenta = '';
+    public $moneda_cuenta = 'PEN';
+    public $numero_cuenta = '';
+    public $banco_secundario = '';
+    public $tipo_cuenta_secundaria = '';
+    public $moneda_cuenta_secundaria = 'PEN';
+    public $numero_cuenta_secundaria = '';
 
     public ?int $contratoAFinalizarId = null;
     public $datosCierre = ['fecha_fin' => '', 'motivo_cese_sunat' => '', 'comentario_cese' => ''];
@@ -85,6 +98,14 @@ class EmpleadoContratosTabComponent extends Component
         $this->esta_jubilado = $contrato->esta_jubilado ?? 0;
         $this->modalidad_pago = $contrato->modalidad_pago;
         $this->fecha_fin_prueba = $contrato->fecha_fin_prueba ? $contrato->fecha_fin_prueba->format('Y-m-d') : '';
+        $this->tipo_ingreso = $contrato->tipo_ingreso ?: 'planilla';
+        $this->suspension_cuarta = (bool) $contrato->suspension_cuarta;
+        $this->beneficios_mensuales = (int) $contrato->beneficios_mensuales;
+        foreach (['metodo_pago', 'banco', 'tipo_cuenta', 'numero_cuenta', 'banco_secundario', 'tipo_cuenta_secundaria', 'numero_cuenta_secundaria'] as $campo) {
+            $this->{$campo} = $contrato->{$campo} ?? '';
+        }
+        $this->moneda_cuenta = $contrato->moneda_cuenta ?: 'PEN';
+        $this->moneda_cuenta_secundaria = $contrato->moneda_cuenta_secundaria ?: 'PEN';
 
         $this->esEdicion = true;
         $this->mostrarForm = true;
@@ -105,6 +126,18 @@ class EmpleadoContratosTabComponent extends Component
             'esta_jubilado' => (bool) $this->esta_jubilado,
             'modalidad_pago' => $this->modalidad_pago,
             'fecha_fin_prueba' => $this->fecha_fin_prueba ? Carbon::parse($this->fecha_fin_prueba) : null,
+            'tipo_ingreso' => $this->tipo_ingreso ?: 'planilla',
+            'suspension_cuarta' => $this->tipo_ingreso === 'honorarios' && (bool) $this->suspension_cuarta,
+            'beneficios_mensuales' => $this->tipo_ingreso !== 'honorarios' && (bool) $this->beneficios_mensuales,
+            'metodo_pago' => blank($this->metodo_pago) ? null : $this->metodo_pago,
+            'banco' => blank($this->banco) ? null : trim($this->banco),
+            'tipo_cuenta' => blank($this->tipo_cuenta) ? null : $this->tipo_cuenta,
+            'moneda_cuenta' => blank($this->numero_cuenta) ? null : $this->moneda_cuenta,
+            'numero_cuenta' => blank($this->numero_cuenta) ? null : trim($this->numero_cuenta),
+            'banco_secundario' => blank($this->banco_secundario) ? null : trim($this->banco_secundario),
+            'tipo_cuenta_secundaria' => blank($this->tipo_cuenta_secundaria) ? null : $this->tipo_cuenta_secundaria,
+            'moneda_cuenta_secundaria' => blank($this->numero_cuenta_secundaria) ? null : $this->moneda_cuenta_secundaria,
+            'numero_cuenta_secundaria' => blank($this->numero_cuenta_secundaria) ? null : trim($this->numero_cuenta_secundaria),
         ];
 
         try {
@@ -171,6 +204,7 @@ class EmpleadoContratosTabComponent extends Component
         $this->reset([
             'contratoId', 'tipo_contrato', 'fecha_inicio', 'grupo_codigo', 'compensacion_vacacional', 'tipo_planilla',
             'plan_sp_codigo', 'esta_jubilado', 'modalidad_pago', 'fecha_fin_prueba', 'remuneracion_basica', 'bonificacion',
+            'tipo_ingreso', 'suspension_cuarta', 'beneficios_mensuales', 'metodo_pago', 'banco', 'tipo_cuenta', 'moneda_cuenta', 'numero_cuenta', 'banco_secundario', 'tipo_cuenta_secundaria', 'moneda_cuenta_secundaria', 'numero_cuenta_secundaria',
         ]);
         $this->resetErrorBag();
     }

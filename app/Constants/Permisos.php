@@ -257,6 +257,11 @@ class Permisos
     const PLANILLA_BLANCO_VER = 'Planilla Blanco Ver';
     const PLANILLA_BLANCO_GESTIONAR = 'Planilla Blanco Gestionar';
 
+    // — Planilla Oficina (régimen general: administrativos y personal fuera de planilla)
+    const PLANILLA_OFICINA = 'Planilla Oficina';
+    const PLANILLA_OFICINA_VER = 'Planilla Oficina Ver';
+    const PLANILLA_OFICINA_GESTIONAR = 'Planilla Oficina Gestionar';
+
     // — Familiares (vista general de asignación familiar desde planilla)
     const PLANILLA_FAMILIAR = 'Planilla Familiares';
     const PLANILLA_FAMILIAR_VER = 'Planilla Familiares Ver';

@@ -2,78 +2,43 @@
 
 namespace App\Livewire\Planilla\Asistencia;
 
+use App\Constants\Permisos;
 use App\Models\PlanEmpleado;
-use App\Models\PlanTipoSuspension;
-use App\Services\Planilla\PlanillaSuspensionProceso;
-use App\Services\Planilla\PlanillaSuspensionServicio;
-use App\Services\Planilla\PlanillaEmpleadoServicio;
 use App\Services\Planilla\Asistencia\SugerenciaSuspensionServicio;
+use App\Services\Planilla\Suspension\PlanillaSuspensionConsulta;
+use App\Services\Planilla\Suspension\PlanillaSuspensionCrud;
 use App\Traits\Selectores\ConSelectorMes;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
-use Livewire\WithPagination;
 
+/**
+ * Planilla → Permisos y suspensiones.
+ *
+ * - Suspensiones del mes agrupadas por trabajador (buscador y filtro por tipo de planilla), con la línea de días.
+ * - Edición por trabajador en un modal: todos sus rangos se guardan y validan juntos (ver PlanillaSuspensionCrud).
+ *   Se pueden registrar rangos antes de que estén en el registro diario (vacaciones, descanso médico ya sabido).
+ * - Sugerencias desde el registro diario (se mantienen de la versión anterior).
+ * - Estadísticas (subcomponente SuspensionesEstadisticasComponent): por mes del año, por día del mes o historial de un trabajador.
+ */
 class SuspensionesPlanillaComponent extends Component
 {
-    use LivewireAlert, WithPagination, ConSelectorMes;
+    use LivewireAlert, ConSelectorMes;
 
-    // Propiedades de Estado
-    public array $suspensiones = [];
-    public array $filtros = [];
-    public array $listaEmpleados = [];
-    public array $listaSuspensiones = [];
+    public string $vista = 'registro'; // registro | estadisticas
+    public string $buscar = '';
+    public string $tipoPlanilla = '';
 
-    protected $listeners = [];
+    // Modal de un trabajador
+    public bool $modal = false;
+    public $modalEmpleadoId;
+    public array $rangos = [];
+    public array $idsEnModal = [];
 
+    // Estadísticas
+    public $estAnio;
+    public $estMes = '';
+    public $estEmpleadoId = '';
 
-    protected PlanillaSuspensionServicio $servicio;
-    protected PlanillaSuspensionProceso $proceso;
-    public function boot(
-        PlanillaSuspensionServicio $servicio,
-        PlanillaSuspensionProceso $proceso
-    ) {
-        $this->servicio = $servicio;
-        $this->proceso = $proceso;
-    }
-
-    public function mount()
-    {
-        $this->inicializarMesAnio();
-        $this->cargarSuspensiones(false);
-        $this->cargarEmpleados();
-        $this->cargarSuspensionesPendientes();
-
-        $this->listaSuspensiones = PlanTipoSuspension::get()
-            ->map(function ($q) {
-                return [
-                    'id' => $q->id,
-                    'label' => $q->codigo . ' - ' . $q->descripcion
-                ];
-            })
-            ->toArray();
-    }
-    public function cargarEmpleados()
-    {
-        if (!$this->mes || !$this->anio) {
-            $this->listaEmpleados = PlanEmpleado::get()
-                ->map(function ($q) {
-                    return [
-                        'id' => $q->id,
-                        'label' => $q->nombre_completo
-                    ];
-                })
-                ->toArray();
-            return;
-        }
-        $this->listaEmpleados = app(PlanillaEmpleadoServicio::class)->obtenerPlanillaAgraria($this->mes, $this->anio)
-            ->map(function ($q) {
-                return [
-                    'id' => $q->id,
-                    'label' => $q->nombre_completo
-                ];
-            })
-            ->toArray();
-    }
     /** Sugerencias del registro diario (panel izquierdo), códigos sin vínculo y conflictos (panel derecho). */
     public array $sugerencias = [];
     public array $porDecidir = [];
@@ -85,11 +50,89 @@ class SuspensionesPlanillaComponent extends Component
     /** codigo de asistencia => id de tipo de suspensión elegido, o 'sin' (no genera suspensión). */
     public array $vinculos = [];
 
-    public function cargarSuspensionesPendientes()
+    public function mount(): void
     {
-        $mes = $this->normalizarMes($this->mes);
-        $anio = $this->normalizarAnio($this->anio);
-        if (!$mes || !$anio) {
+        $this->inicializarMesAnio();
+        $this->estAnio = $this->anio ?: now()->year;
+        $this->cargarSuspensionesPendientes();
+    }
+
+    protected function despuesMesAnioModificado(string $mes, string $anio)
+    {
+        $this->cargarSuspensionesPendientes();
+    }
+
+    // ------------------------------------------------------------------ modal por trabajador
+
+    public function editarTrabajador(int $planEmpleadoId): void
+    {
+        $this->resetErrorBag();
+        $this->modalEmpleadoId = $planEmpleadoId;
+        $this->rangos = app(PlanillaSuspensionConsulta::class)->rangosParaEditar($planEmpleadoId, (int) $this->mes, (int) $this->anio);
+        $this->idsEnModal = array_column($this->rangos, 'id');
+        if (!$this->rangos) {
+            $this->agregarRango();
+        }
+        $this->modal = true;
+    }
+
+    /** Botón "Agregar trabajador con suspensión": modal vacío con el selector de trabajador. */
+    public function nuevoTrabajador(): void
+    {
+        $this->resetErrorBag();
+        $this->modalEmpleadoId = null;
+        $this->rangos = [];
+        $this->idsEnModal = [];
+        $this->agregarRango();
+        $this->modal = true;
+    }
+
+    /** Al elegir el trabajador en el modal se cargan los rangos que ya tenga. */
+    public function updatedModalEmpleadoId($valor): void
+    {
+        if ($valor) {
+            $existentes = app(PlanillaSuspensionConsulta::class)->rangosParaEditar((int) $valor, (int) $this->mes, (int) $this->anio);
+            $nuevos = array_values(array_filter($this->rangos, fn($r) => empty($r['id']) && (!empty($r['tipo_suspension_id']) || !empty($r['fecha_inicio']))));
+            $this->rangos = array_merge($existentes, $nuevos ?: [$this->rangoVacio()]);
+            $this->idsEnModal = array_column($existentes, 'id');
+        }
+    }
+
+    public function agregarRango(): void
+    {
+        $this->rangos[] = $this->rangoVacio();
+    }
+
+    public function quitarRango(int $i): void
+    {
+        unset($this->rangos[$i]);
+        $this->rangos = array_values($this->rangos);
+    }
+
+    public function guardarRangos(): void
+    {
+        $this->authorize(Permisos::PLANILLA_SUSPENSION_GESTIONAR);
+        $this->validate(['modalEmpleadoId' => 'required|exists:plan_empleados,id'], [], ['modalEmpleadoId' => 'trabajador']);
+
+        $r = app(PlanillaSuspensionCrud::class)->guardarRangos((int) $this->modalEmpleadoId, $this->rangos, $this->idsEnModal);
+        $this->modal = false;
+        $this->alert('success', "Suspensiones guardadas: {$r['creados']} nuevas, {$r['actualizados']} editadas, {$r['eliminados']} eliminadas.");
+        $this->cargarSuspensionesPendientes();
+    }
+
+    private function rangoVacio(): array
+    {
+        $dia = sprintf('%04d-%02d-01', (int) $this->anio, (int) $this->mes);
+        return ['id' => null, 'tipo_suspension_id' => '', 'fecha_inicio' => $dia, 'fecha_fin' => $dia, 'observaciones' => ''];
+    }
+
+    // ------------------------------------------------------------------ sugerencias del registro diario
+
+    public function cargarSuspensionesPendientes(): void
+    {
+        $mes = (int) $this->mes;
+        $anio = (int) $this->anio;
+        if ($mes < 1 || $mes > 12 || $anio < 2000) {
             $this->sugerencias = $this->porDecidir = $this->conflictos = $this->parciales = $this->seleccionadas = [];
             return;
         }
@@ -117,13 +160,9 @@ class SuspensionesPlanillaComponent extends Component
                 $this->alert('warning', 'No hay sugerencias marcadas.');
                 return;
             }
-            $r = app(SugerenciaSuspensionServicio::class)->aplicar(
-                $this->normalizarMes($this->mes),
-                $this->normalizarAnio($this->anio),
-                $this->seleccionadas
-            );
+            $r = app(SugerenciaSuspensionServicio::class)->aplicar((int) $this->mes, (int) $this->anio, $this->seleccionadas);
             $this->alert('success', "Suspensiones registradas: {$r['creadas']} nuevas, {$r['extendidas']} extendidas, {$r['unidas']} unidas.");
-            $this->cargarSuspensiones();
+            $this->cargarSuspensionesPendientes();
         } catch (\Throwable $e) {
             $this->alert('error', 'No se pudieron registrar: ' . $e->getMessage());
         }
@@ -142,87 +181,26 @@ class SuspensionesPlanillaComponent extends Component
         $this->alert('success', $valor === 'sin' ? "{$codigo} ya no genera suspensión." : "{$codigo} vinculado.");
         $this->cargarSuspensionesPendientes();
     }
-    protected function despuesMesAnioModificado(string $mes, string $anio)
-    {
-        $this->cargarSuspensiones();
-    }
-    public function guardarRegistrosSuspensiones($datos)
-    {
-
-        try {
-            $resultado = $this->proceso->guardarHandsontable(
-                $datos,
-                $this->mes,
-                $this->anio
-            );
-
-            $mensaje = sprintf(
-                'Creados: %d | Actualizados: %d | Eliminados: %d',
-                $resultado['creados'],
-                $resultado['actualizados'],
-                $resultado['eliminados']
-            );
-
-            if (!empty($resultado['errores'])) {
-                $mensaje .= ' | Errores: ' . count($resultado['errores']);
-            }
-
-            $this->alert('success', 'Suspensiones guardadas', [
-                'text' => $mensaje,
-                'position' => 'top-end',
-                'timer' => 4000,
-            ]);
-
-            $this->cargarSuspensiones();
-        } catch (\Exception $e) {
-            $this->alert('error', 'Error al guardar', [
-                'text' => $e->getMessage(),
-                'position' => 'top-end',
-                'timer' => 5000,
-            ]);
-        }
-    }
-    public function cargarSuspensiones($dispatched = true)
-    {
-        $mes = $this->normalizarMes($this->mes);
-        $anio = $this->normalizarAnio($this->anio);
-
-        $this->suspensiones = $this->servicio->prepararParaHandsontable($mes, $anio);
-        $this->cargarEmpleados();
-        $this->cargarSuspensionesPendientes();
-
-        if ($dispatched) {
-            $this->dispatch('refrescarTablaSuspensiones', data: $this->suspensiones, empleados: $this->listaEmpleados);
-        }
-    }
-    private function normalizarMes($valor): ?int
-    {
-        // Caso vacío o null
-        if ($valor === '' || $valor === null) {
-            return null;
-        }
-
-        // convertir a entero
-        $mes = intval($valor);
-
-        // validar rango real
-        return ($mes >= 1 && $mes <= 12) ? $mes : null;
-    }
-
-    private function normalizarAnio($valor): ?int
-    {
-        if ($valor === '' || $valor === null) {
-            return null;
-        }
-
-        $anio = intval($valor);
-
-        // ajusta el rango según tu sistema
-        return ($anio >= 2000 && $anio <= 2100) ? $anio : null;
-    }
 
     public function render()
     {
-        return view('livewire.planilla.asistencia.suspensiones-planilla-component');
+        $consulta = app(PlanillaSuspensionConsulta::class);
+        $datos = ['tipos' => $consulta->tipos()];
+
+        if ($this->vista === 'estadisticas') {
+            // El gráfico y el historial los arma el subcomponente SuspensionesEstadisticasComponent
+            $datos['empleadosTodos'] = PlanEmpleado::orderBy('apellido_paterno')->get()
+                ->map(fn($e) => ['id' => $e->id, 'name' => $e->nombre_completo])->all();
+        } else {
+            $mesValido = (int) $this->mes >= 1 && (int) $this->anio >= 2000;
+            $datos['trabajadores'] = $mesValido ? $consulta->porTrabajador((int) $this->mes, (int) $this->anio, $this->buscar, $this->tipoPlanilla ?: null) : collect();
+            $datos['diasMes'] = $mesValido ? \Illuminate\Support\Carbon::create((int) $this->anio, (int) $this->mes, 1)->daysInMonth : 0;
+            $datos['empleadosMes'] = $mesValido && $this->modal
+                ? array_map(fn($e) => ['id' => $e['id'], 'name' => $e['label']], $consulta->empleadosDelMes((int) $this->mes, (int) $this->anio))
+                : [];
+            $datos['nombreModal'] = $this->modalEmpleadoId ? PlanEmpleado::find($this->modalEmpleadoId)?->nombre_completo : null;
+        }
+
+        return view('livewire.planilla.asistencia.suspensiones-planilla-component', $datos);
     }
 }

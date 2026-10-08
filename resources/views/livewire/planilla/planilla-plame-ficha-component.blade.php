@@ -117,7 +117,7 @@
                                     @forelse ($ficha['ingresos'] as $i)
                                         <tr>
                                             <td class="p-1.5 px-2 border border-border">{{ $i['codigo'] }}</td>
-                                            <td class="p-1.5 px-2 border border-border">{{ $i['concepto'] }}</td>
+                                            <td class="p-1.5 px-2 border border-border">{{ $i['concepto'] }}@if ($i['ajustado'] ?? false) <span class="ml-1 text-[10px] px-1 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" title="{{ $i['motivo'] }}">personalizado · sistema S/ {{ $soles($i['calculado']) }}</span>@endif</td>
                                             <td class="p-1.5 px-2 border border-border text-right">{{ $soles($i['monto']) }}</td>
                                             <td class="p-1.5 px-2 border border-border"></td>
                                         </tr>
@@ -128,7 +128,7 @@
                                     @forelse ($ficha['descuentos'] as $i)
                                         <tr>
                                             <td class="p-1.5 px-2 border border-border">{{ $i['codigo'] }}</td>
-                                            <td class="p-1.5 px-2 border border-border">{{ $i['concepto'] }}</td>
+                                            <td class="p-1.5 px-2 border border-border">{{ $i['concepto'] }}@if ($i['ajustado'] ?? false) <span class="ml-1 text-[10px] px-1 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" title="{{ $i['motivo'] }}">personalizado · sistema S/ {{ $soles($i['calculado']) }}</span>@endif</td>
                                             <td class="p-1.5 px-2 border border-border"></td>
                                             <td class="p-1.5 px-2 border border-border text-right">{{ $soles($i['monto']) }}</td>
                                         </tr>
@@ -163,7 +163,7 @@
                                     @forelse ($ficha['aportes'] as $i)
                                         <tr>
                                             <td class="p-1.5 px-2 border border-border">{{ $i['codigo'] }}</td>
-                                            <td class="p-1.5 px-2 border border-border">{{ $i['concepto'] }}</td>
+                                            <td class="p-1.5 px-2 border border-border">{{ $i['concepto'] }}@if ($i['ajustado'] ?? false) <span class="ml-1 text-[10px] px-1 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" title="{{ $i['motivo'] }}">personalizado · sistema S/ {{ $soles($i['calculado']) }}</span>@endif</td>
                                             <td class="p-1.5 px-2 border border-border text-right">{{ $soles($i['monto']) }}</td>
                                         </tr>
                                     @empty
@@ -181,11 +181,19 @@
                                 <p class="font-semibold">Vacaciones</p>
                                 <p>Días de descanso vacacional (S.I. 23): <b>{{ $v['dias'] }}</b></p>
                                 <p>0118 Remuneración vacacional: <b>S/ {{ $soles($v['remuneracion']) }}</b>
+                                    @if ($v['plame_personalizado'] !== null)
+                                        <span class="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">personalizado</span>
+                                    @endif
                                     · 0117 Compensación vacacional: <b>S/ {{ $soles($v['compensacion']) }}</b></p>
-                                @if ($v['plame_personalizado'] !== null || $v['neto_pagadas'] !== null || $v['negro'] !== null)
+                                @if ($v['plame_personalizado'] !== null)
+                                    <p class="text-muted-foreground text-xs">
+                                        Monto registrado en Vacaciones y bonos; reemplaza al cálculo legal (RMV/30 × días: S/ {{ $soles($v['remuneracion_legal']) }})
+                                        en la remuneración bruta, gratificación, CTS, descuentos, EsSalud y neto.
+                                    </p>
+                                @endif
+                                @if ($v['neto_pagadas'] !== null || $v['negro'] !== null)
                                     <p class="text-muted-foreground">
-                                        Ajustes: PLAME personalizado S/ {{ $soles($v['plame_personalizado']) }} ·
-                                        neto pagadas S/ {{ $soles($v['neto_pagadas']) }} · negro S/ {{ $soles($v['negro']) }}
+                                        Vacaciones pagadas S/ {{ $soles($v['neto_pagadas']) }} · exceso sobre el PLAME (negro) S/ {{ $soles($v['negro']) }}
                                     </p>
                                 @endif
                             </div>

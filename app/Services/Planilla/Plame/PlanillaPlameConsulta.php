@@ -127,8 +127,9 @@ class PlanillaPlameConsulta
             'vacaciones' => [
                 'dias' => (int) $p->si_23,
                 'remuneracion' => round((float) $p->plame_0118_rem_vacacional, 2),
+                'remuneracion_legal' => $p->calculadoPlame('0118') ?? round((float) $p->plame_0118_rem_vacacional, 2),
                 'compensacion' => round((float) $p->plame_0117_comp_vacacional, 2),
-                'plame_personalizado' => $p->vacaciones_plame_personalizado,
+                'plame_personalizado' => $p->ajustePlame('0118')['monto'] ?? null,
                 'neto_pagadas' => $p->vacaciones_neto_pagadas,
                 'negro' => $p->vacaciones_negro,
             ],
@@ -152,8 +153,11 @@ class PlanillaPlameConsulta
         $resultado = [];
         foreach ($catalogo as $codigo => [$columna, $concepto]) {
             $monto = round((float) $p->{$columna}, 2);
-            if ($monto != 0.0) {
-                $resultado[] = ['codigo' => $codigo, 'concepto' => $concepto, 'monto' => $monto];
+            if ($monto != 0.0 || $p->ajustePlame((string) $codigo)) {
+                $ajuste = $p->ajustePlame((string) $codigo);
+                $resultado[] = ['codigo' => $codigo, 'concepto' => $concepto, 'monto' => $monto,
+                    // Ajuste manual: lo calculado por el sistema y el motivo
+                    'calculado' => $ajuste ? $p->calculadoPlame((string) $codigo) : null, 'motivo' => $ajuste['motivo'] ?? null, 'ajustado' => (bool) $ajuste];
             }
         }
         return $resultado;
