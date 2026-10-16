@@ -8,7 +8,7 @@ use Livewire\Component;
 
 class CostosMensualesFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $mostrarFormCostosMensuales = false;
     public array $aniosDisponibles = [];
     public $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -69,7 +69,7 @@ class CostosMensualesFormComponent extends Component
             $this->dispatch('actualizarCostosMensualesTable');
             $this->alert('success', 'Costos guardados correctamente.');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function render()

@@ -13,7 +13,7 @@ use Livewire\Component;
 
 class GestionPlanillaRegistroDiarioDetalleComponent extends Component
 {
-    use ConArrayPlanTipoAsistencia, ConArrayCampos, LivewireAlert;
+    use ConArrayPlanTipoAsistencia, ConArrayCampos, LivewireAlert, \App\Traits\HandlesAlerts;
     public $fecha;
     public $empleados = [];
     public $resumenDiarioPlanilla;
@@ -47,7 +47,7 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
                 $this->dispatch("setEmpleados", $this->empleados);
             }
         } catch (\Throwable $th) {
-            $this->alert('error',$th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function guardarInformacionRegistroPlanilla($datos)
@@ -73,7 +73,7 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
             $this->alert('success',"Registros Guardados Correctamente.");
 
         } catch (\Throwable $th) {
-            $this->alert('error',$th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function render()

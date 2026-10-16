@@ -9,7 +9,7 @@ use Exception;
 
 class TipoAsistenciaComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public $tipoAsistencias;
     public $codigosInvalidos = [];
@@ -37,8 +37,8 @@ class TipoAsistenciaComponent extends Component
         try {
             $servicio->eliminar($data['id']);
             $this->alert('success', '¡Tipo de asistencia eliminado con éxito!');
-        } catch (Exception $e) {
-            $this->alert('error', 'Hubo un error al eliminar: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e, 'Hubo un error al eliminar');
         }
     }
 
@@ -54,8 +54,8 @@ class TipoAsistenciaComponent extends Component
         try {
             $servicio->restaurarPorDefecto();
             $this->alert('success', 'Registro Restaurado con Éxito');
-        } catch (Exception $e) {
-            $this->alert('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
         }
     }
 

@@ -9,6 +9,46 @@ use InvalidArgumentException;
 
 class DateHelper
 {
+    private const MESES = ['ene' => 1, 'jan' => 1, 'feb' => 2, 'mar' => 3, 'abr' => 4, 'apr' => 4, 'may' => 5, 'jun' => 6,
+        'jul' => 7, 'ago' => 8, 'aug' => 8, 'sep' => 9, 'set' => 9, 'oct' => 10, 'nov' => 11, 'dic' => 12, 'dec' => 12];
+
+    /**
+     * Fecha escrita o pegada (de Excel, un correo…) a Y-m-d. Acepta 31/01/2023, 31-1-23, 31.01.2023, 2023-01-31,
+     * 31-ene-2023 y el número de serie de Excel; día antes que mes. Vacío → null. Si no se entiende lanza una
+     * excepción con un mensaje para el usuario (no un error de base de datos). Misma regla que resources/js/fechas.js.
+     */
+    public static function normalizarFecha($valor, string $campo = 'fecha'): ?string
+    {
+        if ($valor === null || trim((string) $valor) === '') {
+            return null;
+        }
+        if ($valor instanceof \DateTimeInterface) {
+            return $valor->format('Y-m-d');
+        }
+        $texto = mb_strtolower(trim(preg_replace('/\s+/', ' ', (string) $valor)));
+        $valida = fn($y, $m, $d) => (int) $y >= 1900 && (int) $y <= 2100 && checkdate((int) $m, (int) $d, (int) $y)
+            ? sprintf('%04d-%02d-%02d', $y, $m, $d) : null;
+        $anio = fn($y) => strlen($y) <= 2 ? ((int) $y < 70 ? 2000 + (int) $y : 1900 + (int) $y) : (int) $y;
+
+        $fecha = null;
+        if (preg_match('/^\d{5}(\.\d+)?$/', $texto)) {
+            $serie = (int) floor((float) $texto); // Excel: días desde 1899-12-30
+            $fecha = $serie > 20000 && $serie < 80000 ? Carbon::create(1899, 12, 30)->addDays($serie)->format('Y-m-d') : null;
+        } else {
+            $texto = preg_split('/[ t](?=\d{1,2}:)/', $texto)[0]; // sin la hora
+            if (preg_match('/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/', $texto, $m)) {
+                $fecha = $valida($m[1], $m[2], $m[3]);
+            } elseif (preg_match('/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2}|\d{4})$/', $texto, $m)) {
+                $fecha = $valida($anio($m[3]), $m[2], $m[1]);
+            } elseif (preg_match('/^(\d{1,2})[-\/. ]([a-z]{3})[a-z]*\.?[-\/. ](\d{2}|\d{4})$/u', $texto, $m) && isset(self::MESES[$m[2]])) {
+                $fecha = $valida($anio($m[3]), self::MESES[$m[2]], $m[1]);
+            }
+        }
+        if (!$fecha) {
+            throw new Exception("La {$campo} \"{$valor}\" no es una fecha válida. Usa el formato día/mes/año (ej. 31/01/2023).");
+        }
+        return $fecha;
+    }
     public static function esPeriodoVigente(string $fecha): bool
     {
         return (int) date('Y', strtotime($fecha)) === (int) date('Y');

@@ -10,7 +10,7 @@ use Livewire\Component;
 
 class ConsolidadoRiegoComponent extends Component
 {
-    use LivewireAlert, ConFechaReporteDia;
+    use LivewireAlert, ConFechaReporteDia, \App\Traits\HandlesAlerts;
     public $consolidado_riegos;
     protected $listeners = ['RefrescarMapa' => '$refresh', 'registroConsolidado' => '$refresh'];
     public function mount()
@@ -31,7 +31,7 @@ class ConsolidadoRiegoComponent extends Component
             $this->alert("success", "Registro consolidado");
 
         } catch (\Throwable $th) {
-            $this->alert("error", "Ocurrió un error al consolidar el registro");
+            $this->errorAlert("Ocurrió un error al consolidar el registro");
         }
     }
     public function render()

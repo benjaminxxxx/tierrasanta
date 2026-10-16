@@ -21,7 +21,7 @@ class LaboresComponent extends Component
 {
     use WithPagination;
     use WithoutUrlPagination;
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     use WithFileUploads;
     public $search = '';
     public $manoObras;
@@ -49,7 +49,7 @@ class LaboresComponent extends Component
             $this->fileLabores = null;
             $this->alert('success', "Labores importadas correctamente. {$registros} registros procesados.");
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage(), [
+            $this->errorAlert($th, null, [
                 'position' => 'center',
                 'toast' => false,
                 'timer' => null,
@@ -82,7 +82,7 @@ class LaboresComponent extends Component
             $resultado = LaborServicio::eliminar($data['laborId']);
             $this->alert('success', $resultado === 'desactivada' ? 'Labor desactivada: sus registros y reportes se conservan.' : 'Labor eliminada.');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function updatingSearch()
@@ -108,7 +108,7 @@ class LaboresComponent extends Component
             $labor->restore();
             $this->alert('success', 'Labor restaurada correctamente.');
         } catch (\Throwable $th) {
-            $this->alert('error', 'Error al restaurar la labor: ' . $th->getMessage());
+            $this->errorAlert($th, 'Error al restaurar la labor');
         }
     }
     public function render()

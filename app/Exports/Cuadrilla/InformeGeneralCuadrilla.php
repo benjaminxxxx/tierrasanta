@@ -56,7 +56,7 @@ class InformeGeneralCuadrilla
                 $hoja->setCellValue("I{$fila}", $reg['total_bono']);
                 $hoja->setCellValue("J{$fila}", $reg['costo_total'] ?? ($reg['costo_dia'] + $reg['total_bono']));
                 $hoja->setCellValue("K{$fila}", $reg['esta_pagado'] ? 'Sí' : 'No');
-                $hoja->setCellValue("L{$fila}", $reg['bono_esta_pagado'] ? 'Sí' : 'No');
+                $hoja->setCellValue("L{$fila}", $reg['bono_esta_pagado'] === null ? '—' : ($reg['bono_esta_pagado'] ? 'Sí' : 'No'));
                 $hoja->setCellValue("M{$fila}", $reg['detalle_campos']); // concatenado por comas
 
                 // FORMATO FECHA

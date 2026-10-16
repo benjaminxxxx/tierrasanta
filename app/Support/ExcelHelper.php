@@ -92,11 +92,8 @@ class ExcelHelper
                 )->format('Y-m-d');
             }
 
-            // Texto
-            $valor = trim($valor);
-            $valor = str_replace(['.', '/', '\\'], '-', $valor);
-
-            return Carbon::parse($valor)->format('Y-m-d');
+            // Texto: día/mes/año (31/01/2023, 31-1-23, 31-ene-2023…)
+            return DateHelper::normalizarFecha(trim($valor));
 
         } catch (\Throwable $e) {
             $msg = "Error al interpretar la fecha '{$valor}'";
@@ -281,9 +278,8 @@ class ExcelHelper
                 return Carbon::instance(ExcelDate::excelToDateTimeObject($valor))->format('Y-m-d');
             }
 
-            // Si es string, limpia separadores no estándar y parsea
-            $valor = str_replace(['.', '/', '\\'], '-', trim($valor));
-            return Carbon::parse($valor)->format('Y-m-d');
+            // Si es texto: día/mes/año (31/01/2023, 31-1-23, 31-ene-2023…)
+            return DateHelper::normalizarFecha(trim($valor));
         } catch (Exception $e) {
             throw new Exception("Error al interpretar la fecha '{$valor}' en la fila #{$fila}: " . $e->getMessage());
         }

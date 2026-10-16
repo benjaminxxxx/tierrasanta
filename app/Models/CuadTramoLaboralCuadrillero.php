@@ -21,7 +21,7 @@ class CuadTramoLaboralCuadrillero extends Model
     // Relaciones
     public function cuadrillero()
     {
-        return $this->belongsTo(Cuadrillero::class);
+        return $this->belongsTo(Cuadrillero::class)->withTrashed(); // eliminado: su historia se sigue viendo
     }
 
     public function tramoLaboralGrupal()

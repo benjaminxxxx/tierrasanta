@@ -12,9 +12,9 @@
                 <div class="space-y-6 py-4">
                     <div class="w-full">
                         <x-label value="Buscar Persona / Empresa por RUC, DNI o Nombre" />
-                        <x-select-dropdown 
+                        <x-searchable-select 
                             wire:model="personaSeleccionadaId" 
-                            source="getPersonas"
+                            buscar="getPersonas"
                             placeholder="Escribe el RUC o Nombre..." 
                         />
                     </div>

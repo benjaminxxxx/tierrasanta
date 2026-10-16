@@ -10,7 +10,7 @@ use Livewire\Component;
 
 class CampaniaPorCampoInformeComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $campania;
     protected $listeners = [
         'poblacionPlantasRegistrado' => 'refrescar', 
@@ -39,13 +39,13 @@ class CampaniaPorCampoInformeComponent extends Component
             $this->refrescar();
             $this->alert('success', 'Datos actualizados desde Kardex satisfactoriamente.');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function sincronizarRiegos()
     {
         if (!$this->campania) {
-            return $this->alert('error', 'Seleccione una campaña para continuar.');
+            return $this->errorAlert('Seleccione una campaña para continuar.');
         }
         $campaniaServicio = new CampaniaHistorialServicio($this->campania->id);
         $campaniaServicio->registrarHistorialRiegos();

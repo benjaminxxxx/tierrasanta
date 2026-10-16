@@ -14,8 +14,18 @@
                 <x-input id="nombre" type="text" class="w-full uppercase" label="Nombre del Grupo (*)" wire:model="nombre"
                     error="nombre" />
 
-                <x-input id="codigo" type="text" class="w-full uppercase" label="Código del Grupo (*)" wire:model="codigo"
-                    error="codigo" />
+                <div>
+                    <div class="flex items-end gap-2">
+                        <div class="flex-1">
+                            <x-input id="codigo" type="text" class="w-full uppercase" label="Código del Grupo (*)" wire:model="codigo"
+                                error="codigo" />
+                        </div>
+                        <x-button type="button" variant="secondary" wire:click="sugerirCodigo" title="CM, CQ o CS según la modalidad + la última palabra del nombre">
+                            <i class="fa fa-magic"></i> Sugerir
+                        </x-button>
+                    </div>
+                    <p class="text-xs text-muted-foreground mt-1">Mensual CM…, quincenal CQ…, semanal CS… + la última palabra del nombre.</p>
+                </div>
 
                 <x-input id="costo_dia_sugerido" type="number" label="Costo Día Sugerido (*)" step="0.01"
                     class="w-full" error="costo_dia_sugerido" wire:model="costo_dia_sugerido" />

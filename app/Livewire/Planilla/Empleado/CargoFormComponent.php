@@ -8,7 +8,7 @@ use Livewire\Component;
 
 class CargoFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public ?int $cargoId = null;
     public bool $mostrarModal = false;
 
@@ -36,7 +36,7 @@ class CargoFormComponent extends Component
             $this->activo = $cargo->activo;
             $this->mostrarModal = true;
         }else{
-            $this->alert('error','Registro inexistente');
+            $this->errorAlert('Registro inexistente');
         }
     }
     public function mount(): void
@@ -91,7 +91,7 @@ class CargoFormComponent extends Component
             $this->mostrarModal = false;
 
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
 
 

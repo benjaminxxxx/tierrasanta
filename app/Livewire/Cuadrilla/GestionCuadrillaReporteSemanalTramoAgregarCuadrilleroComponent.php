@@ -17,7 +17,7 @@ use Jantinnerezo\LivewireAlert\LivewireAlert;
 
 class GestionCuadrillaReporteSemanalTramoAgregarCuadrilleroComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $tramoLaboral;
     public $mostrarAgregarCuadrillero = false;
     public $grupos = [];
@@ -141,12 +141,11 @@ class GestionCuadrillaReporteSemanalTramoAgregarCuadrilleroComponent extends Com
                     ->update(['tramo_cuadrillero_id' => $tramoCuadrillero->id]);
             }
 
-            // 🔥 Eliminar diferenciales (los que ya estaban pero no están en los nuevos)
-            // Gracias al ON DELETE CASCADE en la BD, eliminar aquí eliminará automáticamente
-            // los registros de asistencia en 'cuad_registros_diarios' vinculados a este tramo_cuadrillero_id.
-            CuadTramoLaboralCuadrillero::where('cuad_tramo_laboral_grupo_id', $grupo->id)
-                ->whereNotIn('cuadrillero_id', $idsNuevos)
-                ->delete();
+            // Los que ya estaban y no están en la lista nueva salen del grupo con sus registros del tramo
+            // (no se puede si tienen algo pagado en un desglose)
+            app(\App\Services\Cuadrilla\TramoLaboralServicio::class)->quitarCuadrillerosDelGrupo($grupo,
+                CuadTramoLaboralCuadrillero::where('cuad_tramo_laboral_grupo_id', $grupo->id)
+                    ->whereNotIn('cuadrillero_id', $idsNuevos)->pluck('cuadrillero_id')->all());
 
             DB::commit();
 
@@ -157,71 +156,9 @@ class GestionCuadrillaReporteSemanalTramoAgregarCuadrilleroComponent extends Com
 
         } catch (\Throwable $th) {
             DB::rollBack();
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
-    /*
-    public function agregarListaAgregada()
-    {
-        try {
-
-            if (!$this->codigo_grupo) {
-                throw new Exception("No ha elegido ningún grupo");
-            }
-
-            // IDs de cuadrilleros que se registrarán en esta ejecución
-            $idsNuevos = [];
-
-            //verificar si existe el grupo en el tramoLaboral
-            $grupo = $this->registrarGrupoEnTramoLaboral($this->tramoLaboral, $this->codigo_grupo);
-
-
-
-            $orden = 0;
-            foreach ($this->cuadrillerosAgregados as $cuadrillero) {
-                $nombres = trim($cuadrillero['nombres'] ?? '');
-                $cuadrilleroId = $cuadrillero['id'] ?? null;
-                $orden++;
-
-                if (!$cuadrilleroId) {
-                    // Buscar cuadrillero por nombre o crear si no existe
-                    $cuadrilleroModel = Cuadrillero::firstOrCreate(
-                        ['nombres' => $nombres]
-                    );
-                    $cuadrilleroId = $cuadrilleroModel->id;
-                    $nombres = $cuadrilleroModel->nombres;
-                }
-
-                // Guardamos el id en la lista de nuevos
-                $idsNuevos[] = $cuadrilleroId;
-
-                CuadTramoLaboralCuadrillero::updateOrCreate(
-                    [
-                        'cuadrillero_id' => $cuadrilleroId,
-                        'cuad_tramo_laboral_grupo_id' => $grupo->id,
-
-                    ],
-                    [
-                        'nombres' => $nombres,
-                        'orden' => $orden,
-                    ]
-                );
-            }
-
-            // 🔥 Eliminar diferenciales (los que ya estaban pero no están en los nuevos)
-            CuadTramoLaboralCuadrillero::where('cuad_tramo_laboral_grupo_id', $grupo->id)
-                ->whereNotIn('cuadrillero_id', $idsNuevos)
-                ->delete();
-
-            $this->alert('success', "Registros agregados");
-            $this->mostrarAgregarCuadrillero = false;
-            $this->resetForm();
-            $this->dispatch('cuadrillerosAgregadosEnTramo');
-
-        } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
-        }
-    }*/
     public static function registrarGrupoEnTramoLaboral($tramoLaboral, $codigo)
     {
         // Verificar si ya existe el registro para esa fecha y grupo

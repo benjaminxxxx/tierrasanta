@@ -10,7 +10,7 @@ use App\Services\Planilla\DerechoHabiente\DerechoHabienteService;
 
 class DerechoHabienteWizardComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public bool $show = false;
     public string $paso = 'seleccionar'; // seleccionar | gestionar
@@ -138,7 +138,7 @@ class DerechoHabienteWizardComponent extends Component
             $this->alert('success', 'Registro desvinculado');
             $this->dispatch('derechoHabienteGuardado');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

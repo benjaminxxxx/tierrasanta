@@ -12,7 +12,7 @@ use Livewire\Component;
  */
 class EmpleadoSueldosTabComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public int $empleadoId;
     public $fechaInicio;
@@ -47,7 +47,7 @@ class EmpleadoSueldosTabComponent extends Component
             $this->reset(['fechaInicio', 'fechaFin', 'sueldo']);
             $this->dispatch('empleadoActualizado');
         } catch (\Throwable $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 
@@ -58,7 +58,7 @@ class EmpleadoSueldosTabComponent extends Component
             $this->alert('success', 'Sueldo eliminado correctamente');
             $this->dispatch('empleadoActualizado');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

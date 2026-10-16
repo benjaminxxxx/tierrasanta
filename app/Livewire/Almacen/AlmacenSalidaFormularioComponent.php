@@ -19,7 +19,7 @@ use Livewire\Component;
 
 class AlmacenSalidaFormularioComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public bool $mostrar = false;
     public string $tipo = 'productos';
@@ -207,15 +207,15 @@ class AlmacenSalidaFormularioComponent extends Component
             // Toma la fecha de la primera fila con datos para saber a qué mes/año
             // saltar en la Lista — puede diferir del mes que se estaba viendo
             // (ej. edito en agosto un registro de enero).
-            $primeraFecha = collect($data)->pluck('fecha_reporte')->filter()->first();
+            $primeraFecha = \App\Support\DateHelper::normalizarFecha(collect($data)->pluck('fecha_reporte')->filter()->first());
             [$mesDestino, $anioDestino] = $primeraFecha
                 ? [(int) date('n', strtotime($primeraFecha)), (int) date('Y', strtotime($primeraFecha))]
                 : [$this->mes, $this->anio];
 
             $this->dispatch('salidaGuardada', mes: $mesDestino, anio: $anioDestino);
             $this->cerrar();
-        } catch (\Exception $e) {
-            $this->alert('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
         }
     }
 

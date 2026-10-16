@@ -2,29 +2,33 @@
 
 namespace App\Livewire\Traits;
 
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Session;
-use Log;
+use App\Services\Sistema\Error\SistemaErrorCrud;
+use App\Services\Sistema\Error\SistemaErrorReglas;
 
+/**
+ * Forma anterior de mostrar errores. Ahora se apoya en el sistema de tickets (ver HandlesAlerts::errorAlert, que es lo
+ * que se debe usar en código nuevo):
+ * - error controlado (throw new Exception / ErrorControlado): se muestra su mensaje;
+ * - error no controlado: se guarda el ticket y se muestra $mensajeUsuario con el número de ticket.
+ */
 trait ConManejarErrores
 {
-    /**
-     * Manejar excepciones y mostrar alertas amigables en Livewire.
-     */
     public function manejarError(\Throwable $e, string $mensajeUsuario = 'Ocurrió un error inesperado')
     {
-        // Registrar en log con fecha y hora
-        Log::error(sprintf(
-            "[%s] %s (archivo: %s, línea: %d)",
-            now()->format('Y-m-d H:i:s'),
-            $e->getMessage(),
-            $e->getFile(),
-            $e->getLine()
-        ));
+        if (SistemaErrorReglas::esControlado($e)) {
+            $mensaje = $e->getMessage() ?: $mensajeUsuario;
+        } else {
+            $ticket = SistemaErrorCrud::registrar($e, static::class);
+            $mensaje = $ticket
+                ? "{$mensajeUsuario}. Quedó registrado con el ticket #{$ticket->id} para que lo revisen."
+                : SistemaErrorReglas::mensajeUsuario(null);
+        }
 
-        // Mostrar alerta amigable en frontend
         if (method_exists($this, 'alert')) {
-            $this->alert('error', $mensajeUsuario);
+            $this->alert('error', $mensaje, [
+                'position' => 'center', 'toast' => false, 'timer' => null,
+                'showConfirmButton' => true, 'confirmButtonText' => 'Aceptar',
+            ]);
         }
     }
 }

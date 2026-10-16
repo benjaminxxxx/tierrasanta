@@ -132,6 +132,10 @@ class Permisos
     const CAMPAÑA_COSTOS_VER = 'Campañas Costo Ver';
     const CAMPAÑA_COSTOS_GESTIONAR = 'Campañas Costo Gestionar';
 
+    // — Informes mensuales (cierre de mes por campaña: Excel + vista)
+    const CAMPAÑA_INFORME_MENSUAL = 'Campañas Informe Mensual';
+    const CAMPAÑA_INFORME_MENSUAL_GESTIONAR = 'Campañas Informe Mensual Gestionar';
+
     // =========================================================================
     // DOMINIO: PERSONAL (empleados, familiares, contratos)
     // Tablas: plan_empleados, plan_familiares, plan_contratos, plan_sueldos
@@ -153,7 +157,7 @@ class Permisos
     // =========================================================================
 // DOMINIO: CUADRILLA
 // Tablas: cuad_cuadrilleros, cuad_grupos, cuad_tramos_laborales,
-//         cuad_registros_diarios, cuad_bonos_actividades, cuad_resumen_tramos
+//         cuad_registros_diarios, cuad_bonos_actividades
 // =========================================================================
 
     const CUADRILLA = 'Cuadrilla';
@@ -219,6 +223,9 @@ class Permisos
 
     // — Configuración del sistema (parámetros de negocio guardados en la tabla configuracion)
     const SISTEMA_CONFIGURACION = 'Configuración del Sistema';
+
+    // — Errores no controlados (tickets): ver la lista, el detalle técnico y marcarlos como revisados
+    const SISTEMA_ERRORES = 'Errores del Sistema';
 
     // =========================================================================
     // DOMINIO: PLANILLA (asistencia, registros diarios, resúmenes, liquidaciones)

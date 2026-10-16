@@ -8,7 +8,7 @@ use Livewire\Component;
 
 class ReporteGeneralComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $filtroNombres = '';
     public $fechaInicio;
     public $fechaFin;
@@ -51,7 +51,7 @@ class ReporteGeneralComponent extends Component
             );
 
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function render()

@@ -13,7 +13,7 @@ use Livewire\Component;
 
 class EvaluacionInfestacionCosechaComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $campoSeleccionado;
     public $campaniaSeleccionada;
     public $campaniasPorCampo = [];
@@ -129,8 +129,8 @@ class EvaluacionInfestacionCosechaComponent extends Component
             app(EvaluacionInfestacionPencaServicio::class)->guardar($this->campania, $datos);
             $this->renderizarTabla();
             $this->alert('success', 'Evaluación guardada correctamente.');
-        } catch (\Exception $e) {
-            $this->alert('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
         }
     }
 

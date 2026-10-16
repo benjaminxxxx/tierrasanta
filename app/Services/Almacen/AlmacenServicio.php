@@ -2,6 +2,8 @@
 
 namespace App\Services\Almacen;
 
+use App\Support\DateHelper;
+
 use App\Models\AlmacenProductoSalida;
 use App\Models\CampoCampania;
 use App\Models\InsKardex;
@@ -228,8 +230,10 @@ class AlmacenServicio
         DB::transaction(function () use ($filas, $tipo, $almacenId, &$resultados, &$idsSalidasParaReconciliar, $esCombustible) {
             $usuarioId = Auth::id();
 
-            foreach ($filas as $fila) {
+            foreach ($filas as $numero => $fila) {
                 $id = $fila['id'] ?? null;
+                // Fechas pegadas desde Excel (31/01/2023, número de serie…) → Y-m-d; si no se entiende, mensaje claro
+                $fila['fecha_reporte'] = DateHelper::normalizarFecha($fila['fecha_reporte'] ?? null, 'fecha de la fila ' . ($numero + 1));
 
                 $camposBase = ['fecha_reporte', 'producto_id', 'cantidad', 'tipo_kardex'];
                 $campoDestino = $esCombustible ? 'maquinaria_id' : 'campo_nombre';

@@ -54,7 +54,7 @@ class ReporteDiarioAgregarRegadoresComponent extends Component
             $this->cuadrilleros = EmpleadoServicio::cargarSearchableEmpleados($this->fecha, 'cuadrilleros');
       
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function render()

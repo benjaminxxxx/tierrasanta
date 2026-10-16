@@ -13,7 +13,7 @@ use Livewire\Component;
 
 class DistribucionCombustibleComponent extends Component
 {
-    use HstListas, ConSelectorMes, LivewireAlert;
+    use HstListas, ConSelectorMes, LivewireAlert, \App\Traits\HandlesAlerts;
     public array  $filas             = [];   // aplanado: salidas + distribuciones
 
     // Modal
@@ -66,8 +66,8 @@ class DistribucionCombustibleComponent extends Component
             DistribucionCombustible::findOrFail($id)->delete();
             $this->alert('success', 'Distribución eliminada');
             $this->generarDistribucion();
-        } catch (\Exception $e) {
-            $this->alert('error', 'Error al eliminar: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e, 'Error al eliminar');
         }
     }
 

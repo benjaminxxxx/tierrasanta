@@ -11,7 +11,7 @@ use Livewire\WithPagination;
 class EvaluacionPoblacionPlantasComponent extends Component
 {
     use WithPagination;
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $campoFiltrado;
     public $campaniaFiltrada;
     public $evaluadorFiltro;
@@ -56,7 +56,7 @@ class EvaluacionPoblacionPlantasComponent extends Component
             $this->alert('success', 'Registro eliminado correctamente.');
             $this->dispatch('poblacionPlantasEliminado');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function exportarReporte(){
@@ -69,7 +69,7 @@ class EvaluacionPoblacionPlantasComponent extends Component
             ];
             return app(PoblacionPlantaServicio::class)->exportar($data);
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function render()

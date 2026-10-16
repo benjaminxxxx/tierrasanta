@@ -11,7 +11,7 @@ use Exception;
 
 class EvaluacionReinfestacionFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public $mostrarFormularioEvalReinfestacion = false;
 
@@ -32,7 +32,7 @@ class EvaluacionReinfestacionFormComponent extends Component
             $this->dispatch('refrescarInformeCampaniaXCampo');
             $this->alert('success', 'Datos sincronizados correctamente');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

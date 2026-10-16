@@ -11,7 +11,7 @@ use Livewire\WithPagination;
 class CochinillaVentaRegistroEntregaComponent extends Component
 {
     use ConSelectorMes;
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     use WithPagination;
     public $totalVenta;
     protected $listeners = ['registroEntregaVentaExitoso'];
@@ -27,7 +27,7 @@ class CochinillaVentaRegistroEntregaComponent extends Component
             VentaServicio::eliminarRegistroEntrega($grupoVenta);
             $this->alert('success','Detalle de registro de venta eliminado correctamente.');
         } catch (\Throwable $th) {
-            $this->alert('error',$th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function registroEntregaVentaExitoso()

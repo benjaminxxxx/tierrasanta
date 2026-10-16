@@ -18,7 +18,7 @@
                 {{-- Mitad izquierda: buscador --}}
                 <div class="flex-1">
                     <x-label value="Buscar producto existente" />
-                    <x-select-dropdown wire:model="productoId" source="getProductos"
+                    <x-searchable-select wire:model="productoId" buscar="getProductos"
                         placeholder="Nombre comercial o ingrediente activo…" />
                 </div>
 

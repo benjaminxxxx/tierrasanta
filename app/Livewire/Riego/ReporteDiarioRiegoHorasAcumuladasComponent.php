@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 
 class ReporteDiarioRiegoHorasAcumuladasComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public $mostrarHorasAcumuladasForm = false;
     public $acumulado = [];
@@ -36,7 +36,7 @@ class ReporteDiarioRiegoHorasAcumuladasComponent extends Component
         $this->resumenRiego = ConsolidadoRiego::find($resumenRiegoId);
 
         if (!$this->resumenRiego) {
-            $this->alert('error', 'El resumen de riego ya no existe o fue eliminado.');
+            $this->errorAlert('El resumen de riego ya no existe o fue eliminado.');
             return;
         }
 
@@ -224,7 +224,7 @@ class ReporteDiarioRiegoHorasAcumuladasComponent extends Component
 
                 $this->alert('success', 'Uso de horas acumuladas registrado correctamente.');
             } catch (\Throwable $th) {
-                $this->alert('error', $th->getMessage());
+                $this->errorAlert($th);
             }
         }*/
     public function registrarUsoHorasAcumuladas()
@@ -353,7 +353,7 @@ class ReporteDiarioRiegoHorasAcumuladasComponent extends Component
 
             $this->alert('success', 'Uso de horas acumuladas registrado correctamente.');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

@@ -17,7 +17,7 @@
                 {{-- PRODUCTO --}}
                 <x-group-field>
                     <x-label for="kardex.producto_id" value="Selecciona un Producto" />
-                    <x-select-dropdown wire:model="kardex.producto_id" source="getProductos"
+                    <x-searchable-select wire:model="kardex.producto_id" buscar="getProductos"
                         placeholder="-- Seleccione Producto --" :etiqueta="$productoEtiqueta" />
                     <x-input-error for="kardex.producto_id" />
                 </x-group-field>

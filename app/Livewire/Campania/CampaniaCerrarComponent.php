@@ -17,7 +17,7 @@ use Livewire\Component;
  */
 class CampaniaCerrarComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public bool $mostrar = false;
     public ?int $campaniaId = null;
@@ -36,7 +36,7 @@ class CampaniaCerrarComponent extends Component
         $this->resetErrorBag();
         $campania = CampoCampania::find($campaniaId);
         if (!$campania) {
-            $this->alert('error', 'La campaña ya no existe.');
+            $this->errorAlert('La campaña ya no existe.');
             return;
         }
         if ($campania->fecha_fin) {
@@ -87,7 +87,7 @@ class CampaniaCerrarComponent extends Component
                 $this->addError('fechaCierre', implode(' ', $mensajes));
             }
         } catch (\Throwable $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 

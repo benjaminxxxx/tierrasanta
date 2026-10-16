@@ -10,6 +10,14 @@ use App\Models\GastoAdicionalPorGrupoCuadrilla;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
+/**
+ * Cuadro resumen (historial) de un tramo de cuadrilla, calculado en el momento desde el estado de pago que deja el
+ * desglose (esta_pagado / desglose_detalle_id): por grupo, el sueldo (por mes si el grupo es mensual), el bono que
+ * se paga aparte y los gastos adicionales, con lo pagado dentro del tramo y lo que sigue pendiente.
+ *
+ * En tramos que acumulan costos, lo pendiente arrastra lo no pagado de tramos anteriores (hasta la fecha de corte).
+ * El bono se calcula hasta la fecha "hasta dónde se calcula el bono" del tramo.
+ */
 class ResumenTramoInformativoServicio
 {
     protected array $meses = [
@@ -132,8 +140,9 @@ class ResumenTramoInformativoServicio
     protected function filaBono(CuaGrupo $grupo, CuadTramoLaboral $tramoLaboral, string $fechaCorteBono, bool $acumula): ?array
     {
         $registrosDeEsteTramo = CuadActividadBono::where('se_paga_con_jornal', false)
-            ->whereHas('registroDiario', fn($q) => $q->where('codigo_grupo', $grupo->codigo)->where('tramo_laboral_id', $tramoLaboral->id))
-            ->with('desgloseDetalle.desglose')
+            ->whereHas('registroDiario', fn($q) => $q->where('codigo_grupo', $grupo->codigo)->where('tramo_laboral_id', $tramoLaboral->id)
+                ->where('fecha', '<=', $fechaCorteBono))
+            ->with(['desgloseDetalle.desglose', 'registroDiario'])
             ->get();
 
         $deudaActual = $registrosDeEsteTramo->sum('total_bono');
@@ -144,7 +153,7 @@ class ResumenTramoInformativoServicio
                 ->whereHas('registroDiario', fn($q) => $q->where('codigo_grupo', $grupo->codigo)
                     ->where('fecha', '<=', $fechaCorteBono)
                     ->whereHas('tramoLaboral', fn($q2) => $q2->where('acumula_costos', true)))
-                ->with('desgloseDetalle.desglose')
+                ->with(['desgloseDetalle.desglose', 'registroDiario'])
                 ->get();
 
             if ($registrosHistoricos->isEmpty() && $deudaActual <= 0) {
@@ -241,17 +250,25 @@ class ResumenTramoInformativoServicio
     }
 
     /**
-     * Calcula la deuda pendiente real acumulada a la fecha de corte.
-     * Si el registro YA fue pagado (tiene esta_pagado = true), la deuda pasa a 0.00.
+     * Deuda pendiente a la fecha de corte: lo no pagado (sin desglose) con fecha hasta el corte.
      */
     protected function calcularDeudaPendienteReal(Collection $registros, string $fechaCorte, string $campoMonto): float
     {
         return $registros
-            ->filter(function ($r) {
-                // Si el registro ya fue marcado como pagado por cualquier desglose registrado, ya no es deuda pendiente
-                return !$r->esta_pagado;
-            })
+            ->filter(fn($r) => !$r->esta_pagado && ($this->fechaDe($r) === null || $this->fechaDe($r) <= $fechaCorte))
             ->sum($campoMonto);
+    }
+
+    /** Fecha del registro (Y-m-d): día del registro diario, día del registro del bono o fecha del gasto. */
+    protected function fechaDe($registro): ?string
+    {
+        $fecha = match (true) {
+            $registro instanceof CuadRegistroDiario => $registro->fecha,
+            $registro instanceof CuadActividadBono => $registro->registroDiario?->fecha,
+            $registro instanceof GastoAdicionalPorGrupoCuadrilla => $registro->fecha_gasto,
+            default => null,
+        };
+        return $fecha ? Carbon::parse($fecha)->toDateString() : null;
     }
 
     /**

@@ -13,7 +13,7 @@ use Livewire\Component;
 
 class AlmacenSalidaProductosFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $mostrarFormulario = false;
     public $productos;
     public $nombre_comercial;
@@ -110,7 +110,7 @@ class AlmacenSalidaProductosFormComponent extends Component
                 $this->productos = [];
             }
         } catch (\Throwable $th) {
-            $this->alert("error", $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function seleccionarProductoParaSalida($productoId)
@@ -122,7 +122,7 @@ class AlmacenSalidaProductosFormComponent extends Component
                 throw new Exception("Producto no encontrado.");
             }
         } catch (\Throwable $th) {
-            $this->alert("error", $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 
@@ -146,11 +146,11 @@ class AlmacenSalidaProductosFormComponent extends Component
            
             if($this->destino=='combustible'){
                 if ($this->step == 2 && count($this->maquinariasAgregadas) == 0) {
-                    return $this->alert('error', 'Debe seleccionar las maquinarias o centro de costos.');
+                    return $this->errorAlert('Debe seleccionar las maquinarias o centro de costos.');
                 }
             }else{
                 if ($this->step == 2 && count($this->camposAgregados) == 0) {
-                    return $this->alert('error', 'Debe seleccionar los campos.');
+                    return $this->errorAlert('Debe seleccionar los campos.');
                 }
             }
             $data = [];
@@ -201,7 +201,7 @@ class AlmacenSalidaProductosFormComponent extends Component
             if (count($data) > 0) {
                 AlmacenServicio::registrarSalida($data);
             } else {
-                return $this->alert('error', 'Ningún registro tiene la cantidad para ser registrado');
+                return $this->errorAlert('Ningún registro tiene la cantidad para ser registrado');
             }
 
             $this->alert('success', 'Registro Actualizado correctamente');
@@ -209,7 +209,7 @@ class AlmacenSalidaProductosFormComponent extends Component
             $this->closeForm();
 
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function resetForm()

@@ -18,16 +18,19 @@ use App\Support\FormatoHelper;
 class CampaniaCostoProduccionConsulta
 {
     /**
-     * Partidas en vivo, en el orden del reporte.
+     * Partidas en vivo, en el orden del reporte. Con $desde / $hasta solo cuenta los costos de ese rango (informe
+     * mensual: corte al fin de mes y reparto por etapas).
      *
      * @return array{filas: array<int, array{seccion: string, grupo: ?string, item: string, codigo: ?string, cantidad: ?float, costo_soles: float}>,
      *               filas_origen: int, fecha_desde: ?string, fecha_hasta: ?string}
      */
-    public function agrupar(CampoCampania $campania): array
+    public function agrupar(CampoCampania $campania, ?string $desde = null, ?string $hasta = null): array
     {
         $base = ResumenCostoDiario::query()
             ->where('campania', $campania->nombre_campania)
-            ->where('campo', $campania->campo);
+            ->where('campo', $campania->campo)
+            ->when($desde, fn($q) => $q->where('fecha', '>=', $desde))
+            ->when($hasta, fn($q) => $q->where('fecha', '<=', $hasta));
 
         $resumen = (clone $base)->selectRaw('COUNT(*) as filas, MIN(fecha) as desde, MAX(fecha) as hasta')->first();
 

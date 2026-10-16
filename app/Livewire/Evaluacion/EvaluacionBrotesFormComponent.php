@@ -28,7 +28,7 @@ use Livewire\Component;
  */
 class EvaluacionBrotesFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public $mostrarFormulario = false;
     public $idTable;
@@ -162,10 +162,10 @@ class EvaluacionBrotesFormComponent extends Component
             $this->abrirEvaluacion($id); // la tabla vuelve con los valores por hectárea recalculados
             $this->alert('success', $esNueva ? 'Evaluación registrada.' : 'Evaluación actualizada.');
         } catch (ValidationException $ve) {
-            $this->alert('error', 'No se guardó: ' . implode(' ', $ve->validator->errors()->all()), ['timer' => 6000]);
+            $this->errorAlert('No se guardó: ' . implode(' ', $ve->validator->errors()->all()), null, ['timer' => 6000]);
             throw $ve;
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 
@@ -181,7 +181,7 @@ class EvaluacionBrotesFormComponent extends Component
             $this->dispatch('brotesPorPisoRegistrado');
             $this->alert('success', 'Evaluación eliminada (queda en la auditoría).');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

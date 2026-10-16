@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 
 class FdmCostosComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $idTable;
     public $mes;
     public $anio;
@@ -105,8 +105,8 @@ class FdmCostosComponent extends Component
             //$this->negroCostosAdicionales = $costosAdicionales['costo_adicional_negro'];
             $this->obtenerParametros();
             $this->alert('success', 'Costos guardados correctamente.');
-        } catch (\Exception $e) {
-            $this->alert('error', 'Error al guardar los costos: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e, 'Error al guardar los costos');
         }
 
     }
@@ -117,7 +117,7 @@ class FdmCostosComponent extends Component
             $maquinariaServicio->calcularCosto();
             $this->alert('success', 'Costos de Maquinaria calculados correctamente.');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
 
         $this->obtenerParametros();
@@ -152,14 +152,14 @@ class FdmCostosComponent extends Component
                     break;
 
                 default:
-                    $this->alert('error', "Tipo de costo no reconocido: $tipoCosto");
+                    $this->errorAlert("Tipo de costo no reconocido: $tipoCosto");
                     return;
             }
 
             $this->obtenerCostos();
             $this->alert('success', 'Datos procesados correctamente');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

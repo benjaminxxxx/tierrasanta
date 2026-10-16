@@ -146,3 +146,21 @@ Handsontable y los sueldos de la planilla generada); `/planilla/asistencias` red
 | Qué | Por qué se retiró |
 |---|---|
 | `app/Livewire/Planilla/Asistencia/SuspensionesPlanillaComponent.php` (versión Handsontable), su vista y `app/Services/Planilla/PlanillaSuspensionProceso.php` | Tabla editable de suspensiones: cada fila se validaba contra la base por separado, así que correr el límite entre dos rangos seguidos obligaba a guardar uno, luego el otro (o eliminar y volver a crear). Además solo dejaba fechas de inicio dentro del mes. El componente nuevo (mismo nombre) agrupa por trabajador, edita en un modal y valida el conjunto (`App\Services\Planilla\Suspension\PlanillaSuspensionCrud`); permite rangos futuros. |
+
+### Cuadrilla: resumen por tramo guardado (09/10/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| `app/Services/Cuadrilla/ResumenTramoServicio.php`, `app/Models/CuadResumenPorTramo.php` | Guardaban el cuadro resumen del tramo en `cuad_resumen_tramos` y solo se rehacía con "Recalcular resumen": después de un pago el cuadro quedaba desactualizado. Ahora `GestionCuadrillaResumenAcumuladoComponent` lo calcula al abrirlo con `ResumenTramoInformativoServicio` (desde el estado de pago del desglose). La tabla `cuad_resumen_tramos` queda en la base sin uso (se puede eliminar con una migración cuando se confirme). También se quitaron del reporte semanal (`GestionCuadrillaReporteSemanalTramoComponent`) las versiones comentadas de `guardarReporteSemanal` y `registrarCostoPersonalizado`, `listarResumenes`, `recalcularResumenTramo` (solo mostraba un mensaje) y `TramoLaboralServicio::generarResumen` (vacío). |
+
+### Cuadrilla: código de la versión anterior (10/10/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| `app/Models/CuadOrdenSemanal.php` y 12 métodos de `CuadrilleroServicio` (`obtenerListaGruposOrdenados`, `listarHandsontableGastosAdicionales`, `guardarGastosAdicionalesXGrupo`, `guardarBonoCuadrillaobsoleta`, `obtenerHandsontableRegistrosPorActividad`, `obtenerHandsontableReporte`, `asignarGrupoPeriodo`, `registrarOrdenSemanal`, `guardarReporteSemanal`, `sincronizarOrdenGruposSemana`, `getLaborNombre`, `getLaborCodigo`) | De la versión por semanas anterior a los tramos: nadie los llamaba y varios usaban tablas que ya no existen (`cuad_orden_semanal`, el modelo `CuadGrupoOrden` ni existía). `guardarGastosAdicionalesXGrupo` además borraba y volvía a crear todos los gastos del rango, perdiendo su vínculo con el pago. Se quitaron de `app/` (quedan en el historial de git). |
+
+### Buscadores con lista: un solo `x-searchable-select` (11/10/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| `resources/views/components/searchable.blade.php`, `searchable-dinamico.blade.php`, `searchable-select-stable.blade.php`, `select-dropdown.blade.php` | Cuatro variantes del mismo buscador. `searchable` y `searchable-dinamico` registraban las dos un `Alpine.data('searchable')` distinto (la última en cargar pisaba a la otra); `searchable-select-stable` era una copia sin uso; la lista pasada con `:options` quedaba congelada en Alpine aunque Livewire la cambiara; y cada una traía su `<script>` dentro de la vista, que no se ejecuta si el componente aparece después (por ejemplo dentro de un modal). Ahora todo es `x-searchable-select` con su lógica en `resources/js/components/searchable-select.js` (registrada una vez en `app.js`) y tres modos: `:options` (se recarga sola), `opciones="propiedad"` (enlazada, antes `searchable-dinamico`) y `buscar="metodo"` (búsqueda en el servidor, antes `select-dropdown`; `source` sigue aceptándose, y el evento `selectDropdownEtiqueta` también). `x-autocomplete` se mantiene aparte: es texto libre con sugerencias, no elige un id. |

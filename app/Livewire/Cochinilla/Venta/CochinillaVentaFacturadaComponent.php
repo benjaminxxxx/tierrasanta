@@ -11,7 +11,7 @@ use Session;
 
 class CochinillaVentaFacturadaComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     use ConSelectorMes;
     use ListaCampos;
     public $ventasFacturadas = [];
@@ -32,7 +32,7 @@ class CochinillaVentaFacturadaComponent extends Component
             $ventasFacturadasDesdeReporte = VentaServicio::listarVentasPorAnioYMesMasReporte($this->anio, $this->mes);
             $this->dispatch('cargarTabla', ['ventas' => $ventasFacturadasDesdeReporte]);
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function cargarReporte()
@@ -41,7 +41,7 @@ class CochinillaVentaFacturadaComponent extends Component
             $this->ventasFacturadas = VentaServicio::listarVentasPorAnioYMes($this->anio, $this->mes);
             $this->dispatch('cargarTabla', ['ventas' => $this->ventasFacturadas]);
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function storeTableDataRegistroVentas($datos)
@@ -51,7 +51,7 @@ class CochinillaVentaFacturadaComponent extends Component
             $this->cargarReporte();
             $this->alert('success', 'Ventas registradas correctamente');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function render()

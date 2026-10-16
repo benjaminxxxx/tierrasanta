@@ -12,7 +12,7 @@ use Livewire\Component;
  */
 class EmpleadoCargosTabComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public int $empleadoId;
 
@@ -46,7 +46,7 @@ class EmpleadoCargosTabComponent extends Component
             $this->alert('success', 'Cargo asignado correctamente.');
             $this->limpiar();
         } catch (\DomainException $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 
@@ -59,7 +59,7 @@ class EmpleadoCargosTabComponent extends Component
             $this->alert('success', 'Cargo finalizado correctamente.');
             $this->limpiar();
         } catch (\DomainException $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 
@@ -70,7 +70,7 @@ class EmpleadoCargosTabComponent extends Component
             $this->alert('success', 'Cargo reaperturado correctamente.');
             $this->limpiar();
         } catch (\DomainException $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 
@@ -81,7 +81,7 @@ class EmpleadoCargosTabComponent extends Component
             $this->alert('success', 'Registro de cargo eliminado.');
             $this->limpiar();
         } catch (\DomainException $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 

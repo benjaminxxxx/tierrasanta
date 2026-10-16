@@ -10,7 +10,7 @@ use Jantinnerezo\LivewireAlert\LivewireAlert;
 #[Title('Permisos por Rol')]
 class PermisosRolComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public $breadcrumb = [];
     public string $rolNombre = '';
@@ -35,7 +35,7 @@ class PermisosRolComponent extends Component
             PermisosServicio::guardarPermisosParaRol($this->rolNombre, $this->permisosActivados);
             $this->alert('success', 'Permisos actualizados correctamente.');
         } catch (\Throwable $th) {
-            $this->alert('error', 'Error: ' . $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

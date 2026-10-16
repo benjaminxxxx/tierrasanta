@@ -122,7 +122,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
             $this->dispatch('registroConsolidado');
             $this->alert('success', 'Horas acumuladas liberadas correctamente.');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function registroConsolidado($resumenRiegoId = null)
@@ -212,7 +212,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
             \App\Services\Costos\Consolidacion\BddManoObraServicio::registrarCambio($this->fecha);
             $this->dispatch('registroRiegoEliminado', $riegoId);
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function render()

@@ -24,9 +24,9 @@ class GrupoServicio
             // Actualizar registro existente
             $grupo = CuaGrupo::where('codigo', $codigo)->firstOrFail();
 
-            $existeCodigo = CuaGrupo::where('codigo', $data['codigo'])->exists();
+            $existeCodigo = CuaGrupo::withTrashed()->where('codigo', $data['codigo'])->exists();
             if ($existeCodigo && ($codigo!=$data['codigo'])) {
-                throw new Exception("El código ya está siendo usado.");
+                throw new Exception("El código ya está siendo usado (también cuentan los grupos eliminados).");
             }
             
             $existeNombre = CuaGrupo::where('nombre', $data['nombre'])
@@ -41,9 +41,9 @@ class GrupoServicio
             return $grupo;
         } else {
             // Validar código único
-            $existeCodigo = CuaGrupo::where('codigo', $data['codigo'])->exists();
+            $existeCodigo = CuaGrupo::withTrashed()->where('codigo', $data['codigo'])->exists();
             if ($existeCodigo) {
-                throw new Exception("El código ya está siendo usado.");
+                throw new Exception("El código ya está siendo usado (también cuentan los grupos eliminados).");
             }
 
             // Validar nombre único

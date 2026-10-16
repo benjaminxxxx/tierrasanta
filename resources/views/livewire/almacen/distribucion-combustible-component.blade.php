@@ -14,7 +14,7 @@
             <x-flex>
                 <div class="mt-4">
                     <x-label value="Maquinaria" />
-                    <x-select-dropdown wire:model="filtroMaquinariaId" source="getMaquinarias"
+                    <x-searchable-select wire:model="filtroMaquinariaId" buscar="getMaquinarias"
                         placeholder="Filtrar por maquinaria" />
                 </div>
             </x-flex>

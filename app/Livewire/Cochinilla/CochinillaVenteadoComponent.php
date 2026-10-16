@@ -11,7 +11,7 @@ use Livewire\WithPagination;
 
 class CochinillaVenteadoComponent extends Component
 {
-    use WithPagination,LivewireAlert;
+    use WithPagination,LivewireAlert, \App\Traits\HandlesAlerts;
     public $lote;
     public $anioSeleccionado;
     public $campoSeleccionado;
@@ -46,7 +46,7 @@ class CochinillaVenteadoComponent extends Component
             $this->alert('success', 'Registro de venteado eliminado correctamente.');
             $this->resetPage();
         }else{
-            $this->alert('error', 'El registro de venteado no existe.');
+            $this->errorAlert('El registro de venteado no existe.');
         }
     }
     public function render(VenteadoServicio $service)

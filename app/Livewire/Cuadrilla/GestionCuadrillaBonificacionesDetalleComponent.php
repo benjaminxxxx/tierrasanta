@@ -13,7 +13,7 @@ use Livewire\Component;
 
 class GestionCuadrillaBonificacionesDetalleComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $actividad;
     public $metodos = [];
     public $estandarProduccion = 0;
@@ -152,7 +152,7 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
             $this->tableDataBonificados = $dataHandsontable;
         } catch (\Throwable $th) {
 
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }*/
     public function obtenerTrabajadores()
@@ -256,7 +256,7 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
             $this->tableDataBonificados = $dataHandsontable;
 
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 
@@ -425,7 +425,7 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
 
             $this->alert('success', 'Datos guardados correctamente.');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function render()

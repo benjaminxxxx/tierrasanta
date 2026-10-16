@@ -14,7 +14,7 @@ use Livewire\Component;
  */
 class CampaniaCostoProduccionComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public int $campaniaId;
     public ?int $versionId = null;
@@ -34,7 +34,7 @@ class CampaniaCostoProduccionComponent extends Component
                 ? 'Costos consultados: se guardó una versión nueva.'
                 : 'No hay costos de esta campaña en la BDD de costos (consolida los meses de la campaña).');
         } catch (\Throwable $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 

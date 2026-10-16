@@ -14,7 +14,7 @@ use Livewire\Component;
 
 class GestionCuadrillaReporteDiarioComponent extends Component
 {
-    use LivewireAlert, ConFechaReporteDia, ConManejarErrores, ConReporteDiarioExcel;
+    use LivewireAlert, ConFechaReporteDia, ConManejarErrores, ConReporteDiarioExcel, \App\Traits\HandlesAlerts;
 
     #region VARIABLES E INICIALIZACION
     public $trabajadores = [];
@@ -84,7 +84,7 @@ class GestionCuadrillaReporteDiarioComponent extends Component
             $this->alert('success', 'Registro actualizado correctamente');
 
         } catch (ValidationException $ex) {
-            $this->alert('error', implode("\n", $ex->validator->errors()->all()));
+            $this->errorAlert(implode("\n", $ex->validator->errors()->all()));
         } catch (\Throwable $e) {
             $this->manejarError($e,$e->getMessage());
         }
@@ -143,7 +143,7 @@ class GestionCuadrillaReporteDiarioComponent extends Component
             $this->ejecutarGuardado($datos);
 
         } catch (ValidationException $ex) {
-            $this->alert('error', implode("\n", $ex->validator->errors()->all()));
+            $this->errorAlert(implode("\n", $ex->validator->errors()->all()));
         } catch (\Throwable $e) {
             $this->manejarError($e, $e->getMessage());
         }

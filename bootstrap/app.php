@@ -18,5 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Errores no controlados que nadie atrapó: también quedan como ticket (Sistema → Errores)
+        $exceptions->report(function (Throwable $e) {
+            \App\Services\Sistema\Error\SistemaErrorCrud::registrar($e);
+        });
     })->create();

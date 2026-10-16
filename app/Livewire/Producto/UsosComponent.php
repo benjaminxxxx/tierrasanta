@@ -13,7 +13,7 @@ use Livewire\Component;
 #[Title('Usos de Productos')]
 class UsosComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public bool $modalAuditoria = false;
     public array $auditoriaHistorial = [];
@@ -41,14 +41,14 @@ class UsosComponent extends Component
         }
 
         if (!empty($errores)) {
-            $this->alert('error', implode(' | ', $errores));
+            $this->errorAlert(implode(' | ', $errores));
         }
     }
 
     public function eliminarUso(int $id): void
     {
         if (!Auth::user()->can(Permisos::INSUMO_USO_GESTIONAR)) {
-            $this->alert('error','Sin permiso para realizar esta acción');
+            $this->errorAlert('Sin permiso para realizar esta acción');
             return;
         }
         InsumoUsoServicio::eliminarUso($id);

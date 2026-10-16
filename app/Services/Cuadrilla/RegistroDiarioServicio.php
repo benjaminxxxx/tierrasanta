@@ -102,7 +102,6 @@ class RegistroDiarioServicio
             'costo_personalizado_dia' => $costoLimpio,
             'codigo_grupo' => $codigoGrupo,
             'tramo_laboral_id' => $tramoLaboralId,
-            'costo_dia' => 0,
         ]);
     }
 

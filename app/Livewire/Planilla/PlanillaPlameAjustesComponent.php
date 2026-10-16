@@ -80,7 +80,7 @@ class PlanillaPlameAjustesComponent extends Component
         try {
             $p = $this->persona((int) $this->personalId);
             if (!$p) {
-                $this->alert('error', 'El trabajador no está en la planilla de este mes.');
+                $this->errorAlert('El trabajador no está en la planilla de este mes.');
                 return;
             }
             app(PlanillaPlameProceso::class)->guardarAjuste($p, $codigo, $monto, $motivo);

@@ -9,7 +9,7 @@ use Livewire\Component;
 
 class UsuarioListComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $usuarios;
     protected $listeners = ['confirmarEliminar', 'ActualizarUsuarios' => '$refresh'];
 
@@ -40,7 +40,7 @@ class UsuarioListComponent extends Component
             $this->alert('success', "El usuario se eliminó correctamente");
             $this->dispatch("ActualizarUsuarios");
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

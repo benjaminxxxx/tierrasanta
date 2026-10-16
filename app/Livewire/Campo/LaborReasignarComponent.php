@@ -21,7 +21,7 @@ use Livewire\Component;
  */
 class LaborReasignarComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public bool $mostrar = false;
     public ?int $laborId = null;
@@ -63,10 +63,10 @@ class LaborReasignarComponent extends Component
             $this->alert('success', "Código {$labor->codigo} reasignado a \"{$labor->nombre_labor}\" desde el " . $labor->vigente_desde->format('d/m/Y') . '.');
             $this->dispatch('laborGuardada');
         } catch (ValidationException $e) {
-            $this->alert('error', 'No se reasignó: ' . implode(' ', $e->validator->errors()->all()), ['timer' => 7000]);
+            $this->errorAlert('No se reasignó: ' . implode(' ', $e->validator->errors()->all()), null, ['timer' => 7000]);
             throw $e;
         } catch (\Throwable $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 

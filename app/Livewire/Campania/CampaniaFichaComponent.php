@@ -27,7 +27,7 @@ use Livewire\Component;
  */
 class CampaniaFichaComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public const TABS = [
         'general' => 'Datos generales',
@@ -179,7 +179,7 @@ class CampaniaFichaComponent extends Component
             }
             throw $e;
         } catch (\Throwable $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 
@@ -204,7 +204,7 @@ class CampaniaFichaComponent extends Component
     {
         $this->reiniciar();
         if (!CampoCampania::whereKey($campaniaId)->exists()) {
-            $this->alert('error', 'La campaña ya no existe.');
+            $this->errorAlert('La campaña ya no existe.');
             return;
         }
         $this->cargarCampania($campaniaId);
@@ -292,7 +292,7 @@ class CampaniaFichaComponent extends Component
             $this->avisosFechas = null;
             throw $e;
         } catch (\Throwable $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 
@@ -349,7 +349,7 @@ class CampaniaFichaComponent extends Component
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 

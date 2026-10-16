@@ -10,7 +10,7 @@ use Livewire\WithPagination;
 class ProveedoresComponent extends Component
 {
     use WithPagination;
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public $search = '';
     public $verificadoFiltro = ''; // '', '1' (verificados), '0' (no verificados)
@@ -49,7 +49,7 @@ class ProveedoresComponent extends Component
             $proveedor->delete();
             $this->alert('success', 'Proveedor Eliminado');
         } catch (\Exception $e) {
-            $this->alert('error', 'No se puede eliminar el proveedor porque está asociado a otros registros.');
+            $this->errorAlert('No se puede eliminar el proveedor porque está asociado a otros registros.');
         }
     }
 
@@ -61,7 +61,7 @@ class ProveedoresComponent extends Component
             $proveedor->update(['eliminado_por' => null, 'editado_por' => auth()->id()]);
             $this->alert('success', 'Proveedor restaurado correctamente.');
         } catch (\Exception $e) {
-            $this->alert('error', 'No se pudo restaurar el proveedor.');
+            $this->errorAlert('No se pudo restaurar el proveedor.');
         }
     }
 

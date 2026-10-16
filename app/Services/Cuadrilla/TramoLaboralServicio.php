@@ -2,8 +2,13 @@
 
 namespace App\Services\Cuadrilla;
 
+use App\Models\CuadActividadBono;
 use App\Models\CuadCostoDiarioGrupo;
+use App\Models\CuadRegistroDiario;
 use App\Models\CuadTramoLaboral;
+use App\Models\CuadTramoLaboralCuadrillero;
+use App\Models\CuadTramoLaboralGrupo;
+use App\Models\GastoAdicionalPorGrupoCuadrilla;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
@@ -49,12 +54,6 @@ class TramoLaboralServicio
         return CuadTramoLaboral::find($id);
     }
 
-    public function generarResumen(int $tramoId, $fechaHastaBono): void
-    {
-
-       // app(ResumenTramoServicio::class)->generarResumen($tramoId, $fechaHastaBono);
-
-    }
     public function encontrarTramoPorMesAnioLista($mes, $anio)
     {
         // Definimos el inicio y fin del mes objetivo
@@ -175,27 +174,90 @@ class TramoLaboralServicio
         return $tramo;
     }
 
+    /*
+     * Borrados seguros. Lo pagado (en un desglose) no se borra: la base ya no borra en cascada los registros diarios
+     * ni los gastos de un tramo o de un cuadrillero del tramo (migración 2026_10_10_100000), así que todo borrado
+     * pasa por aquí: se comprueba que no haya nada pagado y se borra explícitamente lo que no lo está.
+     */
+
+    /** Registros diarios pagados (jornal o bono que se paga aparte) entre los dados. */
+    public static function registrosPagados($registros)
+    {
+        $ids = $registros->pluck('id');
+        $bonosPagados = CuadActividadBono::whereIn('registro_diario_id', $ids)
+            ->where(fn($q) => $q->where('esta_pagado', true)->orWhereNotNull('desglose_detalle_id'))
+            ->pluck('registro_diario_id');
+        return $registros->filter(fn($r) => $r->esta_pagado || $r->desglose_detalle_id || $bonosPagados->contains($r->id));
+    }
+
     /**
-     * Elimina un tramo laboral.
+     * Quita cuadrilleros de un grupo del tramo y borra sus registros de ese tramo (horas, detalle, bonos). No deja
+     * quitar a quien ya tiene días o bonos pagados.
+     *
+     * @param int[] $cuadrilleroIds
+     */
+    public function quitarCuadrillerosDelGrupo(CuadTramoLaboralGrupo $grupo, array $cuadrilleroIds): int
+    {
+        if (!$cuadrilleroIds) {
+            return 0;
+        }
+        return DB::transaction(function () use ($grupo, $cuadrilleroIds) {
+            $tramoCuadrilleros = CuadTramoLaboralCuadrillero::where('cuad_tramo_laboral_grupo_id', $grupo->id)
+                ->whereIn('cuadrillero_id', $cuadrilleroIds)->get();
+            $registros = CuadRegistroDiario::whereIn('tramo_cuadrillero_id', $tramoCuadrilleros->pluck('id'))->get();
+            $pagados = self::registrosPagados($registros);
+            if ($pagados->isNotEmpty()) {
+                $nombres = $tramoCuadrilleros->whereIn('id', $pagados->pluck('tramo_cuadrillero_id'))->pluck('nombres')->unique()->implode(', ');
+                throw new \Exception("No se puede quitar a {$nombres} del grupo {$grupo->codigo_grupo}: tiene(n) {$pagados->count()} día(s) ya pagado(s) en un desglose. "
+                    . 'Si es un error, primero quite el pago en el desglose.');
+            }
+            // Detalle de horas, bonos y producción se van en cascada con cada registro (no tienen nada pagado)
+            CuadRegistroDiario::whereIn('id', $registros->pluck('id'))->delete();
+            return CuadTramoLaboralCuadrillero::whereIn('id', $tramoCuadrilleros->pluck('id'))->delete();
+        });
+    }
+
+    /** Lo que se perdería al eliminar el tramo (para avisar antes). */
+    public function resumenParaEliminar(CuadTramoLaboral $tramo): array
+    {
+        $registros = CuadRegistroDiario::where('tramo_laboral_id', $tramo->id)->get(['id', 'esta_pagado', 'desglose_detalle_id', 'total_horas']);
+        $gastos = GastoAdicionalPorGrupoCuadrilla::where('cuad_tramo_laboral_id', $tramo->id)->get(['id', 'esta_pagado', 'desglose_detalle_id']);
+        return [
+            'registros' => $registros->count(),
+            'horas' => (float) $registros->sum('total_horas'),
+            'gastos' => $gastos->count(),
+            'pagados' => self::registrosPagados($registros)->count() + $gastos->filter(fn($g) => $g->esta_pagado || $g->desglose_detalle_id)->count(),
+        ];
+    }
+
+    /**
+     * Elimina un tramo laboral con sus grupos, cuadrilleros, registros diarios, gastos y costos del rango. No se
+     * puede si algo del tramo ya está pagado en un desglose (se perdería lo pagado).
      */
     public function eliminar(CuadTramoLaboral $tramo): void
     {
-        DB::transaction(function () use ($tramo) {
-            // 🔎 Obtener códigos de grupos del tramo
-            $codigosGrupos = $tramo->gruposEnTramos()->pluck('codigo_grupo')->toArray();
+        $resumen = $this->resumenParaEliminar($tramo);
+        if ($resumen['pagados'] > 0) {
+            throw new \Exception("No se puede eliminar el tramo: tiene {$resumen['pagados']} registro(s) o gasto(s) ya pagados en un desglose. "
+                . 'Eliminarlo borraría lo pagado. Si es un error, primero quite esos pagos del desglose.');
+        }
 
+        DB::transaction(function () use ($tramo) {
+            $codigosGrupos = $tramo->gruposEnTramos()->pluck('codigo_grupo')->toArray();
             if (!empty($codigosGrupos)) {
-                // 🗑️ Borrar costos diarios SOLO dentro del rango del tramo
+                // Costos diarios SOLO dentro del rango del tramo
                 CuadCostoDiarioGrupo::whereIn('codigo_grupo', $codigosGrupos)
                     ->whereBetween('fecha', [$tramo->fecha_inicio, $tramo->fecha_fin])
                     ->delete();
             }
+            // Lo registrado (sin nada pagado): se borra explícitamente, la base ya no lo hace en cascada
+            CuadRegistroDiario::where('tramo_laboral_id', $tramo->id)->delete();
+            GastoAdicionalPorGrupoCuadrilla::where('cuad_tramo_laboral_id', $tramo->id)->delete();
             $tramo->gruposEnTramos()->delete();
             $tramo->delete();
             Session::forget('tramo_actual_id');
         });
     }
-
 
     /**
      * Valida que no exista otro tramo con la misma fecha de inicio.

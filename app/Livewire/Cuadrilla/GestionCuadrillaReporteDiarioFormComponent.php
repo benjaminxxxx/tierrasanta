@@ -11,7 +11,7 @@ use Livewire\Component;
 
 class GestionCuadrillaReporteDiarioFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $mostrarFormularioRegistroDiarioCuadrilla = false;
     public $cuadrilleros = [];
     public $labores = [];
@@ -88,7 +88,7 @@ class GestionCuadrillaReporteDiarioFormComponent extends Component
             $this->alert('success', 'Actividades registradas correctamente.');
             $this->dispatch('registroDetalleHorasExterno', $this->fecha);
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

@@ -13,7 +13,7 @@ use Livewire\Component;
 #[Title('Tabla de Concentración')]
 class TablaConcentracionComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $listaNutrientes = [];
     public $listaFertilizantes = [];
     public $tableData = [];
@@ -107,7 +107,7 @@ class TablaConcentracionComponent extends Component
 
             if (count($errores) > 0) {
                 DB::rollBack();
-                $this->alert('error', "Errores encontrados:\n" . implode("\n", $errores));
+                $this->errorAlert("Errores encontrados:\n" . implode("\n", $errores));
                 return;
             }
 
@@ -119,7 +119,7 @@ class TablaConcentracionComponent extends Component
             if (DB::transactionLevel() > 0) {
                 DB::rollBack();
             }
-            $this->alert('error', 'Error inesperado: ' . $e->getMessage());
+            $this->errorAlert($e, 'Error inesperado');
         }
     }
 

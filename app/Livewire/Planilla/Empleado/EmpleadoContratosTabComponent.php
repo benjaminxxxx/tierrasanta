@@ -14,7 +14,7 @@ use Livewire\Component;
  */
 class EmpleadoContratosTabComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public int $empleadoId;
 
@@ -68,7 +68,7 @@ class EmpleadoContratosTabComponent extends Component
     public function nuevoContrato(): void
     {
         if ($this->contratoVigente) {
-            $this->alert('error', 'El empleado ya tiene un contrato vigente. Finalícelo antes de crear uno nuevo.');
+            $this->errorAlert('El empleado ya tiene un contrato vigente. Finalícelo antes de crear uno nuevo.');
             return;
         }
 
@@ -82,7 +82,7 @@ class EmpleadoContratosTabComponent extends Component
         $contrato = PlanContrato::find($id);
 
         if (!$contrato) {
-            $this->alert('error', 'Contrato no encontrado.');
+            $this->errorAlert('Contrato no encontrado.');
             return;
         }
 
@@ -150,7 +150,7 @@ class EmpleadoContratosTabComponent extends Component
         } catch (ValidationException $e) {
             $this->setErrorBag($e->validator->getMessageBag());
         } catch (\DomainException $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 
@@ -175,7 +175,7 @@ class EmpleadoContratosTabComponent extends Component
             $this->cargarHistorial();
             $this->avisarCambios();
         } catch (\DomainException $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 
@@ -188,7 +188,7 @@ class EmpleadoContratosTabComponent extends Component
             $this->cargarHistorial();
             $this->avisarCambios();
         } catch (\DomainException $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 

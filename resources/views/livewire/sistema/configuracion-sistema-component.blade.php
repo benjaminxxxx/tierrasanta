@@ -93,6 +93,21 @@
     </x-card>
     <x-card class="space-y-4 max-w-3xl">
         <div>
+            <h3 class="font-semibold text-foreground">Cuadrilla: grupos inactivos</h3>
+            <p class="text-sm text-muted-foreground">
+                En Cuadrilla → Grupos se marca "Sin tramo" a los grupos que no están en ningún tramo desde hace más de estos meses (si nunca
+                estuvieron en uno, se cuenta desde su creación). También sirve para filtrarlos.
+            </p>
+        </div>
+        <div class="flex items-end gap-3">
+            <div class="w-48">
+                <x-input type="number" min="1" wire:model="mesesGrupoSinTramo" label="Meses sin tramo" error="meses_sin_tramo" />
+            </div>
+            <x-button wire:click="guardarGruposCuadrilla"><i class="fa fa-save"></i> Guardar</x-button>
+        </div>
+    </x-card>
+    <x-card class="space-y-4 max-w-3xl">
+        <div>
             <h3 class="font-semibold text-foreground">Cochinilla: tipos de ingreso vendibles</h3>
             <p class="text-sm text-muted-foreground">
                 La mamá que se cosecha para infestar no se vende: su cochinilla vuelve después como un ingreso de infestadores (con otro peso) y
@@ -112,5 +127,5 @@
             <x-button wire:click="guardarVendibles"><i class="fa fa-save"></i> Guardar</x-button>
         </div>
     </x-card>
-    <x-loading wire:loading wire:target="guardarBrotes,guardarInfestacion,guardarLabores,guardarVendibles" />
+    <x-loading wire:loading wire:target="guardarBrotes,guardarInfestacion,guardarLabores,guardarGruposCuadrilla,guardarVendibles" />
 </div>

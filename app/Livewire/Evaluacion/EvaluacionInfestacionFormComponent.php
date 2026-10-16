@@ -10,7 +10,7 @@ use Exception;
 
 class EvaluacionInfestacionFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $mostrarFormularioEvalInfestacion = false;
     public $infestacion_fecha;
     public $infestacion_fecha_recojo_vaciado_infestadores;
@@ -32,14 +32,14 @@ class EvaluacionInfestacionFormComponent extends Component
             $this->dispatch('refrescarInformeCampaniaXCampo');
             $this->alert('success', 'Datos sincronizados correctamente');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function editarInfestacion($campaniaId)
     {
         $campania = CampoCampania::find($campaniaId);
         if (!$campania) {
-            $this->alert('error', 'Campaña no encontrada');
+            $this->errorAlert('Campaña no encontrada');
             return;
         }
         $this->campania = $campania;
@@ -71,8 +71,8 @@ class EvaluacionInfestacionFormComponent extends Component
             $this->mostrarFormularioEvalInfestacion = false;
             $this->dispatch('evaluacionInfestacionGuardada');
 
-        } catch (Exception $e) {
-            $this->alert('error', 'Error al guardar la evaluación de infestación: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e, 'Error al guardar la evaluación de infestación');
         }
     }
 

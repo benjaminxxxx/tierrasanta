@@ -11,7 +11,7 @@ use Livewire\Component;
 #[Title('Proyección Rendimiento Poda')]
 class ProyeccionRendimientoPodaComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $campania;
     public $campoSeleccionado;
     public $campaniaSeleccionada;
@@ -171,7 +171,7 @@ class ProyeccionRendimientoPodaComponent extends Component
 
         // Opcional: puedes validar que no sean nulos si es requerido
         if (!$muestra || !$metros) {
-            $this->alert('error', 'Los campos de muestra y metros cama/ha son obligatorios.');
+            $this->errorAlert('Los campos de muestra y metros cama/ha son obligatorios.');
             return;
         }
 

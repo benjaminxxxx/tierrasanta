@@ -118,7 +118,7 @@
                         <x-td class="text-center">S/.
                             {{ formatear_numero($registro['total_bono'] + $registro['costo_dia']) }}</x-td>
                         <x-td class="text-center">{{ $registro['esta_pagado'] ? 'Sí' : 'No' }}</x-td>
-                        <x-td class="text-center">{{ $registro['bono_esta_pagado'] ? 'Sí' : 'No' }}</x-td>
+                        <x-td class="text-center">{{ $registro['bono_esta_pagado'] === null ? '—' : ($registro['bono_esta_pagado'] ? 'Sí' : 'No') }}</x-td>
                         <x-td>{{ $registro['detalle_campos'] }}</x-td>
                     </x-tr>
                 @endforeach

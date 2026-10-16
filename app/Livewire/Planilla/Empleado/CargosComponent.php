@@ -9,7 +9,7 @@ use Livewire\WithPagination;
 
 class CargosComponent extends Component
 {
-    use WithPagination, LivewireAlert;
+    use WithPagination, LivewireAlert, \App\Traits\HandlesAlerts;
 
     public array $breadcrumb = [];
     public bool $verEliminados = false;
@@ -56,7 +56,7 @@ class CargosComponent extends Component
         $cargo = PlanCargo::withCount('contratoCargos')->findOrFail($cargoId);
 
         if ($cargo->contrato_cargos_count > 0) {
-            $this->alert('error', 'No se puede eliminar: el cargo tiene historial de contratos asociados.');
+            $this->errorAlert('No se puede eliminar: el cargo tiene historial de contratos asociados.');
             return;
         }
 
@@ -77,7 +77,7 @@ class CargosComponent extends Component
         $cargo = PlanCargo::onlyTrashed()->withCount('contratoCargos')->findOrFail($cargoId);
 
         if ($cargo->contrato_cargos_count > 0) {
-            $this->alert('error', 'No se puede eliminar definitivamente: tiene historial asociado.');
+            $this->errorAlert('No se puede eliminar definitivamente: tiene historial asociado.');
             return;
         }
 

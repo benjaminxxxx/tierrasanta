@@ -12,7 +12,7 @@ use Livewire\WithPagination;
 
 class CochinillaFiltradoComponent extends Component
 {
-    use WithPagination, WithoutUrlPagination,LivewireAlert;
+    use WithPagination, WithoutUrlPagination,LivewireAlert, \App\Traits\HandlesAlerts;
     public $lote;
     public $anioSeleccionado;
     public $campoSeleccionado;
@@ -47,7 +47,7 @@ class CochinillaFiltradoComponent extends Component
             $this->alert('success', 'Registro de filtrado eliminado correctamente.');
             $this->resetPage();
         }else{
-            $this->alert('error', 'El registro de filtrado no existe.');
+            $this->errorAlert('El registro de filtrado no existe.');
         }
     }
     public function render(FiltradoServicio $service)

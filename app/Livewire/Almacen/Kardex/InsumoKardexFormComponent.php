@@ -51,11 +51,11 @@ class InsumoKardexFormComponent extends Component
     {
         $k = InsKardex::with('producto')->find($kardexId);
         if (!$k) {
-            $this->alert('error', 'El kardex ya no existe.');
+            $this->errorAlert('El kardex ya no existe.');
             return;
         }
         if ($k->estado === 'cerrado') {
-            $this->alert('error', 'El kardex está cerrado. Reábrelo para poder editarlo.');
+            $this->errorAlert('El kardex está cerrado. Reábrelo para poder editarlo.');
             return;
         }
 

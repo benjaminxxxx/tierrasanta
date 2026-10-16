@@ -8,7 +8,7 @@ use Livewire\Component;
 
 class CostosMensualesDistribucionComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $mostrarDistribucionesMensuales = false;
     public $mes;
     public $anio;
@@ -51,7 +51,7 @@ class CostosMensualesDistribucionComponent extends Component
 
             $this->mostrarDistribucionesMensuales = true;
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function render()

@@ -13,7 +13,7 @@ use Livewire\Component;
 
 class GestionCuadrillaGastosAdicionalesComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     // ── Estado del modal ──────────────────────────────────────────
     public bool $mostrarFormulario = false;
@@ -106,7 +106,7 @@ class GestionCuadrillaGastosAdicionalesComponent extends Component
             $this->inicializarFormularioNuevo();
             $this->alert('success', 'Gasto agregado correctamente.');
         } catch (\Throwable $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 
@@ -115,7 +115,7 @@ class GestionCuadrillaGastosAdicionalesComponent extends Component
         $gasto = GastoAdicionalPorGrupoCuadrilla::findOrFail($id);
 
         if (!$gasto->estaEditablePor(Auth::user())) {
-            $this->alert('error', 'No tiene permisos para editar este gasto.');
+            $this->errorAlert('No tiene permisos para editar este gasto.');
             return;
         }
 
@@ -146,7 +146,7 @@ class GestionCuadrillaGastosAdicionalesComponent extends Component
             $this->cargarGastosExistentes();
             $this->alert('success', 'Gasto actualizado.');
         } catch (\Throwable $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 
@@ -165,7 +165,7 @@ class GestionCuadrillaGastosAdicionalesComponent extends Component
             $this->cargarGastosExistentes();
             $this->alert('success', 'Gasto eliminado.');
         } catch (\Throwable $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 
@@ -177,7 +177,7 @@ class GestionCuadrillaGastosAdicionalesComponent extends Component
             $this->cargarGastosExistentes();
             $this->alert('success', "{$n} gasto(s) aprobados y sellados.");
         } catch (\Throwable $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 
@@ -190,7 +190,7 @@ class GestionCuadrillaGastosAdicionalesComponent extends Component
             $this->cargarGastosExistentes();
             $this->alert('success', 'Gasto habilitado para corrección.');
         } catch (\Throwable $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 

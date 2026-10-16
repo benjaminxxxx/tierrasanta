@@ -11,7 +11,7 @@ use Livewire\WithPagination;
 
 class InsumoKardexReporteComponent extends Component
 {
-    use LivewireAlert, WithPagination, WithoutUrlPagination;
+    use LivewireAlert, WithPagination, WithoutUrlPagination, \App\Traits\HandlesAlerts;
     public $filtroAnio;
     public $filtroTipo;
     public $filtroGrupo;
@@ -52,7 +52,7 @@ class InsumoKardexReporteComponent extends Component
     {
         $reporte = InsKardexReporte::find($reporteId);
         if (!$reporte) {
-            return $this->alert('error', 'El reporte de kardex no existe');
+            return $this->errorAlert('El reporte de kardex no existe');
         }
         try {
             if ($reporte->file) {
@@ -61,8 +61,8 @@ class InsumoKardexReporteComponent extends Component
             $reporte->delete();
             $this->alert('success', 'Reporte de kardex eliminado correctamente');
             $this->dispatch("insumoKardexRefrescar");
-        } catch (\Exception $e) {
-            $this->alert('error', 'Error al eliminar el reporte de kardex: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e, 'Error al eliminar el reporte de kardex');
         }
     }
 

@@ -10,7 +10,7 @@ use Session;
 
 class GestionCuadrillaResumenAnualComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $aniosDisponibles = [];
     public $totalCostoAnual = 0;
     public $totalBonoAnual = 0;
@@ -73,7 +73,7 @@ class GestionCuadrillaResumenAnualComponent extends Component
             $this->dispatch('actualizarGraficoCuadrilla', $this->resumenMensual);
 
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function updatedAnioSeleccionado()

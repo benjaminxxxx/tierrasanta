@@ -15,7 +15,7 @@ use Livewire\WithPagination;
 
 class InsumoKardexComponent extends Component
 {
-    use LivewireAlert, WithPagination, WithoutUrlPagination;
+    use LivewireAlert, WithPagination, WithoutUrlPagination, \App\Traits\HandlesAlerts;
     public $filtroAnio;
     public $filtroProducto = '';
     public $aniosDisponibles = [];
@@ -101,8 +101,8 @@ class InsumoKardexComponent extends Component
 
             app(InsumoKardexServicio::class)->eliminarKardex($reporteId);
             $this->alert('success', 'Kardex eliminado correctamente');
-        } catch (\Exception $e) {
-            $this->alert('error', 'Error al eliminar el kardex: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e, 'Error al eliminar el kardex');
         }
 
     }

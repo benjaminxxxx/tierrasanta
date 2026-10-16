@@ -37,6 +37,8 @@ class InsumoKardexImportarServicio
 
     /** Avisos que no impiden importar (p. ej. tipo de comprobante deducido de la serie). */
     private array $advertencias = [];
+    /** Filas con la Tabla 12 vacía a las que se puso el código por defecto: [código => [filas]] */
+    private array $tabla12PorDefecto = [];
 
     /** Códigos válidos de la tabla 10 (tipo de comprobante), sin '00' (Otros): se deduce de la serie. */
     private ?array $codigosTabla10 = null;
@@ -55,6 +57,7 @@ class InsumoKardexImportarServicio
         $codigoExistencia = $hoja ?? $insumoKardex->codigo_existencia;
         $this->observaciones = [];
         $this->advertencias = [];
+        $this->tabla12PorDefecto = [];
 
         $this->validarHojaExiste($ruta, $codigoExistencia);
 
@@ -401,9 +404,9 @@ class InsumoKardexImportarServicio
             $dateTimeObject = Date::excelToDateTimeObject($valorCeldaFecha);
             $fechaCurrent = Carbon::instance($dateTimeObject);
         } else {
-            // Desde string (intentar parsear)
+            // Fecha guardada como texto ("15/09/2026"): día/mes/año. Carbon::parse la leía como mes/día.
             try {
-                $fechaCurrent = Carbon::parse($valorCeldaFecha);
+                $fechaCurrent = Carbon::parse(\App\Support\DateHelper::normalizarFecha($valorCeldaFecha));
             } catch (Exception $e) {
                 throw new Exception("Fecha inválida en la fila **{$numFilaExcel}**: $valorCeldaFecha");
             }
@@ -438,15 +441,21 @@ class InsumoKardexImportarServicio
                 continue; // ya anotado en validarRangoFechas()
             }
             try {
-                $datosCompra = array_merge($datosCompra, $this->procesarEntrada($fila, $hoja, $numFilaExcel, $insumoKardex, $fechaPura, $tipoOperacion));
+                $datosCompra = array_merge($datosCompra, $this->procesarEntrada($fila, $hoja, $numFilaExcel, $insumoKardex, $fechaPura, $tipoOperacion, $i === $indiceInicio));
             } catch (Exception $e) {
                 $this->observaciones[] = $e->getMessage();
             }
             try {
-                $datosSalida = array_merge($datosSalida, $this->procesarSalida($hoja, $numFilaExcel, $insumoKardex, $fechaPura, $filtroCampos, $tipoOperacion));
+                $datosSalida = array_merge($datosSalida, $this->procesarSalida($hoja, $numFilaExcel, $insumoKardex, $fechaPura, $filtroCampos, $tipoOperacion, $i === $indiceInicio));
             } catch (Exception $e) {
                 $this->observaciones[] = $e->getMessage();
             }
+        }
+
+        $nombres = ['2' => 'compra', '10' => 'salida a campo'];
+        foreach ($this->tabla12PorDefecto as $codigo => $filasCorregidas) {
+            $lista = implode(', ', array_slice($filasCorregidas, 0, 15)) . (count($filasCorregidas) > 15 ? '…' : '');
+            $this->advertencias[] = 'Tabla 12 vacía en ' . count($filasCorregidas) . " fila(s) ({$lista}): se tomó **{$codigo}** ({$nombres[$codigo]}).";
         }
 
         return [$datosCompra, $datosSalida];
@@ -463,7 +472,7 @@ class InsumoKardexImportarServicio
      * @return array
      * @throws Exception
      */
-    private function procesarEntrada(array $fila, $hoja, int $numFilaExcel, InsKardex $insumoKardex, Carbon $fechaPura, string $tipoOperacion): array
+    private function procesarEntrada(array $fila, $hoja, int $numFilaExcel, InsKardex $insumoKardex, Carbon $fechaPura, string $tipoOperacion, bool $esPrimeraFila = false): array
     {
         $datosCompra = [];
         $entradaCantidad = (float) $hoja->getCell('F' . $numFilaExcel)->getCalculatedValue();
@@ -475,6 +484,11 @@ class InsumoKardexImportarServicio
             $serie = trim((string) $fila[2]);
             $numero = trim((string) $fila[3]);
 
+            // Tabla 12 olvidada: una entrada con costo es compra (2). La primera fila no se corrige: puede ser saldo inicial (16).
+            if ($tipoOperacion === '' && !$esPrimeraFila) {
+                $tipoOperacion = '2';
+                $this->tabla12PorDefecto['2'][] = $numFilaExcel;
+            }
             if ((int) $tipoOperacion !== 2) {
                 throw new Exception("Fila **{$numFilaExcel}**: hay valores de compra, pero el tipo de operación (Tabla 12) no es **2**.");
             }
@@ -565,7 +579,7 @@ class InsumoKardexImportarServicio
      * @return array
      * @throws Exception
      */
-    private function procesarSalida($hoja, int $numFilaExcel, InsKardex $insumoKardex, Carbon $fechaPura, array $filtroCampos, string $tipoOperacion): array
+    private function procesarSalida($hoja, int $numFilaExcel, InsKardex $insumoKardex, Carbon $fechaPura, array $filtroCampos, string $tipoOperacion, bool $esPrimeraFila = false): array
     {
         $datosSalida = [];
         $salidaCantidad = (float) $hoja->getCell('I' . $numFilaExcel)->getCalculatedValue();
@@ -573,6 +587,11 @@ class InsumoKardexImportarServicio
 
         if ($salidaCantidad > 0 && $salidaLoteNombre != '') {
             // Salida a Producción
+            // Tabla 12 olvidada: toda salida es a campo (10), no se vende nada. La primera fila no se corrige.
+            if ($tipoOperacion === '' && !$esPrimeraFila) {
+                $tipoOperacion = '10';
+                $this->tabla12PorDefecto['10'][] = $numFilaExcel;
+            }
             if ((int) $tipoOperacion !== 10) {
                 throw new Exception("Fila **{$numFilaExcel}**: hay valores de salida, pero el tipo de operación (Tabla 12) no es **10**.");
             }

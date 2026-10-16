@@ -15,7 +15,7 @@ use Livewire\Component;
 #[Title('Subcategorias')]
 class SubcategoriasComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     // ─── Estado tabla ──────────────────────────────────────────
     public array $filasModificadas = [];
 
@@ -79,7 +79,7 @@ class SubcategoriasComponent extends Component
             $this->dispatch('cargarDataSubcategorias', data: $this->registros);
             $this->alert('success', 'Subcategorías guardadas.');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 
@@ -95,7 +95,7 @@ class SubcategoriasComponent extends Component
             $this->dispatch('cargarDataSubcategorias', data: $this->registros);
             $this->alert('success', 'Subcategoría eliminada.');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

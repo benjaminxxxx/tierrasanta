@@ -22,7 +22,7 @@ use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
 class DistribucionCombustibleCalculoComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public $fecha, $campo, $horaInicio, $horaFin, $descripcion;
     public $mostrarFormulario = false;
@@ -220,7 +220,7 @@ class DistribucionCombustibleCalculoComponent extends Component
 
         } catch (\Throwable $th) {
             $this->dispatch('log', $th->getMessage());
-            $this->alert('error', 'Error: ' . $th->getMessage());
+            $this->errorAlert($th);
         }
 
     }
@@ -254,7 +254,7 @@ class DistribucionCombustibleCalculoComponent extends Component
 
             $almacenProductoSalida = AlmacenProductoSalida::find($this->almacenProductoSalidaId);
             if (!$almacenProductoSalida) {
-                return $this->alert('error', 'La salida y no existe.');
+                return $this->errorAlert('La salida y no existe.');
             }
 
             dd($almacenProductoSalida);
@@ -270,7 +270,7 @@ class DistribucionCombustibleCalculoComponent extends Component
 
             // Si no hay salidas anteriores en el mismo mes y año, mostrar error
             if (!$almacenSalida) {
-                return $this->alert('error', 'No hay una salida de almacén anterior dentro del mismo mes y año.');
+                return $this->errorAlert('No hay una salida de almacén anterior dentro del mismo mes y año.');
             }
 
             // Crear la distribución de combustible
@@ -290,8 +290,8 @@ class DistribucionCombustibleCalculoComponent extends Component
             // Reiniciar los valores del formulario
             $this->reset(['fecha', 'campo', 'horaInicio', 'horaFin', 'descripcion']);
             $this->alert('success', 'Distribución guardada correctamente.');
-        } catch (Exception $th) {
-            $this->alert('error', $th->getMessage());
+        } catch (\Throwable $th) {
+            $this->errorAlert($th);
         }
     }
     public function generarDistribucion()
@@ -321,8 +321,8 @@ class DistribucionCombustibleCalculoComponent extends Component
             // Llamar función para obtener la lista actualizada
             $this->generarDistribucion();
             $this->alert('success', 'Distribución eliminada correctamente.');
-        } catch (Exception $th) {
-            $this->alert('error', $th->getMessage());
+        } catch (\Throwable $th) {
+            $this->errorAlert($th);
         }
     }
     public function verDistribucionCombustible($salidaId, $mes, $anio)
@@ -334,7 +334,7 @@ class DistribucionCombustibleCalculoComponent extends Component
 
         $almacenProductoSalida = AlmacenProductoSalida::find($salidaId);
         if (!$almacenProductoSalida) {
-            return $this->alert('error', 'La salida y no existe.');
+            return $this->errorAlert('La salida y no existe.');
         }
 
         $this->maquinaria = $almacenProductoSalida->maquinaria;

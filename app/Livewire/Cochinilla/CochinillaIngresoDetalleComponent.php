@@ -17,7 +17,7 @@ use Livewire\Component;
 //MODULO COCHINILLA INGRESO - WIZARD (Lote + Sublotes)
 class CochinillaIngresoDetalleComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public $mostrarFormulario = false;
     public $step = 1; // 1: buscar lote, 2: datos del lote, 3: sublotes (handsontable)
@@ -177,7 +177,7 @@ class CochinillaIngresoDetalleComponent extends Component
         ]);
 
         if (!$this->campania) {
-            return $this->alert('error', 'No hay campañas disponibles para este campo y fecha.');
+            return $this->errorAlert('No hay campañas disponibles para este campo y fecha.');
         }
 
         try {
@@ -193,7 +193,7 @@ class CochinillaIngresoDetalleComponent extends Component
             );
         } catch (\Illuminate\Database\QueryException $e) {
             if ($e->getCode() === '23000') {
-                return $this->alert('error', 'Ese número de lote ya fue registrado por otra persona justo ahora. Vuelve al paso 1 e intenta con otro número.');
+                return $this->errorAlert('Ese número de lote ya fue registrado por otra persona justo ahora. Vuelve al paso 1 e intenta con otro número.');
             }
             throw $e;
         }
@@ -277,7 +277,7 @@ class CochinillaIngresoDetalleComponent extends Component
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 
@@ -293,7 +293,7 @@ class CochinillaIngresoDetalleComponent extends Component
         $proceso = app(\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::class);
         $opciones = $proceso->opciones($this->cochinillaIngreso)['opciones'];
         if ($opciones && !array_key_exists($this->origenElegido, $opciones)) {
-            $this->alert('error', 'Elige uno de los campos que infestaron este campo.');
+            $this->errorAlert('Elige uno de los campos que infestaron este campo.');
             return;
         }
         $proceso->confirmar($this->cochinillaIngreso, $this->origenElegido);

@@ -9,7 +9,7 @@ use Exception;
 
 class TipoAsistenciaFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public $mostrarFormulario = false;
     public $codigo, $codigoOriginal, $descripcion, $horasJornal, $color, $tipoAsistenciaId;
@@ -61,8 +61,8 @@ class TipoAsistenciaFormComponent extends Component
             $this->dispatch('nuevoRegistro');
             $this->mostrarFormulario = false;
             $this->resetForm();
-        } catch (Exception $e) {
-            $this->alert('error', 'Hubo un error al guardar: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e, 'Hubo un error al guardar');
         }
     }
 
@@ -84,7 +84,7 @@ class TipoAsistenciaFormComponent extends Component
             $this->rol = $tipoAsistencia->rol;
             $this->mostrarFormulario = true;
         } catch (Exception $e) {
-            $this->alert('error', 'No se pudo cargar el registro');
+            $this->errorAlert('No se pudo cargar el registro');
         }
     }
 

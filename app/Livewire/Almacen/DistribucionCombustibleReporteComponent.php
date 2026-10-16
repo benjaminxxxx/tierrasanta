@@ -14,7 +14,7 @@ use Livewire\Component;
 
 class DistribucionCombustibleReporteComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public bool $modalDistribucionReporte = false;
     public ?int $anioSeleccionado = null;
@@ -177,8 +177,8 @@ class DistribucionCombustibleReporteComponent extends Component
 
             return response()->streamDownload(fn() => $writer->save('php://output'), $nombreArchivo);
 
-        } catch (\Exception $e) {
-            $this->alert('error', 'Error: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
         }
     }
 

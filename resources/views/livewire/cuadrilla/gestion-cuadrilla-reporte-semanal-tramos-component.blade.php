@@ -48,9 +48,8 @@
             wire:key="gastosAdicionales{{ $tramoActual->id }}" />
         <livewire:cuadrilla.cuadrillero.cuadrilla-grupo-form-component />
 
-        
         <livewire:cuadrilla.gestion-cuadrilla-resumen-acumulado-component :tramoLaboralId="$tramoActual->id"
-            :fechaHastaBono="$tramoActual->fecha_hasta_bono" wire:key="tramo{{ $tramoActual->id }}-{{ $cambios }}" />
+            :fechaHastaBono="$tramoActual->fecha_hasta_bono" wire:key="resumenAcumulado{{ $tramoActual->id }}-{{ $cambios }}" />
     @endif
 
     <x-dialog-modal wire:model.live="mostrarFormularioReporteSemanalTramo">

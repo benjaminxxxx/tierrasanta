@@ -72,8 +72,8 @@ class AperturaPlanillaModal extends Component
             $this->configuracionPendiente = $config;
 
             $this->alert('success', 'Valores obtenidos desde configuración. Aún no se han guardado.');
-        } catch (\Exception $e) {
-            $this->alert('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
         }
     }
 
@@ -91,8 +91,8 @@ class AperturaPlanillaModal extends Component
             $this->descuentosPreview = $registros->toArray();
 
             $this->alert('success', 'Vista previa de descuentos AFP cargada. Aún no se han guardado.');
-        } catch (\Exception $e) {
-            $this->alert('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
         }
     }
     /**

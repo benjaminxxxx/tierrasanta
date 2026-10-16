@@ -3,6 +3,7 @@
 namespace App\Livewire\Cuadrilla\Cuadrillero;
 
 use App\Models\CuaGrupo;
+use App\Services\Cuadrilla\Grupo\CuadrillaGrupoReglas;
 use App\Services\Cuadrilla\GrupoServicio;
 use Exception;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -10,7 +11,7 @@ use Livewire\Component;
 
 class CuadrillaGrupoFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $mostrarFormularioGrupoCuadrilla = false;
     public $grupoId;
     public $nombre;
@@ -38,7 +39,7 @@ class CuadrillaGrupoFormComponent extends Component
             $this->costo_dia_sugerido = $grupo->costo_dia_sugerido;
             $this->mostrarFormularioGrupoCuadrilla = true;
         }else{
-            $this->alert('error','El grupo ha dejado de existir');
+            $this->errorAlert('El grupo ha dejado de existir');
         }
     }
     public function registrar()
@@ -78,9 +79,20 @@ class CuadrillaGrupoFormComponent extends Component
             $this->resetForm();
             $this->mostrarFormularioGrupoCuadrilla = false;
             $this->dispatch('grupoRegistrado', $data);
-        } catch (Exception $e) {
-            $this->alert('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
         }
+    }
+    /** Código según la modalidad (CM/CQ/CS) + la última palabra del nombre; si ya existe, le agrega 2, 3… */
+    public function sugerirCodigo()
+    {
+        if (!trim((string) $this->nombre)) {
+            $this->addError('nombre', 'Escribe primero el nombre del grupo para sugerir el código.');
+            return;
+        }
+        $this->resetErrorBag(['nombre', 'codigo']);
+        $existentes = CuaGrupo::withTrashed()->where('codigo', '!=', (string) $this->grupoId)->pluck('codigo')->all();
+        $this->codigo = CuadrillaGrupoReglas::sugerirCodigo($this->nombre, $this->modalidad_pago, $existentes);
     }
     public function resetForm(){
         $this->reset(['grupoId','nombre','codigo','color','costo_dia_sugerido']);

@@ -17,7 +17,7 @@ trait ConReporteDiarioExcel
             return response()->download($archivo['ruta'], $archivo['nombre'])->deleteFileAfterSend();
         } catch (\Throwable $e) {
             report($e);
-            $this->alert('error', 'No se pudo generar el reporte diario: ' . $e->getMessage());
+            $this->errorAlert($e, 'No se pudo generar el reporte diario');
         }
     }
 }

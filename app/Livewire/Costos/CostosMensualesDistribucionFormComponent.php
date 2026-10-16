@@ -13,7 +13,7 @@ use Livewire\Component;
 
 class CostosMensualesDistribucionFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $mostrarFormDistribucionCostosMensuales = false;
     public $distribucionCalculada = [];
     public $totalesDistribuidos = 0;
@@ -147,7 +147,7 @@ class CostosMensualesDistribucionFormComponent extends Component
 
             $this->mostrarFormDistribucionCostosMensuales = true;
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function aprobarDistribucion()
@@ -160,7 +160,7 @@ class CostosMensualesDistribucionFormComponent extends Component
             $this->alert('success', 'Distribución mensual guardada correctamente');
             $this->mostrarFormDistribucionCostosMensuales = false;
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function render()

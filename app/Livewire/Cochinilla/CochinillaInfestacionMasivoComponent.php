@@ -13,7 +13,7 @@ use Livewire\Component;
 
 class CochinillaInfestacionMasivoComponent extends Component
 {
-    use LivewireAlert, ConSelectorMes, HstListas;
+    use LivewireAlert, ConSelectorMes, HstListas, \App\Traits\HandlesAlerts;
     public $breadcrumb = [];
     public array $filasModificadas = [];
     public $codigoActualizacion = '';
@@ -97,8 +97,8 @@ class CochinillaInfestacionMasivoComponent extends Component
             $this->codigoActualizacion = Str::random(5);
             $this->listarInfestaciones();
             $this->filasModificadas = []; // solo aquí se limpia
-        } catch (\Exception $e) {
-            $this->alert('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
         }
     }
     public function render()

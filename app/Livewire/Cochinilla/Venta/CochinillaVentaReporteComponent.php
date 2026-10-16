@@ -10,7 +10,7 @@ use Livewire\Component;
 
 class CochinillaVentaReporteComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     use ConSelectorMes;
     //Variables Existentes $mes,$anio
     public $condicionSugerencia = [];
@@ -51,13 +51,13 @@ class CochinillaVentaReporteComponent extends Component
             $this->puedeVincular = false;
             $this->dispatch('cargarTabla', ['entregas' => $this->reporteCargado]);
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function obtenerParaReporte()
     {
         if (!$this->mes || !$this->anio) {
-            return $this->alert('error', 'Debe seleccionar el mes y el año para generar la entrega.');
+            return $this->errorAlert('Debe seleccionar el mes y el año para generar la entrega.');
         }
         $this->datosParaReporte = VentaServicio::datosDeEntrega($this->mes, $this->anio);
         $this->registroVinculado = false;
@@ -85,7 +85,7 @@ class CochinillaVentaReporteComponent extends Component
             $this->dispatch('cargarTabla', ['entregas' => $this->datosParaReporte]);
             $this->alert('success', 'Vinculación exitosa');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function storeTableAgruparPorIngresos($datos)
@@ -95,7 +95,7 @@ class CochinillaVentaReporteComponent extends Component
             $this->dispatch('cargarTabla', ['entregas' => $this->datosParaReporte]);
             $this->alert('success', 'Agrupación realizada exitosamente.');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 
@@ -105,7 +105,7 @@ class CochinillaVentaReporteComponent extends Component
             VentaServicio::registrarReporteVenta($datos,$this->mes,$this->anio);
             $this->alert('success', 'Agrupación realizada exitosamente.');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function render()

@@ -16,7 +16,7 @@ use Livewire\Component;
 
 class ProductosFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $mostrarFormulario = false;
     public $productoId;
     public $nombre_comercial;
@@ -217,7 +217,7 @@ class ProductosFormComponent extends Component
             $this->closeForm();
 
         } catch (\Throwable $e) {
-            $this->alert('error', 'Ocurrió un error inesperado: ' . $e->getMessage());
+            $this->errorAlert($e, 'Ocurrió un error inesperado');
         }
     }
     public function closeForm()

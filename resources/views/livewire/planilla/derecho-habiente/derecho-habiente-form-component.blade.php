@@ -114,7 +114,7 @@
                 <div class="flex flex-wrap items-end gap-3">
                     <div class="w-64">
                         <x-label value="Empleado" />
-                        <x-select-dropdown wire:model="nuevoVinculoEmpleadoId" source="getEmpleados"
+                        <x-searchable-select wire:model="nuevoVinculoEmpleadoId" buscar="getEmpleados"
                             placeholder="Buscar empleado..." />
                     </div>
                     <div class="w-36">

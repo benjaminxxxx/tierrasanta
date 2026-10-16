@@ -9,7 +9,7 @@ use Jantinnerezo\LivewireAlert\LivewireAlert;
 
 class ConfiguracionPrimasComisionesComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public array $fechas = [];
     public string $fecha_inicio;
@@ -58,7 +58,7 @@ class ConfiguracionPrimasComisionesComponent extends Component
     public function guardarPrimasComisiones(): void
     {
         if (!$this->informacion || trim($this->informacion) === '') {
-            $this->alert('error', 'Pega los datos de la SBS antes de generar los montos.');
+            $this->errorAlert('Pega los datos de la SBS antes de generar los montos.');
             return;
         }
 
@@ -66,7 +66,7 @@ class ConfiguracionPrimasComisionesComponent extends Component
             $valores = $this->parsearInformacion($this->informacion);
 
             if (empty($valores)) {
-                $this->alert('error', 'No se reconoció ninguna AFP en el texto pegado. Verifica que copiaste la tabla completa desde la SBS.');
+                $this->errorAlert('No se reconoció ninguna AFP en el texto pegado. Verifica que copiaste la tabla completa desde la SBS.');
                 return;
             }
 
@@ -84,7 +84,7 @@ class ConfiguracionPrimasComisionesComponent extends Component
 
             $this->alert('success', 'Valores guardados correctamente para ' . $this->fecha_inicio . '.');
         } catch (\Throwable $th) {
-            $this->alert('error', 'Ocurrió un error inesperado: ' . $th->getMessage());
+            $this->errorAlert($th, 'Ocurrió un error inesperado');
         }
     }
 

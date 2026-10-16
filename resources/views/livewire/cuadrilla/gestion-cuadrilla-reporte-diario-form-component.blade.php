@@ -41,7 +41,7 @@
                                 {{-- Labor --}}
                                 <x-group-field>
                                     <x-label>Labor</x-label>
-                                    <x-searchable :options="$labores" wire:model="actividades.{{ $index }}.labor"
+                                    <x-searchable-select :options="$labores" wire:model="actividades.{{ $index }}.labor"
                                         search-placeholder="Selecciona una labor" />
                                 </x-group-field>
 
@@ -62,7 +62,7 @@
                         <x-h3>Agregar cuadrilleros que realizaron dichas labores</x-h3>
                     </x-flex>
                     <x-group-field>
-                        <x-searchable-dinamico entangle="cuadrilleros" placeholder="Seleccionar Cuadrillero"
+                        <x-searchable-select opciones="cuadrilleros" placeholder="Seleccionar Cuadrillero"
                             wire:model="cuadrilleroSeleccionado" />
 
                     </x-group-field>

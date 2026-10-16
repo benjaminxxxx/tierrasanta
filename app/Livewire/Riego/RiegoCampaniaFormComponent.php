@@ -10,7 +10,7 @@ use Exception;
 
 class RiegoCampaniaFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $mostrarFormularioRiegoCampania = false;
     public $riego_descarga_ha_hora;
     public $campania;
@@ -25,7 +25,7 @@ class RiegoCampaniaFormComponent extends Component
     {
         $campania = CampoCampania::find($campaniaId);
         if (!$campania) {
-            $this->alert('error', 'Campaña no encontrada');
+            $this->errorAlert('Campaña no encontrada');
             return;
         }
         $this->campania = $campania;
@@ -43,8 +43,8 @@ class RiegoCampaniaFormComponent extends Component
             $this->mostrarFormularioRiegoCampania = false;
             $this->dispatch('riegoCampaniaModificado');
 
-        } catch (Exception $e) {
-            $this->alert('error',  $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
         }
     }
 

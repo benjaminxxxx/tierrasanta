@@ -22,7 +22,7 @@ use Livewire\Component;
  */
 class SuspensionesPlanillaComponent extends Component
 {
-    use LivewireAlert, ConSelectorMes;
+    use LivewireAlert, ConSelectorMes, \App\Traits\HandlesAlerts;
 
     public string $vista = 'registro'; // registro | estadisticas
     public string $buscar = '';
@@ -164,7 +164,7 @@ class SuspensionesPlanillaComponent extends Component
             $this->alert('success', "Suspensiones registradas: {$r['creadas']} nuevas, {$r['extendidas']} extendidas, {$r['unidas']} unidas.");
             $this->cargarSuspensionesPendientes();
         } catch (\Throwable $e) {
-            $this->alert('error', 'No se pudieron registrar: ' . $e->getMessage());
+            $this->errorAlert($e, 'No se pudieron registrar');
         }
     }
 

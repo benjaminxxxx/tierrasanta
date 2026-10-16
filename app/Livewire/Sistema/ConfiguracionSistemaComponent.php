@@ -15,12 +15,13 @@ use Livewire\Component;
 #[Title('Configuración')]
 class ConfiguracionSistemaComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     /** @var array<int, mixed> días de la 1ª, 2ª… evaluación */
     public array $diasBrotes = [];
     public $diasMaximo;
     public $mesesReutilizar;
+    public $mesesGrupoSinTramo;
     /** @var array<string, bool> tipo de ingreso de cochinilla => vendible */
     public array $vendibles = [];
     /** @var array<int, mixed> días después de la infestación de la 1ª, 2ª… evaluación de infestación */
@@ -34,6 +35,7 @@ class ConfiguracionSistemaComponent extends Component
         $this->diasInfestacion = CampaniaEtapaReglas::diasEvaluacionInfestacion();
         $this->avisarInfestacionCerradas = CampaniaEtapaReglas::avisarInfestacionEnCerradas();
         $this->mesesReutilizar = \App\Services\Campo\Labor\CampoLaborVigenciaConsulta::mesesParaReutilizar();
+        $this->mesesGrupoSinTramo = \App\Services\Cuadrilla\Grupo\CuadrillaGrupoReglas::mesesSinTramo();
         $this->vendibles = \App\Models\CochinillaObservacion::orderBy('descripcion')->pluck('es_vendible', 'codigo')->map(fn($v) => (bool) $v)->all();
     }
 
@@ -59,7 +61,7 @@ class ConfiguracionSistemaComponent extends Component
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 
@@ -88,6 +90,13 @@ class ConfiguracionSistemaComponent extends Component
         \App\Services\Campo\Labor\CampoLaborVigenciaConsulta::guardarMesesParaReutilizar($this->mesesReutilizar);
         $this->resetErrorBag();
         $this->alert('success', 'Configuración de labores guardada.');
+    }
+
+    public function guardarGruposCuadrilla(): void
+    {
+        \App\Services\Cuadrilla\Grupo\CuadrillaGrupoReglas::guardarMesesSinTramo($this->mesesGrupoSinTramo);
+        $this->resetErrorBag();
+        $this->alert('success', 'Configuración de grupos de cuadrilla guardada.');
     }
 
     /** Qué tipos de ingreso de cochinilla se pueden vender (la mamá que va a infestar no: vuelve como infestadores). */

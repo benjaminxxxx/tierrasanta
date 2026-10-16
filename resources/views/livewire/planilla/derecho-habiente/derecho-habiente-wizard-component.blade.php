@@ -8,7 +8,7 @@
         @if ($paso === 'seleccionar')
             <div class="w-full">
                 <x-label value="Buscar empleado" />
-                <x-select-dropdown wire:model="empleadoId" source="getEmpleados"
+                <x-searchable-select wire:model="empleadoId" buscar="getEmpleados"
                     placeholder="Escriba nombre, apellido o DNI..." />
             </div>
         @endif

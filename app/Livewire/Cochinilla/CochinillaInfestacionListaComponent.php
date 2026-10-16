@@ -15,7 +15,7 @@ use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
 class CochinillaInfestacionListaComponent extends Component
 {
-    use LivewireAlert, WithPagination;
+    use LivewireAlert, WithPagination, \App\Traits\HandlesAlerts;
 
     public $breadcrumb = [];
 
@@ -174,7 +174,7 @@ class CochinillaInfestacionListaComponent extends Component
             $this->modalVinculacion = true;
 
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 
@@ -210,7 +210,7 @@ class CochinillaInfestacionListaComponent extends Component
             $this->alert('success', $msg);
 
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     // Cuando cambia el filtro de campaña, restringir campos disponibles
@@ -416,7 +416,7 @@ class CochinillaInfestacionListaComponent extends Component
             return ExcelHelper::descargar($spreadsheet, 'REPORTE_INFESTACIONES.xlsx');
 
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 
@@ -472,7 +472,7 @@ class CochinillaInfestacionListaComponent extends Component
             $infestaciones = $this->getQuery()->paginate(20);
             $total = $this->getQuery()->count();
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
             $infestaciones = collect();
             $total = 0;
         }

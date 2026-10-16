@@ -18,7 +18,7 @@ use Livewire\Component;
  */
 class LaborFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public bool $mostrar = false;
     public $laborId;
@@ -48,7 +48,7 @@ class LaborFormComponent extends Component
         $this->limpiar();
         $labor = Labores::find($id);
         if (!$labor) {
-            $this->alert('error', 'Labor no encontrada.');
+            $this->errorAlert('Labor no encontrada.');
             return;
         }
         $this->laborId = $labor->id;
@@ -87,10 +87,10 @@ class LaborFormComponent extends Component
             $this->dispatch('laborGuardada');
         } catch (ValidationException $ve) {
             // Además del error bajo cada campo, un aviso: un error en un campo que no lo muestra cortaba el guardado sin decir nada
-            $this->alert('error', 'No se guardó la labor: ' . implode(' ', $ve->validator->errors()->all()), ['timer' => 6000]);
+            $this->errorAlert('No se guardó la labor: ' . implode(' ', $ve->validator->errors()->all()), null, ['timer' => 6000]);
             throw $ve;
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

@@ -15,7 +15,7 @@ use Exception;
 class SiembraListComponent extends Component
 {
     use WithPagination;
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     // Filtros de la tabla principal
     public $filtroCampo = '';
@@ -79,10 +79,10 @@ class SiembraListComponent extends Component
             $this->alert('success', 'La siembra se eliminó correctamente.');
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             $this->dispatch('log', 'Registro no encontrado: ' . $e->getMessage());
-            $this->alert('error', 'La siembra no existe o ya fue eliminado.');
-        } catch (\Exception $e) {
+            $this->errorAlert('La siembra no existe o ya fue eliminado.');
+        } catch (\Throwable $e) {
             $this->dispatch('log', 'Error al eliminar: ' . $e->getMessage());
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 
@@ -147,7 +147,7 @@ class SiembraListComponent extends Component
             return ExcelHelper::descargar($spreadsheet, 'REPORTE_SIEMBRAS.xlsx');
 
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

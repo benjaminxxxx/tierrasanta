@@ -10,7 +10,7 @@ use Livewire\Component;
 
 class InsumoKardexCrearComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public ?int $productoId = null;
     public ?Producto $producto = null;
@@ -65,7 +65,7 @@ class InsumoKardexCrearComponent extends Component
         $this->producto = $servicio->encontrar($id);
 
         if (!$this->producto) {
-            $this->alert('error', 'Producto no encontrado');
+            $this->errorAlert('Producto no encontrado');
             $this->resetTodo();
             return;
         }

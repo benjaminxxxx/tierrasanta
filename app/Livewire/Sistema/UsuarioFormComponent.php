@@ -10,7 +10,7 @@ use Jantinnerezo\LivewireAlert\LivewireAlert;
 
 class UsuarioFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public $mostrarFormulario = false;
     public $userId;
@@ -55,7 +55,7 @@ class UsuarioFormComponent extends Component
                 $this->rolSeleccionado = $usuario->roles?->first()?->name ?? '';
             }
         } catch (\Throwable $th) {
-            $this->alert('error', 'Error al cargar usuario: ' . $th->getMessage());
+            $this->errorAlert($th, 'Error al cargar usuario');
         }
     }
 
@@ -123,7 +123,7 @@ class UsuarioFormComponent extends Component
         } catch (ValidationException $th) {
             throw $th;
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

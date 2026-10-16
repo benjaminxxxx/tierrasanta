@@ -12,7 +12,7 @@ use Livewire\WithPagination;
 class EvaluacionBrotesComponent extends Component
 {
     use WithPagination, WithoutUrlPagination;
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $campoFiltrado;
     public $campaniaId;
     public $campaniaFiltrada;
@@ -58,7 +58,7 @@ class EvaluacionBrotesComponent extends Component
             app(BrotesPorPisoServicio::class)->eliminar($data['evaluacionBrotesXPisoId']);
             $this->alert('success', 'Evaluación eliminada (queda en la auditoría).');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function exportarReporteBrotesXPiso(){
@@ -71,7 +71,7 @@ class EvaluacionBrotesComponent extends Component
             ];
             return app(BrotesPorPisoServicio::class)->exportar($data);
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function render()

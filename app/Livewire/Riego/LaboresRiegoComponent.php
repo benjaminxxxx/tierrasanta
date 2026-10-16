@@ -10,7 +10,7 @@ use Livewire\WithPagination;
 
 class LaboresRiegoComponent extends Component
 {
-    use LivewireAlert, WithPagination;
+    use LivewireAlert, WithPagination, \App\Traits\HandlesAlerts;
 
     // Búsqueda y filtro (ya no es un formulario de alta)
     public $busqueda = '';
@@ -119,7 +119,7 @@ class LaboresRiegoComponent extends Component
             LaboresRiego::findOrFail($id)->delete();
             $this->alert('success', 'Labor eliminada correctamente');
         } catch (\Throwable $th) {
-            $this->alert('error', 'No se pudo eliminar la labor: ' . $th->getMessage());
+            $this->errorAlert($th, 'No se pudo eliminar la labor');
         }
     }
     public function render()

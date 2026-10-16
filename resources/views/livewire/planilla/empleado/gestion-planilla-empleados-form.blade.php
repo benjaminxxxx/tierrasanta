@@ -14,7 +14,7 @@
                 {{-- Abierto sin empleado (p. ej. "Crear contrato" del panel de contratos) --}}
                 <div class="w-full md:w-[28rem] py-6">
                     <x-label value="Empleado" />
-                    <x-select-dropdown wire:model.live="empleadoBuscadoId" source="getEmpleados"
+                    <x-searchable-select wire:model.live="empleadoBuscadoId" buscar="getEmpleados"
                         placeholder="Buscar por nombre o DNI..." />
                 </div>
             @else

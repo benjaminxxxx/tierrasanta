@@ -107,7 +107,7 @@
             @can(\App\Constants\Permisos::INSUMO_CATEGORIA_GESTIONAR)
                 <div class="mb-4">
                     <x-label value="Agregar producto" />
-                    <x-select-dropdown wire:model.live="productoSeleccionado" source="getProductos"
+                    <x-searchable-select wire:model.live="productoSeleccionado" buscar="getProductos"
                         placeholder="Buscar producto..." />
                 </div>
             @endcan

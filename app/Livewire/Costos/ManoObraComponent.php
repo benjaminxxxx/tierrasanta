@@ -15,7 +15,7 @@ use Livewire\Component;
  */
 class ManoObraComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $manoObraCodigo; // código de la que se edita (null = nueva)
     public $codigo;
     public $descripcion;
@@ -62,7 +62,7 @@ class ManoObraComponent extends Component
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 
@@ -89,9 +89,9 @@ class ManoObraComponent extends Component
             $this->crud()->eliminar($data['codigo']);
             $this->alert('success', 'Mano de obra eliminada.');
         } catch (ValidationException $e) {
-            $this->alert('error', implode(' ', $e->validator->errors()->all()));
+            $this->errorAlert(implode(' ', $e->validator->errors()->all()));
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

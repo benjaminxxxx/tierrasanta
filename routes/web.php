@@ -83,6 +83,8 @@ Route::middleware([
     Route::prefix('sistema')->name('sistema.')->group(function () {
         Route::get('/configuracion', \App\Livewire\Sistema\ConfiguracionSistemaComponent::class)
             ->name('configuracion')->middleware('can:' . Permisos::SISTEMA_CONFIGURACION);
+        Route::get('/errores', \App\Livewire\Sistema\SistemaErroresComponent::class)
+            ->name('errores')->middleware('can:' . Permisos::SISTEMA_ERRORES);
         Route::view('/usuarios', 'livewire.sistema.usuarios-indice')
             ->name('usuarios')->middleware('can:' . Permisos::SISTEMA_USUARIO);
         Route::get('/roles', RolesPermisosFormComponent::class)
@@ -192,6 +194,8 @@ Route::middleware([
             ->name('por_campo')->middleware('can:' . Permisos::CAMPAÑA_POR_CAMPO);
         Route::view('/calendario', 'livewire.campania.campania-calendario-indice')
             ->name('calendario')->middleware('can:' . Permisos::CAMPAÑA_CALENDARIO);
+        Route::get('/informes-mensuales', \App\Livewire\Campania\CampaniaInformesMensualesComponent::class)
+            ->name('informes_mensuales')->middleware('can:' . Permisos::CAMPAÑA_INFORME_MENSUAL);
     });
 
     // ================================================================ CAJA

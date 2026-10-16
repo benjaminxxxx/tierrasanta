@@ -11,7 +11,7 @@ use Livewire\Component;
 
 class OrdenarPlanillaMensualComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $listaPlanilla = [];
     public $mostrarListaPlanillaMensual = false;
     public $dialogOpen = false;
@@ -53,7 +53,7 @@ class OrdenarPlanillaMensualComponent extends Component
                 ->toArray();
             $this->totalEmpleados = count($this->listaPlanilla);
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 
@@ -134,7 +134,7 @@ class OrdenarPlanillaMensualComponent extends Component
             $this->dispatch('actualizarListaPlanillaRegistroDiario');
             $this->alert('success', 'Registro Actualizado Correctamente.');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

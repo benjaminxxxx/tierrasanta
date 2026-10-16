@@ -13,7 +13,7 @@ use Livewire\Component;
 
 class CochinillaVenteadoFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $mostrarFormulario = false;
     public $cochinillaIngreso;
     public $idTable;
@@ -46,7 +46,7 @@ class CochinillaVenteadoFormComponent extends Component
 
         } catch (\Throwable $e) {
             // El servicio lanzará excepciones si algo falla en la transacción
-            $this->alert('error', 'Error al guardar: ' . $e->getMessage());
+            $this->errorAlert($e, 'Error al guardar');
         }
     }
     public function agregarVenteado($ingresoId = null){

@@ -13,7 +13,7 @@ use Str;
 
 class CochinillaVentaRegistroEntregaFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $cosechaSeleccionada = false;
     public $filtroOrigen = 'ingreso';
     public $ultimosIngresos = [];
@@ -73,7 +73,7 @@ class CochinillaVentaRegistroEntregaFormComponent extends Component
             $this->mostrarFormulario = false;
 
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 
@@ -103,7 +103,7 @@ class CochinillaVentaRegistroEntregaFormComponent extends Component
 
             $this->mostrarFormulario = true;
         } else {
-            return $this->alert('error', 'No hay ventas con el grupo indicado');
+            return $this->errorAlert('No hay ventas con el grupo indicado');
         }
 
     }
@@ -128,7 +128,7 @@ class CochinillaVentaRegistroEntregaFormComponent extends Component
             $this->ultimosIngresos = CochinillaServicio::IngresoCochinillaParaVenta($fecha, $this->tipo_ingreso);
         } catch (\Throwable $th) {
             Log::error("Error al buscar ingresos: " . $th->getMessage(), ['file' => $th->getFile(), 'line' => $th->getLine()]);
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

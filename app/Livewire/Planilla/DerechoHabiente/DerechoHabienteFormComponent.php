@@ -12,7 +12,7 @@ use App\Services\Planilla\DerechoHabiente\DerechoHabienteService;
 
 class DerechoHabienteFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     public bool $show = false;
     public string $paso = 'buscar'; // buscar | panel
@@ -203,7 +203,7 @@ class DerechoHabienteFormComponent extends Component
     public function agregarVinculoDesdeBuscador()
     {
         if (!$this->nuevoVinculoEmpleadoId) {
-            $this->alert('error', 'Seleccione un empleado.');
+            $this->errorAlert('Seleccione un empleado.');
             return;
         }
 
@@ -212,7 +212,7 @@ class DerechoHabienteFormComponent extends Component
         );
 
         if ($yaExiste) {
-            $this->alert('error', 'Ese empleado ya está vinculado a este registro.');
+            $this->errorAlert('Ese empleado ya está vinculado a este registro.');
             return;
         }
 
@@ -234,7 +234,7 @@ class DerechoHabienteFormComponent extends Component
     public function confirmarQuitarVinculo(int $index)
     {
         if (count($this->vinculos) <= 1) {
-            $this->alert('error', 'Debe mantener al menos un padre, madre o tutor vinculado.');
+            $this->errorAlert('Debe mantener al menos un padre, madre o tutor vinculado.');
             return;
         }
 
@@ -260,7 +260,7 @@ class DerechoHabienteFormComponent extends Component
             $this->alert('success', 'Vínculo eliminado.');
             $this->dispatch('derechoHabienteGuardado');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 
@@ -303,7 +303,7 @@ class DerechoHabienteFormComponent extends Component
         $this->validate();
 
         if (count($this->vinculos) < 1) {
-            $this->alert('error', 'Debe registrar al menos un vínculo (padre, madre o tutor) antes de guardar.');
+            $this->errorAlert('Debe registrar al menos un vínculo (padre, madre o tutor) antes de guardar.');
             return;
         }
 
@@ -332,7 +332,7 @@ class DerechoHabienteFormComponent extends Component
             $this->dispatch('derechoHabienteGuardado');
             $this->cerrar();
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

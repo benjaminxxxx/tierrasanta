@@ -9,7 +9,7 @@ use Livewire\Component;
 
 class SiembraFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $mostrarFormulario = false;
     public $siembra_id;
     public $fecha_siembra;
@@ -50,7 +50,7 @@ class SiembraFormComponent extends Component
             $this->dispatch('siembraGuardada');
         } catch (\Exception $th) {
             $this->dispatch('log', $th->getMessage());
-            $this->alert('error', 'Ocurrió un error al registrar o actualizar la siembra.');
+            $this->errorAlert('Ocurrió un error al registrar o actualizar la siembra.');
         }
     }
 

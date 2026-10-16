@@ -14,7 +14,7 @@ use Livewire\WithFileUploads;
 class ImportarPlanillaComponent extends Component
 {
     use WithFileUploads;
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $activeTab = 'upload';
     public $archivo; // Para el input file de Livewire
     public $archivoCargado = false;
@@ -50,7 +50,7 @@ class ImportarPlanillaComponent extends Component
             
             $this->activeTab = 'preview';
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 
@@ -68,15 +68,15 @@ class ImportarPlanillaComponent extends Component
             app(EmpleadoServicio::class)->guardarDataDesdeExcel($this->data);
             $this->alert('success', '¡Datos importados con éxito!');
             $this->cancelar(); // Limpiar todo al finalizar
-        } catch (\Exception $e) {
-            $this->alert('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
         }
     }
     public function descargarPlanilla(){
         try {
             return app(PlanillaSueldoGastoServicio::class)->descargarPlanillaActualizada();
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function render()

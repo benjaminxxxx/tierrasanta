@@ -35,16 +35,17 @@
 
                     <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700/60">
                         @php
-                            $totalAPagarEnTramo = 0;
+                            // Totales de todas las filas (antes solo sumaba las ya pagadas)
+                            $totalAcumulacion = 0;
                             $totalPagadoAcumulado = 0;
+                            $totalPendiente = 0;
                         @endphp
                         @forelse ($resumenes as $resumen)
                             @php
                                 $montoPagado = $resumen['monto_pagado'] ?? 0;
-                                if ($resumen['condicion'] == 'Pagado') {
-                                    $totalAPagarEnTramo += $resumen['deuda_actual'];
-                                }
+                                $totalAcumulacion += $resumen['deuda_actual'];
                                 $totalPagadoAcumulado += $montoPagado;
+                                $totalPendiente += $resumen['deuda_acumulada'];
                             @endphp
 
                             <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
@@ -86,13 +87,15 @@
                         <tr>
                             <td class="px-4 py-3 text-right text-zinc-900 dark:text-zinc-100">Total</td>
                             <td class="px-4 py-3 text-right text-zinc-900 dark:text-zinc-100 font-mono">
-                                {{ formatear_numero($totalAPagarEnTramo) }}
+                                {{ formatear_numero($totalAcumulacion) }}
                             </td>
                             <td colspan="3"></td>
                             <td class="px-4 py-3 text-right text-emerald-600 dark:text-emerald-400 font-mono">
                                 {{ $totalPagadoAcumulado > 0 ? formatear_numero($totalPagadoAcumulado) : '-' }}
                             </td>
-                            <td></td>
+                            <td class="px-4 py-3 text-right text-zinc-900 dark:text-zinc-100 font-mono">
+                                {{ formatear_numero($totalPendiente) }}
+                            </td>
                         </tr>
                     </tfoot>
                 </table>

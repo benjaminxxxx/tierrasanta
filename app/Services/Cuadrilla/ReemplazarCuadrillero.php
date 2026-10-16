@@ -31,6 +31,12 @@ class ReemplazarCuadrillero
             throw new \InvalidArgumentException('El cuadrillero ya pertenece a este tramo laboral.');
         }
 
+        $pagados = TramoLaboralServicio::registrosPagados(\App\Models\CuadRegistroDiario::where('tramo_laboral_id', $tramoLaboralId)
+            ->where('cuadrillero_id', $anteriorId)->get());
+        if ($pagados->isNotEmpty()) {
+            throw new \InvalidArgumentException("No se puede reemplazar: el cuadrillero tiene {$pagados->count()} día(s) ya pagados en un desglose en este tramo.");
+        }
+
         DB::transaction(function () use ($tramoLaboralId, $anteriorId, $nuevoId) {
             // 3. Reemplazar en registros diarios (solo del tramo indicado)
             $this->registroDiarioServicio

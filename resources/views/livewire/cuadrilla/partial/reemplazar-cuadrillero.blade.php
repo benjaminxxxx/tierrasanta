@@ -9,7 +9,7 @@
         @endif
         <div class="mt-4">
             <x-label value="Cuadrillero" />
-            <x-select-dropdown wire:model="cuadrilleroARemplazarSeleccionado" source="getCuadrillero" />
+            <x-searchable-select wire:model="cuadrilleroARemplazarSeleccionado" buscar="getCuadrillero" />
             {{-- Debug --}}
             <div class="mt-2 p-2 bg-muted rounded text-xs">
                 <strong>ID Seleccionado:</strong> {{ $cuadrilleroARemplazarSeleccionado ?? 'Ninguno' }}

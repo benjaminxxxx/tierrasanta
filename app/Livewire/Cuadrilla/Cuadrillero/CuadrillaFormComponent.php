@@ -11,7 +11,7 @@ use Livewire\Component;
 
 class CuadrillaFormComponent extends Component
 {
-    use LivewireAlert, ConGrupoCuadrilla;
+    use LivewireAlert, ConGrupoCuadrilla, \App\Traits\HandlesAlerts;
     public $mostrarFormularioCuadrillero = false;
     public $nombres;
     public $dni;
@@ -42,7 +42,7 @@ class CuadrillaFormComponent extends Component
             $this->resetForm();
             $this->dispatch('cuadrilleroRegistrado', $cuadrillero);
         } catch (QueryException $e) {
-            $this->alert('error', 'Hubo un error al guardar el cuadrillero: ' . $e->getMessage());
+            $this->errorAlert($e, 'Hubo un error al guardar el cuadrillero');
         }
     }
     public function registrarCuadrillero()

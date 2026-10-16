@@ -173,6 +173,11 @@ class Sidebar extends Component
                         'route' => 'campania.por_campo',
                         'can' => Permisos::CAMPAÑA_POR_CAMPO,
                     ],
+                    [
+                        'title' => 'Informes mensuales',
+                        'route' => 'campania.informes_mensuales',
+                        'can' => Permisos::CAMPAÑA_INFORME_MENSUAL,
+                    ],
                 ],
             ],
             [
@@ -280,6 +285,11 @@ class Sidebar extends Component
                         'title' => 'Configuración',
                         'route' => 'sistema.configuracion',
                         'can' => Permisos::SISTEMA_CONFIGURACION,
+                    ],
+                    [
+                        'title' => 'Errores',
+                        'route' => 'sistema.errores',
+                        'can' => Permisos::SISTEMA_ERRORES,
                     ],
                 ],
             ],

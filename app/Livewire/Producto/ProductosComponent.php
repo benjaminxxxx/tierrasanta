@@ -13,7 +13,7 @@ use Livewire\WithPagination;
 
 class ProductosComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     use WithPagination;
     public $search = '';
     public $categoriaSeleccionada;
@@ -80,7 +80,7 @@ class ProductosComponent extends Component
             $this->alert('success', 'Producto eliminado correctamente.');
             $this->dispatch('ActualizarProductos');
         } catch (\Throwable $e) {
-            $this->alert('error', $e->getMessage());
+            $this->errorAlert($e);
         }
     }
     public function sortBy($field)

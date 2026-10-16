@@ -9,7 +9,7 @@ use Livewire\Component;
 
 class InsumoKardexReporteDetalleComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $insumoKardexReporteId;
     public ?InsKardexReporte $insumoKardexReporte = null;
     /** Por qué el Excel guardado ya no refleja los kardex (vacío = al día). */
@@ -41,7 +41,7 @@ class InsumoKardexReporteDetalleComponent extends Component
             $this->alert('success', 'Resumen y Excel generados' . ($this->advertencias ? ' (con advertencias).' : '.'));
         } catch (\Throwable $e) {
             logger()->error("Error al generar el reporte de kardex {$this->insumoKardexReporte->id}: " . $e->getMessage());
-            $this->alert('error', $e->getMessage(), ['timer' => 20000, 'toast' => false, 'position' => 'center']);
+            $this->errorAlert($e, null, ['timer' => 20000, 'toast' => false, 'position' => 'center']);
         }
     }
 

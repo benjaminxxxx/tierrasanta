@@ -8,6 +8,14 @@ import { Spanish } from "flatpickr/dist/l10n/es.js"; // ✅ importa el idioma
 import { Calendar } from "@fullcalendar/core";
 import resourceTimelinePlugin from "@fullcalendar/resource-timeline";
 import { SumadorSeleccionPlugin } from "./plugins/SumadorSeleccionPlugin";
+import searchableSelect from "./components/searchable-select";
+
+// <x-searchable-select>: se registra una sola vez (antes cada variante traía su propio <script>)
+if (window.Alpine) {
+    window.Alpine.data("searchableSelect", searchableSelect);
+} else {
+    document.addEventListener("alpine:init", () => window.Alpine.data("searchableSelect", searchableSelect));
+}
 
 // Establece el idioma globalmente
 flatpickr.localize(Spanish);

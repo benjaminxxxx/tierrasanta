@@ -146,7 +146,7 @@ class CampaniaCampoSelectorComponent extends Component
             $campaniaServicio->actualizarConsumo();
             $this->alert('success', 'Reporte de consumo generado correctamente.');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     /**
@@ -184,7 +184,7 @@ class CampaniaCampoSelectorComponent extends Component
             $this->cargarYSeleccionar($this->campoSeleccionado);
             $this->alert('success', 'Campaña Eliminada.');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

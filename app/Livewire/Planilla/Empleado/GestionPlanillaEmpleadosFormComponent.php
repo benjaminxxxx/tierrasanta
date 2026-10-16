@@ -19,7 +19,7 @@ use Livewire\Component;
  */
 class GestionPlanillaEmpleadosFormComponent extends Component
 {
-    use LivewireAlert, ConGrupoPlanilla;
+    use LivewireAlert, ConGrupoPlanilla, \App\Traits\HandlesAlerts;
 
     public const TABS = [
         'perfil' => 'Perfil',
@@ -75,7 +75,7 @@ class GestionPlanillaEmpleadosFormComponent extends Component
 
         $empleado = PlanEmpleado::withTrashed()->find($id);
         if (!$empleado) {
-            $this->alert('error', 'El empleado ya no existe.');
+            $this->errorAlert('El empleado ya no existe.');
             return;
         }
 
@@ -187,7 +187,7 @@ class GestionPlanillaEmpleadosFormComponent extends Component
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

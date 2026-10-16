@@ -9,7 +9,7 @@ use Jantinnerezo\LivewireAlert\LivewireAlert;
 
 class GestionCuadrillaReporteSemanalTramosComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
 
     // Propiedades de estado de la UI
     public bool $mostrarFormularioReporteSemanalTramo = false;
@@ -109,7 +109,7 @@ class GestionCuadrillaReporteSemanalTramosComponent extends Component
                     ->encontrarTramoPorMesAnioLista($mes, $anio);
             }
         } catch (\Throwable $th) {
-            $this->alert('error', 'Error en búsqueda: ' . $th->getMessage());
+            $this->errorAlert($th, 'Error en búsqueda');
         }
     }
     public function seleccionarTramo($tramoLaboralId)
@@ -156,7 +156,7 @@ class GestionCuadrillaReporteSemanalTramosComponent extends Component
             $this->cerrarFormularioYRecargar();
 
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function confirmadoEliminarTramo()
@@ -172,7 +172,7 @@ class GestionCuadrillaReporteSemanalTramosComponent extends Component
             $this->cargarDatosActuales();
 
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     /**
@@ -180,9 +180,18 @@ class GestionCuadrillaReporteSemanalTramosComponent extends Component
      */
     public function eliminarTramo(): void
     {
-        $this->confirm('¿Está seguro de eliminar este tramo?', [
-            'onConfirmed' => 'confirmadoEliminarTramo'
-        ]);
+        if (!$this->tramoActual) {
+            return;
+        }
+        $r = $this->tramoLaboralServicio->resumenParaEliminar($this->tramoActual);
+        if ($r['pagados'] > 0) {
+            $this->errorAlert("No se puede eliminar el tramo: tiene {$r['pagados']} registro(s) o gasto(s) ya pagados en un desglose.");
+            return;
+        }
+        $texto = $r['registros'] || $r['gastos']
+            ? sprintf('Se borrarán %d día(s) registrados (%s h) y %d gasto(s) adicionales del tramo. ¿Eliminar el tramo?', $r['registros'], rtrim(rtrim(number_format($r['horas'], 2), '0'), '.'), $r['gastos'])
+            : '¿Está seguro de eliminar este tramo?';
+        $this->confirm($texto, ['onConfirmed' => 'confirmadoEliminarTramo']);
     }
 
     /**
@@ -223,7 +232,7 @@ class GestionCuadrillaReporteSemanalTramosComponent extends Component
     public function editarTramo(): void
     {
         if (!$this->tramoActual) {
-            $this->alert('error', 'No hay tramo seleccionado para editar.');
+            $this->errorAlert('No hay tramo seleccionado para editar.');
             return;
         }
 

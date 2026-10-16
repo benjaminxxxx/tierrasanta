@@ -13,7 +13,7 @@ use Jantinnerezo\LivewireAlert\LivewireAlert;
 
 class ContratosPlanillaComponent extends Component
 {
-    use WithPagination, LivewireAlert, WithoutUrlPagination, WithFileUploads;
+    use WithPagination, LivewireAlert, WithoutUrlPagination, WithFileUploads, \App\Traits\HandlesAlerts;
 
     
     public $breadcrumb = [];
@@ -71,7 +71,7 @@ class ContratosPlanillaComponent extends Component
         $contrato = PlanContrato::find($id);
 
         if (!$contrato) {
-            $this->alert('error', 'Contrato no encontrado');
+            $this->errorAlert('Contrato no encontrado');
             return;
         }
 
@@ -83,7 +83,7 @@ class ContratosPlanillaComponent extends Component
         $contrato = PlanContrato::find($id);
 
         if (!$contrato) {
-            $this->alert('error', 'Contrato no encontrado');
+            $this->errorAlert('Contrato no encontrado');
             return;
         }
         $this->reset('datosCierre');
@@ -108,8 +108,8 @@ class ContratosPlanillaComponent extends Component
             $servicio->finalizarContrato($this->contratoAFinalizar->id, $this->datosCierre);
             $this->alert('success', 'Contrato finalizado correctamente');
             $this->mostrarInformacionFinalizar = false;
-        } catch (\Exception $e) {
-            $this->alert('error', 'Error al finalizar el contrato: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e, 'Error al finalizar el contrato');
         }
     }
 
@@ -118,7 +118,7 @@ class ContratosPlanillaComponent extends Component
         $contrato = PlanContrato::find($id);
 
         if (!$contrato) {
-            $this->alert('error', 'Contrato no encontrado');
+            $this->errorAlert('Contrato no encontrado');
             return;
         }
 
@@ -135,7 +135,7 @@ class ContratosPlanillaComponent extends Component
         $contrato = PlanContrato::find($data['id']);
 
         if (!$contrato) {
-            $this->alert('error', 'Contrato no encontrado');
+            $this->errorAlert('Contrato no encontrado');
             return;
         }
 
@@ -183,7 +183,7 @@ class ContratosPlanillaComponent extends Component
             $this->fileContratos = null;
             $this->alert('success', 'Contratos importados correctamente');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage(), [
+            $this->errorAlert($th, null, [
                 'position' => 'center',
                 'toast' => false,
                 'timer' => null,

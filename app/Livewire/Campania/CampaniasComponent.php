@@ -14,7 +14,7 @@ use Livewire\WithPagination;
 #[Title('Resumen de Campaña')]
 class CampaniasComponent extends Component
 {
-    use WithPagination, WithoutUrlPagination, LivewireAlert;
+    use WithPagination, WithoutUrlPagination, LivewireAlert, \App\Traits\HandlesAlerts;
 
     public $campoSeleccionado;
     public $campaniaSeleccionada;
@@ -103,7 +103,7 @@ class CampaniasComponent extends Component
             $this->alert('success', 'Campaña eliminada correctamente.');
             $this->cargarOpciones();
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 
@@ -114,7 +114,7 @@ class CampaniasComponent extends Component
             return app(CampaniaServicio::class)
                 ->descargarReporteCampania($registros, $this->campoSeleccionado, $this->campaniaSeleccionada);
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

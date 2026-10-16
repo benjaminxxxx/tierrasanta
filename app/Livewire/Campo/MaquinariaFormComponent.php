@@ -12,7 +12,7 @@ use Livewire\WithFileUploads;
 
 class MaquinariaFormComponent extends Component
 {
-    use LivewireAlert, WithFileUploads;
+    use LivewireAlert, WithFileUploads, \App\Traits\HandlesAlerts;
 
     public $nombre;
     public $alias_blanco;
@@ -121,7 +121,7 @@ class MaquinariaFormComponent extends Component
             $this->dispatch('ActualizarMaquinarias');
             $this->closeForm();
         } catch (\Throwable $e) {
-            $this->alert('error', 'No se pudo guardar: ' . $e->getMessage());
+            $this->errorAlert($e, 'No se pudo guardar');
         }
     }
 

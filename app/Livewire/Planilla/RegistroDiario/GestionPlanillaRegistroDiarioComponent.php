@@ -11,7 +11,7 @@ use Livewire\Component;
 
 class GestionPlanillaRegistroDiarioComponent extends Component
 {
-    use ConFechaReporteDia, LivewireAlert, ConReporteDiarioExcel;
+    use ConFechaReporteDia, LivewireAlert, ConReporteDiarioExcel, \App\Traits\HandlesAlerts;
     public $listaPlanilla = [];
     public $mes;
     public $anio;
@@ -27,7 +27,7 @@ class GestionPlanillaRegistroDiarioComponent extends Component
             $this->listaPlanilla = app(GestionPlanillaReporteDiario::class)->obtenerPlanillaMensualXFecha($this->fecha)->toArray();
             $this->mostrarListaPlanillaMensual = true;
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
    

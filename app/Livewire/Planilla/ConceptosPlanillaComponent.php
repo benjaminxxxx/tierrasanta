@@ -10,7 +10,7 @@ use Jantinnerezo\LivewireAlert\LivewireAlert;
 
 class ConceptosPlanillaComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $conceptos = [];
     public function mount(){
         $this->conceptos = ConceptoPlanillaServicio::leer();
@@ -21,9 +21,9 @@ class ConceptosPlanillaComponent extends Component
             ImportarConceptosProceso::ejecutar($data);
             $this->alert('success', 'Conceptos de planilla sincronizados correctamente.');
         } catch (ValidationException $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function render()

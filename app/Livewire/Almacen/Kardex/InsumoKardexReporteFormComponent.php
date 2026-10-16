@@ -9,7 +9,7 @@ use Livewire\Component;
 
 class InsumoKardexReporteFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $mostrarFormularioInsumoKardexReporte = false;
     public ?int $reporteId = null;
     public $anio;
@@ -37,7 +37,7 @@ class InsumoKardexReporteFormComponent extends Component
     {
         $reporte = InsKardexReporte::find($reporteId);
         if (!$reporte) {
-            return $this->alert('error', 'El reporte de kardex no existe');
+            return $this->errorAlert('El reporte de kardex no existe');
         }
         $this->resetForm();
         $this->reporteId = $reporte->id;
@@ -97,7 +97,7 @@ class InsumoKardexReporteFormComponent extends Component
             $this->mostrarFormularioInsumoKardexReporte = false;
             $this->alert("success", $mensaje);
         } catch (\Throwable $th) {
-            $this->alert("error", $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

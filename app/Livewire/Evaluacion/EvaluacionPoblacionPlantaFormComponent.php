@@ -19,7 +19,7 @@ use Illuminate\Support\Str;
 
 class EvaluacionPoblacionPlantaFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $mostrarFormulario = false;
     public $poblacionPlantaId;
     public $evaluadoresNombres = [];
@@ -105,7 +105,7 @@ class EvaluacionPoblacionPlantaFormComponent extends Component
             }
         } catch (\Throwable $th) {
             $this->fecha_siembra = null;
-            $this->alert('error', 'La campaña seleccionada no es válida.');
+            $this->errorAlert('La campaña seleccionada no es válida.');
         }
     }
     public function updatedCampaniaSeleccionada()
@@ -164,7 +164,7 @@ class EvaluacionPoblacionPlantaFormComponent extends Component
         } catch (ValidationException $ve) {
             throw $ve;
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 
@@ -186,7 +186,7 @@ class EvaluacionPoblacionPlantaFormComponent extends Component
             $this->mostrarFormulario = true;
 
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 
@@ -227,7 +227,7 @@ class EvaluacionPoblacionPlantaFormComponent extends Component
             $this->dispatch('cargarData', []);
             $this->mostrarFormulario = true;
         } catch (\Throwable $th) {
-            return $this->alert('error', $th->getMessage());
+            return $this->errorAlert($th);
         }
     }
 

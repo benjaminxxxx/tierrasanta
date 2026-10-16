@@ -17,7 +17,7 @@ use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 //MODULO COCHINILLA INGRESO
 class CochinillaIngresoComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     use WithPagination;
     public $campoSeleccionado;
     public $campaniaSeleccionado;
@@ -123,7 +123,7 @@ class CochinillaIngresoComponent extends Component
             $ingreso->delete();
             $this->alert('success', 'Ingreso eliminado correctamente.');
         } else {
-            $this->alert('error', 'Ingreso no encontrado.');
+            $this->errorAlert('Ingreso no encontrado.');
         }
     }
     public function eliminarIngreso($ingresoId)
@@ -430,7 +430,7 @@ class CochinillaIngresoComponent extends Component
             return ExcelHelper::descargar($spreadsheet, 'REPORTE_COCHINILLA_INGRESOS.xlsx');
 
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     /**

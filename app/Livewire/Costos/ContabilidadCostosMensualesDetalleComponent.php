@@ -11,7 +11,7 @@ use Livewire\Component;
 
 class ContabilidadCostosMensualesDetalleComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $campos = [];
     public $campoSeleccionado = [];
     public $modoEdicion = false;
@@ -93,7 +93,7 @@ class ContabilidadCostosMensualesDetalleComponent extends Component
             $this->listarCostoMensualId();
         } catch (\Throwable $th) {
             $this->dispatch('log', $th->getMessage());
-            $this->alert('error', 'Ocurrió un error al registrar los costos.');
+            $this->errorAlert('Ocurrió un error al registrar los costos.');
         }
     }
     public function listarCampos()
@@ -239,7 +239,7 @@ class ContabilidadCostosMensualesDetalleComponent extends Component
             ];
         } catch (\Throwable $th) {
             $this->dispatch('log', $th->getMessage());
-            $this->alert('error', 'Ocurrió un error al listar los costos.');
+            $this->errorAlert('Ocurrió un error al listar los costos.');
         }
     }
 

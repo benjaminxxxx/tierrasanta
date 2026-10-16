@@ -24,7 +24,7 @@ use Session;
 
 class ReporteDiarioRiegoComponent extends Component
 {
-    use LivewireAlert, ConFechaReporteDia, TieneParametrosTemporales, ConReporteDiarioExcel;
+    use LivewireAlert, ConFechaReporteDia, TieneParametrosTemporales, ConReporteDiarioExcel, \App\Traits\HandlesAlerts;
     public $consolidados;
     public $archivoBackupHoy;
     public $tipoLabores;
@@ -166,7 +166,7 @@ class ReporteDiarioRiegoComponent extends Component
             $this->mostrarEnvioAReporteDiario = false;
 
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     protected function despuesFechaModificada($fecha)

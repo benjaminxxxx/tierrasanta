@@ -19,7 +19,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class GestionCuadrillaPagosComponent extends Component
 {
-    use LivewireAlert, ConGrupoCuadrilla;
+    use LivewireAlert, ConGrupoCuadrilla, \App\Traits\HandlesAlerts;
     public $fecha_inicio;
     public $fecha_fin;
     public $grupoSeleccionado;
@@ -69,9 +69,11 @@ class GestionCuadrillaPagosComponent extends Component
         $this->registros = $query->orderBy('fecha')
             ->orderBy('codigo_grupo')
             ->orderBy('cuadrillero_id')
-            ->with('detalleHoras')
+            ->with(['detalleHoras', 'actividadesBonos'])
             ->get()
             ->map(function ($registroDiario) {
+                // Bonos que se pagan aparte (se acumulan): pagado si todos lo están; null si el día no tiene
+                $bonosAparte = $registroDiario->actividadesBonos->where('se_paga_con_jornal', false)->where('total_bono', '>', 0);
                 return [
                     'fecha' => formatear_fecha($registroDiario->fecha),
                     'codigo_grupo' => $registroDiario->codigo_grupo,
@@ -81,7 +83,7 @@ class GestionCuadrillaPagosComponent extends Component
                     'costo_dia' => $registroDiario->costo_dia,
                     'total_horas' => $registroDiario->total_horas,
                     'esta_pagado' => $registroDiario->esta_pagado,
-                    'bono_esta_pagado' => $registroDiario->bono_esta_pagado,
+                    'bono_esta_pagado' => $bonosAparte->isEmpty() ? null : $bonosAparte->every(fn($b) => $b->esta_pagado || $b->desglose_detalle_id),
                     'detalle_campos' => $registroDiario->detalleHoras
                         ->pluck('campo_nombre')
                         ->implode(', '),
@@ -147,7 +149,7 @@ class GestionCuadrillaPagosComponent extends Component
                 $hoja->setCellValue("I{$fila}", $reg['total_bono']);
                 $hoja->setCellValue("J{$fila}", '=H' . $fila . '+I' . $fila);
                 $hoja->setCellValue("K{$fila}", $reg['esta_pagado'] ? 'Sí' : 'No');
-                $hoja->setCellValue("L{$fila}", $reg['bono_esta_pagado'] ? 'Sí' : 'No');
+                $hoja->setCellValue("L{$fila}", $reg['bono_esta_pagado'] === null ? '—' : ($reg['bono_esta_pagado'] ? 'Sí' : 'No'));
                 $hoja->setCellValue("M{$fila}", $reg['detalle_campos']); // concatenado por comas
 
                 // FORMATO FECHA
@@ -181,7 +183,7 @@ class GestionCuadrillaPagosComponent extends Component
 
             return ExcelHelper::descargar($spreadsheet, 'informe_general_cuadrilla.xlsx');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function registrarPago($listaPagos)
@@ -191,7 +193,7 @@ class GestionCuadrillaPagosComponent extends Component
             $this->alert('success', 'Registros con pagos procesados exitosamente.');
 
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

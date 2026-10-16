@@ -7,7 +7,7 @@ use Livewire\Component;
 
 class RolesPermisosFormComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $breadcrumb = [];
     public $roles;
     public $permisos;
@@ -45,7 +45,7 @@ class RolesPermisosFormComponent extends Component
             $this->modoEditarRol = true;
             $this->mostrarModalCrearRol = true;
         } catch (\Throwable $th) {
-            $this->alert('error', 'Error al cargar el rol para edición: ' . $th->getMessage());
+            $this->errorAlert($th, 'Error al cargar el rol para edición');
         }
     }
 
@@ -59,7 +59,7 @@ class RolesPermisosFormComponent extends Component
             $this->modoEditarPermiso = true;
             $this->mostrarModalCrearPermiso = true;
         } catch (\Throwable $th) {
-            $this->alert('error', 'Error al cargar el permiso para edición: ' . $th->getMessage());
+            $this->errorAlert($th, 'Error al cargar el permiso para edición');
         }
     }
 
@@ -89,7 +89,7 @@ class RolesPermisosFormComponent extends Component
             $this->cargarDatos();
             $this->alert('success', $mensaje);
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 
@@ -119,7 +119,7 @@ class RolesPermisosFormComponent extends Component
             $this->cargarDatos();
             $this->alert('success', $mensaje);
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 
@@ -130,7 +130,7 @@ class RolesPermisosFormComponent extends Component
             $this->cargarDatos();
             $this->alert('success', 'Permiso eliminado correctamente.');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function eliminarRol($rolId)
@@ -140,7 +140,7 @@ class RolesPermisosFormComponent extends Component
             $this->cargarDatos();
             $this->alert('success', 'Rol eliminado correctamente.');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
 

@@ -12,7 +12,7 @@ use Livewire\WithPagination;
 
 class GestionPlanillaEmpleadosComponent extends Component
 {
-    use LivewireAlert, WithPagination, WithoutUrlPagination;
+    use LivewireAlert, WithPagination, WithoutUrlPagination, \App\Traits\HandlesAlerts;
     public $planCargoId;
     public $planDescuentoSpCodigo;
     public $planGrupoCodigo;
@@ -48,7 +48,7 @@ class GestionPlanillaEmpleadosComponent extends Component
             $this->resetPage();
             $this->alert('success', 'Eliminado correctamente');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function restaurarEmpleado($id)
@@ -58,7 +58,7 @@ class GestionPlanillaEmpleadosComponent extends Component
             $this->resetPage();
             $this->alert('success', 'Restaurado correctamente');
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function abrirFormCambioMasivoSueldo()
@@ -98,7 +98,7 @@ class GestionPlanillaEmpleadosComponent extends Component
             $this->alert('success', 'Sueldos modificados correctamente.');
 
         } catch (\Throwable $th) {
-            return $this->alert('error', $th->getMessage());
+            return $this->errorAlert($th);
         }
 
     }

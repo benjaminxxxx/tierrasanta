@@ -11,7 +11,7 @@ use Jantinnerezo\LivewireAlert\LivewireAlert;
 
 class ParametrosPlanillaComponent extends Component
 {
-    use LivewireAlert;
+    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $parametros = [];
     public $configuraciones = [];
     public function mount()
@@ -34,9 +34,9 @@ class ParametrosPlanillaComponent extends Component
             $this->refrescarTablaParametros();
             $this->alert('success', 'Parámetros de planilla sincronizados correctamente.');
         } catch (ValidationException $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         } catch (\Throwable $th) {
-            $this->alert('error', $th->getMessage());
+            $this->errorAlert($th);
         }
     }
     public function render()
