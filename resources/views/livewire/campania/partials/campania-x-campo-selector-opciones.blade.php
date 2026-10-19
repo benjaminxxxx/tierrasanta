@@ -1,4 +1,9 @@
 @if ($campaniaSeleccionada)
+    <x-flex class="justify-center">
+        <x-button type="button" variant="secondary" @click="$wire.dispatch('verHistoriaCampania', {campaniaId: {{ $campaniaSeleccionada }}})">
+            <i class="fa fa-book-open"></i> Historia de la campaña
+        </x-button>
+    </x-flex>
     @can(\App\Constants\Permisos::CAMPAÑA_POR_CAMPO_GESTIONAR)
         <x-flex class="justify-center">
             @if($campania && $campania->gasto_resumen_bdd_file)

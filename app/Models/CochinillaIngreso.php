@@ -21,6 +21,8 @@ class CochinillaIngreso extends Model
         'campania_origen_id', // campaña dueña de la cochinilla: a la que se carga la venta
         'origen_estado',
         'origen_detalle',
+        'creado_por',
+        'editado_por',
         'observacion',
         'proveedor_kg_exportado',
         'kg_ha',
@@ -82,6 +84,12 @@ class CochinillaIngreso extends Model
      *
      * Antes buscaba las infestaciones que ESTE campo hizo a otros y mostraba su origen, que es el mismo campo.
      */
+    /** Reparto de un retorno de infestadores entre sus campos de origen (kg por campo). */
+    public function origenes()
+    {
+        return $this->hasMany(CochinillaIngresoOrigen::class, 'cochinilla_ingreso_id');
+    }
+
     public function getCamposInfestadosAttribute()
     {
         if (!\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::esDeInfestador($this->observacion)) {
@@ -396,10 +404,29 @@ class CochinillaIngreso extends Model
      */
     protected static function booted(): void
     {
+        // Quién lo registró y quién lo editó por última vez (el motivo de cada edición va a auditorias)
+        static::creating(function (self $ingreso) {
+            $ingreso->creado_por ??= auth()->id();
+        });
+        static::updating(function (self $ingreso) {
+            if (auth()->id()) {
+                $ingreso->editado_por = auth()->id();
+            }
+        });
         static::saved(function (self $ingreso) {
-            if ($ingreso->wasRecentlyCreated || $ingreso->wasChanged(['campo', 'fecha', 'observacion', 'campo_campania_id'])) {
+            if ($ingreso->wasRecentlyCreated || $ingreso->wasChanged(['campo', 'fecha', 'observacion', 'campo_campania_id', 'total_kilos'])) {
                 app(\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::class)->recalcular($ingreso);
             }
         });
+    }
+
+    public function creadoPor()
+    {
+        return $this->belongsTo(User::class, 'creado_por');
+    }
+
+    public function editadoPor()
+    {
+        return $this->belongsTo(User::class, 'editado_por');
     }
 }

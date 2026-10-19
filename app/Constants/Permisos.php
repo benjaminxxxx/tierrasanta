@@ -295,6 +295,9 @@ class Permisos
     const COCHINILLA_FILTRADO = 'Cochinilla Filtrado';
     const COCHINILLA_COSECHA = 'Cochinilla Cosecha Mamas';
     const COCHINILLA_INFESTACION = 'Cochinilla Infestación';
+    // — Recuperación de infestadores: qué falta recuperar, reparto del retorno por campo de origen, cerrar recuperación
+    const COCHINILLA_RECUPERACION = 'Cochinilla Recuperación';
+    const COCHINILLA_RECUPERACION_GESTIONAR = 'Cochinilla Recuperación Gestionar';
     // =========================================================================
 // COCHINILLA — Venta
 // Tablas: venta_cochinillas, venta_facturada_cochinillas, venta_cochinilla_reportes

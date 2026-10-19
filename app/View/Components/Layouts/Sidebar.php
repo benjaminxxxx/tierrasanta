@@ -159,14 +159,9 @@ class Sidebar extends Component
                 'can' => Permisos::CAMPAÑA,
                 'children' => [
                     [
-                        'title' => 'Resumen General de Campañas',
+                        'title' => 'Campañas',
                         'route' => 'campania.resumen',
                         'can' => Permisos::CAMPAÑA_RESUMEN,
-                    ],
-                    [
-                        'title' => 'Todas las campañas',
-                        'route' => 'campania.calendario',
-                        'can' => Permisos::CAMPAÑA_CALENDARIO,
                     ],
                     [
                         'title' => 'Campañas por campo',
@@ -190,6 +185,7 @@ class Sidebar extends Component
                     ['title' => 'Filtrado', 'route' => 'cochinilla.filtrado', 'can' => Permisos::COCHINILLA_FILTRADO],
                     ['title' => 'Cosecha Mamas', 'route' => 'cochinilla.cosecha_mamas', 'can' => Permisos::COCHINILLA_COSECHA],
                     ['title' => 'Infestación', 'route' => 'cochinilla.infestacion', 'can' => Permisos::COCHINILLA_INFESTACION],
+                    ['title' => 'Por recuperar', 'route' => 'cochinilla.recuperacion', 'can' => Permisos::COCHINILLA_RECUPERACION],
                     ['title' => 'Venta', 'route' => 'cochinilla.ventas', 'can' => Permisos::COCHINILLA_VENTA],
                 ],
             ],

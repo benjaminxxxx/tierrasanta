@@ -84,6 +84,8 @@ class CampaniaResumenConsulta
             ->with('campo_model')
             ->when($filtros['campo'] ?? null, fn($q, $campo) => $q->where('campo', $campo))
             ->when($filtros['campania'] ?? null, fn($q, $nombre) => $q->where('nombre_campania', $nombre))
+            ->when(trim((string) ($filtros['buscar'] ?? '')), fn($q, $t) => $q->where(fn($w) => $w->where('campo', 'like', "%{$t}%")
+                ->orWhere('nombre_campania', 'like', "%{$t}%")->orWhereRaw("CONCAT(campo, ' ', nombre_campania) LIKE ?", ["%{$t}%"])))
             ->when($estado === self::ESTADO_VIGENTES, fn($q) => $q->whereNull('fecha_fin'))
             ->when($estado === self::ESTADO_CERRADAS, fn($q) => $q->whereNotNull('fecha_fin'));
     }

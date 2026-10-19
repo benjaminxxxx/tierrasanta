@@ -164,3 +164,15 @@ Handsontable y los sueldos de la planilla generada); `/planilla/asistencias` red
 | Qué | Por qué se retiró |
 |---|---|
 | `resources/views/components/searchable.blade.php`, `searchable-dinamico.blade.php`, `searchable-select-stable.blade.php`, `select-dropdown.blade.php` | Cuatro variantes del mismo buscador. `searchable` y `searchable-dinamico` registraban las dos un `Alpine.data('searchable')` distinto (la última en cargar pisaba a la otra); `searchable-select-stable` era una copia sin uso; la lista pasada con `:options` quedaba congelada en Alpine aunque Livewire la cambiara; y cada una traía su `<script>` dentro de la vista, que no se ejecuta si el componente aparece después (por ejemplo dentro de un modal). Ahora todo es `x-searchable-select` con su lógica en `resources/js/components/searchable-select.js` (registrada una vez en `app.js`) y tres modos: `:options` (se recarga sola), `opciones="propiedad"` (enlazada, antes `searchable-dinamico`) y `buscar="metodo"` (búsqueda en el servidor, antes `select-dropdown`; `source` sigue aceptándose, y el evento `selectDropdownEtiqueta` también). `x-autocomplete` se mantiene aparte: es texto libre con sugerencias, no elige un id. |
+
+### Planilla: modal duplicado del orden mensual (17/10/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| `resources/views/livewire/planilla/registro-diario/partials/orden-planilla-mensual.blade.php` y, en `GestionPlanillaRegistroDiarioComponent`, `gestionarListaMensual()`, `$listaPlanilla` y `$mostrarListaPlanillaMensual` | Copia del modal "Orden Mensual de Empleados" incluida en el registro diario de planilla. Nunca se abría (el botón de esa pantalla abre `OrdenarPlanillaMensualComponent`, que es el que funciona) y sus botones llamaban a métodos que este componente no tiene. Además registraba el mismo `Alpine.data('ordenMensualPlanilla')` que el modal real. |
+
+### Campañas: calendario de todas las campañas (17/10/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| `app/Livewire/Campania/CampaniaCalendarioComponent.php`, `resources/views/livewire/campania/campania-calendario-component.blade.php`, `campania-calendario-indice.blade.php` y la ruta `campania.calendario` | Línea de tiempo de campañas por campo que solo enlazaba al detalle. Todo se centraliza en Campaña → Campañas (`/campania/resumen`): buscar, filtrar, avance vegetativo, etapa, informe al día o final, informes mensuales, editar, cerrar y eliminar. El permiso `Campañas Calendario` queda sin uso. |

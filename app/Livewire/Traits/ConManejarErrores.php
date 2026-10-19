@@ -16,7 +16,7 @@ trait ConManejarErrores
     public function manejarError(\Throwable $e, string $mensajeUsuario = 'Ocurrió un error inesperado')
     {
         if (SistemaErrorReglas::esControlado($e)) {
-            $mensaje = $e->getMessage() ?: $mensajeUsuario;
+            $mensaje = SistemaErrorReglas::mensajeControlado($e) ?: $mensajeUsuario;
         } else {
             $ticket = SistemaErrorCrud::registrar($e, static::class);
             $mensaje = $ticket

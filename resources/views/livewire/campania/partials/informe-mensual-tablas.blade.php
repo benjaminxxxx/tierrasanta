@@ -30,7 +30,8 @@
         'error' => 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200',
         'aviso' => 'bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200',
     ];
-    $hojas = ['resumen' => 'Resumen', 'detalle' => 'Detalle'];
+    $hojas = array_intersect_key(\App\Services\Campania\InformeMensual\CampaniaInformeMensualFormatoReglas::HOJAS,
+        array_flip(array_merge(['resumen', 'detalle'], array_column($tablas, 'hoja'))));
 @endphp
 
 <div x-data="{ hoja: 'resumen' }" class="space-y-4">
@@ -61,7 +62,9 @@
                             <tr class="border-t border-gray-100 dark:border-gray-700 {{ $estilos[$fila['estilo']] ?? '' }}">
                                 @foreach ($fila['celdas'] as $i => $valor)
                                     @php $tipo = $tabla['columnas'][$i]['tipo'] ?? 'texto'; @endphp
-                                    <td class="px-2 py-1 {{ $tipo === 'texto' ? 'text-left' : 'text-right whitespace-nowrap' }} {{ $i === 0 ? 'whitespace-pre' : '' }}">{{ $formato($valor, $tipo) }}</td>
+                                    {{-- Contenido en una sola línea: la 1ª columna usa whitespace-pre (sangría de subpartidas) y mostraría saltos y espacios --}}
+                                    @php $url = $fila['enlaces'][$i]['url'] ?? null; @endphp
+                                    <td class="px-2 py-1 {{ $tipo === 'texto' ? 'text-left' : 'text-right whitespace-nowrap' }} {{ $i === 0 ? 'whitespace-pre' : '' }}">@if ($url)<a href="{{ $url }}" target="_blank" class="text-primary underline hover:opacity-80" title="Abrir la evaluación para comprobar el valor">{{ $formato($valor, $tipo) }} <i class="fa fa-external-link-alt text-[10px]"></i></a>@else{{ $formato($valor, $tipo) }}@endif</td>
                                 @endforeach
                             </tr>
                         @empty

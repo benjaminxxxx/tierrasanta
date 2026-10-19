@@ -33,7 +33,7 @@
                 </div>
             @else
                 <!-- ── PASO 2: FORMULARIO ── -->
-                <form wire:submit.prevent="guardar" class="space-y-4">
+                <form wire:submit.prevent="guardarProveedorYSeleccionar" class="space-y-4">
                     <!-- Selector de Tipo -->
                     <div class="flex gap-4 mb-4">
                         <label class="inline-flex items-center">

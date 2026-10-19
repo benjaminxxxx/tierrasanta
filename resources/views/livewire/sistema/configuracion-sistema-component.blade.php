@@ -93,6 +93,24 @@
     </x-card>
     <x-card class="space-y-4 max-w-3xl">
         <div>
+            <h3 class="font-semibold text-foreground">Campañas: duración proyectada por etapa</h3>
+            <p class="text-sm text-muted-foreground">
+                Meses que se proyectan para cada etapa al calcular el avance del periodo vegetativo (Campañas e informes mensuales).
+                La 1ª etapa usa los meses reales hasta la infestación cuando ya está registrada; este valor solo se usa mientras no la hay.
+            </p>
+        </div>
+        <div class="flex flex-wrap items-end gap-3">
+            @foreach ([1 => '1ª etapa (sin infestación)', 2 => '2ª etapa', 3 => '3ª etapa'] as $e => $t)
+                <div class="w-44" wire:key="etapa-{{ $e }}">
+                    <x-input type="number" min="1" max="36" wire:model="mesesEtapas.{{ $e }}" label="{{ $t }}" />
+                </div>
+            @endforeach
+            <x-button wire:click="guardarMesesEtapas"><i class="fa fa-save"></i> Guardar</x-button>
+        </div>
+        @error('meses_etapas') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
+    </x-card>
+    <x-card class="space-y-4 max-w-3xl">
+        <div>
             <h3 class="font-semibold text-foreground">Cuadrilla: grupos inactivos</h3>
             <p class="text-sm text-muted-foreground">
                 En Cuadrilla → Grupos se marca "Sin tramo" a los grupos que no están en ningún tramo desde hace más de estos meses (si nunca
@@ -104,6 +122,24 @@
                 <x-input type="number" min="1" wire:model="mesesGrupoSinTramo" label="Meses sin tramo" error="meses_sin_tramo" />
             </div>
             <x-button wire:click="guardarGruposCuadrilla"><i class="fa fa-save"></i> Guardar</x-button>
+        </div>
+    </x-card>
+    <x-card class="space-y-4 max-w-3xl">
+        <div>
+            <h3 class="font-semibold text-foreground">Cochinilla: recuperación de infestadores</h3>
+            <p class="text-sm text-muted-foreground">
+                Días desde la infestación sin darla por recuperada (Cochinilla → Por recuperar) para avisar en tareas pendientes, y factor fresco → seco
+                de la mamá (1,000 kg frescos con factor 5 deberían volver como unos 200 kg secos).
+            </p>
+        </div>
+        <div class="flex items-end gap-3">
+            <div class="w-48">
+                <x-input type="number" min="1" max="365" wire:model="diasRecuperacion" label="Días de aviso" error="dias_alerta" />
+            </div>
+            <div class="w-48">
+                <x-input type="number" step="0.1" min="1" max="20" wire:model="factorSeco" label="Factor fresco → seco" error="factor_seco" />
+            </div>
+            <x-button wire:click="guardarRecuperacion"><i class="fa fa-save"></i> Guardar</x-button>
         </div>
     </x-card>
     <x-card class="space-y-4 max-w-3xl">

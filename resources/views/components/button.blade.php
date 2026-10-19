@@ -47,7 +47,8 @@
 
 <{{ $tag }}
     @if($href) 
-        href="{{ $href }}" 
+        {{-- e(…, false): no vuelve a escapar un href que ya llega escapado (href="{{ route(…) }}" con varios parámetros) --}}
+        href="{!! e($href, false) !!}" 
         @if($target) target="{{ $target }}" @endif
     @else 
         type="{{ $type }}" 

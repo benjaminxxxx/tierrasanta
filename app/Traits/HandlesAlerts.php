@@ -33,7 +33,7 @@ trait HandlesAlerts
      */
     public function errorAlert($error, ?string $title = null, array $options = []): void
     {
-        $mensaje = $error instanceof Throwable ? $error->getMessage() : (string) $error;
+        $mensaje = $error instanceof Throwable ? SistemaErrorReglas::mensajeControlado($error) : (string) $error;
 
         if ($error instanceof Throwable && !SistemaErrorReglas::esControlado($error)) {
             $ticket = SistemaErrorCrud::registrar($error, static::class);

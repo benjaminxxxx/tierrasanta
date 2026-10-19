@@ -87,7 +87,7 @@
             {{-- =================== TBODY =================== --}}
             <x-slot name="tbody" >
                 @foreach ($evaluacionesBrotes as $index => $e)
-                    <tr class="border-b border-border">
+                    <tr class="border-b border-border {{ $evaluacionResaltada === $e->id ? 'bg-amber-100 dark:bg-amber-900/40 ring-2 ring-amber-400' : '' }}" @if ($evaluacionResaltada === $e->id) x-init="$el.scrollIntoView({ block: 'center' })" @endif>
                         {{-- Número --}}
                         <x-td class="text-center">{{ $index + 1 }}</x-td>
 

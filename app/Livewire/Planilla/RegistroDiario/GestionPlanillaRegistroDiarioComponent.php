@@ -3,7 +3,6 @@
 namespace App\Livewire\Planilla\RegistroDiario;
 use App\Livewire\Traits\ConFechaReporteDia;
 use App\Livewire\Traits\ConReporteDiarioExcel;
-use App\Services\Planilla\Modulos\GestionPlanillaReporteDiario;
 use App\Services\Planilla\PlanillaMensualDetalleServicio;
 use Illuminate\Support\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -12,25 +11,13 @@ use Livewire\Component;
 class GestionPlanillaRegistroDiarioComponent extends Component
 {
     use ConFechaReporteDia, LivewireAlert, ConReporteDiarioExcel, \App\Traits\HandlesAlerts;
-    public $listaPlanilla = [];
     public $mes;
     public $anio;
-    public $mostrarListaPlanillaMensual = false;
     public function mount()
     {
         $this->inicializarFecha();
     }
-    public function gestionarListaMensual()
-    {
-        try {
 
-            $this->listaPlanilla = app(GestionPlanillaReporteDiario::class)->obtenerPlanillaMensualXFecha($this->fecha)->toArray();
-            $this->mostrarListaPlanillaMensual = true;
-        } catch (\Throwable $th) {
-            $this->errorAlert($th);
-        }
-    }
-   
     protected function despuesFechaModificada(string $fecha)
     {
         $fecha = Carbon::parse($this->fecha);

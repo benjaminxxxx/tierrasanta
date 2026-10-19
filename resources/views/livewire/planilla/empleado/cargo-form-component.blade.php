@@ -31,7 +31,7 @@
         </x-slot>
 
         <x-slot name="footer">
-            <x-button variant="secondary" wire:click="cerrar" wire:loading.attr="disabled">
+            <x-button variant="secondary" wire:click="$set('mostrarModal', false)" wire:loading.attr="disabled">
                 Cancelar
             </x-button>
             <x-button wire:click="guardar" wire:loading.attr="disabled">

@@ -924,6 +924,8 @@ class CuadrilleroServicio
             }
 
             $labores = Labores::all()->pluck('id', 'codigo')->toArray();
+            // Campos válidos (nombre o alias en minúsculas → nombre oficial), igual que el registro diario de planilla
+            $campos = \App\Services\Campo\CampoServicio::obtenerMapaCamposNormalizados();
 
             $errores = [];
             $maxCol = 0;
@@ -953,10 +955,20 @@ class CuadrilleroServicio
                     }
 
                     if ($inicio || $fin || $campo || $labor) {
-                        if (!$inicio || !$fin || !$labor) {
-                            $errores[] = "Fila " . ($i + 1) . ", tramo $j: falta hora o labor.";
+                        // El campo también es obligatorio (la base no acepta horas sin campo)
+                        $faltan = array_keys(array_filter(['hora de inicio' => !$inicio, 'hora de fin' => !$fin, 'labor' => !$labor, 'campo' => !$campo]));
+                        if ($faltan) {
+                            $nombre = $fila['cuadrillero_nombres'] ?? '';
+                            $errores[] = "Fila {$filaOrden}" . ($nombre ? " ({$nombre})" : '') . ", tramo {$j}: falta " . implode(', ', $faltan) . '.';
                             continue;
                         }
+                        $campoOficial = $campos[mb_strtolower(trim((string) $campo))] ?? null;
+                        if (!$campoOficial) {
+                            $nombre = $fila['cuadrillero_nombres'] ?? '';
+                            $errores[] = "Fila {$filaOrden}" . ($nombre ? " ({$nombre})" : '') . ", tramo {$j}: el campo \"{$campo}\" no existe.";
+                            continue;
+                        }
+                        $campo = $campoOficial;
 
                         $inicio = FormatoHelper::normalizarHora($inicio);
                         $fin = FormatoHelper::normalizarHora($fin);

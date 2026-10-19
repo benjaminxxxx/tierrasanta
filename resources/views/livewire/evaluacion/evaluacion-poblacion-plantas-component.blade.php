@@ -79,7 +79,7 @@
 
                 <x-slot name="tbody">
                     @foreach ($poblacionPlantas as $indice => $p)
-                        <tr class="border-b border-border">
+                        <tr class="border-b border-border {{ $evaluacionResaltada === $p->id ? 'bg-amber-100 dark:bg-amber-900/40 ring-2 ring-amber-400' : '' }}" @if ($evaluacionResaltada === $p->id) x-init="$el.scrollIntoView({ block: 'center' })" @endif>
                             <x-td class="text-center">
                                 {{ $indice + 1 }}
                             </x-td>

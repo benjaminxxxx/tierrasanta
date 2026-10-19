@@ -23,11 +23,13 @@
                 ];
             @endphp
 
+            {{-- x-data sin datos del servidor: si su atributo cambiara al abrir el modal (Livewire lo actualiza), Alpine crearía
+                 otro componente y el buscador quedaría unido al anterior (escribir no filtraba). Código y nombre van en data-*. --}}
             <div x-data="{
                 q: '',
                 copiado: null,
-                todos: @js(collect($grupos)->flatMap(fn($g) => collect($g['labores'])->map(fn($l) => [$l['codigo'], $l['nombre']]))->values()),
-                hayResultados() { return this.todos.some(([c, n]) => this.visible(c, n)); },
+                coincide(el) { return this.visible(el.dataset.codigo, el.dataset.nombre); },
+                hayResultados() { return [...this.$root.querySelectorAll('[data-codigo]')].some(el => this.coincide(el)); },
                 norm(t) { return (t ?? '').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, ''); },
                 visible(codigo, nombre) {
                     const q = this.norm(this.q).trim();
@@ -60,14 +62,12 @@
 
                 @foreach ($grupos as $i => $grupo)
                     @php
-                        $codigosGrupo = collect($grupo['labores'])->map(fn($l) => [$l['codigo'], $l['nombre']])->values();
                         $estilo = $grupo['suspension']
                             ? 'border-l-rose-500 bg-rose-50 dark:bg-rose-900/20'
                             : $paleta[$i % count($paleta)];
                     @endphp
                     <section wire:key="grupo-{{ $grupo['clave'] }}"
-                        x-data="{ items: @js($codigosGrupo) }"
-                        x-show="items.some(([c, n]) => visible(c, n))"
+                        x-show="[...$el.querySelectorAll('[data-codigo]')].some(el => coincide(el))"
                         class="rounded-lg border border-border border-l-4 {{ $estilo }} p-3">
                         <h3 class="font-semibold text-sm text-foreground mb-2 flex items-center gap-2">
                             @if ($grupo['suspension'])
@@ -75,7 +75,7 @@
                             @endif
                             {{ $grupo['nombre'] }}
                             <span class="text-xs font-normal text-muted-foreground">
-                                (<span x-text="items.filter(([c, n]) => visible(c, n)).length"></span>/{{ count($grupo['labores']) }})
+                                (<span x-text="[...$el.closest('section').querySelectorAll('[data-codigo]')].filter(el => coincide(el)).length"></span>/{{ count($grupo['labores']) }})
                             </span>
                         </h3>
                         @if ($grupo['suspension'])
@@ -88,7 +88,8 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1.5">
                             @foreach ($grupo['labores'] as $labor)
                                 <button type="button" wire:key="labor-{{ $labor['codigo'] }}"
-                                    x-show="visible(@js($labor['codigo']), @js($labor['nombre']))"
+                                    data-codigo="{{ $labor['codigo'] }}" data-nombre="{{ $labor['nombre'] }}"
+                                    x-show="coincide($el)"
                                     @click="copiar(@js($labor['codigo']))"
                                     class="flex items-center gap-2 text-left rounded-md bg-background/80 hover:bg-background border border-border px-2 py-1.5 transition">
                                     <span class="shrink-0 min-w-[2.75rem] text-center font-mono font-bold text-sm rounded px-1.5 py-0.5 border border-black/10 text-gray-900"

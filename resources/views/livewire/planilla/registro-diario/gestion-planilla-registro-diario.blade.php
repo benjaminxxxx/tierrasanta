@@ -52,7 +52,6 @@
 
 
 
-    @include('livewire.planilla.registro-diario.partials.orden-planilla-mensual')
 
 
     <x-loading wire:loading />

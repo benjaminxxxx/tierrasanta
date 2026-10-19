@@ -65,6 +65,7 @@
     {{-- Modales de campaña: se montan solo en las páginas que los usan --}}
     <livewire:campania.campania-ficha-component />
     <livewire:campania.campania-cerrar-component />
+    <livewire:campania.campania-historia-component />
 </div>
 @script
 <script>

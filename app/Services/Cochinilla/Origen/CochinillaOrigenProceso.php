@@ -44,6 +44,12 @@ class CochinillaOrigenProceso
             return;
         }
         $ingreso->forceFill($this->resolver($ingreso))->saveQuietly();
+        // Reparto entre campos de origen sugerido por % de mamá (hasta que alguien lo confirme)
+        try {
+            app(\App\Services\Cochinilla\Recuperacion\CochinillaRecuperacionProceso::class)->sincronizarAutomatico($ingreso);
+        } catch (\App\Exceptions\ErrorControlado) {
+            // Sin infestación encontrada o sin kg: queda solo el origen principal; se reparte al registrar
+        }
     }
 
     /** @return int ingresos recalculados */

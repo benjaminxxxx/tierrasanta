@@ -28,6 +28,9 @@ class CochinillaIngresoDetalleComponent extends Component
     // Contexto cargado / en edición
     public $cochinillaIngreso; // instancia de CochinillaIngreso o null si es nuevo
     public $esNuevo = false;
+    /** Se abrió un ingreso ya registrado: cualquier cambio pide motivo y queda en auditoría */
+    public bool $editandoExistente = false;
+    public string $motivoEdicion = '';
 
     // Paso 2 (datos del lote)
     public $campoSeleccionado;
@@ -35,8 +38,6 @@ class CochinillaIngresoDetalleComponent extends Component
     public $campania; // instancia de CampoCampania
     public $fecha;
     public $observacionSeleccionada;
-    /** Cochinilla de infestadores: campo de origen (dueño de la venta) que confirma quien registra */
-    public $origenElegido;
 
     // Paso 3 (handsontable)
     public $idTable;
@@ -48,6 +49,7 @@ class CochinillaIngresoDetalleComponent extends Component
         'agregarIngreso',
         'editarIngreso',
         'storeTableDataCochinillaIngreso',
+        'repartoGuardado' => '$refresh',
     ];
 
     public function mount()
@@ -82,10 +84,11 @@ class CochinillaIngresoDetalleComponent extends Component
         $this->resetErrorBag();
         $this->reset([
             'step',
-            'origenElegido',
             'loteBuscado',
             'cochinillaIngreso',
             'esNuevo',
+            'editandoExistente',
+            'motivoEdicion',
             'campoSeleccionado',
             'area',
             'campania',
@@ -118,9 +121,9 @@ class CochinillaIngresoDetalleComponent extends Component
 
     protected function cargarIngresoExistente(CochinillaIngreso $ingreso)
     {
-        $this->origenElegido = null;
         $this->cochinillaIngreso = $ingreso;
         $this->esNuevo = false;
+        $this->editandoExistente = true;
 
         $this->campoSeleccionado = $ingreso->campo;
         $this->area = $ingreso->area;
@@ -179,6 +182,10 @@ class CochinillaIngresoDetalleComponent extends Component
         if (!$this->campania) {
             return $this->errorAlert('No hay campañas disponibles para este campo y fecha.');
         }
+        if (!$this->motivoValido()) {
+            return;
+        }
+        $antes = $this->cochinillaIngreso?->only(self::CAMPOS_AUDITADOS);
 
         try {
             $this->cochinillaIngreso = CochinillaIngreso::updateOrCreate(
@@ -198,6 +205,7 @@ class CochinillaIngresoDetalleComponent extends Component
             throw $e;
         }
 
+        $this->auditar($antes, $this->cochinillaIngreso->only(self::CAMPOS_AUDITADOS), 'Datos del lote');
         $this->esNuevo = false;
         $this->dispatch('cargarData', $this->cochinillaIngreso->detalles->toArray());
         $this->step = 3;
@@ -217,6 +225,10 @@ class CochinillaIngresoDetalleComponent extends Component
         if (!$this->cochinillaIngreso) {
             return;
         }
+        if (!$this->motivoValido()) {
+            return;
+        }
+        $sublotesAntes = $this->sublotesParaAuditoria();
 
         DB::beginTransaction();
 
@@ -271,6 +283,7 @@ class CochinillaIngresoDetalleComponent extends Component
 
             $this->cochinillaIngreso->update($actualizacion);
             $this->cochinillaIngreso->refresh();
+            $this->auditar(['sublotes' => $sublotesAntes], ['sublotes' => $this->sublotesParaAuditoria()], 'Sublotes');
 
             $this->alert('success', 'Registro exitoso');
             $this->dispatch('detalleIngresoAgregado');
@@ -281,35 +294,63 @@ class CochinillaIngresoDetalleComponent extends Component
         }
     }
 
-    /**
-     * Quien registra confirma (o cambia) de qué campo es la cochinilla de los infestadores: el sistema sugiere por el
-     * orden de recojo, pero en campo se sabe de qué tanda son las cajitas. Queda elegido a mano.
-     */
-    public function confirmarOrigen(): void
+    /* ==========================
+     *  TRAZABILIDAD (quién y por qué)
+     * ========================== */
+
+    /** Campos del lote que se comparan en la auditoría al editar. */
+    private const CAMPOS_AUDITADOS = ['lote', 'campo', 'area', 'campo_campania_id', 'observacion', 'fecha'];
+
+    /** Al editar un ingreso ya registrado el motivo es obligatorio. */
+    private function motivoValido(): bool
     {
-        if (!$this->cochinillaIngreso || !$this->origenElegido) {
+        if (!$this->editandoExistente || mb_strlen(trim($this->motivoEdicion)) >= 5) {
+            return true;
+        }
+        $this->addError('motivoEdicion', 'Indica por qué editas este ingreso (mínimo 5 letras).');
+        $this->errorAlert('Este ingreso ya estaba registrado: escribe el motivo de la edición antes de guardar.');
+        return false;
+    }
+
+    private function sublotesParaAuditoria(): array
+    {
+        return $this->cochinillaIngreso->detalles()->orderBy('sublote_codigo')->get(['sublote_codigo', 'fecha', 'total_kilos', 'observacion'])
+            ->map(fn($d) => "{$d->sublote_codigo} · " . \Illuminate\Support\Carbon::parse($d->fecha)->format('d/m/Y') . " · {$d->total_kilos} kg · {$d->observacion}")
+            ->all();
+    }
+
+    /** Registra en auditoría: alta del ingreso, o la edición con su motivo. */
+    private function auditar(?array $antes, array $despues, string $que): void
+    {
+        $lote = $this->cochinillaIngreso->lote;
+        if (!$this->editandoExistente) {
+            if ($antes === null) {
+                \App\Services\Reporte\AuditoriaServicio::registrar(CochinillaIngreso::class, $this->cochinillaIngreso->id, 'crear', null, $despues, "Registro del lote {$lote}");
+            }
             return;
         }
-        $proceso = app(\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::class);
-        $opciones = $proceso->opciones($this->cochinillaIngreso)['opciones'];
-        if ($opciones && !array_key_exists($this->origenElegido, $opciones)) {
-            $this->errorAlert('Elige uno de los campos que infestaron este campo.');
-            return;
+        \App\Services\Reporte\AuditoriaServicio::registrar(CochinillaIngreso::class, $this->cochinillaIngreso->id, 'editar', $antes, $despues,
+            mb_substr("{$que} del lote {$lote}. Motivo: " . trim($this->motivoEdicion), 0, 255));
+    }
+
+    /** Abre el reparto por campo de origen (componente compartido con "Cochinilla por recuperar"). */
+    public function repartirOrigen(): void
+    {
+        if ($this->cochinillaIngreso) {
+            // Se cierra este modal: dos modales con foco bloqueado (x-trap) a la vez no dejan escribir en el segundo
+            $this->mostrarFormulario = false;
+            $this->dispatch('repartirIngreso', ingresoId: $this->cochinillaIngreso->id);
         }
-        $proceso->confirmar($this->cochinillaIngreso, $this->origenElegido);
-        $this->cochinillaIngreso->refresh();
-        $this->alert('success', "Origen confirmado: la venta de este lote va a la campaña de {$this->origenElegido}.");
-        $this->dispatch('detalleIngresoAgregado');
     }
 
     public function render()
     {
-        $origen = null;
+        $reparto = null;
         if ($this->step === 3 && $this->cochinillaIngreso
             && \App\Services\Cochinilla\Origen\CochinillaOrigenProceso::esDeInfestador($this->cochinillaIngreso->observacion)) {
-            $origen = app(\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::class)->opciones($this->cochinillaIngreso);
-            $this->origenElegido ??= $this->cochinillaIngreso->campo_origen ?: $origen['sugerido'];
+            $this->cochinillaIngreso->load('origenes', 'creadoPor:id,name', 'editadoPor:id,name');
+            $reparto = app(\App\Services\Cochinilla\Recuperacion\CochinillaRecuperacionProceso::class)->opciones($this->cochinillaIngreso);
         }
-        return view('livewire.cochinilla.cochinilla-ingreso-detalle-component', ['origen' => $origen]);
+        return view('livewire.cochinilla.cochinilla-ingreso-detalle-component', ['reparto' => $reparto]);
     }
 }

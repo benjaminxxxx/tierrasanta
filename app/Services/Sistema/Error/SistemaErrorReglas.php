@@ -25,6 +25,21 @@ class SistemaErrorReglas
             || $e instanceof AuthorizationException;
     }
 
+    /**
+     * Texto de un error controlado. Una validación con varios errores muestra todos (getMessage() solo da el
+     * primero + "(and N more errors)" en inglés).
+     */
+    public static function mensajeControlado(Throwable $e): string
+    {
+        if ($e instanceof ValidationException) {
+            $mensajes = collect($e->errors())->flatten()->filter()->unique()->values();
+            if ($mensajes->isNotEmpty()) {
+                return $mensajes->implode("\n");
+            }
+        }
+        return $e->getMessage();
+    }
+
     /** Mismo error (clase + lugar), para contar cuántas veces pasó. */
     public static function huella(Throwable $e): string
     {

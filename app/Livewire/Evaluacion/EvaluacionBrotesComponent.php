@@ -23,9 +23,18 @@ class EvaluacionBrotesComponent extends Component
     public $campaniasParaFiltro = [];
     protected $listeners = ['brotesPorPisoRegistrado' => '$refresh','confirmareliminarBrotesXPiso'];
 
+    public ?int $evaluacionResaltada = null;
+
     public function mount($campaniaId = null)
     {
-       $this->campaniaFiltrada = $campaniaId;
+        // Enlace desde el informe de campaña: ?campania=ID (o el id de la ruta) y ?evaluacion=ID para resaltarla
+        $campaniaId = $campaniaId ?: request()->query('campania');
+        $this->evaluacionResaltada = (int) request()->query('evaluacion') ?: null;
+        if ($campaniaId && ($campania = \App\Models\CampoCampania::find($campaniaId))) {
+            $this->campoFiltrado = $campania->campo;
+            $this->campaniasParaFiltro = app(CampaniaServicio::class)->buscarCampaniasPorCampo($campania->campo);
+        }
+        $this->campaniaFiltrada = $campaniaId;
     }
     public function updatedCampoFiltrado()
     {

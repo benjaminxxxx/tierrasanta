@@ -86,7 +86,7 @@ class GestionCuadrillaReporteDiarioComponent extends Component
         } catch (ValidationException $ex) {
             $this->errorAlert(implode("\n", $ex->validator->errors()->all()));
         } catch (\Throwable $e) {
-            $this->manejarError($e,$e->getMessage());
+            $this->errorAlert($e);
         }
     }*/
     public function storeTableDataGuardarActividadDiaria($datos)
@@ -145,7 +145,7 @@ class GestionCuadrillaReporteDiarioComponent extends Component
         } catch (ValidationException $ex) {
             $this->errorAlert(implode("\n", $ex->validator->errors()->all()));
         } catch (\Throwable $e) {
-            $this->manejarError($e, $e->getMessage());
+            $this->errorAlert($e);
         }
     }
 
@@ -162,7 +162,7 @@ class GestionCuadrillaReporteDiarioComponent extends Component
             $this->refrescarTabla($this->fecha);
             $this->alert('success', 'Registro actualizado correctamente');
         } catch (\Throwable $e) {
-            $this->manejarError($e, $e->getMessage());
+            $this->errorAlert($e);
         }
     }
     public function refrescarTabla($fecha)

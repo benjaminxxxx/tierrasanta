@@ -64,12 +64,23 @@ class CochinillaIngresoComponent extends Component
     {
         $this->resetPage();
     }
+    /** Eliminar pide motivo: queda en auditoría con todo el lote (sublotes, venteado, filtrado, reparto por origen). */
+    public bool $mostrarEliminar = false;
+    public ?int $eliminarId = null;
+    public string $motivoEliminacion = '';
+
     public function eliminarIngresoConfirmado($data)
     {
-        $ingreso = CochinillaIngreso::find($data['laborId']);
+        if (mb_strlen(trim($this->motivoEliminacion)) < 5) {
+            $this->addError('motivoEliminacion', 'Indica por qué se elimina (mínimo 5 letras).');
+            return;
+        }
+        $ingreso = CochinillaIngreso::with('creadoPor:id,name')->find($data['laborId']);
         if ($ingreso) {
             $data = $ingreso->toArray();
             $data['eliminado_por'] = auth()->user()->name;
+            $data['registrado_por'] = $ingreso->creadoPor?->name;
+            $data['reparto_origen'] = $ingreso->origenes()->pluck('kg', 'campo_origen')->all();
             $data['detalles'] = $ingreso->detalles->toArray();
             $data['venteados'] = $ingreso->venteados->toArray();
             $data['filtrados'] = $ingreso->filtrados->toArray();
@@ -79,6 +90,7 @@ class CochinillaIngresoComponent extends Component
                 modeloId: $ingreso->id,
                 accion: 'eliminar',
                 antes: $data,
+                observacion: mb_substr("Lote {$ingreso->lote} eliminado. Motivo: " . trim($this->motivoEliminacion), 0, 255),
                 camposIgnorados: [
                     'created_at',
                     'updated_at',
@@ -121,19 +133,18 @@ class CochinillaIngresoComponent extends Component
             $ingreso->venteados()->delete();
             $ingreso->filtrados()->delete();
             $ingreso->delete();
-            $this->alert('success', 'Ingreso eliminado correctamente.');
+            $this->reset(['mostrarEliminar', 'eliminarId', 'motivoEliminacion']);
+            $this->alert('success', 'Ingreso eliminado. Quedó en la auditoría con su motivo.');
         } else {
             $this->errorAlert('Ingreso no encontrado.');
         }
     }
     public function eliminarIngreso($ingresoId)
     {
-        $this->confirm('¿Está seguro de eliminar este ingreso?', [
-            'onConfirmed' => 'eliminarIngresoConfirmado',
-            'data' => [
-                'laborId' => $ingresoId,
-            ],
-        ]);
+        $this->resetErrorBag();
+        $this->eliminarId = (int) $ingresoId;
+        $this->motivoEliminacion = '';
+        $this->mostrarEliminar = true;
 
 
     }

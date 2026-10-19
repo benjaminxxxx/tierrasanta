@@ -26,9 +26,12 @@ class CampaniaInformeMensualConsulta
     {
     }
 
-    public function construir(CampoCampania $campania, int $anio, int $mes): array
+    public function construir(CampoCampania $campania, int $anio, int $mes, ?string $corteMaximo = null): array
     {
         $corte = CampaniaInformeMensualReglas::fechaCorte($campania, $anio, $mes)->toDateString();
+        if ($corteMaximo && $corteMaximo < $corte) {
+            $corte = $corteMaximo; // informe al día (mes en curso)
+        }
         $inicio = Carbon::parse($campania->fecha_inicio)->toDateString();
         $area = (float) $campania->area;
 
@@ -36,18 +39,21 @@ class CampaniaInformeMensualConsulta
         $reinfestacion = $this->fechaEvento($campania, 'reinfestacion', $campania->reinfestacion_fecha, $corte);
         $rangos = CampaniaInformeMensualReglas::rangosEtapas($inicio, $infestacion, $reinfestacion, $corte);
         [$tc, $tcFuente, $tcFecha] = $this->tipoCambio($campania, $corte);
+        // Cochinilla y ventas de una campaña cerrada siguen llegando después del cierre (infestadores con su mamá,
+        // ventas hasta 100 días después): en el informe de cierre se cuentan hasta hoy, no hasta la fecha de fin.
+        $corteProduccion = CampaniaInformeMensualReglas::esCierre($campania, $anio, $mes) ? max($corte, now()->toDateString()) : $corte;
 
         $datos = [
             'ficha' => $this->ficha($campania, $anio, $mes, $inicio, $corte, $area, $tc, $tcFuente) + ['tipo_cambio_fecha' => $tcFecha],
             'etapas' => $this->etapas($rangos, $infestacion, $reinfestacion, CampaniaInformeMensualReglas::esCierre($campania, $anio, $mes)),
             'evaluaciones' => $this->evaluaciones($campania, $corte),
             'infestaciones' => $this->infestaciones($campania, $corte, $area),
-            'cosecha' => $this->cosecha($campania, $corte, $area),
+            'cosecha' => $this->cosecha($campania, $corteProduccion, $area),
             'fertilizacion' => $this->fertilizacion($campania, $inicio, $corte, $area, $rangos),
             'sanidad' => $this->sanidad($campania, $inicio, $corte, $area),
             'riego' => $this->riego($campania, $rangos),
             'costos' => $this->costos($campania, $inicio, $corte, $rangos),
-            'ventas' => $this->ventas($campania, $corte),
+            'ventas' => $this->ventas($campania, $corteProduccion),
         ];
         // US$ mes a mes (cada mes con su tipo de cambio, como el Excel histórico). El tipo de cambio del informe es el
         // promedio ponderado resultante: así las partidas en US$ suman lo mismo que la suma de los meses.
@@ -61,8 +67,38 @@ class CampaniaInformeMensualConsulta
             $datos['ficha']['tipo_cambio_fuente'] = 'mensual';
         }
         $datos['rentabilidad'] = $this->rentabilidad($datos, $area, $tc);
+        $datos['avance'] = CampaniaInformeMensualReglas::avanceVegetativo($inicio, $infestacion, $corte);
+        $datos['indices'] = $this->indices($campania, $datos, $rangos, $area);
         $datos['advertencias'] = $this->advertencias($campania, $datos, $anio, $mes, $inicio, $corte);
         return $datos;
+    }
+
+    /**
+     * Informe "al día" sin guardar: campaña abierta → hasta hoy (mes actual); cerrada → informe final al cierre.
+     * Devuelve un modelo sin persistir, para mostrarlo o bajarlo en Excel igual que uno guardado.
+     */
+    public function enVivo(CampoCampania $campania): CampaniaInformeMensual
+    {
+        $referencia = $campania->fecha_fin ? Carbon::parse($campania->fecha_fin) : now();
+        [$anio, $mes] = [$referencia->year, $referencia->month];
+        // Campaña abierta: corte hoy (no fin de mes)
+        $datos = $this->construir($campania, $anio, $mes, $campania->fecha_fin ? null : now()->toDateString());
+        $advertencias = $datos['advertencias'];
+        unset($datos['advertencias']);
+        $advertencias = array_values(array_filter($advertencias, fn($a) => $a['tipo'] !== 'secuencia'));
+
+        return (new CampaniaInformeMensual())->forceFill([
+            'campo_campania_id' => $campania->id,
+            'anio' => $anio,
+            'mes' => $mes,
+            'fecha_desde' => $datos['ficha']['fecha_inicio'],
+            'fecha_corte' => $datos['ficha']['fecha_corte'],
+            'es_cierre' => (bool) $datos['ficha']['es_cierre'],
+            'version' => 0,
+            'datos' => $datos,
+            'advertencias' => $advertencias,
+            'total_soles' => $datos['costos']['total_soles'],
+        ]);
     }
 
     // ------------------------------------------------------------------------------------------------ bloques
@@ -111,22 +147,41 @@ class CampaniaInformeMensualConsulta
 
     private function evaluaciones(CampoCampania $c, string $corte): array
     {
+        // Cada evaluación lleva su id, de qué pantalla viene (modelo) y el detalle por cama: así el informe enlaza a la
+        // pantalla de la evaluación y el Excel a su hoja "Evaluaciones", y se puede comprobar de dónde sale el valor.
         $poblacion = EvalPoblacionPlanta::with('detalles')->where('campania_id', $c->id)->get()
-            ->flatMap(fn($e) => array_filter([
-                $e->fecha_eval_cero && $e->fecha_eval_cero <= $corte ? [
-                    'tipo' => 'Población día cero', 'fecha' => Carbon::parse($e->fecha_eval_cero)->toDateString(),
-                    'valor' => $e->promedio_plantas_ha_cero, 'unidad' => 'plantas/ha',
-                ] : null,
-                $e->fecha_eval_resiembra && $e->fecha_eval_resiembra <= $corte ? [
-                    'tipo' => 'Población después de resiembra', 'fecha' => Carbon::parse($e->fecha_eval_resiembra)->toDateString(),
-                    'valor' => $e->promedio_plantas_ha_resiembra, 'unidad' => 'plantas/ha',
-                ] : null,
-            ]));
+            ->flatMap(function ($e) use ($corte, $c) {
+                $etapa = fn(string $tipo, string $clave, $fecha, $valor, string $campoHilera, string $campoMetro) => [
+                    'id' => $e->id, 'campania_id' => $c->id, 'modelo' => 'poblacion', 'clave' => "poblacion-{$e->id}-{$clave}",
+                    'tipo' => $tipo, 'fecha' => Carbon::parse($fecha)->toDateString(),
+                    'valor' => $valor !== null ? round((float) $valor, 2) : null, 'unidad' => 'plantas/ha',
+                    'evaluador' => $e->evaluador, 'metros_cama_ha' => (float) $e->metros_cama_ha,
+                    'camas' => $e->detalles->sortBy('numero_cama')->map(fn($d) => [
+                        'cama' => $d->numero_cama, 'longitud' => (float) $d->longitud_cama,
+                        'conteo' => $d->{$campoHilera} !== null ? (float) $d->{$campoHilera} : null,
+                        'por_metro' => $d->{$campoMetro} !== null ? round((float) $d->{$campoMetro}, 4) : null,
+                    ])->values()->all(),
+                ];
+                return array_filter([
+                    $e->fecha_eval_cero && $e->fecha_eval_cero <= $corte
+                        ? $etapa('Población día cero', 'cero', $e->fecha_eval_cero, $e->promedio_plantas_ha_cero, 'eval_cero_plantas_x_hilera', 'plantas_por_metro_cero') : null,
+                    $e->fecha_eval_resiembra && $e->fecha_eval_resiembra <= $corte
+                        ? $etapa('Población después de resiembra', 'resiembra', $e->fecha_eval_resiembra, $e->promedio_plantas_ha_resiembra, 'eval_resiembra_plantas_x_hilera', 'plantas_por_metro_resiembra') : null,
+                ]);
+            });
         $brotes = EvalBrotesPorPiso::with('detalles')->where('campania_id', $c->id)->where('fecha', '<=', $corte)->orderBy('fecha')->get()
             ->map(fn($e) => [
+                'id' => $e->id, 'campania_id' => $c->id, 'modelo' => 'brotes', 'clave' => "brotes-{$e->id}",
                 'tipo' => 'Brotes aptos 2° y 3° piso', 'fecha' => Carbon::parse($e->fecha)->toDateString(),
                 'valor' => $e->promedio_actual_total_brotes_2y3piso, 'unidad' => 'brotes/ha',
                 'valor_n_dias' => $e->promedio_total_brotes_2y3piso_n_dias,
+                'evaluador' => $e->evaluador, 'metros_cama_ha' => (float) $e->metros_cama_ha,
+                'camas' => $e->detalles->sortBy('numero_cama')->map(fn($d) => [
+                    'cama' => $d->numero_cama, 'longitud' => (float) $d->longitud_cama,
+                    'b2_actual' => (float) $d->brotes_aptos_2p_actual, 'b2_despues' => (float) $d->brotes_aptos_2p_despues_n_dias,
+                    'b3_actual' => (float) $d->brotes_aptos_3p_actual, 'b3_despues' => (float) $d->brotes_aptos_3p_despues_n_dias,
+                    'total_ha' => round((float) $d->total_actual_por_mt, 2), 'total_despues_ha' => round((float) $d->total_despues_por_mt, 2),
+                ])->values()->all(),
             ]);
         return $poblacion->concat($brotes)->sortBy('fecha')->values()->all();
     }
@@ -168,19 +223,37 @@ class CampaniaInformeMensualConsulta
         ];
     }
 
-    /** Ingresos de cochinilla de la campaña (por sublote si lo tiene), agrupados por tipo. */
+    /**
+     * Cochinilla PRODUCIDA por la campaña (por sublote si lo tiene), agrupada por tipo.
+     *
+     * Se cuenta por dueño (campania_origen_id), no por el campo donde se recogió: la cosecha de mamá infesta otros
+     * campos y vuelve como ingreso de infestadores en ese otro campo semanas después, y esos kilos son de la campaña
+     * cosechada (regla del ingeniero, 19/10/2026). Ingresos sin dueño registrado: los del propio campo.
+     * Un retorno de infestadores con mamá de varios campos se reparte (cochinilla_ingreso_origenes): a esta campaña
+     * le toca solo su parte, aplicada en proporción a cada sublote.
+     */
     private function cosecha(CampoCampania $c, string $corte, float $area): array
     {
         $tipos = DB::table('cochinilla_observaciones')->get()->keyBy('codigo');
-        $ingresos = DB::table('cochinilla_ingresos')->where('campo_campania_id', $c->id)->where('fecha', '<=', $corte)->orderBy('fecha')->get();
+        // Parte de cada ingreso repartido que es de esta campaña
+        $partePropia = DB::table('cochinilla_ingreso_origenes')->where('campania_origen_id', $c->id)
+            ->selectRaw('cochinilla_ingreso_id, SUM(kg) AS kg')->groupBy('cochinilla_ingreso_id')->pluck('kg', 'cochinilla_ingreso_id');
+        $repartidos = DB::table('cochinilla_ingreso_origenes')->distinct()->pluck('cochinilla_ingreso_id')->flip();
+        $ingresos = DB::table('cochinilla_ingresos')
+            ->where(fn($q) => $q->whereIn('id', $partePropia->keys())
+                ->orWhere(fn($w) => $w->whereNotIn('id', $repartidos->keys())->where(fn($x) => $x->where('campania_origen_id', $c->id)
+                    ->orWhere(fn($y) => $y->whereNull('campania_origen_id')->where('campo_campania_id', $c->id)))))
+            ->where('fecha', '<=', $corte)->orderBy('fecha')->get();
         $detalles = DB::table('cochinilla_ingreso_detalles')->whereIn('cochinilla_ingreso_id', $ingresos->pluck('id'))->get()->groupBy('cochinilla_ingreso_id');
 
         $lineas = [];
         foreach ($ingresos as $i) {
+            $factor = isset($partePropia[$i->id]) && (float) $i->total_kilos > 0 ? (float) $partePropia[$i->id] / (float) $i->total_kilos : 1.0;
             $partes = $detalles->get($i->id) ?? collect([(object) ['observacion' => $i->observacion, 'total_kilos' => $i->total_kilos, 'fecha' => $i->fecha]]);
             foreach ($partes as $p) {
-                $lineas[] = ['fecha' => $p->fecha ?? $i->fecha, 'lote' => $i->lote, 'codigo' => $p->observacion,
-                    'tipo' => $tipos[$p->observacion]->descripcion ?? ($p->observacion ?: 'Sin tipo'), 'kg' => (float) $p->total_kilos];
+                $lineas[] = ['fecha' => $p->fecha ?? $i->fecha, 'lote' => $i->lote, 'codigo' => $p->observacion, 'recogido_en' => $i->campo,
+                    'tipo' => $tipos[$p->observacion]->descripcion ?? ($p->observacion ?: 'Sin tipo'), 'kg' => round((float) $p->total_kilos * $factor, 2),
+                    'parte' => $factor < 0.9999 ? round($factor * 100, 1) : null];
             }
         }
         $resumen = collect($lineas)->groupBy('codigo')->map(fn($g, $tipo) => [
@@ -188,6 +261,7 @@ class CampaniaInformeMensualConsulta
             'es_mama' => (bool) ($tipos[$tipo]->es_cosecha_mama ?? false),
             'es_vendible' => (bool) ($tipos[$tipo]->es_vendible ?? false),
             'ingresos' => $g->count(),
+            'recogido_en' => $g->pluck('recogido_en')->unique()->sort()->implode(', '),
             'desde' => $g->min('fecha'),
             'hasta' => $g->max('fecha'),
             'kg' => round($g->sum('kg'), 2),
@@ -237,8 +311,14 @@ class CampaniaInformeMensualConsulta
                 $pct = (float) ($porcentajes[$productoId][$codigo] ?? 0);
                 $fila['nutrientes_kg_ha'][$codigo] = $pct > 0 ? $ha($kg * $pct / 100) : null;
             }
+            $pctN = (float) ($porcentajes[$productoId]['n'] ?? 0);
+            foreach ($porEtapa as $e => $kgEtapa) {
+                $nitrogenoEtapa[$e] = ($nitrogenoEtapa[$e] ?? 0) + $kgEtapa * $pctN / 100;
+            }
             $productos[] = $fila;
         }
+        $nitrogenoEtapa = array_map(fn($v) => (float) $ha($v), ($nitrogenoEtapa ?? []) + [1 => 0.0, 2 => 0.0, 3 => 0.0]);
+        ksort($nitrogenoEtapa);
         usort($productos, fn($a, $b) => $b['kg'] <=> $a['kg']);
 
         $totales = [];
@@ -251,6 +331,7 @@ class CampaniaInformeMensualConsulta
         return [
             'productos' => $productos,
             'nutrientes_total_kg_ha' => $totales,
+            'nitrogeno_etapa_kg_ha' => $nitrogenoEtapa,
             'productos_sin_nutrientes' => $sinNutrientes,
             'detalle' => $salidas->map(fn($s) => ['fecha' => $s->fecha, 'producto' => $s->producto, 'kg' => (float) $s->cantidad])->all(),
         ];
@@ -409,6 +490,67 @@ class CampaniaInformeMensualConsulta
         return [
             'total' => $fila($costoUsd, $kgProduccion, $ingresoUsd),
             'por_ha' => $area > 0 ? $fila($costoUsd !== null ? $costoUsd / $area : null, $kgProduccion / $area, $ingresoUsd / $area) : null,
+        ];
+    }
+
+    /**
+     * Índices productivos (bloque "Índices productivos de evaluación" del Excel), por etapa:
+     * - pencas: brotes aptos 2° + 3° piso por ha de la última evaluación de brotes dentro de la etapa;
+     * - nitrógeno: kg/ha de N aportado en la etapa (según el % de N de cada fertilizante);
+     * - agua: m³/ha de riego; hormonas: giberelina y Dropp (productos de sanidad cuyo nombre los contiene);
+     * - cochinilla: kg/ha vendibles cosechados, kg de N por kg y gramos por infestador.
+     */
+    private function indices(CampoCampania $c, array $datos, array $rangos, float $area): array
+    {
+        $porEtapa = fn(callable $fn) => array_combine([1, 2, 3], array_map(fn($e) => $rangos[$e] ? $fn($rangos[$e], $e) : null, [1, 2, 3]));
+
+        $brotes = EvalBrotesPorPiso::with('detalles')->where('campania_id', $c->id)->orderBy('fecha')->get();
+        $pencas = $porEtapa(function ($r) use ($brotes) {
+            $ultima = $brotes->filter(fn($b) => ($f = Carbon::parse($b->fecha)->toDateString()) >= $r['desde'] && $f <= $r['hasta'])->last();
+            return $ultima ? round((float) $ultima->promedio_actual_total_brotes_2y3piso, 2) : null;
+        });
+        $nitrogeno = $datos['fertilizacion']['nitrogeno_etapa_kg_ha'];
+        $gramosNPenca = [];
+        foreach ([1, 2, 3] as $e) {
+            $gramosNPenca[$e] = ($pencas[$e] ?? 0) > 0 ? round($nitrogeno[$e] * 1000 / $pencas[$e], 4) : null;
+        }
+        $agua = [];
+        foreach ($datos['riego']['filas'] as $f) {
+            $agua[$f['etapa']] = $f['m3_ha'];
+        }
+
+        $hormona = function (string $patron) use ($datos, $rangos, $area) {
+            $porEt = [1 => 0.0, 2 => 0.0, 3 => 0.0];
+            foreach ($datos['sanidad']['detalle'] as $s) {
+                if (preg_match($patron, mb_strtoupper($s['producto'])) && ($e = CampaniaInformeMensualReglas::etapaDeFecha($rangos, $s['fecha']))) {
+                    $porEt[$e] += (float) $s['cantidad'];
+                }
+            }
+            return array_map(fn($v) => $area > 0 ? round($v / $area, 3) : null, $porEt);
+        };
+
+        $kgVendible = array_sum(array_map(fn($r) => $r['es_vendible'] ? (float) $r['kg_ha'] : 0, $datos['cosecha']['resumen']));
+        $kgVendibleLote = array_sum(array_map(fn($r) => $r['es_vendible'] ? (float) $r['kg'] : 0, $datos['cosecha']['resumen']));
+        $nTotal = array_sum($nitrogeno);
+        $infestadores = [];
+        foreach ($datos['infestaciones']['resumen'] as $i) {
+            $infestadores[] = [
+                'nombre' => "{$i['tipo']} – {$i['metodo']}",
+                'gramos_madre' => $i['gramos_por_infestador'],
+                'gramos_produccion' => $i['infestadores'] > 0 && $i['tipo'] === 'Infestación' ? round($kgVendibleLote * 1000 / $i['infestadores'], 2) : null,
+            ];
+        }
+
+        return [
+            'pencas_ha' => $pencas,
+            'nitrogeno_kg_ha' => $nitrogeno,
+            'gramos_n_por_penca' => $gramosNPenca,
+            'agua_m3_ha' => $agua + [1 => 0, 2 => 0, 3 => 0],
+            'giberelina_ha' => $hormona('/GIBER/'),
+            'dropp_ha' => $hormona('/DROPP/'),
+            'cochinilla_kg_ha' => round($kgVendible, 2),
+            'kg_n_por_kg_cochinilla' => $kgVendible > 0 ? round($nTotal / $kgVendible, 3) : null,
+            'infestadores' => $infestadores,
         ];
     }
 

@@ -192,8 +192,6 @@ Route::middleware([
             ->name('resumen')->middleware('can:' . Permisos::CAMPAÑA_RESUMEN);
         Route::get('/por-campo/{campania?}', CampaniaCampoSelectorComponent::class)
             ->name('por_campo')->middleware('can:' . Permisos::CAMPAÑA_POR_CAMPO);
-        Route::view('/calendario', 'livewire.campania.campania-calendario-indice')
-            ->name('calendario')->middleware('can:' . Permisos::CAMPAÑA_CALENDARIO);
         Route::get('/informes-mensuales', \App\Livewire\Campania\CampaniaInformesMensualesComponent::class)
             ->name('informes_mensuales')->middleware('can:' . Permisos::CAMPAÑA_INFORME_MENSUAL);
     });
@@ -235,6 +233,8 @@ Route::middleware([
             ->name('cosecha_mamas')->middleware('can:' . Permisos::COCHINILLA_COSECHA);
         Route::view('/infestacion', 'livewire.cochinilla.cochinilla-infestacion-indice')
             ->name('infestacion')->middleware('can:' . Permisos::COCHINILLA_INFESTACION);
+        Route::get('/por-recuperar', \App\Livewire\Cochinilla\CochinillaRecuperacionComponent::class)
+            ->name('recuperacion')->middleware('can:' . Permisos::COCHINILLA_RECUPERACION);
         Route::get('/ventas', CochinillaVentasComponent::class)
             ->name('ventas')->middleware('can:' . Permisos::COCHINILLA_VENTA);
     });

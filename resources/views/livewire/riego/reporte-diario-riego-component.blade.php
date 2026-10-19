@@ -43,9 +43,6 @@
                                     </div>
 
                                     <!-- Team Settings -->
-                                    <x-dropdown-link wire:click="verResumenSemanalRiego">
-                                        Ver Resumen Semanal
-                                    </x-dropdown-link>
                                     @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
                                         <x-dropdown-link @click="$wire.dispatch('abrirAgregarRegador')">
                                             Agregar Regador

@@ -20,6 +20,8 @@ class CampaniaInformeMensualFormatoReglas
 {
     public const HOJA_RESUMEN = 'resumen';
     public const HOJA_DETALLE = 'detalle';
+    public const HOJA_EVALUACIONES = 'evaluaciones';
+    public const HOJAS = [self::HOJA_RESUMEN => 'Resumen', self::HOJA_DETALLE => 'Detalle', self::HOJA_EVALUACIONES => 'Evaluaciones'];
 
     /** @return array<int, array> */
     public static function tablas(array $d): array
@@ -33,6 +35,7 @@ class CampaniaInformeMensualFormatoReglas
             self::ficha($d['ficha']),
             self::advertencias($d['advertencias'] ?? []),
             self::etapas($d['etapas']),
+            isset($d['avance']) ? self::avance($d['avance']) : null,
             self::evaluaciones($d['evaluaciones']),
             self::infestaciones($d['infestaciones']['resumen']),
             self::cosecha($d['cosecha']['resumen']),
@@ -45,17 +48,20 @@ class CampaniaInformeMensualFormatoReglas
             self::costos($d['costos'], $usdHa, $porHa),
             self::ventasResumen($d['ventas']),
             self::rentabilidad($d['rentabilidad']),
+            isset($d['indices']) ? self::indices($d['indices']) : null,
             // Hoja de detalle: las listas largas
             self::detalle('det_infestaciones', 'Infestaciones registradas', ['Fecha' => 'fecha', 'Tipo' => 'texto', 'Método' => 'texto', 'Kg madres' => 'numero', 'Infestadores' => 'entero', 'Campo origen' => 'texto'],
                 array_map(fn($r) => [$r['fecha'], ucfirst($r['tipo']), ucfirst((string) $r['metodo']), $r['kg_madres'], $r['infestadores'], $r['origen']], $d['infestaciones']['detalle'])),
-            self::detalle('det_cosecha', 'Ingresos de cochinilla', ['Fecha' => 'fecha', 'Tipo' => 'texto', 'Lote' => 'texto', 'Kg' => 'numero'],
-                array_map(fn($r) => [$r['fecha'], $r['tipo'], $r['lote'], $r['kg']], $d['cosecha']['detalle'])),
+            self::detalle('det_cosecha', 'Ingresos de cochinilla de la campaña', ['Fecha' => 'fecha', 'Tipo' => 'texto', 'Lote' => 'texto', 'Recogida en' => 'texto', 'Kg' => 'numero'],
+                array_map(fn($r) => [$r['fecha'], $r['tipo'], $r['lote'], $r['recogido_en'] ?? null, $r['kg']], $d['cosecha']['detalle'])),
             self::detalle('det_fertilizantes', 'Salidas de fertilizantes', ['Fecha' => 'fecha', 'Producto' => 'texto', 'Kg' => 'cantidad'],
                 array_map(fn($r) => [$r['fecha'], $r['producto'], $r['kg']], $d['fertilizacion']['detalle'])),
             self::detalle('det_sanidad', 'Aplicaciones sanitarias', ['Fecha' => 'fecha', 'Producto' => 'texto', 'Categoría' => 'texto', 'Cantidad' => 'cantidad'],
                 array_map(fn($r) => [$r['fecha'], $r['producto'], ucfirst($r['categoria']), $r['cantidad']], $d['sanidad']['detalle'])),
             self::detalle('det_ventas', 'Ventas facturadas', ['Fecha' => 'fecha', 'Factura' => 'texto', 'Tipo' => 'texto', 'Comprador' => 'texto', 'Kg' => 'numero', 'Precio US$' => 'usd', 'Total US$' => 'usd', 'Ac. carmínico %' => 'numero'],
                 array_map(fn($r) => [$r['fecha'], $r['factura'], $r['tipo'], $r['comprador'], $r['kg'], $r['precio_usd'], $r['total_usd'], $r['acido_carminico']], $d['ventas'])),
+            // Hoja de evaluaciones: el detalle por cama de cada evaluación (destino de los enlaces del resumen)
+            ...self::evaluacionesDetalle($d['evaluaciones']),
         ]));
     }
 
@@ -112,9 +118,64 @@ class CampaniaInformeMensualFormatoReglas
             nota: 'Infestación: ' . (self::f($e['infestacion']) ?? '—') . ' · Reinfestación: ' . (self::f($e['reinfestacion']) ?? '—'));
     }
 
+    /** Pantalla de la evaluación, filtrada en su campaña y con la evaluación resaltada. */
+    private static function urlEvaluacion(array $r): ?string
+    {
+        if (empty($r['id']) || !function_exists('route')) {
+            return null;
+        }
+        $campania = $r['campania_id'] ?? null;
+        return match ($r['modelo'] ?? null) {
+            'poblacion' => route('evaluacion.poblacion_plantas', array_filter(['campania' => $campania, 'evaluacion' => $r['id']])),
+            'brotes' => route('evaluacion.brotes', array_filter(['campaniaId' => $campania, 'evaluacion' => $r['id']])),
+            default => null,
+        };
+    }
+
+    /**
+     * Una tabla por evaluación en la hoja "Evaluaciones": conteo por cama y la fila del resultado, que es el destino del
+     * enlace del resumen (ancla). Se calcula igual que la pantalla de evaluación, para comprobar que coincide.
+     *
+     * @return array<int, array>
+     */
+    private static function evaluacionesDetalle(array $ev): array
+    {
+        $tablas = [];
+        foreach ($ev as $r) {
+            if (empty($r['camas']) && !isset($r['clave'])) {
+                continue;
+            }
+            $titulo = "{$r['tipo']} – " . self::f($r['fecha']) . ($r['evaluador'] ? " – {$r['evaluador']}" : '');
+            $metros = $r['metros_cama_ha'] ?? 0;
+            if ($r['modelo'] === 'poblacion') {
+                $filas = array_map(fn($c) => [$c['cama'], $c['longitud'], $c['conteo'], $c['por_metro'], $c['por_metro'] !== null ? $c['por_metro'] * $metros : null], $r['camas']);
+                $promMetro = collect($r['camas'])->pluck('por_metro')->filter(fn($v) => $v !== null)->avg();
+                $filas[] = ['celdas' => ['PROMEDIO', null, collect($r['camas'])->pluck('conteo')->filter(fn($v) => $v !== null)->avg(), $promMetro, $r['valor']],
+                    'estilo' => 'total', 'ancla' => $r['clave'], 'ancla_col' => 4];
+                $tablas[] = self::tabla("eval_{$r['clave']}", $titulo, ['Cama' => 'entero', 'Longitud (m)' => 'numero', 'Plantas por hilera' => 'numero',
+                    'Plantas por metro' => 'cantidad', 'Plantas por ha' => 'numero'], $filas, self::HOJA_EVALUACIONES,
+                    nota: "Plantas por ha = plantas por metro × {$metros} metros de cama por ha.");
+            } else {
+                $filas = array_map(fn($c) => [$c['cama'], $c['longitud'], $c['b2_actual'], $c['b3_actual'], $c['total_ha'], $c['b2_despues'], $c['b3_despues'], $c['total_despues_ha']], $r['camas']);
+                $filas[] = ['celdas' => ['PROMEDIO', null, null, null, $r['valor'], null, null, $r['valor_n_dias'] ?? null],
+                    'estilo' => 'total', 'ancla' => $r['clave'], 'ancla_col' => 4];
+                $tablas[] = self::tabla("eval_{$r['clave']}", $titulo, ['Cama' => 'entero', 'Longitud (m)' => 'numero', '2° piso actual' => 'numero',
+                    '3° piso actual' => 'numero', 'Total actual por ha' => 'numero', '2° piso a N días' => 'numero', '3° piso a N días' => 'numero',
+                    'Total a N días por ha' => 'numero'], $filas, self::HOJA_EVALUACIONES,
+                    nota: "Por ha = brotes ÷ longitud de la cama × {$metros} metros de cama por ha (2° + 3° piso).");
+            }
+        }
+        return $tablas;
+    }
+
     private static function evaluaciones(array $ev): array
     {
-        $filas = array_map(fn($r) => [$r['tipo'], $r['fecha'], $r['valor'], $r['unidad'], $r['valor_n_dias'] ?? null], $ev);
+        // Cada valor enlaza a su evaluación: en la web a la pantalla de evaluación, en el Excel a la hoja "Evaluaciones"
+        $filas = array_map(fn($r) => [
+            'celdas' => [$r['tipo'], $r['fecha'], $r['valor'], $r['unidad'], $r['valor_n_dias'] ?? null],
+            'estilo' => 'normal',
+            'enlaces' => isset($r['clave']) ? [2 => ['url' => self::urlEvaluacion($r), 'ancla' => $r['clave']]] : [],
+        ], $ev);
         return self::tabla('evaluaciones', 'Población de plantas y evaluación de brotes', ['Evaluación' => 'texto', 'Fecha' => 'fecha', 'Valor' => 'numero', 'Unidad' => 'texto', 'A los N días' => 'numero'], $filas);
     }
 
@@ -128,14 +189,15 @@ class CampaniaInformeMensualFormatoReglas
 
     private static function cosecha(array $res): array
     {
-        $filas = array_map(fn($r) => [$r['tipo'], $r['ingresos'], $r['desde'], $r['hasta'], $r['kg'], $r['kg_ha'],
+        $filas = array_map(fn($r) => [$r['tipo'], $r['ingresos'], $r['recogido_en'] ?? null, $r['desde'], $r['hasta'], $r['kg'], $r['kg_ha'],
             $r['es_mama'] ? 'Mamá (vuelve a infestar)' : ($r['es_vendible'] ? 'Vendible' : 'No vendible')], $res);
         if ($res) {
-            $filas[] = ['celdas' => ['TOTAL', array_sum(array_column($res, 'ingresos')), null, null, array_sum(array_column($res, 'kg')),
+            $filas[] = ['celdas' => ['TOTAL', array_sum(array_column($res, 'ingresos')), null, null, null, array_sum(array_column($res, 'kg')),
                 array_sum(array_map(fn($r) => (float) $r['kg_ha'], $res)), null], 'estilo' => 'total'];
         }
-        return self::tabla('cosecha', 'Cosecha de madres y cosecha (ingresos de cochinilla)', ['Tipo de ingreso' => 'texto', 'Ingresos' => 'entero', 'Desde' => 'fecha', 'Hasta' => 'fecha',
-            'Kg' => 'numero', 'Kg/ha' => 'numero', 'Uso' => 'texto'], $filas);
+        return self::tabla('cosecha', 'Cochinilla producida por la campaña (cosecha de madres y cosecha)', ['Tipo de ingreso' => 'texto', 'Ingresos' => 'entero', 'Recogida en' => 'texto',
+            'Desde' => 'fecha', 'Hasta' => 'fecha', 'Kg' => 'numero', 'Kg/ha' => 'numero', 'Uso' => 'texto'], $filas,
+            nota: 'Kilos de esta campaña aunque se hayan recogido después o en otro campo (infestadores con su mamá). Los costos de recojo, vaciado y post-cosecha posteriores al cierre van a la campaña que esté vigente en ese momento.');
     }
 
     private static function fertilizantes(array $fert): array
@@ -284,6 +346,51 @@ class CampaniaInformeMensualFormatoReglas
         }
         return self::tabla('ventas', 'Ventas', ['Tipo' => 'texto', 'Facturas' => 'entero', 'Kg' => 'numero', 'Precio promedio US$/kg' => 'usd', 'Ingreso US$' => 'usd'], $filas,
             vacio: 'Sin ventas facturadas hasta la fecha de corte.');
+    }
+
+    /** Avance del periodo vegetativo y edad por etapa (proyectada vs acumulada), como el encabezado del Excel. */
+    private static function avance(array $a): array
+    {
+        $filas = [];
+        foreach (CampaniaInformeMensualReglas::ETAPAS as $n => $nombre) {
+            $filas[] = ["{$n}. {$nombre}", $a['meses_proyectados'][$n], $a['meses_acumulados_etapa'][$n]];
+        }
+        $filas[] = ['celdas' => ['TOTAL', $a['meses_proyectados_total'], $a['meses_acumulados']], 'estilo' => 'total'];
+        $filas[] = ['celdas' => ['Duración proyectada (semanas)', $a['semanas_proyectadas'], $a['semanas_transcurridas']], 'estilo' => 'grupo'];
+        $filas[] = ['celdas' => ['AVANCE DEL PERIODO VEGETATIVO (%)', null, $a['avance_pct']], 'estilo' => 'seccion'];
+        return self::tabla('avance', 'Avance del periodo vegetativo', ['Etapa' => 'texto', 'Proyectado (meses)' => 'numero', 'Acumulado (meses)' => 'numero'], $filas,
+            nota: 'Avance = semanas transcurridas / semanas proyectadas. 1ª etapa proyectada = ' . ($a['etapa1_real'] ? 'meses completos hasta la infestación' : 'valor configurado (aún sin infestación)')
+                . '; 2ª y 3ª = valores de Sistema → Configuración. La última fila muestra semanas proyectadas / transcurridas.');
+    }
+
+    /** Índices productivos de evaluación por etapa. */
+    private static function indices(array $i): array
+    {
+        $fila = fn(string $nombre, array $porEtapa, ?float $total = null, string $estilo = 'normal') => ['celdas' => array_merge([$nombre], [$porEtapa[1] ?? null, $porEtapa[2] ?? null, $porEtapa[3] ?? null], [$total]), 'estilo' => $estilo];
+        $suma = fn(array $v) => array_sum(array_map('floatval', array_filter($v, fn($x) => $x !== null)));
+        $filas = [
+            $fila('PRODUCCIÓN DE PENCAS EN FUNCIÓN DEL NITRÓGENO', [], null, 'seccion'),
+            $fila('Nitrógeno aplicado (kg/ha)', $i['nitrogeno_kg_ha'], $suma($i['nitrogeno_kg_ha'])),
+            $fila('Pencas (brotes aptos 2°+3° piso/ha, última evaluación de la etapa)', $i['pencas_ha']),
+            $fila('Gramos de nitrógeno por penca', $i['gramos_n_por_penca']),
+            $fila('Agua (m³/ha)', $i['agua_m3_ha'], $suma($i['agua_m3_ha'])),
+            $fila('PRODUCCIÓN DE COCHINILLA', [], null, 'seccion'),
+            $fila('Cochinilla vendible cosechada (kg/ha)', [], $i['cochinilla_kg_ha']),
+            $fila('Kg de nitrógeno por kg de cochinilla', [], $i['kg_n_por_kg_cochinilla']),
+            $fila('Giberelina (cantidad/ha)', $i['giberelina_ha'], $suma($i['giberelina_ha'])),
+            $fila('Dropp (cantidad/ha)', $i['dropp_ha'], $suma($i['dropp_ha'])),
+        ];
+        if ($i['infestadores']) {
+            $filas[] = $fila('POR INFESTADOR', [], null, 'seccion');
+            foreach ($i['infestadores'] as $inf) {
+                $filas[] = $fila("{$inf['nombre']}: g de madre por infestador", [], $inf['gramos_madre']);
+                if ($inf['gramos_produccion'] !== null) {
+                    $filas[] = $fila("{$inf['nombre']}: g de cochinilla producida por infestador", [], $inf['gramos_produccion']);
+                }
+            }
+        }
+        return self::tabla('indices', 'Índices productivos de evaluación', ['Índice' => 'texto', 'Etapa 1' => 'numero', 'Etapa 2' => 'numero', 'Etapa 3' => 'numero', 'Total' => 'numero'], $filas,
+            nota: 'Pencas: de las evaluaciones de brotes registradas. Giberelina y Dropp: productos de sanidad cuyo nombre los contiene. Cochinilla: kilos de tipos vendibles (sin la mamá que vuelve a infestar).');
     }
 
     private static function rentabilidad(array $r): array

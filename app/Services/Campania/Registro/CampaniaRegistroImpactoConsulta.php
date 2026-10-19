@@ -110,6 +110,72 @@ class CampaniaRegistroImpactoConsulta
         ];
     }
 
+    /** Otros registros que guardan la campaña (sin fecha propia o que no se reasignan): tabla => [columna, descripción] */
+    private const TABLAS_VINCULADAS = [
+        'cochinilla_ingreso_origenes' => ['campania_origen_id', 'repartos de cochinilla de origen'],
+        'eval_poblacion_plantas' => ['campania_id', 'evaluaciones de población de plantas'],
+        'poblacion_plantas' => ['campania_id', 'registros de población de plantas'],
+        'eval_infestacion_pencas' => ['campo_campania_id', 'evaluaciones de infestación'],
+        'proyeccion_rendimiento_podas' => ['campo_campania_id', 'proyecciones de rendimiento'],
+        'servicios_campo_detalles' => ['campania_id', 'servicios de campo'],
+        'costo_mensual_distribuciones' => ['campo_campania_id', 'distribuciones de costos mensuales'],
+        'campania_informes_mensuales' => ['campo_campania_id', 'informes mensuales guardados'],
+    ];
+
+    /** Columnas de la ficha que solo se llenan si la campaña tuvo actividad real. */
+    private const CAMPOS_FICHA = [
+        'infestacion_fecha', 'infestacion_kg_totales_madre', 'reinfestacion_fecha', 'cosch_fecha', 'cosch_total_cosecha',
+        'cosch_total_campania', 'cosechamadres_fecha_cosecha', 'riego_hrs_acumuladas', 'gasto_planilla', 'gasto_cuadrilla',
+        'pp_dia_cero_fecha_evaluacion', 'brotexpiso_fecha_evaluacion', 'eval_infest_fecha_primera',
+    ];
+
+    /**
+     * Registros vinculados a la campaña (mano de obra, cosechas, riego, ventas, evaluaciones…). Una campaña con
+     * cualquiera de ellos no se elimina: se corrigen sus fechas.
+     *
+     * @return array<string, int> descripción => cantidad
+     */
+    public function registrosVinculados(CampoCampania $campania): array
+    {
+        $resultado = [];
+        $inicio = $campania->fecha_inicio->toDateString();
+        $fin = min($this->finEfectivo($campania, $inicio, $campania->fecha_fin?->toDateString(), Carbon::today()->toDateString()), Carbon::today()->toDateString());
+
+        // Mano de obra y costos: van a la campaña por campo y rango de fechas
+        $manoObra = DB::table('resumen_costo_diarios')->where('campo', $campania->campo)
+            ->whereBetween('fecha', [$inicio, $fin])->count();
+        if ($manoObra > 0) {
+            $resultado['registros de mano de obra / costos'] = $manoObra;
+        }
+        $cosechas = DB::table('cochinilla_ingresos')
+            ->where(fn($q) => $q->where('campo_campania_id', $campania->id)->orWhere('campania_origen_id', $campania->id))->count();
+        if ($cosechas > 0) {
+            $resultado['ingresos de cochinilla (cosechas)'] = $cosechas;
+        }
+        $tablas = array_merge(
+            array_diff_key(self::TABLAS_REASIGNADAS, ['cochinilla_ingresos' => true]),
+            self::TABLAS_CON_CAMPANIA,
+        );
+        foreach ($tablas as $tabla => [$columna, , $descripcion]) {
+            $cantidad = DB::table($tabla)->where($columna, $campania->id)->count();
+            if ($cantidad > 0) {
+                $resultado[$descripcion] = $cantidad;
+            }
+        }
+        foreach (self::TABLAS_VINCULADAS as $tabla => [$columna, $descripcion]) {
+            $cantidad = DB::table($tabla)->where($columna, $campania->id)->count();
+            if ($cantidad > 0) {
+                $resultado[$descripcion] = $cantidad;
+            }
+        }
+        // Campañas históricas: los datos vienen en la propia ficha (cosecha, infestación, evaluaciones del Excel)
+        $ficha = collect(self::CAMPOS_FICHA)->filter(fn($col) => filled($campania->getAttribute($col)))->count();
+        if ($ficha > 0) {
+            $resultado['datos llenados en la ficha (infestación, cosecha, evaluaciones…)'] = $ficha;
+        }
+        return $resultado;
+    }
+
     /** Fin efectivo: el cierre (u hoy si está abierta), pero nunca después del día anterior a la siguiente campaña. */
     private function finEfectivo(CampoCampania $campania, string $inicio, ?string $fin, string $hoy): string
     {

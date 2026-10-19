@@ -2,6 +2,7 @@
 
 namespace App\Services\Campania\Registro;
 
+use App\Exceptions\ErrorControlado;
 use App\Models\CampoCampania;
 use App\Services\Costos\Consolidacion\BddManoObraServicio;
 use App\Services\Costos\Consolidacion\ConsolidarCostoManoObraServicio;
@@ -112,11 +113,12 @@ class CampaniaRegistroProceso
     {
         $campania = CampoCampania::findOrFail($campaniaId);
 
-        if ($campania->evaluacionPoblacionPlantas()->exists()) {
-            throw new \RuntimeException('No se puede eliminar la campaña porque tiene evaluaciones de población de plantas.');
-        }
-        if ($campania->distribucionesCostosMensuales()->exists()) {
-            throw new \RuntimeException('No se puede eliminar la campaña porque tiene distribuciones de costos mensuales.');
+        // Solo se elimina una campaña creada por error y sin datos. Con registros vinculados se corrigen sus fechas.
+        $vinculos = $this->impacto->registrosVinculados($campania);
+        if ($vinculos) {
+            $detalle = collect($vinculos)->map(fn($n, $desc) => number_format($n) . " {$desc}")->implode(', ');
+            throw new ErrorControlado("No se puede eliminar la campaña {$campania->nombre_campania} del campo {$campania->campo}: "
+                . "ya tiene {$detalle}. Si sus fechas están mal, corrígelas (Editar campaña) en lugar de eliminarla.");
         }
 
         // Rango efectivo (una abierta termina donde empieza la siguiente), como en el consolidado

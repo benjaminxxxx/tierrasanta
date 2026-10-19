@@ -22,6 +22,10 @@ class ConfiguracionSistemaComponent extends Component
     public $diasMaximo;
     public $mesesReutilizar;
     public $mesesGrupoSinTramo;
+    public $diasRecuperacion;
+    public $factorSeco;
+    /** @var array<int,int> meses proyectados por etapa de campaña (1ª sin infestación, 2ª, 3ª) */
+    public array $mesesEtapas = [];
     /** @var array<string, bool> tipo de ingreso de cochinilla => vendible */
     public array $vendibles = [];
     /** @var array<int, mixed> días después de la infestación de la 1ª, 2ª… evaluación de infestación */
@@ -36,6 +40,9 @@ class ConfiguracionSistemaComponent extends Component
         $this->avisarInfestacionCerradas = CampaniaEtapaReglas::avisarInfestacionEnCerradas();
         $this->mesesReutilizar = \App\Services\Campo\Labor\CampoLaborVigenciaConsulta::mesesParaReutilizar();
         $this->mesesGrupoSinTramo = \App\Services\Cuadrilla\Grupo\CuadrillaGrupoReglas::mesesSinTramo();
+        $this->diasRecuperacion = \App\Services\Cochinilla\Recuperacion\CochinillaRecuperacionReglas::diasAlerta();
+        $this->factorSeco = \App\Services\Cochinilla\Recuperacion\CochinillaRecuperacionReglas::factorSeco();
+        $this->mesesEtapas = \App\Services\Campania\InformeMensual\CampaniaInformeMensualReglas::mesesProyectadosEtapas();
         $this->vendibles = \App\Models\CochinillaObservacion::orderBy('descripcion')->pluck('es_vendible', 'codigo')->map(fn($v) => (bool) $v)->all();
     }
 
@@ -90,6 +97,21 @@ class ConfiguracionSistemaComponent extends Component
         \App\Services\Campo\Labor\CampoLaborVigenciaConsulta::guardarMesesParaReutilizar($this->mesesReutilizar);
         $this->resetErrorBag();
         $this->alert('success', 'Configuración de labores guardada.');
+    }
+
+    public function guardarMesesEtapas(): void
+    {
+        \App\Services\Campania\InformeMensual\CampaniaInformeMensualReglas::guardarMesesProyectadosEtapas($this->mesesEtapas);
+        $this->resetErrorBag();
+        $this->alert('success', 'Meses proyectados guardados. Los informes nuevos o recalculados ya los usan.');
+    }
+
+    public function guardarRecuperacion(): void
+    {
+        \App\Services\Cochinilla\Recuperacion\CochinillaRecuperacionReglas::guardarDiasAlerta($this->diasRecuperacion);
+        \App\Services\Cochinilla\Recuperacion\CochinillaRecuperacionReglas::guardarFactorSeco($this->factorSeco);
+        $this->resetErrorBag();
+        $this->alert('success', 'Recuperación de cochinilla: configuración guardada.');
     }
 
     public function guardarGruposCuadrilla(): void

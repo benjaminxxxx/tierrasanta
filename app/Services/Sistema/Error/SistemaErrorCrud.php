@@ -37,6 +37,9 @@ class SistemaErrorCrud
             $esLivewire = $request->routeIs('livewire.update') || $request->hasHeader('X-Livewire');
             // En Livewire la URL es /livewire/update: la pantalla real viene en el Referer
             $url = $esLivewire ? ($request->headers->get('referer') ?: $request->fullUrl()) : $request->fullUrl();
+            // Errores que Livewire lanza antes de llegar al componente (p. ej. método inexistente): sacar el
+            // componente y el método pedido de la propia petición
+            [$componenteLw, $metodoLw] = $esLivewire ? self::datosLivewire($request) : [null, null];
 
             $error = (new ErrorSistema())->setConnection(self::CONEXION);
             $error->fill([
@@ -49,8 +52,8 @@ class SistemaErrorCrud
                 'url' => mb_substr((string) $url, 0, 2048),
                 'ruta' => self::rutaDeUrl($url) ?? $request->route()?->getName(),
                 'metodo_http' => $request->method(),
-                'componente' => $componente,
-                'accion' => self::accion($e, $componente),
+                'componente' => $componente ?? $componenteLw,
+                'accion' => self::accion($e, $componente) ?? ($metodoLw ? "{$metodoLw}() (pedido desde la pantalla)" : null),
                 'user_id' => Auth::id(),
                 'ip' => $request->ip(),
                 'navegador' => mb_substr((string) $request->userAgent(), 0, 512),
@@ -60,6 +63,23 @@ class SistemaErrorCrud
         } catch (Throwable $falla) {
             Log::error('No se pudo registrar el ticket de error: ' . $falla->getMessage(), ['error_original' => $e->getMessage()]);
             return null;
+        }
+    }
+
+    /**
+     * Componente (nombre Livewire, p. ej. riego.reporte-diario-riego-component) y primer método llamado, leídos del
+     * cuerpo de la petición /livewire/update.
+     *
+     * @return array{0: ?string, 1: ?string}
+     */
+    private static function datosLivewire($request): array
+    {
+        try {
+            $componente = (array) ($request->input('components')[0] ?? []);
+            $snapshot = json_decode((string) ($componente['snapshot'] ?? ''), true);
+            return [$snapshot['memo']['name'] ?? null, $componente['calls'][0]['method'] ?? null];
+        } catch (Throwable) {
+            return [null, null];
         }
     }
 

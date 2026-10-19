@@ -178,5 +178,24 @@
             {{ $cochinillaIngresos->links() }}
         </div>
     </x-card>
+    {{-- Eliminar con motivo (queda en auditoría) --}}
+    <x-dialog-modal wire:model.live="mostrarEliminar" maxWidth="lg">
+        <x-slot name="title">Eliminar ingreso de cochinilla</x-slot>
+        <x-slot name="content">
+            @php $aEliminar = $eliminarId ? \App\Models\CochinillaIngreso::with('creadoPor:id,name')->find($eliminarId) : null; @endphp
+            @if ($aEliminar)
+                <p class="text-sm mb-3">Lote <b>{{ $aEliminar->lote }}</b> · {{ $aEliminar->campo }} · {{ formatear_fecha($aEliminar->fecha) }} · {{ number_format($aEliminar->total_kilos, 2) }} kg
+                    @if ($aEliminar->creadoPor) · registrado por {{ $aEliminar->creadoPor->name }} @endif</p>
+                <p class="text-xs text-muted-foreground mb-2">Se eliminan también sus sublotes, venteado, filtrado y reparto por campo de origen. Todo queda guardado en la auditoría con tu nombre y el motivo.</p>
+            @endif
+            <x-input type="text" wire:model="motivoEliminacion" error="motivoEliminacion" class="w-full" label="Motivo (obligatorio)" placeholder="Ej. lote duplicado, se registró dos veces el 1465" />
+        </x-slot>
+        <x-slot name="footer">
+            <div class="flex gap-2">
+                <x-button variant="secondary" wire:click="$set('mostrarEliminar', false)">Cancelar</x-button>
+                <x-button variant="danger" wire:click="eliminarIngresoConfirmado({ laborId: {{ (int) $eliminarId }} })"><i class="fa fa-trash"></i> Eliminar</x-button>
+            </div>
+        </x-slot>
+    </x-dialog-modal>
     <x-loading wire:loading />
 </div>

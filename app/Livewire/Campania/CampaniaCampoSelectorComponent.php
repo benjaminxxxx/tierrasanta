@@ -49,7 +49,7 @@ class CampaniaCampoSelectorComponent extends Component
         }
 
         $this->breadcrumb = [
-            ['route' => 'campania.resumen', 'label' => 'Resúmen General de Campañas'],
+            ['route' => 'campania.resumen', 'label' => 'Campañas'],
             ['label' => 'Campañas por Campo']
         ];
         // 1. Determinar el campo inicial

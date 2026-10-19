@@ -43,6 +43,81 @@ class CampaniaInformeMensualReglas
         'indirectos' => ['Costo operativo y costo fijo (/costos/mensual)', ['costo_operativo', 'costo_fijo']],
     ];
 
+    // ------------------------------------------------------------------ duración proyectada y avance vegetativo
+
+    /** Meses proyectados por etapa (Excel histórico: 1ª = meses hasta la infestación o 6 si no hay; 2ª y 3ª = 4). */
+    public const CONFIG_MESES_ETAPAS = 'campania_meses_proyectados_etapas';
+    public const MESES_ETAPAS = [1 => 6, 2 => 4, 3 => 4];
+
+    /** @return array{1:int,2:int,3:int} */
+    public static function mesesProyectadosEtapas(): array
+    {
+        $valor = json_decode((string) \App\Models\Configuracion::find(self::CONFIG_MESES_ETAPAS)?->valor, true);
+        $meses = self::MESES_ETAPAS;
+        foreach ([1, 2, 3] as $e) {
+            if (isset($valor[$e]) && (int) $valor[$e] > 0) {
+                $meses[$e] = (int) $valor[$e];
+            }
+        }
+        return $meses;
+    }
+
+    public static function guardarMesesProyectadosEtapas(array $meses): void
+    {
+        $limpios = [];
+        foreach ([1, 2, 3] as $e) {
+            $n = (int) ($meses[$e] ?? 0);
+            if ($n < 1 || $n > 36) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['meses_etapas' => "Los meses de la etapa {$e} deben estar entre 1 y 36."]);
+            }
+            $limpios[$e] = $n;
+        }
+        \App\Models\Configuracion::updateOrCreate(['codigo' => self::CONFIG_MESES_ETAPAS], [
+            'valor' => json_encode($limpios),
+            'descripcion' => 'Meses proyectados por etapa de campaña (1ª sin infestación registrada, 2ª, 3ª)',
+        ]);
+    }
+
+    /**
+     * Avance del periodo vegetativo, como el Excel histórico:
+     * - 1ª etapa proyectada = meses completos del inicio a la infestación (o el valor configurado si aún no hay);
+     *   2ª y 3ª = configuradas. Duración en semanas = meses / 12 × 52.
+     * - Avance % = ((corte − inicio) en días / 7) / semanas proyectadas × 100.
+     * - Edad acumulada en meses = meses completos + días restantes / días del mes del corte, repartida por etapa.
+     */
+    public static function avanceVegetativo(string $inicio, ?string $infestacion, string $corte): array
+    {
+        $proyectados = self::mesesProyectadosEtapas();
+        $desde = Carbon::parse($inicio);
+        $hasta = Carbon::parse($corte);
+        $etapa1Real = $infestacion !== null;
+        if ($etapa1Real) {
+            $proyectados[1] = (int) $desde->diff(Carbon::parse($infestacion))->m + 12 * $desde->diff(Carbon::parse($infestacion))->y;
+        }
+        $totalMeses = array_sum($proyectados);
+        $semanas = $totalMeses / 12 * 52;
+        $dias = $desde->diffInDays($hasta);
+
+        $intervalo = $desde->diff($hasta);
+        $mesesCompletos = $intervalo->y * 12 + $intervalo->m;
+        $acumulado = $mesesCompletos + $intervalo->d / $hasta->daysInMonth;
+        $acum = [1 => min($acumulado, $proyectados[1])];
+        $acum[2] = $acumulado > $proyectados[1] ? min($acumulado - $proyectados[1], $proyectados[2]) : 0.0;
+        $acum[3] = $acumulado > $proyectados[1] + $proyectados[2] ? $acumulado - $proyectados[1] - $proyectados[2] : 0.0;
+
+        return [
+            'meses_proyectados' => $proyectados,
+            'etapa1_real' => $etapa1Real,
+            'meses_proyectados_total' => $totalMeses,
+            'semanas_proyectadas' => round($semanas, 2),
+            'dias_transcurridos' => $dias,
+            'semanas_transcurridas' => round($dias / 7, 2),
+            'avance_pct' => $semanas > 0 ? round($dias / 7 / $semanas * 100, 2) : null,
+            'meses_acumulados' => round($acumulado, 2),
+            'meses_acumulados_etapa' => array_map(fn($v) => round($v, 2), $acum),
+        ];
+    }
+
     public static function inicioMes(int $anio, int $mes): Carbon
     {
         return Carbon::create($anio, $mes, 1)->startOfDay();
