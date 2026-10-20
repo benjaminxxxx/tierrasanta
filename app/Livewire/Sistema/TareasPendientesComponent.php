@@ -30,6 +30,7 @@ class TareasPendientesComponent extends Component
         \App\Services\Campania\Cosecha\CampaniaCosechaDetector::class,
         \App\Services\Campania\Cobertura\CampaniaCoberturaDetector::class,
         \App\Services\Almacen\Kardex\AlmacenKardexCostoCeroDetector::class,
+        \App\Services\Almacen\Kardex\AlmacenKardexPendienteDetector::class,
         \App\Services\Campo\Labor\CampoLaborManoObraDetector::class,
         \App\Services\Caja\Cierre\CajaCierreDetector::class,
         \App\Services\Campania\Etapa\CampaniaEtapaDetector::class,

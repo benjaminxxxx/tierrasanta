@@ -41,16 +41,15 @@
     $esVivo = $model && $modelKey && str_contains($modelKey, '.live')
         && in_array($type, ['text', 'search', 'number', 'email', 'tel', 'url'], true);
 
-    // Fecha con wire:model: picker moderno (x-selector-dia). El input nativo, al escribir el año con wire:model.live,
-    // mandaba cada dígito (0002, 0020…) y el re-render dejaba "026". Si el campo usa Alpine (x-model, @change),
-    // min/max o está deshabilitado, se queda el nativo.
-    $usaPicker = $type === 'date' && $model && !$isDisabled && !$isReadOnly
-        && !collect(array_keys($attributes->getAttributes()))->contains(fn($k) => str_starts_with($k, 'x-') || str_starts_with($k, '@')
-            || in_array($k, ['min', 'max'], true));
+    // Fecha: <x-fecha> (se escribe dd/mm/aaaa con máscara o se elige en el almanaque; el valor sigue siendo Y-m-d).
+    // El input nativo, con wire:model.live, mandaba cada dígito del año (0002, 0020…) y el re-render dejaba "026".
+    // Solo se queda el nativo si el campo usa Alpine (x-model, @change, x-on…), que espera eventos del input nativo.
+    $usaPicker = $type === 'date'
+        && !collect(array_keys($attributes->getAttributes()))->contains(fn($k) => str_starts_with($k, 'x-') || str_starts_with($k, '@'));
 @endphp
 
 @if ($usaPicker)
-    <x-selector-dia {{ $attributes }} :label="$label" :help="$help" :error="$error" />
+    <x-fecha {{ $attributes }} :id="$id" :label="$label" :help="$help" :error="$error" :disabled="$isDisabled" :readonly="$isReadOnly" :size="$size" />
 @else
 <x-group-field>
     @if ($type === 'checkbox')

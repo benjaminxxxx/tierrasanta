@@ -205,3 +205,12 @@ span.flatpickr-weekday,
 body.escribiendo-en-vivo .x-loading-overlay {
     display: none !important;
 }
+
+/* Menús de Handsontable (clic derecho, menú de columna, listas desplegables) por encima de los modales (z-index 10000) */
+.htContextMenu,
+.htDropdownMenu,
+.htFiltersConditionsMenu,
+.handsontable.autocompleteEditor,
+.htCommentsContainer {
+    z-index: 10050 !important;
+}

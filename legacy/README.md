@@ -198,3 +198,9 @@ de cuadrilla). Los permisos `CONTABILIDAD_FDM*` siguen en `Permisos.php`, sin us
 | Qué | Por qué se retiró |
 |---|---|
 | `app/Livewire/Costos/GestionCampaniaCostos.php`, vistas `livewire/costos/gestion-campania-costos`, `indice-costos` | `/costos/campania` leía las distribuciones de `costo_mensual_distribuciones` y `costos_mensuales` por su cuenta (anterior a la BDD) y tenía su propio cierre de campaña. Reemplazado por `CostosCampaniaComponent` + `App\Services\Costos\Campania\CostosCampaniaConsulta`, que leen **solo la BDD** (`resumen_costo_diarios`) mes a mes, avisan los meses sin distribuir / sin mano de obra indirecta y descargan el Reporte BDD de la campaña. El cierre de campaña sigue en `CampaniaCerrarComponent`. |
+
+### Selector de fecha flatpickr (20/10/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| `resources/views/components/selector-dia.blade.php` (versión flatpickr + `wire:ignore` + hook `commit`) | Reemplazado por `<x-fecha>` (`resources/views/components/fecha.blade.php` + `resources/js/components/campo-fecha.js`): se escribe con máscara dd/mm/aaaa (relleno de ceros automático) o se elige en el almanaque (Hoy / Borrar), y solo envía la fecha cuando está completa. `x-selector-dia` ahora es un alias de `x-fecha`; `x-input type="date"` también lo usa. |

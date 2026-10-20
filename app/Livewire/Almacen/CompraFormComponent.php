@@ -181,6 +181,20 @@ class CompraFormComponent extends Component
         }
     }
 
+    /**
+     * El detalle siempre como lista 0..n: al sacar una fila desde la tabla quedaban huecos en los índices y PHP lo
+     * enviaba como objeto ({0: …, 2: …}), que la tabla no podía leer.
+     */
+    public function updatedDetalles(): void
+    {
+        $this->detalles = array_values($this->detalles);
+    }
+
+    public function dehydrate(): void
+    {
+        $this->detalles = array_values($this->detalles);
+    }
+
     public function updatedProductoSeleccionadoId($valor): void
     {
         if (!$valor)
@@ -220,12 +234,12 @@ class CompraFormComponent extends Component
             'almacenId' => ['required', 'exists:almacenes,id'],
             'fechaEmision' => ['required', 'date'],
             'tipo_comprobante_codigo' => ['required', 'exists:sunat_tabla10_tipo_comprobantes_pago,codigo'],
-            'serie' => ['nullable', 'string', 'max:10', 'required_with:numero'],
+            // Serie y número opcionales (compras antiguas sin serie); el formulario avisa si una factura/boleta no tiene serie
+            'serie' => ['nullable', 'string', 'max:10'],
             'numero' => [
                 'nullable',
                 'string',
                 'max:20',
-                'required_with:serie',
                 Rule::unique('compras', 'numero')
                     ->where(function ($query) {
                         return $query
@@ -237,8 +251,6 @@ class CompraFormComponent extends Component
             'tipoKardex' => ['required', 'in:blanco,negro'],
         ], [
             'numero.unique' => 'Ya existe una compra registrada con ese proveedor, serie y número de comprobante.',
-            'serie.required_with' => 'La serie es obligatoria si ingresas número.',
-            'numero.required_with' => 'El número es obligatorio si ingresas serie.',
         ]);
 
         if (empty($this->detalles)) {
@@ -283,7 +295,9 @@ class CompraFormComponent extends Component
             }
 
             $this->mostrarModal = false;
-            $this->alert('success', 'Compra registrada');
+            // El kardex no se regenera al registrar (es pesado): queda como tarea pendiente "Kardex por regenerar"
+            $productos = collect($this->detalles)->pluck('producto_id')->unique()->count();
+            $this->alert('success', 'Compra guardada. El kardex ' . $this->tipoKardex . " de {$productos} producto(s) queda pendiente de regenerar (Tareas pendientes → Kardex por regenerar).", ['timer' => 7000]);
         } catch (\Throwable $th) {
             $this->errorAlert($th);
         }

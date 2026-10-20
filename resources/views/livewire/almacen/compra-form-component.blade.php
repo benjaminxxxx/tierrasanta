@@ -68,6 +68,11 @@
                                 placeholder="00123" error="numero" />
                         </div>
                     </div>
+                    {{-- Serie y número son opcionales (compras antiguas con datos perdidos); factura o boleta sin serie: solo aviso --}}
+                    <p x-show="['01', '03'].includes(String($wire.tipo_comprobante_codigo)) && !String($wire.serie ?? '').trim()" x-cloak
+                        class="text-xs text-amber-700 dark:text-amber-400 -mt-2">
+                        <i class="fa fa-exclamation-triangle"></i> Toda factura o boleta debería tener serie. Se permite vacía solo para compras antiguas con datos perdidos.
+                    </p>
 
                     <div class="grid gap-4 md:grid-cols-2">
                         <div>
@@ -128,88 +133,17 @@
                                 wire:model.live="productoSeleccionadoId" />
                         </div>
 
-                        <div class="overflow-x-auto">
-                            <x-table>
-                                <x-slot name="thead">
-                                    <x-tr>
-                                        <x-th class="text-left">Producto</x-th>
-                                        <x-th class="text-left">Presentación</x-th>
-                                        <x-th class="text-center">Cant.</x-th>
-                                        <x-th class="text-center">Precio Unit. (inc. IGV)</x-th>
-                                        <x-th class="text-center">Desc. (%)</x-th>
-                                        <x-th class="text-center">IGV (%)</x-th>
-                                        <x-th class="text-right">IGV</x-th>
-                                        <x-th class="text-center">Subtotal (inc. IGV)</x-th>
-                                        <x-th class="text-center">Acción</x-th>
-                                    </x-tr>
-                                </x-slot>
-
-                                <x-slot name="tbody">
-                                    <template x-for="(item, index) in detalles" :key="index">
-                                        <x-tr>
-                                            <x-td class="text-xs font-medium" x-text="item.producto_nombre"></x-td>
-
-                                            <x-td>
-                                                <x-select size="small" x-model="item.presentacion_id"
-                                                    @change="cambiarPresentacion(index)">
-                                                    <option value="">(unidad base)</option>
-                                                    <template x-for="pres in item.presentaciones"
-                                                        :key="pres.id">
-                                                        <option :value="pres.id"
-                                                            x-text="`${pres.nombre} x${parseInt(pres.factor_conversion)}`">
-                                                        </option>
-                                                    </template>
-                                                </x-select>
-                                            </x-td>
-
-                                            <x-td>
-                                                <x-input type="number" step="1" x-model="item.cantidad"
-                                                    @input="desdePrecio(item)" />
-                                            </x-td>
-
-                                            <x-td>
-                                                <x-input type="number" step="any" x-model="item.costo_unitario"
-                                                    @input="desdePrecio(item)" />
-                                            </x-td>
-
-                                            <x-td>
-                                                <x-input type="number" step="0.01"
-                                                    x-model="item.porcentaje_descuento" @input="desdePrecio(item)" />
-                                            </x-td>
-
-                                            <x-td>
-                                                <x-input type="number" step="0.01" x-model="item.porcentaje_igv" />
-                                            </x-td>
-
-                                            <x-td class="text-right text-xs whitespace-nowrap text-muted-foreground"
-                                                title="Informativo: el IGV ya está incluido en el subtotal y forma parte del costo">
-                                                S/. <span x-text="formatNumber(igvLinea(item))"></span>
-                                            </x-td>
-
-                                            <x-td>
-                                                <x-input type="number" step="0.01" x-model="item.total_linea"
-                                                    @input="desdeSubtotal(item)" class="text-right font-semibold" />
-                                            </x-td>
-
-                                            <x-td class="text-center">
-                                                <x-button variant="danger" size="sm"
-                                                    @click="eliminarDetalle(index)">
-                                                    &times;
-                                                </x-button>
-                                            </x-td>
-                                        </x-tr>
-                                    </template>
-
-                                    <template x-if="detalles.length === 0">
-                                        <x-tr>
-                                            <x-td colspan="9"
-                                                class="text-center py-4 text-gray-500 italic text-sm">
-                                                Agregue productos a la compra usando el buscador superior.
-                                            </x-td>
-                                        </x-tr>
-                                    </template>
-                                </x-slot>
-                            </x-table>
+                        <div>
+                            {{-- Detalle en Handsontable (wire:ignore: Livewire no debe tocar la tabla). Eliminar: clic derecho. --}}
+                            <div wire:ignore>
+                                <div x-ref="tablaDetalle" class="w-full"></div>
+                            </div>
+                            <p x-show="detalles.length === 0" class="text-center py-3 text-muted-foreground italic text-sm">
+                                Agregue productos a la compra usando el buscador superior.
+                            </p>
+                            <p x-show="detalles.length > 0" class="text-xs text-muted-foreground mt-1">
+                                Edita presentación, cantidad, precio, descuento, IGV o el subtotal (recalcula el precio). Clic derecho sobre una fila para sacarla del detalle.
+                            </p>
                         </div>
 
                         <div class="rounded-lg bg-muted p-4 text-right text-muted-foreground space-y-1 text-sm">
@@ -246,11 +180,132 @@
             igvTotal: config.igvTotal,
             total: config.total,
 
+            hot: null,
+            sincronizando: false,
+
             init() {
                 this.$watch('detalles', () => {
+                    // Cambio desde el servidor (producto agregado, compra cargada): recargar la tabla.
+                    // Si el cambio vino de la propia tabla (sincronizando), no se recarga.
+                    if (!this.sincronizando) this.cargarTabla();
                     this.recalcularTotales();
                 });
                 this.recalcularTotales();
+                this.$nextTick(() => this.crearTabla());
+            },
+
+            destroy() {
+                this.hot && this.hot.destroy();
+            },
+
+            // ---------------------------------------------------------------- Handsontable del detalle
+            etiquetaPresentacion(item, id) {
+                const p = (item.presentaciones || []).find(p => p.id == id);
+                return p ? `${p.nombre} x${parseInt(p.factor_conversion)}` : '(unidad base)';
+            },
+
+            filasTabla() {
+                // Si llega como objeto ({0: …, 2: …}) se toma como lista
+                return Object.values(this.detalles || {}).map(item => ({
+                    ...JSON.parse(JSON.stringify(item)),
+                    presentacion_label: this.etiquetaPresentacion(item, item.presentacion_id),
+                    cantidad: item.cantidad === '' ? null : parseFloat(item.cantidad),
+                    costo_unitario: item.costo_unitario === '' ? null : parseFloat(item.costo_unitario),
+                    porcentaje_descuento: parseFloat(item.porcentaje_descuento) || 0,
+                    porcentaje_igv: parseFloat(item.porcentaje_igv) || 0,
+                    total_linea: item.total_linea === '' ? null : parseFloat(item.total_linea),
+                    igv_linea: Math.round(this.igvLinea(item) * 100) / 100,
+                }));
+            },
+
+            crearTabla() {
+                const contenedor = this.$refs.tablaDetalle;
+                if (!contenedor || this.hot) return;
+                // Handsontable 18: numericFormat con opciones de Intl.NumberFormat
+                const dinero = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+                this.hot = new Handsontable(contenedor, {
+                    ...window.HstConfig,
+                    data: this.filasTabla(),
+                    themeName: JSON.parse(localStorage.getItem('darkMode')) ? 'ht-theme-main-dark' : 'ht-theme-main',
+                    colHeaders: true,
+                    rowHeaders: true,
+                    height: 'auto',
+                    stretchH: 'all',
+                    minSpareRows: 0,
+                    columns: [
+                        { data: 'producto_nombre', title: 'PRODUCTO', readOnly: true, width: 220, className: 'htLeft' },
+                        { data: 'presentacion_label', title: 'PRESENTACIÓN', type: 'dropdown', width: 130, className: 'htLeft' },
+                        { data: 'cantidad', title: 'CANT.', type: 'numeric', numericFormat: { maximumFractionDigits: 3 }, width: 70 },
+                        { data: 'costo_unitario', title: 'PRECIO UNIT. (inc. IGV)', type: 'numeric', numericFormat: { minimumFractionDigits: 2, maximumFractionDigits: 6 }, width: 110 },
+                        { data: 'porcentaje_descuento', title: 'DESC. %', type: 'numeric', numericFormat: dinero, width: 65 },
+                        { data: 'porcentaje_igv', title: 'IGV %', type: 'numeric', numericFormat: dinero, width: 60 },
+                        { data: 'igv_linea', title: 'IGV S/.', type: 'numeric', numericFormat: dinero, readOnly: true, width: 80, className: 'htRight !text-muted-foreground' },
+                        { data: 'total_linea', title: 'SUBTOTAL (inc. IGV)', type: 'numeric', numericFormat: dinero, width: 110, className: 'htRight font-semibold' },
+                    ],
+                    // Presentaciones propias de cada producto
+                    cells: (fila, col, prop) => {
+                        if (prop !== 'presentacion_label') return {};
+                        const item = this.hot?.getSourceDataAtRow(fila) || {};
+                        return { source: ['(unidad base)', ...(item.presentaciones || []).map(p => `${p.nombre} x${parseInt(p.factor_conversion)}`)] };
+                    },
+                    contextMenu: {
+                        items: {
+                            eliminar: {
+                                name: 'Sacar del detalle de compra',
+                                callback: () => {
+                                    const sel = this.hot.getSelectedLast();
+                                    if (!sel) return;
+                                    const desde = Math.min(sel[0], sel[2]);
+                                    const hasta = Math.max(sel[0], sel[2]);
+                                    this.hot.alter('remove_row', desde, hasta - desde + 1, 'eliminar');
+                                    this.guardarDesdeTabla();
+                                },
+                            },
+                        },
+                    },
+                    afterChange: (cambios, origen) => {
+                        if (!cambios || origen === 'loadData' || origen === 'calculo') return;
+                        cambios.forEach(([fila, prop, antes, ahora]) => {
+                            if (antes === ahora) return;
+                            const item = this.hot.getSourceDataAtRow(fila);
+                            if (prop === 'presentacion_label') {
+                                const p = (item.presentaciones || []).find(p => `${p.nombre} x${parseInt(p.factor_conversion)}` === ahora);
+                                item.presentacion_id = p ? p.id : '';
+                                item.factor_conversion = p ? p.factor_conversion : 1;
+                            } else if (prop === 'total_linea') {
+                                this.desdeSubtotal(item);
+                            } else if (['cantidad', 'costo_unitario', 'porcentaje_descuento'].includes(prop)) {
+                                this.desdePrecio(item);
+                            }
+                            item.igv_linea = Math.round(this.igvLinea(item) * 100) / 100;
+                        });
+                        this.hot.render();
+                        this.guardarDesdeTabla();
+                    },
+                });
+                // El modal se abre después: ajustar el ancho cuando el contenedor se hace visible
+                new ResizeObserver(() => this.hot && this.hot.refreshDimensions()).observe(contenedor);
+            },
+
+            cargarTabla() {
+                if (this.hot) this.hot.loadData(this.filasTabla());
+            },
+
+            // La tabla es la que se edita: sus filas pasan a `detalles` (lo que se envía al guardar)
+            guardarDesdeTabla() {
+                const filas = this.hot.getSourceData().map(f => {
+                    const { presentacion_label, igv_linea, ...item } = f;
+                    return {
+                        ...item,
+                        cantidad: item.cantidad ?? '',
+                        costo_unitario: item.costo_unitario ?? '',
+                        total_linea: item.total_linea ?? '',
+                    };
+                });
+                this.sincronizando = true;
+                this.detalles = filas;
+                this.recalcularTotales();
+                this.$nextTick(() => this.sincronizando = false);
             },
 
             cambiarPresentacion(index) {

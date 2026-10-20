@@ -9,12 +9,18 @@ import { Calendar } from "@fullcalendar/core";
 import resourceTimelinePlugin from "@fullcalendar/resource-timeline";
 import { SumadorSeleccionPlugin } from "./plugins/SumadorSeleccionPlugin";
 import searchableSelect from "./components/searchable-select";
+import campoFecha from "./components/campo-fecha";
 
 // <x-searchable-select>: se registra una sola vez (antes cada variante traía su propio <script>)
+// <x-fecha>: fecha escrita con máscara dd/mm/aaaa o elegida en el almanaque
+const registrarComponentes = (Alpine) => {
+    Alpine.data("searchableSelect", searchableSelect);
+    Alpine.data("campoFecha", campoFecha);
+};
 if (window.Alpine) {
-    window.Alpine.data("searchableSelect", searchableSelect);
+    registrarComponentes(window.Alpine);
 } else {
-    document.addEventListener("alpine:init", () => window.Alpine.data("searchableSelect", searchableSelect));
+    document.addEventListener("alpine:init", () => registrarComponentes(window.Alpine));
 }
 
 // Establece el idioma globalmente
@@ -87,6 +93,7 @@ const esCampoEnVivo = (el) =>
     el instanceof HTMLElement &&
     (el.matches("input, textarea") || el.isContentEditable) &&
     (el.getAttributeNames().some((n) => n.startsWith("wire:model.live")) ||
+        el.hasAttribute("data-campo-en-vivo") ||
         el.closest('[x-data^="searchableSelect"]') !== null);
 document.addEventListener("focusin", (e) => document.body.classList.toggle("escribiendo-en-vivo", esCampoEnVivo(e.target)));
 document.addEventListener("focusout", () => document.body.classList.remove("escribiendo-en-vivo"));

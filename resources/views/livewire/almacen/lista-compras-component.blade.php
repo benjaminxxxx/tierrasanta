@@ -16,8 +16,11 @@
                     <i class="fa fa-plus"></i> Nueva compra
                 </x-button>
             @endcan
-            <x-button variant="secondary" wire:click="exportToExcel">
+            <x-button variant="secondary" @click="$wire.dispatch('abrirExportarCompras')" title="Compras del mes + productos y proveedores: también es la plantilla para importar">
                 <i class="fa fa-file-excel"></i> Exportar Excel
+            </x-button>
+            <x-button variant="secondary" @click="$wire.dispatch('abrirImportarCompras')" title="Sube el Excel: verás qué compras son nuevas antes de registrarlas">
+                <i class="fa fa-file-import"></i> Importar Excel
             </x-button>
         </x-flex>
     </x-flex>
@@ -172,5 +175,6 @@
         {{ $compras->links() }}
     </div>
     <livewire:almacen.compra-form-component />
+    <livewire:almacen.almacen-compra-excel-component />
     <x-loading wire:loading />
 </div>

@@ -13,7 +13,6 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
-use App\Services\Purchase\ExportToExcelService;
 
 #[Title('Compras')]
 class ListaComprasComponent extends Component
@@ -128,23 +127,7 @@ class ListaComprasComponent extends Component
         }
     }
 
-    public function exportToExcel(ExportToExcelService $service)
-    {
-        try {
-            return $service->execute([
-                'search' => $this->search,
-                'documentType' => $this->tipoComprobante,
-                'dateFrom' => $this->fechaDesde,
-                'dateTo' => $this->fechaHasta,
-                'supplierId' => $this->proveedorId,
-                'showTrashed' => $this->verEliminadas,
-                'sortBy' => $this->sortField,
-                'sortDirection' => $this->sortDirection,
-            ]);
-        } catch (\Throwable $e) {
-            session()->flash('error', 'Error al exportar a Excel: ' . $e->getMessage());
-        }
-    }
+    // Exportar / importar Excel: AlmacenCompraExcelComponent (el antiguo exportToExcel usaba un servicio que no existía)
 
     public function render()
     {

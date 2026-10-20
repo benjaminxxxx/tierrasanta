@@ -3,7 +3,9 @@
 
 <div class="relative">
     <x-input type="text" x-ref="entrada" x-model="texto" autocomplete="off" :disabled="$disabled"
-        @input="alEscribir()" @focus="abrir()" @click="abrir()"
+        {{-- No se abre al recibir foco: los modales enfocan el primer campo al abrirse y la lista tapaba el formulario.
+             Se abre con clic, al escribir o con ↓. --}}
+        @input="alEscribir()" @click="abrir()"
         @keydown.arrow-down.prevent="bajar()" @keydown.arrow-up.prevent="subir()"
         @keydown.enter.prevent="elegirResaltado()" @keydown.tab="cerrar()"
         placeholder="{{ $placeholder }}" class="w-full pr-14" />
