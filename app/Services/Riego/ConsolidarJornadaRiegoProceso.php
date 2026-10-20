@@ -299,16 +299,17 @@ class ConsolidarJornadaRiegoProceso
 
     private function calcularMinutosBrutos(array $data): int
     {
+        // Como en ConsolidadorServicio: la jornada del día y la "de otro día" (columna 7) se calculan aparte y se suman
         $intervalos = [];
         foreach ($data as $row) {
             if (empty($row[0]) || (isset($row[6]) && $row[6]))
                 continue; // omitir sh
-            $intervalos[] = [
+            $intervalos[($row[7] ?? false) === true ? 'referido' : 'dia'][] = [
                 'hora_inicio' => FormatoHelper::normalizarHora($row[1] ?? '00:00'),
                 'hora_fin' => FormatoHelper::normalizarHora($row[2] ?? '00:00'),
             ];
         }
-        return empty($intervalos) ? 0 : CalculoHelper::calcularMinutosJornalParcial($intervalos);
+        return array_sum(array_map(fn($grupo) => CalculoHelper::calcularMinutosJornalParcial($grupo), $intervalos));
     }
 
 }

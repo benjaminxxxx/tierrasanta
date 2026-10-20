@@ -34,6 +34,8 @@ class DistribucionCombustibleComponent extends Component
         $this->generarDistribucion();
     }
 
+    // Solo devuelve opciones al <x-searchable-select>: sin re-render (re-renderizar el modal le quitaba el foco al buscador)
+    #[\Livewire\Attributes\Renderless]
     public function getMaquinarias($search)
     {
         $query = Maquinaria::orderBy('nombre');

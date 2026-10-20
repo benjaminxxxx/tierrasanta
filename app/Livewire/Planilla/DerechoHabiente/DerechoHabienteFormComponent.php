@@ -81,6 +81,8 @@ class DerechoHabienteFormComponent extends Component
         $this->show = true;
     }
 
+    // Solo devuelve opciones al <x-searchable-select>: sin re-render (re-renderizar el modal le quitaba el foco al buscador)
+    #[\Livewire\Attributes\Renderless]
     public function getEmpleados($search)
     {
         $query = PlanEmpleado::orderBy('nombres');

@@ -36,6 +36,8 @@ class ContabilidadCostosMensualesDetalleComponent extends Component
     public $fechaDistribucion;
     public $advertencias = [];
     public $costoMensualId;
+    /** Mano de obra indirecta calculada: ['en' => fecha, 'concluyente' => bool] o null si es manual. */
+    public ?array $moiCalculado = null;
     public function mount()
     {
         $this->advertencias = ValidadorRangosCampania::validarCampos();
@@ -78,6 +80,11 @@ class ContabilidadCostosMensualesDetalleComponent extends Component
             $costoMensual = CostoMensual::where('anio', $this->anio)
                 ->where('mes', $this->mes)
                 ->first();
+
+            // La mano de obra indirecta calculada solo cambia al recalcular (/costos/mano-obra-indirecta)
+            if ($costoMensual?->moi_calculado_en) {
+                unset($data['operativo_mano_obra_indirecta_blanco'], $data['operativo_mano_obra_indirecta_negro']);
+            }
 
             if ($costoMensual) {
                 // Si existe, actualiza el registro
@@ -205,6 +212,11 @@ class ContabilidadCostosMensualesDetalleComponent extends Component
                 $this->resetCostos();
                 return;
             }
+
+            $this->moiCalculado = $costos->moi_calculado_en ? [
+                'en' => $costos->moi_calculado_en->format('d/m/Y H:i'),
+                'concluyente' => (bool) $costos->moi_concluyente,
+            ] : null;
 
             // Convertir el modelo a array y formatearlo para la vista
             $this->costos_mensuales = [

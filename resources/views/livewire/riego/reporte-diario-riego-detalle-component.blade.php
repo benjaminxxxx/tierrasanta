@@ -329,6 +329,17 @@
                 uncheckedTemplate: false
             },
             {
+                // Trabajo de otro día anotado aquí (ej. domingo pagado el lunes): no se cruza con otros regadores
+                // y su jornal se calcula aparte de las horas del día. Debe quedar en la columna 7 (ver RegistroDiarioServicio).
+                data: 'referido_otro_dia',
+                width: 60,
+                type: 'checkbox',
+                title: 'DE OTRO DÍA',
+                className: '!text-center',
+                checkedTemplate: true,
+                uncheckedTemplate: false
+            },
+            {
                 data: 'horas_ponderadas',
                 width: 60,
                 type: 'text',

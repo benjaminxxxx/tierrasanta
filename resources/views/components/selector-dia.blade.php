@@ -40,9 +40,14 @@
      - No uses wire:model directamente en el input, Flatpickr lo reemplaza.
     ============================================================
     --}}
-    x-data="{ 
+    x-data="{
         picker: null,
-        value: @entangle($attributes->wire('model'))
+        quitarHook: null,
+        value: @entangle($attributes->wire('model')),
+        destroy() {
+            this.quitarHook && this.quitarHook();
+            this.picker && this.picker.destroy();
+        }
     }"
     x-init="
         picker = flatpickr($refs.input, {
@@ -68,11 +73,15 @@
     }
         });
 
-        Livewire.hook('commit', ({ component, commit, respond, succeed, fail }) => {
+        quitarHook = Livewire.hook('commit', ({ component, commit, respond, succeed, fail }) => {
             succeed(({ snapshot, effect }) => {
                 $nextTick(() => {
-                    if (picker && value) {
+                    if (!picker) return;
+                    // Si el servidor limpió la fecha (p. ej. al abrir el formulario de otro registro), el picker también
+                    if (value) {
                         picker.setDate(value, false);
+                    } else if (picker.selectedDates.length) {
+                        picker.clear(false);
                     }
                 });
             });

@@ -183,5 +183,24 @@ return [
     |
     */
 
-    'release_token' => 'a',
+    // Cambia con cada versión publicada: una pestaña abierta antes del despliegue recibe "La página expiró, ¿recargar?"
+    // en vez de errores como "Public property [$x] not found" (ticket #10/#11). LIVEWIRE_RELEASE_TOKEN en el .env o,
+    // si no está, el commit actual de git.
+    'release_token' => env('LIVEWIRE_RELEASE_TOKEN') ?: (function () {
+        $git = base_path('.git');
+        $head = @file_get_contents("{$git}/HEAD");
+        if (!$head) {
+            return 'a';
+        }
+        $head = trim($head);
+        if (!str_starts_with($head, 'ref: ')) {
+            return substr($head, 0, 12);
+        }
+        $ref = substr($head, 5);
+        $hash = @file_get_contents("{$git}/{$ref}");
+        if (!$hash && preg_match('/^([0-9a-f]{40}) ' . preg_quote($ref, '/') . '$/m', (string) @file_get_contents("{$git}/packed-refs"), $m)) {
+            $hash = $m[1];
+        }
+        return $hash ? substr(trim($hash), 0, 12) : 'a';
+    })(),
 ];

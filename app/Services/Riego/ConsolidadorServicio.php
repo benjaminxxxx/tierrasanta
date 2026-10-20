@@ -253,13 +253,16 @@ public function consolidar(
             }
 
             if (!$reg->sh) {
-                $intervalosJornal[] = [
+                // "De otro día" (domingo anotado el lunes): jornada aparte. No se fusiona con las horas del propio
+                // día ni se pondera junto a ellas (eran otro día: no hubo riego simultáneo).
+                $grupo = $reg->referido_otro_dia ? 'referido' : 'dia';
+                $intervalosJornal[$grupo][] = [
                     'hora_inicio' => $reg->hora_inicio,
                     'hora_fin' => $reg->hora_fin,
                 ];
 
                 // ✅ SOLO los registros físicos reales van al cálculo ponderado por campo
-                $intervalosParaPonderar[$reg->id] = [
+                $intervalosParaPonderar[$grupo][$reg->id] = [
                     'hora_inicio' => $reg->hora_inicio,
                     'hora_fin' => $reg->hora_fin,
                     'nombre' => $reg->campo,
@@ -273,10 +276,13 @@ public function consolidar(
             }
         }
 
-        // 2. Tiempo de presencia física bruta
-        $minutosJornalBruto = empty($intervalosJornal)
-            ? 0
-            : CalculoHelper::calcularMinutosJornalParcial($intervalosJornal);
+        // 2. Tiempo de presencia física bruta: cada jornada (la del día y la "de otro día") por separado y sumadas
+        $minutosJornalBruto = 0;
+        foreach ($intervalosJornal as $intervalos) {
+            $minutosJornalBruto += CalculoHelper::calcularMinutosJornalParcial($intervalos);
+        }
+        // El almuerzo se descuenta de la jornada del día; si solo hay trabajo "de otro día", de esa
+        $grupoAlmuerzo = isset($intervalosJornal['dia']) ? 'dia' : 'referido';
 
         // Descuento de almuerzo
         $minutosAlmuerzo = 0;
@@ -304,12 +310,17 @@ public function consolidar(
                 ->diffInMinutes(Carbon::parse($registroAcumulado->hora_fin));
         }
 
-        // 4. Calcular horas ponderadas SOLO para el trabajo real hecho HOY
-        $calculo = CalculoHelper::calcularHorasPonderadasConExplicacion(
-            $intervalosParaPonderar,
-            $horaInicioAlmuerzo,
-            $horaFinAlmuerzo
-        );
+        // 4. Horas ponderadas: cada jornada por su lado (el almuerzo solo en la que corresponde)
+        $calculo = ['totales' => [], 'explicacion' => []];
+        foreach ($intervalosParaPonderar as $grupo => $intervalos) {
+            $parcial = CalculoHelper::calcularHorasPonderadasConExplicacion(
+                $intervalos,
+                $grupo === $grupoAlmuerzo ? $horaInicioAlmuerzo : null,
+                $grupo === $grupoAlmuerzo ? $horaFinAlmuerzo : null
+            );
+            $calculo['totales'] += $parcial['totales'];
+            $calculo['explicacion'] = array_merge($calculo['explicacion'], (array) $parcial['explicacion']);
+        }
 
         // Asignar horas ponderadas
         foreach ($todosLosRegistros as $reg) {

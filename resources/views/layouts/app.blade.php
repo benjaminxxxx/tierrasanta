@@ -27,10 +27,11 @@ $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(valu
     :class="{ 'dark': darkMode === true }">
     <x-preloader />
     
-    <div class="flex min-h-screen bg-background">
-        
+    {{-- Escritorio: menú a la izquierda (fijo al alto de la pantalla). Celular/tablet: barra superior fija (h-14) y
+         menú flotante; por eso el contenido baja 3.5rem. min-w-0 deja que el contenido se ajuste al espacio que queda. --}}
+    <div class="lg:flex min-h-screen bg-background">
         <x-layouts.sidebar />
-        <main class="flex-1 p-5 overflow-visible ultra-thin-scroll max-w-[calc(100vw-4rem)]">
+        <main class="flex-1 min-w-0 p-3 pt-[4.25rem] sm:p-5 sm:pt-[4.75rem] lg:pt-5 overflow-visible ultra-thin-scroll">
             {{ $slot }}
         </main>
     </div>

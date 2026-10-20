@@ -33,6 +33,12 @@ class CostoMensual extends Model
         'operativo_servicios_fundo_negro',
         'operativo_mano_obra_indirecta_blanco',
         'operativo_mano_obra_indirecta_negro',
+        // Cálculo explicado de la mano de obra indirecta (CostosManoObraIndirectaProceso)
+        'moi_calculado_en',
+        'moi_calculado_por',
+        'moi_archivo',
+        'moi_concluyente',
+        'moi_resumen',
 
         // Costos base/declarados
         'costo_planilla',
@@ -69,6 +75,9 @@ class CostoMensual extends Model
         'anio' => 'integer',
         'mes' => 'integer',
         'calculado_en' => 'datetime',
+        'moi_calculado_en' => 'datetime',
+        'moi_concluyente' => 'boolean',
+        'moi_resumen' => 'array',
         'fijo_administrativo_blanco' => 'decimal:2',
         'fijo_administrativo_negro' => 'decimal:2',
         'fijo_financiero_blanco' => 'decimal:2',
@@ -102,6 +111,11 @@ class CostoMensual extends Model
     /* =======================
      |  RELACIONES
      ======================= */
+
+    public function moiCalculadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'moi_calculado_por');
+    }
 
     public function usuarioCalculadoPor(): BelongsTo
     {

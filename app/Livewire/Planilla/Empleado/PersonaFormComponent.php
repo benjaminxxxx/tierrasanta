@@ -53,6 +53,8 @@ class PersonaFormComponent extends Component
 }
 
     // ── Método de búsqueda para x-select-dropdown ──────────────────────
+    // Solo devuelve opciones al <x-searchable-select>: sin re-render (re-renderizar el modal le quitaba el foco al buscador)
+    #[\Livewire\Attributes\Renderless]
     public function getPersonas($search)
     {
         $query = Persona::orderBy('nombre_mostrar');

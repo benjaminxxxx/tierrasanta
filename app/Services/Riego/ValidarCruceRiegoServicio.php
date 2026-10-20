@@ -22,7 +22,8 @@ class ValidarCruceRiegoServicio
 
         $entrantes = [];
         foreach ($data as $row) {
-            if (empty($row[0]) || (isset($row[6]) && $row[6])) {
+            // Sin haberes (6) o "de otro día" (7: el riego ocurrió otro día, se anota aquí para pagarlo) no se cruzan
+            if (empty($row[0]) || (isset($row[6]) && $row[6]) || ($row[7] ?? false) === true) {
                 continue;
             }
 
@@ -41,6 +42,7 @@ class ValidarCruceRiegoServicio
 
         $registrosOtros = ReporteDiarioRiego::whereDate('fecha', $fecha)
             ->where('por_acumulacion', false)
+            ->where('referido_otro_dia', false)
             ->where('consolidado_id', '!=', $consolidadoIdActual)
             ->get()
             ->map(function ($reg) use ($labores) {
@@ -82,7 +84,8 @@ class ValidarCruceRiegoServicio
                         $conflictos[] = "El campo '{$campo}' tiene riego cruzado entre {$nombreA} " .
                             "(" . CalculoHelper::minutosAHora($a['inicio']) . "-" . CalculoHelper::minutosAHora($a['fin']) . ") y {$nombreB} " .
                             "(" . CalculoHelper::minutosAHora($b['inicio']) . "-" . CalculoHelper::minutosAHora($b['fin']) . "). " .
-                            "Solo uno debería tener 'Riego'; el otro debería ser 'Apoyo en Riego'.";
+                            "Solo uno debería tener 'Riego'; el otro debería ser 'Apoyo en Riego'. " .
+                            "Si es trabajo de otro día anotado aquí (ej. un domingo que se paga el lunes), marca 'De otro día'.";
                     }
                 }
             }

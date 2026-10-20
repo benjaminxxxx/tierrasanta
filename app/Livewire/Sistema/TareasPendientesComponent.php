@@ -35,6 +35,7 @@ class TareasPendientesComponent extends Component
         \App\Services\Campania\Etapa\CampaniaEtapaDetector::class,
         \App\Services\Campania\Etapa\CampaniaEvaluacionInfestacionDetector::class,
         \App\Services\Cochinilla\Recuperacion\CochinillaRecuperacionDetector::class,
+        \App\Services\Costos\ManoObraIndirecta\CostosManoObraIndirectaDetector::class,
         //aqui ir agregando mas tareas pendientes
     ];
 

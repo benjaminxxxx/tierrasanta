@@ -176,3 +176,25 @@ Handsontable y los sueldos de la planilla generada); `/planilla/asistencias` red
 | Qué | Por qué se retiró |
 |---|---|
 | `app/Livewire/Campania/CampaniaCalendarioComponent.php`, `resources/views/livewire/campania/campania-calendario-component.blade.php`, `campania-calendario-indice.blade.php` y la ruta `campania.calendario` | Línea de tiempo de campañas por campo que solo enlazaba al detalle. Todo se centraliza en Campaña → Campañas (`/campania/resumen`): buscar, filtrar, avance vegetativo, etapa, informe al día o final, informes mensuales, editar, cerrar y eliminar. El permiso `Campañas Calendario` queda sin uso. |
+
+### Costos Generales FDM (19/10/2026)
+
+Reemplazado por **Costos → Mano de Obra Indirecta** (`/costos/mano-obra-indirecta`, `App\Services\Costos\ManoObraIndirecta\*`):
+mismo cálculo (todo lo gastado en FDM) pero explicado por sección, en blanco y negro, guardado en el costo mensual y con
+Excel de fórmulas. Las URLs `/costos/fdm` y `/fdm/costos_generales` redirigen a la pantalla nueva.
+
+| Qué | Por qué se retiró |
+|---|---|
+| `app/Livewire/Costos/FdmComponent.php`, `FdmCostosComponent.php` y vistas `livewire/costos/fdm-component`, `fdm-costos-component` | Pantalla `/costos/fdm`. Ruta `costos.fdm` quitada de `routes/web.php` (comentario `LEGACY`) y del menú de Contabilidad. |
+| `app/Services/Costos/Fdm/` (`CostoServicio`, `CostoFdmServicio`, `PlanillaFdmServicio`, `CuadrillaFdmServicio`, `MaquinariaFdmServicio`) | Cálculos FDM por partes guardados en `parametros_mensuales` / `costo_mano_indirectas`. La planilla leía columnas que ya no se llenan; el combustible no contaba las máquinas sin distribución. |
+| `app/Models/CostoFdmMensual.php` | Gastos FDM escritos a mano. La tabla `costo_fdm_mensuals` **se quedó** y el cálculo nuevo la sigue leyendo (sección "Otros gastos FDM"). |
+| `public/templates/reporte_combustible_fdm.xlsx`, `reporte_gasto_cuadrilla_fdm.xlsx` | Plantillas de los Excel antiguos. |
+
+Se quedaron porque otros módulos los usan: `ParametroMensual` (asistencias, planilla) y `CostoManoIndirecta` (resumen anual
+de cuadrilla). Los permisos `CONTABILIDAD_FDM*` siguen en `Permisos.php`, sin uso.
+
+### Costos por campaña antiguo (19/10/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| `app/Livewire/Costos/GestionCampaniaCostos.php`, vistas `livewire/costos/gestion-campania-costos`, `indice-costos` | `/costos/campania` leía las distribuciones de `costo_mensual_distribuciones` y `costos_mensuales` por su cuenta (anterior a la BDD) y tenía su propio cierre de campaña. Reemplazado por `CostosCampaniaComponent` + `App\Services\Costos\Campania\CostosCampaniaConsulta`, que leen **solo la BDD** (`resumen_costo_diarios`) mes a mes, avisan los meses sin distribuir / sin mano de obra indirecta y descargan el Reporte BDD de la campaña. El cierre de campaña sigue en `CampaniaCerrarComponent`. |

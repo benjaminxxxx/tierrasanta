@@ -27,10 +27,12 @@ class ReporteDiarioRiego extends Model
         'descripcion',
         'campo_campania_id',
         'por_acumulacion',
+        'referido_otro_dia',
         'horas_ponderadas'
     ];
     protected $casts = [
         'por_acumulacion' => 'boolean',
+        'referido_otro_dia' => 'boolean',
     ];
     public function consolidado()
     {

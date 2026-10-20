@@ -137,11 +137,30 @@
                     </x-slot>
                     <x-slot name="tbody">
                         @foreach ($costos_operativos as $indice => $costo)
+                            @php
+                                $esMoi = $costo['codigo'] === 'operativo_mano_obra_indirecta';
+                                // Calculada: solo cambia al recalcular, no se edita a mano
+                                $editable = $modoEdicion && !($esMoi && $moiCalculado);
+                            @endphp
                             <x-tr>
                                 <x-td>{{ $indice + 1 }}</x-td>
-                                <x-td>{{ $costo['nombre'] }}</x-td>
+                                <x-td>
+                                    {{ $costo['nombre'] }}
+                                    @if ($esMoi)
+                                        <a href="{{ route('costos.mano_obra_indirecta', ['anio' => $anio, 'mes' => $mes]) }}"
+                                            class="block text-xs text-primary hover:underline">
+                                            <i class="fa fa-search-dollar"></i>
+                                            {{ $moiCalculado ? 'Ver de dónde sale / recalcular' : 'Calcular con lo gastado en FDM' }}
+                                        </a>
+                                        @if ($moiCalculado)
+                                            <span class="block text-xs {{ $moiCalculado['concluyente'] ? 'text-muted-foreground' : 'text-red-600 dark:text-red-400' }}">
+                                                Calculado el {{ $moiCalculado['en'] }}{{ $moiCalculado['concluyente'] ? '' : ' · no concluyente' }}
+                                            </span>
+                                        @endif
+                                    @endif
+                                </x-td>
                                 <x-td class="text-right">
-                                    @if ($modoEdicion)
+                                    @if ($editable)
                                         <x-input class="!w-32 text-right" type="number"
                                             wire:model="{{ $costo['codigo'] }}_costo_blanco" @focus="$el.select()" />
                                     @else
@@ -150,7 +169,7 @@
                                     @endif
                                 </x-td>
                                 <x-td class="text-right">
-                                    @if ($modoEdicion)
+                                    @if ($editable)
                                         <x-input class="!w-32 text-right" type="number"
                                             wire:model="{{ $costo['codigo'] }}_costo_negro" @focus="$el.select()" />
                                     @else

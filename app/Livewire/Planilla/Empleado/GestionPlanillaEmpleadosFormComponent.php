@@ -116,6 +116,8 @@ class GestionPlanillaEmpleadosFormComponent extends Component
     }
 
     /** Buscador del paso "elegir empleado" (x-select-dropdown). */
+    // Solo devuelve opciones al <x-searchable-select>: sin re-render (re-renderizar el modal le quitaba el foco al buscador)
+    #[\Livewire\Attributes\Renderless]
     public function getEmpleados($search)
     {
         return PlanEmpleado::query()

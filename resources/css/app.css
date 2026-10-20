@@ -200,3 +200,8 @@ span.flatpickr-weekday,
 [x-cloak] {
     display: none !important;
 }
+
+/* Ver app.js: sin overlay de carga mientras se escribe en un campo en vivo o en un buscador */
+body.escribiendo-en-vivo .x-loading-overlay {
+    display: none !important;
+}

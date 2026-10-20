@@ -34,8 +34,24 @@
     $readOnlyClasses = $isReadOnly && !$isDisabled ? 'bg-muted text-muted-foreground cursor-default' : '';
 
     $classes = trim("{$baseClasses} {$sizeClasses} {$errorClasses} {$readOnlyClasses}");
+
+    // Campo en vivo (wire:model.live…): spinner al final del input mientras se actualiza esa propiedad, en vez del
+    // overlay de pantalla completa (que no aparece mientras se escribe: ver app.js "escribiendo-en-vivo")
+    $modelKey = collect(array_keys($attributes->getAttributes()))->first(fn($k) => str_starts_with($k, 'wire:model'));
+    $esVivo = $model && $modelKey && str_contains($modelKey, '.live')
+        && in_array($type, ['text', 'search', 'number', 'email', 'tel', 'url'], true);
+
+    // Fecha con wire:model: picker moderno (x-selector-dia). El input nativo, al escribir el año con wire:model.live,
+    // mandaba cada dígito (0002, 0020…) y el re-render dejaba "026". Si el campo usa Alpine (x-model, @change),
+    // min/max o está deshabilitado, se queda el nativo.
+    $usaPicker = $type === 'date' && $model && !$isDisabled && !$isReadOnly
+        && !collect(array_keys($attributes->getAttributes()))->contains(fn($k) => str_starts_with($k, 'x-') || str_starts_with($k, '@')
+            || in_array($k, ['min', 'max'], true));
 @endphp
 
+@if ($usaPicker)
+    <x-selector-dia {{ $attributes }} :label="$label" :help="$help" :error="$error" />
+@else
 <x-group-field>
     @if ($type === 'checkbox')
         <div class="flex items-center gap-2">
@@ -54,13 +70,29 @@
             <x-label for="{{ $id }}">{{ $label }}</x-label>
         @endif
 
-        <input 
-            id="{{ $id }}" 
-            type="{{ $type }}" 
-            {{ $isDisabled ? 'disabled' : '' }} 
-            {{ $isReadOnly && !$isDisabled ? 'readonly' : '' }}
-            {{ $attributes->class([$classes])->except(['type', 'disabled', 'readonly']) }} 
-        />
+        @if ($esVivo)
+            <div class="relative">
+                <input
+                    id="{{ $id }}"
+                    type="{{ $type }}"
+                    {{ $isDisabled ? 'disabled' : '' }}
+                    {{ $isReadOnly && !$isDisabled ? 'readonly' : '' }}
+                    {{ $attributes->class([$classes, 'pr-8'])->except(['type', 'disabled', 'readonly']) }}
+                />
+                <span wire:loading.flex wire:target="{{ $model }}"
+                    class="absolute inset-y-0 right-2 items-center pointer-events-none text-muted-foreground">
+                    <i class="fa fa-spinner fa-spin text-xs"></i>
+                </span>
+            </div>
+        @else
+            <input
+                id="{{ $id }}"
+                type="{{ $type }}"
+                {{ $isDisabled ? 'disabled' : '' }}
+                {{ $isReadOnly && !$isDisabled ? 'readonly' : '' }}
+                {{ $attributes->class([$classes])->except(['type', 'disabled', 'readonly']) }}
+            />
+        @endif
 
         @if ($help)
             <p id="{{ $id }}-help" class="text-xs text-muted-foreground">{{ $help }}</p>
@@ -71,3 +103,4 @@
         @endif
     @endif
 </x-group-field>
+@endif

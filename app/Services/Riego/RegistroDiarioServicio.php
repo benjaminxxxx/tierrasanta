@@ -34,6 +34,8 @@ class RegistroDiarioServicio
                 'tipo_labor'       => isset($row[4]) && trim($row[4]) !== '' ? $row[4] : 'Riego',
                 'descripcion'      => $row[5] ?? null,
                 'por_acumulacion'  => false,
+                // Columna "De otro día" (checkbox de la grilla): estricto, para no tomar otro valor como verdadero
+                'referido_otro_dia' => ($row[7] ?? false) === true,
             ]);
         }
     }

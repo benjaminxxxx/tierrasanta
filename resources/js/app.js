@@ -79,3 +79,14 @@ window.HstConfig = {
     //minSpareRows: 1,
     autoColumnSize: false,
 };
+
+// Mientras se escribe en un campo que se actualiza en vivo (wire:model.live…) o en un buscador (<x-searchable-select>),
+// el <x-loading> de pantalla completa no aparece: tapaba el campo y hacía perder el foco. Esos campos muestran su
+// propio indicador de carga (spinner al final del <x-input>, "Buscando…" del searchable-select).
+const esCampoEnVivo = (el) =>
+    el instanceof HTMLElement &&
+    (el.matches("input, textarea") || el.isContentEditable) &&
+    (el.getAttributeNames().some((n) => n.startsWith("wire:model.live")) ||
+        el.closest('[x-data^="searchableSelect"]') !== null);
+document.addEventListener("focusin", (e) => document.body.classList.toggle("escribiendo-en-vivo", esCampoEnVivo(e.target)));
+document.addEventListener("focusout", () => document.body.classList.remove("escribiendo-en-vivo"));

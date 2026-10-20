@@ -158,6 +158,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
                     'tipo_labor' => $registro->tipo_labor,
                     'descripcion' => $registro->descripcion,
                     'sh' => (bool) $registro->sh,
+                    'referido_otro_dia' => (bool) $registro->referido_otro_dia,
                     'horas_ponderadas' => $registro->horas_ponderadas,
                 ];
             })

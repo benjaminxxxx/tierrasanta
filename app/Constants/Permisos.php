@@ -537,6 +537,8 @@ class Permisos
     const REPORTE_ANUAL_VER = 'Reporte Anual Ver';
     const REPORTE_AUDITORIA = 'Auditoría';
     const REPORTE_AUDITORIA_VER = 'Auditoría Ver';
+    /** Historial laboral de un trabajador (planilla + cuadrilla): incluye horas, labores, producción y pago. */
+    const REPORTE_HISTORIAL_LABORAL = 'Historial Laboral';
 
     // =========================================================================
 // DOMINIO: PLANILLA — Configuración

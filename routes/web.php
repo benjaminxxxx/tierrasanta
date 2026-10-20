@@ -24,7 +24,8 @@ use App\Livewire\Cochinilla\Venta\CochinillaVentasComponent;
 // Costos
 use App\Livewire\Costos\CampoCostosComponent;
 use App\Livewire\Costos\ContabilidadCostosMensualesComponent;
-use App\Livewire\Costos\FdmComponent;
+use App\Livewire\Costos\CostosManoObraIndirectaComponent;
+use App\Livewire\Costos\CostosCampaniaComponent;
 // Cuadrilla
 use App\Livewire\Cuadrilla\GestionCuadrillaBonificacionesComponent;
 use App\Livewire\Cuadrilla\GestionCuadrillaReporteDiarioComponent;
@@ -53,6 +54,7 @@ use App\Livewire\Reporte\AuditoriaComponent;
 use App\Livewire\Reporte\ReporteAnualComponent;
 use App\Livewire\Reporte\ReporteDiarioComponent;
 use App\Livewire\Reporte\ReporteMensualComponent;
+use App\Livewire\Reporte\ReporteHistorialLaboralComponent;
 // Riego
 use App\Livewire\Riego\ReporteDiarioRiegoComponent;
 // Sistema
@@ -211,14 +213,15 @@ Route::middleware([
         Route::get('/campo', CampoCostosComponent::class)->name('campo');
         Route::view('/mano-obra', 'livewire.costos.index-mano-obra')
             ->name('mano_obra')->middleware('can:' . Permisos::CAMPO_MANO_OBRA);
-        Route::view('/campania/{campaniaId?}', 'livewire.costos.indice-costos', ['campaniaId' => null])
+        Route::get('/campania/{campaniaId?}', CostosCampaniaComponent::class)
             ->name('campania')->middleware('can:' . Permisos::CAMPAÑA_COSTOS);
         Route::get('/mensual', ContabilidadCostosMensualesComponent::class)
             ->name('mensual')->middleware('can:' . Permisos::CONTABILIDAD_COSTO_MENSUAL);
+        Route::get('/mano-obra-indirecta', CostosManoObraIndirectaComponent::class)
+            ->name('mano_obra_indirecta')->middleware('can:' . Permisos::CONTABILIDAD_COSTO_MENSUAL);
         Route::view('/mensuales', 'livewire.costos.costos-mensuales')
             ->name('mensuales')->middleware('can:' . Permisos::CONTABILIDAD_COSTO_MENSUAL_LISTA);
-        Route::get('/fdm', FdmComponent::class)
-            ->name('fdm')->middleware('can:' . Permisos::CONTABILIDAD_FDM);
+        // LEGACY: /costos/fdm (Costos Generales FDM) → reemplazado por /costos/mano-obra-indirecta (redirige abajo)
     });
 
     // ================================================================ COCHINILLA
@@ -304,6 +307,8 @@ Route::middleware([
             ->name('mensual')->middleware('can:' . Permisos::REPORTE_MENSUAL);
         Route::get('/anual', ReporteAnualComponent::class)
             ->name('anual')->middleware('can:' . Permisos::REPORTE_ANUAL);
+        Route::get('/historial-laboral', ReporteHistorialLaboralComponent::class)
+            ->name('historial_laboral')->middleware('can:' . Permisos::REPORTE_HISTORIAL_LABORAL);
         Route::get('/auditoria', AuditoriaComponent::class)
             ->name('auditoria')->middleware('can:' . Permisos::REPORTE_AUDITORIA);
     });
@@ -336,7 +341,8 @@ Route::middleware([
         '/campania/costos/{campaniaId?}' => 'costos.campania',
         '/contabilidad/costo_mensual' => 'costos.mensual',
         '/contabilidad/costos_mensuales' => 'costos.mensuales',
-        '/fdm/costos_generales' => 'costos.fdm',
+        '/fdm/costos_generales' => 'costos.mano_obra_indirecta',
+        '/costos/fdm' => 'costos.mano_obra_indirecta',
         '/cochinilla/cosechamamas' => 'cochinilla.cosecha_mamas',
         '/evaluacion_campo/poblacion_planta' => 'evaluacion.poblacion_plantas',
         '/evaluacion_campo/evaluacion_brotes/{campaniaId?}' => 'evaluacion.brotes',

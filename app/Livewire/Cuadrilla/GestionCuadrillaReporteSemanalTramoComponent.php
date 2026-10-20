@@ -51,6 +51,8 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
         $this->totalDias = DateHelper::calcularTotalDias($this->tramoLaboral->fecha_inicio, $this->tramoLaboral->fecha_fin);
         $this->obtenerReporteTramo(false);
     }
+    // Solo devuelve opciones al <x-searchable-select>: sin re-render (re-renderizar el modal le quitaba el foco al buscador)
+    #[\Livewire\Attributes\Renderless]
     public function getCuadrillero($search)
     {
         $query = Cuadrillero::orderBy('nombres');

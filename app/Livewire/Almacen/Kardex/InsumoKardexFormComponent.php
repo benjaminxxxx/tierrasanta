@@ -125,6 +125,8 @@ class InsumoKardexFormComponent extends Component
         $this->dispatch('resetearCalculos');
         $this->mostrarFormularioKardex = true;
     }
+    // Solo devuelve opciones al <x-searchable-select>: sin re-render (re-renderizar el modal le quitaba el foco al buscador)
+    #[\Livewire\Attributes\Renderless]
     public function getProductos(string $search): array
     {
         return app(ProductoServicio::class)->buscar($search);

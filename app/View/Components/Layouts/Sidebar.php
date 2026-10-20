@@ -294,9 +294,9 @@ class Sidebar extends Component
                 'icon' => 'fa fa-calculator',
                 'can' => Permisos::CONTABILIDAD,
                 'children' => [
-                    ['title' => 'Costos Generales FDM', 'route' => 'costos.fdm', 'can' => Permisos::CONTABILIDAD_FDM],
                     ['title' => 'Costos Mensuales', 'route' => 'costos.mensuales', 'can' => Permisos::CONTABILIDAD_COSTO_MENSUAL_LISTA],
                     ['title' => 'Costo Mensual', 'route' => 'costos.mensual', 'can' => Permisos::CONTABILIDAD_COSTO_MENSUAL],
+                    ['title' => 'Mano de Obra Indirecta', 'route' => 'costos.mano_obra_indirecta', 'can' => Permisos::CONTABILIDAD_COSTO_MENSUAL],
                     ['title' => 'Costos x Campaña', 'route' => 'costos.campania', 'can' => Permisos::CAMPAÑA_COSTOS],
                     
                 ],
@@ -321,6 +321,7 @@ class Sidebar extends Component
                     ['title' => 'Reporte Diario', 'route' => 'reporte.diario', 'can' => Permisos::REPORTE_DIARIO],
                     ['title' => 'Reporte Mensual', 'route' => 'reporte.mensual', 'can' => Permisos::REPORTE_MENSUAL],
                     ['title' => 'Reporte Anual', 'route' => 'reporte.anual', 'can' => Permisos::REPORTE_ANUAL],
+                    ['title' => 'Historial laboral', 'route' => 'reporte.historial_laboral', 'can' => Permisos::REPORTE_HISTORIAL_LABORAL],
                     ['title' => 'Auditoria', 'route' => 'reporte.auditoria', 'can' => Permisos::REPORTE_AUDITORIA],
                 ],
             ],

@@ -8,6 +8,8 @@
  *               siendo el que tiene el wire:model; al elegir se escribe en él y se dispara "change".
  * - "buscar":   cada vez que se escribe se llama a un método Livewire ($wire[metodo](texto)) que devuelve
  *               [{id, name}]; el valor se envía al servidor al elegir (como el antiguo x-select-dropdown).
+ *               Ese método debe llevar #[\Livewire\Attributes\Renderless]: si re-renderiza el componente (sobre todo
+ *               dentro de un modal con x-trap) el buscador pierde el foco a cada tecla.
  *
  * Opciones: [{id, name}]. El valor elegido va al wire:model (@entangle).
  */

@@ -95,6 +95,8 @@ class InsumoKardexCrearComponent extends Component
     }
 
     // ── Helpers ───────────────────────────────────────────────────
+    // Solo devuelve opciones al <x-searchable-select>: sin re-render (re-renderizar el modal le quitaba el foco al buscador)
+    #[\Livewire\Attributes\Renderless]
     public function getProductos(string $search): array
     {
         return app(ProductoServicio::class)->buscar($search);
