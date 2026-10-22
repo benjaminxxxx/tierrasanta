@@ -98,4 +98,6 @@
 
         </x-slot>
     </x-dialog-modal>
+    {{-- Excel de recursos: solo las hojas de esta página (DESIGN.md) --}}
+    <livewire:sistema.sistema-libro-excel-component libro="recursos" :hojas="['roles']" :flotante="true" :permiso="\App\Constants\Permisos::SISTEMA_ROL_GESTIONAR" />
 </div>

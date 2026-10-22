@@ -120,4 +120,6 @@
     </div>
 
     <x-loading wire:loading />
+    {{-- Excel de recursos: solo las hojas de esta página (DESIGN.md) --}}
+    <livewire:sistema.sistema-libro-excel-component libro="recursos" :hojas="['afp', 'sp', 'sp_fecha']" :flotante="true" :permiso="\App\Constants\Permisos::PLANILLA_CONFIG_AFP_GESTIONAR" />
 </div>

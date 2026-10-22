@@ -1,69 +1,94 @@
+{{-- Login según DESIGN.md: panel de marca en Noche + formulario sobre Papel; en celular solo el formulario --}}
 <x-guest-layout>
-    <!-- Contenedor principal que centra la tarjeta y aplica padding -->
-    <div class="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-        <x-card
-            class="flex flex-col lg:flex-row w-full shadow-xl rounded-xl overflow-hidden !p-0">
-            <!-- Sección de Imagen (oculta en pantallas pequeñas, toma el espacio restante en grandes) -->
-            <div class="bg-stone-200 hidden lg:block flex-1 p-8 flex items-center justify-center">
-                <img src="{{asset('images/logo/logo.svg')}}" class="mx-auto w-full max-w-md h-auto object-contain"
-                    alt="illustration" />
-            </div>
+    <div class="w-full max-w-5xl">
+        <div class="flex flex-col lg:flex-row overflow-hidden rounded-2xl border border-mist bg-paper lg:min-h-[34rem]">
 
-            <!-- Sección del Formulario (ancho completo en móvil, 25rem en pantallas grandes) -->
-            <div class="w-full lg:w-[25rem] p-8 sm:p-10 lg:p-12 border-t lg:border-t-0 lg:border-l border-border">
-                <div class="w-full">
-                    <h2 class="mb-2 text-xl font-bold text-card-foreground text-center">
-                        Bienvenido al Sistema Administrativo
-                    </h2>
-                    <span class="mb-8 block text-lg font-medium text-card-foreground text-center">Inicia Sesión en tu Cuenta</span>
+            {{-- Panel de marca --}}
+            <div class="relative hidden lg:flex lg:w-[45%] flex-col justify-between bg-noche p-10 text-white">
+                <img src="{{ asset('images/logo/logo-horizontal.svg') }}" alt="Tierra Santa" class="h-14 w-auto self-start" />
 
-                    <x-validation-errors class="mb-4 text-red-600 dark:text-red-400" />
+                <div>
+                    <p class="text-[32px] font-semibold leading-tight tracking-[-0.02em]">
+                        Sistema<br>administrativo
+                    </p>
+                    <p class="mt-3 max-w-xs text-sm leading-relaxed text-white/70">
+                        Campo, cochinilla, planilla, almacén y costos en un solo lugar.
+                    </p>
+                </div>
 
-    
-                    <form method="POST" action="{{ route('login') }}" class="px-6">
-                        @csrf
-                        <div class="mb-5">
-                            <x-label>Email</x-label>
-                            <div class="relative mt-1">
-                                <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none text-gray-400 dark:text-gray-500">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
-                                        viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-                                    </svg>
-                                </div>
-                                <x-input type="email" name="email" :value="old('email')" required autofocus
-                                    autocomplete="username" placeholder="Ingrese su email" class="pl-10" />
-                            </div>
-                        </div>
-                        <div class="mb-6">
-                            <x-label>Contraseña</x-label>
-                            <div class="relative mt-1">
-                                <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none text-gray-400 dark:text-gray-500">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
-                                        viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-                                    </svg>
-                                </div>
-                                <x-input type="password" name="password" required autocomplete="current-password"
-                                    placeholder="Ingrese su contraseña" class="pl-10" />    
-                            </div>
-                        </div>
-                        <div class="block mt-6">
-                            <label for="remember_me" class="flex items-center">
-                                <x-checkbox id="remember_me" name="remember" />
-                                <span class="ms-2 text-sm text-card-foreground">Recordar sesión</span>
-                            </label>
-                        </div>
-                        <div class="mt-6">
-                            <x-button type="submit" class="w-full">
-                                Ingresar
-                            </x-button>
-                        </div>
-                    </form>
+                <div class="flex items-center gap-2 text-xs text-white/50">
+                    <span class="h-1.5 w-6 rounded-full bg-carmin"></span>
+                    {{ config('app.name', 'Tierra Santa') }}
                 </div>
             </div>
-        </x-card>
+
+            {{-- Formulario --}}
+            <div class="flex flex-1 items-center justify-center px-6 py-10 sm:px-10">
+                <div class="w-full max-w-sm">
+                    <img src="{{ asset('images/logo/logo-horizontal-color.svg') }}" alt="Tierra Santa" class="mb-8 h-12 w-auto lg:hidden dark:hidden" />
+                    <img src="{{ asset('images/logo/logo-horizontal.svg') }}" alt="Tierra Santa" class="mb-8 hidden h-12 w-auto dark:block lg:!hidden" />
+
+                    <h1 class="text-2xl font-semibold tracking-[-0.01em] text-ink">Iniciar sesión</h1>
+                    <p class="mt-1 text-sm text-graphite">Ingresa con tu correo y tu clave.</p>
+
+                    @session('status')
+                        <div class="mt-6 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-400/10 dark:text-green-400">
+                            {{ $value }}
+                        </div>
+                    @endsession
+
+                    @if ($errors->any())
+                        <div class="mt-6 flex gap-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-400/10 dark:text-red-400" role="alert">
+                            <i class="fa fa-circle-exclamation mt-0.5"></i>
+                            <div>
+                                @foreach ($errors->all() as $error)
+                                    <p>{{ $error }}</p>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    <form method="POST" action="{{ route('login') }}" class="mt-6 space-y-5" x-data="{ ver: false, enviando: false }" @submit="enviando = true">
+                        @csrf
+
+                        <div>
+                            <label for="email" class="mb-1.5 block text-sm font-medium text-ink">Correo</label>
+                            <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username"
+                                placeholder="nombre@empresa.com"
+                                class="h-10 w-full rounded-[10px] border border-mist bg-paper px-3 text-sm text-ink placeholder:text-steel
+                                       focus:border-carmin focus:outline-none focus:ring-[3px] focus:ring-carmin/25" />
+                        </div>
+
+                        <div>
+                            <label for="password" class="mb-1.5 block text-sm font-medium text-ink">Clave</label>
+                            <div class="relative">
+                                <input id="password" :type="ver ? 'text' : 'password'" type="password" name="password" required autocomplete="current-password"
+                                    class="h-10 w-full rounded-[10px] border border-mist bg-paper pl-3 pr-10 text-sm text-ink placeholder:text-steel
+                                           focus:border-carmin focus:outline-none focus:ring-[3px] focus:ring-carmin/25" />
+                                <button type="button" @click="ver = !ver" class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-steel hover:text-ink"
+                                    :title="ver ? 'Ocultar clave' : 'Mostrar clave'" :aria-label="ver ? 'Ocultar clave' : 'Mostrar clave'">
+                                    <i class="fa fa-eye" :class="ver ? 'fa-eye-slash' : 'fa-eye'"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <label for="remember_me" class="flex items-center gap-2 text-sm text-graphite">
+                            <input id="remember_me" type="checkbox" name="remember"
+                                class="h-4 w-4 rounded border-mist text-carmin focus:ring-carmin/25" />
+                            Recordar sesión en este equipo
+                        </label>
+
+                        <button type="submit" :disabled="enviando"
+                            class="flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-carmin text-sm font-semibold text-white transition-colors
+                                   hover:bg-carmin-hover focus:outline-none focus:ring-[3px] focus:ring-carmin/25 disabled:opacity-70">
+                            <i class="fa fa-spinner fa-spin" x-show="enviando" x-cloak></i>
+                            Ingresar
+                        </button>
+                    </form>
+
+                    <p class="mt-6 text-xs text-pewter">¿Olvidaste tu clave? Pide al administrador del sistema que la restablezca.</p>
+                </div>
+            </div>
+        </div>
     </div>
 </x-guest-layout>

@@ -15,7 +15,7 @@
                     @endforeach
                 </x-select>
                 <x-select wire:model="anio" label="Año" class="w-auto">
-                    @foreach (range(now()->year, 2020) as $a)
+                    @foreach (range(now()->year, \App\Services\Sistema\Vigencia\SistemaVigenciaReglas::anioMinimo(2020)) as $a)
                         <option value="{{ $a }}">{{ $a }}</option>
                     @endforeach
                 </x-select>

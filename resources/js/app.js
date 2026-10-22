@@ -10,12 +10,27 @@ import resourceTimelinePlugin from "@fullcalendar/resource-timeline";
 import { SumadorSeleccionPlugin } from "./plugins/SumadorSeleccionPlugin";
 import searchableSelect from "./components/searchable-select";
 import campoFecha from "./components/campo-fecha";
+import inicioGrafico from "./components/inicio-grafico";
 
 // <x-searchable-select>: se registra una sola vez (antes cada variante traía su propio <script>)
 // <x-fecha>: fecha escrita con máscara dd/mm/aaaa o elegida en el almanaque
+// Alertas (SweetAlert) sobre un modal: el modal atrapa el foco (x-trap) y, al hacer clic en la alerta, lo devolvía al
+// modal, lo que borraba la selección (no se podía copiar el texto de un error) y le quitaba el foco al botón Aceptar.
+// Se corta el "focusin" de la alerta antes de que llegue a la trampa.
+window.addEventListener(
+    "focusin",
+    (e) => {
+        if (e.target instanceof Element && e.target.closest(".swal2-container")) {
+            e.stopImmediatePropagation();
+        }
+    },
+    true,
+);
+
 const registrarComponentes = (Alpine) => {
     Alpine.data("searchableSelect", searchableSelect);
     Alpine.data("campoFecha", campoFecha);
+    Alpine.data("inicioGrafico", inicioGrafico);
 };
 if (window.Alpine) {
     registrarComponentes(window.Alpine);

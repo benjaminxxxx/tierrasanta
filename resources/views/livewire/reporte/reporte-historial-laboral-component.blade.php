@@ -77,13 +77,13 @@
                         @endforeach
                     </x-select>
                     <x-select wire:model.live="anio" label="Año" class="w-auto">
-                        @foreach (range(now()->year, 2016) as $a)
+                        @foreach (range(now()->year, \App\Services\Sistema\Vigencia\SistemaVigenciaReglas::anioMinimo(2016)) as $a)
                             <option value="{{ $a }}">{{ $a }}</option>
                         @endforeach
                     </x-select>
                 @elseif ($modo === 'anio')
                     <x-select wire:model.live="anio" label="Año" class="w-auto">
-                        @foreach (range(now()->year, 2016) as $a)
+                        @foreach (range(now()->year, \App\Services\Sistema\Vigencia\SistemaVigenciaReglas::anioMinimo(2016)) as $a)
                             <option value="{{ $a }}">{{ $a }}</option>
                         @endforeach
                     </x-select>

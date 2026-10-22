@@ -157,7 +157,7 @@ class LaborServicio
     {
         // "Seleccione un grupo" llega como '' (Livewire no pasa por ConvertEmptyStringsToNull): vacío = null, y la
         // mano de obra es obligatoria (es el grupo con que se arman los costos de producción de cada campaña).
-        foreach (['codigo_mano_obra', 'estandar_produccion', 'unidades', 'tipo_asistencia_codigo'] as $campo) {
+        foreach (['codigo_mano_obra', 'estandar_produccion', 'unidades', 'tipo_asistencia_codigo', 'rol_campania'] as $campo) {
             if (array_key_exists($campo, $data) && $data[$campo] === '') {
                 $data[$campo] = null;
             }
@@ -175,6 +175,8 @@ class LaborServicio
             'codigo_mano_obra' => 'required|exists:mano_obras,codigo',
             // Labor de suspensión: representa ese tipo de asistencia (DM, V, FR…). No se usa con A (trabajo).
             'tipo_asistencia_codigo' => 'nullable|not_in:A|exists:plan_tipo_asistencias,codigo',
+            // Cosecha: marca el fin de la campaña; neutra: no indica campaña (CampaniaCosechaReglas)
+            'rol_campania' => 'nullable|in:cosecha,neutra',
             'estandar_produccion' => 'nullable|integer|min:0',
             'unidades' => 'nullable|string|max:20',
             'tramos_bonificacion' => 'nullable', // Se limpia abajo
@@ -182,6 +184,7 @@ class LaborServicio
         ], [
             'required' => 'El campo :attribute es obligatorio.',
             'codigo_mano_obra.required' => 'Elige la mano de obra de la labor.',
+            'rol_campania.in' => 'El rol en la campaña debe ser normal, cosecha o neutra.',
             'unique' => 'El :attribute ya existe.',
             'exists' => 'La :attribute no es válida.',
             'integer' => 'El :attribute debe ser un número entero.',

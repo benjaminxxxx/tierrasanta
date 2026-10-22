@@ -5,6 +5,7 @@ namespace App\Services\Campania\Registro;
 use App\Models\CampoCampania;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Qué cambia si se modifican las fechas de una campaña (solo lectura).
@@ -163,6 +164,10 @@ class CampaniaRegistroImpactoConsulta
             }
         }
         foreach (self::TABLAS_VINCULADAS as $tabla => [$columna, $descripcion]) {
+            // poblacion_plantas es antigua (sin migración): solo existe en bases anteriores a la instalación limpia
+            if (!Schema::hasTable($tabla)) {
+                continue;
+            }
             $cantidad = DB::table($tabla)->where($columna, $campania->id)->count();
             if ($cantidad > 0) {
                 $resultado[$descripcion] = $cantidad;

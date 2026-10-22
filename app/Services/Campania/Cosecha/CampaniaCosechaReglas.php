@@ -26,11 +26,21 @@ class CampaniaCosechaReglas
     /** Días desde la última cosecha para recomendar cerrar una campaña abierta aunque no haya otras labores. */
     public const DIAS_SUGERIR_CIERRE = 15;
 
-    public const CONFIG_LABORES_COSECHA = 'campania_labores_cosecha';
-    public const CONFIG_LABORES_NEUTRAS = 'campania_labores_neutras';
+    /** Rol de una labor en la campaña (labores.rol_campania). null = labor normal. */
+    public const ROL_COSECHA = 'cosecha';
+    public const ROL_NEUTRA = 'neutra';
+    public const ROLES = [
+        self::ROL_COSECHA => 'Cosecha (marca el fin de la campaña)',
+        self::ROL_NEUTRA => 'Neutra (no indica campaña: administración, vigilancia, maquinaria…)',
+    ];
 
-    /** Poda, poda mamá, poda barrido, cosecha mamá / pre-cosecha, traslados de cosecha y post-cosecha. */
-    private const LABORES_COSECHA = [41, 42, 52, 67, 68, 69, 144, 145, 146];
+    /**
+     * Poda, poda mamá, poda barrido, cosecha mamá / pre-cosecha y traslados de cosecha.
+     * NO incluye 69 "Post-cosecha (venteado, extendido y filtrado)": es lo que se hace después de cosechar (procesar la
+     * cochinilla, limpiar el campo…) y según la regla del ingeniero ya es de la campaña siguiente. Contarla como
+     * cosecha hacía ver "cosechada" una campaña recién iniciada (ej. campo 1 T.2026: post-cosecha al vaciar mallitas).
+     */
+    private const LABORES_COSECHA = [41, 42, 52, 67, 68, 144, 145, 146];
 
     /**
      * Labores que no indican el inicio de otra campaña (administración, vigilancia, cocina, maquinaria,
@@ -55,33 +65,36 @@ class CampaniaCosechaReglas
         return self::OBSERVACIONES_NO_COSECHA;
     }
 
-    /** @return int[] */
+    /** Códigos de las labores marcadas "cosecha" (Labores → Rol en la campaña). @return int[] */
     public static function laboresCosecha(): array
     {
-        return self::lista(self::CONFIG_LABORES_COSECHA, self::LABORES_COSECHA);
+        return self::porRol(self::ROL_COSECHA, self::LABORES_COSECHA);
     }
 
-    /** @return int[] */
+    /** Códigos de las labores marcadas "neutra". @return int[] */
     public static function laboresNeutras(): array
     {
-        return self::lista(self::CONFIG_LABORES_NEUTRAS, self::LABORES_NEUTRAS);
+        return self::porRol(self::ROL_NEUTRA, self::LABORES_NEUTRAS);
+    }
+
+    /**
+     * El rol lo define cada labor (labores.rol_campania), así una labor de cosecha nueva se marca al crearla.
+     * Incluye labores eliminadas (sus registros antiguos siguen contando). Las constantes solo se usan si ninguna
+     * labor tiene el rol (antes de la migración).
+     *
+     * @return int[]
+     */
+    private static function porRol(string $rol, array $porDefecto): array
+    {
+        if (!array_key_exists($rol, self::$cache)) {
+            $codigos = \App\Models\Labores::withTrashed()->where('rol_campania', $rol)->pluck('codigo')->map(fn($c) => (int) $c)->unique()->values()->all();
+            self::$cache[$rol] = $codigos ?: $porDefecto;
+        }
+        return self::$cache[$rol];
     }
 
     public static function diasMaximoVenta(bool $esMama): int
     {
         return $esMama ? self::DIAS_MAX_VENTA_MAMA : self::DIAS_MAX_VENTA;
-    }
-
-    /** @return int[] */
-    private static function lista(string $codigo, array $porDefecto): array
-    {
-        if (!array_key_exists($codigo, self::$cache)) {
-            $valor = Configuracion::find($codigo)?->valor;
-            $codigos = $valor
-                ? array_values(array_filter(array_map('intval', preg_split('/[\s,;]+/', $valor))))
-                : [];
-            self::$cache[$codigo] = $codigos ?: $porDefecto;
-        }
-        return self::$cache[$codigo];
     }
 }

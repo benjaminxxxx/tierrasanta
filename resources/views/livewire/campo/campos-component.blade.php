@@ -380,4 +380,6 @@
     {{-- Modales de campaña: se montan solo en las páginas que los usan --}}
     <livewire:campania.campania-ficha-component />
     <livewire:campania.campania-cerrar-component />
+    {{-- Excel de recursos: solo las hojas de esta página (DESIGN.md) --}}
+    <livewire:sistema.sistema-libro-excel-component libro="recursos" :hojas="['campos']" :flotante="true" :permiso="\App\Constants\Permisos::CAMPO_PARCELA_GESTIONAR" />
 </div>

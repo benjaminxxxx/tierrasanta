@@ -1,4 +1,5 @@
 <x-app-layout>
+    <livewire:cochinilla.cochinilla-excel-component modulo="ingreso" />
     
     <!--MODULO COCHINILLA INGRESO-->
     @livewire('cochinilla.cochinilla-ingreso-mapa-component')

@@ -1,0 +1,40 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('labores', function (Blueprint $table) {
+            $table->id();
+            $table->string('nombre_labor');
+            $table->string('codigo_mano_obra')->nullable();
+            $table->string('tipo_asistencia_codigo', 10)->nullable()->comment('Si la labor representa una suspensión/no laborado: código de plan_tipo_asistencias (DM, V, FR…)');
+            $table->string('rol_campania', 10)->nullable();
+            $table->integer('codigo')->nullable();
+            $table->date('vigente_desde')->nullable()->comment('Desde cuándo el código significa esta labor (null = siempre)');
+            $table->integer('estandar_produccion')->nullable();
+            $table->string('unidades', 20)->nullable();
+            $table->text('tramos_bonificacion')->nullable();
+            $table->foreignId('creado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('actualizado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('eliminado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->boolean('se_paga_con_jornal')->default(false)->comment('true = junto con el jornal, false = se acumula');
+            $table->timestamps();
+            $table->softDeletes();
+
+            $table->unique('codigo');
+            $table->index('tipo_asistencia_codigo');
+
+            $table->foreign('codigo_mano_obra')->references('codigo')->on('mano_obras')->nullOnDelete();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('labores');
+    }
+};

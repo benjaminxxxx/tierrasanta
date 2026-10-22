@@ -1,0 +1,65 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('plan_mensual_detalles', function (Blueprint $table) {
+            $table->id();
+            $table->string('documento', 8);
+            $table->string('nombres');
+            $table->string('grupo', 50)->nullable();
+            $table->string('spp_snp')->nullable();
+            $table->string('empleado_grupo_color')->nullable();
+            $table->foreignId('plan_empleado_id')->nullable()->constrained('plan_empleados')->nullOnDelete();
+            $table->integer('orden');
+            $table->decimal('remuneracion_basica', 10, 2)->nullable();
+            $table->decimal('bonificacion', 10, 2)->nullable();
+            $table->decimal('asignacion_familiar', 10, 2)->nullable();
+            $table->decimal('compensacion_vacacional', 10, 2)->nullable();
+            $table->decimal('sueldo_bruto', 10, 2)->nullable();
+            $table->decimal('dscto_afp_seguro', 10, 2)->nullable();
+            $table->string('dscto_afp_seguro_explicacion')->nullable();
+            $table->decimal('sueldo_neto', 10, 2)->nullable();
+            $table->decimal('rem_basica_essalud', 10, 2)->nullable();
+            $table->decimal('rem_basica_asg_fam_essalud_cts_grat_beta', 10, 2)->nullable();
+            $table->decimal('jornal_diario', 10, 2)->nullable();
+            $table->decimal('costo_hora', 10, 2)->nullable();
+            $table->decimal('negro_sueldo_por_dia_total', 10, 2)->nullable();
+            $table->decimal('negro_sueldo_por_hora_total', 12, 5)->nullable();
+            $table->decimal('negro_otros_bonos_acumulados', 10, 2)->nullable();
+            $table->decimal('negro_sueldo_final_empleado', 10, 2)->nullable();
+            $table->string('esta_jubilado', 10)->nullable();
+            $table->decimal('negro_diferencia_bonificacion', 10, 2)->nullable();
+            $table->decimal('negro_sueldo_neto_total', 10, 2)->nullable();
+            $table->decimal('negro_sueldo_bruto', 10, 2)->nullable();
+            $table->decimal('negro_sueldo_por_dia', 10, 2)->nullable();
+            $table->decimal('negro_sueldo_por_hora', 12, 5)->nullable();
+            $table->decimal('negro_diferencia_por_hora', 10, 2)->nullable();
+            $table->decimal('negro_diferencia_real', 10, 2)->nullable();
+            $table->decimal('negro_bono_asistencia', 10, 2)->default(0.00);
+            $table->decimal('negro_bono_productividad', 10, 2)->default(0.00);
+            $table->integer('dias_trabajados')->default(0);
+            $table->decimal('horas_trabajadas', 8, 2)->default(0.00);
+            $table->decimal('horas_trabajadas_reales', 8, 2)->default(0.00);
+            $table->decimal('blanco_neto_pagar', 10, 2)->default(0.00);
+            $table->unsignedTinyInteger('faltas_injustificadas')->default(0);
+            $table->foreignId('plan_mensual_id')->constrained('plan_mensuales')->cascadeOnDelete();
+            $table->integer('dias_laborados')->default(0);
+            $table->integer('dias_no_laborados')->default(0);
+            $table->timestamps();
+            $table->decimal('sueldo_negro_pagado', 12, 2)->nullable()->comment('Monto proporcional pactado a pagar al trabajador');
+            $table->decimal('total_horas', 12, 2)->nullable();
+            $table->decimal('sueldo_blanco_pagado', 12, 2)->nullable();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('plan_mensual_detalles');
+    }
+};

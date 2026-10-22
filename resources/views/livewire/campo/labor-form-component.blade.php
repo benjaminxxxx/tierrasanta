@@ -46,6 +46,21 @@
                                 entran al costo en FDM con este código y el día cuenta para las suspensiones del PLAME.
                             </p>
                         </div>
+
+                        <div class="md:col-span-2">
+                            <x-select wire:model="rol_campania" label="Rol en la campaña" error="rol_campania">
+                                <option value="">Normal — es trabajo de la campaña</option>
+                                @foreach (\App\Services\Campania\Cosecha\CampaniaCosechaReglas::ROLES as $valor => $texto)
+                                    <option value="{{ $valor }}">{{ $texto }}</option>
+                                @endforeach
+                            </x-select>
+                            <p class="text-xs text-muted-foreground mt-1">
+                                <b>Cosecha</b>: el sistema la usa para saber cuándo se cosechó una campaña y sugerir su cierre
+                                (poda, poda mamá, cosecha mamá, traslados de cosecha…). La post-cosecha no es cosecha: es de la
+                                campaña siguiente. <b>Neutra</b>: no indica en qué campaña se está (administración, vigilancia,
+                                maquinaria…). Una labor normal después de la cosecha indica que ya empezó la campaña siguiente.
+                            </p>
+                        </div>
                     </div>
     
                     <div x-data="{

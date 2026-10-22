@@ -183,7 +183,9 @@ class CampaniaHistoriaConsulta
     /** Infestaciones del campo, por tanda (días seguidos), con la mamá de cada campo de origen. */
     private function infestaciones(CampoCampania $c): Collection
     {
-        $filas = DB::table('cochinilla_infestaciones')->where('campo_campania_id', $c->id)->orderBy('fecha')->get();
+        // infestadores no es columna: envases × capacidad (igual que CochinillaInfestacion::getInfestadoresAttribute)
+        $filas = DB::table('cochinilla_infestaciones')->where('campo_campania_id', $c->id)
+            ->selectRaw('cochinilla_infestaciones.*, numero_envases * capacidad_envase AS infestadores')->orderBy('fecha')->get();
         $eventos = collect();
         $tanda = [];
         $cerrarTanda = function () use (&$tanda, $eventos) {

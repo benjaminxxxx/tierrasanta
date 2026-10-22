@@ -4,6 +4,8 @@
         <x-subtitle>Parámetros de negocio. No son reglas estrictas: el sistema los usa para sugerir lo que normalmente toca.</x-subtitle>
     </div>
 
+    <livewire:sistema.sistema-libro-excel-component libro="recursos" />
+
     <x-card class="space-y-4 max-w-3xl">
         <div>
             <h3 class="font-semibold text-foreground">Evaluaciones de brotes por campaña</h3>

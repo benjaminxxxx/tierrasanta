@@ -9,9 +9,9 @@
 
     <title>{{ config('app.name', 'Tierra Santa Holding S.A.C.') }}</title>
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <!-- Fuente e íconos (los mismos del sistema; ver DESIGN.md) -->
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <link rel="stylesheet" href="{{ asset('css/fontawesome.min.css') }}" />
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -27,7 +27,7 @@
 $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(value)))"
     :class="{ 'dark': darkMode === true }">
     <div
-        class="font-sans min-h-screen bg-background antialiased flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
+        class="font-['Inter',ui-sans-serif,system-ui,sans-serif] tracking-[-0.01em] min-h-screen bg-fog antialiased flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
         {{ $slot }}
     </div>
     @livewireScripts

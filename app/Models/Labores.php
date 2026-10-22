@@ -15,6 +15,7 @@ class Labores extends Model
         'nombre_labor',
         'codigo_mano_obra',
         'tipo_asistencia_codigo', // labor de suspensión: DM, V, FR… (plan_tipo_asistencias.codigo)
+        'rol_campania', // cosecha | neutra | null (ver CampaniaCosechaReglas)
         'codigo',
         'vigente_desde', // desde cuándo el código significa esta labor (antes: labor_vigencias)
         'estandar_produccion',

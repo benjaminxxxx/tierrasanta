@@ -60,6 +60,13 @@ return [
                 ],
             ],
             [
+                'nombre' => Permisos::PLANILLA_OFICINA,
+                'hijos' => [
+                    ['nombre' => Permisos::PLANILLA_OFICINA_VER],
+                    ['nombre' => Permisos::PLANILLA_OFICINA_GESTIONAR],
+                ],
+            ],
+            [
                 'nombre' => Permisos::PLANILLA_FAMILIAR,
                 'hijos' => [
                     ['nombre' => Permisos::PLANILLA_FAMILIAR_VER],
@@ -261,6 +268,12 @@ return [
                     ['nombre' => Permisos::CAMPAÑA_POR_CAMPO_GESTIONAR],
                 ],
             ],
+            [
+                'nombre' => Permisos::CAMPAÑA_INFORME_MENSUAL,
+                'hijos' => [
+                    ['nombre' => Permisos::CAMPAÑA_INFORME_MENSUAL_GESTIONAR],
+                ],
+            ],
         ],
     ],
 
@@ -296,6 +309,12 @@ return [
                     ['nombre' => Permisos::COCHINILLA_VENTA_REPORTE_GESTIONAR],
                     ['nombre' => Permisos::COCHINILLA_VENTA_FACTURACION_VER],
                     ['nombre' => Permisos::COCHINILLA_VENTA_FACTURACION_GESTIONAR],
+                ],
+            ],
+            [
+                'nombre' => Permisos::COCHINILLA_RECUPERACION,
+                'hijos' => [
+                    ['nombre' => Permisos::COCHINILLA_RECUPERACION_GESTIONAR],
                 ],
             ],
         ],
@@ -466,6 +485,7 @@ return [
                 ],
             ],
             ['nombre' => Permisos::SISTEMA_CONFIGURACION],
+            ['nombre' => Permisos::SISTEMA_ERRORES],
         ],
     ],
 
@@ -556,6 +576,7 @@ return [
                     ['nombre' => Permisos::REPORTE_AUDITORIA_VER],
                 ],
             ],
+            ['nombre' => Permisos::REPORTE_HISTORIAL_LABORAL],
         ],
     ],
 ];

@@ -4,29 +4,26 @@ namespace App\Livewire\Campo;
 
 use App\Models\Labores;
 use App\Models\ManoObra;
-use App\Services\Campo\Labor\ImportarLaborProceso;
 use App\Services\Campo\Labor\LaborServicio;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Attributes\On;
 use Livewire\Component;
-use Livewire\WithFileUploads;
 use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
 
 /**
- * Lista de labores (filtros, importación, eliminar y restaurar). El registro y la edición están en
- * LaborFormComponent: esta lista le pide abrirse con crearLabor / editarLabor y se refresca con laborGuardada.
+ * Lista de labores (filtros, eliminar y restaurar). El registro y la edición están en LaborFormComponent: esta lista
+ * le pide abrirse con crearLabor / editarLabor y se refresca con laborGuardada. El Excel (descargar / subir) es el botón
+ * flotante "Recursos" de la página (Excel de recursos, solo las hojas Labores y Tramos de bono).
  */
 class LaboresComponent extends Component
 {
     use WithPagination;
     use WithoutUrlPagination;
     use LivewireAlert, \App\Traits\HandlesAlerts;
-    use WithFileUploads;
     public $search = '';
     public $manoObras;
     public $manoObraFiltro;
-    public $fileLabores;
     public $tipoFiltro = '';
     public $verEliminados = false;
     public $afectoBonoFiltro = '';
@@ -40,20 +37,6 @@ class LaboresComponent extends Component
         $manoObra = request()->query('mano_obra');
         if (is_string($manoObra) && $manoObra !== '') {
             $this->manoObraFiltro = $manoObra;
-        }
-    }
-    public function updatedFileLabores($file)
-    {
-        try {
-            $registros = app(ImportarLaborProceso::class)->ejecutar($file);
-            $this->fileLabores = null;
-            $this->alert('success', "Labores importadas correctamente. {$registros} registros procesados.");
-        } catch (\Throwable $th) {
-            $this->errorAlert($th, null, [
-                'position' => 'center',
-                'toast' => false,
-                'timer' => null,
-            ]);
         }
     }
     /** El formulario guardó: render() vuelve a leer la página actual con los cambios. */

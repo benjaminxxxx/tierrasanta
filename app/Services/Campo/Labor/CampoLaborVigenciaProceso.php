@@ -89,6 +89,8 @@ class CampoLaborVigenciaProceso
                 'unidades' => $nueva['unidades'] ?? null,
                 'estandar_produccion' => $nueva['estandar_produccion'] ?? null,
                 'tipo_asistencia_codigo' => $nueva['tipo_asistencia_codigo'] ?? null,
+                // El rol (cosecha / neutra) era de la labor anterior: la nueva empieza normal salvo que se indique
+                'rol_campania' => in_array($nueva['rol_campania'] ?? null, ['cosecha', 'neutra'], true) ? $nueva['rol_campania'] : null,
                 'tramos_bonificacion' => null, // los tramos eran de la labor anterior
                 'vigente_desde' => $desde->toDateString(),
                 'actualizado_por' => auth()->id(),

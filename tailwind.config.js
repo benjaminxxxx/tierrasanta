@@ -58,6 +58,21 @@ export default {
                 ring: "var(--ring)",
                 link: "var(--link)",
 
+                // Guía de diseño (DESIGN.md) — se adoptan módulo por módulo
+                carmin: {
+                    DEFAULT: "rgb(var(--color-carmin) / <alpha-value>)",
+                    hover: "rgb(var(--color-carmin-hover) / <alpha-value>)",
+                },
+                noche: "rgb(var(--color-noche) / <alpha-value>)",
+                paper: "rgb(var(--color-paper) / <alpha-value>)",
+                fog: "rgb(var(--color-fog) / <alpha-value>)",
+                mist: "rgb(var(--color-mist) / <alpha-value>)",
+                hairline: "rgb(var(--color-hairline) / <alpha-value>)",
+                steel: "rgb(var(--color-steel) / <alpha-value>)",
+                pewter: "rgb(var(--color-pewter) / <alpha-value>)",
+                graphite: "rgb(var(--color-graphite) / <alpha-value>)",
+                ink: "rgb(var(--color-ink) / <alpha-value>)",
+
                 current: "currentColor",
                 transparent: "transparent",
                 white: "#FFFFFF",

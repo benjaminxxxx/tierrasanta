@@ -2,32 +2,20 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
+/**
+ * Instalación nueva: solo lo necesario para entrar y administrar. Los catálogos de la empresa (campos, labores,
+ * asistencia, configuración, AFP, maquinarias, grupos, roles y usuarios) se cargan con el Excel de recursos
+ * (escritorio de archivos del inicio, Sistema → Configuración, o php artisan libro:excel recursos importar RECURSOS.xlsx --guardar).
+ */
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        $this->call(CamposSeeder::class);
-        $this->call(ManoObraSeeder::class);
-        $this->call(LaboresSeeder::class);
-        $this->call(RegLaboresSeeder::class);
-        $this->call(NutrientesSeeder::class);
-        $this->call(PlanTipoAsistenciaSeeder::class);
-        $this->call(ConfiguracionTableSeeder::class);
-        $this->call(DescuentoSpSeeder::class);
-        $this->call(UsersTableSeeder::class);
-        $this->call(PlanTiposSuspensionSeeder::class);
-        //$this->call(CargosSeeder::class);
-        //$this->call(GrupoSeeder::class);
-        //$this->call(GruposCuadrillaSeeder::class);
-        //$this->call(CochinillaObservacionSeeder::class);
-        //$this->call(PlanEmpleadosSeeder::class);
-        $this->call(MaquinariasSeeder::class);
+        $this->call(PermisosSeeder::class);
+        $this->call(SuperAdminSeeder::class);
+        $this->call(SunatTablasSeeder::class);
+        $this->call(AlmacenSeeder::class);
     }
 }

@@ -49,6 +49,17 @@ class TareasPendientesComponent extends Component
         $this->mes = is_string($mes) && preg_match('/^\d{4}-\d{2}$/', $mes) ? $mes : now()->format('Y-m');
     }
 
+    /** Desde el inicio (dashboard): abre el panel en el mes que se estaba viendo. */
+    #[\Livewire\Attributes\On('abrirTareasPendientes')]
+    public function abrirDesdeInicio(?string $mes = null): void
+    {
+        if ($mes && preg_match('/^\d{4}-\d{2}$/', $mes)) {
+            $this->mes = $mes;
+            $this->updatedMes();
+        }
+        $this->mostrarFormularioTareasPendientes = true;
+    }
+
     public function updatedMes(): void
     {
         if (preg_match('/^\d{4}-\d{2}$/', $this->mes)) {

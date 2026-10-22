@@ -23,6 +23,8 @@ class CochinillaInfestacion extends Model
         'metodo',
         'numero_envases',
         'capacidad_envase',
+        'porcentaje_malla_rashel',
+        'procedencia_infestadores',
         //'infestadores',
         //'madres_por_infestador',
         //'infestadores_por_ha',

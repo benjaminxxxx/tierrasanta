@@ -31,6 +31,7 @@ class LaborFormComponent extends Component
     public $codigo_mano_obra;
     public bool $se_paga_con_jornal = false;
     public $tipo_asistencia_codigo;
+    public $rol_campania;
     public array $tramos = [['hasta' => '', 'monto' => '']];
 
     #[On('crearLabor')]
@@ -60,6 +61,7 @@ class LaborFormComponent extends Component
         $this->codigo_mano_obra = $labor->codigo_mano_obra;
         $this->se_paga_con_jornal = (bool) $labor->se_paga_con_jornal;
         $this->tipo_asistencia_codigo = $labor->tipo_asistencia_codigo;
+        $this->rol_campania = $labor->rol_campania;
         // La columna guarda el JSON como texto (el cast del modelo solo quita una capa)
         $tramos = is_string($labor->tramos_bonificacion) ? json_decode($labor->tramos_bonificacion, true) : $labor->tramos_bonificacion;
         $this->tramos = is_array($tramos) && $tramos ? $tramos : [['hasta' => '', 'monto' => '']];
@@ -79,6 +81,7 @@ class LaborFormComponent extends Component
                 'codigo_mano_obra' => $this->codigo_mano_obra,
                 'se_paga_con_jornal' => $this->se_paga_con_jornal,
                 'tipo_asistencia_codigo' => $this->tipo_asistencia_codigo,
+                'rol_campania' => $this->rol_campania,
             ], $this->laborId);
 
             $this->limpiar();
@@ -98,7 +101,7 @@ class LaborFormComponent extends Component
     {
         $this->resetErrorBag();
         $this->reset(['laborId', 'codigoFijo', 'codigo', 'nombre_labor', 'codigo_mano_obra', 'estandar_produccion', 'unidades', 'tramos',
-            'tipo_asistencia_codigo', 'se_paga_con_jornal']);
+            'tipo_asistencia_codigo', 'se_paga_con_jornal', 'rol_campania']);
     }
 
     private function soloGestion(): void

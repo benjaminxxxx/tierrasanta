@@ -1,3 +1,3 @@
-<x-app-layout title="THS">
-    <livewire:sistema.dashboard-component /> 
+<x-app-layout title="Inicio">
+    <livewire:sistema.sistema-inicio-component />
 </x-app-layout>

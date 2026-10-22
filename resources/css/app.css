@@ -27,6 +27,19 @@
         @apply relative z-1 bg-whiten font-satoshi text-base font-normal;
     }
     :root {
+        /* Guía de diseño (DESIGN.md): canales RGB para usar con opacidad (bg-carmin/25) */
+        --color-carmin: 188 0 45;
+        --color-carmin-hover: 160 0 38;
+        --color-noche: 16 33 45;
+        --color-paper: 255 255 255;
+        --color-fog: 243 243 247;
+        --color-mist: 185 187 198;
+        --color-hairline: 228 229 235;
+        --color-steel: 139 141 152;
+        --color-pewter: 111 115 123;
+        --color-graphite: 96 100 108;
+        --color-ink: 11 13 16;
+
         --background: #f3f3f3;
         --link: oklch(37.706% 0.13297 257.453);
         --foreground: oklch(0.145 0 0);
@@ -63,6 +76,18 @@
         --sidebar-ring: oklch(0.708 0 0);
     }
     .dark {
+        --color-carmin: 224 51 90;
+        --color-carmin-hover: 234 85 119;
+        --color-noche: 11 24 32;
+        --color-paper: 14 20 25;
+        --color-fog: 21 28 34;
+        --color-mist: 44 53 61;
+        --color-hairline: 34 43 50;
+        --color-steel: 125 133 144;
+        --color-pewter: 154 161 170;
+        --color-graphite: 180 186 194;
+        --color-ink: 237 238 242;
+
         --background: #0a0a0a;
         --foreground: oklch(0.985 0 0);
         --card: #171717;

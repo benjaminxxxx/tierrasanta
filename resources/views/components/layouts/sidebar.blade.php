@@ -106,24 +106,33 @@
                             if ({{ $item['isActive'] ? 'true' : 'false' }} && !openMenus.includes(this.titulo)) openMenus.push(this.titulo);
                         }
                     }" x-show="visible">
+                    {{-- DESIGN.md: grupo activo en Tinta sobre Niebla; opción activa en Tinta 500 con marca carmín de 2px --}}
                     <button type="button" x-on:click="toggleMenu(titulo)"
-                        class="rounded w-full h-10 flex items-center transition-all duration-200 {{ $item['isActive'] ? 'bg-muted text-card-foreground' : 'text-muted-foreground hover:bg-muted' }}"
+                        class="rounded-[10px] w-full h-10 flex items-center transition-colors duration-200 {{ $item['isActive'] ? 'bg-fog text-ink font-medium' : 'text-graphite hover:bg-fog hover:text-ink' }}"
                         :class="isExpanded ? 'justify-start px-3' : 'justify-center px-0'" title="{{ $item['title'] }}">
-                        <i class="{{ $item['icon'] }} h-5 w-5 flex-shrink-0"></i>
+                        <i class="{{ $item['icon'] }} h-5 w-5 flex-shrink-0 text-center leading-5"></i>
                         <template x-if="isExpanded">
                             <div class="flex items-center ml-3 truncate w-full">
                                 <span>{{ $item['title'] }}</span>
-                                <i class="fa fa-chevron-right ml-auto h-4 w-4 transform transition-transform duration-200"
+                                <i class="fa fa-chevron-right ml-auto h-4 w-4 text-[10px] text-steel transform transition-transform duration-200"
                                     :class="isOpen(titulo) ? 'rotate-90' : ''"></i>
                             </div>
                         </template>
                     </button>
-                    <div x-show="isExpanded && isOpen(titulo)">
-                        @foreach ($item['children'] as $child)
-                            <a href="{{ $child['url'] }}" x-show="hijoVisible(@js($child['title']))"
-                                class="block pl-12 pr-4 py-1 text-sm transition {{ $child['isActive'] ? 'font-semibold text-card-foreground' : 'text-muted-foreground hover:text-card-foreground' }}">
-                                {{ $child['title'] }}
-                            </a>
+                    <div x-show="isExpanded && isOpen(titulo)" class="pb-2">
+                        @php $secciones = collect($item['children'])->groupBy(fn($c) => $c['seccion'] ?? ''); @endphp
+                        @foreach ($secciones as $seccion => $opciones)
+                            {{-- La sección solo se rotula si el grupo tiene varias (y se oculta si la búsqueda no deja ninguna opción) --}}
+                            @if ($secciones->count() > 1 && $seccion !== '')
+                                <p x-show="@js($opciones->pluck('title')->values()).some(t => hijoVisible(t))"
+                                    class="pl-11 pr-4 pt-2 pb-0.5 text-[11px] font-medium uppercase tracking-wide text-pewter">{{ $seccion }}</p>
+                            @endif
+                            @foreach ($opciones as $child)
+                                <a href="{{ $child['url'] }}" x-show="hijoVisible(@js($child['title']))"
+                                    class="relative block pl-11 pr-4 py-1 text-sm transition-colors {{ $child['isActive'] ? 'font-medium text-ink before:absolute before:left-7 before:top-1 before:bottom-1 before:w-[2px] before:rounded-full before:bg-carmin' : 'text-graphite hover:text-ink' }}">
+                                    {{ $child['title'] }}
+                                </a>
+                            @endforeach
                         @endforeach
                     </div>
                 </div>

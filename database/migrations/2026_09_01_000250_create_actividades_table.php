@@ -1,0 +1,32 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('actividades', function (Blueprint $table) {
+            $table->id();
+            $table->date('fecha');
+            $table->string('campo');
+            $table->foreignId('labor_id')->nullable()->constrained('labores')->nullOnDelete();
+            $table->string('nombre_labor');
+            $table->integer('codigo_labor');
+            $table->unsignedInteger('recojos')->default(1);
+            $table->string('unidades', 20)->nullable();
+            $table->foreignId('creado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('actualizado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamps();
+
+            $table->index(['campo', 'fecha']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('actividades');
+    }
+};

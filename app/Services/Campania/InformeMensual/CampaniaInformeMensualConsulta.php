@@ -188,7 +188,9 @@ class CampaniaInformeMensualConsulta
 
     private function infestaciones(CampoCampania $c, string $corte, float $area): array
     {
+        // infestadores no es columna: envases × capacidad (igual que CochinillaInfestacion::getInfestadoresAttribute)
         $filas = DB::table('cochinilla_infestaciones')->where('campo_campania_id', $c->id)->where('fecha', '<=', $corte)
+            ->selectRaw('cochinilla_infestaciones.*, numero_envases * capacidad_envase AS infestadores')
             ->orderBy('fecha')->get();
         $resumen = [];
         foreach (['infestacion' => 'Infestación', 'reinfestacion' => 'Reinfestación'] as $tipo => $nombre) {

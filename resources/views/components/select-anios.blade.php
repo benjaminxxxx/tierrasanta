@@ -8,7 +8,7 @@
 @php
     $model = $attributes->whereStartsWith('wire:model')->first();
 
-    $anioMin = 2015;
+    $anioMin = \App\Services\Sistema\Vigencia\SistemaVigenciaReglas::anioMinimo(2015); // desde la vigencia del sistema (SISTEMA_VIGENCIA_DESDE)
     $anioMax = is_numeric($max) ? intval($max) : now()->year;
 @endphp
 

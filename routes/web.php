@@ -81,6 +81,16 @@ Route::middleware([
     Route::view('/', 'livewire.sistema.dashboard-indice')->name('inicio');
     Route::view('/dashboard', 'livewire.sistema.dashboard-indice')->name('dashboard');
 
+    // Escritorio de archivos del inicio: descargas con datos frescos (cada una valida su permiso)
+    Route::prefix('archivos')->name('archivos.')->group(function () {
+        Route::get('/cochinilla/{anio}', [\App\Http\Controllers\Sistema\SistemaArchivoController::class, 'cochinilla'])
+            ->whereNumber('anio')->name('cochinilla');
+        Route::get('/compras/{anio}/{mes}', [\App\Http\Controllers\Sistema\SistemaArchivoController::class, 'compras'])
+            ->whereNumber(['anio', 'mes'])->name('compras');
+        Route::get('/{libro}', [\App\Http\Controllers\Sistema\SistemaArchivoController::class, 'libro'])
+            ->whereIn('libro', array_keys(\App\Services\Sistema\LibroExcel\SistemaLibroExcelRegistro::LIBROS))->name('libro');
+    });
+
     // ================================================================ SISTEMA
     Route::prefix('sistema')->name('sistema.')->group(function () {
         Route::get('/configuracion', \App\Livewire\Sistema\ConfiguracionSistemaComponent::class)

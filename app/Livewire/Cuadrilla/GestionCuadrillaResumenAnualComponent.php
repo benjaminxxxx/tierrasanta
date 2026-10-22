@@ -20,7 +20,7 @@ class GestionCuadrillaResumenAnualComponent extends Component
     public $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     public function mount()
     {
-        $this->aniosDisponibles = range(2017, now()->year);
+        $this->aniosDisponibles = range(\App\Services\Sistema\Vigencia\SistemaVigenciaReglas::anioMinimo(2017), now()->year);
         $this->anioSeleccionado = Session::get('anio', now()->year);
         $this->obtenerResumenMensual();
     }

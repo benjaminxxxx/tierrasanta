@@ -1,4 +1,5 @@
 <x-app-layout title="Filtrado de Cochinilla">
+    <livewire:cochinilla.cochinilla-excel-component modulo="filtrado" />
     
     <livewire:cochinilla.cochinilla-filtrado-component />
     <livewire:cochinilla.cochinilla-filtrado-form-component />

@@ -26,303 +26,138 @@ class Sidebar extends Component
 
     }
 
+    /**
+     * Menú por flujo de trabajo (7 grupos). Cada opción tiene su permiso ('can') y el del módulo de donde viene
+     * ('modulo'): para los roles comunes se piden los dos, así nadie ve más que antes. Un grupo no tiene permiso
+     * propio: aparece si el usuario ve alguna de sus opciones. 'seccion' agrupa las opciones dentro del grupo.
+     * Catálogos = lo que se carga con los Excel (recursos, insumos, empleados).
+     */
     private function buildMenu(): array
     {
+        $op = fn(string $seccion, string $title, string $route, ?string $can, ?string $modulo = null) =>
+            array_filter(compact('seccion', 'title', 'route', 'can', 'modulo'), fn($v) => $v !== null);
+
         $rawMenu = [
             [
-                'title' => 'Planilla',
-                'icon' => 'fa fa-table',
-                'can' => Permisos::PLANILLA,
+                'title' => 'Personal',
+                'icon' => 'fa fa-users',
                 'children' => [
-                    [
-                        'title' => 'Empleados',
-                        'route' => 'planilla.empleados',
-                        'can' => Permisos::PERSONAL
-                    ],
-                    [
-                        'title' => 'Actividades Diarias',
-                        'route' => 'planilla.registro_diario',
-                        'can' => Permisos::PLANILLA_ACTIVIDAD
-                    ],
-                    [
-                        'title' => 'Asistencia Mensual',
-                        'route' => 'planilla.asistencia',
-                        'can' => Permisos::PLANILLA_ASISTENCIA
-                    ],
-                    [
-                        'title' => 'Permisos y Suspensiones',
-                        'route' => 'planilla.suspensiones',
-                        'can' => Permisos::PLANILLA_SUSPENSION
-                    ],
-                    [
-                        'title' => 'Resumen Mensual',
-                        'route' => 'planilla.resumen_mensual',
-                        'can' => Permisos::PLANILLA_RESUMEN_MENSUAL
-                    ],
-                    [
-                        'title' => 'Resumen General',
-                        'route' => 'planilla.resumen_general',
-                        'can' => Permisos::PLANILLA_RESUMEN_GENERAL
-                    ],
-                    [
-                        'title' => 'Planilla Agraria',
-                        'route' => 'planilla.blanco',
-                        'can' => Permisos::PLANILLA_BLANCO
-                    ],
-                    [
-                        'title' => 'Planilla Oficina',
-                        'route' => 'planilla.oficina',
-                        'can' => Permisos::PLANILLA_OFICINA
-                    ],
-                    [
-                        'title' => 'Derecho Habientes',
-                        'route' => 'planilla.derecho_habiente',
-                        'can' => Permisos::PLANILLA_FAMILIAR
-                    ],
-                    [
-                        'title' => 'Contratos',
-                        'route' => 'planilla.panel_contrato',
-                        'can' => Permisos::PERSONAL_CONTRATOS
-                    ],
-                    [
-                        'title' => 'Cargos',
-                        'route' => 'planilla.cargos',
-                        'can' => Permisos::PERSONAL_CARGOS
-                    ],
-                    [
-                        'title' => 'Conceptos',
-                        'route' => 'planilla.conceptos',
-                        'can' => Permisos::PLANILLA_CONCEPTO
-                    ],
-                    [
-                        'title' => 'Parámetros',
-                        'route' => 'planilla.parametros',
-                        'can' => Permisos::PLANILLA_PARAMETRO
-                    ],
-                    [
-                        'title' => 'Descuentos de AFP',
-                        'route' => 'planilla.descuentos_afp',
-                        'can' => Permisos::PLANILLA_CONFIG_AFP,
-                    ],
-                    [
-                        'title' => 'Tipo de Asistencia',
-                        'route' => 'planilla.tipos_asistencia',
-                        'can' => Permisos::PLANILLA_CONFIG_ASISTENCIA,
-                    ],
+                    $op('Registro diario', 'Actividades diarias', 'planilla.registro_diario', Permisos::PLANILLA_ACTIVIDAD, Permisos::PLANILLA),
+                    $op('Registro diario', 'Cuadrilla: actividades del día', 'cuadrilla.registro_diario', Permisos::CUADRILLA_DIARIO, Permisos::CUADRILLA),
+                    $op('Registro diario', 'Cuadrilla: horas de la semana', 'cuadrilla.reporte_semanal', Permisos::CUADRILLA_SEMANAL, Permisos::CUADRILLA),
+                    $op('Asistencia', 'Asistencia mensual', 'planilla.asistencia', Permisos::PLANILLA_ASISTENCIA, Permisos::PLANILLA),
+                    $op('Asistencia', 'Permisos y suspensiones', 'planilla.suspensiones', Permisos::PLANILLA_SUSPENSION, Permisos::PLANILLA),
+                    $op('Planillas', 'Planilla agraria', 'planilla.blanco', Permisos::PLANILLA_BLANCO, Permisos::PLANILLA),
+                    $op('Planillas', 'Planilla oficina', 'planilla.oficina', Permisos::PLANILLA_OFICINA, Permisos::PLANILLA),
+                    $op('Planillas', 'Resumen mensual', 'planilla.resumen_mensual', Permisos::PLANILLA_RESUMEN_MENSUAL, Permisos::PLANILLA),
+                    $op('Planillas', 'Resumen general', 'planilla.resumen_general', Permisos::PLANILLA_RESUMEN_GENERAL, Permisos::PLANILLA),
+                    $op('Cuadrilla', 'Panel de cuadrilleros', 'cuadrilla.panel', Permisos::CUADRILLA_PANEL, Permisos::CUADRILLA),
+                    $op('Cuadrilla', 'Lista de cuadrilleros', 'cuadrilla.cuadrilleros', Permisos::CUADRILLA_LISTA, Permisos::CUADRILLA),
+                    $op('Cuadrilla', 'Bonificaciones', 'cuadrilla.bonificaciones', Permisos::CUADRILLA_BONIFICACION, Permisos::CUADRILLA),
+                    $op('Cuadrilla', 'Pagos (desglose)', 'cuadrilla.pagos', Permisos::CUADRILLA, Permisos::CUADRILLA),
+                    $op('Cuadrilla', 'Resumen general de cuadrilla', 'cuadrilla.resumen_general', Permisos::CUADRILLA_RESUMEN_GENERAL, Permisos::CUADRILLA),
+                    $op('Cuadrilla', 'Resumen anual de cuadrilla', 'cuadrilla.resumen_anual', Permisos::CUADRILLA_RESUMEN_ANUAL, Permisos::CUADRILLA),
+                    $op('Empleados', 'Empleados', 'planilla.empleados', Permisos::PERSONAL, Permisos::PLANILLA),
+                    $op('Empleados', 'Contratos', 'planilla.panel_contrato', Permisos::PERSONAL_CONTRATOS, Permisos::PLANILLA),
+                    $op('Empleados', 'Derecho habientes', 'planilla.derecho_habiente', Permisos::PLANILLA_FAMILIAR, Permisos::PLANILLA),
                 ],
             ],
             [
-                'title' => 'Cuadrilla',
-                'icon' => 'fas fa-hard-hat',
-                'can' => Permisos::CUADRILLA,
+                'title' => 'Producción',
+                'icon' => 'fa fa-seedling',
                 'children' => [
-                    ['title' => 'Panel de cuadrilleros', 'route' => 'cuadrilla.panel', 'can' => Permisos::CUADRILLA_PANEL],
-                    ['title' => 'Lista de cuadrilleros', 'route' => 'cuadrilla.cuadrilleros', 'can' => Permisos::CUADRILLA_LISTA],
-                    ['title' => 'Grupos de cuadrillas', 'route' => 'cuadrilla.grupos', 'can' => Permisos::CUADRILLA_GRUPO],
-                    ['title' => 'Reporte semanal (horas)', 'route' => 'cuadrilla.reporte_semanal', 'can' => Permisos::CUADRILLA_SEMANAL],
-                    ['title' => 'Reporte diario (actividades)', 'route' => 'cuadrilla.registro_diario', 'can' => Permisos::CUADRILLA_DIARIO],
-                    ['title' => 'Bonificaciones', 'route' => 'cuadrilla.bonificaciones', 'can' => Permisos::CUADRILLA_BONIFICACION],
-                    ['title' => 'Resumen General', 'route' => 'cuadrilla.resumen_general', 'can' => Permisos::CUADRILLA_RESUMEN_GENERAL],
-                    ['title' => 'Resumen anual', 'route' => 'cuadrilla.resumen_anual', 'can' => Permisos::CUADRILLA_RESUMEN_ANUAL],
-                    ['title' => 'Pagos (desglose)', 'route' => 'cuadrilla.pagos', 'can' => Permisos::CUADRILLA], //crear permiso especial mas adelante
-                ],
-            ],
-
-            [
-                'title' => 'Riego',
-                'icon' => 'fa fa-water',
-                'can' => Permisos::CAMPO_RIEGO,
-                'children' => [
-                    ['title' => 'Reporte diario regadores', 'route' => 'riego.reporte_diario', 'can' => Permisos::CAMPO_RIEGO_REPORTE],
-                    ['title' => 'Labores en riego', 'route' => 'riego.labores', 'can' => Permisos::CAMPO_RIEGO_LABOR],
-                    ['title' => 'Ver estado de riegos', 'route' => 'riego.estados', 'can' => Permisos::CAMPO_RIEGO_ESTADO],
-                    ['title' => 'Resumen diario de riegos', 'route' => 'riego.resumen_diario', 'can' => Permisos::CAMPO_RIEGO_RESUMEN],
+                    $op('Campañas', 'Campañas', 'campania.resumen', Permisos::CAMPAÑA_RESUMEN, Permisos::CAMPAÑA),
+                    $op('Campañas', 'Campañas por campo', 'campania.por_campo', Permisos::CAMPAÑA_POR_CAMPO, Permisos::CAMPAÑA),
+                    $op('Campañas', 'Informes mensuales', 'campania.informes_mensuales', Permisos::CAMPAÑA_INFORME_MENSUAL, Permisos::CAMPAÑA),
+                    $op('Cochinilla', 'Ingreso', 'cochinilla.ingreso', Permisos::COCHINILLA_INGRESO, Permisos::COCHINILLA),
+                    $op('Cochinilla', 'Venteado', 'cochinilla.venteado', Permisos::COCHINILLA_VENTEADO, Permisos::COCHINILLA),
+                    $op('Cochinilla', 'Filtrado', 'cochinilla.filtrado', Permisos::COCHINILLA_FILTRADO, Permisos::COCHINILLA),
+                    $op('Cochinilla', 'Cosecha mamás', 'cochinilla.cosecha_mamas', Permisos::COCHINILLA_COSECHA, Permisos::COCHINILLA),
+                    $op('Cochinilla', 'Infestación', 'cochinilla.infestacion', Permisos::COCHINILLA_INFESTACION, Permisos::COCHINILLA),
+                    $op('Cochinilla', 'Por recuperar', 'cochinilla.recuperacion', Permisos::COCHINILLA_RECUPERACION, Permisos::COCHINILLA),
+                    $op('Cochinilla', 'Venta', 'cochinilla.ventas', Permisos::COCHINILLA_VENTA, Permisos::COCHINILLA),
+                    $op('Evaluaciones', 'Población de plantas', 'evaluacion.poblacion_plantas', Permisos::PLANTA_EVALUACION, Permisos::EVALUACION),
+                    $op('Evaluaciones', 'Brotes por piso', 'evaluacion.brotes', Permisos::BROTE_EVALUACION, Permisos::EVALUACION),
+                    $op('Evaluaciones', 'Infestación a la cosecha', 'evaluacion.infestacion_cosecha', Permisos::INFESTACION_EVALUACION, Permisos::EVALUACION),
+                    $op('Evaluaciones', 'Proyección rendimiento poda', 'evaluacion.proyeccion_rendimiento_poda', Permisos::PROYECCION_EVALUACION, Permisos::EVALUACION),
+                    $op('Riego', 'Reporte diario de regadores', 'riego.reporte_diario', Permisos::CAMPO_RIEGO_REPORTE, Permisos::CAMPO_RIEGO),
+                    $op('Riego', 'Estado de riegos', 'riego.estados', Permisos::CAMPO_RIEGO_ESTADO, Permisos::CAMPO_RIEGO),
+                    $op('Riego', 'Resumen diario de riegos', 'riego.resumen_diario', Permisos::CAMPO_RIEGO_RESUMEN, Permisos::CAMPO_RIEGO),
+                    $op('Campo', 'Siembras', 'campo.siembras', Permisos::CAMPO_SIEMBRA, Permisos::CAMPO),
+                    $op('Campo', 'Servicios en campo', 'campo.servicios', Permisos::CAMPO, Permisos::CAMPO),
                 ],
             ],
             [
-                'title' => 'Campo',
-                'icon' => 'fa fa-leaf',
-                'can' => Permisos::CAMPO,
+                'title' => 'Almacén',
+                'icon' => 'fa fa-warehouse',
                 'children' => [
-                    ['title' => 'Labores', 'route' => 'campo.labores', 'can' => Permisos::CAMPO_LABOR],
-                    ['title' => 'Mano de obra', 'route' => 'costos.mano_obra', 'can' => Permisos::CAMPO_MANO_OBRA],
-                    ['title' => 'Costos (BDD)', 'route' => 'costos.campo'],
-                    ['title' => 'Servicios en campo', 'route' => 'campo.servicios', 'can' => Permisos::CAMPO],
-                    ['title' => 'Campos', 'route' => 'campo.campos', 'can' => Permisos::CAMPO_PARCELA],
-                    ['title' => 'Siembras', 'route' => 'campo.siembras', 'can' => Permisos::CAMPO_SIEMBRA],
-                    ['title' => 'Maquinarias', 'route' => 'campo.maquinarias', 'can' => Permisos::CAMPO_MAQUINARIA],
+                    $op('Movimientos', 'Entradas (compras)', 'almacen.compras', Permisos::INSUMO_COMPRA, Permisos::INSUMO),
+                    $op('Movimientos', 'Salidas: pesticidas y fertilizantes', 'almacen.salida_productos', Permisos::INSUMO_SALIDA, Permisos::INSUMO),
+                    $op('Movimientos', 'Salidas: combustible', 'almacen.salida_combustible', Permisos::INSUMO_COMBUSTIBLE, Permisos::INSUMO),
+                    $op('Movimientos', 'Distribución de combustible', 'almacen.distribucion_combustible', Permisos::INSUMO_DISTRIBUCION, Permisos::INSUMO),
+                    $op('Kardex', 'Kardex de insumos', 'almacen.kardex', Permisos::INSUMO_KARDEX, Permisos::INSUMO),
+                    $op('Kardex', 'Kardex por insumo', 'almacen.kardex.crear', Permisos::INSUMO_KARDEX, Permisos::INSUMO),
+                    $op('Kardex', 'Carga de kardex anual', 'almacen.kardex.carga', Permisos::INSUMO_KARDEX, Permisos::INSUMO),
+                    $op('Kardex', 'Reporte de kardex', 'almacen.kardex.reportes', Permisos::INSUMO_KARDEX_REPORTE, Permisos::INSUMO),
                 ],
             ],
             [
-                'title' => 'Campañas',
-                'icon' => 'fa fa-flag',
-                'can' => Permisos::CAMPAÑA,
+                'title' => 'Costos y caja',
+                'icon' => 'fa fa-calculator',
                 'children' => [
-                    [
-                        'title' => 'Campañas',
-                        'route' => 'campania.resumen',
-                        'can' => Permisos::CAMPAÑA_RESUMEN,
-                    ],
-                    [
-                        'title' => 'Campañas por campo',
-                        'route' => 'campania.por_campo',
-                        'can' => Permisos::CAMPAÑA_POR_CAMPO,
-                    ],
-                    [
-                        'title' => 'Informes mensuales',
-                        'route' => 'campania.informes_mensuales',
-                        'can' => Permisos::CAMPAÑA_INFORME_MENSUAL,
-                    ],
+                    $op('Costos', 'Costos (BDD)', 'costos.campo', null),
+                    $op('Costos', 'Costos mensuales', 'costos.mensuales', Permisos::CONTABILIDAD_COSTO_MENSUAL_LISTA, Permisos::CONTABILIDAD),
+                    $op('Costos', 'Costo mensual', 'costos.mensual', Permisos::CONTABILIDAD_COSTO_MENSUAL, Permisos::CONTABILIDAD),
+                    $op('Costos', 'Mano de obra indirecta', 'costos.mano_obra_indirecta', Permisos::CONTABILIDAD_COSTO_MENSUAL, Permisos::CONTABILIDAD),
+                    $op('Costos', 'Costos por campaña', 'costos.campania', Permisos::CAMPAÑA_COSTOS, Permisos::CONTABILIDAD),
+                    $op('Caja', 'Movimientos de caja', 'caja.movimientos', Permisos::CAJA_MOVIMIENTO, Permisos::CAJA),
+                    $op('Caja', 'Caja de oficina', 'caja.oficina', Permisos::CAJA_OFICINA, Permisos::CAJA),
+                    $op('Caja', 'Historial de caja', 'caja.historial', Permisos::CAJA_HISTORIAL, Permisos::CAJA),
                 ],
             ],
             [
-                'title' => 'Cochinilla',
-                'icon' => 'fa fa-bug',
-                'can' => Permisos::COCHINILLA,
+                'title' => 'Reportes',
+                'icon' => 'fa fa-chart-line',
                 'children' => [
-                    ['title' => 'Ingreso', 'route' => 'cochinilla.ingreso', 'can' => Permisos::COCHINILLA_INGRESO],
-                    ['title' => 'Venteado', 'route' => 'cochinilla.venteado', 'can' => Permisos::COCHINILLA_VENTEADO],
-                    ['title' => 'Filtrado', 'route' => 'cochinilla.filtrado', 'can' => Permisos::COCHINILLA_FILTRADO],
-                    ['title' => 'Cosecha Mamas', 'route' => 'cochinilla.cosecha_mamas', 'can' => Permisos::COCHINILLA_COSECHA],
-                    ['title' => 'Infestación', 'route' => 'cochinilla.infestacion', 'can' => Permisos::COCHINILLA_INFESTACION],
-                    ['title' => 'Por recuperar', 'route' => 'cochinilla.recuperacion', 'can' => Permisos::COCHINILLA_RECUPERACION],
-                    ['title' => 'Venta', 'route' => 'cochinilla.ventas', 'can' => Permisos::COCHINILLA_VENTA],
+                    $op('Reportes', 'Reporte diario', 'reporte.diario', Permisos::REPORTE_DIARIO, Permisos::REPORTE),
+                    $op('Reportes', 'Reporte mensual', 'reporte.mensual', Permisos::REPORTE_MENSUAL, Permisos::REPORTE),
+                    $op('Reportes', 'Reporte anual', 'reporte.anual', Permisos::REPORTE_ANUAL, Permisos::REPORTE),
+                    $op('Reportes', 'Historial laboral', 'reporte.historial_laboral', Permisos::REPORTE_HISTORIAL_LABORAL, Permisos::REPORTE),
+                    $op('Reportes', 'Auditoría', 'reporte.auditoria', Permisos::REPORTE_AUDITORIA, Permisos::REPORTE),
                 ],
             ],
             [
-                'title' => 'Evaluación de Campo',
-                'icon' => 'fa fa-file',
-                'can' => Permisos::EVALUACION,
+                'title' => 'Catálogos',
+                'icon' => 'fa fa-book',
                 'children' => [
-                    ['title' => 'Población Plantas', 'route' => 'evaluacion.poblacion_plantas', 'can' => Permisos::PLANTA_EVALUACION],
-                    ['title' => 'Brotes x Piso', 'route' => 'evaluacion.brotes', 'can' => Permisos::BROTE_EVALUACION],
-                    ['title' => 'Evaluación Infestación Cosecha', 'route' => 'evaluacion.infestacion_cosecha', 'can' => Permisos::INFESTACION_EVALUACION],
-                    ['title' => 'Proyección Rendimiento Poda', 'route' => 'evaluacion.proyeccion_rendimiento_poda', 'can' => Permisos::PROYECCION_EVALUACION],
-                ],
-            ],
-            [
-                'title' => 'Producto y Nutrientes',
-                'icon' => 'fa fa-box',
-                'can' => Permisos::INSUMO_CATALOGO,
-                'children' => [
-                    ['title' => 'Productos', 'route' => 'producto.index', 'can' => Permisos::INSUMO_PRODUCTO],
-                    ['title' => 'Categorias', 'route' => 'producto.categorias', 'can' => Permisos::INSUMO_CATEGORIA],
-                    ['title' => 'Subcategorias', 'route' => 'producto.subcategorias', 'can' => Permisos::INSUMO_SUBCATEGORIA],
-                    ['title' => 'Usos', 'route' => 'producto.usos', 'can' => Permisos::INSUMO_USO],
-                    ['title' => 'Nutrientes', 'route' => 'producto.nutrientes', 'can' => Permisos::INSUMO_NUTRIENTE],
-                    ['title' => 'Tabla de concentración', 'route' => 'producto.tabla_concentracion', 'can' => Permisos::INSUMO_CONCENTRACION],
-                    ['title' => 'Proveedores', 'route' => 'almacen.proveedores', 'can' => Permisos::INSUMO_PROVEEDOR],
-                ],
-            ],
-            [
-                'title' => 'Kardex y Almacén',
-                'icon' => 'fa fa-clipboard-list',
-                'can' => Permisos::INSUMO,
-                'children' => [
-                    [
-                        'title' => 'Entradas (compras)',
-                        'route' => 'almacen.compras',
-                        'can' => Permisos::INSUMO_COMPRA,
-                    ],
-                    [
-                        'title' => 'Salida de Almacén Pesticidas y Fertilizantes',
-                        'route' => 'almacen.salida_productos',
-                        'can' => Permisos::INSUMO_SALIDA,
-                    ],
-                    [
-                        'title' => 'Salida de Combustible',
-                        'route' => 'almacen.salida_combustible',
-                        'can' => Permisos::INSUMO_COMBUSTIBLE,
-                    ],
-                    [
-                        'title' => 'Distribución de Combustible',
-                        'route' => 'almacen.distribucion_combustible',
-                        'can' => Permisos::INSUMO_DISTRIBUCION,
-                    ],
-                    [
-                        'title' => 'Kardex de Insumos',
-                        'route' => 'almacen.kardex',
-                        'can' => Permisos::INSUMO_KARDEX,
-                    ],
-                    [
-                        // Misma guardia que Kardex — comparte permisos hijos
-                        'title' => 'Kardex por Insumo',
-                        'route' => 'almacen.kardex.crear',
-                        'can' => Permisos::INSUMO_KARDEX,
-                    ],
-                    [
-                        'title' => 'Carga de KARDEX anual',
-                        'route' => 'almacen.kardex.carga',
-                        'can' => Permisos::INSUMO_KARDEX,
-                    ],
-                    [
-                        'title' => 'Reporte de Kardex',
-                        'route' => 'almacen.kardex.reportes',
-                        'can' => Permisos::INSUMO_KARDEX_REPORTE,
-                    ],
+                    $op('Campo', 'Campos', 'campo.campos', Permisos::CAMPO_PARCELA, Permisos::CAMPO),
+                    $op('Campo', 'Labores', 'campo.labores', Permisos::CAMPO_LABOR, Permisos::CAMPO),
+                    $op('Campo', 'Mano de obra', 'costos.mano_obra', Permisos::CAMPO_MANO_OBRA, Permisos::CAMPO),
+                    $op('Campo', 'Labores de riego', 'riego.labores', Permisos::CAMPO_RIEGO_LABOR, Permisos::CAMPO_RIEGO),
+                    $op('Campo', 'Maquinarias', 'campo.maquinarias', Permisos::CAMPO_MAQUINARIA, Permisos::CAMPO),
+                    $op('Insumos', 'Productos', 'producto.index', Permisos::INSUMO_PRODUCTO, Permisos::INSUMO_CATALOGO),
+                    $op('Insumos', 'Categorías', 'producto.categorias', Permisos::INSUMO_CATEGORIA, Permisos::INSUMO_CATALOGO),
+                    $op('Insumos', 'Subcategorías', 'producto.subcategorias', Permisos::INSUMO_SUBCATEGORIA, Permisos::INSUMO_CATALOGO),
+                    $op('Insumos', 'Usos', 'producto.usos', Permisos::INSUMO_USO, Permisos::INSUMO_CATALOGO),
+                    $op('Insumos', 'Nutrientes', 'producto.nutrientes', Permisos::INSUMO_NUTRIENTE, Permisos::INSUMO_CATALOGO),
+                    $op('Insumos', 'Tabla de concentración', 'producto.tabla_concentracion', Permisos::INSUMO_CONCENTRACION, Permisos::INSUMO_CATALOGO),
+                    $op('Insumos', 'Proveedores', 'almacen.proveedores', Permisos::INSUMO_PROVEEDOR, Permisos::INSUMO_CATALOGO),
+                    $op('Personal', 'Cargos', 'planilla.cargos', Permisos::PERSONAL_CARGOS, Permisos::PLANILLA),
+                    $op('Personal', 'Conceptos', 'planilla.conceptos', Permisos::PLANILLA_CONCEPTO, Permisos::PLANILLA),
+                    $op('Personal', 'Parámetros', 'planilla.parametros', Permisos::PLANILLA_PARAMETRO, Permisos::PLANILLA),
+                    $op('Personal', 'Descuentos de AFP', 'planilla.descuentos_afp', Permisos::PLANILLA_CONFIG_AFP, Permisos::PLANILLA),
+                    $op('Personal', 'Tipos de asistencia', 'planilla.tipos_asistencia', Permisos::PLANILLA_CONFIG_ASISTENCIA, Permisos::PLANILLA),
+                    $op('Personal', 'Grupos de cuadrilla', 'cuadrilla.grupos', Permisos::CUADRILLA_GRUPO, Permisos::CUADRILLA),
                 ],
             ],
             [
                 'title' => 'Sistema',
-                'icon' => 'fas fa-palette',
-                'can' => Permisos::SISTEMA,
+                'icon' => 'fa fa-gear',
                 'children' => [
-                    [
-                        'title' => 'Usuarios',
-                        'route' => 'sistema.usuarios',
-                        'can' => Permisos::SISTEMA_USUARIO,
-                    ],
-                    [
-                        'title' => 'Roles y Permisos',
-                        'route' => 'sistema.roles',
-                        'can' => Permisos::SISTEMA_ROL,
-                    ],
-                    [
-                        'title' => 'Configuración',
-                        'route' => 'sistema.configuracion',
-                        'can' => Permisos::SISTEMA_CONFIGURACION,
-                    ],
-                    [
-                        'title' => 'Errores',
-                        'route' => 'sistema.errores',
-                        'can' => Permisos::SISTEMA_ERRORES,
-                    ],
-                ],
-            ],
-            [
-                'title' => 'Contabilidad',
-                'icon' => 'fa fa-calculator',
-                'can' => Permisos::CONTABILIDAD,
-                'children' => [
-                    ['title' => 'Costos Mensuales', 'route' => 'costos.mensuales', 'can' => Permisos::CONTABILIDAD_COSTO_MENSUAL_LISTA],
-                    ['title' => 'Costo Mensual', 'route' => 'costos.mensual', 'can' => Permisos::CONTABILIDAD_COSTO_MENSUAL],
-                    ['title' => 'Mano de Obra Indirecta', 'route' => 'costos.mano_obra_indirecta', 'can' => Permisos::CONTABILIDAD_COSTO_MENSUAL],
-                    ['title' => 'Costos x Campaña', 'route' => 'costos.campania', 'can' => Permisos::CAMPAÑA_COSTOS],
-                    
-                ],
-            ],
-
-            [
-                'title' => 'Caja',
-                'icon' => 'fa fa-cash-register',
-                'can' => Permisos::CAJA,
-                'children' => [
-                    ['title' => 'Movimientos de caja', 'route' => 'caja.movimientos', 'can' => Permisos::CAJA_MOVIMIENTO],
-                    ['title' => 'Caja de oficina', 'route' => 'caja.oficina', 'can' => Permisos::CAJA_OFICINA],
-                    ['title' => 'Historial de caja', 'route' => 'caja.historial', 'can' => Permisos::CAJA_HISTORIAL],
-                ],
-            ],
-
-            [
-                'title' => 'Reporte y Auditoria',
-                'icon' => 'fa fa-file',
-                'can' => Permisos::REPORTE,
-                'children' => [
-                    ['title' => 'Reporte Diario', 'route' => 'reporte.diario', 'can' => Permisos::REPORTE_DIARIO],
-                    ['title' => 'Reporte Mensual', 'route' => 'reporte.mensual', 'can' => Permisos::REPORTE_MENSUAL],
-                    ['title' => 'Reporte Anual', 'route' => 'reporte.anual', 'can' => Permisos::REPORTE_ANUAL],
-                    ['title' => 'Historial laboral', 'route' => 'reporte.historial_laboral', 'can' => Permisos::REPORTE_HISTORIAL_LABORAL],
-                    ['title' => 'Auditoria', 'route' => 'reporte.auditoria', 'can' => Permisos::REPORTE_AUDITORIA],
+                    $op('Sistema', 'Usuarios', 'sistema.usuarios', Permisos::SISTEMA_USUARIO, Permisos::SISTEMA),
+                    $op('Sistema', 'Roles y permisos', 'sistema.roles', Permisos::SISTEMA_ROL, Permisos::SISTEMA),
+                    $op('Sistema', 'Configuración', 'sistema.configuracion', Permisos::SISTEMA_CONFIGURACION, Permisos::SISTEMA),
+                    $op('Sistema', 'Errores', 'sistema.errores', Permisos::SISTEMA_ERRORES, Permisos::SISTEMA),
                 ],
             ],
         ];
@@ -331,97 +166,46 @@ class Sidebar extends Component
     }
 
     /**
-     * Decide si el usuario actual puede ver un ítem del menú.
-     *
-     * Reglas en orden:
-     *  1. Super Admin  → siempre true.
-     *  2. Administrador → true SALVO que el 'can' del ítem esté en EXCEPCIONES_ADMINISTRADOR.
-     *  3. Cualquier otro rol → evalúa 'can' normalmente con Spatie.
+     * Decide si el usuario actual puede ver una opción del menú.
+     *  1. Super Admin  → siempre.
+     *  2. Administrador → siempre, salvo que el 'can' de la opción esté en EXCEPCIONES_ADMINISTRADOR.
+     *  3. Otro rol → necesita el 'can' de la opción y el de su módulo ('modulo'), como cuando cada módulo era un grupo.
      */
     private function puedeVer(array $item): bool
     {
         $user = auth()->user();
 
-        if ($user->hasRole('Super Admin'))
-            return true;
-
-        if ($user->hasRole('Administrador')) {
-            if (isset($item['can'])) {
-                $estaExcluido = !empty(
-                    array_intersect((array) $item['can'], self::EXCEPCIONES_ADMINISTRADOR)
-                );
-                if ($estaExcluido)
-                    return false;
-            }
+        if ($user->hasRole('Super Admin')) {
             return true;
         }
-
-        // Otro rol: verificar solo el 'can' del propio nodo, sin importar hijos ni padres
-        if (!isset($item['can']))
+        if ($user->hasRole('Administrador')) {
+            return !isset($item['can']) || !array_intersect((array) $item['can'], self::EXCEPCIONES_ADMINISTRADOR);
+        }
+        if (!isset($item['can'])) {
             return false;
-
-        return $user->can($item['can']);
+        }
+        return $user->can($item['can']) && (!isset($item['modulo']) || $user->can($item['modulo']));
     }
 
+    /** Grupos con sus opciones visibles; un grupo sin ninguna opción visible no aparece. */
     private function filterMenu(array $items): array
     {
-        $currentRoute = Route::currentRouteName();
+        $actual = Route::currentRouteName();
 
         return collect($items)
-            ->filter(fn($item) => $this->puedeVer($item))
-            ->map(function ($item) use ($currentRoute) {
-
-                if (isset($item['children'])) {
-                    // Filtrar hijos recursivamente con la misma lógica
-                    $item['children'] = collect($item['children'])
-                        ->filter(fn($child) => $this->puedeVer($child))
-                        ->map(function ($child) use ($currentRoute) {
-                        // Si el hijo también tiene children, filtrarlos recursivamente
-                        if (isset($child['children'])) {
-                            $child = $this->mapItem($child, $currentRoute);
-                        } else {
-                            $child['url'] = route($child['route']);
-                            $child['isActive'] = Route::currentRouteName() === $child['route'];
-                        }
-                        return $child;
-                    })
-                        ->values()
-                        ->toArray();
-
-                    // Padre visible aunque no tenga hijos visibles
-                    // (él mismo tiene el permiso, no depende de sus hijos)
-                    $item['isActive'] = collect($item['children'])->contains('isActive', true);
-
-                } else {
-                    $item['url'] = route($item['route']);
-                    $item['isActive'] = $currentRoute === $item['route'];
-                }
-
-                return $item;
+            ->map(function ($grupo) use ($actual) {
+                $grupo['children'] = collect($grupo['children'])
+                    ->filter(fn($op) => Route::has($op['route']) && $this->puedeVer($op))
+                    ->map(fn($op) => $op + ['url' => route($op['route']), 'isActive' => $actual === $op['route']])
+                    ->values()
+                    ->all();
+                $grupo['isActive'] = collect($grupo['children'])->contains('isActive', true);
+                return $grupo;
             })
+            ->filter(fn($grupo) => $grupo['children'])
             ->values()
-            ->toArray();
+            ->all();
     }
-
-    // Extrae el map recursivo para no duplicar código
-    private function mapItem(array $item, string $currentRoute): array
-    {
-        if (isset($item['children'])) {
-            $item['children'] = collect($item['children'])
-                ->filter(fn($child) => $this->puedeVer($child))
-                ->map(fn($child) => $this->mapItem($child, $currentRoute))
-                ->values()
-                ->toArray();
-
-            $item['isActive'] = collect($item['children'])->contains('isActive', true);
-        } else {
-            $item['url'] = route($item['route']);
-            $item['isActive'] = Route::currentRouteName() === $item['route'];
-        }
-
-        return $item;
-    }
-
     public function render(): View|Closure|string
     {
         return view('components.layouts.sidebar');

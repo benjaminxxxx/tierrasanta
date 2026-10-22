@@ -26,7 +26,8 @@ class CochinillaRecuperacionConsulta
         $infestaciones = CochinillaInfestacion::where('fecha', '>=', $desde)
             ->when($campo, fn($q) => $q->where('campo_nombre', $campo))
             ->orderBy('campo_nombre')->orderBy('fecha')->orderBy('id')
-            ->get(['id', 'fecha', 'campo_nombre', 'campo_origen_nombre', 'kg_madres', 'infestadores', 'metodo', 'tipo_infestacion', 'campo_campania_id']);
+            // infestadores no es columna: lo calcula el modelo con numero_envases × capacidad_envase
+            ->get(['id', 'fecha', 'campo_nombre', 'campo_origen_nombre', 'kg_madres', 'numero_envases', 'capacidad_envase', 'metodo', 'tipo_infestacion', 'campo_campania_id']);
         $cerradas = CochinillaRecuperacion::with('cerradaPor:id,name')->where('tanda_inicio', '>=', $desde)->get()
             ->keyBy(fn($r) => $r->campo . '|' . $r->tanda_inicio->toDateString());
         $alerta = CochinillaRecuperacionReglas::diasAlerta();

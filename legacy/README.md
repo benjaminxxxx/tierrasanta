@@ -204,3 +204,43 @@ de cuadrilla). Los permisos `CONTABILIDAD_FDM*` siguen en `Permisos.php`, sin us
 | Qué | Por qué se retiró |
 |---|---|
 | `resources/views/components/selector-dia.blade.php` (versión flatpickr + `wire:ignore` + hook `commit`) | Reemplazado por `<x-fecha>` (`resources/views/components/fecha.blade.php` + `resources/js/components/campo-fecha.js`): se escribe con máscara dd/mm/aaaa (relleno de ceros automático) o se elige en el almanaque (Hoy / Borrar), y solo envía la fecha cuando está completa. `x-selector-dia` ahora es un alias de `x-fecha`; `x-input type="date"` también lo usa. |
+
+### Migraciones anteriores a la consolidación (21/10/2026)
+
+`legacy/database/migrations/` tiene las 198 migraciones históricas. Se reemplazaron por **una migración por tabla**
+(`database/migrations/2026_09_01_*`), generadas del esquema final y en orden de dependencias (los triggers van en la
+migración de su tabla). Los datos iniciales que cargaban algunas migraciones pasaron a los seeders
+(`ConfiguracionTableSeeder`, `PermisosSeeder`, `LaboresSeeder`).
+
+- **Instalación nueva:** `php artisan migrate --seed`.
+- **Base existente (dominio antiguo):** respaldo, desplegar el código y luego
+  1. `php artisan migrate --path=legacy/database/migrations` (las anteriores que falten);
+  2. `php artisan migraciones:consolidar --verificar` (compara el esquema real con `database/consolidacion/esquema.json`);
+  3. `php artisan migraciones:consolidar` (o `--forzar` si las diferencias son aceptables): reemplaza los registros de
+     la tabla `migrations` por los nombres nuevos. No toca tablas ni datos.
+
+### Seeders de datos (21/10/2026)
+
+`legacy/database/seeders/` tiene los seeders con datos de la empresa (campos, labores, configuración, usuarios…). Los
+reemplaza el **Excel de recursos** (Sistema → Configuración, o `php artisan libro:excel recursos importar RECURSOS.xlsx --guardar`).
+`DatabaseSeeder` solo crea lo necesario para entrar: permisos, rol y usuario Super Admin (`SUPERADMIN_EMAIL`,
+`SUPERADMIN_PASSWORD` en el .env) y las tablas SUNAT. `PlanTipoAsistenciaSeeder` sigue en `database/seeders` porque lo
+usa "Restaurar por defecto" de tipos de asistencia.
+
+### Dashboard anterior (21/10/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| `app/Livewire/Sistema/DashboardComponent.php` y `livewire/sistema/dashboard-component` | Reemplazado por el inicio nuevo (`SistemaInicioComponent` + `Services/Sistema/Inicio/SistemaInicioConsulta`), con el diseño de `DESIGN.md`: indicadores del mes, gráficos del año, alertas y accesos. |
+| `app/Livewire/Cochinilla/CochinillaInfestacionStatsComponent.php`, `CochinillaInfestacionResumenGeneralComponent.php` y sus vistas | Bloques de infestación del dashboard anterior (9 tarjetas). El inicio muestra el resumen del mes; el detalle está en Cochinilla → Infestación. |
+| `app/Models/EstadisticaMensual.php` | Estadísticas guardadas a mano con el botón "Actualizar" del dashboard anterior. El inicio calcula en vivo. La tabla `estadistica_mensuales` se conserva. |
+
+### Importador antiguo de labores (21/10/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| `app/Services/Campo/Labor/ImportarLaborProceso.php` | Importaba labores desde un Excel propio (hojas `LABORES` / `TRAMOS` con tablas con nombre). Lo reemplaza el botón flotante "Recursos" de la página de labores (Excel de recursos, hojas Labores y Tramos de bono, con vista previa). Se quitó el botón "Importar desde Excel" y `updatedFileLabores` de `LaboresComponent`. |
+
+### Tablas antiguas fuera de la instalación nueva (22/10/2026)
+
+`legacy/database/migraciones-retiradas/` tiene las migraciones de `tienda_comercials` y `compra_productos` (compras antiguas, ya migradas a `compras` / `compra_detalles` / `proveedores`). Una instalación nueva ya no las crea. En el dominio antiguo las tablas siguen con sus datos (el verificador de `migraciones:consolidar` las mostrará como tablas extra).
