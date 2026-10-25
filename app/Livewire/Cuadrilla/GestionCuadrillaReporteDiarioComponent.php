@@ -20,6 +20,8 @@ class GestionCuadrillaReporteDiarioComponent extends Component
     public $trabajadores = [];
     public $totalColumnas = 0;
     public $labores = [];
+    /** codigo => nombre de la labor (buscador por labor) */
+    public $laboresNombres = [];
     public $campos = [];
     public $tramos = [];
     public $tramoSeleccionadoId;
@@ -59,6 +61,7 @@ class GestionCuadrillaReporteDiarioComponent extends Component
     private function inicializarValores()
     {
         $this->labores = Labores::get()->pluck('codigo')->toArray();
+        $this->laboresNombres = Labores::pluck('nombre_labor', 'codigo')->toArray();
         $this->campos = Campo::get()->pluck('nombre')->toArray();
     }
     private function cargarDatosDeReporte()

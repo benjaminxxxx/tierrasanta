@@ -31,9 +31,12 @@ class ConfiguracionSistemaComponent extends Component
     /** @var array<int, mixed> días después de la infestación de la 1ª, 2ª… evaluación de infestación */
     public array $diasInfestacion = [];
     public bool $avisarInfestacionCerradas = false;
+    /** Datos de la empresa (encabezados de reportes y Excel) */
+    public array $empresa = ['ruc' => '', 'razon_social' => '', 'establecimiento' => ''];
 
     public function mount(): void
     {
+        $this->empresa = array_map(fn($v) => (string) $v, \App\Services\Sistema\Empresa\SistemaEmpresaProceso::datos());
         $this->diasBrotes = CampaniaEtapaReglas::diasEvaluacionBrotes();
         $this->diasMaximo = CampaniaEtapaReglas::diasMaximoSugerencia();
         $this->diasInfestacion = CampaniaEtapaReglas::diasEvaluacionInfestacion();
@@ -44,6 +47,18 @@ class ConfiguracionSistemaComponent extends Component
         $this->factorSeco = \App\Services\Cochinilla\Recuperacion\CochinillaRecuperacionReglas::factorSeco();
         $this->mesesEtapas = \App\Services\Campania\InformeMensual\CampaniaInformeMensualReglas::mesesProyectadosEtapas();
         $this->vendibles = \App\Models\CochinillaObservacion::orderBy('descripcion')->pluck('es_vendible', 'codigo')->map(fn($v) => (bool) $v)->all();
+    }
+
+    public function guardarEmpresa(): void
+    {
+        try {
+            app(\App\Services\Sistema\Empresa\SistemaEmpresaProceso::class)
+                ->guardar($this->empresa['ruc'], $this->empresa['razon_social'], $this->empresa['establecimiento']);
+            $this->empresa = array_map(fn($v) => (string) $v, \App\Services\Sistema\Empresa\SistemaEmpresaProceso::datos());
+            $this->alert('success', 'Datos de la empresa guardados. Los reportes y Excel nuevos ya los usan.');
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+        }
     }
 
     public function agregarEvaluacion(): void

@@ -34,8 +34,5 @@ class PlanActividadBono extends Model
     {
         return $this->belongsTo(Actividad::class, 'actividad_id');
     }
-    public function producciones()
-    {
-        return $this->hasMany(PlanActividadProduccion::class, 'actividad_bono_id');
-    }
+    // Las cantidades producidas están en produccion_registros (Campo/Produccion), por actividad y trabajador
 }

@@ -11,7 +11,7 @@ use Livewire\Component;
 class ConsolidadoRiegoComponent extends Component
 {
     use LivewireAlert, ConFechaReporteDia, \App\Traits\HandlesAlerts;
-    public $consolidado_riegos;
+    public $consolidado_riegos = [];
     protected $listeners = ['RefrescarMapa' => '$refresh', 'registroConsolidado' => '$refresh'];
     public function mount()
     {
@@ -36,10 +36,10 @@ class ConsolidadoRiegoComponent extends Component
     }
     public function render()
     {
-        if ($this->fecha) {
-            $this->consolidado_riegos = ConsolidadoRiego::with(['trabajador'])->whereDate('fecha', $this->fecha)->get();
-
-        }
+        // Sin fecha, lista vacía (antes quedaba en null y la vista fallaba en el foreach)
+        $this->consolidado_riegos = $this->fecha
+            ? ConsolidadoRiego::with(['trabajador'])->whereDate('fecha', $this->fecha)->get()
+            : collect();
         return view('livewire.riego.consolidado-riego-component');
     }
 }

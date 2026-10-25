@@ -31,6 +31,11 @@ class Actividad extends Model
     {
         return $this->hasMany(ActividadMetodo::class, 'actividad_id')->orderBy('orden');
     }
+    /** Cantidades producidas (con y sin bono). */
+    public function producciones(): HasMany
+    {
+        return $this->hasMany(ProduccionRegistro::class, 'actividad_id');
+    }
     protected static function booted()
     {
         static::creating(function ($model) {

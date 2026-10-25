@@ -50,18 +50,10 @@ class DerechoHabienteWizardComponent extends Component
     #[\Livewire\Attributes\Renderless]
     public function getEmpleados($search)
     {
-        $query = PlanEmpleado::orderBy('nombres');
+        // Nombres y DNI viven en la persona del empleado (scopes buscar / ordenarPor)
+        $query = PlanEmpleado::buscar($search)->ordenarPor('nombres');
 
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('nombres', 'like', "%{$search}%")
-                    ->orWhere('apellido_paterno', 'like', "%{$search}%")
-                    ->orWhere('apellido_materno', 'like', "%{$search}%")
-                    ->orWhere('documento', 'like', "%{$search}%");
-            });
-        }
-
-        return $query->limit(10)->get(['id', 'nombres', 'apellido_paterno', 'apellido_materno'])
+        return $query->limit(10)->get()
             ->map(fn ($e) => [
                 'id' => $e->id,
                 'name' => trim("{$e->nombres} {$e->apellido_paterno} {$e->apellido_materno}"),

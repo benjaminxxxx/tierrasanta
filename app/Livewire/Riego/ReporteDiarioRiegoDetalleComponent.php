@@ -39,16 +39,16 @@ class ReporteDiarioRiegoDetalleComponent extends Component
     public $hora_fin_almuerzo;
     public $mostrarExplicacion = false;
     protected $listeners = ["registroConsolidado"];
-    public function mount($resumenId)
+    /**
+     * $tipoLabores y $campos llegan del padre (se leen una vez para todos los regadores); si no, se consultan.
+     */
+    public function mount($resumenId, $tipoLabores = null, $campos = null)
     {
         $this->resumenRiego = ConsolidadoRiego::find($resumenId);
         $this->sincronizarAcumulado();
         $this->idTable = 'componenteTable' . Str::random(5);
-        $this->tipoLabores = LaboresRiego::pluck('nombre_labor')->toArray();
-        array_unshift($this->tipoLabores, '');
-
-        $this->campos = Campo::pluck('nombre')->toArray();
-        array_unshift($this->campos, '');
+        $this->tipoLabores = $tipoLabores ?? array_merge([''], LaboresRiego::pluck('nombre_labor')->toArray());
+        $this->campos = $campos ?? array_merge([''], Campo::pluck('nombre')->toArray());
 
         $this->obtenerRegistrosDiarios(false);
         if ($this->resumenRiego) {
@@ -119,7 +119,8 @@ class ReporteDiarioRiegoDetalleComponent extends Component
             $this->mostrarDetalleAcumulado = false; // ← cerrar modal
             $this->detalleAcumulado = [];           // ← limpiar datos
 
-            $this->dispatch('registroConsolidado');
+            // Solo este regador se refresca (los demás no cambiaron)
+            $this->dispatch('registroConsolidado', resumenRiegoId: $this->resumenRiego->id);
             $this->alert('success', 'Horas acumuladas liberadas correctamente.');
         } catch (\Throwable $th) {
             $this->errorAlert($th);
@@ -128,7 +129,8 @@ class ReporteDiarioRiegoDetalleComponent extends Component
     public function registroConsolidado($resumenRiegoId = null)
     {
         if ($resumenRiegoId !== null && (int) $resumenRiegoId !== (int) $this->resumenRiego->id) {
-            return; // no es mi consolidado, ignorar
+            $this->skipRender(); // no es mi regador: ni consulta ni se vuelve a dibujar
+            return;
         }
         $this->sincronizarAcumulado();
         $this->obtenerRegistrosDiarios();
@@ -193,7 +195,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
             $conflictos = app(ConsolidarJornadaRiegoProceso::class)->ejecutarGuardadoRegistros($parametros);
 
             $this->sincronizarAcumulado();
-            $this->dispatch('registroRegadoresActualizado', $this->resumenRiego->id);
+            $this->dispatch('registroRegadoresActualizado', resumenRiegoId: $this->resumenRiego->id);
             $this->obtenerRegistrosDiarios();
 
             if (!empty($conflictos)) {

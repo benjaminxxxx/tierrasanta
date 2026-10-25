@@ -2,6 +2,7 @@
 
 namespace App\Services\Reporte\RegistroDiario;
 
+use App\Models\AcumulacionUso;
 use App\Models\ConsolidadoRiego;
 use App\Models\CuadRegistroDiario;
 use App\Models\Labores;
@@ -12,7 +13,12 @@ use Illuminate\Support\Carbon;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
+use App\Services\Sistema\Empresa\SistemaEmpresaProceso;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -24,7 +30,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
  * - PLANILLA Y CUADRILLA: cada empleado de planilla con su asistencia y sus actividades; debajo, la cuadrilla
  *   agrupada (cuántos cuadrilleros hicieron las mismas actividades).
  * - CUADRILLA: el mismo detalle de cuadrilla, cuadrillero por cuadrillero, con el total de horas al final.
- * - REGADORES: el diseño de un regador (25 filas) repetido uno debajo de otro, uno por regador del día.
+ * - REGADORES: se arma desde cero como la pantalla de riego: empresa, y por regador sus datos del día y todas sus filas.
  *
  * Los totales de horas no se recalculan en el Excel: son los que ya tiene el sistema.
  */
@@ -43,15 +49,15 @@ class ReporteRegistroDiarioExcel
     // CUADRILLA: A n°, B nombre, actividades desde C
     private const CUAD = ['primer_bloque' => 3, 'total' => 'AE'];
 
-    // REGADORES: un regador ocupa 25 filas (la primera y la última quedan libres) y las columnas A–Y
-    private const RIEGO_ALTO = 25;
-    private const RIEGO_ULTIMA_COL = 25; // Y
-    /** Grupos de la grilla: columna del campo => [primera fila, última fila]. El de K tiene una fila más. */
-    private const RIEGO_GRUPOS = ['A' => [11, 22], 'F' => [11, 22], 'K' => [11, 23], 'P' => [11, 22], 'U' => [11, 22]];
-    private const RIEGO_FILA_TOTALES = 23;
-    private const RIEGO_CELDA_OBSERVACIONES = 'C24';
-    /** Etiquetas de la plantilla que no coinciden con el nombre del campo en el sistema. */
-    private const RIEGO_ALIAS = ['nb' => 'naranjosb'];
+    // REGADORES: columna => [título, ancho] (las de la pantalla de riego)
+    private const RIEGO_COLUMNAS = [
+        'A' => ['N°', 5], 'B' => ['Campo', 12], 'C' => ['Hora inicio', 10], 'D' => ['Hora fin', 10], 'E' => ['Total horas', 11],
+        'F' => ['Tipo de labor', 30], 'G' => ['Descripción', 30], 'H' => ['Sin horas', 9], 'I' => ['De otro día', 10], 'J' => ['Jornal', 9],
+    ];
+    // Colores de DESIGN.md
+    private const NOCHE = '10212D';
+    private const NIEBLA = 'F3F3F7';
+    private const GRIS = '6F737B';
 
     private const FORMATO_HORA = 'h:mm';
     private const FORMATO_DURACION = '[h]:mm';
@@ -112,6 +118,7 @@ class ReporteRegistroDiarioExcel
      */
     private function cuadrilla(Carbon $fecha): array
     {
+        $orden = $this->ordenCuadrilla($fecha);
         return CuadRegistroDiario::whereDate('fecha', $fecha)
             ->with(['cuadrillero' => fn($q) => $q->withTrashed(), 'detalleHoras'])
             ->get()
@@ -120,8 +127,30 @@ class ReporteRegistroDiarioExcel
                 'grupo' => $registro->codigo_grupo,
                 'horas' => (float) $registro->total_horas,
                 'actividades' => $this->actividades($registro->detalleHoras->sortBy('hora_inicio')),
+                // Mismo orden que el registro diario de cuadrilla (lista del tramo semanal); los que no están en
+                // ninguna lista van al final por grupo y nombre
+                'orden' => $orden[$registro->codigo_grupo . '|' . $registro->cuadrillero_id] ?? PHP_INT_MAX,
             ])
-            ->sortBy([['grupo', 'asc'], ['nombre', 'asc']])->values()->all();
+            ->sortBy([['orden', 'asc'], ['grupo', 'asc'], ['nombre', 'asc']])->values()->all();
+    }
+
+    /**
+     * Orden de llegada de la cuadrilla: la lista oficial de cada tramo semanal que cubre la fecha (grupos y
+     * cuadrilleros en su orden), igual que /cuadrilla/registro-diario.
+     *
+     * @return array<string, int> "codigo_grupo|cuadrillero_id" => posición
+     */
+    private function ordenCuadrilla(Carbon $fecha): array
+    {
+        $orden = [];
+        foreach (\App\Services\Cuadrilla\TramoLaboralServicio::tramosEnFecha($fecha->toDateString()) as $tramo) {
+            foreach (\App\Services\Cuadrilla\TramoLaboralServicio::obtenerListaOficial($tramo->id) as $grupo) {
+                foreach ($grupo->cuadrilleros as $c) {
+                    $orden[$grupo->codigo_grupo . '|' . $c->cuadrillero_id] ??= count($orden);
+                }
+            }
+        }
+        return $orden;
     }
 
     /** @return array<int, array{campo: ?string, labor: mixed, inicio: ?string, fin: ?string}> */
@@ -144,22 +173,47 @@ class ReporteRegistroDiarioExcel
     private function regadores(Carbon $fecha): array
     {
         $laboresDeRiego = LaboresRiego::where('es_riego', true)->pluck('nombre_labor')->map(fn($n) => mb_strtolower(trim($n)))->all() ?: ['riego'];
+        $inicioSemana = $fecha->copy()->startOfWeek(Carbon::MONDAY)->toDateString();
+        $finSemana = $fecha->copy()->endOfWeek(Carbon::SUNDAY)->toDateString();
 
-        return ConsolidadoRiego::whereDate('fecha', $fecha)->orderBy('id')->get()
-            ->map(function (ConsolidadoRiego $consolidado) use ($laboresDeRiego) {
-                $detalles = ReporteDiarioRiego::where('consolidado_id', $consolidado->id)->orderBy('hora_inicio')->orderBy('id')->get();
-                [$riegos, $otras] = $detalles->partition(fn($d) => in_array(mb_strtolower(trim((string) $d->tipo_labor)), $laboresDeRiego, true));
+        return ConsolidadoRiego::with('registrosDiarios')->whereDate('fecha', $fecha)->orderBy('id')->get()
+            ->map(function (ConsolidadoRiego $consolidado) use ($laboresDeRiego, $fecha, $inicioSemana, $finSemana) {
+                $esRiego = fn($d) => in_array(mb_strtolower(trim((string) $d->tipo_labor)), $laboresDeRiego, true);
+                // Mismo orden que la pantalla: riego primero, luego por labor y hora
+                $detalles = $consolidado->registrosDiarios->where('por_acumulacion', false)
+                    ->sortBy(fn($d) => ($esRiego($d) ? '0' : '1') . mb_strtolower((string) $d->tipo_labor) . '|' . $d->hora_inicio)->values();
+                [$riegos, $otras] = $detalles->partition($esRiego);
                 $fila = fn($d) => [
                     'campo' => trim((string) $d->campo), 'inicio' => $d->hora_inicio, 'fin' => $d->hora_fin, 'labor' => $d->tipo_labor,
                     'descripcion' => $d->descripcion, 'horas_sistema' => (float) $d->horas_ponderadas,
+                    'sin_horas' => (bool) $d->sh, 'otro_dia' => (bool) $d->referido_otro_dia, 'es_riego' => $esRiego($d),
                 ];
+                $acumulado = $consolidado->registrosDiarios->firstWhere('por_acumulacion', true);
+                $mismo = fn() => ConsolidadoRiego::where('trabajador_type', $consolidado->trabajador_type)->where('trabajador_id', $consolidado->trabajador_id);
 
                 return [
                     'nombre' => trim((string) $consolidado->trabajador_nombre) ?: 'Regador',
+                    'tipo' => $consolidado->alias_origen,
+                    'es_planilla' => $consolidado->trabajador_type === \App\Models\PlanEmpleado::class,
+                    'sincronizado' => (bool) $consolidado->sincronizado,
+                    'no_acumular' => (bool) $consolidado->no_acumular_horas,
                     'hora_inicio' => $consolidado->hora_inicio,
                     'hora_fin' => $consolidado->hora_fin,
+                    'almuerzo_inicio' => $consolidado->hora_inicio_almuerzo,
+                    'almuerzo_fin' => $consolidado->hora_fin_almuerzo,
                     'minutos_regados' => (int) $consolidado->minutos_regados,
                     'minutos_jornal' => (int) $consolidado->minutos_jornal,
+                    'minutos_acumulados' => (int) $consolidado->minutos_acumulados,
+                    'jornal_computable' => (float) $consolidado->jornal_computable,
+                    'minutos_semana' => (int) $mismo()->whereBetween('fecha', [$inicioSemana, $finSemana])->sum('minutos_jornal'),
+                    'minutos_mes' => (int) $mismo()->whereYear('fecha', $fecha->year)->whereMonth('fecha', $fecha->month)->sum('minutos_jornal'),
+                    'acumulado_usado' => $acumulado ? [
+                        'horas' => $this->horasEntre($acumulado->hora_inicio, $acumulado->hora_fin),
+                        'origenes' => AcumulacionUso::with('consolidadoOrigen')->where('consolidado_destino_id', $consolidado->id)->get()
+                            ->map(fn($u) => Carbon::parse($u->consolidadoOrigen?->fecha)->format('d/m') . ' (' . intdiv($u->minutos_consumidos, 60) . 'h '
+                                . ($u->minutos_consumidos % 60) . 'min)')->all(),
+                    ] : null,
+                    'detalles' => $detalles->map($fila)->all(),
                     'riegos' => $riegos->map($fila)->values()->all(),
                     'otras' => $otras->map($fila)->values()->all(),
                 ];
@@ -297,6 +351,16 @@ class ReporteRegistroDiarioExcel
     {
         $hoja->setCellValue('A3', ExcelDate::PHPToExcel($fecha));
         $hoja->setCellValue('A4', auth()->user()?->name ?? '');
+        // Empresa (Sistema → Configuración) en la fila 1, del mismo ancho que el título
+        $empresa = SistemaEmpresaProceso::datos();
+        if ($empresa['razon_social']) {
+            $ancho = collect($hoja->getMergeCells())->first(fn($m) => str_starts_with($m, 'A2:'));
+            $ultima = $ancho ? preg_replace('/\d+/', '', explode(':', $ancho)[1]) : 'J';
+            $hoja->mergeCells("A1:{$ultima}1");
+            $hoja->setCellValue('A1', $empresa['razon_social'] . ($empresa['ruc'] ? ' · RUC ' . $empresa['ruc'] : ''));
+            $hoja->getStyle('A1')->getFont()->setBold(true)->setSize(11);
+            $hoja->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        }
     }
 
     /**
@@ -336,142 +400,150 @@ class ReporteRegistroDiarioExcel
 
     // ------------------------------------------------------------------ regadores
 
-    /** El diseño de un regador (filas 1–25 de la plantilla) se repite uno debajo de otro. */
-    private function hojaRegadores(Worksheet $hoja, Carbon $fecha, array $regadores): void
-    {
-        // Campos impresos en la grilla de la plantilla, en su orden: [columna, fila, etiqueta]
-        $casillas = [];
-        foreach (self::RIEGO_GRUPOS as $col => [$desde, $hasta]) {
-            for ($r = $desde; $r <= $hasta; $r++) {
-                $casillas[] = [$col, $r, trim((string) $hoja->getCell("{$col}{$r}")->getValue())];
-            }
-        }
-
-        // Primero las copias (el bloque original aún está sin llenar) y luego se llena cada uno
-        for ($k = 1; $k < count($regadores); $k++) {
-            $this->copiarBloqueRegador($hoja, $k * self::RIEGO_ALTO);
-        }
-        foreach ($regadores ?: [null] as $k => $regador) {
-            $this->llenarRegador($hoja, $k * self::RIEGO_ALTO, $fecha, $regador, $casillas);
-            // Cada regador en su página al imprimir
-            if ($k > 0) {
-                $hoja->setBreak('A' . ($k * self::RIEGO_ALTO), Worksheet::BREAK_ROW);
-            }
-        }
-    }
-
-    /** Copia textos fijos, estilos, alturas y celdas combinadas del bloque original $desplazamiento filas más abajo. */
-    private function copiarBloqueRegador(Worksheet $hoja, int $desplazamiento): void
-    {
-        for ($r = 1; $r <= self::RIEGO_ALTO; $r++) {
-            $destino = $r + $desplazamiento;
-            $hoja->getRowDimension($destino)->setRowHeight($hoja->getRowDimension($r)->getRowHeight());
-            for ($c = 1; $c <= self::RIEGO_ULTIMA_COL; $c++) {
-                $col = Coordinate::stringFromColumnIndex($c);
-                $origen = $hoja->getCell("{$col}{$r}");
-                $celda = $hoja->getCell("{$col}{$destino}");
-                $celda->setXfIndex($origen->getXfIndex());
-                // Las fórmulas no se copian: cada bloque escribe las suyas con sus propias filas
-                $valor = $origen->getValue();
-                $celda->setValue(is_string($valor) && str_starts_with($valor, '=') ? null : $valor);
-            }
-        }
-        foreach ($hoja->getMergeCells() as $rango) {
-            [$inicio, $fin] = Coordinate::rangeBoundaries($rango);
-            if ($fin[1] <= self::RIEGO_ALTO) {
-                $hoja->mergeCells(Coordinate::stringFromColumnIndex($inicio[0]) . ($inicio[1] + $desplazamiento) . ':'
-                    . Coordinate::stringFromColumnIndex($fin[0]) . ($fin[1] + $desplazamiento));
-            }
-        }
-    }
-
-    /** @param array<int, array{0:string, 1:int, 2:string}> $casillas */
-    private function llenarRegador(Worksheet $hoja, int $d, Carbon $fecha, ?array $regador, array $casillas): void
-    {
-        $celda = fn(string $ref) => preg_replace_callback('/\d+/', fn($m) => (int) $m[0] + $d, $ref);
-
-        $hoja->setCellValue($celda('H5'), ExcelDate::PHPToExcel($fecha));
-        $hoja->setCellValue($celda('B7'), $regador['nombre'] ?? '');
-        $this->escribirHora($hoja, $celda('H6'), $regador['hora_inicio'] ?? null);
-        $this->escribirHora($hoja, $celda('H7'), $regador['hora_fin'] ?? null);
-        // Totales tal como los calculó el sistema, no una fórmula
-        $this->escribirDuracion($hoja, $celda('O5'), $regador ? $regador['minutos_regados'] / 60 : null);
-        $this->escribirDuracion($hoja, $celda('O6'), $regador ? $regador['minutos_jornal'] / 60 : null);
-
-        [$asignados, $sobrantes] = $this->ubicarRiegos($regador['riegos'] ?? [], $casillas);
-
-        $totales = [];
-        foreach ($casillas as $i => [$colCampo, $fila, $etiqueta]) {
-            $n = Coordinate::columnIndexFromString($colCampo);
-            [$colInicio, $colFin, $colTotal, $colSistema] = array_map(fn($k) => Coordinate::stringFromColumnIndex($n + $k), [1, 2, 3, 4]);
-            $r = $fila + $d;
-            $riego = $asignados[$i] ?? null;
-            $horas = $riego ? $this->horasEntre($riego['inicio'], $riego['fin']) : null;
-
-            $hoja->setCellValue("{$colCampo}{$r}", $riego['campo'] ?? $etiqueta);
-            $this->escribirHora($hoja, "{$colInicio}{$r}", $riego['inicio'] ?? null);
-            $this->escribirHora($hoja, "{$colFin}{$r}", $riego['fin'] ?? null);
-            $this->escribirDuracion($hoja, "{$colTotal}{$r}", $horas);
-            $this->escribirDuracion($hoja, "{$colSistema}{$r}", $riego && $riego['horas_sistema'] > 0 ? $riego['horas_sistema'] : null);
-            $totales[$colCampo][$colTotal] = ($totales[$colCampo][$colTotal] ?? 0) + ($horas ?? 0);
-            $totales[$colCampo][$colSistema] = ($totales[$colCampo][$colSistema] ?? 0) + ($riego['horas_sistema'] ?? 0);
-        }
-        // Totales por grupo de columnas (el grupo K no tiene: usa esa fila para un campo más)
-        foreach ($totales as $colCampo => $columnas) {
-            if (self::RIEGO_GRUPOS[$colCampo][1] >= self::RIEGO_FILA_TOTALES) {
-                continue;
-            }
-            foreach ($columnas as $col => $horas) {
-                $this->escribirDuracion($hoja, $col . (self::RIEGO_FILA_TOTALES + $d), $horas > 0 ? $horas : null);
-            }
-        }
-
-        $hora = fn($h) => $h ? substr($h, 0, 5) : '?';
-        $notas = array_map(
-            fn($o) => "{$hora($o['inicio'])}-{$hora($o['fin'])} " . trim(($o['campo'] !== '' ? "{$o['campo']}: " : '') . $o['labor'] . ($o['descripcion'] ? " ({$o['descripcion']})" : '')),
-            $regador['otras'] ?? []
-        );
-        foreach ($sobrantes as $s) {
-            $notas[] = "{$hora($s['inicio'])}-{$hora($s['fin'])} {$s['campo']}: riego (no entró en la grilla)";
-        }
-        $hoja->setCellValue($celda(self::RIEGO_CELDA_OBSERVACIONES), implode('; ', $notas));
-    }
-
     /**
-     * Cada riego va a la casilla de su campo. Los campos que la grilla no tiene impresos (o un segundo riego
-     * del mismo campo) ocupan las últimas casillas cuyo campo no se regó ese día.
-     *
-     * @return array{0: array<int, array>, 1: array<int, array>} [casilla => riego, riegos que no entraron]
+     * Hoja REGADORES: se arma desde cero, igual que la pantalla de riego. Encabezado con la empresa (Sistema →
+     * Configuración) y, por regador, sus datos del día (inicio, fin, almuerzo, horas de riego y jornal, acumulado,
+     * semana y mes) y todas sus filas tal como están en el sistema (campo, horas, labor, descripción, sin horas, de otro
+     * día, jornal). Sin casillas vacías de campos que no se regaron. Cada regador en su página al imprimir.
      */
-    private function ubicarRiegos(array $riegos, array $casillas): array
+    private function hojaRegadores(Worksheet $plantilla, Carbon $fecha, array $regadores): void
     {
-        $clave = fn(string $t) => self::RIEGO_ALIAS[mb_strtolower(trim($t))] ?? mb_strtolower(trim($t));
-        $porEtiqueta = [];
-        foreach ($casillas as $i => [, , $etiqueta]) {
-            $porEtiqueta[$clave($etiqueta)] ??= $i; // FDM está impreso varias veces: vale la primera
-        }
+        $libro = $plantilla->getParent();
+        $indice = $libro->getIndex($plantilla);
+        $libro->removeSheetByIndex($indice);
+        $hoja = new Worksheet($libro, 'REGADORES');
+        $libro->addSheet($hoja, $indice);
 
-        $asignados = [];
-        $sinCasilla = [];
-        foreach ($riegos as $riego) {
-            $i = $porEtiqueta[$clave($riego['campo'])] ?? null;
-            if ($i !== null && !isset($asignados[$i])) {
-                $asignados[$i] = $riego;
-            } else {
-                $sinCasilla[] = $riego;
+        $hoja->getDefaultRowDimension()->setRowHeight(18);
+        $libro->getDefaultStyle()->getFont()->setName('Calibri')->setSize(10);
+        foreach (self::RIEGO_COLUMNAS as $col => [, $ancho]) {
+            $hoja->getColumnDimension($col)->setWidth($ancho);
+        }
+        $hoja->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE)->setPaperSize(PageSetup::PAPERSIZE_A4)
+            ->setFitToWidth(1)->setFitToHeight(0);
+        $hoja->getPageMargins()->setTop(0.4)->setBottom(0.4)->setLeft(0.3)->setRight(0.3);
+
+        // Encabezado: empresa y título
+        $empresa = SistemaEmpresaProceso::datos();
+        $hoja->mergeCells('A1:J1')->setCellValue('A1', $empresa['razon_social'] ?: 'Empresa sin configurar (Sistema → Configuración → Datos de la empresa)');
+        $hoja->mergeCells('A2:J2')->setCellValue('A2', trim(($empresa['ruc'] ? 'RUC ' . $empresa['ruc'] : '') . ($empresa['establecimiento'] ? ' · ' . $empresa['establecimiento'] : '')));
+        $hoja->mergeCells('A3:J3')->setCellValue('A3', 'REGISTRO DE TIEMPO DE RIEGO · ' . mb_strtoupper($fecha->translatedFormat('l d \d\e F \d\e Y')));
+        $hoja->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $hoja->getStyle('A2')->getFont()->setSize(9)->getColor()->setRGB(self::GRIS);
+        $hoja->getStyle('A3')->getFont()->setBold(true)->setSize(11);
+
+        $r = 5;
+        if (!$regadores) {
+            $hoja->mergeCells("A{$r}:J{$r}")->setCellValue("A{$r}", 'No hay regadores registrados este día.');
+            return;
+        }
+        foreach ($regadores as $k => $regador) {
+            if ($k > 0) {
+                $hoja->setBreak('A' . ($r - 1), Worksheet::BREAK_ROW);
+            }
+            $r = $this->bloqueRegador($hoja, $r, $regador) + 2;
+        }
+        $hoja->setSelectedCell('A1');
+    }
+
+    /** Un regador desde la fila $r; devuelve la última fila usada. */
+    private function bloqueRegador(Worksheet $hoja, int $r, array $g): int
+    {
+        $hhmm = fn($h) => $h ? substr($h, 0, 5) : '—';
+        $dur = fn(int $min) => $min > 0 ? intdiv($min, 60) . ':' . str_pad((string) ($min % 60), 2, '0', STR_PAD_LEFT) : '0:00';
+
+        // Barra con el nombre
+        $hoja->mergeCells("A{$r}:J{$r}")->setCellValue("A{$r}", $g['nombre'] . '   ·   ' . ($g['tipo'] ?? ''));
+        $hoja->getStyle("A{$r}:J{$r}")->applyFromArray(['font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => self::NOCHE]]]);
+        $hoja->getRowDimension($r)->setRowHeight(24);
+
+        // Datos del día (tres pares etiqueta / valor por fila)
+        $almuerzo = $g['almuerzo_inicio'] || $g['almuerzo_fin'] ? $hhmm($g['almuerzo_inicio']) . ' a ' . $hhmm($g['almuerzo_fin']) : 'Sin almuerzo registrado';
+        $estado = ($g['es_planilla'] ? ($g['sincronizado'] ? 'Sincronizado con planilla' : 'No sincronizado con planilla') . ' · ' : '')
+            . ($g['no_acumular'] ? 'No acumula horas' : 'Acumula horas');
+        $info = [
+            [['Hora de inicio', $hhmm($g['hora_inicio'])], ['Hora de fin', $hhmm($g['hora_fin'])], ['Almuerzo', $almuerzo]],
+            [['Horas de riego', $dur($g['minutos_regados'])], ['Horas de jornal', $dur($g['minutos_jornal'])],
+                ['Se acumularon', $g['minutos_acumulados'] > 0 ? $dur($g['minutos_acumulados']) . ' h' : '—']],
+            [['Jornal computable', number_format($g['jornal_computable'], 2)], ['Semana / mes', $dur($g['minutos_semana']) . ' / ' . $dur($g['minutos_mes'])],
+                ['Estado', $estado]],
+        ];
+        foreach ($info as $par) {
+            $r++;
+            foreach ([['A', 'B', 'C', 'C'], ['D', 'E', 'F', 'F'], ['G', 'G', 'H', 'J']] as $i => [$l1, $l2, $v1, $v2]) {
+                $l1 !== $l2 && $hoja->mergeCells("{$l1}{$r}:{$l2}{$r}");
+                $v1 !== $v2 && $hoja->mergeCells("{$v1}{$r}:{$v2}{$r}");
+                $hoja->setCellValue("{$l1}{$r}", $par[$i][0])->setCellValueExplicit("{$v1}{$r}", $par[$i][1], DataType::TYPE_STRING);
+                $hoja->getStyle("{$l1}{$r}")->getFont()->getColor()->setRGB(self::GRIS);
+                $hoja->getStyle("{$v1}{$r}")->getFont()->setBold(true);
             }
         }
 
-        $regados = array_map(fn($r) => $clave($r['campo']), $riegos);
-        $libres = array_values(array_filter(array_reverse(array_keys($casillas)),
-            fn($i) => !isset($asignados[$i]) && !in_array($clave($casillas[$i][2]), $regados, true)));
-        // Las casillas libres se toman desde el final, pero los riegos quedan en orden de hora hacia abajo
-        $usar = array_reverse(array_slice($libres, 0, count($sinCasilla)));
-        foreach ($usar as $n => $i) {
-            $asignados[$i] = $sinCasilla[$n];
+        // Tabla de actividades (las columnas de la pantalla)
+        $r += 2;
+        $inicioTabla = $r;
+        foreach (self::RIEGO_COLUMNAS as $col => [$titulo]) {
+            $hoja->setCellValue("{$col}{$r}", $titulo);
+        }
+        $hoja->getStyle("A{$r}:J{$r}")->applyFromArray(['font' => ['bold' => true, 'color' => ['rgb' => '60646C']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => self::NIEBLA]],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true]]);
+        $hoja->getRowDimension($r)->setRowHeight(28);
+
+        $totalHoras = 0;
+        $totalJornal = 0;
+        foreach ($g['detalles'] as $n => $d) {
+            $r++;
+            $horas = $this->horasEntre($d['inicio'], $d['fin']);
+            $totalHoras += $horas ?? 0;
+            $totalJornal += $d['horas_sistema'];
+            $hoja->setCellValue("A{$r}", $n + 1);
+            $hoja->setCellValue("B{$r}", $d['campo']);
+            $this->escribirHora($hoja, "C{$r}", $d['inicio']);
+            $this->escribirHora($hoja, "D{$r}", $d['fin']);
+            $this->escribirDuracion($hoja, "E{$r}", $horas);
+            $hoja->setCellValue("F{$r}", $d['labor']);
+            $hoja->setCellValue("G{$r}", $d['descripcion']);
+            $hoja->setCellValue("H{$r}", $d['sin_horas'] ? 'Sí' : '');
+            $hoja->setCellValue("I{$r}", $d['otro_dia'] ? 'Sí' : '');
+            $hoja->setCellValue("J{$r}", round($d['horas_sistema'], 2));
+            $hoja->getStyle("J{$r}")->getNumberFormat()->setFormatCode('0.00');
+            if ($d['es_riego']) {
+                $hoja->getStyle("F{$r}")->getFont()->setBold(true);
+            }
+            if ($d['sin_horas']) {
+                $hoja->getStyle("A{$r}:J{$r}")->getFont()->getColor()->setRGB(self::GRIS);
+            }
+        }
+        if (!$g['detalles']) {
+            $r++;
+            $hoja->mergeCells("A{$r}:J{$r}")->setCellValue("A{$r}", 'Sin actividades registradas.');
+            $hoja->getStyle("A{$r}")->getFont()->getColor()->setRGB(self::GRIS);
         }
 
-        return [$asignados, array_slice($sinCasilla, count($usar))];
+        // Totales
+        $r++;
+        $hoja->mergeCells("A{$r}:D{$r}")->setCellValue("A{$r}", 'Total');
+        $this->escribirDuracion($hoja, "E{$r}", $totalHoras);
+        $hoja->setCellValue("J{$r}", round($totalJornal, 2));
+        $hoja->getStyle("J{$r}")->getNumberFormat()->setFormatCode('0.00');
+        $hoja->getStyle("A{$r}:J{$r}")->getFont()->setBold(true);
+        $hoja->getStyle("A{$r}:J{$r}")->getBorders()->getTop()->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('B9BBC6');
+
+        $hoja->getStyle("A{$inicioTabla}:J{$r}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('E4E5EB');
+        $hoja->getStyle("A" . ($inicioTabla + 1) . ":E{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $hoja->getStyle("H" . ($inicioTabla + 1) . ":J{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $hoja->getStyle("F" . ($inicioTabla + 1) . ":G{$r}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_CENTER);
+
+        // Horas acumuladas de otros días que se usaron hoy
+        if ($g['acumulado_usado']) {
+            $r++;
+            $hoja->mergeCells("A{$r}:J{$r}")->setCellValue("A{$r}", 'Se usaron ' . number_format((float) $g['acumulado_usado']['horas'], 2)
+                . ' hora(s) de trabajos acumulados' . ($g['acumulado_usado']['origenes'] ? ' de: ' . implode(', ', $g['acumulado_usado']['origenes']) : '') . '.');
+            $hoja->getStyle("A{$r}")->getFont()->setItalic(true)->getColor()->setRGB(self::GRIS);
+        }
+        return $r;
     }
 
     // ------------------------------------------------------------------ celdas

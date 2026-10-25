@@ -17,6 +17,8 @@ return new class extends Migration
             $table->decimal('aporte_obligatorio', 6, 2)->nullable();
             $table->decimal('remuneracion_maxima_asegurable', 10, 2)->nullable();
             $table->date('fecha_inicio');
+            $table->string('motivo')->nullable()->comment('Por qué cambió: publicación SBS, resolución…');
+            $table->foreignId('registrado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
             $table->unique(['referencia', 'fecha_inicio']);

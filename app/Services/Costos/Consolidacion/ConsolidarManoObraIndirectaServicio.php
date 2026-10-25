@@ -2,7 +2,7 @@
 
 namespace App\Services\Costos\Consolidacion;
 
-use App\Models\PlanMensualPersonal;
+use App\Models\PlanMensualDetalle;
 use App\Models\PlanTipoAsistencia;
 use App\Models\ResumenCostoDiario;
 use App\Services\Planilla\Asistencia\PlanillaAsistenciaLaborConsulta;
@@ -30,7 +30,7 @@ class ConsolidarManoObraIndirectaServicio
     /** Campaña con la que se guardaba antes de ir a FDM (filas viejas aún no regeneradas). */
     public const CAMPANIA_ANTERIOR = 'MANO DE OBRA INDIRECTA';
 
-    /** Conceptos que no dependen de horas (columnas de plan_mensual_personals). */
+    /** Conceptos que no dependen de horas (columnas de plan_mensual_detalles). */
     public const CONCEPTOS_MONTO = [
         'vacaciones_neto_pagadas' => 'Vacaciones pagadas',
         'bonificacion_asistencia' => 'Bonificación 100% asistencia',
@@ -51,7 +51,7 @@ class ConsolidarManoObraIndirectaServicio
         $ahora = now();
         $laborPorAsistencia = app(PlanillaAsistenciaLaborConsulta::class)->laborPorAsistencia();
 
-        $personal = PlanMensualPersonal::whereHas('planMensual', fn($q) => $q->where('mes', $mes)->where('anio', $anio))
+        $personal = PlanMensualDetalle::calculados()->whereHas('planMensual', fn($q) => $q->where('mes', $mes)->where('anio', $anio))
             ->get()
             ->keyBy('plan_empleado_id');
 
@@ -104,7 +104,7 @@ class ConsolidarManoObraIndirectaServicio
      */
     public function totalPagado(int $anio, int $mes): array
     {
-        $personal = PlanMensualPersonal::whereHas('planMensual', fn($q) => $q->where('mes', $mes)->where('anio', $anio))->get();
+        $personal = PlanMensualDetalle::calculados()->whereHas('planMensual', fn($q) => $q->where('mes', $mes)->where('anio', $anio))->get();
 
         $sueldo = (float) $personal->sum(fn($p) => (float) ($p->pagado_sueldo_bruto_negro ?? 0));
         $vacaciones = (float) $personal->sum(fn($p) => (float) ($p->vacaciones_neto_pagadas ?? 0));
@@ -157,7 +157,7 @@ class ConsolidarManoObraIndirectaServicio
             ->selectRaw('d.plan_empleado_id, MAX(r.updated_at) as modificado')->pluck('modificado', 'plan_empleado_id');
 
         $resultado = [];
-        $personal = PlanMensualPersonal::with('planMensual')->whereHas('planMensual', fn($q) => $q->where('mes', $mes)->where('anio', $anio))->get();
+        $personal = PlanMensualDetalle::calculados()->with('planMensual')->whereHas('planMensual', fn($q) => $q->where('mes', $mes)->where('anio', $anio))->get();
         foreach ($personal as $p) {
             $pagado = (float) ($p->pagado_sueldo_bruto_negro ?? 0);
             $fila = $bdd->get($p->plan_empleado_id);

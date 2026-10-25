@@ -7,8 +7,8 @@
             <button type="button" wire:click="abrirImportar"
                 class="fixed bottom-6 right-6 z-[900] flex h-11 items-center gap-2 rounded-full border border-mist bg-paper px-4 text-sm font-medium text-ink
                        shadow-[0_8px_24px_rgb(16_33_45/0.12)] hover:bg-fog focus:outline-none focus:ring-[3px] focus:ring-carmin/25"
-                title="Descargar o subir {{ implode(' / ', $titulos) }} en Excel">
-                <i class="fa fa-file-excel text-green-600"></i> Recursos
+                title="Descargar o subir {{ $titulos ? implode(' / ', $titulos) : mb_strtolower($tituloLibro) }} en Excel">
+                <i class="fa fa-file-excel text-green-600"></i> {{ $libro === 'recursos' ? 'Recursos' : $tituloLibro }}
             </button>
         @else
             <x-card class="flex flex-wrap items-end gap-3 max-w-3xl">
@@ -25,7 +25,7 @@
         @endif
 
         <x-dialog-modal wire:model.live="mostrarImportar" maxWidth="full">
-            <x-slot name="title">{{ $flotante ? 'Recursos en Excel: ' . implode(', ', $titulos) : 'Subir ' . mb_strtolower($tituloLibro) }}</x-slot>
+            <x-slot name="title">{{ $flotante && $titulos ? 'Recursos en Excel: ' . implode(', ', $titulos) : ($flotante ? $tituloLibro : 'Subir ' . mb_strtolower($tituloLibro)) }}</x-slot>
             <x-slot name="content">
                 <div class="space-y-4 font-['Inter',ui-sans-serif,system-ui,sans-serif] tracking-[-0.01em]">
                     @if ($flotante)
@@ -184,11 +184,13 @@
             <x-slot name="footer">
                 @php $aplicar = $analisis ? ($analisis['resumen']['nuevo'] ?? 0) + ($analisis['resumen']['cambia'] ?? 0) : 0; @endphp
                 <div class="flex gap-2 items-center">
-                    @if ($analisis)
+                    @if ($analisis && !empty($analisis['bloqueado']))
+                        <span class="text-xs text-red-600 mr-2"><i class="fa fa-ban"></i> Este libro solo se guarda completo: corrige las filas con errores en el Excel y vuelve a subirlo.</span>
+                    @elseif ($analisis)
                         <span class="text-xs text-muted-foreground mr-2">Las filas con errores no se guardan: corrígelas en el Excel y vuelve a subirlo.</span>
                     @endif
                     <x-button variant="secondary" wire:click="$set('mostrarImportar', false)">Cancelar</x-button>
-                    @if ($analisis && $aplicar && \App\Services\Sistema\LibroExcel\SistemaLibroExcelProceso::permiteGuardar($analisis['version']))
+                    @if ($analisis && $aplicar && empty($analisis['bloqueado']) && \App\Services\Sistema\LibroExcel\SistemaLibroExcelProceso::permiteGuardar($analisis['version']))
                         <button type="button" wire:click="importar" wire:confirm="Se guardarán {{ $aplicar }} fila(s) nuevas o con cambios. ¿Confirmar?"
                             class="h-9 rounded-[10px] bg-carmin px-4 text-sm font-semibold text-white hover:bg-carmin-hover focus:outline-none focus:ring-[3px] focus:ring-carmin/25">
                             <i class="fa fa-check"></i> Guardar {{ $aplicar }} cambio(s)

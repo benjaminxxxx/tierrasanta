@@ -40,7 +40,7 @@ class EvaluacionPoblacionPlantaFormComponent extends Component
     public function mount()
     {
         $this->idTable = "table" . Str::random(15);
-        $planilla = PlanEmpleado::pluck('nombres')->toArray();
+        $planilla = PlanEmpleado::get()->pluck('nombres')->toArray();
         $cuadrilla = Cuadrillero::pluck('nombres')->toArray();
         $this->evaluadoresNombres = array_values(array_unique(array_merge($planilla, $cuadrilla)));
 

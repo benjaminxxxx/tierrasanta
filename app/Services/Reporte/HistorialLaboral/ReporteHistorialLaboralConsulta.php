@@ -197,16 +197,17 @@ class ReporteHistorialLaboralConsulta
         $registros = DB::table('plan_registros_diarios as r')
             ->join('plan_mensual_detalles as d', 'd.id', '=', 'r.plan_det_men_id')
             ->leftJoin('plan_empleados as e', 'e.id', '=', 'd.plan_empleado_id')
+            ->leftJoin('personas as pe', 'pe.id', '=', 'e.persona_id')
             ->whereIn('d.plan_empleado_id', $ids)->whereBetween('r.fecha', [$desde, $hasta])
             ->get(['r.id', 'r.fecha', 'r.asistencia', 'r.total_horas', 'd.plan_empleado_id',
-                DB::raw("TRIM(CONCAT_WS(' ', e.apellido_paterno, e.apellido_materno, ',', e.nombres)) AS nombre")]);
+                DB::raw("TRIM(CONCAT_WS(' ', pe.apellido_paterno, pe.apellido_materno, ',', pe.nombres)) AS nombre")]);
         if ($registros->isEmpty()) {
             return [];
         }
         $tipos = DB::table('plan_tipo_asistencias')->pluck('descripcion', 'codigo');
         $tramos = DB::table('plan_detalles_horas')->whereIn('plan_reg_dia_id', $registros->pluck('id'))
             ->orderBy('hora_inicio')->get(['plan_reg_dia_id as registro', 'campo_nombre', 'codigo_labor', 'hora_inicio', 'hora_fin'])->groupBy('registro');
-        $bonos = $this->bonos('plan_actividad_bonos', 'plan_actividad_producciones', $registros->pluck('id'));
+        $bonos = $this->bonos('plan_actividad_bonos', $registros->pluck('plan_empleado_id', 'id'), 'plan_empleado_id');
         // Costo real del día: lo que la BDD le asigna (sueldo + aportes prorrateados por hora, y bonos)
         $costos = DB::table('resumen_costo_diarios')->whereIn('plan_empleado_id', $ids)->whereBetween('fecha', [$desde, $hasta])
             ->whereIn('origen_tipo', ['planilla', 'planilla_bono_productividad'])
@@ -237,13 +238,13 @@ class ReporteHistorialLaboralConsulta
         }
         $registros = DB::table('cuad_registros_diarios as r')->join('cuad_cuadrilleros as c', 'c.id', '=', 'r.cuadrillero_id')
             ->whereIn('r.cuadrillero_id', $ids)->whereBetween('r.fecha', [$desde, $hasta])
-            ->get(['r.id', 'r.fecha', 'r.total_horas', 'r.horas_destajo', 'r.jornal_aplicado', 'r.costo_personalizado_dia', 'r.total_bono', 'r.codigo_grupo', 'c.nombres']);
+            ->get(['r.id', 'r.fecha', 'r.total_horas', 'r.horas_destajo', 'r.jornal_aplicado', 'r.costo_personalizado_dia', 'r.total_bono', 'r.codigo_grupo', 'c.nombres', 'r.cuadrillero_id']);
         if ($registros->isEmpty()) {
             return [];
         }
         $tramos = DB::table('cuad_detalles_horas')->whereIn('registro_diario_id', $registros->pluck('id'))
             ->orderBy('hora_inicio')->get(['registro_diario_id as registro', 'campo_nombre', 'codigo_labor', 'hora_inicio', 'hora_fin'])->groupBy('registro');
-        $bonos = $this->bonos('cuad_bonos_actividades', 'cuad_produccion_actividades', $registros->pluck('id'));
+        $bonos = $this->bonos('cuad_bonos_actividades', $registros->pluck('cuadrillero_id', 'id'), 'cuadrillero_id');
 
         return $registros->map(function ($r) use ($tramos, $bonos) {
             $fecha = Carbon::parse($r->fecha)->toDateString();
@@ -283,23 +284,31 @@ class ReporteHistorialLaboralConsulta
         })->values()->all();
     }
 
-    /** Producción por actividad (bonos) de los registros, con su estándar. */
-    private function bonos(string $tablaBonos, string $tablaProduccion, Collection $registroIds): Collection
+    /**
+     * Producción por actividad (bonos) de los registros, con su estándar. Las cantidades vienen del registro de producción
+     * de campo (por actividad y trabajador).
+     * @param Collection $trabajadorPorRegistro registro_diario_id => id del trabajador
+     * @param string $columna columna del trabajador en produccion_registros (cuadrillero_id / plan_empleado_id)
+     */
+    private function bonos(string $tablaBonos, Collection $trabajadorPorRegistro, string $columna): Collection
     {
         $bonos = DB::table("{$tablaBonos} as b")->join('actividades as a', 'a.id', '=', 'b.actividad_id')
             ->leftJoin('actividad_metodos as m', 'm.id', '=', 'b.metodo_id')
             ->leftJoin('labores as l', 'l.id', '=', 'a.labor_id')
-            ->whereIn('b.registro_diario_id', $registroIds)
-            ->get(['b.id', 'b.registro_diario_id', 'b.total_bono', 'a.fecha', 'a.campo', 'a.nombre_labor', 'a.codigo_labor', 'a.unidades',
+            ->whereIn('b.registro_diario_id', $trabajadorPorRegistro->keys())
+            ->get(['b.id', 'b.registro_diario_id', 'b.actividad_id', 'b.total_bono', 'a.fecha', 'a.campo', 'a.nombre_labor', 'a.codigo_labor', 'a.unidades',
                 'm.estandar', 'l.estandar_produccion', 'l.unidades as labor_unidades']);
         if ($bonos->isEmpty()) {
             return collect();
         }
-        $producciones = DB::table($tablaProduccion)->whereIn('actividad_bono_id', $bonos->pluck('id'))
-            ->orderBy('numero_recojo')->get(['actividad_bono_id', 'numero_recojo', 'produccion'])->groupBy('actividad_bono_id');
+        $producciones = DB::table('produccion_registros')->whereIn('actividad_id', $bonos->pluck('actividad_id')->unique())
+            ->whereIn($columna, $trabajadorPorRegistro->values()->filter()->unique())->where('con_bono', true)
+            ->orderBy('numero_recojo')->get(['actividad_id', $columna, 'numero_recojo', 'cantidad'])
+            ->groupBy(fn($p) => $p->actividad_id . '|' . $p->{$columna});
 
-        return $bonos->map(function ($b) use ($producciones) {
-            $recojos = $producciones->get($b->id, collect())->map(fn($p) => (float) $p->produccion)->values()->all();
+        return $bonos->map(function ($b) use ($producciones, $trabajadorPorRegistro) {
+            $clave = $b->actividad_id . '|' . $trabajadorPorRegistro[$b->registro_diario_id];
+            $recojos = $producciones->get($clave, collect())->map(fn($p) => (float) $p->cantidad)->values()->all();
             $total = array_sum($recojos);
             $estandar = $b->estandar !== null ? (float) $b->estandar : ($b->estandar_produccion !== null ? (float) $b->estandar_produccion : null);
             $pct = $estandar && $recojos ? round($total / $estandar * 100, 1) : null;

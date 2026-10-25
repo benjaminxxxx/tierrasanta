@@ -130,7 +130,12 @@ Texto Grafito; activa en Tinta con subrayado carmín de 2px.
 Radio 6px, texto de estado sobre su fondo suave, 12px/500.
 
 ### Barra lateral y encabezado
-Fondo Papel (o Noche si se decide un marco oscuro), ítem activo con texto Tinta 500 y marca carmín de 2px a la izquierda.
+Estilo explorador de archivos: Inicio, "Acceso directo" (de cada usuario, con pin para quitar y arrastrar para ordenar) y
+los grupos en árbol con flecha. Filas de 32px, radio 6px, texto 13px; hover Niebla; ítem activo en Tinta 500 sobre
+Niebla con marca carmín de 3px a la izquierda. Excepción a "sin colores decorativos": cada grupo tiene un color de ícono
+fijo (SistemaMenuReglas::COLORES, versión clara y oscura) para reconocerlo de un vistazo; el texto siempre en tinta.
+Clic derecho en una opción: menú contextual (radio 10px, sombra flotante) con abrir, nueva pestaña y agregar / quitar.
+Los grupos cargan sin expandir; abrir el de la página actual o recordar los abiertos son preferencias de cada usuario.
 
 ### Login y pantallas de acceso
 Pantalla partida: panel de marca en Noche (logo `logo-horizontal.svg` en blanco, titular, una línea de descripción) y
@@ -201,3 +206,10 @@ Definidos en `resources/css/app.css` (`:root` y `.dark`) y expuestos en `tailwin
 | Labores (lista) y botón flotante "Recursos" | 21/10/2026 |
 | Menú lateral (7 grupos con secciones) | 22/10/2026 |
 | Escritorio de archivos del inicio | 22/10/2026 |
+| Empleados: pestañas Historial laboral y Pensión y pago, botón flotante del Excel de empleados | 23/10/2026 |
+| Producción de campo (página nueva) y "Producción sin bono" dentro de Bonificaciones | 23/10/2026 |
+| Registro diario de planilla: solo el aviso "Ausencias programadas" (la tabla sigue sin migrar) | 24/10/2026 |
+| Parámetros de planilla (tarjetas + modal de historial) y modal "Generar planilla" | 24/10/2026 |
+| Menú lateral estilo explorador con Acceso directo por usuario (Planilla y Cuadrilla separados) | 24/10/2026 |
+| Registro diario de riego: barra superior, fecha compacta y modal "Agregar regadores" (las tarjetas de cada regador siguen sin migrar) | 24/10/2026 |
+| Campañas (/campania/resumen): vista Lista, contadores, filtros, menú y estado de cosecha (la Tabla técnica sigue sin migrar) | 24/10/2026 |

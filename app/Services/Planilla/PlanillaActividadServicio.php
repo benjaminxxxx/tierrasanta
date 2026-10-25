@@ -4,7 +4,6 @@ namespace App\Services\Planilla;
 
 use App\Models\Actividad;
 use App\Models\PlanActividadBono;
-use App\Models\PlanActividadProduccion;
 use App\Models\PlanRegistroDiario;
 use App\Models\ReporteDiario;
 use App\Models\ReporteDiarioDetalle;
@@ -56,29 +55,14 @@ class PlanillaActividadServicio
             ]
         );
 
-        PlanActividadProduccion::where('actividad_bono_id', $actividadBono->id)
-            ->where('numero_recojo', '>', $numeroRecojos)
-            ->delete();
-
+        // Cantidades por recojo: van al registro de producción de campo (fuente única, con bono)
+        $empleadoId = PlanRegistroDiario::with('detalleMensual')->find($registroDiarioId)?->detalleMensual?->plan_empleado_id;
+        $porRecojo = [];
         for ($i = 1; $i <= $numeroRecojos; $i++) {
-            $produccion = $fila['produccion_' . $i] ?? null;
-
-            if ($produccion) {
-                PlanActividadProduccion::updateOrCreate(
-                    [
-                        'actividad_bono_id' => $actividadBono->id,
-                        'numero_recojo' => $i
-                    ],
-                    [
-                        'produccion' => $produccion
-                    ]
-                );
-            } else {
-                PlanActividadProduccion::where('actividad_bono_id', $actividadBono->id)
-                    ->where('numero_recojo', $i)
-                    ->delete();
-            }
+            $porRecojo[$i] = $fila['produccion_' . $i] ?? null;
         }
+        app(\App\Services\Campo\Produccion\CampoProduccionProceso::class)
+            ->guardarConBono(Actividad::findOrFail($actividadId), null, (int) $empleadoId ?: null, $porRecojo, (int) $numeroRecojos);
 
         $sumaBonos = PlanActividadBono::where('registro_diario_id', $registroDiarioId)->sum('total_bono');
 

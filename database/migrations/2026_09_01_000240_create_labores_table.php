@@ -17,7 +17,9 @@ return new class extends Migration
             $table->integer('codigo')->nullable();
             $table->date('vigente_desde')->nullable()->comment('Desde cuándo el código significa esta labor (null = siempre)');
             $table->integer('estandar_produccion')->nullable();
+            // Código de la unidad de producción (produccion_unidades); solo si la labor registra producción
             $table->string('unidades', 20)->nullable();
+            $table->boolean('registra_produccion')->default(false)->comment('La labor produce algo medible (kilos, lavadores, cajas…): exige unidad');
             $table->text('tramos_bonificacion')->nullable();
             $table->foreignId('creado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('actualizado_por')->nullable()->constrained('users')->nullOnDelete();

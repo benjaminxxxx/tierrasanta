@@ -133,7 +133,7 @@ class BddManoObraServicio
 
         // Cambios que afectan a todo el mes: tarifa de planilla y campañas que cruzan el mes
         $delMes = collect([
-            DB::table('plan_mensual_personals as p')->join('plan_mensuales as m', 'm.id', '=', 'p.plan_mensual_id')
+            DB::table('plan_mensual_detalles as p')->join('plan_mensuales as m', 'm.id', '=', 'p.plan_mensual_id')->whereNotNull('p.calculado_en')
                 ->where('m.mes', $mes)->where('m.anio', $anio)->max('p.updated_at'),
             DB::table('campos_campanias')->where('fecha_inicio', '<=', $fin)
                 ->where(fn($q) => $q->whereNull('fecha_fin')->orWhere('fecha_fin', '>=', $inicio))

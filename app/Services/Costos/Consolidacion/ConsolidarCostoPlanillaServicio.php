@@ -7,7 +7,7 @@ use App\Models\CuadActividadBono;
 use App\Models\CuadDetalleHora;
 use App\Models\Cuadrillero;
 use App\Models\PlanEmpleado;
-use App\Models\PlanMensualPersonal;
+use App\Models\PlanMensualDetalle;
 use App\Models\ReporteDiarioRiego;
 use App\Services\Planilla\Asistencia\PlanillaAsistenciaLaborConsulta;
 use App\Support\CalculoHelper;
@@ -298,7 +298,7 @@ class ConsolidarCostoPlanillaServicio
     {
         $tarifas = [];
         for ($m = Carbon::parse($inicio)->startOfMonth(); $m->toDateString() <= $fin; $m->addMonth()) {
-            $personal = PlanMensualPersonal::with('planMensual')
+            $personal = PlanMensualDetalle::calculados()->with('planMensual')
                 ->whereHas('planMensual', fn($q) => $q->where('mes', $m->month)->where('anio', $m->year))->get();
             foreach ($personal as $p) {
                 $tarifa = $p->pagado_sueldo_por_hora;

@@ -119,7 +119,8 @@ class LibroExcelApiController extends Controller
             return null;
         }
         $hojas = array_values(array_intersect(array_map('trim', explode(',', $texto)), $def->reglas()::claves()));
-        return $hojas ?: null;
+        // Actualización en cadena (botones "Actualizar hoja" / "Subir hoja"): con sus hojas dependientes
+        return $hojas ? $def->reglas()::conDependencias($hojas) : null;
     }
 
     /** Informe para la macro: ID, si se puede guardar, resumen y detalle por hoja (lo vuelca en la hoja "Resultado"). */
@@ -128,7 +129,10 @@ class LibroExcelApiController extends Controller
         $r = $a['resumen'];
         $aplicar = ($r['nuevo'] ?? 0) + ($r['cambia'] ?? 0);
         $resumen = ($r['nuevo'] ?? 0) . ' nuevo(s), ' . ($r['cambia'] ?? 0) . ' con cambios, ' . ($r['igual'] ?? 0) . ' sin cambios, ' . ($r['error'] ?? 0) . ' con errores.';
-        $l = ["ID:{$id}", 'GUARDAR:' . ($aplicar > 0 ? '1' : '0'), "RESUMEN:{$resumen}", ''];
+        $l = ["ID:{$id}", 'GUARDAR:' . ($aplicar > 0 && empty($a['bloqueado']) ? '1' : '0'), "RESUMEN:{$resumen}", ''];
+        if (!empty($a['bloqueado'])) {
+            $l[] = 'No se puede guardar: este libro solo se guarda completo y hay filas con errores. Corrígelas y vuelve a subir.';
+        }
         if ($a['version']['estado'] === 'otro_sistema') {
             $l[] = 'Este archivo viene de otro sistema: se compara con los datos de este.';
         }

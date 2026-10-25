@@ -71,6 +71,13 @@ class SistemaRecursosReglas extends SistemaLibroExcelReglas
             'criterio_bono' => ['t' => 'Criterio bono asistencia', 'tipo' => 'texto', 'op' => 'criterio_bono', 'def' => 'no_afecta'],
             'activo' => ['t' => 'Activo', 'tipo' => 'sino', 'def' => 'SI'],
         ]],
+        // Unidades en que se mide lo que produce una labor (KG, LAVADOR, CAJA…)
+        'unidades_produccion' => ['Unidades de producción', ['codigo'], [
+            'codigo' => ['t' => 'Código', 'tipo' => 'texto', 'req' => true],
+            'nombre' => ['t' => 'Nombre', 'tipo' => 'texto', 'req' => true],
+            'decimales' => ['t' => 'Decimales', 'tipo' => 'entero', 'def' => '2'],
+            'activo' => ['t' => 'Activo', 'tipo' => 'sino', 'def' => 'SI'],
+        ]],
         'labores' => ['Labores', ['codigo'], [
             'codigo' => ['t' => 'Código', 'tipo' => 'entero', 'req' => true],
             'nombre' => ['t' => 'Labor', 'tipo' => 'texto', 'req' => true],
@@ -79,7 +86,8 @@ class SistemaRecursosReglas extends SistemaLibroExcelReglas
             'rol_campania' => ['t' => 'Rol en la campaña', 'tipo' => 'texto', 'op' => 'rol_campania'],
             'vigente_desde' => ['t' => 'Vigente desde', 'tipo' => 'fecha'],
             'estandar' => ['t' => 'Estándar de producción', 'tipo' => 'entero'],
-            'unidades' => ['t' => 'Unidades', 'tipo' => 'texto'],
+            'registra_produccion' => ['t' => 'Registra producción', 'tipo' => 'sino', 'def' => 'NO'],
+            'unidades' => ['t' => 'Unidad de producción (código)', 'tipo' => 'texto', 'ref' => 'unidades_produccion.codigo'],
             'se_paga_con_jornal' => ['t' => 'Bono se paga con el jornal', 'tipo' => 'sino', 'def' => 'NO'],
             'activa' => ['t' => 'Activa', 'tipo' => 'sino', 'def' => 'SI'],
         ]],
@@ -107,9 +115,9 @@ class SistemaRecursosReglas extends SistemaLibroExcelReglas
         'configuracion_fecha' => ['Configuración por fecha', ['codigo', 'desde'], [
             'codigo' => ['t' => 'Código', 'tipo' => 'texto', 'req' => true, 'ref' => 'configuracion.codigo'],
             'valor' => ['t' => 'Valor', 'tipo' => 'decimal', 'req' => true],
-            'desde' => ['t' => 'Desde', 'tipo' => 'fecha', 'req' => true],
-            'hasta' => ['t' => 'Hasta', 'tipo' => 'fecha'],
-            'activo' => ['t' => 'Activo', 'tipo' => 'sino', 'def' => 'SI'],
+            'desde' => ['t' => 'Desde (día 1 del mes)', 'tipo' => 'fecha', 'req' => true],
+            'hasta' => ['t' => 'Hasta (se calcula sola)', 'tipo' => 'fecha', 'lectura' => true],
+            'motivo' => ['t' => 'Motivo del cambio', 'tipo' => 'texto'],
         ]],
         'sp' => ['Descuentos SP', ['codigo'], [
             'codigo' => ['t' => 'Código', 'tipo' => 'texto', 'req' => true],
@@ -136,6 +144,7 @@ class SistemaRecursosReglas extends SistemaLibroExcelReglas
             'prima_seguros' => ['t' => 'Prima de seguros %', 'tipo' => 'decimal'],
             'aporte_obligatorio' => ['t' => 'Aporte obligatorio %', 'tipo' => 'decimal'],
             'remuneracion_maxima' => ['t' => 'Remuneración máxima asegurable', 'tipo' => 'decimal'],
+            'motivo' => ['t' => 'Motivo del cambio', 'tipo' => 'texto'],
         ]],
         'maquinarias' => ['Maquinarias', ['nombre'], [
             'nombre' => ['t' => 'Nombre', 'tipo' => 'texto', 'req' => true],

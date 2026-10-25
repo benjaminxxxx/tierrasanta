@@ -100,14 +100,14 @@ class CargosComponent extends Component
     public function render()
     {
         $cargos = PlanCargo::query()
-            ->withCount([
-                'empleadoCargosVigentes as trabajadores_actuales',
-                'empleadoCargos as total_relaciones',
-            ])
+            ->withCount(['asignaciones as total_relaciones'])
             ->when($this->verEliminados, fn($q) => $q->onlyTrashed())
             ->when($this->busqueda !== '', fn($q) => $q->where('nombre', 'like', "%{$this->busqueda}%"))
             ->orderBy($this->sortField,$this->sortDirection)
             ->paginate(10);
+        // Quién ocupa cada cargo hoy (asignación vigente), según la capa laboral
+        $ocupantes = \App\Services\Planilla\Laboral\PlanillaLaboralConsulta::ocupantesPorCargo();
+        $cargos->getCollection()->each(fn($c) => $c->trabajadores_actuales = count($ocupantes[$c->id] ?? []));
 
         return view('livewire.planilla.empleado.cargos-component', compact('cargos'));
     }

@@ -1,14 +1,7 @@
 <div x-data="ordenMensualPlanilla">
     <x-dialog-modal wire:model="mostrarListaPlanillaMensual" maxWidth="2xl">
         <x-slot name="title">
-            <x-flex class="justify-between">
-                <x-title>Orden de Empleados</x-title>
-
-                <x-button variant="secondary" wire:click="agregarPlanilleros">
-                    <i class="fa fa-sync"></i> Actualizar Contratados
-                </x-button>
-
-            </x-flex>
+            <x-title>Orden de Empleados</x-title>
         </x-slot>
 
         <x-slot name="content">
@@ -19,6 +12,11 @@
                         {{ \Carbon\Carbon::parse($fecha)->translatedFormat('F \d\e Y') }}
                     </span>
                 </x-label>
+                <p class="mt-1 text-xs text-pewter">
+                    Aquí solo se cambia el orden. Al contratar a alguien (planilla agraria) entra solo al final de los meses
+                    que ya tienen lista; quien termina su contrato sale y los de abajo suben. Un mes nuevo copia el orden del
+                    anterior.
+                </p>
             </div>
 
             <!-- Buscador -->

@@ -1,4 +1,72 @@
 <div x-data="registroDiarioActividades">
+    @if ($sinLista)
+        <div class="mt-4 rounded-[10px] border border-mist bg-paper px-4 py-3 text-sm text-graphite">
+            <i class="fa fa-circle-info text-blue-700 dark:text-blue-400"></i>
+            Este mes todavía no tiene lista: no hay contratados en planilla agraria o el mes aún no empieza. Se crea sola al
+            haber contratados (con el orden del mes anterior).
+        </div>
+    @endif
+
+    {{-- Aviso: vacaciones, descansos y permisos que cubren este día (solo se ve en los días del rango) --}}
+    @if (count($ausencias))
+        @php
+            $estadosAusencia = [
+                'registrado' => ['Registrado', 'text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-400/10', 'fa-check'],
+                'sin_registro' => ['Sin registrar', 'text-amber-700 bg-amber-50 dark:text-amber-400 dark:bg-amber-400/10', 'fa-clock'],
+                'conflicto' => ['Registrado como', 'text-red-700 bg-red-50 dark:text-red-400 dark:bg-red-400/10', 'fa-triangle-exclamation'],
+            ];
+            $fmt = fn($f) => $f ? \Carbon\Carbon::parse($f)->format('d/m/Y') : 'sin fin';
+        @endphp
+        <div class="mt-4 rounded-[10px] border border-mist bg-paper font-['Inter',ui-sans-serif,system-ui,sans-serif] tracking-[-0.01em]"
+            x-data="{ abierto: true }">
+            <button type="button" @click="abierto = !abierto"
+                class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left">
+                <span class="text-sm font-semibold text-ink">
+                    <i class="fa fa-umbrella-beach text-pewter"></i>
+                    Ausencias programadas este día · {{ count($ausencias) }}
+                </span>
+                <span class="text-xs text-pewter">
+                    Vacaciones, descansos y permisos que cubren el
+                    {{ \Carbon\Carbon::parse($fecha)->format('d/m/Y') }}
+                    <i class="fa ml-1" :class="abierto ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                </span>
+            </button>
+            <div x-show="abierto" x-collapse class="border-t border-hairline">
+                <ul class="divide-y divide-hairline text-[13px]">
+                    @foreach ($ausencias as $a)
+                        @php [$txt, $cls, $ico] = $estadosAusencia[$a['estado']]; @endphp
+                        <li class="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2" wire:key="aus-{{ $a['suspension_id'] }}">
+                            <span class="w-64 font-medium text-ink">{{ $a['nombre'] }}</span>
+                            <span class="flex items-center gap-2 text-graphite">
+                                <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $a['color'] }}"></span>
+                                {{ $a['codigo_esperado'] ?? $a['codigo'] }} · {{ \Illuminate\Support\Str::limit($a['descripcion'], 45) }}
+                            </span>
+                            <span class="tabular-nums text-graphite">
+                                del {{ $fmt($a['desde']) }} al {{ $fmt($a['hasta']) }}
+                                <span class="text-pewter">· día {{ $a['dia'] }} de {{ $a['dias'] }}</span>
+                            </span>
+                            <span class="rounded-[6px] px-2 py-0.5 text-xs font-medium {{ $cls }}">
+                                <i class="fa {{ $ico }}"></i> {{ $txt }}{{ $a['estado'] === 'conflicto' ? ' ' . $a['asistencia'] : '' }}
+                            </span>
+                            @can(\App\Constants\Permisos::PLANILLA_SUSPENSION_GESTIONAR)
+                                <button type="button" wire:click="regresoAnticipado({{ $a['suspension_id'] }})"
+                                    wire:confirm="{{ $a['nombre'] }} regresó hoy: su {{ mb_strtolower($a['descripcion'] ?? 'suspensión') }} {{ $a['dia'] > 1 ? 'terminará el ' . \Carbon\Carbon::parse($fecha)->subDay()->format('d/m/Y') : 'se eliminará' }} y se quitarán sus {{ $a['codigo_esperado'] ?? '' }} desde hoy hasta el {{ $fmt($a['hasta']) }}. ¿Continuar?"
+                                    class="ml-auto inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-mist bg-paper px-3 text-xs font-medium text-ink hover:bg-fog focus:outline-none focus:ring-[3px] focus:ring-carmin/25"
+                                    title="Termina la suspensión ayer y quita del registro diario los días que sobran">
+                                    <i class="fa fa-person-walking-arrow-loop-left"></i> Regresó hoy
+                                </button>
+                            @endcan
+                        </li>
+                    @endforeach
+                </ul>
+                <p class="border-t border-hairline px-4 py-2 text-xs text-pewter">
+                    Al programar una suspensión en Permisos y suspensiones, sus días se marcan solos aquí. Si regresa antes,
+                    usa "Regresó hoy" (o acorta el rango allá) y los días que sobran se quitan.
+                </p>
+            </div>
+        </div>
+    @endif
+
     <x-card class="mt-4">
 
         <x-flex class="justify-between">

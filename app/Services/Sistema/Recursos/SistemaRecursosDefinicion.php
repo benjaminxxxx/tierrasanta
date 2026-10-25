@@ -4,6 +4,7 @@ namespace App\Services\Sistema\Recursos;
 
 use App\Constants\Permisos;
 use App\Models\User;
+use App\Services\Planilla\Parametro\PlanillaParametroProceso;
 use App\Services\Reporte\AuditoriaServicio;
 use App\Services\Sistema\LibroExcel\SistemaLibroExcelDefinicion;
 use App\Services\Sistema\PermisosServicio;
@@ -31,6 +32,12 @@ class SistemaRecursosDefinicion extends SistemaLibroExcelDefinicion
     public function permiso(): string
     {
         return Permisos::SISTEMA_CONFIGURACION;
+    }
+
+    /** Carga inicial: sin datos principales, se acepta un Excel descargado antes o de otra base. */
+    public function sistemaVacio(): bool
+    {
+        return !\Illuminate\Support\Facades\DB::table('campos')->exists() && !\Illuminate\Support\Facades\DB::table('labores')->exists();
     }
 
     public function filasSistema(): array
@@ -71,12 +78,40 @@ class SistemaRecursosDefinicion extends SistemaLibroExcelDefinicion
             sort($roles);
             $f['roles'] = $roles ? implode(', ', $roles) : null;
         }
+        // Unidades: siempre el código del catálogo (lavadores / lavaderos → LAVADOR, kg → KG)
+        if ($hoja === 'unidades_produccion' && $f['codigo'] !== null) {
+            $f['codigo'] = \App\Services\Campo\Produccion\CampoProduccionReglas::codigo($f['codigo']);
+        }
+        if ($hoja === 'labores') {
+            $f['unidades'] = \App\Services\Campo\Produccion\CampoProduccionReglas::codigo($f['unidades']);
+        }
         return $f;
     }
 
     public function reglasFila(string $hoja, array $f, array &$avisos, array $contexto): array
     {
         $e = [];
+        // Registra producción = SI exige unidad; = NO, la unidad se ignora (misma regla que el formulario de labores)
+        if ($hoja === 'labores' && $f['registra_produccion'] === 'SI' && $f['unidades'] === null) {
+            $e[] = 'Registra producción = SI: indica la unidad de producción.';
+        }
+        if ($hoja === 'labores' && $f['registra_produccion'] === 'NO' && $f['unidades'] !== null) {
+            $avisos[] = "Registra producción = NO: la unidad \"{$f['unidades']}\" no se guarda.";
+        }
+        // Parámetros y AFP: valores el día 1 del mes; si el cambio toca planillas generadas se hace en la pantalla (confirma y regenera)
+        if (in_array($hoja, ['configuracion_fecha', 'afp'], true) && $f['desde'] !== null) {
+            if (substr((string) $f['desde'], 8, 2) !== '01') {
+                $e[] = 'Desde debe ser el día 1 de un mes: el valor rige por meses.';
+            } elseif ($hoja === 'configuracion_fecha' && $f['codigo'] !== null && $f['valor'] !== null) {
+                $error = app(PlanillaParametroProceso::class)->errorSinGuardar(fn() => app(PlanillaParametroProceso::class)
+                    ->guardarDesdeExcel($f['codigo'], $f['valor'], $f['desde'], $f['motivo'] ?? null));
+                $error && $e[] = $error;
+            } elseif ($hoja === 'afp' && $f['afp'] !== null) {
+                $error = app(PlanillaParametroProceso::class)->errorSinGuardar(fn() => app(PlanillaParametroProceso::class)
+                    ->guardarAfp($f['desde'], [$f['afp'] => $this->datosAfp($f)], $f['motivo'] ?? null));
+                $error && $e[] = $error;
+            }
+        }
         if ($hoja === 'empresa' && $f['fila'] > 2) {
             $e[] = 'La hoja Empresa lleva una sola fila (la empresa de este sistema).';
         }
@@ -278,13 +313,19 @@ class SistemaRecursosDefinicion extends SistemaLibroExcelDefinicion
         ]);
     }
 
+    protected function guardarUnidadesProduccion(array $d): void
+    {
+        $this->upsert('produccion_unidades', ['codigo' => $d['codigo']], ['nombre' => $d['nombre'], 'decimales' => (int) $d['decimales'], 'activo' => $d['activo'] === 'SI']);
+    }
+
     protected function guardarLabores(array $d): void
     {
         $actual = DB::table('labores')->where('codigo', $d['codigo'])->first();
         $valores = [
             'nombre_labor' => $d['nombre'], 'codigo_mano_obra' => $d['mano_obra'], 'tipo_asistencia_codigo' => $d['tipo_asistencia'],
             'rol_campania' => $d['rol_campania'], 'vigente_desde' => $d['vigente_desde'], 'estandar_produccion' => $d['estandar'],
-            'unidades' => $d['unidades'], 'se_paga_con_jornal' => $d['se_paga_con_jornal'] === 'SI', 'updated_at' => now(),
+            'registra_produccion' => $d['registra_produccion'] === 'SI', 'unidades' => $d['registra_produccion'] === 'SI' ? $d['unidades'] : null,
+            'se_paga_con_jornal' => $d['se_paga_con_jornal'] === 'SI', 'updated_at' => now(),
         ];
         if ($d['activa'] === 'SI') {
             $valores += ['deleted_at' => null, 'eliminado_por' => null];
@@ -312,11 +353,10 @@ class SistemaRecursosDefinicion extends SistemaLibroExcelDefinicion
         $this->upsert('configuracion', ['codigo' => $d['codigo']], ['valor' => $d['valor'] ?? '', 'descripcion' => $d['descripcion'] ?? '']);
     }
 
+    /** Parámetros con vigencia: por el proceso de parámetros (motivo, "hasta" automático, planillas generadas). */
     protected function guardarConfiguracionFecha(array $d): void
     {
-        $this->upsert('configuracion_historial', ['configuracion_codigo' => $d['codigo'], 'fecha_inicio' => $d['desde']], [
-            'valor' => (float) $d['valor'], 'fecha_fin' => $d['hasta'], 'activo' => $d['activo'] === 'SI',
-        ]);
+        app(PlanillaParametroProceso::class)->guardarDesdeExcel($d['codigo'], $d['valor'], $d['desde'], $d['motivo'] ?? null);
     }
 
     protected function guardarSp(array $d): void
@@ -336,10 +376,13 @@ class SistemaRecursosDefinicion extends SistemaLibroExcelDefinicion
 
     protected function guardarAfp(array $d): void
     {
-        $this->upsert('plan_prima_comision_historicos', ['referencia' => $d['afp'], 'fecha_inicio' => $d['desde']], [
-            'comision_flujo' => $d['comision_flujo'], 'comision_saldo' => $d['comision_saldo'], 'prima_seguros' => $d['prima_seguros'],
-            'aporte_obligatorio' => $d['aporte_obligatorio'], 'remuneracion_maxima_asegurable' => $d['remuneracion_maxima'],
-        ]);
+        app(PlanillaParametroProceso::class)->guardarAfp($d['desde'], [$d['afp'] => $this->datosAfp($d)], $d['motivo'] ?? null);
+    }
+
+    private function datosAfp(array $d): array
+    {
+        return ['comision_flujo' => $d['comision_flujo'], 'comision_saldo' => $d['comision_saldo'], 'prima_seguros' => $d['prima_seguros'],
+            'aporte_obligatorio' => $d['aporte_obligatorio'], 'remuneracion_maxima_asegurable' => $d['remuneracion_maxima']];
     }
 
     protected function guardarMaquinarias(array $d): void

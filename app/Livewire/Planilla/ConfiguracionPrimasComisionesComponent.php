@@ -2,7 +2,9 @@
 
 namespace App\Livewire\Planilla;
 
+use App\Exceptions\ParametroAfectaPlanillas;
 use App\Models\PlanPrimaComisionHistorico;
+use App\Services\Planilla\Parametro\PlanillaParametroProceso;
 use Carbon\Carbon;
 use Livewire\Component;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -15,6 +17,11 @@ class ConfiguracionPrimasComisionesComponent extends Component
     public string $fecha_inicio;
     public string $informacion = '';
     public bool $modoRegistro = false;
+    /** Motivo del cambio (publicación SBS, resolución…) */
+    public ?string $motivo = null;
+    /** Cambio pendiente de confirmar porque afecta planillas generadas, y los meses afectados */
+    public ?array $pendiente = null;
+    public array $afectados = [];
 
     protected array $referenciasValidas = ['HABITAT', 'INTEGRA', 'PRIMA', 'PROFUTURO'];
 
@@ -70,19 +77,7 @@ class ConfiguracionPrimasComisionesComponent extends Component
                 return;
             }
 
-            $fecha = Carbon::createFromFormat('Y-m-d', $this->fecha_inicio . '-01')->startOfMonth()->format('Y-m-d');
-
-            foreach ($valores as $referencia => $datos) {
-                PlanPrimaComisionHistorico::updateOrCreate(
-                    ['referencia' => $referencia, 'fecha_inicio' => $fecha],
-                    $datos
-                );
-            }
-
-            $this->modoRegistro = false;
-            $this->informacion = '';
-
-            $this->alert('success', 'Valores guardados correctamente para ' . $this->fecha_inicio . '.');
+            $this->ejecutar(['accion' => 'guardar', 'valores' => $valores, 'motivo' => $this->motivo]);
         } catch (\Throwable $th) {
             $this->errorAlert($th, 'Ocurrió un error inesperado');
         }
@@ -90,10 +85,46 @@ class ConfiguracionPrimasComisionesComponent extends Component
 
     public function eliminarRegistros(): void
     {
-        $fecha = Carbon::createFromFormat('Y-m-d', $this->fecha_inicio . '-01')->startOfMonth()->format('Y-m-d');
-        PlanPrimaComisionHistorico::whereDate('fecha_inicio', $fecha)->delete();
+        $this->ejecutar(['accion' => 'eliminar']);
+    }
 
-        $this->alert('success', 'Los valores de ' . $this->fecha_inicio . ' fueron eliminados.');
+    /** "Sí, guardar y regenerar" */
+    public function confirmar(): void
+    {
+        if ($this->pendiente) {
+            $this->ejecutar($this->pendiente, true);
+        }
+    }
+
+    public function cancelarConfirmacion(): void
+    {
+        $this->reset(['pendiente', 'afectados']);
+    }
+
+    /** Guarda o elimina por el proceso de parámetros: si toca meses con planilla generada pide confirmar y regenera. */
+    private function ejecutar(array $cambio, bool $confirmado = false): void
+    {
+        try {
+            $this->authorize(\App\Constants\Permisos::PLANILLA_CONFIG_AFP_GESTIONAR);
+            $proceso = app(PlanillaParametroProceso::class);
+            if ($cambio['accion'] === 'guardar') {
+                $proceso->guardarAfp($this->fecha_inicio, $cambio['valores'], $cambio['motivo'], $confirmado);
+                $texto = 'Valores guardados para ' . $this->fecha_inicio . '.';
+            } else {
+                $proceso->eliminarAfp($this->fecha_inicio, $confirmado);
+                $texto = 'Los valores de ' . $this->fecha_inicio . ' fueron eliminados.';
+            }
+            $this->reset(['pendiente', 'afectados', 'motivo']);
+            $this->modoRegistro = false;
+            $this->informacion = '';
+            $regenerados = collect($proceso->regenerados)->map(fn($r) => ($r['ok'] ? '✔ ' : '✖ ') . $r['periodo'] . ' ' . $r['planilla'] . ': ' . $r['detalle'])->implode(' · ');
+            $this->alert('success', $texto . ($regenerados ? ' Planillas regeneradas: ' . $regenerados : ''), $regenerados ? ['timer' => 12000] : []);
+        } catch (ParametroAfectaPlanillas $e) {
+            $this->pendiente = $cambio;
+            $this->afectados = $e->meses;
+        } catch (\Throwable $th) {
+            $this->errorAlert($th);
+        }
     }
 
     protected function parsearInformacion(string $informacion): array

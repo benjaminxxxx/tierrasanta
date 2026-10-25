@@ -19,7 +19,7 @@ class GestionPlanillaReporteDiario
     }
     public function obtenerPlanillaMensualXFecha($fecha)
     {
-        return app(PlanillaMensualServicio::class)->obtenerPlanillaXFecha($fecha)->map(function ($empleado){
+        return app(PlanillaMensualServicio::class)->obtenerPlanillaXFecha($fecha)->map(function ($empleado) use ($fecha) {
             // spp_snp y grupo de plan_mensual_detalles ya no se llenan (solo hasta 01/2026): se leen del contrato del mes
             $contrato = $empleado->empleado?->contratos->first();
 
@@ -28,22 +28,23 @@ class GestionPlanillaReporteDiario
                 'nombres' => $empleado->nombres,
                 'documento' => $empleado->documento,
                 'orden' => $empleado->orden,
-                'spp_snp' => $contrato?->plan_sp_codigo,
-                'grupo' => $contrato?->grupo_codigo,
+                'spp_snp' => $empleado->empleado?->pensionEn($fecha)?->plan_sp_codigo,
+                'grupo' => $contrato?->asignacionEn($contrato->cubre($fecha) ? $fecha : null)?->grupo_codigo,
             ];
         });
     }
     public function obtenerPlanillaAgraria($mes,$anio)
     {    
         return app(PlanillaEmpleadoServicio::class)->obtenerPlanillaAgraria($mes,$anio)
-        ->map(function ($empleado){
+        ->map(function ($empleado) use ($mes, $anio) {
+            $laboral = \App\Services\Planilla\Laboral\PlanillaLaboralConsulta::delMes($empleado, (int) $mes, (int) $anio);
             return [
                 'id' => $empleado->id,
                 'nombres' => $empleado->nombre_completo,
                 'documento' => $empleado->documento,
                 'orden' => $empleado->orden,
-                'spp_snp' => $empleado->contratos[0]->plan_sp_codigo,
-                'grupo' => $empleado->contratos[0]->grupo_codigo,
+                'spp_snp' => $laboral['pension']?->plan_sp_codigo,
+                'grupo' => $laboral['asignacion']?->grupo_codigo,
             ];
         });
     }

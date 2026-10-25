@@ -54,7 +54,8 @@ class SistemaLibroExcelComponent extends Component
     {
         $this->libro = $libro;
         $reglas = $this->def()->reglas();
-        $this->hojas = array_values(array_intersect($hojas, $reglas::claves()));
+        // Actualización en cadena: con una hoja vienen también las que referencia (se descargan y se suben juntas)
+        $this->hojas = $hojas ? $reglas::conDependencias(array_values(array_intersect($hojas, $reglas::claves()))) : [];
         $this->flotante = $flotante;
         $this->escritorio = $escritorio;
         $this->permiso = $permiso;
@@ -163,7 +164,10 @@ class SistemaLibroExcelComponent extends Component
             'visible' => $this->puede(),
             'tituloLibro' => $reglas::TITULO,
             'titulos' => $this->hojas ? $reglas::titulos($this->hojas) : [],
-            'nombreArchivo' => $reglas::nombreArchivo($this->soloHojas()),
+            // Con la macro disponible la descarga sale como .xlsm (botones Actualizar / Subir)
+            'nombreArchivo' => SistemaLibroExcel::macroDisponible()
+                ? preg_replace('/\.xlsx$/', '.xlsm', $reglas::nombreArchivo($this->soloHojas()))
+                : $reglas::nombreArchivo($this->soloHojas()),
         ]);
     }
 }

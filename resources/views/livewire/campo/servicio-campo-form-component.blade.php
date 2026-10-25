@@ -50,7 +50,7 @@
                             @endforeach
                         </x-select>
 
-                        <x-input type="date" label="Fecha del comprobante" wire:model="fechaComprobante"
+                        <x-input type="date" label="Fecha del comprobante (pago)" wire:model="fechaComprobante"
                             error="fechaComprobante" />
 
                         <x-input type="number" step="0.01" min="0" label="% IGV" x-model="porcentajeIgv"
@@ -71,9 +71,15 @@
                 {{-- ── Sección 2: Campos trabajados ── --}}
                 <div>
                     <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
-                            Detalle por campo
-                        </span>
+                        <div>
+                            <span class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+                                Detalle por campo
+                            </span>
+                            <p class="text-xs text-muted-foreground">
+                                Un recibo puede cubrir varios campos: una fila por campo, cada una con la <strong>fecha en que se hizo el servicio</strong>
+                                (puede ser distinta a la del pago). El costo va a la campaña vigente en esa fecha, aunque la campaña ya esté cerrada al pagar.
+                            </p>
+                        </div>
                         <x-button size="sm" variant="secondary" x-on:click="agregarFila()">
                             <i class="fa fa-plus"></i> Agregar campo
                         </x-button>
@@ -87,7 +93,7 @@
                         <table class="w-full text-sm">
                             <thead>
                                 <tr class="text-left text-xs uppercase text-muted-foreground border-b border-border">
-                                    <th class="p-2 w-40">Fecha</th>
+                                    <th class="p-2 w-40">Fecha del servicio</th>
                                     <th class="p-2 w-40">Campo</th>
                                     <th class="p-2">Labor</th>
                                     <th class="p-2 w-32 text-right">
@@ -163,6 +169,10 @@
                             </tfoot>
                         </table>
                     </div>
+                    {{-- También abajo, junto a la tabla: con muchos campos el botón de arriba queda lejos --}}
+                    <x-button size="sm" variant="secondary" x-on:click="agregarFila()" class="mt-2">
+                        <i class="fa fa-plus"></i> Agregar otro campo
+                    </x-button>
                 </div>
 
                 {{-- ── Sección 3: Montos del comprobante ── --}}

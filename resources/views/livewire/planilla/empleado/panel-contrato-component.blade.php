@@ -64,12 +64,13 @@
                                 {{ $contract->empleado->nombre_completo ?? 'Empleado no asignado' }}
                             </h3>
                             <p class="text-sm text-muted-foreground">
-                                {{ $contract->cargo_codigo }} • {{ $contract->grupo_codigo }}
+                                @php $asig = $contract->asignacionEn(); @endphp
+                                {{ $asig?->cargo?->nombre ?? 'Sin cargo' }} • {{ $asig?->grupo_codigo ?? 'Sin grupo' }}
                             </p>
                         </div>
                         <div class="text-right">
                             <div class="font-semibold text-foreground">
-                                S/ {{ number_format($contract->compensacion_vacacional ?? 0, 2) }}
+                                S/ {{ number_format((float) ($contract->remuneracionEn()?->sueldo ?? 0), 2) }}
                             </div>
                             <div class="flex items-center gap-2 justify-end mt-1">
                                 <x-status-badge :status="$contract->estado" />

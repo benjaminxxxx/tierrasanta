@@ -36,7 +36,9 @@
             @endphp
 
             @forelse ($tareas as $tarea)
-                <div class="border rounded-lg p-4 mb-3 {{ $variantes[$tarea->variante] ?? $variantes['warning'] }}">
+                {{-- El detalle (subtareas) empieza colapsado: se abre con "Ver detalle" --}}
+                <div class="border rounded-lg p-4 mb-3 {{ $variantes[$tarea->variante] ?? $variantes['warning'] }}"
+                    x-data="{ detalle: false }" wire:key="tarea-{{ $tarea->id }}">
                     <div class="flex justify-between items-start gap-4">
                         <div>
                             <p class="font-semibold">{{ $tarea->titulo }}</p>
@@ -64,7 +66,13 @@
                     </div>
 
                     @if ($tarea->subtareas->isNotEmpty())
-                        <div class="mt-3 pl-4 border-l-2 border-current/30 space-y-2">
+                        <button type="button" @click="detalle = !detalle"
+                            class="mt-2 inline-flex items-center gap-1.5 text-sm font-medium underline-offset-2 hover:underline">
+                            <i class="fa fa-chevron-right text-[10px] transition-transform" :class="detalle ? 'rotate-90' : ''"></i>
+                            <span x-text="detalle ? 'Ocultar detalle' : 'Ver detalle'"></span>
+                            ({{ $tarea->subtareas->count() }})
+                        </button>
+                        <div x-show="detalle" x-collapse x-cloak class="mt-3 pl-4 border-l-2 border-current/30 space-y-2">
                             @foreach ($tarea->subtareas as $sub)
                                 <div class="flex justify-between items-center text-sm">
                                     <span>{{ $sub->titulo }} ({{ $sub->cantidad_afectados }})</span>

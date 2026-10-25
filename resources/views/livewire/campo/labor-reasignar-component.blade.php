@@ -29,7 +29,20 @@
                             <option value="{{ $codigo }}">{{ $descripcion }}</option>
                         @endforeach
                     </x-select>
-                    <x-input wire:model="unidades" label="Unidades" placeholder="Ejem: Kg, Lavaderos" error="unidades" />
+                    <div>
+                        <label class="flex items-center gap-2 text-sm font-medium text-ink">
+                            <input type="checkbox" wire:model.live="registra_produccion" class="rounded border-mist text-carmin focus:ring-carmin/25" />
+                            Registra producción
+                        </label>
+                        @if ($registra_produccion)
+                            <x-select wire:model="unidades" label="Unidad de producción *" error="unidades" class="mt-2">
+                                <option value="">Seleccionar…</option>
+                                @foreach (\App\Models\ProduccionUnidad::where('activo', true)->orderBy('codigo')->get() as $u)
+                                    <option value="{{ $u->codigo }}">{{ $u->codigo }} · {{ $u->nombre }}</option>
+                                @endforeach
+                            </x-select>
+                        @endif
+                    </div>
                     <x-input type="number" wire:model="estandar_produccion" label="Estándar de producción" error="estandar_produccion" />
                     <x-select wire:model="tipo_asistencia_codigo" label="Representa una asistencia" error="tipo_asistencia_codigo">
                         <option value="">No — es una labor de trabajo</option>

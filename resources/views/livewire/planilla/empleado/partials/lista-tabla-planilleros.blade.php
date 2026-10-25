@@ -19,18 +19,23 @@
             @if ($empleados->count())
                 @foreach ($empleados as $indice => $empleado)
                     @php
-                        // Se muestra el contrato vigente; si no hay, el último que tuvo.
-                        $contrato = $empleado->contratoVigente ?? $empleado->ultimoContrato;
-                        $colorGrupo = $contrato?->grupo?->color;
+                        // Se muestra el contrato vigente; si no hay, el último que tuvo. Grupo, cargo, remuneración y
+                        // pensión: lo vigente hoy (capa laboral, con las relaciones ya cargadas)
+                        $vigente = $empleado->contratoEn();
+                        $contrato = $vigente ?? $empleado->contratos->sortByDesc(fn($c) => $c->fecha_inicio->format('Ymd'))->first();
+                        $asig = $contrato?->asignacionEn();
+                        $rem = $contrato?->remuneracionEn();
+                        $pen = $empleado->pensionEn();
+                        $colorGrupo = $asig?->grupo?->color;
                         $hoy = now()->startOfDay();
                         $inicio = $contrato?->fecha_inicio ? \Carbon\Carbon::parse($contrato->fecha_inicio) : null;
                         $fin = $contrato?->fecha_fin ? \Carbon\Carbon::parse($contrato->fecha_fin) : null;
 
                         [$estadoTexto, $estadoClase] = match (true) {
                             !$contrato => ['Sin contrato', 'bg-muted text-muted-foreground'],
-                            (bool) $empleado->contratoVigente && $fin && $fin->diffInDays($hoy, true) <= 30
+                            (bool) $vigente && $fin && $fin->diffInDays($hoy, true) <= 30
                                 => ['Vence pronto', 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'],
-                            (bool) $empleado->contratoVigente => ['Vigente', 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'],
+                            (bool) $vigente => ['Vigente', 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'],
                             $inicio && $inicio->gt($hoy) => ['Por iniciar', 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'],
                             default => ['Vencido', 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'],
                         };
@@ -64,21 +69,21 @@
                             </span>
                         </x-td>
                         <x-td class="text-center whitespace-nowrap">
-                            @if ($contrato?->grupo_codigo)
+                            @if ($asig?->grupo_codigo)
                                 <span class="inline-flex items-center gap-1.5">
                                     <span class="inline-block size-2.5 rounded-full border border-border"
                                         style="background-color: {{ $colorGrupo ?? 'transparent' }}"></span>
-                                    {{ $contrato->grupo_codigo }}
+                                    {{ $asig->grupo_codigo }}
                                 </span>
                             @else
                                 -
                             @endif
                         </x-td>
-                        <x-td value="{{ $contrato?->compensacion_vacacional }}" class="text-center" />
-                        <x-td value="{{ $contrato?->descuento?->codigo }}" class="text-center" />
-                        <x-td value="{{ $empleado->nombreCargoActual }}" class="text-center" />
-                        <x-td value="{{ $contrato?->modalidad_pago }}" class="text-center" />
-                        <x-td value="{{ match ($contrato?->tipo_planilla) { 'agraria' => 'P. AGRARIA', 'oficina' => 'P. OFICINA', null => '-', default => mb_strtoupper($contrato->tipo_planilla) } }}"
+                        <x-td value="{{ $rem?->compensacion_vacacional }}" class="text-center" />
+                        <x-td value="{{ $pen?->plan_sp_codigo }}" class="text-center" />
+                        <x-td value="{{ $asig?->cargo?->nombre ?? '-' }}" class="text-center" />
+                        <x-td value="{{ $rem?->modalidad_pago }}" class="text-center" />
+                        <x-td value="{{ match ($contrato?->tipo_planilla) { 'agraria' => 'P. AGRARIA', 'oficina' => 'P. OFICINA', 'externa' => 'EXTERNA', null => '-', default => mb_strtoupper($contrato->tipo_planilla) } }}"
                             class="text-center" />
 
                         <x-td class="text-center">
@@ -108,19 +113,15 @@
 
                                             @can(\App\Constants\Permisos::PERSONAL_CONTRATOS)
                                                 <x-dropdown-link @click="$wire.dispatch('abrirEmpleado', { id: {{ $empleado->id }}, tab: 'contratos' })">
-                                                    <i class="fa fa-table"></i> Gestionar Contratos
-                                                </x-dropdown-link>
-
-                                                <x-dropdown-link @click="$wire.dispatch('abrirEmpleado', { id: {{ $empleado->id }}, tab: 'sueldos' })">
-                                                    <i class="fa fa-money-bill"></i> Gestionar Sueldos
+                                                    <i class="fa fa-table"></i> Historial laboral
                                                 </x-dropdown-link>
                                             @endcan
 
-                                            @can(\App\Constants\Permisos::PERSONAL_CARGOS)
-                                                <x-dropdown-link @click="$wire.dispatch('abrirEmpleado', { id: {{ $empleado->id }}, tab: 'cargos' })">
-                                                    <i class="fa fa-id-badge"></i> Gestionar Cargo
+                                            @canany([\App\Constants\Permisos::PERSONAL_PENSIONES, \App\Constants\Permisos::PERSONAL_PAGOS])
+                                                <x-dropdown-link @click="$wire.dispatch('abrirEmpleado', { id: {{ $empleado->id }}, tab: 'pension_pago' })">
+                                                    <i class="fa fa-building-columns"></i> Pensión y pago
                                                 </x-dropdown-link>
-                                            @endcan
+                                            @endcanany
 
                                             @can(\App\Constants\Permisos::PERSONAL_FAMILIARES)
                                                 <x-dropdown-link @click="$wire.dispatch('abrirEmpleado', { id: {{ $empleado->id }}, tab: 'familiares' })">

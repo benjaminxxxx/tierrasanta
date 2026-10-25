@@ -126,6 +126,55 @@ class PlanillaSuspensionConsulta
             ])->all();
     }
 
+    /**
+     * Aviso del registro diario: quién de la lista del mes tiene una suspensión que cubre la fecha (solo se ve en los
+     * días del rango, también si cruza dos meses), y qué tiene registrado ese día.
+     *
+     * @return array<int, array{suspension_id:int, plan_empleado_id:int, nombre:string, codigo:?string, descripcion:?string,
+     *   color:string, desde:string, hasta:?string, dia:int, dias:int, asistencia:?string, codigo_esperado:?string, estado:string}>
+     *   estado: registrado (ya tiene el código), sin_registro, conflicto (tiene otra asistencia)
+     */
+    public function vigentesEn(string $fecha): array
+    {
+        $f = Carbon::parse($fecha)->startOfDay();
+        $detalles = \App\Models\PlanMensualDetalle::whereHas('planillaMensual', fn($q) => $q->where('mes', $f->month)->where('anio', $f->year))
+            ->whereNotNull('plan_empleado_id')->get(['id', 'plan_empleado_id', 'nombres', 'orden'])->keyBy('plan_empleado_id');
+        if ($detalles->isEmpty()) {
+            return [];
+        }
+        $registros = \App\Models\PlanRegistroDiario::whereIn('plan_det_men_id', $detalles->pluck('id'))->whereDate('fecha', $f)
+            ->pluck('asistencia', 'plan_det_men_id');
+        $codigos = \App\Models\PlanTipoAsistencia::whereNotNull('plan_tipo_suspension_id')->orderBy('id')->get(['codigo', 'plan_tipo_suspension_id']);
+
+        return PlanSuspension::with('tipoSuspension')->whereIn('plan_empleado_id', $detalles->keys())
+            ->whereDate('fecha_inicio', '<=', $f)
+            ->where(fn($q) => $q->whereNull('fecha_fin')->orWhereDate('fecha_fin', '>=', $f))
+            ->get()
+            ->map(function (PlanSuspension $s) use ($detalles, $registros, $codigos, $f) {
+                $detalle = $detalles[$s->plan_empleado_id];
+                $asistencia = $registros[$detalle->id] ?? null;
+                $propios = $codigos->where('plan_tipo_suspension_id', $s->tipo_suspension_id)->pluck('codigo');
+                $estado = $asistencia === null || $asistencia === '' ? 'sin_registro' : ($propios->contains($asistencia) ? 'registrado' : 'conflicto');
+                return [
+                    'suspension_id' => $s->id,
+                    'plan_empleado_id' => $s->plan_empleado_id,
+                    'nombre' => mb_strtoupper($detalle->nombres ?? ''),
+                    'orden' => (int) $detalle->orden,
+                    'codigo' => $s->tipoSuspension?->codigo,
+                    'descripcion' => $s->tipoSuspension?->descripcion,
+                    'color' => self::color($s->tipoSuspension?->codigo),
+                    'desde' => $s->fecha_inicio->toDateString(),
+                    'hasta' => $s->fecha_fin?->toDateString(),
+                    'dia' => (int) $s->fecha_inicio->diffInDays($f) + 1,
+                    'dias' => $s->duracion_dias,
+                    'asistencia' => $asistencia ?: null,
+                    'codigo_esperado' => $propios->first(),
+                    'estado' => $f->isSunday() && $estado === 'sin_registro' ? 'registrado' : $estado,
+                ];
+            })
+            ->sortBy('orden')->values()->all();
+    }
+
     // ------------------------------------------------------------------ estadísticas
 
     /**

@@ -2,15 +2,18 @@
 
 namespace App\Services\Planilla\Modulos;
 
-use App\Services\Planilla\PlanillaSueldoGastoServicio;
+use App\Services\Planilla\Laboral\PlanillaLaboralProceso;
 use App\Services\Planilla\PlanillaEmpleadoServicio;
 use Illuminate\Support\Carbon;
 
 class GestionPlanillaEmpleados
 {
+    /** Nuevo sueldo desde el 1 del mes elegido: una remuneración nueva en el contrato de cada empleado (capa laboral). */
     public function guardarSueldosMasivos($cambios, $mesVigencia, $anioVigencia){
-
-        app(PlanillaSueldoGastoServicio::class)->guardarSueldosMasivos($cambios, $mesVigencia, $anioVigencia);
+        if (!$mesVigencia || !$anioVigencia) {
+            throw new \App\Exceptions\ErrorControlado('Debe seleccionar el mes y el año de vigencia.');
+        }
+        app(PlanillaLaboralProceso::class)->cambiarSueldos($cambios, sprintf('%04d-%02d-01', $anioVigencia, $mesVigencia));
     }
     public function obtenerPlanillaAgrariaActual(){
         $mes  = Carbon::now()->format('m');

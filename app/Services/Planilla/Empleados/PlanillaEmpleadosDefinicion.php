@@ -4,21 +4,36 @@ namespace App\Services\Planilla\Empleados;
 
 use App\Constants\Permisos;
 use App\Models\PlanCargo;
-use App\Services\Planilla\PlanillaEmpleadoServicio;
+use App\Models\PlanContrato;
+use App\Models\PlanContratoAsignacion;
+use App\Models\PlanContratoRemuneracion;
+use App\Models\PlanEmpleado;
+use App\Models\PlanEmpleadoPago;
+use App\Models\PlanEmpleadoPension;
+use App\Services\Planilla\Laboral\PlanillaLaboralConsulta;
+use App\Services\Planilla\Laboral\PlanillaLaboralProceso;
+use App\Services\Planilla\Laboral\PlanillaLaboralReglas;
 use App\Services\Sistema\LibroExcel\SistemaLibroExcelDefinicion;
 use App\Services\Sistema\Vigencia\SistemaVigenciaReglas;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Excel de empleados (motor común SistemaLibroExcel), solo planilla: grupos, cargos, empleados (crea / actualiza su
- * persona con PlanillaEmpleadoServicio), contratos, sueldos, historial de cargos y derecho habientes.
- * Nunca borra: Activo = NO da de baja al empleado o inactiva el vínculo con el familiar.
+ * Excel de empleados sobre el motor común. Lee del sistema y guarda SIEMPRE a través de la capa laboral
+ * (PlanillaLaboralProceso / PlanillaLaboralReglas): así el Excel y los formularios validan igual.
+ * Se guarda completo o nada (bloquearConErrores): guardar a medias dejaría contratos sin sueldo o grupo.
  */
 class PlanillaEmpleadosDefinicion extends SistemaLibroExcelDefinicion
 {
     /** @var string[] avisos de la lectura (vigencia) */
     private array $avisos = [];
+
+    /** @var array<string, array>|null contratos leídos del Excel (ya con la vigencia), por DNI */
+    private ?array $contratosLeidos = null;
+
+    public function __construct(private PlanillaLaboralProceso $proceso)
+    {
+    }
 
     public function reglas(): string
     {
@@ -30,14 +45,45 @@ class PlanillaEmpleadosDefinicion extends SistemaLibroExcelDefinicion
         return Permisos::PERSONAL_CONTRATOS;
     }
 
+    /** Carga inicial: sin datos principales, se acepta un Excel descargado antes o de otra base. */
+    public function sistemaVacio(): bool
+    {
+        return !\Illuminate\Support\Facades\DB::table('plan_empleados')->exists();
+    }
+
+    public function permisoHoja(string $hoja): ?string
+    {
+        return match ($hoja) {
+            'grupos' => Permisos::PERSONAL_OPCIONES,
+            'cargos', 'asignaciones' => Permisos::PERSONAL_CARGOS,
+            'empleados' => Permisos::PERSONAL_EDITAR,
+            'contratos' => Permisos::PERSONAL_CONTRATOS,
+            'remuneraciones' => Permisos::PERSONAL_REMUNERACIONES,
+            'pensiones' => Permisos::PERSONAL_PENSIONES,
+            'pagos' => Permisos::PERSONAL_PAGOS,
+            'derecho_habientes' => Permisos::PERSONAL_FAMILIARES,
+            default => null,
+        };
+    }
+
+    public function bloquearConErrores(): bool
+    {
+        return true;
+    }
+
     public function leeme(): array
     {
         $vigencia = SistemaVigenciaReglas::desde();
         return array_filter([
             'El empleado se reconoce por su DNI (8 dígitos) en todas las hojas.',
-            'Contratos, sueldos y cargos: un periodo por fila (Desde / Hasta). Hasta vacío = vigente.',
+            'Contratos: un periodo por fila (Inicio / Fin; Fin vacío = vigente). Puede haber días sin contrato entre uno y otro, pero dos contratos del mismo empleado no se pueden cruzar.',
+            'Asignaciones (cargo, grupo) y Remuneraciones (sueldo, básica, bonificación…): solo "Desde". Valen hasta la siguiente fila del mismo empleado o hasta el fin del contrato. Para un cambio, agrega una fila con la fecha; no hay que cerrar la anterior.',
+            'Cada contrato necesita una asignación y una remuneración con "Desde" igual a su inicio.',
+            'Pensiones y Cuentas de pago: solo "Desde"; siguen al empleado aunque cambie de contrato.',
+            'Cada fila es completa: copia la anterior y cambia solo lo necesario (una celda vacía queda vacía).',
+            'Anular = SI quita esa fila del sistema (por ejemplo, si te equivocaste de fecha de inicio).',
+            'Se guarda todo o nada: si una fila tiene errores, corrígela y vuelve a subir.',
             $vigencia ? 'Vigencia del sistema: ' . Carbon::parse($vigencia)->format('d/m/Y') . '. Al subir, lo que terminó antes no se lee y lo vigente empieza en esa fecha.' : null,
-            'Derecho habientes: una fila por familiar y empleado ("El empleado es" padre, madre, cónyuge o tutor).',
             'Sistema de pensión: código de la hoja "Descuentos SP" del Excel de recursos (SNP, HAB F, PRI M…).',
         ]);
     }
@@ -46,12 +92,18 @@ class PlanillaEmpleadosDefinicion extends SistemaLibroExcelDefinicion
 
     public function filasSistema(): array
     {
-        $empleados = DB::table('plan_empleados')->orderBy('apellido_paterno')->orderBy('apellido_materno')->orderBy('nombres')->get();
-        $dni = $empleados->pluck('documento', 'id');
-        $cargos = DB::table('plan_cargos')->pluck('nombre', 'id');
         $sn = fn($v) => PlanillaEmpleadosReglas::sn($v);
         // Fechas imposibles (0001-01-01…) se exportan vacías: Excel no las representa
         $fecha = fn($v) => $v && substr((string) $v, 0, 4) >= '1900' ? substr((string) $v, 0, 10) : null;
+        $empleados = PlanEmpleado::withTrashed()->with(['persona', 'usuario'])->alfabetico()->get();
+        $dni = $empleados->mapWithKeys(fn($e) => [$e->id => $e->documento]);
+        // Contratos vivos y el DNI de su empleado
+        $contratos = DB::table('plan_contratos')->whereNull('deleted_at')->whereIn('plan_empleado_id', $dni->keys())
+            ->orderBy('plan_empleado_id')->orderBy('fecha_inicio')->get();
+        $dniContrato = $contratos->mapWithKeys(fn($c) => [$c->id => $dni[$c->plan_empleado_id]]);
+        $cargos = DB::table('plan_cargos')->pluck('nombre', 'id');
+        $particulas = fn(string $tabla, string $dueno, $ids, $mapa) => DB::table($tabla)->whereIn($dueno, $ids)->orderBy($dueno)->orderBy('desde')->get()
+            ->map(fn($p) => ['_dni' => $mapa[$p->{$dueno}]] + (array) $p);
 
         return [
             'grupos' => DB::table('plan_grupos')->orderBy('codigo')->get()->map(fn($g) => ['codigo' => $g->codigo, 'descripcion' => $g->descripcion, 'color' => $g->color])->all(),
@@ -61,29 +113,35 @@ class PlanillaEmpleadosDefinicion extends SistemaLibroExcelDefinicion
             'empleados' => $empleados->map(fn($e) => [
                 'dni' => $e->documento, 'apellido_paterno' => $e->apellido_paterno, 'apellido_materno' => $e->apellido_materno, 'nombres' => $e->nombres,
                 'fecha_nacimiento' => $fecha($e->fecha_nacimiento), 'genero' => $e->genero, 'email' => $e->email, 'telefono' => $e->numero,
-                'direccion' => $e->direccion, 'fecha_ingreso' => $fecha($e->fecha_ingreso), 'orden' => $e->orden, 'comentarios' => $e->comentarios,
-                'activo' => $sn(!$e->deleted_at),
+                'direccion' => $e->direccion, 'orden' => $e->orden, 'comentarios' => $e->comentarios, 'activo' => $sn(!$e->deleted_at),
+                'usuario' => $e->usuario?->email,
             ])->all(),
-            'contratos' => DB::table('plan_contratos')->whereNull('deleted_at')->whereIn('plan_empleado_id', $dni->keys())
-                ->orderBy('plan_empleado_id')->orderBy('fecha_inicio')->get()->map(fn($c) => [
-                    'dni' => $dni[$c->plan_empleado_id], 'desde' => $fecha($c->fecha_inicio), 'hasta' => $fecha($c->fecha_fin),
-                    'tipo_contrato' => $c->tipo_contrato, 'tipo_planilla' => $c->tipo_planilla, 'tipo_ingreso' => $c->tipo_ingreso, 'grupo' => $c->grupo_codigo,
-                    'estado' => $c->estado, 'remuneracion_basica' => $c->remuneracion_basica, 'bonificacion' => $c->bonificacion,
-                    'compensacion_vacacional' => $c->compensacion_vacacional, 'sistema_pension' => $c->plan_sp_codigo, 'esta_jubilado' => $sn($c->esta_jubilado),
-                    'suspension_cuarta' => $sn($c->suspension_cuarta), 'beneficios_mensuales' => $sn($c->beneficios_mensuales),
-                    'modalidad_pago' => $c->modalidad_pago, 'metodo_pago' => $c->metodo_pago, 'banco' => $c->banco, 'tipo_cuenta' => $c->tipo_cuenta,
-                    'moneda_cuenta' => $c->moneda_cuenta, 'numero_cuenta' => $c->numero_cuenta, 'banco_secundario' => $c->banco_secundario,
-                    'tipo_cuenta_secundaria' => $c->tipo_cuenta_secundaria, 'moneda_cuenta_secundaria' => $c->moneda_cuenta_secundaria,
-                    'numero_cuenta_secundaria' => $c->numero_cuenta_secundaria, 'fecha_fin_prueba' => $fecha($c->fecha_fin_prueba),
-                    'motivo_cese_sunat' => $c->motivo_cese_sunat, 'comentario_cese' => $c->comentario_cese,
-                ])->all(),
-            'sueldos' => DB::table('plan_sueldos')->whereIn('plan_empleado_id', $dni->keys())->orderBy('plan_empleado_id')->orderBy('fecha_inicio')->get()
-                ->map(fn($s) => ['dni' => $dni[$s->plan_empleado_id], 'desde' => $fecha($s->fecha_inicio), 'hasta' => $fecha($s->fecha_fin), 'sueldo' => $s->sueldo])->all(),
-            'cargos_empleado' => DB::table('plan_empleado_cargos')->whereIn('plan_empleado_id', $dni->keys())->orderBy('plan_empleado_id')->orderBy('fecha_inicio')->get()
-                ->map(fn($c) => [
-                    'dni' => $dni[$c->plan_empleado_id], 'cargo' => $cargos[$c->plan_cargo_id] ?? null, 'grupo' => $c->grupo_codigo,
-                    'desde' => $fecha($c->fecha_inicio), 'hasta' => $fecha($c->fecha_fin), 'motivo' => $c->motivo_cambio,
-                ])->all(),
+            'contratos' => $contratos->map(fn($c) => [
+                'dni' => $dni[$c->plan_empleado_id], 'inicio' => $fecha($c->fecha_inicio), 'fin' => $fecha($c->fecha_fin),
+                'tipo_contrato' => $c->tipo_contrato, 'tipo_planilla' => $c->tipo_planilla, 'tipo_ingreso' => $c->tipo_ingreso,
+                'fin_prueba' => $fecha($c->fecha_fin_prueba), 'motivo_cese_sunat' => $c->motivo_cese_sunat, 'comentario_cese' => $c->comentario_cese,
+                'anular' => 'NO',
+            ])->all(),
+            'asignaciones' => $particulas('plan_contrato_asignaciones', 'plan_contrato_id', $dniContrato->keys(), $dniContrato)->map(fn($p) => [
+                'dni' => $p['_dni'], 'desde' => $fecha($p['desde']), 'cargo' => $cargos[$p['plan_cargo_id']] ?? null, 'grupo' => $p['grupo_codigo'],
+                'motivo' => $p['motivo'], 'anular' => 'NO',
+            ])->all(),
+            'remuneraciones' => $particulas('plan_contrato_remuneraciones', 'plan_contrato_id', $dniContrato->keys(), $dniContrato)->map(fn($p) => [
+                'dni' => $p['_dni'], 'desde' => $fecha($p['desde']), 'sueldo' => $p['sueldo'], 'remuneracion_basica' => $p['remuneracion_basica'],
+                'bonificacion' => $p['bonificacion'], 'compensacion_vacacional' => $p['compensacion_vacacional'], 'modalidad_pago' => $p['modalidad_pago'],
+                'beneficios_mensuales' => $sn($p['beneficios_mensuales']), 'motivo' => $p['motivo'], 'anular' => 'NO',
+            ])->all(),
+            'pensiones' => $particulas('plan_empleado_pensiones', 'plan_empleado_id', $dni->keys(), $dni)->map(fn($p) => [
+                'dni' => $p['_dni'], 'desde' => $fecha($p['desde']), 'sistema_pension' => $p['plan_sp_codigo'], 'esta_jubilado' => $sn($p['esta_jubilado']),
+                'suspension_cuarta' => $sn($p['suspension_cuarta']), 'motivo' => $p['motivo'], 'anular' => 'NO',
+            ])->all(),
+            'pagos' => $particulas('plan_empleado_pagos', 'plan_empleado_id', $dni->keys(), $dni)->map(fn($p) => [
+                'dni' => $p['_dni'], 'desde' => $fecha($p['desde']), 'metodo_pago' => $p['metodo_pago'], 'banco' => $p['banco'],
+                'tipo_cuenta' => $p['tipo_cuenta'], 'moneda_cuenta' => $p['moneda_cuenta'], 'numero_cuenta' => $p['numero_cuenta'],
+                'banco_secundario' => $p['banco_secundario'], 'tipo_cuenta_secundaria' => $p['tipo_cuenta_secundaria'],
+                'moneda_cuenta_secundaria' => $p['moneda_cuenta_secundaria'], 'numero_cuenta_secundaria' => $p['numero_cuenta_secundaria'],
+                'motivo' => $p['motivo'], 'anular' => 'NO',
+            ])->all(),
             'derecho_habientes' => DB::table('empleado_derecho_habientes as v')->join('derecho_habientes as d', 'd.id', '=', 'v.derecho_habiente_id')
                 ->whereIn('v.empleado_id', $dni->keys())->whereNull('d.deleted_at')->orderBy('v.empleado_id')->orderBy('d.fecha_nacimiento')
                 ->get(['v.empleado_id', 'v.rol', 'v.activo', 'd.*'])->map(fn($d) => [
@@ -95,47 +153,107 @@ class PlanillaEmpleadosDefinicion extends SistemaLibroExcelDefinicion
         ];
     }
 
-    // ------------------------------------------------------------------ análisis
+    // ------------------------------------------------------------------ lectura (vigencia)
 
     /**
-     * Vigencia del sistema: en contratos, sueldos y cargos, lo que terminó antes no se lee y lo vigente empieza en la
-     * fecha de vigencia (contrato simulado de la empresa nueva). Sin vigencia (dominio antiguo) no cambia nada.
+     * Vigencia del sistema (empresa nueva): los contratos que terminaron antes no se leen y los vigentes empiezan en la
+     * fecha de vigencia. De cada partícula anterior a la vigencia solo queda la última, movida a esa fecha (y solo si
+     * el empleado sigue contratado). Sin vigencia (dominio antiguo) no cambia nada.
      */
     public function prepararHoja(string $hoja, array $filas): array
     {
         $vigencia = SistemaVigenciaReglas::desde();
-        if (!$vigencia || !in_array($hoja, PlanillaEmpleadosReglas::HOJAS_CON_PERIODO, true)) {
+        if (!$vigencia) {
             return $filas;
         }
-        $titulo = PlanillaEmpleadosReglas::HOJAS[$hoja][0];
-        $omitidas = 0;
-        $ajustadas = 0;
+        $titulo = PlanillaEmpleadosReglas::HOJAS[$hoja][0] ?? $hoja;
+        $fechaTexto = Carbon::parse($vigencia)->format('d/m/Y');
+        $esFecha = fn($v) => $v !== null && PlanillaEmpleadosReglas::esFecha($v);
+
+        if ($hoja === 'contratos') {
+            $omitidos = $ajustados = 0;
+            $r = [];
+            foreach ($filas as $f) {
+                if ($esFecha($f['fin']) && $f['fin'] < $vigencia) {
+                    $omitidos++;
+                    continue;
+                }
+                if ($esFecha($f['inicio']) && $f['inicio'] < $vigencia) {
+                    $f['inicio'] = $vigencia;
+                    $ajustados++;
+                }
+                $r[] = $f;
+            }
+            $this->contratosLeidos = [];
+            foreach ($r as $f) {
+                $this->contratosLeidos[(string) $f['dni']][] = ['inicio' => $f['inicio'], 'fin' => $f['fin']];
+            }
+            $omitidos && $this->avisos[] = "{$titulo}: {$omitidos} terminaron antes de la vigencia ({$fechaTexto}) y no se leen.";
+            $ajustados && $this->avisos[] = "{$titulo}: {$ajustados} vigentes empiezan el {$fechaTexto} (vigencia del sistema).";
+            return $r;
+        }
+
+        $esParticula = isset(PlanillaEmpleadosReglas::PARTICULAS_CONTRATO[$hoja]) || isset(PlanillaEmpleadosReglas::PARTICULAS_EMPLEADO[$hoja]);
+        if (!$esParticula) {
+            return $filas;
+        }
+        // Por DNI: las de antes de la vigencia se reducen a la última, que pasa a empezar en la vigencia
+        $antes = [];
         $r = [];
         foreach ($filas as $f) {
-            if ($f['hasta'] !== null && PlanillaEmpleadosReglas::esFecha($f['hasta']) && $f['hasta'] < $vigencia) {
-                $omitidas++;
+            if ($esFecha($f['desde']) && $f['desde'] < $vigencia) {
+                $k = (string) $f['dni'];
+                if (!isset($antes[$k]) || $antes[$k]['desde'] <= $f['desde']) {
+                    $antes[$k] = $f;
+                }
                 continue;
-            }
-            if ($f['desde'] !== null && PlanillaEmpleadosReglas::esFecha($f['desde']) && $f['desde'] < $vigencia) {
-                $f['desde'] = $vigencia;
-                $ajustadas++;
             }
             $r[] = $f;
         }
-        $fecha = Carbon::parse($vigencia)->format('d/m/Y');
-        if ($omitidas) {
-            $this->avisos[] = "{$titulo}: {$omitidas} terminaron antes de la vigencia ({$fecha}) y no se leen.";
+        $movidas = 0;
+        $descartadas = count(array_filter($filas, fn($f) => $esFecha($f['desde']) && $f['desde'] < $vigencia)) - count($antes);
+        foreach ($antes as $k => $f) {
+            $k = (string) $k; // las claves numéricas (DNI) vuelven como int
+            $yaTiene = collect($r)->contains(fn($x) => (string) $x['dni'] === $k && $x['desde'] === $vigencia);
+            // Del contrato: solo si un contrato cubre la vigencia. Del empleado (pensión, pago): si sigue contratado desde
+            // la vigencia (aunque su contrato empiece después), porque su pensión lo acompaña
+            $esDelEmpleado = isset(PlanillaEmpleadosReglas::PARTICULAS_EMPLEADO[$hoja]);
+            if ($yaTiene || !$this->contratadoEn($k, $vigencia, $esDelEmpleado)) {
+                $descartadas++;
+                continue;
+            }
+            $f['desde'] = $vigencia;
+            $r[] = $f;
+            $movidas++;
         }
-        if ($ajustadas) {
-            $this->avisos[] = "{$titulo}: {$ajustadas} vigentes empiezan el {$fecha} (vigencia del sistema).";
-        }
+        $descartadas && $this->avisos[] = "{$titulo}: {$descartadas} anteriores a la vigencia ({$fechaTexto}) no se leen (historial de la empresa anterior).";
+        $movidas && $this->avisos[] = "{$titulo}: {$movidas} vigentes empiezan el {$fechaTexto}.";
         return $r;
+    }
+
+    /**
+     * ¿El DNI tiene un contrato que cubre la fecha (o, con $desdeFecha, alguno vigente desde esa fecha en adelante)?
+     * Usa los contratos del Excel leído o, si no vino la hoja, los del sistema.
+     */
+    private function contratadoEn(string $dni, string $fecha, bool $desdeFecha = false): bool
+    {
+        $lista = $this->contratosLeidos !== null ? ($this->contratosLeidos[$dni] ?? [])
+            : DB::table('plan_contratos as c')->join('plan_empleados as e', 'e.id', '=', 'c.plan_empleado_id')->join('personas as p', 'p.id', '=', 'e.persona_id')
+                ->whereNull('c.deleted_at')->where('p.numero_documento', $dni)->get(['c.fecha_inicio as inicio', 'c.fecha_fin as fin'])->map(fn($c) => (array) $c)->all();
+        foreach ($lista as $c) {
+            $sigue = $c['fin'] === null || $c['fin'] >= $fecha;
+            if ($sigue && ($desdeFecha || $c['inicio'] <= $fecha)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function avisosLectura(): array
     {
         $a = $this->avisos;
         $this->avisos = [];
+        $this->contratosLeidos = null;
         return $a;
     }
 
@@ -155,6 +273,8 @@ class PlanillaEmpleadosDefinicion extends SistemaLibroExcelDefinicion
         return $f;
     }
 
+    // ------------------------------------------------------------------ validaciones por fila
+
     public function reglasFila(string $hoja, array $f, array &$avisos, array $contexto): array
     {
         $e = [];
@@ -165,20 +285,19 @@ class PlanillaEmpleadosDefinicion extends SistemaLibroExcelDefinicion
             if ($f['email'] !== null && !filter_var($f['email'], FILTER_VALIDATE_EMAIL)) {
                 $e[] = "Correo \"{$f['email']}\" no es válido.";
             }
-            if ($f['email'] !== null && DB::table('plan_empleados')->where('email', $f['email'])->where('documento', '<>', $f['dni'])->exists()) {
-                $e[] = "El correo \"{$f['email']}\" ya lo tiene otro empleado.";
+            if ($f['fecha_nacimiento'] !== null && PlanillaEmpleadosReglas::esFecha($f['fecha_nacimiento']) && $f['fecha_nacimiento'] > now()->toDateString()) {
+                $e[] = 'La fecha de nacimiento no puede ser futura.';
             }
-            foreach (['fecha_nacimiento' => 'La fecha de nacimiento', 'fecha_ingreso' => 'La fecha de ingreso'] as $c => $t) {
-                if ($f[$c] !== null && PlanillaEmpleadosReglas::esFecha($f[$c]) && $f[$c] > now()->toDateString()) {
-                    $e[] = "{$t} no puede ser futura.";
+        }
+        if ($hoja === 'pensiones' && $f['sistema_pension'] !== null && !DB::table('plan_sp_desc')->where('codigo', $f['sistema_pension'])->exists()) {
+            $e[] = "Sistema de pensión \"{$f['sistema_pension']}\" no existe: cárgalo en el Excel de recursos (hoja Descuentos SP).";
+        }
+        if ($hoja === 'remuneraciones') {
+            foreach (['sueldo', 'remuneracion_basica', 'bonificacion', 'compensacion_vacacional'] as $c) {
+                if (is_numeric($f[$c]) && (float) $f[$c] < 0) {
+                    $e[] = PlanillaEmpleadosReglas::HOJAS['remuneraciones'][2][$c]['t'] . ' no puede ser negativa.';
                 }
             }
-        }
-        if (in_array($hoja, PlanillaEmpleadosReglas::HOJAS_CON_PERIODO, true) && $f['hasta'] !== null && $f['desde'] !== null && $f['hasta'] < $f['desde']) {
-            $e[] = '"Hasta" es anterior a "Desde".';
-        }
-        if ($hoja === 'contratos' && $f['sistema_pension'] !== null && !DB::table('plan_sp_desc')->where('codigo', $f['sistema_pension'])->exists()) {
-            $e[] = "Sistema de pensión \"{$f['sistema_pension']}\" no existe: cárgalo en el Excel de recursos (hoja Descuentos SP).";
         }
         if ($hoja === 'derecho_habientes' && $f['tipo'] === 'conyuge' && $f['rol'] !== 'conyuge') {
             $avisos[] = 'Parentesco cónyuge: "El empleado es" debería ser conyuge.';
@@ -186,11 +305,146 @@ class PlanillaEmpleadosDefinicion extends SistemaLibroExcelDefinicion
         return $e;
     }
 
-    // ------------------------------------------------------------------ guardado
+    // ------------------------------------------------------------------ validaciones entre filas y hojas
 
-    private function empleadoId(string $dni): ?int
+    /**
+     * Junta lo del sistema con lo del Excel (lo del Excel reemplaza por su clave; Anular = SI lo quita) y valida con la
+     * capa laboral: contratos que se cruzan, partículas fuera de contrato y contratos sin asignación o remuneración
+     * desde su inicio. Los errores se marcan en las filas del Excel.
+     */
+    public function validarLibro(array $hojas, array $sistema): array
     {
-        return DB::table('plan_empleados')->where('documento', $dni)->value('id');
+        $contratos = $this->combinar('contratos', ['dni', 'inicio'], $hojas, $sistema);
+
+        // 1. Contratos del mismo empleado que se cruzan
+        foreach ($contratos as $dni => $lista) {
+            $periodos = array_map(fn($c) => ['ref' => $c['ref'], 'inicio' => $c['inicio'], 'fin' => $c['fin'], 'fin_prueba' => $c['fin_prueba']], $lista);
+            foreach (PlanillaLaboralReglas::erroresContratos($periodos) as $ref => $errores) {
+                foreach ($errores as $msg) {
+                    if (str_contains($msg, 'Se cruza') && $this->hayDelSistema($periodos, $msg)) {
+                        $msg .= ' Si cambiaste la fecha de inicio de un contrato, el anterior sigue en el sistema: agrégalo en una fila con Anular = SI.';
+                    }
+                    $this->marcar($hojas, $ref, $msg);
+                }
+            }
+        }
+
+        // 2. Partículas del contrato dentro de algún contrato del empleado; 3. contratos sin partícula en su inicio
+        $periodosPorDni = array_map(fn($lista) => array_map(fn($c) => ['ref' => $c['ref'], 'inicio' => $c['inicio'], 'fin' => $c['fin']], $lista), $contratos);
+        foreach (PlanillaEmpleadosReglas::PARTICULAS_CONTRATO as $hoja => $titulo) {
+            $particulas = $this->combinar($hoja, ['dni', 'desde'], $hojas, $sistema);
+            foreach ($particulas as $dni => $lista) {
+                $errores = PlanillaLaboralReglas::erroresParticulasDeContrato(array_map(fn($p) => ['ref' => $p['ref'], 'desde' => $p['desde']], $lista),
+                    $periodosPorDni[$dni] ?? [], $titulo);
+                foreach ($errores as $ref => $msgs) {
+                    foreach ($msgs as $msg) {
+                        $this->marcar($hojas, $ref, $msg);
+                    }
+                }
+            }
+            $tituloHoja = PlanillaEmpleadosReglas::HOJAS[$hoja][0];
+            foreach ($periodosPorDni as $dni => $periodos) {
+                // Solo se exige en los contratos que vienen nuevos o cambian en este Excel
+                $delExcel = array_filter($periodos, fn($c) => str_starts_with($c['ref'], 'contratos:') && $this->filaPorRef($hojas, $c['ref'])['estado'] !== 'igual');
+                $desdes = array_map(fn($p) => ['ref' => $p['ref'], 'desde' => $p['desde']], $particulas[$dni] ?? []);
+                $nombre = mb_strtolower(preg_replace('/^(La|El) /', '', $titulo)); // "asignación", "remuneración"
+                foreach (PlanillaLaboralReglas::contratosSinInicio($delExcel, $desdes, $nombre) as $ref => $msg) {
+                    $this->marcar($hojas, $ref, "{$msg} Agrégala en la hoja {$tituloHoja}.");
+                }
+            }
+        }
+
+        // 4. Avisos: Anular en filas que no existen; contratos de planilla sin sistema de pensión
+        foreach ($hojas as $hoja => &$h) {
+            foreach ($h['filas'] as &$f) {
+                if (($f['datos']['anular'] ?? 'NO') === 'SI' && $f['estado'] === 'nuevo') {
+                    $f['avisos'][] = 'Anular = SI en una fila que no está en el sistema: se ignora.';
+                }
+            }
+            unset($f);
+        }
+        unset($h);
+        $pensiones = $this->combinar('pensiones', ['dni', 'desde'], $hojas, $sistema);
+        foreach ($hojas['contratos']['filas'] ?? [] as $i => $f) {
+            $d = $f['datos'];
+            if ($f['estado'] === 'nuevo' && $d['tipo_ingreso'] === 'planilla' && $d['tipo_planilla'] !== 'externa' && empty($pensiones[(string) $d['dni']])) {
+                $hojas['contratos']['filas'][$i]['avisos'][] = 'El empleado no tiene sistema de pensión (hoja Pensiones): la planilla no podrá calcular su descuento.';
+            }
+        }
+        return $hojas;
+    }
+
+    /**
+     * Filas del sistema + del Excel por DNI. Cada una con 'ref' ("hoja:i" si viene del Excel, "sistema" si no) y sus
+     * datos. Las del Excel con errores propios no entran (ya están marcadas); Anular = SI quita la fila.
+     * @return array<string, array<int, array>>
+     */
+    private function combinar(string $hoja, array $clave, array $hojas, array $sistema): array
+    {
+        $porClave = [];
+        $k = fn($f) => implode('|', array_map(fn($c) => mb_strtolower((string) $f[$c]), $clave));
+        foreach ($sistema[$hoja] ?? [] as $f) {
+            $porClave[$k($f)] = ['ref' => 'sistema'] + $f;
+        }
+        foreach ($hojas[$hoja]['filas'] ?? [] as $i => $f) {
+            if ($f['estado'] === 'error') {
+                continue;
+            }
+            if (($f['datos']['anular'] ?? 'NO') === 'SI') {
+                unset($porClave[$k($f['datos'])]);
+                continue;
+            }
+            $porClave[$k($f['datos'])] = ['ref' => "{$hoja}:{$i}"] + $f['datos'];
+        }
+        $r = [];
+        foreach ($porClave as $f) {
+            $r[(string) $f['dni']][] = $f;
+        }
+        return $r;
+    }
+
+    private function hayDelSistema(array $periodos, string $msg): bool
+    {
+        foreach ($periodos as $p) {
+            if ($p['ref'] === 'sistema' && str_contains($msg, PlanillaLaboralReglas::periodo($p))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function filaPorRef(array $hojas, string $ref): array
+    {
+        [$hoja, $i] = explode(':', $ref);
+        return $hojas[$hoja]['filas'][(int) $i];
+    }
+
+    /** Agrega el error a la fila del Excel (las del sistema no se marcan: no están en el archivo). */
+    private function marcar(array &$hojas, string $ref, string $msg): void
+    {
+        if (!str_contains($ref, ':')) {
+            return;
+        }
+        [$hoja, $i] = explode(':', $ref);
+        $hojas[$hoja]['filas'][(int) $i]['errores'][] = $msg;
+    }
+
+    // ------------------------------------------------------------------ guardado (siempre por la capa laboral)
+
+    /** Contratos: primero los anulados, luego los que cambian y al final los nuevos (así un cierre va antes que el contrato siguiente). */
+    public function ordenarParaGuardar(string $hoja, array $filas): array
+    {
+        if ($hoja !== 'contratos') {
+            return $filas;
+        }
+        usort($filas, fn($a, $b) => [($a['datos']['anular'] === 'SI' ? 0 : ($a['estado'] === 'cambia' ? 1 : 2)), $a['datos']['inicio']]
+            <=> [($b['datos']['anular'] === 'SI' ? 0 : ($b['estado'] === 'cambia' ? 1 : 2)), $b['datos']['inicio']]);
+        return $filas;
+    }
+
+    private function empleado(string $dni): ?PlanEmpleado
+    {
+        return PlanEmpleado::withTrashed()->porDocumento($dni)->first();
     }
 
     protected function guardarGrupos(array $d): void
@@ -208,71 +462,102 @@ class PlanillaEmpleadosDefinicion extends SistemaLibroExcelDefinicion
         }
     }
 
-    /** Con el servicio de planilla: valida y crea / actualiza también la persona del empleado. */
     protected function guardarEmpleados(array $d): void
     {
-        $id = DB::table('plan_empleados')->where('documento', $d['dni'])->value('id');
-        if ($id) {
-            // El servicio no ve a los dados de baja: se reactiva y abajo queda según la columna Activo
-            DB::table('plan_empleados')->where('id', $id)->update(['deleted_at' => null]);
-        }
-        $empleado = app(PlanillaEmpleadoServicio::class)->guardar([
+        $empleado = $this->proceso->guardarEmpleado([
             'documento' => $d['dni'], 'nombres' => $d['nombres'], 'apellido_paterno' => $d['apellido_paterno'], 'apellido_materno' => $d['apellido_materno'],
             'fecha_nacimiento' => $d['fecha_nacimiento'], 'genero' => $d['genero'], 'email' => $d['email'], 'numero' => $d['telefono'],
-            'direccion' => $d['direccion'], 'fecha_ingreso' => $d['fecha_ingreso'], 'orden' => $d['orden'], 'comentarios' => $d['comentarios'],
-        ], $id);
-        $baja = DB::table('plan_empleados')->where('id', $empleado->id)->value('deleted_at');
-        if ($d['activo'] === 'SI' && $baja) {
-            DB::table('plan_empleados')->where('id', $empleado->id)->update(['deleted_at' => null]);
-        } elseif ($d['activo'] === 'NO' && !$baja) {
-            DB::table('plan_empleados')->where('id', $empleado->id)->update(['deleted_at' => now()]);
+            'direccion' => $d['direccion'], 'orden' => $d['orden'], 'comentarios' => $d['comentarios'],
+        ], $this->empleado($d['dni'])?->id);
+        if ($d['activo'] === 'SI' && $empleado->trashed()) {
+            $empleado->restore();
+        } elseif ($d['activo'] === 'NO' && !$empleado->trashed()) {
+            $empleado->delete();
         }
     }
 
     protected function guardarContratos(array $d): void
     {
-        $empleadoId = $this->empleadoId($d['dni']);
-        if (!$empleadoId) {
+        $empleado = $this->empleado($d['dni']);
+        $contrato = $empleado?->contratos()->whereDate('fecha_inicio', $d['inicio'])->first();
+        if (!$empleado || $d['anular'] === 'SI') {
+            $contrato && $this->proceso->eliminarContrato($contrato);
             return;
         }
-        $this->upsert('plan_contratos', ['plan_empleado_id' => $empleadoId, 'fecha_inicio' => $d['desde']], [
-            'fecha_fin' => $d['hasta'], 'tipo_contrato' => $d['tipo_contrato'], 'tipo_planilla' => $d['tipo_planilla'], 'tipo_ingreso' => $d['tipo_ingreso'],
-            'grupo_codigo' => $d['grupo'], 'estado' => $d['estado'], 'remuneracion_basica' => $d['remuneracion_basica'], 'bonificacion' => $d['bonificacion'],
-            'compensacion_vacacional' => $d['compensacion_vacacional'], 'plan_sp_codigo' => $d['sistema_pension'], 'esta_jubilado' => $d['esta_jubilado'] === 'SI',
-            'suspension_cuarta' => $d['suspension_cuarta'] === 'SI', 'beneficios_mensuales' => $d['beneficios_mensuales'] === 'SI',
-            'modalidad_pago' => $d['modalidad_pago'], 'metodo_pago' => $d['metodo_pago'], 'banco' => $d['banco'], 'tipo_cuenta' => $d['tipo_cuenta'],
-            'moneda_cuenta' => $d['moneda_cuenta'], 'numero_cuenta' => $d['numero_cuenta'], 'banco_secundario' => $d['banco_secundario'],
-            'tipo_cuenta_secundaria' => $d['tipo_cuenta_secundaria'], 'moneda_cuenta_secundaria' => $d['moneda_cuenta_secundaria'],
-            'numero_cuenta_secundaria' => $d['numero_cuenta_secundaria'], 'fecha_fin_prueba' => $d['fecha_fin_prueba'],
+        $this->proceso->guardarContrato($empleado, [
+            'tipo_contrato' => $d['tipo_contrato'], 'tipo_planilla' => $d['tipo_planilla'], 'tipo_ingreso' => $d['tipo_ingreso'],
+            'fecha_inicio' => $d['inicio'], 'fecha_fin' => $d['fin'], 'fecha_fin_prueba' => $d['fin_prueba'],
             'motivo_cese_sunat' => $d['motivo_cese_sunat'], 'comentario_cese' => $d['comentario_cese'],
+        ], $contrato);
+    }
+
+    /** Contrato del empleado que cubre la fecha (el "Desde" de la partícula decide a qué contrato pertenece). */
+    private function contratoDe(string $dni, string $desde): ?PlanContrato
+    {
+        $empleado = $this->empleado($dni);
+        return $empleado ? PlanillaLaboralConsulta::contratoEn($empleado->setRelation('contratos', $empleado->contratos()->get()), $desde) : null;
+    }
+
+    protected function guardarAsignaciones(array $d): void
+    {
+        $contrato = $this->contratoDe($d['dni'], $d['desde']);
+        if ($d['anular'] === 'SI') {
+            $contrato && PlanContratoAsignacion::where('plan_contrato_id', $contrato->id)->whereDate('desde', $d['desde'])->delete();
+            return;
+        }
+        $this->proceso->guardarAsignacion($contrato, [
+            'desde' => $d['desde'], 'grupo_codigo' => $d['grupo'], 'motivo' => $d['motivo'],
+            'plan_cargo_id' => $d['cargo'] ? DB::table('plan_cargos')->where('slug', PlanCargo::normalizar($d['cargo']))->value('id') : null,
         ]);
     }
 
-    protected function guardarSueldos(array $d): void
+    protected function guardarRemuneraciones(array $d): void
     {
-        $empleadoId = $this->empleadoId($d['dni']);
-        if ($empleadoId) {
-            $this->upsert('plan_sueldos', ['plan_empleado_id' => $empleadoId, 'fecha_inicio' => $d['desde']], ['fecha_fin' => $d['hasta'], 'sueldo' => (float) $d['sueldo']]);
-        }
-    }
-
-    protected function guardarCargosEmpleado(array $d): void
-    {
-        $empleadoId = $this->empleadoId($d['dni']);
-        $cargoId = DB::table('plan_cargos')->where('slug', PlanCargo::normalizar($d['cargo']))->value('id');
-        if (!$empleadoId || !$cargoId) {
+        $contrato = $this->contratoDe($d['dni'], $d['desde']);
+        if ($d['anular'] === 'SI') {
+            $contrato && PlanContratoRemuneracion::where('plan_contrato_id', $contrato->id)->whereDate('desde', $d['desde'])->delete();
             return;
         }
-        $actual = DB::table('plan_empleado_cargos')->where('plan_empleado_id', $empleadoId)->whereDate('fecha_inicio', $d['desde'])->first();
-        $valores = ['plan_cargo_id' => $cargoId, 'grupo_codigo' => $d['grupo'], 'fecha_fin' => $d['hasta'], 'motivo_cambio' => $d['motivo'], 'updated_at' => now()];
-        $actual ? DB::table('plan_empleado_cargos')->where('id', $actual->id)->update($valores)
-            : DB::table('plan_empleado_cargos')->insert($valores + ['plan_empleado_id' => $empleadoId, 'fecha_inicio' => $d['desde'], 'created_at' => now()]);
+        $this->proceso->guardarRemuneracion($contrato, [
+            'desde' => $d['desde'], 'sueldo' => $d['sueldo'], 'remuneracion_basica' => $d['remuneracion_basica'], 'bonificacion' => $d['bonificacion'],
+            'compensacion_vacacional' => $d['compensacion_vacacional'], 'modalidad_pago' => $d['modalidad_pago'],
+            'beneficios_mensuales' => $d['beneficios_mensuales'] === 'SI', 'motivo' => $d['motivo'],
+        ]);
+    }
+
+    protected function guardarPensiones(array $d): void
+    {
+        $empleado = $this->empleado($d['dni']);
+        if (!$empleado) {
+            return;
+        }
+        if ($d['anular'] === 'SI') {
+            PlanEmpleadoPension::where('plan_empleado_id', $empleado->id)->whereDate('desde', $d['desde'])->delete();
+            return;
+        }
+        $this->proceso->guardarPension($empleado, [
+            'desde' => $d['desde'], 'plan_sp_codigo' => $d['sistema_pension'], 'esta_jubilado' => $d['esta_jubilado'] === 'SI',
+            'suspension_cuarta' => $d['suspension_cuarta'] === 'SI', 'motivo' => $d['motivo'],
+        ]);
+    }
+
+    protected function guardarPagos(array $d): void
+    {
+        $empleado = $this->empleado($d['dni']);
+        if (!$empleado) {
+            return;
+        }
+        if ($d['anular'] === 'SI') {
+            PlanEmpleadoPago::where('plan_empleado_id', $empleado->id)->whereDate('desde', $d['desde'])->delete();
+            return;
+        }
+        $this->proceso->guardarPago($empleado, $d);
     }
 
     /** El familiar (por documento) y su vínculo con el empleado. */
     protected function guardarDerechoHabientes(array $d): void
     {
-        $empleadoId = $this->empleadoId($d['dni']);
+        $empleadoId = $this->empleado($d['dni'])?->id;
         if (!$empleadoId) {
             return;
         }

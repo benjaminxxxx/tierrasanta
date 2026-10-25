@@ -4,14 +4,15 @@ namespace App\Livewire\Planilla\Empleado;
 
 use App\Models\PlanContrato;
 use App\Models\PlanEmpleado;
-use App\Services\Planilla\PlanillaEmpleadoServicio;
+use App\Services\Planilla\Laboral\PlanillaLaboralProceso;
 use App\Traits\ListasComunes\ConGrupoPlanilla;
 use Illuminate\Validation\ValidationException;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
 /**
- * Panel único del empleado: Perfil, Datos, Contratos, Sueldos, Cargos y Derecho habientes.
+ * Panel único del empleado: Perfil, Datos, Historial laboral (contratos con cargo, grupo y remuneración), Pensión y pago,
+ * y Derecho habientes.
  * Cada pestaña (salvo Datos) es un componente propio en App\Livewire\GestionPlanilla\Empleado.
  *
  * Se abre con el evento `abrirEmpleado` (id, tab). También escucha los eventos de los modales
@@ -24,9 +25,8 @@ class GestionPlanillaEmpleadosFormComponent extends Component
     public const TABS = [
         'perfil' => 'Perfil',
         'datos' => 'Datos personales',
-        'contratos' => 'Contratos',
-        'sueldos' => 'Sueldos',
-        'cargos' => 'Cargos',
+        'contratos' => 'Historial laboral',
+        'pension_pago' => 'Pensión y pago',
         'familiares' => 'Derecho habientes',
     ];
 
@@ -65,6 +65,8 @@ class GestionPlanillaEmpleadosFormComponent extends Component
     public function abrirEmpleado($id = null, string $tab = 'perfil'): void
     {
         $this->resetForm();
+        // Pestañas antiguas (sueldos, cargos) ahora están en el historial laboral
+        $tab = in_array($tab, ['sueldos', 'cargos'], true) ? 'contratos' : $tab;
         $this->tab = array_key_exists($tab, self::TABS) ? $tab : 'perfil';
 
         if (!$id) {
@@ -100,12 +102,12 @@ class GestionPlanillaEmpleadosFormComponent extends Component
 
     public function abrirSueldos($id): void
     {
-        $this->abrirEmpleado($id, 'sueldos');
+        $this->abrirEmpleado($id, 'contratos');
     }
 
     public function abrirCargos($id): void
     {
-        $this->abrirEmpleado($id, 'cargos');
+        $this->abrirEmpleado($id, 'contratos');
     }
 
     public function abrirFormularioNuevoEmpleado(): void
@@ -121,12 +123,8 @@ class GestionPlanillaEmpleadosFormComponent extends Component
     public function getEmpleados($search)
     {
         return PlanEmpleado::query()
-            ->when($search, fn($q) => $q->where(fn($q) => $q
-                ->where('nombres', 'like', "%{$search}%")
-                ->orWhere('apellido_paterno', 'like', "%{$search}%")
-                ->orWhere('apellido_materno', 'like', "%{$search}%")
-                ->orWhere('documento', 'like', "%{$search}%")))
-            ->orderBy('apellido_paterno')
+            ->buscar($search)
+            ->alfabetico()
             ->limit(10)
             ->get()
             ->map(fn($e) => ['id' => $e->id, 'name' => "{$e->nombreCompleto} — {$e->documento}"])
@@ -171,11 +169,10 @@ class GestionPlanillaEmpleadosFormComponent extends Component
                 'direccion' => $this->direccion,
                 'genero' => $this->genero,
                 'fecha_nacimiento' => $this->fecha_nacimiento,
-                'fecha_ingreso' => $this->fecha_ingreso,
             ];
 
             $esNuevo = !$this->empleadoId;
-            $empleado = app(PlanillaEmpleadoServicio::class)->guardar($datos, $this->empleadoId);
+            $empleado = app(PlanillaLaboralProceso::class)->guardarEmpleado($datos, $this->empleadoId);
 
             $this->alert('success', 'Los datos fueron guardados correctamente');
             $this->dispatch('empleadoGuardado');

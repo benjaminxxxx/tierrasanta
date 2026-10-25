@@ -6,6 +6,28 @@
 
     <livewire:sistema.sistema-libro-excel-component libro="recursos" />
 
+    {{-- Datos de la empresa: encabezados de reportes y Excel (también en la hoja "Empresa" del Excel de recursos) --}}
+    <x-card class="space-y-4 max-w-3xl">
+        <div>
+            <h3 class="font-semibold text-foreground">Datos de la empresa</h3>
+            <p class="text-sm text-muted-foreground">Aparecen en el encabezado de los reportes y archivos Excel (por ejemplo, el reporte diario de regadores).</p>
+        </div>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div class="sm:col-span-2">
+                <x-input wire:model="empresa.razon_social" label="Razón social" placeholder="Ej.: TIERRA SANTA HOLDING SAC" />
+            </div>
+            <div>
+                <x-input wire:model="empresa.ruc" label="RUC" maxlength="11" inputmode="numeric" placeholder="11 dígitos" />
+            </div>
+            <div class="sm:col-span-3">
+                <x-input wire:model="empresa.establecimiento" label="Establecimiento (dirección)" />
+            </div>
+        </div>
+        <div class="flex justify-end">
+            <x-button wire:click="guardarEmpresa" wire:loading.attr="disabled"><i class="fa fa-save"></i> Guardar datos de la empresa</x-button>
+        </div>
+    </x-card>
+
     <x-card class="space-y-4 max-w-3xl">
         <div>
             <h3 class="font-semibold text-foreground">Evaluaciones de brotes por campaña</h3>

@@ -1,10 +1,11 @@
 Attribute VB_Name = "TierraSanta"
 ' Macro de los libros Excel del sistema (recursos, insumos, empleados).
 ' La hoja oculta "_tsh" trae la dirección del sistema (A1), la clave de acceso personal (A2), el libro (A3), las hojas
-' del archivo (A4), la hoja índice (A5), el correo del usuario (A6), el vencimiento (A7) y, desde la fila 10, cada hoja
-' con su clave (A = título, B = clave).
+' del archivo (A4), la hoja índice (A5), el correo del usuario (A6), el vencimiento (A7),
+' el modo (A8 = "carga": carga inicial) y, desde la fila 10, cada hoja con su clave (A = título, B = clave).
 ' Botones: en el índice "Actualizar todo" / "Subir cambios"; en cada hoja "Actualizar hoja" / "Subir hoja".
 ' "Subir" solo aparece despues de "Actualizar" (en cada apertura): siempre se trabaja sobre datos frescos.
+' Excepcion: un archivo de carga inicial (A8 = "carga") se sube sin actualizar; al guardarse deja de serlo.
 Option Explicit
 
 Private Const HOJA_CFG As String = "_tsh"
@@ -12,10 +13,24 @@ Private Const HOJA_CFG As String = "_tsh"
 Public Sub Auto_Open()
     On Error Resume Next
     CrearBotones
-    MostrarSubir "", False
+    ' Carga inicial (A8 = "carga"): el archivo trae datos que aun no estan en el sistema; se sube sin actualizar
+    MostrarSubir "", EsCargaInicial()
 End Sub
 
 ' ------------------------------------------------------------------ configuracion
+
+Private Function EsCargaInicial() As Boolean
+    EsCargaInicial = (Cfg(8) = "carga")
+End Function
+
+' Avisa antes de actualizar un archivo de carga inicial (se perderian sus datos). True = seguir.
+Private Function ConfirmarSinCarga() As Boolean
+    ConfirmarSinCarga = True
+    If Not EsCargaInicial() Then Exit Function
+    ConfirmarSinCarga = (MsgBox("Este archivo es una CARGA INICIAL: trae datos que aun no estan en el sistema." & vbLf & _
+        "Si actualizas, se reemplazan por los del sistema y se pierde la carga. Usa ""Subir cambios"" en su lugar." & vbLf & vbLf & _
+        "Actualizar de todos modos?", vbYesNo + vbExclamation, "Actualizar") = vbYes)
+End Function
 
 Private Function Cfg(ByVal fila As Long) As String
     Cfg = CStr(ThisWorkbook.Worksheets(HOJA_CFG).Cells(fila, 1).Value)
@@ -87,10 +102,12 @@ End Sub
 ' ------------------------------------------------------------------ actualizar
 
 Public Sub ActualizarTodo()
+    If Not ConfirmarSinCarga() Then Exit Sub
     If MsgBox("Se traerán los datos actuales del sistema y reemplazarán los de todas las hojas." & vbLf & _
               "Si ya hiciste cambios en este archivo, se perderán." & vbLf & vbLf & "¿Continuar?", _
               vbYesNo + vbQuestion, "Actualizar") = vbNo Then Exit Sub
     If TraerDatos(Cfg(4)) Then
+        ThisWorkbook.Worksheets(HOJA_CFG).Cells(8, 1).Value = ""
         MostrarSubir "", True
         MsgBox "Listo: datos al " & Format(Now, "dd/mm/yyyy hh:nn") & "." & vbLf & _
                "Haz tus cambios y luego usa ""Subir cambios"".", vbInformation, "Actualizar"
@@ -99,6 +116,7 @@ End Sub
 
 Public Sub ActualizarHoja()
     Dim clave As String, nombre As String
+    If Not ConfirmarSinCarga() Then Exit Sub
     nombre = ActiveSheet.Name
     clave = ClaveDeHoja(nombre)
     If clave = "" Then Exit Sub
@@ -186,7 +204,11 @@ Private Sub Subir(ByVal hojas As String, ByVal descripcion As String)
               "¿Guardar estos cambios en el sistema?", vbYesNo + vbQuestion, "Subir " & descripcion) = vbNo Then Exit Sub
 
     respuesta = Enviar("POST", Cfg(1) & "/api/libros/" & Cfg(3) & "/guardar/" & id, "")
-    If respuesta <> "" Then MsgBox respuesta, vbInformation, "Subir " & descripcion
+    If respuesta <> "" Then
+        ' Ya guardada, la carga inicial deja de serlo: lo siguiente se trabaja con "Actualizar"
+        If Left(respuesta, 8) = "Guardado" Then ThisWorkbook.Worksheets(HOJA_CFG).Cells(8, 1).Value = ""
+        MsgBox respuesta, vbInformation, "Subir " & descripcion
+    End If
 End Sub
 
 Private Sub EscribirResultado(lineas() As String)

@@ -66,6 +66,36 @@ class Persona extends Model
     {
         return "{$this->apellido_paterno} {$this->apellido_materno}, {$this->nombres}";
     }
+    /** masculino / femenino → M / F */
+    public static function generoCorto(?string $genero): ?string
+    {
+        return match ($genero) {
+            'masculino' => 'M',
+            'femenino' => 'F',
+            default => null,
+        };
+    }
+
+    /** M / F → masculino / femenino */
+    public static function generoLargo(?string $genero): ?string
+    {
+        return match (mb_strtoupper((string) $genero)) {
+            'M' => 'masculino',
+            'F' => 'femenino',
+            default => null,
+        };
+    }
+
+    public function usuario()
+    {
+        return $this->hasOne(User::class, 'persona_id');
+    }
+
+    public function empleado()
+    {
+        return $this->hasOne(PlanEmpleado::class, 'persona_id');
+    }
+
     public function proveedor()
     {
         return $this->hasOne(Proveedor::class, 'persona_id');

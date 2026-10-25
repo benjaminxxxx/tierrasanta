@@ -85,6 +85,8 @@
     </div>
 
     <livewire:planilla.apertura-planilla-modal />
+    {{-- Editar un parámetro sin salir de la planilla (lo abre el modal de apertura) --}}
+    <livewire:planilla.planilla-parametro-modal-component />
     @if(!in_array($vista, ['VACACIONESYBONOS', 'AJUSTES']))
         <x-inferior-derecha>
             <x-button @click="$wire.dispatch('abrir-apertura-planilla',{mes: {{ $mes }}, anio: {{ $anio }}})">

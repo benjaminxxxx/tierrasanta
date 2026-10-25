@@ -487,7 +487,8 @@ class PlanillaRegistroDiarioServicio
         }
     }
 
-    private function actualizarResumenAsistencia($fecha)
+    /** Recalcula los totales por código de asistencia del día (también lo usa la sincronización de suspensiones). */
+    public function actualizarResumenAsistencia($fecha)
     {
         $resumen = PlanResumenDiario::firstOrCreate(['fecha' => $fecha]);
 

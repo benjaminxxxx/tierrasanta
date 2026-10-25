@@ -5,8 +5,6 @@ namespace App\Services\Planilla\Empleado;
 use App\Models\EmpleadoDerechoHabiente;
 use App\Models\PlanContrato;
 use App\Models\PlanEmpleado;
-use App\Models\PlanEmpleadoCargo;
-use App\Models\PlanSueldo;
 use App\Models\PlanSuspension;
 use Carbon\Carbon;
 
@@ -26,12 +24,14 @@ class EmpleadoPerfilServicio
         $empleado = PlanEmpleado::withTrashed()->with('persona')->findOrFail($empleadoId);
         $hoy = now()->startOfDay();
 
-        $contratos = PlanContrato::with(['grupo', 'descuento'])
+        $contratos = PlanContrato::with(['asignaciones.cargo', 'asignaciones.grupo', 'remuneraciones'])
             ->where('plan_empleado_id', $empleadoId)
             ->orderBy('fecha_inicio')
             ->get();
-        $cargos = PlanEmpleadoCargo::with('cargo')->where('plan_empleado_id', $empleadoId)->orderBy('fecha_inicio')->get();
-        $sueldos = PlanSueldo::where('plan_empleado_id', $empleadoId)->orderBy('fecha_inicio')->get();
+        // Partículas de todos los contratos, en orden (cargo/grupo y remuneración)
+        $cargos = $contratos->flatMap->asignaciones->sortBy(fn($a) => $a->desde->format('Ymd'))->values();
+        $sueldos = $contratos->flatMap->remuneraciones->sortBy(fn($r) => $r->desde->format('Ymd'))->values();
+        $pension = $empleado->pensionEn();
         $suspensiones = PlanSuspension::with('tipoSuspension')->where('plan_empleado_id', $empleadoId)->orderBy('fecha_inicio')->get();
         $familiares = EmpleadoDerechoHabiente::with('derechoHabiente')->where('empleado_id', $empleadoId)->get();
 
@@ -44,12 +44,13 @@ class EmpleadoPerfilServicio
         $finAnterior = null;
         foreach ($contratos as $i => $c) {
             $inicio = Carbon::parse($c->fecha_inicio);
+            $inicial = $c->asignacionEn($c->fecha_inicio);
             $detalle = collect([
                 mb_strtoupper($c->tipo_contrato),
                 $c->tipo_planilla ? 'Planilla ' . $c->tipo_planilla : null,
-                $c->grupo_codigo ? 'Grupo ' . $c->grupo_codigo : null,
-                $c->modalidad_pago ? 'Pago ' . $c->modalidad_pago : null,
-                $c->descuento?->codigo ?? 'No afiliado',
+                $inicial?->grupo_codigo ? 'Grupo ' . $inicial->grupo_codigo : null,
+                ($m = $c->remuneracionEn($c->fecha_inicio)?->modalidad_pago) ? 'Pago ' . $m : null,
+                $empleado->pensionEn($c->fecha_inicio)?->plan_sp_codigo ?? 'No afiliado',
             ])->filter()->implode(' · ');
 
             if ($i === 0) {
@@ -73,7 +74,7 @@ class EmpleadoPerfilServicio
                 $motivo = self::MOTIVOS_CESE[$c->motivo_cese_sunat] ?? ($c->motivo_cese_sunat ? "Motivo SUNAT {$c->motivo_cese_sunat}" : null);
                 $agregar($fin, $fin->gt($hoy) ? 'fin_programado' : 'cese',
                     $fin->gt($hoy) ? 'Fin de contrato programado' : 'Cese' . ($motivo ? " — {$motivo}" : ''),
-                    $c->comentario_cese ?: $c->motivo_despido,
+                    $c->comentario_cese,
                     ['futuro' => $fin->gt($hoy)]
                 );
                 $finAnterior = $fin;
@@ -82,21 +83,24 @@ class EmpleadoPerfilServicio
             }
         }
 
-        // ── Cargos ──
+        // ── Cargo y grupo (asignaciones) ──
         foreach ($cargos as $cargo) {
-            $agregar($cargo->fecha_inicio, 'cargo', 'Cargo: ' . ($cargo->cargo?->nombre ?? '—'),
-                collect([$cargo->motivo_cambio ? ucfirst($cargo->motivo_cambio) : null, $cargo->grupo_codigo ? "Grupo {$cargo->grupo_codigo}" : null])->filter()->implode(' · ') ?: null);
-            if ($cargo->fecha_fin) {
-                $agregar($cargo->fecha_fin, 'cargo_fin', 'Dejó el cargo ' . ($cargo->cargo?->nombre ?? ''));
-            }
+            $agregar($cargo->desde, 'cargo', 'Cargo: ' . ($cargo->cargo?->nombre ?? '—'),
+                collect([$cargo->motivo ? ucfirst($cargo->motivo) : null, $cargo->grupo_codigo ? "Grupo {$cargo->grupo_codigo}" : null])->filter()->implode(' · ') ?: null);
         }
 
         // ── Sueldos (con variación respecto al anterior) ──
         $anterior = null;
         foreach ($sueldos as $s) {
+            if ($s->sueldo === null) {
+                continue;
+            }
             $monto = (float) $s->sueldo;
+            if ($anterior !== null && abs($monto - $anterior) < 0.005) {
+                continue; // misma remuneración en otro contrato o cambio de otro dato
+            }
             $variacion = $anterior ? $monto - $anterior : null;
-            $agregar($s->fecha_inicio, 'sueldo', $anterior === null ? 'Sueldo inicial' : ($variacion >= 0 ? 'Aumento de sueldo' : 'Reducción de sueldo'), null, [
+            $agregar($s->desde, 'sueldo', $anterior === null ? 'Sueldo inicial' : ($variacion >= 0 ? 'Aumento de sueldo' : 'Reducción de sueldo'), null, [
                 'monto' => $monto,
                 'variacion' => $variacion,
                 'porcentaje' => $anterior ? round($variacion / $anterior * 100, 1) : null,
@@ -126,18 +130,18 @@ class EmpleadoPerfilServicio
         $orden = ['fin_programado' => 0, 'eliminado' => 1, 'cese' => 2, 'cargo_fin' => 3, 'prueba' => 4, 'suspension' => 5, 'sueldo' => 6, 'cargo' => 7, 'familiar' => 8, 'renovacion' => 9, 'reingreso' => 10, 'ingreso' => 11];
         usort($eventos, fn($a, $b) => [$b['fecha'], $orden[$a['tipo']] ?? 99] <=> [$a['fecha'], $orden[$b['tipo']] ?? 99]);
 
-        $resumen = $this->resumen($empleado, $contratos, $cargos, $sueldos, $hoy);
+        $resumen = $this->resumen($empleado, $contratos, $hoy) + ['pension' => $pension?->plan_sp_codigo];
         $resumen['reingresos'] = count(array_filter($eventos, fn($e) => $e['tipo'] === 'reingreso'));
 
         return [
             'empleado' => $empleado,
             'resumen' => $resumen,
-            'sueldos' => $sueldos->map(fn($s) => ['fecha' => Carbon::parse($s->fecha_inicio)->format('m/Y'), 'monto' => (float) $s->sueldo])->values()->all(),
+            'sueldos' => $sueldos->filter(fn($s) => $s->sueldo !== null)->map(fn($s) => ['fecha' => $s->desde->format('m/Y'), 'monto' => (float) $s->sueldo])->values()->all(),
             'eventos' => $eventos,
         ];
     }
 
-    private function resumen(PlanEmpleado $empleado, $contratos, $cargos, $sueldos, Carbon $hoy): array
+    private function resumen(PlanEmpleado $empleado, $contratos, Carbon $hoy): array
     {
         $vigente = $contratos->last(fn($c) => Carbon::parse($c->fecha_inicio)->lte($hoy) && (!$c->fecha_fin || Carbon::parse($c->fecha_fin)->gte($hoy)));
         $ultimo = $contratos->last();
@@ -158,8 +162,9 @@ class EmpleadoPerfilServicio
         };
 
         $contratoMostrado = $vigente ?? $ultimo;
-        $cargoActual = $cargos->last(fn($c) => !$c->fecha_fin);
-        $sueldoActual = $sueldos->last(fn($s) => Carbon::parse($s->fecha_inicio)->lte($hoy));
+        // Asignación y remuneración de hoy (o del último día del contrato mostrado)
+        $asignacion = $contratoMostrado?->asignacionEn();
+        $remuneracion = $contratoMostrado?->remuneracionEn();
 
         return [
             'estado' => $estado[0],
@@ -169,9 +174,9 @@ class EmpleadoPerfilServicio
             'antiguedad_texto' => $this->textoDuracion($dias),
             'contratos' => $contratos->count(),
             'contrato' => $contratoMostrado,
-            'grupo' => $contratoMostrado?->grupo,
-            'cargo' => $cargoActual?->cargo?->nombre,
-            'sueldo' => $sueldoActual ? (float) $sueldoActual->sueldo : null,
+            'grupo' => $asignacion?->grupo,
+            'cargo' => $asignacion?->cargo?->nombre,
+            'sueldo' => $remuneracion?->sueldo !== null ? (float) $remuneracion->sueldo : null,
             'edad' => $empleado->fecha_nacimiento ? Carbon::parse($empleado->fecha_nacimiento)->age : null,
         ];
     }

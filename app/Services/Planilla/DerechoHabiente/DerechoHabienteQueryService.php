@@ -16,15 +16,10 @@ final class DerechoHabienteQueryService
         }
 
         if ($filtro->search) {
-            $query->where(function ($q) use ($filtro) {
-                $q->where('nombres', 'like', "%{$filtro->search}%")
-                    ->orWhere('apellido_paterno', 'like', "%{$filtro->search}%")
-                    ->orWhere('apellido_materno', 'like', "%{$filtro->search}%")
-                    ->orWhere('documento', 'like', "%{$filtro->search}%");
-            });
+            $query->buscar($filtro->search);
         }
 
-        $paginador = $query->orderBy('nombres')->paginate(20);
+        $paginador = $query->ordenarPor('nombres')->paginate(20);
 
         $servicio = app(\App\Services\Planilla\DerechoHabiente\EmpleadoAsignacionFamiliarService::class);
         $hoy = now();
@@ -71,12 +66,7 @@ final class DerechoHabienteQueryService
                 $q->whereHas('derechoHabiente', function ($qq) use ($filtro) {
                     $qq->where('nombres', 'like', "%{$filtro->search}%")
                         ->orWhere('documento', 'like', "%{$filtro->search}%");
-                })->orWhereHas('empleado', function ($qq) use ($filtro) {
-                    $qq->where('nombres', 'like', "%{$filtro->search}%")
-                        ->orWhere('apellido_paterno', 'like', "%{$filtro->search}%")
-                        ->orWhere('apellido_materno', 'like', "%{$filtro->search}%")
-                        ->orWhere('documento', 'like', "%{$filtro->search}%");
-                });
+                })->orWhereHas('empleado', fn($qq) => $qq->buscar($filtro->search));
             });
         }
 

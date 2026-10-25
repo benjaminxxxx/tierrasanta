@@ -8,7 +8,7 @@ use Livewire\Component;
 /**
  * Ficha "Ver PLAME" de un trabajador: los datos del PLAME del mes en vivo, con la estructura de la boleta R08
  * de SUNAT, más costos, vacaciones y verificaciones de coherencia. No genera PDF ni Excel.
- * Se abre con el evento `verPlame` (personalId = plan_mensual_personals.id).
+ * Se abre con el evento `verPlame` (personalId = plan_mensual_detalles.id).
  */
 class PlanillaPlameFichaComponent extends Component
 {

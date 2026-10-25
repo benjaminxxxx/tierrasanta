@@ -4,6 +4,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Mes de planilla: días laborables, horas y sueldo base del mes, y los Excel generados. Las tasas (RMV, EsSalud,
+ * gratificaciones, AFP…) no se copian aquí: se leen de Parámetros de planilla (PlanillaParametroConsulta::delMes) y
+ * quedan con candado cuando una planilla las usa.
+ */
 return new class extends Migration
 {
     public function up(): void
@@ -18,22 +23,9 @@ return new class extends Migration
             $table->decimal('remuneracion_basica', 10, 2)->nullable();
             $table->text('excel')->nullable();
             $table->string('excel_oficina')->nullable();
-            $table->decimal('asignacion_familiar', 10, 2)->nullable();
-            $table->decimal('gratificaciones', 10, 2)->nullable();
-            $table->decimal('essalud_gratificaciones', 10, 2)->nullable();
-            $table->decimal('cts', 10, 2)->nullable();
-            $table->decimal('rmv', 10, 2)->nullable();
-            $table->decimal('beta30', 10, 2)->nullable();
-            $table->decimal('essalud', 10, 2)->nullable();
-            $table->decimal('essalud_general', 5, 2)->nullable();
-            $table->decimal('bonif_extraordinaria_general', 5, 2)->nullable();
-            $table->decimal('retencion_cuarta', 5, 2)->nullable();
-            $table->decimal('tope_retencion_cuarta', 10, 2)->nullable();
-            $table->decimal('vida_ley', 10, 2)->nullable();
-            $table->decimal('pension_sctr', 10, 2)->nullable();
-            $table->decimal('essalud_eps', 10, 2)->nullable();
-            $table->decimal('rem_basica_essalud', 10, 2)->nullable();
             $table->timestamps();
+
+            $table->unique(['mes', 'anio']);
         });
     }
 

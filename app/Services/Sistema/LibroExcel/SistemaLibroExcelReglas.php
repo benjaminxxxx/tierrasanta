@@ -37,6 +37,32 @@ abstract class SistemaLibroExcelReglas
     }
 
     /** @return string[] todas las claves válidas (hojas y matriz) */
+    /**
+     * Actualización en cadena: las hojas pedidas más las que referencian (columna 'ref'), en cadena y en el orden del
+     * libro. Así bajar o subir solo "Labores" trae también "Unidades de producción", "Mano de obra"… y nunca falla
+     * por "carga primero…". La matriz (si se pidió) se conserva.
+     * @param string[] $hojas
+     * @return string[]
+     */
+    public static function conDependencias(array $hojas): array
+    {
+        $pendientes = $hojas;
+        $todas = [];
+        while ($pendientes) {
+            $h = array_shift($pendientes);
+            if (isset($todas[$h])) {
+                continue;
+            }
+            $todas[$h] = true;
+            foreach (static::HOJAS[$h][2] ?? [] as $columna) {
+                if (isset($columna['ref'])) {
+                    $pendientes[] = explode('.', $columna['ref'])[0];
+                }
+            }
+        }
+        return array_values(array_filter(static::claves(), fn($c) => isset($todas[$c])));
+    }
+
     public static function claves(): array
     {
         return array_merge(array_keys(static::HOJAS), static::MATRIZ ? [static::MATRIZ] : []);

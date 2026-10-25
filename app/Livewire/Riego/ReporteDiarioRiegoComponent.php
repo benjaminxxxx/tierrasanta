@@ -33,8 +33,9 @@ class ReporteDiarioRiegoComponent extends Component
     protected array $parametros = [
         'limiteHorasDiarias' => ['tipo' => 'limite_horas_riego', 'default' => 8]
     ];
-    public int $limiteHorasDiarias = 8;
-    protected $listeners = ["generalActualizado", 'obtenerRiegos', 'registroRiegoEliminado', 'nuevosRegadoresHanSidoAgregados'];
+    /** Límite de horas del día (parámetro temporal). Sin tipo: el campo vacío llega como '' y se corrige en updated(). */
+    public $limiteHorasDiarias = 8;
+    protected $listeners = ['obtenerRiegos', 'registroRiegoEliminado', 'nuevosRegadoresHanSidoAgregados'];
 
     public function mount()
     {
@@ -50,9 +51,18 @@ class ReporteDiarioRiegoComponent extends Component
     }
     public function updated(string $propiedad): void
     {
-        if (array_key_exists($propiedad, $this->parametros)) {
-            $this->guardarParametro($propiedad);
+        if (!array_key_exists($propiedad, $this->parametros)) {
+            return;
         }
+        // Vacío, letras o fuera de rango: vuelve al valor guardado de la fecha y no se guarda nada
+        $valor = $this->$propiedad;
+        if (!is_numeric($valor) || (float) $valor <= 0 || (float) $valor > 24) {
+            $this->cargarParametros();
+            $this->alert('warning', 'El límite de horas debe ser un número entre 1 y 24.');
+            return;
+        }
+        $this->$propiedad = (int) round((float) $valor);
+        $this->guardarParametro($propiedad);
     }
     /*
     no consideraba las horas acumuladas, solo las horas de la jornada del día
@@ -150,10 +160,14 @@ class ReporteDiarioRiegoComponent extends Component
 
         $this->mostrarEnvioAReporteDiario = true;
     }*/
+    /** "Enviar a registro diario": solo si hay regadores con horas ese día. */
     public function enviarRegistroDiarioRegadores(RiegoServicio $riegoServicio)
     {
-        $this->listaPorEnviarRegadores = $riegoServicio->generarRegistroDiarioParaRegadores($this->fecha);
-
+        $this->listaPorEnviarRegadores = collect($riegoServicio->generarRegistroDiarioParaRegadores($this->fecha))->values()->all();
+        if (!$this->listaPorEnviarRegadores) {
+            $this->alert('warning', 'No hay horas de regadores que enviar el ' . Carbon::parse($this->fecha)->format('d/m/Y') . '.');
+            return;
+        }
         $this->mostrarEnvioAReporteDiario = true;
     }
     public function confirmarEnvio(RiegoServicio $riegoServicio)
@@ -174,13 +188,14 @@ class ReporteDiarioRiegoComponent extends Component
         $this->cargarParametros();
         $this->obtenerRiegos();
     }
-    public function nuevosRegadoresHanSidoAgregados()
+    /** Si el modal agregó en otra fecha, la página pasa a esa fecha. */
+    public function nuevosRegadoresHanSidoAgregados($fecha = null)
     {
+        if ($fecha && $fecha !== $this->fecha) {
+            $this->irAFecha($fecha);
+            return;
+        }
         $this->obtenerRiegos();
-    }
-    public function generalActualizado()
-    {
-        $this->dispatch('delay-riegos');
     }
     public function registroRiegoEliminado()
     {
@@ -239,7 +254,7 @@ class ReporteDiarioRiegoComponent extends Component
             }
 
             // 1️⃣ Buscar en empleados
-            $empleado = PlanEmpleado::where('documento', $documento)->first();
+            $empleado = PlanEmpleado::porDocumento($documento)->first();
 
             if ($empleado) {
                 $registro->update([
@@ -294,6 +309,10 @@ class ReporteDiarioRiegoComponent extends Component
     }
     public function verificarSincronizacion()
     {
+        if (!$this->consolidados?->contains('trabajador_type', PlanEmpleado::class)) {
+            $this->alert('warning', 'No hay regadores de planilla ese día: no hay nada que verificar.');
+            return;
+        }
         $resultado = app(VerificacionSincronizacionRiegoServicio::class)->verificarFechaYActualizarTareas($this->fecha);
 
         $this->dispatch('registroConsolidado'); // refresca cada Detalle para que lea el nuevo valor de sincronizado
@@ -302,7 +321,13 @@ class ReporteDiarioRiegoComponent extends Component
     }
     public function render()
     {
-        return view('livewire.riego.reporte-diario-riego-component');
+        // Catálogos de la grilla: se leen una vez y se pasan a cada regador (antes cada uno los consultaba)
+        return view('livewire.riego.reporte-diario-riego-component', [
+            'hayRegistros' => $this->hayRegistrosDelDia(),
+            'hayPlanilleros' => (bool) $this->consolidados?->contains('trabajador_type', PlanEmpleado::class),
+            'catalogoLabores' => array_merge([''], \App\Models\LaboresRiego::pluck('nombre_labor')->all()),
+            'catalogoCampos' => array_merge([''], \App\Models\Campo::pluck('nombre')->all()),
+        ]);
     }
 
 }

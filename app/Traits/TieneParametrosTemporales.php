@@ -14,6 +14,11 @@ trait TieneParametrosTemporales
     public function cargarParametros(): void
     {
         foreach ($this->parametros as $propiedad => $config) {
+            // Sin fecha todavía: el valor por defecto (antes fallaba con TypeError)
+            if (!$this->fecha) {
+                $this->$propiedad = $config['default'];
+                continue;
+            }
             $this->$propiedad = ParametroTemporal::obtener(
                 $config['tipo'],
                 $this->fecha,           // usa $this->fecha del componente
@@ -26,7 +31,7 @@ trait TieneParametrosTemporales
     {
         $config = $this->parametros[$propiedad] ?? null;
 
-        if (!$config) return;
+        if (!$config || !$this->fecha) return;
 
         ParametroTemporal::guardar(
             $config['tipo'],

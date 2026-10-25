@@ -244,3 +244,50 @@ usa "Restaurar por defecto" de tipos de asistencia.
 ### Tablas antiguas fuera de la instalación nueva (22/10/2026)
 
 `legacy/database/migraciones-retiradas/` tiene las migraciones de `tienda_comercials` y `compra_productos` (compras antiguas, ya migradas a `compras` / `compra_detalles` / `proveedores`). Una instalación nueva ya no las crea. En el dominio antiguo las tablas siguen con sus datos (el verificador de `migraciones:consolidar` las mostrará como tablas extra).
+
+### Historial laboral: estructura antigua de empleados (23/10/2026)
+
+La estructura de empleados pasó a **contratos + partículas** (capa `app/Services/Planilla/Laboral`). Migraciones
+destructivas: se reescribieron `plan_empleados` (solo persona, orden y comentarios; los datos personales están en
+`personas`) y `plan_contratos` (solo el periodo legal), y se crearon `plan_contrato_asignaciones`,
+`plan_contrato_remuneraciones`, `plan_empleado_pensiones` y `plan_empleado_pagos`. Se eliminaron las migraciones de
+`plan_sueldos`, `plan_empleado_cargos` y `plan_familiares` (la reemplaza `derecho_habientes`).
+
+| Qué | Por qué se retiró |
+|---|---|
+| `app/Models/PlanSueldo.php`, `PlanEmpleadoCargo.php` | Sueldos y cargos con fecha de fin: ahora son partículas con solo "desde" (remuneraciones y asignaciones del contrato). |
+| `app/Livewire/Planilla/Empleado/EmpleadoSueldosTabComponent.php`, `EmpleadoCargosTabComponent.php` (+ vistas), `app/Services/Planilla/PlanSueldoServicio.php`, `EmpleadoCargoServicio.php`, `PlanillaSueldoGastoServicio.php` | Pestañas Sueldos y Cargos: ahora todo está en "Historial laboral" (`EmpleadoContratosTabComponent`) y "Pensión y pago" (`EmpleadoPensionPagoTabComponent`). El cambio masivo de sueldo usa `PlanillaLaboralProceso::cambiarSueldos`. |
+| `app/Livewire/Planilla/ImportarPlanillaComponent.php` (+ vistas `importar-planilla-*`, `components/preview-table`, `planilla/partials/import-summary`), `Services/Planilla/Empleado/DataEmpleadoServicio.php`, `ImportContratoServicio.php`, `ValidarContratoServicio.php`, `app/Support/DataPlanillaHelper.php`, `Services/Reporte/RptPlanillaGeneral.php` | Importadores antiguos de empleados y contratos (ruta `planilla.importar`, botón "Importar contratos"). Los reemplaza el Excel de empleados (botón flotante de Empleados, escritorio de archivos, macro). |
+| `app/Services/Planilla/Modulos/GestionPlanilla.php`, `Excel/ExcelPlanillaMensual.php`, `Asistencia/PlanillaAsistenciaServicio.php`, `Handsontable/HSTPlanillaAsistencia.php`, `app/Models/PlanillaAsistencia.php`, `PlanillaAsistenciaDetalle.php` | Cadena sin uso (nadie la llamaba y ya usaba métodos que no existían). |
+| `app/Services/Sistema/Simulacion/GeneradorDatosSimuladosService.php`, `GeneradorPlanillaMensualSimuladaService.php` | Sin uso; escribían la estructura antigua. |
+| `app/Console/Commands/VerificarEmpleadosPersonas.php` | Comparaba los datos personales duplicados en `plan_empleados` con su persona; las columnas duplicadas ya no existen. |
+
+Datos de la estructura antigua → Excel de empleados actual: `php artisan empleados:convertir-legado {base} --correo=… --salida=…`
+(lee la base antigua, no la cambia; sale como carga inicial con macro).
+
+### Conceptos de planilla (23/10/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| `app/Livewire/Planilla/ConceptosPlanillaComponent.php` (+ vistas `conceptos-planilla-*`), `app/Models/PlanConceptosConfig.php`, `Services/Planilla/ConceptoPlanillaServicio.php`, `ImportarConceptosProceso.php`, ruta `planilla.conceptos`, permisos `Planilla Conceptos*` | Pantalla que solo editaba su propia tabla (`plan_conceptos_configs`, vacía también en producción); ningún cálculo la leía. Los conceptos del PLAME están en `Services/Planilla/Plame/PlanillaPlameReglas`. La migración pasó a `legacy/database/migraciones-retiradas/`. |
+
+### Cantidades colgadas del bono → Producción de campo (23/10/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| Migraciones `plan_actividad_producciones` y `cuad_produccion_actividades` (→ `legacy/database/migraciones-retiradas/`), modelos `PlanActividadProduccion`, `CuadActividadProduccion` | Las cantidades por recojo solo existían para quien tenía fila de bono. Ahora todo va a `produccion_registros` (con y sin bono, trabajador opcional; capa `Services/Campo/Produccion`). En una base antigua, `php artisan produccion:preparar` copia esas cantidades al registro nuevo, arma el catálogo `produccion_unidades` y marca las labores que registran producción. |
+
+## Planilla mensual unificada (24/10/2026)
+
+| Archivo | Motivo |
+|---|---|
+| `app/Models/PlanMensualPersonal.php` | `plan_mensual_personals` se unió a `plan_mensual_detalles`: era la misma fila (empleado + mes) guardada dos veces. Sus columnas de cálculo y PLAME están ahora en `PlanMensualDetalle` (scope `calculados()`, `orden_planilla` = su antiguo `orden`) y sus fórmulas en `App\Services\Planilla\Mensual\PlanillaMensualReglas`. Tenía `gasto_real_final` en `$appends` sin accessor: `toArray()` fallaba. |
+| `database/migraciones-retiradas/2026_09_01_001070_create_plan_mensual_personals_table.php` | Tabla retirada. Las ~30 columnas antiguas de `plan_mensual_detalles` (`negro_*`, `sueldo_neto`, `jornal_diario`, `costo_hora`… con datos solo hasta 01/2026) también salieron de su migración. Una base antigua necesita un adaptador para pasar sus datos (pendiente). |
+
+## Parámetros de planilla sin copias (24/10/2026)
+
+| Archivo | Motivo |
+|---|---|
+| `app/Models/PlanMensualSpDesc.php`, `database/migraciones-retiradas/…_create_plan_mensual_sp_desc_table.php` | Copia por mes de los descuentos AFP/SNP. Ahora se calculan al vuelo de las AFP y el SNP vigentes (`PlanillaParametroConsulta::descuentosSp`). Las columnas de tasas de `plan_mensuales` (rmv, essalud, vida_ley, cts…) también salieron de su migración. |
+| `app/Livewire/Planilla/ParametrosPlanillaComponent.php` + vista | Grilla libre de `configuracion_historial` (había que copiar filas y se podía pisar un valor existente). Reemplazada por `PlanillaParametrosComponent` (tarjetas) y `PlanillaParametroModalComponent` (historial, motivo, confirmación de planillas afectadas). |
+| `app/Services/Sistema/ConfiguracionHistorialServicio.php`, `ConfiguracionHistorialProceso.php` | Lectura y escritura libre de los parámetros. Ahora: `App\Services\Planilla\Parametro\*`. |

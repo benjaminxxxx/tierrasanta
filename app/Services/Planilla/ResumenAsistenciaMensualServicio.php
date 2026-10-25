@@ -2,7 +2,7 @@
 
 namespace App\Services\Planilla;
 
-use App\Models\PlanMensualPersonal;
+use App\Models\PlanMensualDetalle;
 use App\Models\PlanRegistroDiario;
 use App\Models\PlanTipoAsistencia;
 use DB;
@@ -33,7 +33,8 @@ class ResumenAsistenciaMensualServicio
             ->groupBy('plan_mensual_detalles.plan_empleado_id')
             ->pluck('total', 'plan_empleado_id');
 
-        return PlanMensualPersonal::whereHas('planMensual', fn($q) => $q->where('mes', $mes)->where('anio', $anio))
+        return PlanMensualDetalle::calculados()->delMes($mes, $anio)
+            ->orderBy('orden_planilla')
             ->get()
             ->map(function ($persona) use ($conteos, $criterios, $bonosProductividad) {
 

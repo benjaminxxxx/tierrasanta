@@ -66,6 +66,28 @@
             </x-flex>
             @endcan
 
+            {{-- Buscador: oculta las filas que no coinciden (siguen en la tabla, "Actualizar" guarda todo) --}}
+            <div class="mb-3 flex flex-wrap items-end gap-3">
+                <div class="w-56">
+                    <x-label value="Buscar por nombre" />
+                    <x-input x-model="filtro.nombre" @input.debounce.200ms="aplicarFiltro()" placeholder="Nombre o DNI" />
+                </div>
+                <div class="w-40">
+                    <x-label value="Campo" />
+                    <x-input x-model="filtro.campo" @input.debounce.200ms="aplicarFiltro()" placeholder="Ej. 9, B6" />
+                </div>
+                <div class="w-56">
+                    <x-label value="Labor" />
+                    <x-input x-model="filtro.labor" @input.debounce.200ms="aplicarFiltro()" placeholder="Código o nombre" />
+                </div>
+                <template x-if="filtroActivo()">
+                    <div class="flex items-center gap-3 pb-2 text-xs text-graphite">
+                        <span x-text="`Mostrando ${visibles} de ${totalFilas}`"></span>
+                        <button type="button" class="underline-offset-4 hover:underline" @click="limpiarFiltro()">Limpiar</button>
+                    </div>
+                </template>
+            </div>
+
             <div x-ref="tableReporteContainer"></div>
 
         </div>
@@ -95,6 +117,10 @@
         trabajadores: @json($trabajadores),
         totalColumnas: @json($totalColumnas),
         labores: @json($labores),
+        laboresNombres: @json($laboresNombres),
+        filtro: { nombre: '', campo: '', labor: '' },
+        visibles: 0,
+        totalFilas: 0,
         campos: @json($campos),
         hasUnsavedChanges: false,
         hot: null,
@@ -155,6 +181,8 @@
                 manualColumnResize: false,
                 manualRowResize: true,
                 autoColumnSize: true,
+                // Buscador: las filas que no coinciden se ocultan (no se borran)
+                hiddenRows: { rows: [], indicators: false },
                 afterChange: (changes, source) => {
                     if (source === 'edit' ||
                         source === 'CopyPaste.paste' ||
@@ -168,6 +196,7 @@
 
             this.hot = hot;
             this.hot.render();
+            this.aplicarFiltro();
             this.ajustarAncho();
 
             window.addEventListener('beforeunload', (event) => {
@@ -194,6 +223,44 @@
                 ancho += encabezadoFilas ? encabezadoFilas.offsetWidth : 50;
                 this.hot.updateSettings({ width: Math.ceil(ancho) + 2 });
             });
+        },
+        filtroActivo() {
+            return Object.values(this.filtro).some(v => (v || '').trim() !== '');
+        },
+        limpiarFiltro() {
+            this.filtro = { nombre: '', campo: '', labor: '' };
+            this.aplicarFiltro();
+        },
+        /** Oculta las filas que no coinciden con nombre (o DNI), campo y labor (código o nombre) en algún tramo. */
+        aplicarFiltro() {
+            if (!this.hot) return;
+            const norm = v => String(v ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+            const nombre = norm(this.filtro.nombre), campo = norm(this.filtro.campo), labor = norm(this.filtro.labor);
+            const plugin = this.hot.getPlugin('hiddenRows');
+            const ocultar = [], mostrar = [];
+            const total = this.hot.countSourceRows();
+            for (let r = 0; r < total; r++) {
+                const fila = this.hot.getSourceDataAtRow(r) || {};
+                let ok = !nombre || norm(fila.cuadrillero_nombres).includes(nombre) || norm(fila.cuadrillero_dni).includes(nombre);
+                if (ok && (campo || labor)) {
+                    ok = false;
+                    for (let i = 1; i <= this.totalColumnas; i++) {
+                        const c = norm(fila[`campo_${i}`]);
+                        const codigo = fila[`labor_${i}`];
+                        const l = norm(codigo) + ' ' + norm(this.laboresNombres[codigo]);
+                        if ((!campo || c === campo || c.includes(campo)) && (!labor || (codigo !== null && codigo !== '' && l.includes(labor)))) {
+                            ok = true;
+                            break;
+                        }
+                    }
+                }
+                (ok ? mostrar : ocultar).push(r);
+            }
+            plugin.showRows(mostrar);
+            plugin.hideRows(ocultar);
+            this.hot.render();
+            this.totalFilas = total;
+            this.visibles = mostrar.length;
         },
         agregarGrupo() {
             this.totalColumnas++;
@@ -351,7 +418,8 @@
             let allData = [];
 
             // Recorre todas las filas de la tabla y obtiene los datos completos
-            for (let row = 0; row < this.hot.countRows(); row++) {
+            // Todas las filas (también las ocultas por el buscador)
+            for (let row = 0; row < this.hot.countSourceRows(); row++) {
                 const rowData = this.hot.getSourceDataAtRow(row);
 
                 // Crear una copia limpia con solo columnas activas

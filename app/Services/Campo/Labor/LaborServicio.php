@@ -206,6 +206,15 @@ class LaborServicio
 
         $datosLimpios = $validator->validated();
 
+        // Registra producción → unidad del catálogo obligatoria; si no, sin unidad (regla de Campo/Produccion).
+        // Si no viene el dato (importación antigua), se deduce de la unidad
+        $registra = array_key_exists('registra_produccion', $data) ? $data['registra_produccion'] : filled($data['unidades'] ?? null);
+        $regla = \App\Services\Campo\Produccion\CampoProduccionReglas::unidadDeLaborValida($registra, $data['unidades'] ?? null);
+        if (is_string($regla)) {
+            throw ValidationException::withMessages(['unidades' => $regla]);
+        }
+        [$datosLimpios['registra_produccion'], $datosLimpios['unidades']] = $regla;
+
         // Aplicamos tu lógica de limpieza de tramos
         $datosLimpios['tramos_bonificacion'] = self::filtrarTramosBonificacion($data['tramos_bonificacion'] ?? null);
 

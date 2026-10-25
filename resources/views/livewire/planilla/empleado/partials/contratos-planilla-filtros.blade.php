@@ -13,13 +13,11 @@
         <option value="">TODAS</option>
         <option value="agraria">AGRARIA</option>
         <option value="oficina">OFICINA</option>
-        <option value="general">GENERAL</option>
-        <option value="mype">MYPE</option>
-        <option value="construccion">CONSTRUCCIÓN</option>
+        <option value="externa">EXTERNA</option>
     </x-select>
 
     {{-- Cargo (Reutilizando tu componente) --}}
-    <x-select-planilla-cargos label="Cargo" wire:model.live="filtros.cargo_codigo" class="w-auto" />
+    <x-select-planilla-cargos label="Cargo" wire:model.live="filtros.cargo_id" class="w-auto" />
 
     {{-- Grupo (Reutilizando tu componente) --}}
     <x-select-planilla-grupos label="Grupo" textoTodos="TODOS" wire:model.live="filtros.grupo_codigo" class="w-auto" />

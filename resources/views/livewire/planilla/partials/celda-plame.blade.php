@@ -1,4 +1,4 @@
-{{-- Celda de un concepto del PLAME: resaltada si tiene ajuste manual (Ajustes PLAME), con lo calculado en el título. $p: PlanMensualPersonal, $codigo --}}
+{{-- Celda de un concepto del PLAME: resaltada si tiene ajuste manual (Ajustes PLAME), con lo calculado en el título. $p: PlanMensualDetalle (calculado), $codigo --}}
 @php
     $ajuste = $p->ajustePlame($codigo);
     $valor = $p->{\App\Services\Planilla\Plame\PlanillaPlameReglas::columna($codigo)};

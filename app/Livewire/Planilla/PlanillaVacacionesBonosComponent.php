@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Planilla;
 
-use App\Models\PlanMensualPersonal;
+use App\Models\PlanMensualDetalle;
 use App\Models\PlanTipoAsistencia;
 use App\Services\Costos\Consolidacion\ConsolidarCostoManoObraServicio;
 use App\Services\Planilla\PlanillaServicio;
@@ -43,7 +43,7 @@ class PlanillaVacacionesBonosComponent extends Component
                     continue;
                 }
 
-                $persona = PlanMensualPersonal::with('planMensual')->where('plan_empleado_id', $fila['plan_empleado_id'])
+                $persona = PlanMensualDetalle::calculados()->with('planMensual')->where('plan_empleado_id', $fila['plan_empleado_id'])
                     ->whereHas('planMensual', fn($q) => $q->where('mes', $this->mes)->where('anio', $this->anio))
                     ->first();
                 if (!$persona) {

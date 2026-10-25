@@ -41,9 +41,11 @@
                             $estadoColor =
                                 [
                                     'activo' => 'bg-green-100 text-green-800',
+                                    'en_prueba' => 'bg-amber-100 text-amber-800',
                                     'finalizado' => 'bg-red-100 text-red-800',
-                                    'renovado' => 'bg-blue-100 text-blue-800',
+                                    'pendiente' => 'bg-blue-100 text-blue-800',
                                 ][$contrato1->estado] ?? 'bg-gray-100 text-gray-800';
+                            $asig = $contrato1->asignacionEn();
                         @endphp
 
                         <span
@@ -64,11 +66,11 @@
 
                     <!-- Cargo -->
                     <x-td class="text-xs">
-                        <p><b>Cargo:</b> {{ $contrato1->cargo_codigo }}</p>
-                        <p><b>Grupo:</b> {{ $contrato1->grupo_codigo }}</p>
+                        <p><b>Cargo:</b> {{ $asig?->cargo?->nombre ?? '—' }}</p>
+                        <p><b>Grupo:</b> {{ $asig?->grupo_codigo ?? '—' }}</p>
                     </x-td>
                     <x-td class="text-xs">
-                        <p>{{ $contrato1->plan_sp_codigo }}</p>
+                        <p>{{ $contrato1->empleado?->pensionEn(\App\Services\Planilla\Laboral\PlanillaLaboralConsulta::fechaActual($contrato1))?->plan_sp_codigo ?? '—' }}</p>
                     </x-td>
 
 
@@ -94,22 +96,16 @@
 
                                 <x-slot name="content">
                                     <div class="w-60">
-                                        @if ($contrato1->estado === 'activo')
                                         <x-dropdown-link
-                                            @click="$dispatch('editarContrato', {id: {{ $contrato1->id }}})">
-                                            Editar Registro
+                                            @click="$dispatch('abrirEmpleado', {id: {{ $contrato1->plan_empleado_id }}, tab: 'contratos'})">
+                                            Historial laboral
                                         </x-dropdown-link>
-                                        @endif
 
                                         <x-dropdown-link wire:click="verInformacion({{ $contrato1->id }})">
                                             Ver Información
                                         </x-dropdown-link>
 
-                                        @if ($contrato1->estado === 'activo')
-                                            <x-dropdown-link wire:click="renovarContrato({{ $contrato1->id }})">
-                                                Renovar Contrato
-                                            </x-dropdown-link>
-
+                                        @if (!$contrato1->fecha_fin)
                                             <x-dropdown-link wire:click="finalizarContrato({{ $contrato1->id }})">
                                                 Finalizar Contrato
                                             </x-dropdown-link>

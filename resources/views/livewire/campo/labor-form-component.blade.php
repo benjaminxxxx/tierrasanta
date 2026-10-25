@@ -30,8 +30,22 @@
                             @endforeach
                         </x-select>
     
-                        <x-input wire:model="unidades" label="Unidades" placeholder="Ejem: Kg, Lavaderos"
-                            error="unidades" />
+                        {{-- Registra producción: obliga a elegir la unidad del catálogo (Excel de recursos → Unidades de producción) --}}
+                        <div>
+                            <label class="flex items-center gap-2 text-sm font-medium text-ink">
+                                <input type="checkbox" wire:model.live="registra_produccion" class="rounded border-mist text-carmin focus:ring-carmin/25" />
+                                Registra producción
+                            </label>
+                            <p class="mt-0.5 text-xs text-pewter">Kilos, lavadores, cajas… que hace cada trabajador.</p>
+                            @if ($registra_produccion)
+                                <x-select wire:model="unidades" label="Unidad de producción *" error="unidades" class="mt-2">
+                                    <option value="">Seleccionar…</option>
+                                    @foreach (\App\Models\ProduccionUnidad::where('activo', true)->orderBy('codigo')->get() as $u)
+                                        <option value="{{ $u->codigo }}">{{ $u->codigo }} · {{ $u->nombre }}</option>
+                                    @endforeach
+                                </x-select>
+                            @endif
+                        </div>
     
                         <div class="md:col-span-2">
                             <x-select wire:model="tipo_asistencia_codigo" label="Representa una asistencia (labor de suspensión)"

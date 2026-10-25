@@ -2,10 +2,8 @@
 
 
 namespace App\Livewire\Planilla;
-use App\Services\Planilla\Modulos\GestionPlanillaReporteDiario;
+use App\Services\Planilla\ListaMensual\PlanillaListaMensualProceso;
 use App\Services\Planilla\PlanillaMensualServicio;
-use App\Services\Planilla\PlanillaMensualDetalleServicio;
-use Illuminate\Support\Carbon;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
 
@@ -32,6 +30,7 @@ class OrdenarPlanillaMensualComponent extends Component
     {
         $this->mes = $mes;
         $this->anio = $anio;
+        $this->fecha = \Illuminate\Support\Carbon::create((int) $anio, (int) $mes, 1);
         $this->gestionarListaMensual();
         $this->mostrarListaPlanillaMensual = true;
     }
@@ -57,78 +56,14 @@ class OrdenarPlanillaMensualComponent extends Component
         }
     }
 
-    public function agregarPlanilleros()
-    {
-        $empleados = app(GestionPlanillaReporteDiario::class)
-            ->obtenerPlanillaAgraria($this->mes, $this->anio)
-            ->toArray();
-
-        if (count($empleados) == 0) {
-            $this->alert('warning', 'No hay registros aún');
-            return;
-        }
-
-        // Fecha del mes anterior
-        $fecha = Carbon::createFromDate($this->anio, $this->mes, 1)->subMonth();
-
-        // Obtener lista de ordenes del mes anterior [empleado_id => orden]
-        $ordenesAnteriores = PlanillaMensualDetalleServicio::obtenerOrden(
-            $fecha->month,
-            $fecha->year
-        );
-
-        // 1. Extraer solo los empleados que siguen existiendo y tienen orden previo
-        $ordenesValidos = [];
-
-        foreach ($empleados as $emp) {
-            $id = $emp['id'];
-
-            if (isset($ordenesAnteriores[$id])) {
-                $ordenesValidos[$id] = $ordenesAnteriores[$id];
-            }
-        }
-
-        // 2. Ordenar por orden del mes pasado
-        asort($ordenesValidos); // sort por valor manteniendo el índice del empleado
-
-        // 3. Reindexar los órdenes válidos desde 1 en adelante
-        $ordenReindexado = [];
-        $n = 1;
-
-        foreach ($ordenesValidos as $idEmp => $oldOrder) {
-            $ordenReindexado[$idEmp] = $n;
-            $n++;
-        }
-
-        // 4. Asignar órdenes nuevos a empleados que no tenían historial
-        foreach ($empleados as &$emp) {
-
-            $id = $emp['id'];
-
-            if (isset($ordenReindexado[$id])) {
-                // Si tenía orden en el mes pasado (reindexado)
-                $emp['orden'] = $ordenReindexado[$id];
-
-            } else {
-                // Empleado nuevo → asignar orden incremental
-                $emp['orden'] = $n;
-                $n++;
-            }
-
-            // Guardar ordenOriginal para detectar cambios posteriores
-            $emp['ordenOriginal'] = $emp['orden'];
-        }
-        unset($emp);
-
-        // Guardar el resultado final
-        $this->listaPlanilla = $empleados;
-    }
-
+    /**
+     * Solo guarda el orden de los que ya están. Quién está lo decide el sistema: el mes se genera solo con el orden del
+     * mes anterior y los contratos nuevos entran al final (PlanillaListaMensualProceso).
+     */
     public function guardarOrdenMensualEmpleados()
     {
         try {
-            app(GestionPlanillaReporteDiario::class)
-                ->guardarOrdenMensualEmpleados($this->mes, $this->anio, $this->listaPlanilla);
+            app(PlanillaListaMensualProceso::class)->guardarOrden((int) $this->mes, (int) $this->anio, $this->listaPlanilla);
 
             $this->mostrarListaPlanillaMensual = false;
             $this->dispatch('actualizarListaPlanillaRegistroDiario');

@@ -26,12 +26,35 @@ trait ConFechaReporteDia
     {
         // ?fecha=YYYY-MM-DD en la URL (p. ej. desde Tareas pendientes) manda sobre la sesión
         $desdeUrl = request()->query('fecha');
-        if (is_string($desdeUrl) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $desdeUrl)) {
+        if (self::esFechaValida($desdeUrl)) {
             Session::put($this->dateSessionKey, $desdeUrl);
         }
 
-        $this->fecha = Session::get($this->dateSessionKey, Carbon::now()->format('Y-m-d'));
+        $this->fecha = $this->fechaGuardada();
         $this->despuesFechaModificada($this->fecha); // Llama al método de actualización al inicio también
+    }
+
+    /** Fecha guardada en la sesión si es válida (antes se podía guardar vacía); si no, hoy. */
+    private function fechaGuardada(): string
+    {
+        $f = Session::get($this->dateSessionKey);
+        return self::esFechaValida($f) ? $f : Carbon::now()->format('Y-m-d');
+    }
+
+    /** Fecha Y-m-d que existe en el calendario (no basta el formato: 2026-13-45 no vale). */
+    private static function esFechaValida($f): bool
+    {
+        if (!is_string($f) || !preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $f, $m)) {
+            return false;
+        }
+        return checkdate((int) $m[2], (int) $m[3], (int) $m[1]);
+    }
+
+    /** Cambia a una fecha (p. ej. cuando un modal guardó en otra fecha). */
+    public function irAFecha(string $fecha): void
+    {
+        $this->fecha = $fecha;
+        $this->refrescarSessionFecha();
     }
 
     /**
@@ -65,6 +88,10 @@ trait ConFechaReporteDia
      */
     private function refrescarSessionFecha()
     {
+        // Fecha borrada o inválida: se vuelve a la última elegida (o a hoy); los componentes siempre reciben una fecha
+        if (!self::esFechaValida($this->fecha)) {
+            $this->fecha = $this->fechaGuardada();
+        }
         Session::put($this->dateSessionKey, $this->fecha);
         $this->despuesFechaModificada($this->fecha);
     }

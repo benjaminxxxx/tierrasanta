@@ -42,7 +42,11 @@ class VerificacionSincronizacionRiegoServicio
                 ->whereDate('fecha', $fecha)
                 ->first();
 
-            $horasEnPlanilla = $registroDiario->total_horas ?? 0;
+            // Horas trabajadas en el registro diario (sus tramos). El total pagado de un día de descanso médico,
+            // atención médica o vacaciones no es riego: con 0 h de riego ese día está sincronizado.
+            $horasEnPlanilla = $registroDiario
+                ? round($registroDiario->detalles()->get()->sum(fn($d) => \Illuminate\Support\Carbon::parse($d->hora_inicio)->diffInMinutes(\Illuminate\Support\Carbon::parse($d->hora_fin))) / 60, 2)
+                : 0;
             $horasEnRiego = round($item->minutos_jornal / 60, 2);
 
             $coincide = abs($horasEnPlanilla - $horasEnRiego) < 0.05; // tolerancia por redondeo

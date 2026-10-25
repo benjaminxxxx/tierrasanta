@@ -29,6 +29,7 @@ class LaborReasignarComponent extends Component
     public $nombre_labor;
     public $codigo_mano_obra;
     public $unidades;
+    public bool $registra_produccion = false;
     public $estandar_produccion;
     public $tipo_asistencia_codigo;
     public $motivo;
@@ -39,7 +40,7 @@ class LaborReasignarComponent extends Component
         abort_unless(auth()->user()?->can(Permisos::CAMPO_LABOR_GESTIONAR), 403);
         $labor = Labores::withTrashed()->findOrFail($id);
         $this->resetErrorBag();
-        $this->reset(['nombre_labor', 'codigo_mano_obra', 'unidades', 'estandar_produccion', 'tipo_asistencia_codigo', 'motivo']);
+        $this->reset(['nombre_labor', 'codigo_mano_obra', 'unidades', 'registra_produccion', 'estandar_produccion', 'tipo_asistencia_codigo', 'motivo']);
         $this->laborId = $labor->id;
         // Por defecto: hoy, o el día después de su último registro si fuera posterior
         $ultimo = app(CampoLaborVigenciaConsulta::class)->ultimosUsos([(int) $labor->codigo])[(int) $labor->codigo] ?? null;
@@ -54,7 +55,8 @@ class LaborReasignarComponent extends Component
             $labor = app(CampoLaborVigenciaProceso::class)->reasignar($this->laborId, (string) $this->desde, [
                 'nombre_labor' => (string) $this->nombre_labor,
                 'codigo_mano_obra' => $this->codigo_mano_obra,
-                'unidades' => $this->unidades,
+                'unidades' => $this->registra_produccion ? $this->unidades : null,
+                'registra_produccion' => $this->registra_produccion,
                 'estandar_produccion' => $this->estandar_produccion,
                 'tipo_asistencia_codigo' => $this->tipo_asistencia_codigo,
             ], $this->motivo);

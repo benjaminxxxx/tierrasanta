@@ -42,13 +42,9 @@ class PlanCargo extends Model
         );
     }
 
-    public function empleadoCargos()
+    /** Asignaciones (partículas de contrato) con este cargo. Quién lo ocupa hoy: PlanillaLaboralConsulta::ocupantesPorCargo(). */
+    public function asignaciones()
     {
-        return $this->hasMany(PlanEmpleadoCargo::class, 'plan_cargo_id');
-    }
-
-    public function empleadoCargosVigentes()
-    {
-        return $this->hasMany(PlanEmpleadoCargo::class, 'plan_cargo_id')->whereNull('fecha_fin');
+        return $this->hasMany(PlanContratoAsignacion::class, 'plan_cargo_id');
     }
 }

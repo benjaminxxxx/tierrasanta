@@ -4,7 +4,7 @@ namespace App\Livewire\Planilla;
 
 use App\Constants\Permisos;
 use App\Models\PlanMensual;
-use App\Models\PlanMensualPersonal;
+use App\Models\PlanMensualDetalle;
 use App\Services\Planilla\Plame\PlanillaPlameProceso;
 use App\Services\Planilla\Plame\PlanillaPlameReglas;
 use App\Services\Planilla\PlanillaServicio;
@@ -102,16 +102,16 @@ class PlanillaPlameAjustesComponent extends Component
         }
     }
 
-    private function persona(int $id): ?PlanMensualPersonal
+    private function persona(int $id): ?PlanMensualDetalle
     {
-        return PlanMensualPersonal::with('planMensual')->whereKey($id)
+        return PlanMensualDetalle::calculados()->with('planMensual')->whereKey($id)
             ->whereHas('planMensual', fn($q) => $q->where('mes', $this->mes)->where('anio', $this->anio))->first();
     }
 
     public function render()
     {
-        $personal = PlanMensualPersonal::whereHas('planMensual', fn($q) => $q->where('mes', $this->mes)->where('anio', $this->anio))
-            ->orderBy('orden')->get();
+        $personal = PlanMensualDetalle::calculados()->whereHas('planMensual', fn($q) => $q->where('mes', $this->mes)->where('anio', $this->anio))
+            ->orderBy('orden_planilla')->get();
         $conceptos = PlanillaPlameReglas::ajustables();
 
         $ajustes = [];

@@ -28,6 +28,8 @@ class LaborFormComponent extends Component
     public $nombre_labor;
     public $estandar_produccion;
     public $unidades;
+    /** La labor produce algo medible (kilos, lavadores, cajas…): exige unidad del catálogo */
+    public bool $registra_produccion = false;
     public $codigo_mano_obra;
     public bool $se_paga_con_jornal = false;
     public $tipo_asistencia_codigo;
@@ -58,6 +60,7 @@ class LaborFormComponent extends Component
         $this->nombre_labor = $labor->nombre_labor;
         $this->estandar_produccion = $labor->estandar_produccion;
         $this->unidades = $labor->unidades;
+        $this->registra_produccion = (bool) $labor->registra_produccion;
         $this->codigo_mano_obra = $labor->codigo_mano_obra;
         $this->se_paga_con_jornal = (bool) $labor->se_paga_con_jornal;
         $this->tipo_asistencia_codigo = $labor->tipo_asistencia_codigo;
@@ -76,7 +79,8 @@ class LaborFormComponent extends Component
                 'codigo' => $this->codigo,
                 'nombre_labor' => $this->nombre_labor,
                 'estandar_produccion' => $this->estandar_produccion,
-                'unidades' => $this->unidades,
+                'unidades' => $this->registra_produccion ? $this->unidades : null,
+                'registra_produccion' => $this->registra_produccion,
                 'tramos_bonificacion' => empty($this->tramos) ? null : json_encode($this->tramos),
                 'codigo_mano_obra' => $this->codigo_mano_obra,
                 'se_paga_con_jornal' => $this->se_paga_con_jornal,
@@ -100,7 +104,7 @@ class LaborFormComponent extends Component
     private function limpiar(): void
     {
         $this->resetErrorBag();
-        $this->reset(['laborId', 'codigoFijo', 'codigo', 'nombre_labor', 'codigo_mano_obra', 'estandar_produccion', 'unidades', 'tramos',
+        $this->reset(['laborId', 'codigoFijo', 'codigo', 'nombre_labor', 'codigo_mano_obra', 'estandar_produccion', 'unidades', 'registra_produccion', 'tramos',
             'tipo_asistencia_codigo', 'se_paga_con_jornal', 'rol_campania']);
     }
 

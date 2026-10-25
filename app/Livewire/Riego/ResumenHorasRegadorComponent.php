@@ -23,7 +23,21 @@ class ResumenHorasRegadorComponent extends Component
 
     public $desgloseSemanas = [];
 
-    protected $listeners = ['registroConsolidado' => 'calcularTotales','registroRegadoresActualizado' => 'calcularTotales'];
+    /** Regador (consolidado) de este resumen: los avisos de otros regadores se ignoran */
+    public $consolidadoId = null;
+
+    protected $listeners = ['registroConsolidado' => 'alActualizar', 'registroRegadoresActualizado' => 'alActualizar'];
+
+    /** Solo recalcula si el aviso es de su regador o es general (sin id: p. ej. "Verificar sincronización"). */
+    public function alActualizar($resumenRiegoId = null): void
+    {
+        if ($resumenRiegoId !== null && $this->consolidadoId !== null && (int) $resumenRiegoId !== (int) $this->consolidadoId) {
+            $this->skipRender();
+            return;
+        }
+        $this->calcularTotales();
+    }
+
     public function calcularTotales(): void
     {
         $fecha = Carbon::parse($this->fecha);
@@ -41,8 +55,9 @@ class ResumenHorasRegadorComponent extends Component
             ->sum('minutos_jornal');
     }
 
-    public function mount($trabajadorType, $trabajadorId, $fecha)
+    public function mount($trabajadorType, $trabajadorId, $fecha, $consolidadoId = null)
     {
+        $this->consolidadoId = $consolidadoId;
         $this->trabajadorType = $trabajadorType;
         $this->trabajadorId = $trabajadorId;
         $this->fecha = $fecha;

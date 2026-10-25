@@ -30,6 +30,7 @@ class SistemaLibroExcelProceso
         $reglas = $def->reglas();
         $analisis = $this->analisis->analizar($def, $this->excel->leer($def, $ruta, $hojas), $hojas);
         self::exigirVersion($analisis['version']);
+        self::exigirSinErrores($analisis);
         $r = [];
 
         DB::transaction(function () use ($def, $reglas, $analisis, &$r) {
@@ -85,6 +86,24 @@ class SistemaLibroExcelProceso
             throw new ErrorControlado("Los datos cambiaron en el sistema después de que descargaste este archivo ({$cuando}). Descárgalo de nuevo, "
                 . 'pasa tus cambios a ese archivo nuevo y vuelve a subirlo: así no se pisan los cambios de otra persona.');
         }
+    }
+
+    /** @throws ErrorControlado si el libro no admite guardar a medias y hay filas con errores */
+    public static function exigirSinErrores(array $analisis): void
+    {
+        if (empty($analisis['bloqueado'])) {
+            return;
+        }
+        $lista = [];
+        foreach ($analisis['hojas'] as $h) {
+            foreach ($h['filas'] as $f) {
+                if ($f['estado'] === 'error') {
+                    $lista[] = "{$h['titulo']} fila {$f['fila']}: " . $f['errores'][0];
+                }
+            }
+        }
+        throw new ErrorControlado('No se guardó nada: hay ' . count($lista) . ' fila(s) con errores y este libro solo se guarda completo. '
+            . implode(' · ', array_slice($lista, 0, 5)) . (count($lista) > 5 ? ' …' : ''));
     }
 
     /** Datos de la fila para la auditoría, sin columnas informativas ni secretas (claves). */

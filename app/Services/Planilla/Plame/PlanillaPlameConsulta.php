@@ -3,13 +3,13 @@
 namespace App\Services\Planilla\Plame;
 
 use App\Models\PlanContrato;
-use App\Models\PlanMensualPersonal;
+use App\Models\PlanMensualDetalle;
 use App\Models\PlanTipoSuspension;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
- * Datos del PLAME del mes (plan_mensual_personals), en vivo, para la tabla y para la ficha "Ver PLAME"
+ * Datos del PLAME del mes (plan_mensual_detalles calculados), en vivo, para la tabla y para la ficha "Ver PLAME"
  * (equivalente a la boleta R08 de SUNAT, para comparar contra el PLAME real). Solo lectura.
  */
 class PlanillaPlameConsulta
@@ -17,13 +17,13 @@ class PlanillaPlameConsulta
     /**
      * Trabajadores del PLAME del mes, filtrados por nombre o DNI.
      *
-     * @return Collection<int, PlanMensualPersonal> con ->documento
+     * @return Collection<int, PlanMensualDetalle> con ->documento
      */
     public function listar(int $mes, int $anio, ?string $busqueda = null): Collection
     {
-        $planilla = PlanMensualPersonal::with(['planMensual', 'planEmpleado:id,documento'])
+        $planilla = PlanMensualDetalle::calculados()->with(['planMensual', 'planEmpleado.persona'])
             ->whereHas('planMensual', fn($q) => $q->where('mes', $mes)->where('anio', $anio))
-            ->orderBy('orden')
+            ->orderBy('orden_planilla')
             ->get()
             ->each(fn($p) => $p->documento = $p->planEmpleado?->documento);
 
@@ -40,18 +40,21 @@ class PlanillaPlameConsulta
     /** Ficha del trabajador en el PLAME del mes. */
     public function ficha(int $personalId): array
     {
-        $p = PlanMensualPersonal::with(['planMensual', 'planEmpleado'])->findOrFail($personalId);
+        $p = PlanMensualDetalle::calculados()->with(['planMensual', 'planEmpleado'])->findOrFail($personalId);
         $plan = $p->planMensual;
         $empleado = $p->planEmpleado;
         $inicioMes = Carbon::create($plan->anio, $plan->mes, 1);
         $finMes = $inicioMes->copy()->endOfMonth();
 
-        $contrato = PlanContrato::with(['descuento', 'grupo'])
+        $contrato = PlanContrato::with(['asignaciones.grupo'])
             ->where('plan_empleado_id', $p->plan_empleado_id)
-            ->whereDate('fecha_inicio', '<=', $finMes)
-            ->where(fn($q) => $q->whereNull('fecha_fin')->orWhereDate('fecha_fin', '>=', $inicioMes))
+            ->enRango($inicioMes, $finMes)
             ->orderByDesc('fecha_inicio')
             ->first();
+        // Pensión y grupo vigentes en el mes (capa laboral)
+        $fechaMes = \App\Services\Planilla\Laboral\PlanillaLaboralConsulta::fechaDelMes((int) $plan->mes, (int) $plan->anio, $contrato);
+        $pension = $empleado?->pensionEn($fechaMes);
+        $grupoMes = $contrato?->asignacionEn($fechaMes)?->grupo;
 
         $ingresos = $this->conceptos($p, PlanillaPlameReglas::INGRESOS);
         $descuentos = $this->conceptos($p, PlanillaPlameReglas::DESCUENTOS);
@@ -96,9 +99,9 @@ class PlanillaPlameConsulta
                 'fecha_ingreso_empleado' => $empleado?->fecha_ingreso,
                 'tipo_contrato' => $contrato?->tipo_contrato,
                 'tipo_planilla' => $contrato?->tipo_planilla,
-                'regimen' => $contrato?->descuento?->descripcion ?? $p->sistema_pension,
+                'regimen' => $pension?->descuento?->descripcion ?? $p->sistema_pension,
                 'codigo_regimen' => $p->sistema_pension,
-                'grupo' => $contrato?->grupo?->descripcion ?? $p->grupo,
+                'grupo' => $grupoMes?->descripcion ?? $p->grupo,
                 'pensionista' => (bool) $p->es_pensionista,
                 'edad' => $p->edad,
                 'estado_contrato' => $contrato?->estado,
@@ -143,12 +146,12 @@ class PlanillaPlameConsulta
                 'bonificacion_asistencia' => $p->bonificacion_asistencia,
             ],
             'verificaciones' => $this->verificaciones($diasLaborados, $diasNoLaborados, $inicioMes->daysInMonth,
-                $suspensiones, $netoCalculado, $netoGuardado, $p, $contrato),
+                $suspensiones, $netoCalculado, $netoGuardado, $p, $contrato, $pension),
         ];
     }
 
     /** @return array<int, array{codigo: string, concepto: string, monto: float}> solo los conceptos con monto */
-    private function conceptos(PlanMensualPersonal $p, array $catalogo): array
+    private function conceptos(PlanMensualDetalle $p, array $catalogo): array
     {
         $resultado = [];
         foreach ($catalogo as $codigo => [$columna, $concepto]) {
@@ -169,7 +172,7 @@ class PlanillaPlameConsulta
      * @return array<int, array{ok: bool, texto: string}>
      */
     private function verificaciones(int $laborados, int $noLaborados, int $diasMes, array $suspensiones,
-        float $netoCalculado, float $netoGuardado, PlanMensualPersonal $p, ?PlanContrato $contrato): array
+        float $netoCalculado, float $netoGuardado, PlanMensualDetalle $p, ?PlanContrato $contrato, ?\App\Models\PlanEmpleadoPension $pension = null): array
     {
         $diasSuspension = array_sum(array_column($suspensiones, 'dias'));
         $verificaciones = [
@@ -192,10 +195,10 @@ class PlanillaPlameConsulta
         if (!$contrato) {
             $verificaciones[] = ['ok' => false, 'texto' => 'No hay un contrato vigente en el mes para este trabajador.'];
         } else {
-            if ($contrato->plan_sp_codigo !== $p->sistema_pension) {
+            if ($pension?->plan_sp_codigo !== $p->sistema_pension) {
                 $verificaciones[] = [
                     'ok' => false,
-                    'texto' => "El sistema de pensión del PLAME ({$p->sistema_pension}) no coincide con el del contrato ({$contrato->plan_sp_codigo}): se cambió después de generar la planilla.",
+                    'texto' => "El sistema de pensión del PLAME ({$p->sistema_pension}) no coincide con el del empleado ({$pension?->plan_sp_codigo}): se cambió después de generar la planilla.",
                 ];
             }
             $ingresoEmpleado = $p->planEmpleado?->fecha_ingreso;

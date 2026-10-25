@@ -9,6 +9,19 @@ use Illuminate\Support\Carbon;
 
 class DistribucionCombustibleServicio
 {
+    /**
+     * Fecha de una fila de la tabla en Y-m-d. Acepta 2026-10-24, 24/10/2026, 24-10-2026…; un texto que no es fecha
+     * completa (p. ej. "24-Feb" pegado de Excel) se rechaza con el número de fila, en vez de fallar al guardar.
+     */
+    private static function fecha($valor, int $fila): string
+    {
+        $fecha = \App\Support\FormatoHelper::parseFecha(is_scalar($valor) ? (string) $valor : null);
+        if (!$fecha) {
+            throw new \App\Exceptions\ErrorControlado("Fila {$fila}: la fecha \"{$valor}\" no es válida. Escríbela completa, por ejemplo 24/10/2026 o 2026-10-24.");
+        }
+        return $fecha;
+    }
+
     public static function previsualizar(array $filas, int $salidaId): array
     {
         $salida = AlmacenProductoSalida::findOrFail($salidaId);
@@ -39,7 +52,7 @@ class DistribucionCombustibleServicio
                 throw new \Exception("La hora de fin debe ser mayor a la de inicio. (fila " . ($i + 1) . ")");
             }
 
-            $fechaFila = Carbon::parse($fila['fecha'])->startOfDay();
+            $fechaFila = Carbon::parse(self::fecha($fila['fecha'], $i + 1))->startOfDay();
 
             // Salida "natural" según fecha: la más cercana con fecha_reporte <= fecha de la fila
             $sugerida = $salidas
@@ -62,7 +75,7 @@ class DistribucionCombustibleServicio
 
             $preview[] = [
                 'fila_index' => $i,
-                'fecha' => $fila['fecha'],
+                'fecha' => $fechaFila->toDateString(),
                 'campo_nombre' => $fila['campo_nombre'],
                 'labor_diaria' => $fila['labor_diaria'],
                 'coincide' => $coincide,
@@ -83,7 +96,7 @@ class DistribucionCombustibleServicio
         $salida = AlmacenProductoSalida::findOrFail($salidaId);
 
         DB::transaction(function () use ($filas, $salida, &$resultados) {
-            foreach ($filas as $fila) {
+            foreach (array_values($filas) as $n => $fila) {
                 $id = $fila['id'] ?? null;
 
                 $vacia = empty($fila['fecha']) && empty($fila['campo_nombre'])
@@ -110,7 +123,7 @@ class DistribucionCombustibleServicio
                 }
 
                 $datos = [
-                    'fecha' => $fila['fecha'],
+                    'fecha' => self::fecha($fila['fecha'], $n + 1),
                     'campo' => $fila['campo_nombre'],
                     'hora_inicio' => $fila['hora_inicio'],
                     'hora_salida' => $fila['hora_fin'],

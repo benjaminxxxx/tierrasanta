@@ -72,8 +72,120 @@ Campania/
 Las clases antiguas del dominio (`CampaniaServicio`, `CrudCampaniaServicio`, …) siguen funcionando. Se
 reemplazan cuando se trabaje en lo que hacen.
 
+## Ejemplo: `Planilla/Laboral/` (historial laboral)
+
+Toda la lógica de contratos y sus partículas vive aquí; pantallas, planillas, PLAME y el Excel de empleados solo la
+llaman. Si cambia una regla (qué día representa al mes, prorrateo, cupo de un cargo…) se cambia en un solo método.
+
+```
+Planilla/Laboral/
+  PlanillaLaboralConsulta.php  qué rige en una fecha: contratoEn / contratoDelMes, asignacionEn, remuneracionEn,
+                               pensionEn, pagoEn, delMes (todo lo del mes), fechaDelMes, estado del contrato,
+                               ocupantesPorCargo y filtros SQL (por grupo, cargo, pensión vigentes)
+  PlanillaLaboralReglas.php    validaciones sin base de datos: contratos que se cruzan, partículas fuera de contrato,
+                               contratos sin partícula en su inicio (las usa el Excel y los formularios)
+  PlanillaLaboralProceso.php   único punto de escritura: guardarEmpleado (persona), guardarContrato, contratar,
+                               finalizar / reabrir / eliminar, guardarAsignacion / Remuneracion / Pension / Pago,
+                               cambiarSueldos (masivo)
+```
+
+Modelo: el **contrato** es el periodo legal (inicio y fin; puede haber días sin contrato entre dos). Las
+**partículas** solo tienen "desde": las del contrato (`plan_contrato_asignaciones` cargo y grupo,
+`plan_contrato_remuneraciones` sueldo, básica, bonificación…) valen hasta la siguiente o el fin del contrato; las del
+empleado (`plan_empleado_pensiones`, `plan_empleado_pagos`) lo acompañan entre contratos. Los datos naturales están en
+`personas` (sin historial); `PlanEmpleado` los expone con los mismos nombres y scopes `buscar`, `porDocumento`,
+`ordenarPor`, `alfabetico`.
+
 ## Auditoría
 
 Todo `Crud` que cree, edite o elimine registros de negocio llama a `App\Services\Reporte\AuditoriaServicio::registrar()`
 (acciones `crear`, `editar`, `eliminar`). Al eliminar se guarda el registro completo en `auditorias.cambios`, con
 quién lo eliminó. Se consulta en Reportes → Auditoría.
+
+## Ejemplo: `Campo/Produccion/` (producción de campo)
+
+Fuente única de las cantidades que produce cada labor (kilos, lavadores, cajas…), con bono o sin bono.
+
+```
+Campo/Produccion/
+  CampoProduccionReglas.php    unidad de una labor (catálogo produccion_unidades; "registra producción" la exige),
+                               qué se compara con el ingreso de cochinilla y los % de aviso / anomalía
+  CampoProduccionConsulta.php  cantidades con bono por trabajador (bonificaciones), filas sin bono, resumen por
+                               día / campo / labor, totales por campo y cuadre con el ingreso
+  CampoProduccionProceso.php   único punto de escritura: guardarConBono (lo llama bonificaciones), guardarSinBono,
+                               asegurarActividad (días completos sin bono)
+```
+
+## Ejemplo: `Planilla/ListaMensual/` y `Planilla/Suspension/` (registro diario de planilla)
+
+Quién aparece cada mes en el registro diario y cómo se reflejan ahí las vacaciones y permisos.
+
+```
+Planilla/ListaMensual/
+  PlanillaListaMensualReglas.php   orden de un mes nuevo (copia el del último mes con lista, los nuevos al final, sin
+                                   huecos), hasta qué mes se genera sola la lista
+  PlanillaListaMensualProceso.php  generar (al abrir el registro diario), sincronizarEmpleado (lo llama
+                                   PlanillaLaboralProceso después de cada cambio de contrato), guardarOrden ("Gestionar
+                                   lista" solo ordena)
+Planilla/Suspension/
+  PlanillaSuspensionDiarioProceso.php  reconciliar: un día con suspensión lleva su código (V, DM…) en el registro diario y
+                                       uno sin suspensión no; regresoAnticipado ("Regresó hoy")
+  PlanillaSuspensionConsulta.php       vigentesEn: aviso del registro diario (quién está ausente ese día y si cuadra)
+```
+
+Seguridad: un contrato agrario no se elimina, acorta ni pasa a otra planilla si deja registros diarios sin contrato
+(`PlanillaLaboralConsulta::registrosDiariosSinContrato`); primero se eliminan esos registros.
+
+## Ejemplo: `Planilla/Mensual/` (planilla agraria del mes)
+
+Una sola tabla por empleado y mes: `plan_mensual_detalles` (modelo `PlanMensualDetalle`). La fila nace con la lista del
+registro diario y "Generar planilla" (`PlanillaServicio::generarProyeccion`) llena su cálculo y `calculado_en`. Para
+planilla, PLAME y costos se usa `PlanMensualDetalle::calculados()->delMes($mes, $anio)`; `orden` es el del registro
+diario y `orden_planilla` el de la planilla. `plan_mensual_personals` ya no existe (ver legacy/README.md).
+
+```
+Planilla/Mensual/
+  PlanillaMensualReglas.php  fórmulas sin base de datos: proyección (CTS, gratificaciones, EsSalud, vida ley, jornal,
+                             costo hora, diferencia en negro…), lo pagado según horas (sueldo, aportes, costo por hora)
+                             y aporteSeguro (factor 1.18). El modelo las expone como atributos (proyectado_cts…).
+```
+
+## Ejemplo: `Planilla/Parametro/` (parámetros de planilla)
+
+Las tasas del mes (RMV, EsSalud, gratificaciones, CTS, vida ley, 4ta…) y las comisiones AFP tienen **una sola fuente**:
+`configuracion_historial` y `plan_prima_comision_historicos`. Las planillas las leen al vuelo (valor vigente el día 1
+del mes); ya no se copian a `plan_mensuales` ni a `plan_mensual_sp_desc` (retirada). `$plan->rmv`, `$plan->essalud`…
+siguen funcionando: el modelo `PlanMensual` los lee de aquí.
+
+```
+Planilla/Parametro/
+  PlanillaParametroReglas.php    catálogo de lo que necesita el sistema (nombre, unidad, qué planilla lo usa, para qué),
+                                 regla del día 1 del mes, formato
+  PlanillaParametroConsulta.php  delMes, afpDelMes, descuentosSp (HAB F… y SNP calculados), faltantes / exigir (mensaje
+                                 de qué falta y dónde), meses con planilla generada, tarjetas e historial de la pantalla
+  PlanillaParametroProceso.php   único punto de escritura (pantalla, modal de Generar planilla, Descuentos AFP, Excel):
+                                 agregar / editar / eliminar con motivo y auditoría, "hasta" automático; si el cambio
+                                 altera un mes con planilla generada lanza ParametroAfectaPlanillas (meses y qué cambia)
+                                 y solo guarda confirmado, regenerando esas planillas (agraria y oficina, con su Excel)
+```
+
+## Ejemplo: `Sistema/Menu/` (menú lateral)
+
+```
+Sistema/Menu/
+  SistemaMenuReglas.php    definición del menú (grupos con ícono y color, opciones con permiso, módulo e ícono) y los
+                           accesos directos de fábrica (lo que se llena todos los días)
+  SistemaMenuConsulta.php  qué ve cada usuario (Super Admin todo, Administrador casi todo, el resto permiso + módulo)
+                           y sus accesos directos (los suyos o los de fábrica, solo los que puede ver)
+  SistemaMenuProceso.php   agregar / quitar / ordenar accesos directos (usuario_preferencias.accesos_directos)
+```
+Una opción nueva del menú se agrega solo en `SistemaMenuReglas::grupos()`.
+
+## Ejemplo: `Riego/Regador/` (agregar regadores)
+
+```
+Riego/Regador/
+  RiegoRegadorConsulta.php  quién puede regar en una fecha: planilleros con contrato agrario vigente, cuadrilleros
+                            activos (sin los ya registrados) y los habituales (más días de riego en los últimos 45)
+  RiegoRegadorProceso.php   agrega regadores a una fecha validando que sigan pudiendo regar ese día
+```

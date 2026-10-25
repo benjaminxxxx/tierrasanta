@@ -6,14 +6,13 @@ use App\Models\PlanContrato;
 use App\Models\PlanEmpleado;
 use App\Services\Planilla\Empleado\ContratoServicio;
 use Livewire\Component;
-use Livewire\WithFileUploads;
 use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 
 class ContratosPlanillaComponent extends Component
 {
-    use WithPagination, LivewireAlert, WithoutUrlPagination, WithFileUploads, \App\Traits\HandlesAlerts;
+    use WithPagination, LivewireAlert, WithoutUrlPagination, \App\Traits\HandlesAlerts;
 
     
     public $breadcrumb = [];
@@ -24,12 +23,11 @@ class ContratosPlanillaComponent extends Component
     public $contratoSeleccionado;
     public $contratoAFinalizar;
     public $datosCierre = [];
-    public $fileContratos;
     public $filtros = [
         'buscar' => '',
         'estado' => 'activo', // Podrías dejarlo activo por defecto
         'tipo_planilla' => '',
-        'cargo_codigo' => '',
+        'cargo_id' => '',
         'grupo_codigo' => '',
         'fecha_desde' => '',
         'fecha_hasta' => '',
@@ -43,7 +41,7 @@ class ContratosPlanillaComponent extends Component
         ];
 
         if ($id) {
-            $empleado = PlanEmpleado::find( $id)->first();
+            $empleado = PlanEmpleado::find($id);
             if ($empleado) {
                 $this->filtros['buscar'] = $empleado->nombres;
             }
@@ -139,19 +137,18 @@ class ContratosPlanillaComponent extends Component
             return;
         }
 
-        $contrato->update([
-            'eliminado_por' => auth()->id(),
-        ]);
-
-        $contrato->delete();
+        (new ContratoServicio())->eliminarContrato($contrato->id);
 
         $this->alert('success', 'Contrato eliminado correctamente');
         $this->refresh();
     }
     public function verInformacion($id)
     {
-        $contrato = PlanContrato::with('empleado')
-            ->findOrFail($id);
+        $contrato = PlanContrato::with(['empleado', 'asignaciones.cargo', 'remuneraciones'])->findOrFail($id);
+        // Cargo, grupo y remuneración de hoy (o del último día del contrato); pensión del empleado a esa fecha
+        $asig = $contrato->asignacionEn();
+        $rem = $contrato->remuneracionEn();
+        $pension = $contrato->empleado?->pensionEn(\App\Services\Planilla\Laboral\PlanillaLaboralConsulta::fechaActual($contrato));
 
         $this->contratoSeleccionado = [
             'empleado' => $contrato->empleado->nombre_completo,
@@ -160,15 +157,15 @@ class ContratosPlanillaComponent extends Component
             'fecha_inicio' => $contrato->fecha_inicio,
             'fecha_fin' => $contrato->fecha_fin,
             'fecha_fin_prueba' => $contrato->fecha_fin_prueba,
-            'cargo_codigo' => $contrato->cargo_codigo,
-            'grupo_codigo' => $contrato->grupo_codigo,
-            'modalidad_pago' => $contrato->modalidad_pago,
+            'cargo_codigo' => $asig?->cargo?->nombre,
+            'grupo_codigo' => $asig?->grupo_codigo,
+            'modalidad_pago' => $rem?->modalidad_pago,
             'motivo_cese_sunat' => $contrato->motivo_cese_sunat,
             'comentario_cese' => $contrato->comentario_cese,
             'estado' => $contrato->estado,
-            'compensacion_vacacional' => $contrato->compensacion_vacacional,
-            'plan_sp_codigo' => $contrato->plan_sp_codigo,
-            'esta_jubilado' => $contrato->esta_jubilado ? 'Sí' : 'No',
+            'compensacion_vacacional' => $rem?->compensacion_vacacional,
+            'plan_sp_codigo' => $pension?->plan_sp_codigo,
+            'esta_jubilado' => $pension?->esta_jubilado ? 'Sí' : 'No',
         ];
 
         $this->mostrarInformacionContrato = true;
@@ -177,19 +174,7 @@ class ContratosPlanillaComponent extends Component
     {
         $this->resetPage();
     }
-    public function updatedFileContratos($file){
-        try {
-            app(ContratoServicio::class)->importarContratos($file);
-            $this->fileContratos = null;
-            $this->alert('success', 'Contratos importados correctamente');
-        } catch (\Throwable $th) {
-            $this->errorAlert($th, null, [
-                'position' => 'center',
-                'toast' => false,
-                'timer' => null,
-            ]);
-        }
-    }
+
     public function render()
     {
         return view('livewire.planilla.empleado.contratos-planilla-component', [

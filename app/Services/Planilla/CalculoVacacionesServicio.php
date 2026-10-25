@@ -3,7 +3,7 @@
 namespace App\Services\Planilla;
 
 use App\Models\PlanEmpleado;
-use App\Models\PlanMensualPersonal;
+use App\Models\PlanMensualDetalle;
 use App\Models\PlanSuspension;
 use Illuminate\Support\Carbon;
 
@@ -32,7 +32,7 @@ class CalculoVacacionesServicio
             ->with('empleado') // ⚠️ ajustar nombre real de la relación en PlanSuspension hacia PlanEmpleado
             ->get();
 
-        $persona = PlanMensualPersonal::whereHas('planMensual', fn($q) => $q->where('mes', $mes)->where('anio', $anio))
+        $persona = PlanMensualDetalle::calculados()->whereHas('planMensual', fn($q) => $q->where('mes', $mes)->where('anio', $anio))
             ->get()
             ->keyBy('plan_empleado_id');
 
@@ -86,7 +86,7 @@ class CalculoVacacionesServicio
     public function guardarCalculos(int $mes, int $anio, array $filas): void
     {
         foreach ($filas as $fila) {
-            $personaMes = PlanMensualPersonal::where('plan_empleado_id', $fila['plan_empleado_id'])
+            $personaMes = PlanMensualDetalle::calculados()->where('plan_empleado_id', $fila['plan_empleado_id'])
                 ->whereHas('planMensual', fn($q) => $q->where('mes', $mes)->where('anio', $anio))
                 ->first();
 

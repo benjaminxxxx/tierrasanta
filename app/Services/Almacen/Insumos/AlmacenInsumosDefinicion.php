@@ -23,6 +23,12 @@ class AlmacenInsumosDefinicion extends SistemaLibroExcelDefinicion
         return Permisos::INSUMO_PRODUCTO_GESTIONAR;
     }
 
+    /** Carga inicial: sin datos principales, se acepta un Excel descargado antes o de otra base. */
+    public function sistemaVacio(): bool
+    {
+        return !\Illuminate\Support\Facades\DB::table('productos')->exists();
+    }
+
     public function leeme(): array
     {
         return [

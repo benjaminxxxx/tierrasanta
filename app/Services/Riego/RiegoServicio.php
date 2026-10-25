@@ -61,7 +61,7 @@ class RiegoServicio
                         "salida_1" => $registro['hora_fin'],
                     ];
                 } elseif ($registro['tipo'] === 'cuadrilla') {
-                    // Lógica pendiente para cuadrilla
+                    $this->registrarRiegoEnCuadrilla($fecha, $registro);
                 }
             }
 
@@ -74,6 +74,30 @@ class RiegoServicio
             ActividadServicio::detectarYCrearActividades($fecha);
         });
     }
+    /**
+     * Cuadrillero que riega (p. ej. el mensual de Santa Rita, que trabaja como planillero): su tramo de riego en el
+     * registro diario de cuadrilla (FDM, labor 81) pasa a ser su jornal de riego; el resto de sus tramos no se toca y
+     * las horas del día se recalculan. Se usa su registro del día (si tiene varios grupos, el que ya tenía riego).
+     */
+    private function registrarRiegoEnCuadrilla(string $fecha, array $registro): void
+    {
+        $registros = \App\Models\CuadRegistroDiario::where('cuadrillero_id', $registro['trabajador_id'])->whereDate('fecha', $fecha)->get();
+        if ($registros->isEmpty()) {
+            // Sin registro de cuadrilla ese día: no se crea uno (no se sabe su grupo ni su jornal). No bloquea a los
+            // demás regadores; queda desincronizado y lo muestra la verificación de riego.
+            return;
+        }
+        $esRiego = fn($d) => mb_strtoupper((string) $d->campo_nombre) === 'FDM' && (string) $d->codigo_labor === (string) $registro['labor'];
+        $rd = $registros->first(fn($r) => \App\Models\CuadDetalleHora::where('registro_diario_id', $r->id)->get()->contains($esRiego)) ?? $registros->first();
+
+        \App\Models\CuadDetalleHora::where('registro_diario_id', $rd->id)->where('campo_nombre', 'FDM')->where('codigo_labor', $registro['labor'])->delete();
+        \App\Models\CuadDetalleHora::create(['registro_diario_id' => $rd->id, 'campo_nombre' => 'FDM', 'codigo_labor' => $registro['labor'],
+            'hora_inicio' => $registro['hora_inicio'], 'hora_fin' => $registro['hora_fin']]);
+        $minutos = \App\Models\CuadDetalleHora::where('registro_diario_id', $rd->id)->get()
+            ->sum(fn($d) => Carbon::parse($d->hora_inicio)->diffInMinutes(Carbon::parse($d->hora_fin)));
+        $rd->update(['total_horas' => round($minutos / 60, 2)]);
+    }
+
     /**
      * Genera la lista de registros diarios para regadores en una fecha determinada.
      *
@@ -116,6 +140,10 @@ class RiegoServicio
 
             // 3. Minutos totales a reportar en la jornada
             $minutosTotales = $item->minutos_jornal;
+            // Solo rondas "sin haberes" (jornal 0): no hay horas que pasar a planilla; su día queda como está
+            if ($minutosTotales <= 0) {
+                continue;
+            }
 
             // 4. Calcular la HORA FIN sumando los minutos totales a la hora inicio prevalente
             $horaFinReal = (clone $horaInicioReal)->addMinutes($minutosTotales);

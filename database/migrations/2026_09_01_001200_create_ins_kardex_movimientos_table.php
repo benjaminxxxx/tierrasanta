@@ -14,7 +14,7 @@ return new class extends Migration
             $table->date('fecha');
             $table->enum('tipo_mov', ['entrada', 'salida']);
             $table->string('tipo_documento', 10)->nullable();
-            $table->string('serie', 10)->nullable();
+            $table->string('serie', 20)->nullable();
             $table->string('numero', 20)->nullable();
             $table->unsignedSmallInteger('tipo_operacion')->nullable();
             $table->decimal('entrada_cantidad', 18, 3)->nullable();

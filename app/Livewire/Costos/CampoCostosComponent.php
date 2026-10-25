@@ -4,7 +4,7 @@ namespace App\Livewire\Costos;
 
 use App\Models\Campania;
 use App\Models\CampoCampania;
-use App\Models\PlanMensualPersonal;
+use App\Models\PlanMensualDetalle;
 use App\Models\ResumenCostoDiario;
 use App\Services\Costos\Consolidacion\ConsolidarCostoGastosGeneralesServicio;
 use App\Services\Costos\Consolidacion\ConsolidarCostoInsumosServicio;

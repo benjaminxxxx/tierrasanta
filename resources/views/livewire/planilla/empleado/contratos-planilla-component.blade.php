@@ -9,13 +9,8 @@
         </div>
         <x-flex>
 
-            <div x-data="{ openFileDialog() { $refs.fileContratos.click() } }">
-                <x-button variant="success" type="button" @click="openFileDialog()">
-                    <i class="fa fa-file-excel"></i> Importar Contratos
-                </x-button>
-                <input type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    x-ref="fileContratos" style="display: none;" wire:model.live="fileContratos" />
-            </div>
+            {{-- La carga masiva de contratos se hace con el Excel de empleados (Inicio → Archivos) --}}
+
             <x-button wire:click="$dispatch('nuevoContrato')">
                 <i class="fas fa-plus"></i> Nuevo Contrato
             </x-button>

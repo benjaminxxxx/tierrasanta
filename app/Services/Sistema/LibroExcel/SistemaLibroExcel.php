@@ -163,6 +163,8 @@ class SistemaLibroExcel
         $c->fromArray([
             [$macro['url']], [$macro['clave']], [$macro['libro']], [$this->soloHojas ? implode(',', $this->soloHojas) : '*'],
             [self::HOJA_INDICE], [$macro['correo']], [$macro['vence']->format('Y-m-d H:i')],
+            // A8: "carga" = carga inicial (la macro permite subir sin actualizar antes)
+            [$macro['modo'] ?? ''],
         ], null, 'A1');
         $fila = 10;
         foreach ($this->reglas::claves() as $clave) {
@@ -496,6 +498,11 @@ class SistemaLibroExcel
         $porTitulo = [];
         foreach ($columnas as $clave => $c) {
             $porTitulo[$norm($c['t'])] = $clave;
+        }
+        // Archivos descargados antes de que el título ganara una aclaración: "Desde" vale por "Desde (día 1 del mes)"
+        foreach ($columnas as $clave => $c) {
+            $corto = $norm(preg_replace('/\s*\(.*\)\s*$/u', '', $c['t']));
+            $porTitulo[$corto] ??= $clave;
         }
         $mapa = [];
         $ultima = Coordinate::columnIndexFromString($h->getHighestDataColumn());

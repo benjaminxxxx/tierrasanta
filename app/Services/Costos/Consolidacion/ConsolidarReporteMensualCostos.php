@@ -272,7 +272,7 @@ class ConsolidarReporteMensualCostos
      */
     public function bonosCuadrillaAparte(string $fechaInicio, string $fechaFin)
     {
-        return CuadActividadBono::with(['registroDiario.cuadrillero', 'actividad', 'metodo', 'producciones'])
+        return CuadActividadBono::with(['registroDiario.cuadrillero', 'actividad', 'metodo'])
             ->where('se_paga_con_jornal', false)
             ->where('total_bono', '>', 0) // mismo criterio que el resumen por campo
             ->whereHas('registroDiario', fn($q) => $q->whereBetween('fecha', [$fechaInicio, $fechaFin]))
@@ -398,7 +398,8 @@ class ConsolidarReporteMensualCostos
                 $hojaBonos->setCellValue("C{$fila}", $bono->registroDiario->cuadrillero?->nombres ?? '-');
                 $hojaBonos->setCellValue("D{$fila}", $actividad?->campo ?? '-');
                 $hojaBonos->setCellValue("E{$fila}", $actividad?->nombre_labor ?? $actividad?->codigo_labor ?? '-');
-                $hojaBonos->setCellValue("F{$fila}", (float) $bono->producciones->sum('produccion'));
+                // Producción del trabajador en esa actividad (registro de producción de campo)
+                $hojaBonos->setCellValue("F{$fila}", \App\Services\Campo\Produccion\CampoProduccionConsulta::totalTrabajador((int) $bono->actividad_id, $bono->registroDiario?->cuadrillero_id, null));
                 $hojaBonos->setCellValue("G{$fila}", $bono->bono_manual ? 'Manual' : ($bono->metodo?->titulo ?? '-'));
                 $hojaBonos->setCellValue("H{$fila}", (float) $bono->total_bono);
                 $fila++;

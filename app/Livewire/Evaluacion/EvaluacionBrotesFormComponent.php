@@ -47,7 +47,7 @@ class EvaluacionBrotesFormComponent extends Component
     public function mount()
     {
         $this->idTable = 'brotes' . Str::random(10);
-        $planilla = PlanEmpleado::pluck('nombres')->toArray();
+        $planilla = PlanEmpleado::get()->pluck('nombres')->toArray();
         $cuadrilla = Cuadrillero::pluck('nombres')->toArray();
         $this->evaluadoresNombres = array_values(array_unique(array_merge($planilla, $cuadrilla)));
     }

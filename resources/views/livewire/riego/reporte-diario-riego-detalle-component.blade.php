@@ -52,7 +52,7 @@
                 @if ($resumenRiego)
                     <x-flex class="justify-between">
                         <div>
-                            <livewire:riego.resumen-horas-regador-component
+                            <livewire:riego.resumen-horas-regador-component :consolidadoId="$resumenRiego->id"
                                 :trabajadorType="$resumenRiego->trabajador_type"
                                 :trabajadorId="$resumenRiego->trabajador_id" :fecha="$fecha"
                                 wire:key="resumen_horas_{{ $resumenRiego->trabajador_type }}_{{ $resumenRiego->trabajador_id }}_{{ $fecha }}" />
@@ -257,14 +257,10 @@
 
             this.initTable();
 
+            // Solo la grilla de este regador (el evento lleva su id de tabla)
             Livewire.on('actualizarGrilla-{{ $idTable }}', (data) => {
-
-                console.log(data[0]);
                 this.tableData = data[0];
                 this.hot.loadData(this.tableData);
-            });
-            Livewire.on('guardarTodo', (data) => {
-                this.sendDataRegistroDiarioRiego();
             });
             $watch('darkMode', value => {
 

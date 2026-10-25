@@ -20,6 +20,7 @@ class Labores extends Model
         'vigente_desde', // desde cuándo el código significa esta labor (antes: labor_vigencias)
         'estandar_produccion',
         'unidades',
+        'registra_produccion',
         'tramos_bonificacion',
         'creado_por',
         'actualizado_por',
@@ -47,6 +48,7 @@ class Labores extends Model
     protected $casts = [
         'vigente_desde' => 'date',
         'tramos_bonificacion' => 'array',
-        'se_paga_con_jornal' => 'boolean'
+        'se_paga_con_jornal' => 'boolean',
+        'registra_produccion' => 'boolean',
     ];
 }

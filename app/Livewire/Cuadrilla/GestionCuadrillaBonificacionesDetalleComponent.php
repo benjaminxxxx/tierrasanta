@@ -20,6 +20,8 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
     public $unidades = 'kg.';
     public $recojos = 1;
     public $tableDataBonificados = [];
+    /** @var array<string, array<int, float>> cantidades con bono por trabajador ("c:ID" / "p:ID") y recojo */
+    private array $cantidades = [];
     public function mount($actividadSeleccionada)
     {
         $this->actividad = Actividad::find($actividadSeleccionada);
@@ -28,133 +30,14 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
         if ($this->actividad) {
             $this->recojos = $this->actividad->recojos;
             $this->metodos = $this->actividad->metodos()->with(['tramos'])->get()->toArray();
-            $this->unidades = $this->actividad->unidades ?? 'kg';
+            // La unidad es la de la labor (catálogo de unidades de producción), no se escribe aquí
+            $this->unidades = \App\Services\Campo\Produccion\CampoProduccionReglas::unidadDeLabor($this->actividad->codigo_labor, $this->actividad->fecha) ?? '';
         }
 
         //los trabajadores deben estar despues de los recojos para obtener la informacion completa de recojos
         $this->obtenerTrabajadores();
 
     }
-    /*
-    public function obtenerTrabajadores()
-    {
-        try {
-            $campoNombre = $this->actividad->campo;
-            $codigoLabor = $this->actividad->codigo_labor;
-            $fecha = $this->actividad->fecha;
-
-            $registros = $this->obtenerCuadrillasPorFechaYLabor($campoNombre, $codigoLabor, $fecha, $this->actividad->id);
-            $registrosPlanilla = $this->obtenerPlanillasPorFechaYLabor($campoNombre, $codigoLabor, $fecha, $this->actividad->id);
-
-            $dataHandsontable = [];
-            $dataHandsontablePlanilla = [];
-
-            foreach ($registros as $registro) {
-
-                $totalBonoCalculado = $registro->actividadesBonos->sum(function ($actividadBono) {
-                    return $actividadBono->total_bono ?? 0;
-                });
-                $metodo_bonificacion = optional(optional($registro->actividadesBonos->first())->metodo)->titulo;
-                $row = [
-                    'registro_diario_id' => $registro->id,
-                    'tipo' => 'CUADRILLA',
-                    'metodo_bonificacion' => $metodo_bonificacion,
-                    'cuadrillero_id' => $registro->cuadrillero_id,
-                    'nombre_trabajador' => optional($registro->cuadrillero)->nombres ?? '-',
-                    'campo' => $campoNombre,
-                    'labor' => $codigoLabor,
-                    'total_bono' => $totalBonoCalculado,
-                    'bono_manual'        => (bool) optional($registro->actividadesBonos->first())->bono_manual,
-                ];
-
-                // Ahora las producciones están dentro de actividadesBonos
-                $producciones = collect();
-                foreach ($registro->actividadesBonos as $actividadBono) {
-                    foreach ($actividadBono->producciones as $produccion) {
-                        $producciones->push($produccion);
-                    }
-                }
-                $recojos = $producciones->keyBy('numero_recojo');
-
-                for ($i = 0; $i < $this->recojos; $i++) {
-                    $numeroRecojo = $i + 1;
-                    $row['produccion_' . $numeroRecojo] = isset($recojos[$numeroRecojo])
-                        ? $recojos[$numeroRecojo]->produccion
-                        : '';
-                }
-
-                $horariosConcatenados = [];
-                foreach ($registro->detalleHoras as $detalle) {
-                    $inicio = Carbon::parse($detalle->hora_inicio)->format('H:i');
-                    $fin = Carbon::parse($detalle->hora_fin)->format('H:i');
-                    $key = "$inicio-$fin";
-                    $horariosConcatenados[] = $key;
-                }
-
-                $row['horarios'] = implode(',', $horariosConcatenados);
-                $row['rango_total_horas'] = DateHelper::calcularDuracionPorTramo($row['horarios']);
-                $row['total_horas'] = DateHelper::calcularTotalHorasFloat($row['rango_total_horas']);
-
-                $dataHandsontable[] = $row;
-            }
-
-
-            foreach ($registrosPlanilla as $registroPlanilla) {
-
-                $totalBonoCalculado = $registroPlanilla->actividadesBonos->sum(function ($actividadBono) {
-                    return $actividadBono->total_bono ?? 0;
-                });
-
-
-                $metodo_bonificacion = optional(optional($registroPlanilla->actividadesBonos->first())->metodo)->titulo;
-
-                $row = [
-                    'registro_diario_id' => $registroPlanilla->id,
-                    'tipo' => 'PLANILLA',
-                    'metodo_bonificacion' => $metodo_bonificacion,
-                    'nombre_trabajador' => $registroPlanilla->detalleMensual->nombres,
-                    'campo' => $campoNombre,
-                    'labor' => $codigoLabor,
-                    'total_bono' => $totalBonoCalculado,
-                    'bono_manual'        => (bool) optional($registroPlanilla->actividadesBonos->first())->bono_manual,
-                ];
-
-                $horariosConcatenados = [];
-
-                $producciones = collect();
-                foreach ($registroPlanilla->actividadesBonos as $actividadBono) {
-                    foreach ($actividadBono->producciones as $produccion) {
-                        $producciones->push($produccion);
-                    }
-                }
-                $recojos = $producciones->keyBy('numero_recojo');
-
-                for ($i = 0; $i < $this->recojos; $i++) {
-                    $numeroRecojo = $i + 1;
-                    $row['produccion_' . $numeroRecojo] = isset($recojos[$numeroRecojo])
-                        ? $recojos[$numeroRecojo]->produccion
-                        : '';
-                }
-                foreach ($registroPlanilla->detalles as $detalle) {
-                    $inicio = Carbon::parse($detalle->hora_inicio)->format('H:i');
-                    $fin = Carbon::parse($detalle->hora_fin)->format('H:i');
-                    $key = "$inicio-$fin";
-                    $horariosConcatenados[] = $key;
-                }
-
-                $row['horarios'] = implode(',', $horariosConcatenados);
-
-                $row['rango_total_horas'] = DateHelper::calcularDuracionPorTramo($row['horarios']);
-                $row['total_horas'] = DateHelper::calcularTotalHorasFloat($row['rango_total_horas']);
-
-                $dataHandsontable[] = $row;
-            }
-            $this->tableDataBonificados = $dataHandsontable;
-        } catch (\Throwable $th) {
-
-            $this->errorAlert($th);
-        }
-    }*/
     public function obtenerTrabajadores()
     {
         try {
@@ -167,6 +50,8 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
             $registrosPlanilla = $this->obtenerPlanillasPorFechaYLabor($campoNombre, $codigoLabor, $fecha, $this->actividad->id);
 
             $dataHandsontable = [];
+            // Cantidades con bono por trabajador (registro de producción de campo)
+            $this->cantidades = \App\Services\Campo\Produccion\CampoProduccionConsulta::conBonoPorTrabajador($this->actividad->id);
 
             // 1. Procesar Cuadrillas
             foreach ($registros as $registro) {
@@ -280,11 +165,14 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
             'bono_manual' => (bool) optional($registro->actividadesBonos->first())->bono_manual,
         ];
 
-        // Mapeo de producciones
-        $producciones = $registro->actividadesBonos->pluck('producciones')->flatten()->keyBy('numero_recojo');
+        // Cantidades por recojo del trabajador (registro de producción de campo)
+        $clave = $tipo === 'CUADRILLA'
+            ? \App\Services\Campo\Produccion\CampoProduccionConsulta::clave($registro->cuadrillero_id, null)
+            : \App\Services\Campo\Produccion\CampoProduccionConsulta::clave(null, $registro->detalleMensual?->plan_empleado_id);
+        $producciones = $this->cantidades[$clave] ?? [];
 
         for ($i = 1; $i <= $this->recojos; $i++) {
-            $row['produccion_' . $i] = isset($producciones[$i]) ? $producciones[$i]->produccion : '';
+            $row['produccion_' . $i] = $producciones[$i] ?? '';
         }
 
         // Mapeo de tramos de horas usando Carbon
@@ -367,7 +255,6 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
             'cuadrillero:id,nombres',
             'actividadesBonos' => function ($query) use ($filtroActividadBono) {
                 $filtroActividadBono($query);
-                $query->with('producciones'); // carga las recogidas
             },
             'detalleHoras' => function ($query) use ($filtroDetalleHoras) {
                 $filtroDetalleHoras($query);
@@ -395,7 +282,6 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
             'detalleMensual',
             'actividadesBonos' => function ($query) use ($filtroActividadBono) {
                 $filtroActividadBono($query);
-                $query->with('producciones'); // carga las recogidas
             },
             'detalles' => function ($query) use ($filtroDetalles) {
                 $filtroDetalles($query);

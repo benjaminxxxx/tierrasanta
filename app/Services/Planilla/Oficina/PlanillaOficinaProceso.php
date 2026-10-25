@@ -5,20 +5,21 @@ namespace App\Services\Planilla\Oficina;
 use App\Models\PlanContrato;
 use App\Models\PlanEmpleado;
 use App\Models\PlanMensual;
-use App\Models\PlanMensualPersonal;
-use App\Models\PlanMensualSpDesc;
+use App\Models\PlanMensualDetalle;
+use App\Services\Planilla\Parametro\PlanillaParametroConsulta;
 use App\Models\PlanOficinaPersonal;
 use App\Models\PlanSuspension;
+use App\Services\Planilla\Laboral\PlanillaLaboralConsulta;
 use App\Services\Planilla\PlanillaMensualServicio;
 use App\Services\Reporte\AuditoriaServicio;
-use App\Services\Sistema\ConfiguracionHistorialServicio;
+
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
  * Planilla oficina (régimen general), como las hojas EMPLEADOS y ADM de la planilla oficial. Entran todos los que
- * tienen contrato de tipo "oficina" o "general" en el mes.
+ * tienen contrato de planilla "oficina" en el mes (la antigua "general" se convirtió en oficina).
  *
  * En planilla (5ta categoría):
  * - Sueldo: remuneración básica menos vacaciones y faltas (sueldo / 30 por día); las vacaciones van aparte (0118).
@@ -63,12 +64,12 @@ class PlanillaOficinaProceso
 
     public const MESES_GRATIFICACION = [7, 12];
     public const MESES_CTS = [5, 11];
-    public const TIPOS_PLANILLA = ['oficina', 'general'];
+    public const TIPOS_PLANILLA = ['oficina'];
 
     /**
      * @param array{tipo_ingreso: string, beneficios_mensuales: bool, rem_basica: float, asig: float, dias_vacaciones: int,
      *   dias_perfecta: int, mes: int, meses_semestre: int, codigo_sp: ?string, es_pensionista: bool, es_mayor_65: bool,
-     *   descuento_sp: ?PlanMensualSpDesc, pct_essalud: float, pct_vida_ley: ?float, pct_bonif: float,
+     *   descuento_sp: ?object (PlanMensual::descuentoSp), pct_essalud: float, pct_vida_ley: ?float, pct_bonif: float,
      *   pct_cuarta: float, tope_cuarta: float, suspension_cuarta: bool, sueldo_real: ?float} $e
      * @param array<string, array{monto: mixed, motivo?: ?string}> $ajustes
      * @return array{columnas: array<string, ?float>, calculados: array<string, ?float>}
@@ -104,7 +105,7 @@ class PlanillaOficinaProceso
         $neto = round($total - $descuentos, 2);
 
         $essalud = $poner('aporte_essalud', $honorarios ? 0 : $total * $e['pct_essalud'] / 100);
-        $vidaLey = $poner('aporte_vida_ley', $honorarios || $e['pct_vida_ley'] === null ? 0 : $total * $e['pct_vida_ley'] / 100 * PlanMensualPersonal::FACTOR_SEGURO);
+        $vidaLey = $poner('aporte_vida_ley', $honorarios || $e['pct_vida_ley'] === null ? 0 : $total * $e['pct_vida_ley'] / 100 * \App\Services\Planilla\Mensual\PlanillaMensualReglas::FACTOR_SEGURO);
 
         // Beneficios: base = remuneración mensual completa (básica + asignación), no la de los días del mes
         $remMensual = $honorarios ? 0 : $base + $e['asig'];
@@ -137,7 +138,7 @@ class PlanillaOficinaProceso
     }
 
     /**
-     * Genera (o regenera) la planilla oficina del mes con los contratos de oficina/general vigentes. Conserva los
+     * Genera (o regenera) la planilla oficina del mes con los contratos de oficina vigentes. Conserva los
      * ajustes y el comprobante de cada persona.
      *
      * @return array{plan: PlanMensual, personas: int, avisos: string[]}
@@ -162,10 +163,12 @@ class PlanillaOficinaProceso
             $orden = 0;
             foreach ($ordenados as $empleadoId => $contrato) {
                 $empleado = $contrato->empleado;
-                if ($contrato->tipo_ingreso !== 'honorarios' && !$contrato->plan_sp_codigo && !$contrato->esta_jubilado) {
-                    $avisos[] = "{$empleado->nombre_completo}: el contrato no tiene sistema de pensión.";
+                $fecha = PlanillaLaboralConsulta::fechaDelMes($mes, $anio, $contrato);
+                $pension = $empleado->pensionEn($fecha);
+                if ($contrato->tipo_ingreso !== 'honorarios' && !$pension?->plan_sp_codigo && !$pension?->esta_jubilado) {
+                    $avisos[] = "{$empleado->nombre_completo}: no tiene sistema de pensión.";
                 }
-                if ((float) $contrato->remuneracion_basica <= 0 && $contrato->tipo_ingreso === 'honorarios') {
+                if ((float) $contrato->remuneracionEn($fecha)?->remuneracion_basica <= 0 && $contrato->tipo_ingreso === 'honorarios') {
                     $avisos[] = "{$empleado->nombre_completo}: el contrato por honorarios no tiene monto (remuneración básica).";
                 }
                 $fila = $existentes->get($empleadoId) ?? new PlanOficinaPersonal(['plan_mensual_id' => $plan->id, 'plan_empleado_id' => $empleadoId]);
@@ -173,7 +176,7 @@ class PlanillaOficinaProceso
                 $fila->save();
             }
 
-            // Los que ya no tienen contrato de oficina/general este mes salen
+            // Los que ya no tienen contrato de oficina este mes salen
             PlanOficinaPersonal::where('plan_mensual_id', $plan->id)->whereNotIn('plan_empleado_id', $ordenados->keys())->delete();
 
             return ['plan' => $plan, 'personas' => $ordenados->count(), 'avisos' => $avisos];
@@ -225,18 +228,9 @@ class PlanillaOficinaProceso
     /** Mes de planilla con sus tasas: si aún no existe se abre con los parámetros vigentes. */
     public function prepararMes(int $mes, int $anio): PlanMensual
     {
-        $plan = PlanMensual::where('mes', $mes)->where('anio', $anio)->first()
-            ?? PlanillaMensualServicio::guardarConfiguracionDesdeParametros($mes, $anio);
-        // Tasas que usa la planilla oficina; si el mes se abrió sin parámetros, se toman los vigentes a la fecha
-        $codigos = ['rmv', 'asignacion_familiar', 'vida_ley', 'essalud_general', 'bonif_extraordinaria_general', 'retencion_cuarta', 'tope_retencion_cuarta'];
-        $faltan = array_values(array_filter($codigos, fn($c) => $plan->{$c} === null));
-        if ($faltan) {
-            $plan->update(ConfiguracionHistorialServicio::obtenerValoresVigentes($faltan, $mes, $anio));
-        }
-        if (!PlanMensualSpDesc::where('plan_mensual_id', $plan->id)->exists()) {
-            PlanillaMensualServicio::snapshotDescuentosSp($plan->id, $mes, $anio);
-        }
-        return $plan->fresh();
+        // Las tasas (EsSalud, vida ley, 4ta, AFP…) se leen de Parámetros de planilla: si falta alguna se dice cuál
+        PlanillaParametroConsulta::exigir($mes, $anio, 'oficina');
+        return PlanillaMensualServicio::mes($mes, $anio);
     }
 
     private function datosFila(PlanMensual $plan, PlanEmpleado $empleado, PlanContrato $contrato, int $mes, int $anio, array $ajustes): array
@@ -246,27 +240,33 @@ class PlanillaOficinaProceso
         [$vacaciones, $perfecta] = $this->diasSuspension($empleado->id, $inicio, $fin);
         $honorarios = $contrato->tipo_ingreso === 'honorarios';
         $tieneAsig = !$honorarios && $empleado->cantidadHijosConAsignacionFamiliar($mes, $anio) > 0;
+        // Partículas vigentes del mes (capa laboral)
+        $fecha = PlanillaLaboralConsulta::fechaDelMes($mes, $anio, $contrato);
+        $rem = $contrato->remuneracionEn($fecha);
+        $pension = $empleado->pensionEn($fecha);
+        $pago = $empleado->pagoEn($fecha);
+        $basica = (float) $rem?->remuneracion_basica;
 
         $fila = new PlanOficinaPersonal([
             'nombres' => $empleado->nombre_completo,
-            'cargo' => $empleado->nombre_cargo_actual ?? null,
+            'cargo' => $contrato->asignacionEn($fecha)?->cargo?->nombre,
             'tipo_ingreso' => $contrato->tipo_ingreso ?: 'planilla',
-            'beneficios_mensuales' => (bool) $contrato->beneficios_mensuales,
-            'sistema_pension' => $honorarios ? null : $contrato->plan_sp_codigo,
-            'es_pensionista' => (bool) $contrato->esta_jubilado,
+            'beneficios_mensuales' => (bool) $rem?->beneficios_mensuales,
+            'sistema_pension' => $honorarios ? null : $pension?->plan_sp_codigo,
+            'es_pensionista' => (bool) $pension?->esta_jubilado,
             'edad' => $empleado->edadContable($mes, $anio),
-            // Sin remuneración básica en el contrato: la RMV del mes
-            'remuneracion_basica' => (float) $contrato->remuneracion_basica > 0 ? (float) $contrato->remuneracion_basica : (float) $plan->rmv,
+            // Sin remuneración básica en la remuneración vigente: la RMV del mes
+            'remuneracion_basica' => $basica > 0 ? $basica : (float) $plan->rmv,
             'asignacion_familiar' => $tieneAsig ? (float) $plan->asignacion_familiar : 0,
-            'cuenta_principal' => $this->textoCuenta($contrato->banco, $contrato->moneda_cuenta, $contrato->numero_cuenta, $contrato->metodo_pago),
-            'cuenta_secundaria' => $this->textoCuenta($contrato->banco_secundario, $contrato->moneda_cuenta_secundaria, $contrato->numero_cuenta_secundaria),
+            'cuenta_principal' => $this->textoCuenta($pago?->banco, $pago?->moneda_cuenta, $pago?->numero_cuenta, $pago?->metodo_pago),
+            'cuenta_secundaria' => $this->textoCuenta($pago?->banco_secundario, $pago?->moneda_cuenta_secundaria, $pago?->numero_cuenta_secundaria),
             'dias_mes' => $inicio->daysInMonth,
             'dias_vacaciones' => $vacaciones,
             'dias_suspension_perfecta' => $perfecta,
             'dias_laborados' => max(0, $inicio->daysInMonth - $vacaciones - $perfecta),
         ]);
-        // Sueldo real: el del empleado (pestaña Sueldos); por honorarios, si no tiene, el monto del recibo
-        $sueldoReal = $empleado->sueldo($mes, $anio) ?? ($honorarios ? (float) $fila->remuneracion_basica : null);
+        // Sueldo real: el de la remuneración vigente; por honorarios, si no tiene, el monto del recibo
+        $sueldoReal = ($rem?->sueldo !== null ? (float) $rem->sueldo : null) ?? ($honorarios ? (float) $fila->remuneracion_basica : null);
         return array_merge($fila->getAttributes(), $this->calcularFila($plan, $fila, $contrato, $ajustes, $sueldoReal));
     }
 
@@ -284,13 +284,13 @@ class PlanillaOficinaProceso
             'codigo_sp' => $p->sistema_pension,
             'es_pensionista' => (bool) $p->es_pensionista,
             'es_mayor_65' => (int) $p->edad >= 65,
-            'descuento_sp' => $p->sistema_pension ? PlanMensualSpDesc::where('plan_mensual_id', $plan->id)->where('codigo', $p->sistema_pension)->first() : null,
+            'descuento_sp' => $plan->descuentoSp($p->sistema_pension),
             'pct_essalud' => (float) ($plan->essalud_general ?? 9),
             'pct_vida_ley' => $plan->vida_ley === null ? null : (float) $plan->vida_ley,
             'pct_bonif' => (float) ($plan->bonif_extraordinaria_general ?? 9),
             'pct_cuarta' => (float) ($plan->retencion_cuarta ?? 8),
             'tope_cuarta' => (float) ($plan->tope_retencion_cuarta ?? 1500),
-            'suspension_cuarta' => (bool) $contrato?->suspension_cuarta,
+            'suspension_cuarta' => (bool) ($contrato ? $contrato->empleado?->pensionEn(PlanillaLaboralConsulta::fechaDelMes((int) $plan->mes, (int) $plan->anio, $contrato))?->suspension_cuarta : false),
             'sueldo_real' => $sueldoReal ?? $p->calculado('sueldo_real') ?? ($p->sueldo_real !== null ? (float) $p->sueldo_real : null),
         ], $ajustes);
         return $r['columnas'] + ['calculados' => $r['calculados']];

@@ -28,7 +28,7 @@ class Observacion extends Model
     {
         $documento = $this->documento;
 
-        return optional(PlanEmpleado::where('documento', $documento)->first())->nombre_completo
+        return optional(PlanEmpleado::porDocumento($documento)->first())->nombre_completo
             ?? Cuadrillero::where('dni', $documento)->value('nombre_completo')
             ?? 'NN';
     }

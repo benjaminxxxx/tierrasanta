@@ -64,6 +64,12 @@ class CampoLaborVigenciaProceso
             }
         });
         $v->validate();
+        // Registra producción → unidad del catálogo obligatoria (misma regla que Editar)
+        $regla = \App\Services\Campo\Produccion\CampoProduccionReglas::unidadDeLaborValida($nueva['registra_produccion'] ?? filled($nueva['unidades'] ?? null), $nueva['unidades'] ?? null);
+        if (is_string($regla)) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['unidades' => $regla]);
+        }
+        [$nueva['registra_produccion'], $nueva['unidades']] = $regla;
 
         return DB::transaction(function () use ($labor, $desde, $nueva, $motivo, $codigo) {
             $antes = $labor->only(['codigo', 'nombre_labor', 'codigo_mano_obra', 'tipo_asistencia_codigo', 'unidades', 'vigente_desde']);
@@ -87,6 +93,7 @@ class CampoLaborVigenciaProceso
                 'nombre_labor' => trim($nueva['nombre_labor']),
                 'codigo_mano_obra' => $nueva['codigo_mano_obra'],
                 'unidades' => $nueva['unidades'] ?? null,
+                'registra_produccion' => $nueva['registra_produccion'],
                 'estandar_produccion' => $nueva['estandar_produccion'] ?? null,
                 'tipo_asistencia_codigo' => $nueva['tipo_asistencia_codigo'] ?? null,
                 // El rol (cosecha / neutra) era de la labor anterior: la nueva empieza normal salvo que se indique

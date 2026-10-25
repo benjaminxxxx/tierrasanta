@@ -7,7 +7,6 @@ use App\Models\PlanEmpleado;
 use App\Models\PlanGrupo;
 use App\Models\PlanMensual;
 use App\Models\PlanMensualDetalle;
-use App\Models\PlanMensualPersonal;
 use App\Models\PlanTipoAsistencia;
 use App\Services\Planilla\PlanillaEmpleadoServicio;
 use Illuminate\Support\Carbon;
@@ -17,7 +16,7 @@ use Illuminate\Support\Carbon;
  * lo que se le paga y lo que le cuesta a la empresa.
  *
  * - Horas y tipo: registro diario (plan_registros_diarios).
- * - Sueldos: la planilla generada del mes (plan_mensual_personals). Sin planilla generada no hay sueldos.
+ * - Sueldos: la planilla generada del mes (plan_mensual_detalles calculados). Sin planilla generada no hay sueldos.
  *     pagado = sueldo_pagado: lo que se calcula para pagarle al trabajador.
  *     costo  = pagado_sueldo_bruto_negro: lo pagado + sus aportes + los aportes del empleador.
  *   El monto de un día es el del mes repartido por sus horas (lo calcula la pantalla).
@@ -45,7 +44,7 @@ class PlanillaAsistenciaMensualConsulta
             ? PlanMensualDetalle::where('plan_mensual_id', $planMensual->id)->with('registrosDiarios')->get()->keyBy('plan_empleado_id')
             : collect();
         $personal = $planMensual
-            ? PlanMensualPersonal::where('plan_mensual_id', $planMensual->id)->get()
+            ? PlanMensualDetalle::calculados()->where('plan_mensual_id', $planMensual->id)->get()
                 ->each(fn($p) => $p->setRelation('planMensual', $planMensual)) // los accessors de sueldo leen las horas del mes
                 ->keyBy('plan_empleado_id')
             : collect();
@@ -53,7 +52,7 @@ class PlanillaAsistenciaMensualConsulta
         $coloresGrupo = PlanGrupo::pluck('color', 'codigo');
 
         $empleados = app(PlanillaEmpleadoServicio::class)->obtenerPlanillaAgraria($mes, $anio, $orden)
-            ->map(function (PlanEmpleado $empleado) use ($detalles, $personal, $riego, $coloresGrupo) {
+            ->map(function (PlanEmpleado $empleado) use ($detalles, $personal, $riego, $coloresGrupo, $mes, $anio) {
                 $porDia = [];
                 $totalHoras = 0.0;
                 foreach ($detalles->get($empleado->id)?->registrosDiarios ?? [] as $registro) {
@@ -68,7 +67,8 @@ class PlanillaAsistenciaMensualConsulta
                 }
 
                 $planilla = $personal->get($empleado->id);
-                $grupo = $empleado->contratos->first()?->grupo_codigo;
+                // Grupo vigente en el mes (asignación del contrato del mes, capa laboral)
+                $grupo = $empleado->contratos->first()?->asignacionDelMes($mes, $anio)?->grupo_codigo;
 
                 return [
                     'id' => $empleado->id,

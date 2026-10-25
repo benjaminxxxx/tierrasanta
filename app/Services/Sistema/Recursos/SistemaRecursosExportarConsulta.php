@@ -82,12 +82,20 @@ class SistemaRecursosExportarConsulta
         ])->all();
     }
 
+    private function hojaUnidadesProduccion(): array
+    {
+        return DB::table('produccion_unidades')->orderBy('codigo')->get()->map(fn($u) => [
+            'codigo' => $u->codigo, 'nombre' => $u->nombre, 'decimales' => $u->decimales, 'activo' => SistemaRecursosReglas::sn($u->activo),
+        ])->all();
+    }
+
     private function hojaLabores(): array
     {
         return DB::table('labores')->orderBy('codigo')->get()->map(fn($l) => [
             'codigo' => $l->codigo, 'nombre' => $l->nombre_labor, 'mano_obra' => $l->codigo_mano_obra, 'tipo_asistencia' => $l->tipo_asistencia_codigo,
             'rol_campania' => $l->rol_campania ?? null, 'vigente_desde' => $l->vigente_desde, 'estandar' => $l->estandar_produccion,
-            'unidades' => $l->unidades, 'se_paga_con_jornal' => SistemaRecursosReglas::sn($l->se_paga_con_jornal), 'activa' => SistemaRecursosReglas::sn(!$l->deleted_at),
+            'registra_produccion' => SistemaRecursosReglas::sn($l->registra_produccion ?? false), 'unidades' => $l->unidades,
+            'se_paga_con_jornal' => SistemaRecursosReglas::sn($l->se_paga_con_jornal), 'activa' => SistemaRecursosReglas::sn(!$l->deleted_at),
         ])->all();
     }
 
@@ -133,7 +141,7 @@ class SistemaRecursosExportarConsulta
     {
         return DB::table('configuracion_historial')->orderBy('configuracion_codigo')->orderBy('fecha_inicio')->get()->map(fn($c) => [
             'codigo' => $c->configuracion_codigo, 'valor' => $c->valor, 'desde' => $c->fecha_inicio, 'hasta' => $c->fecha_fin,
-            'activo' => SistemaRecursosReglas::sn($c->activo),
+            'motivo' => $c->motivo,
         ])->all();
     }
 
@@ -157,6 +165,7 @@ class SistemaRecursosExportarConsulta
         return DB::table('plan_prima_comision_historicos')->orderBy('fecha_inicio')->orderBy('referencia')->get()->map(fn($a) => [
             'afp' => $a->referencia, 'desde' => $a->fecha_inicio, 'comision_flujo' => $a->comision_flujo, 'comision_saldo' => $a->comision_saldo,
             'prima_seguros' => $a->prima_seguros, 'aporte_obligatorio' => $a->aporte_obligatorio, 'remuneracion_maxima' => $a->remuneracion_maxima_asegurable,
+            'motivo' => $a->motivo,
         ])->all();
     }
 

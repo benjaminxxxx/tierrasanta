@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Planilla;
 
-use App\Models\PlanMensualPersonal;
+use App\Models\PlanMensualDetalle;
 use App\Services\Planilla\PlanillaServicio;
 use App\Traits\HandlesAlerts;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -27,7 +27,7 @@ class PlanillaCostoComponent extends Component
     }
     public function mostrarExplicacionSueldo(int $empleadoId): void
     {
-        $empleado = PlanMensualPersonal::with('planMensual')->find($empleadoId);
+        $empleado = PlanMensualDetalle::calculados()->with('planMensual')->find($empleadoId);
 
         if (!$empleado) {
             return;
@@ -59,7 +59,7 @@ class PlanillaCostoComponent extends Component
     }
     public function mostrarExplicacionAportesTrabajador(int $empleadoId): void
     {
-        $emp = PlanMensualPersonal::find($empleadoId);
+        $emp = PlanMensualDetalle::calculados()->find($empleadoId);
         if (!$emp)
             return;
 
@@ -90,7 +90,7 @@ class PlanillaCostoComponent extends Component
 
     public function mostrarExplicacionAportesEmpleador(int $empleadoId): void
     {
-        $emp = PlanMensualPersonal::find($empleadoId);
+        $emp = PlanMensualDetalle::calculados()->find($empleadoId);
         if (!$emp)
             return;
 

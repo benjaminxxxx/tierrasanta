@@ -93,6 +93,8 @@ Route::middleware([
 
     // ================================================================ SISTEMA
     Route::prefix('sistema')->name('sistema.')->group(function () {
+        // Accesos directos del menú de cada usuario (sin permiso propio: cada uno maneja los suyos)
+        Route::post('/accesos-directos', \App\Http\Controllers\Sistema\SistemaAccesoDirectoController::class)->name('accesos_directos');
         Route::get('/configuracion', \App\Livewire\Sistema\ConfiguracionSistemaComponent::class)
             ->name('configuracion')->middleware('can:' . Permisos::SISTEMA_CONFIGURACION);
         Route::get('/errores', \App\Livewire\Sistema\SistemaErroresComponent::class)
@@ -138,16 +140,12 @@ Route::middleware([
             ->name('oficina')->middleware('can:' . Permisos::PLANILLA_OFICINA);
 
         // Configuración
-        Route::view('/conceptos', 'livewire.planilla.conceptos-planilla-indice')
-            ->name('conceptos')->middleware('can:' . Permisos::PLANILLA_CONCEPTO);
         Route::view('/parametros', 'livewire.planilla.parametros-planilla-indice')
             ->name('parametros')->middleware('can:' . Permisos::PLANILLA_PARAMETRO);
         Route::get('/descuentos-afp', ConfiguracionPrimasComisionesComponent::class)
             ->name('descuentos_afp')->middleware('can:' . Permisos::PLANILLA_CONFIG_AFP);
         Route::get('/tipos-asistencia', TipoAsistenciaComponent::class)
             ->name('tipos_asistencia')->middleware('can:' . Permisos::PLANILLA_CONFIG_ASISTENCIA);
-        // Enlace para el programador: aún falta el formato y revisar bien los datos
-        Route::view('/importar', 'livewire.planilla.importar-planilla-indice')->name('importar');
     });
 
     // ================================================================ CUADRILLA
@@ -190,6 +188,8 @@ Route::middleware([
             ->name('campos')->middleware('can:' . Permisos::CAMPO_PARCELA);
         Route::view('/labores', 'livewire.campo.labores-indice')
             ->name('labores')->middleware('can:' . Permisos::CAMPO_LABOR);
+        Route::get('/produccion', \App\Livewire\Campo\CampoProduccionComponent::class)
+            ->name('produccion')->middleware('can:' . Permisos::CAMPO_PRODUCCION);
         Route::view('/siembras', 'livewire.campo.siembra-indice')
             ->name('siembras')->middleware('can:' . Permisos::CAMPO_SIEMBRA);
         Route::get('/servicios', ServiciosCampoComponent::class)

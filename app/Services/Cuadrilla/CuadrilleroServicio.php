@@ -4,7 +4,6 @@ namespace App\Services\Cuadrilla;
 
 use App\Models\Actividad;
 use App\Models\CuadActividadBono;
-use App\Models\CuadActividadProduccion;
 use App\Models\CuadCostoDiarioGrupo;
 use App\Models\CuadDetalleHora;
 use App\Models\CuadRegistroDiario;
@@ -538,31 +537,14 @@ class CuadrilleroServicio
             ]
         );
 
-        // Eliminar producciones que ya no existen
-        CuadActividadProduccion::where('actividad_bono_id', $actividadBono->id)
-            ->where('numero_recojo', '>', $numeroRecojos)
-            ->delete();
-
-        // Guardar o actualizar producciones
+        // Cantidades por recojo: van al registro de producción de campo (fuente única, con bono)
+        $cuadrilleroId = $fila['cuadrillero_id'] ?? CuadRegistroDiario::whereKey($registroDiarioId)->value('cuadrillero_id');
+        $porRecojo = [];
         for ($i = 1; $i <= $numeroRecojos; $i++) {
-            $produccion = $fila['produccion_' . $i] ?? null;
-
-            if ($produccion) {
-                CuadActividadProduccion::updateOrCreate(
-                    [
-                        'actividad_bono_id' => $actividadBono->id,
-                        'numero_recojo' => $i
-                    ],
-                    [
-                        'produccion' => $produccion
-                    ]
-                );
-            } else {
-                CuadActividadProduccion::where('actividad_bono_id', $actividadBono->id)
-                    ->where('numero_recojo', $i)
-                    ->delete();
-            }
+            $porRecojo[$i] = $fila['produccion_' . $i] ?? null;
         }
+        app(\App\Services\Campo\Produccion\CampoProduccionProceso::class)
+            ->guardarConBono(Actividad::findOrFail($actividadId), (int) $cuadrilleroId, null, $porRecojo, (int) $numeroRecojos);
 
         //Recalcular total_bono del registro diario sumando todos los bonos de sus actividades
         $sumaBonos = CuadActividadBono::where('registro_diario_id', $registroDiarioId)->sum('total_bono');

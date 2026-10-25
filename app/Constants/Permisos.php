@@ -20,7 +20,7 @@ namespace App\Constants;
  *    ❌ RRHH_PERSONAL_VER    (ubicación del menú, puede cambiar)
  *
  * 2. DOMINIOS DISPONIBLES — Usar solo estos prefijos de dominio:
- *    - PERSONAL     → plan_empleados, plan_familiares, plan_contratos, users
+ *    - PERSONAL     → plan_empleados, plan_contratos (+ partículas), derecho_habientes, users
  *    - PLANILLA     → plan_mensuales, plan_registros_diarios, plan_conceptos, etc.
  *    - CUADRILLA    → cuad_*
  *    - INSUMO       → ins_*, kardex_*, compra_*, almacen_*
@@ -137,8 +137,9 @@ class Permisos
     const CAMPAÑA_INFORME_MENSUAL_GESTIONAR = 'Campañas Informe Mensual Gestionar';
 
     // =========================================================================
-    // DOMINIO: PERSONAL (empleados, familiares, contratos)
-    // Tablas: plan_empleados, plan_familiares, plan_contratos, plan_sueldos
+    // DOMINIO: PERSONAL (empleados, derecho habientes, contratos y sus partículas)
+    // Tablas: plan_empleados, plan_contratos, plan_contrato_asignaciones, plan_contrato_remuneraciones,
+    //         plan_empleado_pensiones, plan_empleado_pagos, derecho_habientes
     // =========================================================================
 
     const PERSONAL = 'Planilla Empleados';
@@ -149,6 +150,10 @@ class Permisos
     const PERSONAL_RESTAURAR = 'Planilla Empleados Restaurar Empleado';
     const PERSONAL_CONTRATOS = 'Planilla Empleados Gestionar Contratos y Sueldos';
     const PERSONAL_CARGOS = 'Planilla Empleados Gestionar Cargos';
+    // Partículas del historial laboral (cada una se modifica con su permiso)
+    const PERSONAL_REMUNERACIONES = 'Planilla Empleados Gestionar Remuneraciones';
+    const PERSONAL_PENSIONES = 'Planilla Empleados Gestionar Pensiones';
+    const PERSONAL_PAGOS = 'Planilla Empleados Gestionar Cuentas de Pago';
     const PERSONAL_FAMILIARES = 'Planilla Empleados Gestionar Familiares';
     const PERSONAL_OPCIONES = 'Planilla Empleados Gestionar Opciones';
 
@@ -230,7 +235,7 @@ class Permisos
     // =========================================================================
     // DOMINIO: PLANILLA (asistencia, registros diarios, resúmenes, liquidaciones)
     // Tablas: plan_mensuales, plan_registros_diarios, plan_periodos,
-    //         plan_permisos, plan_suspensiones, plan_conceptos_configs,
+    //         plan_permisos, plan_suspensiones,
     //         plan_resumen_diario, plan_mensual_detalles, parametros_mensuales
     // =========================================================================
 
@@ -273,11 +278,6 @@ class Permisos
     const PLANILLA_FAMILIAR = 'Planilla Familiares';
     const PLANILLA_FAMILIAR_VER = 'Planilla Familiares Ver';
     const PLANILLA_FAMILIAR_GESTIONAR = 'Planilla Familiares Gestionar';
-
-    // — Conceptos
-    const PLANILLA_CONCEPTO = 'Planilla Conceptos';
-    const PLANILLA_CONCEPTO_VER = 'Planilla Conceptos Ver';
-    const PLANILLA_CONCEPTO_GESTIONAR = 'Planilla Conceptos Gestionar';
 
     // — Parámetros
     const PLANILLA_PARAMETRO = 'Planilla Parámetros';
@@ -332,6 +332,10 @@ class Permisos
     const CAMPO_LABOR = 'Campo Labores';
     const CAMPO_LABOR_VER = 'Campo Labores Ver';
     const CAMPO_LABOR_GESTIONAR = 'Campo Labores Gestionar';
+
+    // — Producción de campo (cantidades por labor, con y sin bono; cuadre con el ingreso de cochinilla)
+    const CAMPO_PRODUCCION = 'Campo Producción';
+    const CAMPO_PRODUCCION_REGISTRAR = 'Campo Producción Registrar';
 
     // — Mano de Obra
     const CAMPO_MANO_OBRA = 'Campo Mano de Obra';

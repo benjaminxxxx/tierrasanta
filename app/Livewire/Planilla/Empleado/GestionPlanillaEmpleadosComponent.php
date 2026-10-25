@@ -63,19 +63,20 @@ class GestionPlanillaEmpleadosComponent extends Component
     }
     public function abrirFormCambioMasivoSueldo()
     {
-        $lista = PlanEmpleado::with(['ultimoContrato', 'ultimoSueldo'])
+        // Solo quienes tienen contrato vigente: el nuevo sueldo es una remuneración nueva en ese contrato
+        $lista = PlanEmpleado::conContratoVigente()->with(['contratos.asignaciones', 'contratos.remuneraciones'])->alfabetico()
             ->get()
             ->map(function ($e) {
+                $contrato = $e->contratoEn();
+                $rem = $contrato?->remuneracionEn();
                 return [
                     'id' => $e->id,
                     'nombre' => mb_strtoupper(trim("{$e->nombres} {$e->apellido_paterno} {$e->apellido_materno}")),
-                    'grupo_codigo' => optional($e->ultimoContrato)->grupo_codigo ?? '-',
-                    'tipo_planilla' => mb_strtoupper(optional($e->ultimoContrato)->tipo_planilla ?? '-'), // "1" o "2"
-                    'sueldo_actual' => optional($e->ultimoSueldo)->sueldo ?? 0,
-                    'nuevo_sueldo' => optional($e->ultimoSueldo)->sueldo ?? 0,
-                    'sueldo_vigente' => optional($e->ultimoSueldo)->fecha_inicio
-                        ? formatear_fecha($e->ultimoSueldo->fecha_inicio)
-                        : '-',
+                    'grupo_codigo' => $contrato?->asignacionEn()?->grupo_codigo ?? '-',
+                    'tipo_planilla' => mb_strtoupper($contrato?->tipo_planilla ?? '-'),
+                    'sueldo_actual' => (float) ($rem?->sueldo ?? 0),
+                    'nuevo_sueldo' => (float) ($rem?->sueldo ?? 0),
+                    'sueldo_vigente' => $rem ? formatear_fecha($rem->desde) : '-',
                     'seleccionado' => false,
                 ];
             })

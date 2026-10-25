@@ -116,7 +116,17 @@ class SuspensionesPlanillaComponent extends Component
 
         $r = app(PlanillaSuspensionCrud::class)->guardarRangos((int) $this->modalEmpleadoId, $this->rangos, $this->idsEnModal);
         $this->modal = false;
-        $this->alert('success', "Suspensiones guardadas: {$r['creados']} nuevas, {$r['actualizados']} editadas, {$r['eliminados']} eliminadas.");
+        $texto = "Suspensiones guardadas: {$r['creados']} nuevas, {$r['actualizados']} editadas, {$r['eliminados']} eliminadas.";
+        if ($r['registrados'] || $r['revertidos']) {
+            $texto .= " Registro diario: {$r['registrados']} día(s) marcados, {$r['revertidos']} quitados.";
+        }
+        if ($r['conflictos']) {
+            // Días ya registrados con otra asistencia: no se pisan, se avisa para revisarlos
+            $this->alert('warning', $texto . ' Revisa en el registro diario: ' . implode('; ', array_slice($r['conflictos'], 0, 5))
+                . (count($r['conflictos']) > 5 ? '…' : '.'), ['timer' => 12000]);
+        } else {
+            $this->alert('success', $texto);
+        }
         $this->cargarSuspensionesPendientes();
     }
 
@@ -189,7 +199,7 @@ class SuspensionesPlanillaComponent extends Component
 
         if ($this->vista === 'estadisticas') {
             // El gráfico y el historial los arma el subcomponente SuspensionesEstadisticasComponent
-            $datos['empleadosTodos'] = PlanEmpleado::orderBy('apellido_paterno')->get()
+            $datos['empleadosTodos'] = PlanEmpleado::alfabetico()->get()
                 ->map(fn($e) => ['id' => $e->id, 'name' => $e->nombre_completo])->all();
         } else {
             $mesValido = (int) $this->mes >= 1 && (int) $this->anio >= 2000;

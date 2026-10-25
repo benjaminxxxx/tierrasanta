@@ -49,10 +49,10 @@
         <x-input type="date" autocomplete="off" wire:model="fecha_nacimiento" class="uppercase" id="fecha_nacimiento" />
         <x-input-error for="fecha_nacimiento" />
     </x-group-field>
+    {{-- La fecha de ingreso sale del primer contrato (Historial laboral) --}}
     <x-group-field>
-        <x-label for="fecha_ingreso">Fecha de Ingreso</x-label>
-        <x-input type="date" autocomplete="off" wire:model="fecha_ingreso" class="uppercase" id="fecha_ingreso" />
-        <x-input-error for="fecha_ingreso" />
+        <x-label>Fecha de ingreso</x-label>
+        <p class="mt-2 text-sm text-graphite">{{ $fecha_ingreso ? \Carbon\Carbon::parse($fecha_ingreso)->format('d/m/Y') : 'Se toma del primer contrato' }}</p>
     </x-group-field>
 
 </div>

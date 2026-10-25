@@ -14,6 +14,10 @@ return [
                     ['nombre' => Permisos::PERSONAL_CREAR],
                     ['nombre' => Permisos::PERSONAL_EDITAR],
                     ['nombre' => Permisos::PERSONAL_CONTRATOS],
+                    ['nombre' => Permisos::PERSONAL_CARGOS],
+                    ['nombre' => Permisos::PERSONAL_REMUNERACIONES],
+                    ['nombre' => Permisos::PERSONAL_PENSIONES],
+                    ['nombre' => Permisos::PERSONAL_PAGOS],
                     ['nombre' => Permisos::PERSONAL_FAMILIARES],
                     ['nombre' => Permisos::PERSONAL_OPCIONES],
                     ['nombre' => Permisos::PERSONAL_ELIMINAR],
@@ -71,13 +75,6 @@ return [
                 'hijos' => [
                     ['nombre' => Permisos::PLANILLA_FAMILIAR_VER],
                     ['nombre' => Permisos::PLANILLA_FAMILIAR_GESTIONAR],
-                ],
-            ],
-            [
-                'nombre' => Permisos::PLANILLA_CONCEPTO,
-                'hijos' => [
-                    ['nombre' => Permisos::PLANILLA_CONCEPTO_VER],
-                    ['nombre' => Permisos::PLANILLA_CONCEPTO_GESTIONAR],
                 ],
             ],
             [
@@ -204,6 +201,12 @@ return [
                 'hijos' => [
                     ['nombre' => Permisos::CAMPO_LABOR_VER],
                     ['nombre' => Permisos::CAMPO_LABOR_GESTIONAR],
+                ],
+            ],
+            [
+                'nombre' => Permisos::CAMPO_PRODUCCION,
+                'hijos' => [
+                    ['nombre' => Permisos::CAMPO_PRODUCCION_REGISTRAR],
                 ],
             ],
             [

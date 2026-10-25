@@ -52,6 +52,9 @@
                             </x-table>
                         @endif
 
+                        @if ($registros->isNotEmpty() && $registros->first()->motivo)
+                            <p class="mt-2 text-sm text-zinc-500">Motivo: {{ $registros->first()->motivo }}</p>
+                        @endif
                         <x-flex class="justify-end mt-4 gap-2">
                             <x-button wire:click="abrirModoRegistro">
                                 <i class="fa fa-pen"></i>
@@ -64,6 +67,25 @@
                                     <i class="fa fa-remove"></i> Eliminar
                                 </x-button>
                             @endif
+                        </x-flex>
+                    </div>
+                @endif
+
+                {{-- El cambio toca meses con planilla generada: se confirma y se regeneran --}}
+                @if ($afectados)
+                    <div class="mt-6 rounded-[10px] border border-amber-300 bg-amber-50 p-4 dark:border-amber-400/30 dark:bg-amber-400/10">
+                        <p class="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                            <i class="fa fa-triangle-exclamation"></i> Este cambio afecta planillas ya generadas
+                        </p>
+                        <p class="mt-1 text-sm">Si continúas se guarda y se vuelven a generar estas planillas, su PLAME y su Excel (los ajustes manuales se conservan):</p>
+                        <ul class="mt-2 space-y-1 text-sm">
+                            @foreach ($afectados as $a)
+                                <li><strong>{{ $a['periodo'] }}</strong> · {{ implode(' y ', $a['planillas']) }} — {{ implode(' · ', $a['cambios']) }}</li>
+                            @endforeach
+                        </ul>
+                        <x-flex class="justify-end mt-3 gap-2">
+                            <x-button variant="secondary" wire:click="cancelarConfirmacion">Cancelar</x-button>
+                            <x-button wire:click="confirmar" wire:loading.attr="disabled"><i class="fa fa-rotate"></i> Sí, guardar y regenerar</x-button>
                         </x-flex>
                     </div>
                 @endif
@@ -85,6 +107,9 @@
 
                         <x-textarea rows="6" placeholder="Pega aquí la tabla copiada de la SBS..."
                             wire:model="informacion"></x-textarea>
+                        <x-label class="block mt-4 mb-1">3. Motivo del cambio (opcional)</x-label>
+                        <x-input type="text" wire:model="motivo" maxlength="255" class="w-full"
+                            placeholder="Ej.: Publicación SBS de setiembre 2026 / Resolución N° 2342342" />
 
                         <x-flex class="justify-end mt-4 gap-2">
                             <x-button variant="secondary" wire:click="cancelarRegistro">

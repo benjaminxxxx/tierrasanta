@@ -38,11 +38,7 @@ class CuadActividadBono extends Model
     {
         return $this->belongsTo(Actividad::class, 'actividad_id');
     }
-    // Relación con producciones
-    public function producciones()
-    {
-        return $this->hasMany(CuadActividadProduccion::class, 'actividad_bono_id');
-    }
+    // Las cantidades producidas están en produccion_registros (Campo/Produccion), por actividad y trabajador
     public function desgloseDetalle()
     {
         return $this->belongsTo(DesgloseDetalle::class, 'desglose_detalle_id');

@@ -44,17 +44,15 @@
                             </form>
                             @if (!$empleadoId)
                                 <p class="text-xs text-muted-foreground mt-4">
-                                    Al guardar se habilitan las pestañas de perfil, contratos, sueldos, cargos y derecho habientes.
+                                    Al guardar se habilitan las pestañas de perfil, historial laboral, pensión y pago, y derecho habientes.
                                 </p>
                             @endif
                         @elseif ($tab === 'perfil')
                             <livewire:planilla.empleado.empleado-perfil-component :empleado-id="$empleadoId" :key="'perfil-' . $empleadoId" />
                         @elseif ($tab === 'contratos')
                             <livewire:planilla.empleado.empleado-contratos-tab-component :empleado-id="$empleadoId" :key="'contratos-' . $empleadoId" />
-                        @elseif ($tab === 'sueldos')
-                            <livewire:planilla.empleado.empleado-sueldos-tab-component :empleado-id="$empleadoId" :key="'sueldos-' . $empleadoId" />
-                        @elseif ($tab === 'cargos')
-                            <livewire:planilla.empleado.empleado-cargos-tab-component :empleado-id="$empleadoId" :key="'cargos-' . $empleadoId" />
+                        @elseif ($tab === 'pension_pago')
+                            <livewire:planilla.empleado.empleado-pension-pago-tab-component :empleado-id="$empleadoId" :key="'pension-pago-' . $empleadoId" />
                         @elseif ($tab === 'familiares')
                             <livewire:planilla.empleado.empleado-familiares-tab-component :empleado-id="$empleadoId" :key="'familiares-' . $empleadoId" />
                         @endif

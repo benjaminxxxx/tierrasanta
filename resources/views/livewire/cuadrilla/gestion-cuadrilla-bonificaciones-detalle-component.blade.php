@@ -4,8 +4,15 @@
         <x-flex class="justify-between">
             <x-h3>Bonificación</x-h3>
             <x-flex>
-                <x-input wire:model="unidades" placeholder="Unidades Ejem: Kg" label="Unidad de Producción"
-                    class="w-auto" />
+                {{-- La unidad es la de la labor (Catálogos → Labores); si no tiene, la labor no registra producción --}}
+                <div class="text-sm">
+                    <span class="text-pewter">Unidad de producción:</span>
+                    @if ($unidades)
+                        <span class="font-semibold text-ink">{{ $unidades }}</span>
+                    @else
+                        <span class="text-amber-700 dark:text-amber-400"><i class="fa fa-triangle-exclamation"></i> la labor no tiene; asígnala en Labores</span>
+                    @endif
+                </div>
                 @can(\App\Constants\Permisos::CUADRILLA_BONIFICACION_AGREGAR_METODO)
                     <x-button variant="primary" @click="agregarMetodo()" class="ml-auto">
                         <i class="fa fa-plus"></i> Agregar Método
@@ -133,6 +140,9 @@
         @endcan
         <div x-ref="tableBonificacionesCuadrilleros"></div>
     </x-card>
+
+    {{-- Cantidades sin bono de esta misma actividad (personas o días sin bono): registro de producción de campo --}}
+    <livewire:campo.campo-produccion-sin-bono-component :actividad-id="$actividad->id" wire:key="sin-bono-{{ $actividad->id }}" />
 
     <!-- Botón Guardar -->
     @can(\App\Constants\Permisos::CUADRILLA_BONIFICACION_ACTUALIZAR)

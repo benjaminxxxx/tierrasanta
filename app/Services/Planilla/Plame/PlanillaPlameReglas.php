@@ -3,7 +3,7 @@
 namespace App\Services\Planilla\Plame;
 
 /**
- * Conceptos del PLAME (códigos SUNAT, como en la boleta R08) y la columna de plan_mensual_personals que los guarda.
+ * Conceptos del PLAME (códigos SUNAT, como en la boleta R08) y la columna de plan_mensual_detalles que los guarda.
  */
 class PlanillaPlameReglas
 {
@@ -48,7 +48,7 @@ class PlanillaPlameReglas
     /** Suspensiones que SUNAT cuenta como días subsidiados (pagados por EsSalud). */
     public const CODIGOS_SUBSIDIADOS = ['21', '22'];
 
-    /** Columna de plan_mensual_personals que guarda el concepto (valor final, con ajuste si lo tiene). */
+    /** Columna de plan_mensual_detalles que guarda el concepto (valor final, con ajuste si lo tiene). */
     public static function columna(string $codigo): ?string
     {
         return (self::INGRESOS + self::DESCUENTOS + self::APORTES_EMPLEADOR)[$codigo][0] ?? null;

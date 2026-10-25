@@ -17,6 +17,9 @@ use Illuminate\Validation\ValidationException;
  * modal. Así se puede correr el límite entre dos rangos seguidos (acortar uno y alargar el otro) en un solo guardado,
  * lo que antes obligaba a guardar fila por fila. Los rangos pueden ser futuros (vacaciones o descanso médico que ya
  * se sabe): el registro diario después no los duplica.
+ *
+ * Después de guardar, el registro diario se pone de acuerdo con los rangos (PlanillaSuspensionDiarioProceso): V / DM…
+ * en los días nuevos y se quitan de los días que ya no tienen suspensión (regresó antes).
  */
 class PlanillaSuspensionCrud
 {
@@ -79,8 +82,13 @@ class PlanillaSuspensionCrud
             throw ValidationException::withMessages($errores);
         }
 
-        return DB::transaction(function () use ($planEmpleadoId, $rangos, $idsEnModal, $idsQueQuedan) {
-            $res = ['creados' => 0, 'actualizados' => 0, 'eliminados' => 0];
+        // Días que pueden cambiar en el registro diario: los de los rangos de antes y los de ahora
+        $tramo = collect($rangos)->map(fn($r) => [$r['fecha_inicio'], $r['fecha_fin']])
+            ->merge(PlanSuspension::where('plan_empleado_id', $planEmpleadoId)->whereIn('id', $idsEnModal)->get()
+                ->map(fn($s) => [$s->fecha_inicio->toDateString(), ($s->fecha_fin ?? now()->max($s->fecha_inicio))->toDateString()]));
+
+        return DB::transaction(function () use ($planEmpleadoId, $rangos, $idsEnModal, $idsQueQuedan, $tramo) {
+            $res = ['creados' => 0, 'actualizados' => 0, 'eliminados' => 0, 'registrados' => 0, 'revertidos' => 0, 'conflictos' => []];
             $aEliminar = PlanSuspension::where('plan_empleado_id', $planEmpleadoId)
                 ->whereIn('id', array_diff($idsEnModal, $idsQueQuedan))->get();
             foreach ($aEliminar as $s) {
@@ -110,6 +118,11 @@ class PlanillaSuspensionCrud
                     AuditoriaServicio::registrar(PlanSuspension::class, $nueva->id, 'crear', null, $datos, 'Suspensión registrada');
                     $res['creados']++;
                 }
+            }
+            // Registro diario: V / DM / … en los días con suspensión, y se quitan de los días que ya no tienen
+            if ($tramo->isNotEmpty()) {
+                $res = array_merge($res, app(PlanillaSuspensionDiarioProceso::class)
+                    ->reconciliar($planEmpleadoId, $tramo->min(fn($t) => $t[0]), $tramo->max(fn($t) => $t[1])));
             }
             return $res;
         });

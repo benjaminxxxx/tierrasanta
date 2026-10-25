@@ -35,7 +35,9 @@ class DataInsumoServicio
                 'cantidad' => $dist->cantidad_combustible !== null ? (float) $dist->cantidad_combustible : null,
                 'proveedor' => null,
                 'n_documento' => null,
-                'costo' => (float) $dist->valor_costo,
+                // Costo de la fila = costo de la salida × su parte de las horas. (valor_costo es costo por hora: usarlo
+                // aquí cargaba a la campaña solo una fracción del combustible.)
+                'costo' => round((float) ($dist->salidaCombustible?->total_costo ?? 0) * (float) $dist->ratio, 4),
                 'observacion' => null,
             ];
         })->toArray();

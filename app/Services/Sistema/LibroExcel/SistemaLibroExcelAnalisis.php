@@ -144,6 +144,8 @@ class SistemaLibroExcelAnalisis
             $hojas[$clave] = ['titulo' => $titulo, 'filas' => $filas, 'solo_sistema' => $soloSistema, 'resumen' => $this->contar($filas)];
         }
 
+        $hojas = $this->validacionesFinales($def, $hojas, $sistema);
+
         $matriz = $libro['matriz'] ? $def->analizarMatriz($libro['matriz']) : null;
         if ($matriz) {
             $matriz['titulo'] = $reglas::TITULO_MATRIZ;
@@ -157,9 +159,39 @@ class SistemaLibroExcelAnalisis
         }
 
         return ['hojas' => $hojas, 'matriz' => $matriz, 'avisos' => array_merge($libro['avisos'], $def->avisosLectura()), 'resumen' => $resumen,
+            'bloqueado' => $def->bloquearConErrores() && !empty($resumen['error']),
             // hoja que hay que cargar antes => valores que faltan en el sistema
             'faltantes' => array_map(fn($valores) => array_keys($valores), $faltantes),
             'version' => $this->version($def, $libro['version'] ?? [], $hojasSubidas)];
+    }
+
+    /**
+     * Validaciones del libro entre filas y hojas (Definicion::validarLibro) y permiso por hoja; luego recalcula el estado
+     * y el resumen de cada hoja.
+     */
+    private function validacionesFinales(SistemaLibroExcelDefinicion $def, array $hojas, array $sistema): array
+    {
+        $hojas = $def->validarLibro($hojas, $sistema);
+        // Sin usuario (consola) no se exigen permisos por hoja
+        $conUsuario = auth()->check();
+        foreach ($hojas as $clave => &$h) {
+            $permiso = $conUsuario ? $def->permisoHoja($clave) : null;
+            $sinPermiso = $permiso && !\Illuminate\Support\Facades\Gate::allows($permiso);
+            foreach ($h['filas'] as &$f) {
+                if ($sinPermiso && in_array($f['estado'], ['nuevo', 'cambia'], true)) {
+                    $f['errores'][] = "No tienes permiso para modificar {$h['titulo']} (permiso: {$permiso}). Pide que te lo asignen o deja esta hoja sin cambios.";
+                }
+                $f['errores'] = array_values(array_unique($f['errores']));
+                $f['avisos'] = array_values(array_unique($f['avisos']));
+                if ($f['errores']) {
+                    $f['estado'] = 'error';
+                }
+            }
+            unset($f);
+            $h['resumen'] = $this->contar($h['filas']);
+        }
+        unset($h);
+        return $hojas;
     }
 
     /** ¿El archivo se descargó con los datos que hoy tiene el sistema? (firma de las hojas que se descargaron) */
@@ -169,7 +201,7 @@ class SistemaLibroExcelAnalisis
         if (empty($version['firma'])) {
             return ['estado' => 'sin_marca', 'descargado' => $descargado];
         }
-        if (!empty($version['sistema']) && $version['sistema'] !== SistemaLibroExcel::idSistema()) {
+        if ((!empty($version['sistema']) && $version['sistema'] !== SistemaLibroExcel::idSistema()) || $def->sistemaVacio()) {
             // Descargado de otro dominio (sincronizar los dos sistemas): se compara fila por fila con los datos de este
             return ['estado' => 'otro_sistema', 'descargado' => $descargado];
         }

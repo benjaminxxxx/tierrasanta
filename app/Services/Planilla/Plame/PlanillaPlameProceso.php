@@ -2,8 +2,8 @@
 
 namespace App\Services\Planilla\Plame;
 
-use App\Models\PlanMensualPersonal;
-use App\Models\PlanMensualSpDesc;
+use App\Models\PlanMensualDetalle;
+
 use App\Services\Reporte\AuditoriaServicio;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
@@ -43,7 +43,7 @@ class PlanillaPlameProceso
      *   calculados: array<string, float>, // lo calculado de 0117, 0118, 0121, 0201, 0803, 0805, 0810
      *   rmv: float, dias_mes: int, dias_suspension_perfecta: int|float,
      *   codigo_sp: ?string, es_pensionista: bool, es_mayor_65: bool,
-     *   descuento_sp: ?PlanMensualSpDesc, pct_essalud: ?float
+     *   descuento_sp: ?object (PlanMensual::descuentoSp), pct_essalud: ?float
      * } $e
      * @param array<string, array{monto: float|string, motivo?: ?string}> $ajustes
      * @return array{columnas: array<string, float>, calculados: array<string, float>}
@@ -109,7 +109,7 @@ class PlanillaPlameProceso
      * Recalcula en cadena un trabajador ya generado (al cambiar sus ajustes), con los datos guardados del mes.
      * También el exceso de vacaciones pagado en negro.
      */
-    public function recalcular(PlanMensualPersonal $p): void
+    public function recalcular(PlanMensualDetalle $p): void
     {
         $plan = $p->planMensual;
         $diasSuspensionPerfecta = 0;
@@ -131,7 +131,7 @@ class PlanillaPlameProceso
             'codigo_sp' => $p->sistema_pension,
             'es_pensionista' => (bool) $p->es_pensionista,
             'es_mayor_65' => (int) $p->edad >= 65,
-            'descuento_sp' => PlanMensualSpDesc::where('plan_mensual_id', $plan->id)->where('codigo', $p->sistema_pension)->first(),
+            'descuento_sp' => $plan->descuentoSp($p->sistema_pension),
             'pct_essalud' => $plan->essalud === null ? null : (float) $plan->essalud,
         ], $p->plame_ajustes ?? []);
 
@@ -139,7 +139,7 @@ class PlanillaPlameProceso
     }
 
     /** Campos de vacaciones que dependen del 0118 final: el personalizado (espejo del ajuste) y el exceso en negro. */
-    public function camposVacaciones(PlanMensualPersonal $p, array $columnas): array
+    public function camposVacaciones(PlanMensualDetalle $p, array $columnas): array
     {
         $final0118 = $columnas[PlanillaPlameReglas::columna('0118')];
         $campos = ['vacaciones_plame_personalizado' => $p->ajustePlame('0118')['monto'] ?? null];
@@ -153,7 +153,7 @@ class PlanillaPlameProceso
      * Pone (o quita, con monto null) el ajuste manual de un concepto y recalcula la cadena. Único punto de escritura
      * de los ajustes: lo usan la pestaña "Ajustes PLAME" y la columna de vacaciones personalizadas.
      */
-    public function guardarAjuste(PlanMensualPersonal $p, string $codigo, $monto, ?string $motivo = null): void
+    public function guardarAjuste(PlanMensualDetalle $p, string $codigo, $monto, ?string $motivo = null): void
     {
         if (!PlanillaPlameReglas::columna($codigo) || in_array($codigo, ['0605'], true)) {
             throw ValidationException::withMessages(['codigo' => "El concepto {$codigo} no se puede ajustar."]);
@@ -177,7 +177,7 @@ class PlanillaPlameProceso
         $p->save();
         $this->recalcular($p->refresh());
 
-        AuditoriaServicio::registrar(PlanMensualPersonal::class, $p->id, 'editar', [$codigo => $antes], [$codigo => $ajustes[$codigo] ?? null],
+        AuditoriaServicio::registrar(PlanMensualDetalle::class, $p->id, 'editar', [$codigo => $antes], [$codigo => $ajustes[$codigo] ?? null],
             "Ajuste PLAME {$codigo} de {$p->nombres}");
     }
 }

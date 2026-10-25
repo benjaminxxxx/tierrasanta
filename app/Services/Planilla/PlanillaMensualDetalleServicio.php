@@ -3,7 +3,6 @@
 namespace App\Services\Planilla;
 
 use App\Models\PlanMensualDetalle;
-use App\Models\PlanMensualPersonal;
 
 
 class PlanillaMensualDetalleServicio
@@ -44,7 +43,7 @@ class PlanillaMensualDetalleServicio
         return PlanMensualDetalle::create($data);
     }
     /**
-     * Costo del mes por empleado, desde el PLAME (plan_mensual_personals):
+     * Costo del mes por empleado, desde el PLAME (plan_mensual_detalles calculados):
      * [plan_empleado_id => ['sueldo_blanco_pagado', 'sueldo_negro_pagado', 'total_horas']]
      *
      * - blanco: costo formal del PLAME = ingresos (0117…0904) + aportes del empleador.
@@ -53,10 +52,10 @@ class PlanillaMensualDetalleServicio
      */
     public static function obtenerRegistrosMensualesPorCampo($mes, $anio)
     {
-        return PlanMensualPersonal::with('planMensual')
+        return PlanMensualDetalle::calculados()->with('planMensual')
             ->whereHas('planMensual', fn($q) => $q->where('mes', $mes)->where('anio', $anio))
             ->get()
-            ->mapWithKeys(function (PlanMensualPersonal $p) {
+            ->mapWithKeys(function (PlanMensualDetalle $p) {
                 $blanco = (float) $p->plame_remuneracion_bruta
                     + (float) $p->plame_0312_bonif_ext_temp
                     + (float) $p->plame_0314_beta_30

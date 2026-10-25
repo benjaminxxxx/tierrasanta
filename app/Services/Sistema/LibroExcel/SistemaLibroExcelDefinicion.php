@@ -22,6 +22,31 @@ abstract class SistemaLibroExcelDefinicion
     /** Permiso para descargar y subir el libro completo (en Configuración / escritorio). */
     abstract public function permiso(): string;
 
+    /**
+     * Permiso para MODIFICAR una hoja (además del permiso del libro). null = basta el del libro. Las filas nuevas o con
+     * cambios de una hoja sin permiso se marcan con error.
+     */
+    public function permisoHoja(string $hoja): ?string
+    {
+        return null;
+    }
+
+    /**
+     * Validaciones entre filas y hojas (cruces de periodos, fechas fuera de otro periodo…), después de analizar todas
+     * las hojas. Agrega mensajes en $hojas[hoja]['filas'][i]['errores'] o ['avisos']; el motor recalcula los estados.
+     * @param array $sistema filas normalizadas del sistema por hoja
+     */
+    public function validarLibro(array $hojas, array $sistema): array
+    {
+        return $hojas;
+    }
+
+    /** true = si alguna fila tiene errores no se guarda nada (libros donde guardar a medias deja datos incoherentes). */
+    public function bloquearConErrores(): bool
+    {
+        return false;
+    }
+
     /** Líneas propias del "Léeme" (reglas del libro). @return string[] */
     public function leeme(): array
     {
@@ -103,6 +128,15 @@ abstract class SistemaLibroExcelDefinicion
     /** Antes y después de guardar todo (en la transacción / fuera de ella). */
     public function despuesDeGuardar(): void
     {
+    }
+
+    /**
+     * Carga inicial: el sistema aún no tiene los datos principales de este libro. Un archivo descargado antes (o de
+     * otra base) se acepta y se compara fila por fila; desde que hay datos, vuelve la validación de versión.
+     */
+    public function sistemaVacio(): bool
+    {
+        return false;
     }
 
     // -------------------------------------------------------------- matriz (opcional)

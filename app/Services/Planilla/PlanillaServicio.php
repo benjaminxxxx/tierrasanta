@@ -2,11 +2,15 @@
 
 namespace App\Services\Planilla;
 
+use App\Services\Planilla\Laboral\PlanillaLaboralConsulta;
+
 use App\Models\Configuracion;
 use App\Models\PlanEmpleado;
 use App\Models\PlanMensual;
-use App\Models\PlanMensualPersonal;
-use App\Models\PlanMensualSpDesc;
+use App\Models\PlanMensualDetalle;
+use App\Services\Planilla\ListaMensual\PlanillaListaMensualProceso;
+use App\Services\Planilla\Mensual\PlanillaMensualReglas;
+use App\Services\Planilla\Parametro\PlanillaParametroConsulta;
 use App\Models\PlanRegistroDiario;
 use App\Models\PlanSuspension;
 use App\Models\PlanTipoAsistencia;
@@ -203,16 +207,20 @@ class PlanillaServicio
 
         $planillaMensual = PlanMensual::where('mes', $mes)
             ->where('anio', $anio)
-            ->with([
-                'detalle.empleado',
-                'detalle.registrosDiarios',
-                'planilla'
-            ])
             ->first();
 
         if (!$planillaMensual) {
             throw new Exception('No hay planilla mensual generada');
         }
+        // Tasas y AFP del mes: se leen de Parámetros de planilla; si falta alguna se dice cuál y dónde registrarla
+        PlanillaParametroConsulta::exigir((int) $mes, (int) $anio, 'agraria');
+        // Cada empleado calculado necesita su fila en la lista del mes (normalmente ya está: la lista se mantiene sola)
+        $lista = app(PlanillaListaMensualProceso::class);
+        $lista->generar((int) $mes, (int) $anio);
+        foreach ($empleados as $empleado) {
+            $lista->asegurarEmpleado($planillaMensual, $empleado);
+        }
+        $planillaMensual->load(['detalle.empleado', 'detalle.registrosDiarios']);
 
         // Precarga el conteo de suspensiones para TODOS los empleados de una sola vez
         $todosLosIds = $empleados->pluck('id')->toArray();
@@ -234,15 +242,20 @@ class PlanillaServicio
             foreach ($empleados as $key => $empleado) {
 
                 $remuneracionBasica = $planillaMensual->remuneracion_basica;
-                $contrato = $empleado->contrato($mes, $anio);
-                $sueldo = $empleado->sueldo($mes, $anio);
+                // Contrato del mes y sus partículas vigentes (capa laboral)
+                $laboral = PlanillaLaboralConsulta::delMes($empleado, (int) $mes, (int) $anio);
+                $contrato = $laboral['contrato'];
+                $remuneracion = $laboral['remuneracion'];
+                $pension = $laboral['pension'];
+                $grupo = $laboral['asignacion']?->grupo;
+                $sueldo = $remuneracion?->sueldo !== null ? (float) $remuneracion->sueldo : null;
 
                 if (!$contrato) {
                     $errores['sin_contrato'][] = $empleado->nombre_completo;
                     continue;
                 }
 
-                if (!$contrato->plan_sp_codigo) {
+                if (!$pension?->plan_sp_codigo) {
                     $errores['sin_sistema_pension'][] = $empleado->nombre_completo;
                     continue;
                 }
@@ -258,19 +271,19 @@ class PlanillaServicio
                 $procesados++;
 
                 //El empleado puede tener una remuneracion basica 
-                if ((float) $contrato->remuneracion_basica > 0) {
-                    $remuneracionBasica = $contrato->remuneracion_basica;
+                if ((float) $remuneracion?->remuneracion_basica > 0) {
+                    $remuneracionBasica = $remuneracion->remuneracion_basica;
                 }
 
                 $tieneAsignacion = $empleado
                     ->cantidadHijosConAsignacionFamiliar($mes, $anio) > 0;
 
                 $montoAsignacionFamiliar = $tieneAsignacion ? $planillaMensual->asignacion_familiar : 0;
-                $compensacionVacacional = $contrato->compensacion_vacacional;
-                $codigoSp = $contrato->plan_sp_codigo;
-                $esPensionista = (bool) $contrato->esta_jubilado;
+                $compensacionVacacional = $remuneracion?->compensacion_vacacional;
+                $codigoSp = $pension->plan_sp_codigo;
+                $esPensionista = (bool) $pension->esta_jubilado;
                 $esMayor65 = $edad >= 65;
-                $bonificacion = (float) $contrato->bonificacion;
+                $bonificacion = (float) $remuneracion?->bonificacion;
 
                 // Base de cálculo: suma de remuneración básica hasta compensación vacacional
                 $sueldoBrutoBase = $remuneracionBasica
@@ -281,9 +294,7 @@ class PlanillaServicio
                 if ($esPensionista) {
                     $proyectadoDsctoAfpPrimaSeguro = 0;
                 } else {
-                    $descuentoSp = PlanMensualSpDesc::where('plan_mensual_id', $planillaMensual->id)
-                        ->where('codigo', $codigoSp)
-                        ->first();
+                    $descuentoSp = $planillaMensual->descuentoSp($codigoSp);
 
                     if (!$descuentoSp) {
                         throw new Exception(
@@ -338,21 +349,13 @@ class PlanillaServicio
                 $plame0201AsignacionFamiliar = PlanillaPlameProceso::asignacionFamiliar((float) $montoAsignacionFamiliar, $diasDelMes, $sumaSuspensionPerfecta);
 
                 // Aportes del empleador: sobre el sueldo bruto proyectado ($sueldoBrutoBase)
-                $plameAporteEmpleador0803Poliza = is_null($planillaMensual->vida_ley)
-                    ? 0
-                    : round($sueldoBrutoBase * ($planillaMensual->vida_ley / 100) * PlanMensualPersonal::FACTOR_SEGURO, 2);
-
-                $plameAporteEmpleador0805Sctr = is_null($planillaMensual->pension_sctr)
-                    ? 0
-                    : round($sueldoBrutoBase * ($planillaMensual->pension_sctr / 100) * PlanMensualPersonal::FACTOR_SEGURO, 2);
-
-                $plameAporteEmpleador0810Eps = is_null($planillaMensual->essalud_eps)
-                    ? 0
-                    : round($sueldoBrutoBase * ($planillaMensual->essalud_eps / 100) * PlanMensualPersonal::FACTOR_SEGURO, 2);
+                $plameAporteEmpleador0803Poliza = PlanillaMensualReglas::aporteSeguro($sueldoBrutoBase, $planillaMensual->vida_ley);
+                $plameAporteEmpleador0805Sctr = PlanillaMensualReglas::aporteSeguro($sueldoBrutoBase, $planillaMensual->pension_sctr);
+                $plameAporteEmpleador0810Eps = PlanillaMensualReglas::aporteSeguro($sueldoBrutoBase, $planillaMensual->essalud_eps);
 
                 // Conceptos en cadena (bruta, gratificación, CTS, BETA, descuentos, EsSalud, neto) con los ajustes manuales
                 // del trabajador (Ajustes PLAME), que se conservan al regenerar
-                $existente = $planillaMensual->planilla->firstWhere('plan_empleado_id', $empleado->id);
+                $existente = $planillaMensual->detalle->firstWhere('plan_empleado_id', $empleado->id);
                 $plame = PlanillaPlameProceso::calcular([
                     'calculados' => [
                         '0117' => (float) $plame0117CompVacacional,
@@ -374,13 +377,14 @@ class PlanillaServicio
                 ], $existente?->plame_ajustes ?? []);
 
                 $dataPlanilla = array_merge([
-                    'orden' => $key + 1,
+                    'calculado_en' => now(),
+                    'orden_planilla' => $key + 1,
                     'nombres' => $empleado->nombre_completo,
                     'sistema_pension' => $codigoSp,
-                    'grupo' => $contrato->grupo?->codigo,
-                    'empleado_grupo_color' => $contrato->grupo?->color,
+                    'grupo' => $grupo?->codigo,
+                    'empleado_grupo_color' => $grupo?->color,
                     'edad' => $edad,
-                    'es_pensionista' => $contrato->esta_jubilado,
+                    'es_pensionista' => $esPensionista,
                     'remuneracion_basica' => $remuneracionBasica,
                     'bonificacion' => $bonificacion,
                     'asignacion_familiar' => $montoAsignacionFamiliar,
@@ -399,24 +403,19 @@ class PlanillaServicio
                 ], $plame['columnas'], $columnasSuspension);
 
                 // Vacaciones: espejo del ajuste 0118 y exceso pagado en negro (sobre el 0118 final)
-                if ($existente) {
+                if ($existente?->calculado_en) {
                     $dataPlanilla += app(PlanillaPlameProceso::class)->camposVacaciones($existente, $plame['columnas']);
                 }
 
-                $planillaMensual->planilla()->updateOrCreate(
-                    [
-                        'plan_empleado_id' => $empleado->id,
-                    ],
-                    $dataPlanilla
-                );
+                $existente->update($dataPlanilla);
             }
 
-            // Solo se eliminan del detalle los que sí se pudieron evaluar
-            // y ya no corresponden. Los que fallaron por falta de info
-            // tampoco quedan en la planilla (ver nota abajo).
-            $planillaMensual->planilla()
+            // Los que no se pudieron calcular (o ya no van) no entran a la planilla: se vacía su cálculo. La fila queda:
+            // es su lugar en la lista del registro diario y puede tener registros.
+            $planillaMensual->detalle()
                 ->whereNotIn('plan_empleado_id', $empleadosIds)
-                ->delete();
+                ->whereNotNull('calculado_en')
+                ->update(PlanMensualDetalle::CALCULO_VACIO);
 
             $this->actualizarCostosDiarios($planillaMensual, (int) $mes, (int) $anio);
 
@@ -438,9 +437,7 @@ class PlanillaServicio
             throw new Exception('No hay planilla mensual generada para este periodo.');
         }
 
-        $empleados = $planillaMensual->planilla()
-            ->orderBy('orden')
-            ->get();
+        $empleados = $planillaMensual->planilla()->get();
 
         if ($empleados->isEmpty()) {
             throw new Exception('No hay empleados proyectados para generar el Excel. Genera la proyección primero.');
@@ -1242,7 +1239,7 @@ class PlanillaServicio
             $f = $fila;
 
             // --- A-U: datos fijos (valores, no fórmulas) ---
-            $hoja->setCellValue("A{$f}", $empleado->orden);
+            $hoja->setCellValue("A{$f}", $empleado->orden_planilla);
             $hoja->setCellValue("B{$f}", $empleado->nombres);
             $hoja->setCellValue("C{$f}", $empleado->sistema_pension);
             $hoja->setCellValue("D{$f}", $empleado->es_pensionista ? 'SI' : 'NO');
@@ -1363,7 +1360,7 @@ class PlanillaServicio
      * personalizada según la condición ya conocida del empleado
      * (pensionista / SNP / mayor de 65), consultando tabla_descuentos.
      */
-    protected function formulaDsctoAfp(PlanMensualPersonal $empleado, int $fila): string
+    protected function formulaDsctoAfp(PlanMensualDetalle $empleado, int $fila): string
     {
         if ($empleado->es_pensionista) {
             return '0';
@@ -1414,12 +1411,14 @@ class PlanillaServicio
             throw new Exception('La plantilla no tiene la hoja "DESCUENTO AFP" con tabla_descuentos.');
         }
 
-        $registros = PlanMensualSpDesc::where('plan_mensual_id', $planMensualId)
-            ->orderByRaw("FIELD(codigo, 'HAB F','INT F','PRI F','PRO F','SNP','HAB M','INT M','PRI M','PRO M')")
-            ->get();
+        // Descuentos del mes calculados de Parámetros (AFP y SNP vigentes), en el orden de la tabla de la plantilla
+        $plan = \App\Models\PlanMensual::findOrFail($planMensualId);
+        $orden = ['HAB F', 'INT F', 'PRI F', 'PRO F', 'SNP', 'HAB M', 'INT M', 'PRI M', 'PRO M'];
+        $registros = PlanillaParametroConsulta::descuentosSp((int) $plan->mes, (int) $plan->anio)
+            ->sortBy(fn($d) => array_search($d->codigo, $orden) === false ? 99 : array_search($d->codigo, $orden))->values();
 
         if ($registros->isEmpty()) {
-            throw new Exception('No hay snapshot de descuentos AFP/SNP para este periodo. Genera la proyección primero.');
+            throw new Exception('No hay descuentos AFP/SNP vigentes para este periodo: revisa Parámetros de planilla y Descuentos AFP.');
         }
 
         // ⚠️ Asume que tabla_descuentos empieza en la fila 7 (según tu captura),
@@ -1466,7 +1465,7 @@ class PlanillaServicio
      * Corre al generar la planilla (antes era el botón "Recalcular pagos en planilla" de la asistencia mensual).
      *
      * Valor hora = sueldo acordado / horas del mes (plan_mensuales.total_horas), igual que el sueldo
-     * pagado de la planilla (PlanMensualPersonal::sueldo_pagado).
+     * pagado de la planilla (PlanMensualDetalle::sueldo_pagado).
      */
     private function actualizarCostosDiarios(PlanMensual $planillaMensual, int $mes, int $anio): void
     {

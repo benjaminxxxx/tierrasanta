@@ -1,79 +1,73 @@
+{{-- Reporte diario de regadores (DESIGN.md: barra superior; las tarjetas de cada regador siguen con su estilo) --}}
+@php
+    $btn2 = 'inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-mist bg-paper px-3 text-sm font-medium text-ink hover:bg-fog focus:outline-none focus:ring-[3px] focus:ring-carmin/25 disabled:cursor-not-allowed disabled:opacity-50';
+    $btnPrincipal = 'inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-carmin px-4 text-sm font-semibold text-white hover:bg-carmin-hover focus:outline-none focus:ring-[3px] focus:ring-carmin/25';
+    $flecha = 'inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-mist bg-paper text-graphite hover:bg-fog hover:text-ink';
+    $hayRegadores = $consolidados && $consolidados->count() > 0;
+@endphp
 <div>
     <div class="space-y-4">
-        <div class="sticky top-0 z-[999] bg-background py-2 space-y-4 shadow-sm">
-            <x-flex class="justify-between">
-                <div>
-                    <x-title>
-                        Registro Diario de Riego
-                    </x-title>
-
-                </div>
-                <x-flex>
-                    <x-button variant="success" wire:click="descargarReporteDiario" wire:loading.attr="disabled" wire:target="descargarReporteDiario"
-                        title="Descarga el Excel del reporte diario (planilla, cuadrilla y riego) de la fecha seleccionada">
+        <div class="sticky top-0 z-[999] -mx-1 space-y-3 bg-background px-1 py-2 font-['Inter',ui-sans-serif,system-ui,sans-serif] tracking-[-0.01em]">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h1 class="text-2xl font-semibold text-ink">Registro diario de riego</h1>
+                <div class="flex flex-wrap items-center gap-2">
+                    @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
+                        <button type="button" class="{{ $btn2 }}" wire:click="enviarRegistroDiarioRegadores" @disabled(!$hayRegadores)
+                            title="{{ $hayRegadores ? 'Pasa las horas de los regadores al registro diario de planilla y cuadrilla' : 'No hay regadores este día' }}">
+                            <i class="fa fa-paper-plane"></i> Enviar a registro diario
+                        </button>
+                    @endcan
+                    <button type="button" class="{{ $btn2 }}" wire:click="verificarSincronizacion" wire:loading.attr="disabled" @disabled(!$hayPlanilleros)
+                        title="{{ $hayPlanilleros ? 'Compara las horas de riego con el registro diario de planilla' : 'No hay regadores de planilla este día' }}">
+                        <i class="fa fa-rotate"></i> Verificar sincronización
+                    </button>
+                    <button type="button" class="{{ $btn2 }}" wire:click="descargarReporteDiario" wire:loading.attr="disabled" wire:target="descargarReporteDiario"
+                        @disabled(!$hayRegistros)
+                        title="{{ $hayRegistros ? 'Descarga el Excel del reporte diario (planilla, cuadrilla y riego) de la fecha' : 'No hay nada registrado este día' }}">
                         <i class="fa fa-file-excel"></i> Enviar reporte diario
-                    </x-button>
-                    <x-button wire:click="verificarSincronizacion" wire:loading.attr="disabled">
-                        <i class="fa fa-sync"></i> Verificar Sincronización
-                    </x-button>
-                    <div class="ms-3 relative">
+                    </button>
+                    @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
+                        <button type="button" class="{{ $btnPrincipal }}" @click="$wire.dispatch('abrirAgregarRegador', { fecha: $wire.fecha })">
+                            <i class="fa fa-user-plus"></i> Agregar regadores
+                        </button>
+                    @endcan
+                </div>
+            </div>
 
-
-                        <x-dropdown align="right" width="60">
-                            <x-slot name="trigger">
-                                <span class="inline-flex rounded-md">
-                                    <button type="button"
-                                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-card-foreground bg-card transition ease-in-out duration-150">
-                                        Opciones
-
-                                        <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                            viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
-                                        </svg>
-                                    </button>
-                                </span>
-                            </x-slot>
-
-                            <x-slot name="content">
-                                <div class="w-60">
-                                    <!-- Team Management -->
-                                    <div class="block px-4 py-2 text-xs text-gray-400">
-                                        Opciones
-                                    </div>
-
-                                    <!-- Team Settings -->
-                                    @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
-                                        <x-dropdown-link @click="$wire.dispatch('abrirAgregarRegador')">
-                                            Agregar Regador
-                                        </x-dropdown-link>
-                                        <x-dropdown-link wire:click="enviarRegistroDiarioRegadores">
-                                            Enviar Registro Diario
-                                        </x-dropdown-link>
-                                    @endcan
-
-                                </div>
-                            </x-slot>
-                        </x-dropdown>
-                    </div>
-                </x-flex>
-
-            </x-flex>
-            <x-card>
-                <x-flex class="justify-between">
-                    @include('comun.selector-dia-base')
-                    <x-input type="number" wire:model.live="limiteHorasDiarias" label="Limite de Horas" />
-                </x-flex>
-            </x-card>
+            {{-- Fecha compacta --}}
+            <div class="flex flex-wrap items-center gap-2 rounded-[10px] border border-mist bg-paper px-3 py-2">
+                <button type="button" wire:click="fechaAnterior" class="{{ $flecha }}" title="Día anterior"><i class="fa fa-chevron-left text-xs"></i></button>
+                <x-input type="date" wire:model.live="fecha" class="!h-9 !w-auto" />
+                <button type="button" wire:click="fechaPosterior" class="{{ $flecha }}" title="Día siguiente"><i class="fa fa-chevron-right text-xs"></i></button>
+                <span class="text-sm text-graphite">{{ ucfirst(\Illuminate\Support\Carbon::parse($fecha)->translatedFormat('l d \d\e F')) }}</span>
+                @if (\Illuminate\Support\Carbon::parse($fecha)->isSunday())
+                    <span class="rounded-[6px] bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-400/10 dark:text-amber-400">Domingo</span>
+                @endif
+                <span class="text-sm text-pewter">· {{ $consolidados?->count() ?? 0 }} regador(es)</span>
+                <label class="ml-auto flex items-center gap-2 text-sm text-graphite">
+                    Límite de horas
+                    <x-input type="number" wire:model.live.debounce.500ms="limiteHorasDiarias" class="!h-9 !w-20 text-right tabular-nums" />
+                </label>
+            </div>
         </div>
 
         <div>
             @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_VER)
-                @if ($consolidados && $consolidados->count() > 0)
+                @if ($hayRegadores)
                     @foreach ($consolidados as $riego)
                         <livewire:riego.reporte-diario-riego-detalle-component :resumenId="$riego->id"
-                            :fecha="$riego->fecha" wire:key="horas_riego_{{ $riego->id }}_{{ $riego->fecha }}" />
+                            :fecha="$riego->fecha" :tipoLabores="$catalogoLabores" :campos="$catalogoCampos"
+                            wire:key="horas_riego_{{ $riego->id }}_{{ $riego->fecha }}" />
                     @endforeach
+                @else
+                    <div class="rounded-[10px] border border-dashed border-mist px-4 py-10 text-center">
+                        <p class="text-sm text-graphite">No hay regadores el {{ \Illuminate\Support\Carbon::parse($fecha)->format('d/m/Y') }}.</p>
+                        @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
+                            <button type="button" class="{{ $btnPrincipal }} mt-3" @click="$wire.dispatch('abrirAgregarRegador', { fecha: $wire.fecha })">
+                                <i class="fa fa-user-plus"></i> Agregar regadores
+                            </button>
+                        @endcan
+                    </div>
                 @endif
             @else
                 <x-danger>
@@ -84,11 +78,10 @@
     </div>
     <x-dialog-modal wire:model.live="mostrarEnvioAReporteDiario">
         <x-slot name="title">
-            Enviar Resumen a Registros Diarios
+            Enviar resumen a registros diarios
         </x-slot>
 
         <x-slot name="content">
-
             <h4 class="text-lg text-card-foreground mb-3">
                 Registros a enviar
             </h4>
@@ -109,11 +102,9 @@
                 <x-slot name="tbody">
                     @foreach ($listaPorEnviarRegadores as $fila)
                         @php
-                            // Convertir el decimal de total_horas a Horas y Minutos exactos
                             $minutosTotales = round(($fila['total_horas'] ?? 0) * 60);
                             $horas = floor($minutosTotales / 60);
                             $minutos = $minutosTotales % 60;
-
                             $formatoTiempo = $horas . 'h' . ($minutos > 0 ? ' ' . $minutos . 'm' : '');
                         @endphp
                         <x-tr>
@@ -123,14 +114,11 @@
                             <x-td>{{ $fila['labor'] }}</x-td>
                             <x-td>{{ $fila['hora_inicio'] }}</x-td>
                             <x-td>{{ $fila['hora_fin'] }}</x-td>
-                            <x-td class="font-semibold text-slate-800 dark:text-slate-200">
-                                {{ $formatoTiempo }}
-                            </x-td>
+                            <x-td class="font-semibold text-slate-800 dark:text-slate-200">{{ $formatoTiempo }}</x-td>
                         </x-tr>
                     @endforeach
                 </x-slot>
             </x-table>
-
         </x-slot>
 
         <x-slot name="footer">
@@ -138,16 +126,15 @@
                 Cerrar
             </x-button>
             <x-button wire:click="confirmarEnvio" wire:loading.attr="disabled">
-                <i class="fa fa-paper-plane mr-1"></i>Confirmar Envío
+                <i class="fa fa-paper-plane mr-1"></i>Confirmar envío
             </x-button>
         </x-slot>
     </x-dialog-modal>
-    <livewire:riego.reporte-diario-agregar-regadores-component :fecha="$fecha"
-        wire:key="agregarregadores_{{ $fecha }}" />
 
+    {{-- Un solo modal para agregar regadores (recibe la fecha al abrirse; no se recrea al cambiar de día) --}}
+    <livewire:riego.reporte-diario-agregar-regadores-component />
 
     <livewire:riego.reporte-diario-riego-horas-acumuladas-component />
 
-    <x-loading wire:loading />
-
+    <x-loading wire:loading wire:target="fecha,fechaAnterior,fechaPosterior,confirmarEnvio,verificarSincronizacion,enviarRegistroDiarioRegadores" />
 </div>

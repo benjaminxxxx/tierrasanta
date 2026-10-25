@@ -59,7 +59,7 @@ return new class extends Migration
             $table->decimal('acid_poda_infest', 5, 2)->nullable();
             $table->decimal('acid_poda_losa', 5, 2)->nullable();
             $table->decimal('acid_tam', 5, 2)->nullable();
-            $table->decimal('area', 8, 2)->nullable();
+            $table->decimal('area', 10, 4)->nullable();
             $table->date('cosch_fecha')->nullable();
             $table->string('cosch_tiempo_inf_cosch')->nullable();
             $table->string('cosch_tiempo_reinf_cosch')->nullable();
