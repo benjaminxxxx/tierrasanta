@@ -19,10 +19,21 @@ class Campo extends Model
         'grupo',   // Grupo al que pertenece el campo
         'orden',   // Orden en el grupo
         'area',    // Área del campo en metros cuadrados
+        'bloqueado', // ya no se usa: se conserva su historia, no aparece en selectores
     ];
+    protected $casts = [
+        'bloqueado' => 'boolean',
+    ];
+
+    /** Campos en uso (sin los bloqueados). */
+    public function scopeActivos($query)
+    {
+        return $query->where('bloqueado', false);
+    }
+
     public static function listar()
     {
-        return self::orderBy('orden')->get();
+        return self::activos()->orderBy('orden')->get();
     }
     public function campanias()
     {

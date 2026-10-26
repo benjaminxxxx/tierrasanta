@@ -25,8 +25,8 @@
                             <i class="fa fa-dollar-sign text-card-foreground h-5 w-5 text-center"></i>
                         </div>
                         <div>
-                            <p class="text-gray-400 text-sm">Total Costos Anuales</p>
-                            <p class="text-2xl font-bold text-card-foreground">S/ {{ number_format($totalCostoAnual) }}
+                            <p class="text-gray-400 text-sm">Total Jornales Anuales</p>
+                            <p class="text-2xl font-bold text-card-foreground">S/ {{ number_format($totales['jornal']) }}
                             </p>
                         </div>
                     </div>
@@ -39,7 +39,7 @@
                         </div>
                         <div>
                             <p class="text-gray-400 text-sm">Total Bonos Anuales</p>
-                            <p class="text-2xl font-bold text-card-foreground">S/ {{ number_format($totalBonoAnual) }}
+                            <p class="text-2xl font-bold text-card-foreground">S/ {{ number_format($totales['bono']) }}
                             </p>
                         </div>
                     </div>
@@ -52,7 +52,7 @@
                         </div>
                         <div>
                             <p class="text-gray-400 text-sm">Total Sumado Anual</p>
-                            <p class="text-2xl font-bold text-card-foreground">S/ {{ number_format($totalSumadoAnual) }}
+                            <p class="text-2xl font-bold text-card-foreground">S/ {{ number_format($totales['total']) }}
                             </p>
                         </div>
                     </div>
@@ -75,42 +75,38 @@
                 </x-slot>
                 <x-slot name="tbody">
                     <x-tr>
-                        <x-td>Total Costo</x-td>
+                        <x-td>Jornales</x-td>
                         @foreach ($resumenMensual as $mes)
-                            <x-td>S/ {{ number_format($mes['totalCosto']) }}</x-td>
+                            <x-td>S/ {{ number_format($mes['jornal']) }}</x-td>
                         @endforeach
                     </x-tr>
 
                     <x-tr>
-                        <x-td>Total Bono</x-td>
+                        <x-td>Bonos</x-td>
                         @foreach ($resumenMensual as $mes)
-                            <x-td>S/ {{ number_format($mes['totalBono']) }}</x-td>
+                            <x-td>S/ {{ number_format($mes['bono']) }}</x-td>
                         @endforeach
                     </x-tr>
 
                     <x-tr>
-                        <x-td>Total Sumado</x-td>
+                        <x-td class="font-semibold">Total</x-td>
                         @foreach ($resumenMensual as $mes)
-                            <x-td>S/ {{ number_format($mes['totalSumado']) }}</x-td>
+                            <x-td class="font-semibold">S/ {{ number_format($mes['total']) }}</x-td>
                         @endforeach
                     </x-tr>
 
                     <x-tr>
-                        @can(App\Constants\Permisos::CUADRILLA_RESUMEN_ANUAL_EXPORTAR)
-                            <x-td>Reporte del Mes</x-td>
-                            @foreach ($resumenMensual as $mes)
-                                <x-td>
-                                    @if ($mes['reporteMes'])
-                                        <x-button-a href="{{ Storage::disk('public')->url($mes['reporteMes']) }}">
-                                            <i class="fa fa-file-excel" aria-hidden="true"></i> Reporte
-                                        </x-button-a>
-                                    @else
-                                        -
-                                    @endif
-                                </x-td>
-                            @endforeach
-                        @endcan
+                        <x-td>Días trabajados</x-td>
+                        @foreach ($resumenMensual as $mes)
+                            <x-td>{{ $mes['dias'] ?: '-' }}</x-td>
+                        @endforeach
+                    </x-tr>
 
+                    <x-tr>
+                        <x-td>Cuadrilleros</x-td>
+                        @foreach ($resumenMensual as $mes)
+                            <x-td>{{ $mes['cuadrilleros'] ?: '-' }}</x-td>
+                        @endforeach
                     </x-tr>
                 </x-slot>
             </x-table>
@@ -153,16 +149,16 @@
                     labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
                     datasets: [
                         {
-                            label: 'Total Costos',
-                            data: resumen.map(m => m.totalCosto),
+                            label: 'Jornales',
+                            data: resumen.map(m => m.jornal),
                             borderColor: '#3B82F6',
                             backgroundColor: 'rgba(59, 130, 246, 0.2)',
                             fill: false,
                             tension: 0.4
                         },
                         {
-                            label: 'Total Bonos',
-                            data: resumen.map(m => m.totalBono),
+                            label: 'Bonos',
+                            data: resumen.map(m => m.bono),
                             borderColor: '#10B981',
                             backgroundColor: 'rgba(16, 185, 129, 0.2)',
                             fill: false,

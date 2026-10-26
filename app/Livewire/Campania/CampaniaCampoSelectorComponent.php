@@ -138,13 +138,18 @@ class CampaniaCampoSelectorComponent extends Component
     }
 
     // --- Acciones ---
-    public function generarReporteConsumo($campaniaId)
+    /** Descarga el consumo de productos de la campaña, leído en el momento de las salidas de almacén. */
+    public function descargarReporteConsumo($campaniaId)
     {
         try {
-            $campaniaServicio = new \App\Services\Campania\CampaniaHistorialServicio($campaniaId);
+            $campania = CampoCampania::findOrFail($campaniaId);
+            $excel = app(\App\Services\Campania\Consumo\CampaniaConsumoExcel::class);
+            $libro = $excel->generar($campania);
 
-            $campaniaServicio->actualizarConsumo();
-            $this->alert('success', 'Reporte de consumo generado correctamente.');
+            return response()->streamDownload(
+                fn() => (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($libro))->save('php://output'),
+                $excel->nombreArchivo($campania)
+            );
         } catch (\Throwable $th) {
             $this->errorAlert($th);
         }

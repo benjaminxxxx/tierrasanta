@@ -63,14 +63,28 @@ Campania/
     CampaniaRegistroProceso.php    crear, actualizar datos, cambiar fechas, cerrar, eliminar
   CostoProduccion/
     CampaniaCostoProduccionReglas.php    secciones del reporte y qué origen va en cada una
-    CampaniaCostoProduccionConsulta.php  partidas desde resumen_costo_diarios y reporte por ha en US$
-    CampaniaCostoProduccionProceso.php   guarda una versión (historial) de los costos de la campaña
+    CampaniaCostoProduccionConsulta.php  partidas y reporte por ha en US$, en vivo desde resumen_costo_diarios
+  Consumo/
+    CampaniaConsumoExcel.php       descarga del consumo de productos (salidas de almacén del campo en la campaña)
   Resumen/
     CampaniaResumenConsulta.php    listado de /campania/resumen
 ```
 
 Las clases antiguas del dominio (`CampaniaServicio`, `CrudCampaniaServicio`, …) siguen funcionando. Se
 reemplazan cuando se trabaje en lo que hacen.
+
+## Ejemplo: `Costos/Mensual/` (Costos → Mensual)
+
+```
+Costos/Mensual/
+  CostosMensualReglas.php    conceptos fijos y operativos (columna blanco/negro) y cuál es la MOI calculada
+  CostosMensualConsulta.php  campañas que tocan el mes (días, por cerrar, avisos de fechas), tarjeta de una campaña,
+                             costos del mes y distribución guardada
+  CostosMensualProceso.php   guarda los costos del mes (no pisa la MOI ya calculada), con auditoría
+  CostosMensualExcel.php     Excel: campañas con fechas, costos del mes y distribución
+```
+
+Campos que ya no se usan: `Campo/Bloqueo/CampoBloqueoProceso` (columna `campos.bloqueado`, scope `Campo::activos()`).
 
 ## Ejemplo: `Planilla/Laboral/` (historial laboral)
 

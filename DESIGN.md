@@ -213,3 +213,4 @@ Definidos en `resources/css/app.css` (`:root` y `.dark`) y expuestos en `tailwin
 | Menú lateral estilo explorador con Acceso directo por usuario (Planilla y Cuadrilla separados) | 24/10/2026 |
 | Registro diario de riego: barra superior, fecha compacta y modal "Agregar regadores" (las tarjetas de cada regador siguen sin migrar) | 24/10/2026 |
 | Campañas (/campania/resumen): vista Lista, contadores, filtros, menú y estado de cosecha (la Tabla técnica sigue sin migrar) | 24/10/2026 |
+| Costo mensual (/costos/mensual): resumen, campañas del mes con tarjeta y cierre, costos en Handsontable, campos bloqueados, Excel (el modal "Distribuir costos" sigue sin migrar) | 26/10/2026 |

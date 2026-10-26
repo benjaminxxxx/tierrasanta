@@ -2,310 +2,129 @@
 
 namespace App\Livewire\Costos;
 
-use App\Models\Campo;
-use App\Models\CostoMensual;
-use App\Services\Campania\ValidadorRangosCampania;
-use Illuminate\Support\Carbon;
+use App\Constants\Permisos;
+use App\Services\Campo\Bloqueo\CampoBloqueoProceso;
+use App\Services\Costos\Mensual\CostosMensualConsulta;
+use App\Services\Costos\Mensual\CostosMensualExcel;
+use App\Services\Costos\Mensual\CostosMensualProceso;
+use Illuminate\Support\Facades\Gate;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
+use Livewire\Attributes\On;
 use Livewire\Component;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
+/**
+ * Costos → Mensual: campañas que reciben costo en el mes (con tarjeta de cada campaña y cierre), costos fijos y
+ * operativos en una tabla editable, distribución y Excel. La lógica está en App\Services\Costos\Mensual.
+ */
 class ContabilidadCostosMensualesDetalleComponent extends Component
 {
     use LivewireAlert, \App\Traits\HandlesAlerts;
-    public $campos = [];
-    public $campoSeleccionado = [];
-    public $modoEdicion = false;
-    public $costos_mensuales = [];
-    public $fijo_administrativo_costo_blanco;
-    public $fijo_administrativo_costo_negro;
-    public $fijo_financiero_costo_blanco;
-    public $fijo_financiero_costo_negro;
-    public $fijo_gastos_oficina_costo_blanco;
-    public $fijo_gastos_oficina_costo_negro;
-    public $fijo_depreciaciones_costo_blanco;
-    public $fijo_depreciaciones_costo_negro;
-    public $fijo_terreno_costo_blanco;
-    public $fijo_terreno_costo_negro;
-    public $operativo_servicios_fundo_costo_blanco;
-    public $operativo_servicios_fundo_costo_negro;
-    public $operativo_mano_obra_indirecta_costo_blanco;
-    public $operativo_mano_obra_indirecta_costo_negro;
+
     public $mes;
     public $anio;
-    public $areaProduccion;
-    public $fechaDistribucion;
-    public $advertencias = [];
-    public $costoMensualId;
-    /** Mano de obra indirecta calculada: ['en' => fecha, 'concluyente' => bool] o null si es manual. */
-    public ?array $moiCalculado = null;
-    public function mount()
-    {
-        $this->advertencias = ValidadorRangosCampania::validarCampos();
-        $this->listarCostos();
-        $this->listarCampos();
-        $this->listarCostoMensualId();
-        $this->fechaDistribucion = Carbon::createFromDate($this->anio, $this->mes, 1)->lastOfMonth()->format('Y-m-d');
 
-    }
-    public function listarCostoMensualId()
+    /** Tarjeta de la campaña elegida (CostosMensualConsulta::tarjeta) */
+    public ?array $tarjeta = null;
+    public bool $mostrarTarjeta = false;
+    public bool $verBloqueados = false;
+
+    public function guardarCostos(array $filas): void
     {
-        $this->costoMensualId = CostoMensual::where('anio', $this->anio)
-            ->where('mes', $this->mes)
-            ->first()
-                ?->id;
+        $this->autorizar();
+        try {
+            app(CostosMensualProceso::class)->guardar((int) $this->anio, (int) $this->mes, $filas);
+            $this->alert('success', 'Costos del mes guardados.');
+            $this->recargarTabla();
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+        }
     }
-    public function guardarCambios()
+
+    public function verCampania(int $campaniaId): void
+    {
+        $this->tarjeta = app(CostosMensualConsulta::class)->tarjeta($campaniaId, (int) $this->anio, (int) $this->mes);
+        $this->mostrarTarjeta = (bool) $this->tarjeta;
+    }
+
+    /** Abre el modal de cierre de campaña (CampaniaCerrarComponent) con la fecha sugerida por la cosecha. */
+    public function cerrarCampania(): void
+    {
+        if (!$this->tarjeta) {
+            return;
+        }
+        $this->mostrarTarjeta = false;
+        $this->dispatch('cerrarCampania', campaniaId: $this->tarjeta['id']);
+    }
+
+    /** Al cerrar la campaña se actualiza la lista y se vuelve a mostrar su tarjeta ya cerrada. */
+    #[On('campaniaCerrada')]
+    public function campaniaCerrada(int $campaniaId): void
+    {
+        if ($this->tarjeta && $this->tarjeta['id'] === $campaniaId) {
+            $this->verCampania($campaniaId);
+        }
+    }
+
+    #[On('distribucionAprobada')]
+    public function distribucionAprobada(): void
+    {
+        // render() vuelve a leer la fecha de la distribución
+    }
+
+    public function bloquearCampo(string $campo, bool $bloquear = true): void
+    {
+        $this->autorizar();
+        try {
+            app(CampoBloqueoProceso::class)->cambiar($campo, $bloquear);
+            $this->alert('success', $bloquear ? "Campo {$campo} bloqueado: ya no aparece en las listas." : "Campo {$campo} desbloqueado.");
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+        }
+    }
+
+    public function exportar()
     {
         try {
-            $data = [
-                'anio' => $this->anio,
-                'mes' => $this->mes,
-                'fijo_administrativo_blanco' => $this->fijo_administrativo_costo_blanco,
-                'fijo_administrativo_negro' => $this->fijo_administrativo_costo_negro,
-                'fijo_financiero_blanco' => $this->fijo_financiero_costo_blanco,
-                'fijo_financiero_negro' => $this->fijo_financiero_costo_negro,
-                'fijo_gastos_oficina_blanco' => $this->fijo_gastos_oficina_costo_blanco,
-                'fijo_gastos_oficina_negro' => $this->fijo_gastos_oficina_costo_negro,
-                'fijo_depreciaciones_blanco' => $this->fijo_depreciaciones_costo_blanco,
-                'fijo_depreciaciones_negro' => $this->fijo_depreciaciones_costo_negro,
-                'fijo_costo_terreno_blanco' => $this->fijo_terreno_costo_blanco,
-                'fijo_costo_terreno_negro' => $this->fijo_terreno_costo_negro,
-                'operativo_servicios_fundo_blanco' => $this->operativo_servicios_fundo_costo_blanco,
-                'operativo_servicios_fundo_negro' => $this->operativo_servicios_fundo_costo_negro,
-                'operativo_mano_obra_indirecta_blanco' => $this->operativo_mano_obra_indirecta_costo_blanco,
-                'operativo_mano_obra_indirecta_negro' => $this->operativo_mano_obra_indirecta_costo_negro,
-            ];
+            $excel = app(CostosMensualExcel::class);
+            $libro = $excel->generar((int) $this->anio, (int) $this->mes);
 
-            // Buscar si ya existe un registro con el mismo mes y año
-            $costoMensual = CostoMensual::where('anio', $this->anio)
-                ->where('mes', $this->mes)
-                ->first();
-
-            // La mano de obra indirecta calculada solo cambia al recalcular (/costos/mano-obra-indirecta)
-            if ($costoMensual?->moi_calculado_en) {
-                unset($data['operativo_mano_obra_indirecta_blanco'], $data['operativo_mano_obra_indirecta_negro']);
-            }
-
-            if ($costoMensual) {
-                // Si existe, actualiza el registro
-                $costoMensual->update($data);
-                $this->alert('success', 'Costos actualizados correctamente.');
-            } else {
-                // Si no existe, crea un nuevo registro
-                CostoMensual::create($data);
-                $this->alert('success', 'Costos registrados correctamente.');
-            }
-            $this->modoEdicion = false;
-            $this->listarCostos();
-            $this->listarCostoMensualId();
-        } catch (\Throwable $th) {
-            $this->dispatch('log', $th->getMessage());
-            $this->errorAlert('Ocurrió un error al registrar los costos.');
-        }
-    }
-    public function listarCampos()
-    {
-        $anio = (int) $this->anio;
-        $mes = (int) $this->mes;
-
-        $inicioMes = Carbon::create($anio, $mes, 1)->startOfDay();
-        $finMes = (clone $inicioMes)->endOfMonth();
-
-        // Indexar advertencias por campo + campaña
-        $advertenciasIndexadas = collect($this->advertencias)
-            ->flatMap(function ($campo) {
-                return collect($campo['errores'])->flatMap(function ($error) use ($campo) {
-                    return collect($error['campania_ids'] ?? [$error['campania_id']])
-                        ->map(function ($campaniaId) use ($campo) {
-                            return [
-                                'nombre' => $campo['campo_nombre'],
-                                'campania_id' => $campaniaId,
-                            ];
-                        });
-                });
-            });
-
-        $this->campos = Campo::with([
-            'campanias' => function ($query) use ($inicioMes, $finMes) {
-                $query
-                    ->where('fecha_inicio', '<=', $finMes)
-                    ->where(function ($q) use ($inicioMes) {
-                        $q->whereNull('fecha_fin')
-                            ->orWhere('fecha_fin', '>=', $inicioMes);
-                    })
-                    ->orderBy('fecha_inicio');
-            }
-        ])
-            ->orderBy('orden')
-            ->get()
-            ->flatMap(function ($campo) use ($inicioMes, $finMes, $advertenciasIndexadas) {
-
-                // Caso 1: campo SIN campañas → una fila inactiva
-                if ($campo->campanias->isEmpty()) {
-                    return [
-                        [
-                            'nombre' => $campo->nombre,
-                            'area' => $campo->area,
-
-                            'campania_id' => null,
-                            'campania' => null,
-                            'fecha_inicio' => null,
-                            'fecha_fin' => null,
-
-                            'activo' => false,
-                            'warning' => false,
-                        ]
-                    ];
-                }
-
-                // Caso 2: una o más campañas → clonar filas
-                return $campo->campanias->map(function ($campania) use ($campo, $inicioMes, $finMes, $advertenciasIndexadas) {
-
-                    $activo =
-                        $campania->fecha_inicio <= $finMes &&
-                        (
-                            is_null($campania->fecha_fin)
-                            || $campania->fecha_fin >= $inicioMes
-                        );
-
-                    $warning = $advertenciasIndexadas->contains(function ($item) use ($campo, $campania) {
-                        return
-                            $item['nombre'] === $campo->nombre &&
-                            $item['campania_id'] === $campania->id;
-                    });
-
-                    return [
-                        'nombre' => $campo->nombre,
-                        'area' => $campo->area,
-
-                        'campania_id' => $campania->id,
-                        'campania' => $campania->nombre_campania,
-                        'fecha_inicio' => $campania->fecha_inicio,
-                        'fecha_fin' => $campania->fecha_fin,
-
-                        'activo' => $activo,
-                        'warning' => $warning,
-                    ];
-                });
-            })
-            ->values();
-
-        $this->calcularAreaProduccion();
-    }
-
-    public function calcularAreaProduccion()
-    {
-        $this->areaProduccion = $this->campos
-            ->where('activo', true) // Filtra solo los campos activos
-            ->sum('area');
-    }
-
-    public function listarCostos()
-    {
-        try {
-            $costos = CostoMensual::where('anio', $this->anio)
-                ->where('mes', $this->mes)
-                ->first();
-
-            if (!$costos) {
-                $this->alert('warning', 'No se encontraron costos para el mes y año seleccionados.');
-                $this->resetCostos();
-                return;
-            }
-
-            $this->moiCalculado = $costos->moi_calculado_en ? [
-                'en' => $costos->moi_calculado_en->format('d/m/Y H:i'),
-                'concluyente' => (bool) $costos->moi_concluyente,
-            ] : null;
-
-            // Convertir el modelo a array y formatearlo para la vista
-            $this->costos_mensuales = [
-                'fijo_administrativo' => [
-                    'costo_blanco' => $costos->fijo_administrativo_blanco ?? 0,
-                    'costo_negro' => $costos->fijo_administrativo_negro ?? 0,
-                ],
-                'fijo_financiero' => [
-                    'costo_blanco' => $costos->fijo_financiero_blanco ?? 0,
-                    'costo_negro' => $costos->fijo_financiero_negro ?? 0,
-                ],
-                'fijo_gastos_oficina' => [
-                    'costo_blanco' => $costos->fijo_gastos_oficina_blanco ?? 0,
-                    'costo_negro' => $costos->fijo_gastos_oficina_negro ?? 0,
-                ],
-                'fijo_depreciaciones' => [
-                    'costo_blanco' => $costos->fijo_depreciaciones_blanco ?? 0,
-                    'costo_negro' => $costos->fijo_depreciaciones_negro ?? 0,
-                ],
-                'fijo_terreno' => [
-                    'costo_blanco' => $costos->fijo_costo_terreno_blanco ?? 0,
-                    'costo_negro' => $costos->fijo_costo_terreno_negro ?? 0,
-                ],
-                'operativo_servicios_fundo' => [
-                    'costo_blanco' => $costos->operativo_servicios_fundo_blanco ?? 0,
-                    'costo_negro' => $costos->operativo_servicios_fundo_negro ?? 0,
-                ],
-                'operativo_mano_obra_indirecta' => [
-                    'costo_blanco' => $costos->operativo_mano_obra_indirecta_blanco ?? 0,
-                    'costo_negro' => $costos->operativo_mano_obra_indirecta_negro ?? 0,
-                ],
-            ];
-        } catch (\Throwable $th) {
-            $this->dispatch('log', $th->getMessage());
-            $this->errorAlert('Ocurrió un error al listar los costos.');
+            return response()->streamDownload(fn() => (new Xlsx($libro))->save('php://output'), $excel->nombreArchivo((int) $this->anio, (int) $this->mes));
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
         }
     }
 
-    /**
-     * Reinicia los valores de costos a cero
-     */
-    private function resetCostos()
+    private function recargarTabla(): void
     {
-        $this->costos_mensuales = [
-            'fijo_administrativo' => ['costo_blanco' => 0, 'costo_negro' => 0],
-            'fijo_financiero' => ['costo_blanco' => 0, 'costo_negro' => 0],
-            'fijo_gastos_oficina' => ['costo_blanco' => 0, 'costo_negro' => 0],
-            'fijo_depreciaciones' => ['costo_blanco' => 0, 'costo_negro' => 0],
-            'fijo_terreno' => ['costo_blanco' => 0, 'costo_negro' => 0],
-            'operativo_servicios_fundo' => ['costo_blanco' => 0, 'costo_negro' => 0],
-            'operativo_mano_obra_indirecta' => ['costo_blanco' => 0, 'costo_negro' => 0],
-        ];
+        $costos = app(CostosMensualConsulta::class)->costos((int) $this->anio, (int) $this->mes);
+        $this->dispatch('costosMensualesRecargar', filas: $costos['filas']);
     }
 
-    public function editarCostos()
+    private function autorizar(): void
     {
-        if (!empty($this->costos_mensuales)) {
-
-            $this->fijo_administrativo_costo_blanco = $this->costos_mensuales['fijo_administrativo']['costo_blanco'] ?? 0;
-            $this->fijo_administrativo_costo_negro = $this->costos_mensuales['fijo_administrativo']['costo_negro'] ?? 0;
-
-            $this->fijo_financiero_costo_blanco = $this->costos_mensuales['fijo_financiero']['costo_blanco'] ?? 0;
-            $this->fijo_financiero_costo_negro = $this->costos_mensuales['fijo_financiero']['costo_negro'] ?? 0;
-
-            $this->fijo_gastos_oficina_costo_blanco = $this->costos_mensuales['fijo_gastos_oficina']['costo_blanco'] ?? 0;
-            $this->fijo_gastos_oficina_costo_negro = $this->costos_mensuales['fijo_gastos_oficina']['costo_negro'] ?? 0;
-
-            $this->fijo_depreciaciones_costo_blanco = $this->costos_mensuales['fijo_depreciaciones']['costo_blanco'] ?? 0;
-            $this->fijo_depreciaciones_costo_negro = $this->costos_mensuales['fijo_depreciaciones']['costo_negro'] ?? 0;
-
-            $this->fijo_terreno_costo_blanco = $this->costos_mensuales['fijo_terreno']['costo_blanco'] ?? 0;
-            $this->fijo_terreno_costo_negro = $this->costos_mensuales['fijo_terreno']['costo_negro'] ?? 0;
-
-            $this->operativo_servicios_fundo_costo_blanco = $this->costos_mensuales['operativo_servicios_fundo']['costo_blanco'] ?? 0;
-            $this->operativo_servicios_fundo_costo_negro = $this->costos_mensuales['operativo_servicios_fundo']['costo_negro'] ?? 0;
-
-            $this->operativo_mano_obra_indirecta_costo_blanco = $this->costos_mensuales['operativo_mano_obra_indirecta']['costo_blanco'] ?? 0;
-            $this->operativo_mano_obra_indirecta_costo_negro = $this->costos_mensuales['operativo_mano_obra_indirecta']['costo_negro'] ?? 0;
+        if (!Gate::allows(Permisos::CONTABILIDAD_COSTO_MENSUAL_GESTIONAR)) {
+            abort(403, 'No tienes permiso para modificar los costos mensuales.');
         }
-
-        $this->modoEdicion = true;
     }
 
-    public function cancelarEdicion()
-    {
-        $this->modoEdicion = false;
-    }
     public function render()
     {
-        return view('livewire.costos.contabilidad-costos-mensuales-detalle-component');
+        $consulta = app(CostosMensualConsulta::class);
+        $campanias = $consulta->campanias((int) $this->anio, (int) $this->mes);
+        $filas = collect($campanias['filas']);
+        $conCampania = $filas->whereNotNull('campania_id');
+
+        return view('livewire.costos.contabilidad-costos-mensuales-detalle-component', [
+            'campanias' => $campanias,
+            'costos' => $consulta->costos((int) $this->anio, (int) $this->mes),
+            'resumen' => [
+                'campanias' => $conCampania->count(),
+                'abiertas' => $conCampania->whereNull('fecha_fin')->count(),
+                'por_cerrar' => $conCampania->whereNull('fecha_fin')->whereNotNull('por_cerrar')->count(),
+                'area' => $conCampania->unique('campo')->sum('area'),
+                'con_avisos' => $conCampania->filter(fn($f) => $f['avisos'])->count(),
+            ],
+        ]);
     }
 }

@@ -19,7 +19,7 @@ class SelectCampo extends Component
     public function render()
     {
         // Transformamos los campos para el formato que espera x-searchable-select
-        $campos = Campo::all()->map(fn ($campo) => [
+        $campos = Campo::activos()->orderBy('orden')->get()->map(fn ($campo) => [
             'id' => $campo->nombre,
             'name' => $campo->nombre,
         ])->toArray();

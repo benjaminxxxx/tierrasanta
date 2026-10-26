@@ -42,6 +42,7 @@ class SistemaRecursosReglas extends SistemaLibroExcelReglas
             'etapa' => ['t' => 'Etapa', 'tipo' => 'texto'],
             'area' => ['t' => 'Área (ha)', 'tipo' => 'decimal'],
             'alias' => ['t' => 'Alias (separados por coma)', 'tipo' => 'texto'],
+            'bloqueado' => ['t' => 'Bloqueado (ya no se usa)', 'tipo' => 'sino', 'def' => 'NO'],
         ]],
         'mano_obra' => ['Mano de obra', ['codigo'], [
             'codigo' => ['t' => 'Código', 'tipo' => 'texto', 'req' => true],

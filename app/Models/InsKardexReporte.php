@@ -84,10 +84,6 @@ class InsKardexReporte extends Model
         return $grupo ? mb_strtoupper($grupo) . 'S' : 'SIN GRUPO';
     }
 
-    public function categorias()
-    {
-        return $this->hasMany(InsKardexReporteCategoria::class, 'reporte_id');
-    }
     public function detalles()
     {
         return $this->hasMany(InsKardexReporteDetalle::class, 'reporte_id')->orderBy('id');

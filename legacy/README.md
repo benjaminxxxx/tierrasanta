@@ -291,3 +291,42 @@ Datos de la estructura antigua → Excel de empleados actual: `php artisan emple
 | `app/Models/PlanMensualSpDesc.php`, `database/migraciones-retiradas/…_create_plan_mensual_sp_desc_table.php` | Copia por mes de los descuentos AFP/SNP. Ahora se calculan al vuelo de las AFP y el SNP vigentes (`PlanillaParametroConsulta::descuentosSp`). Las columnas de tasas de `plan_mensuales` (rmv, essalud, vida_ley, cts…) también salieron de su migración. |
 | `app/Livewire/Planilla/ParametrosPlanillaComponent.php` + vista | Grilla libre de `configuracion_historial` (había que copiar filas y se podía pisar un valor existente). Reemplazada por `PlanillaParametrosComponent` (tarjetas) y `PlanillaParametroModalComponent` (historial, motivo, confirmación de planillas afectadas). |
 | `app/Services/Sistema/ConfiguracionHistorialServicio.php`, `ConfiguracionHistorialProceso.php` | Lectura y escritura libre de los parámetros. Ahora: `App\Services\Planilla\Parametro\*`. |
+
+## Costos de producción en vivo (26/10/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| `app/Models/CampaniaCostoProduccion.php`, `app/Models/CampaniaCostoProduccionDetalle.php`, `app/Services/Campania/CostoProduccion/CampaniaCostoProduccionProceso.php`, migraciones `campania_costos_produccion` y `campania_costos_produccion_detalles` (→ `legacy/database/migraciones-retiradas/`) | Guardaban "versiones" (fotos) de los costos de la campaña al pulsar "Volver a consultar": la pestaña mostraba números viejos si la BDD de costos se regeneraba después, y no cuadraba con el informe mensual. Ahora la pestaña "Costos de producción" de /campania/por-campo lee en vivo `resumen_costo_diarios` (`CampaniaCostoProduccionConsulta::estructura($campania)`) con el área y el tipo de cambio actuales. Una instalación nueva ya no crea las tablas; en una base antigua siguen con sus datos (el verificador de `migraciones:consolidar` las mostrará como tablas extra). |
+
+## Reporte guardado de distribución de combustible (26/10/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| `app/Models/RptDistribucionCombustible.php`, migración `rpt_distribucion_combustibles` (→ `legacy/database/migraciones-retiradas/`) | Guardaba por mes la ruta del Excel de distribución (blanco/negro) ya generado. Tabla vacía y sin uso: el Excel se descarga en el momento desde Almacén → Distribución de combustible (`DistribucionCombustibleReporteComponent`, misma plantilla, datos en vivo de `distribucion_combustibles` y las salidas). Se quitó la lectura sin uso de `AlmacenSalidaProductosComponent` (`obtenerReporte`, listener `rptDistribucionesGeneradas`). En una base antigua la tabla sigue (el verificador de `migraciones:consolidar` la mostrará como tabla extra). |
+| `app/Livewire/Almacen/DistribucionCombustibleCalculoComponent.php` y su vista | Nadie emitía `calcularDistribucion` ni `verDistribucionCombustible` (solo una copia ya retirada), así que el modal nunca se abría; además `guardarDistribucion()` tenía un `dd()`. Se quitó `<livewire:almacen.distribucion-combustible-calculo-component/>` de `almacen/salida-combustible-indice`. Las distribuciones se registran con `DistribucionCombustibleFormComponent`. |
+
+## Tablas de reportes sin uso y consumo en vivo (26/10/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| `app/Models/ReporteCostoPlanilla.php`, migración `reporte_costo_planillas` | Nada escribía ni leía la tabla; solo quedaba una relación sin uso en `CampoCampania` (`reporteCostoPlanilla`). |
+| Migración `rep_actividades_diarias` | Su modelo y el servicio que la llenaba ya se habían retirado (ver arriba); quedaba solo la migración. |
+| `app/Models/ResumenConsumoProductos.php`, `app/Models/CamposCampaniasConsumo.php`, migraciones `resumen_consumo_productos` y `campos_campanias_consumos`, plantilla `public/templates/reporte_comsumo_productos.xlsx` | "Generar Reporte Consumo" (Campaña → Por campo) copiaba las salidas de almacén a `resumen_consumo_productos` y guardaba 3 Excel (combustible, fertilizante, pesticida) con su ruta en `campos_campanias_consumos`; nadie leía la copia y los archivos quedaban viejos. Ahora "Descargar Reporte Consumo" arma el Excel en el momento desde `almacen_producto_salidas` (`App\Services\Campania\Consumo\CampaniaConsumoExcel`, una hoja con todas las categorías). Se quitaron las relaciones `resumenConsumoProductos` y `camposCampaniasConsumo` de `CampoCampania` y la tabla de `CampaniaRegistroImpactoConsulta`. |
+| `app/Services/Campania/CampaniaHistorialServicioReportes.php` | Versión completa anterior de `App\Services\Campania\CampaniaHistorialServicio`. Se quitaron `actualizarConsumo()` (el botón de arriba), `generarBddMensual()` / `generarInformacionPlanilla()` / `generarInformacionCuadrilla()` / `generarInformacionConsumo()` (nadie los llamaba: la BDD usa `CampaniaServicio::generarBddMensual`) y `registrarHistorialPoblacionPlantas()` (sin llamadas). Queda solo `registrarHistorialRiegos()`. |
+
+Las cuatro migraciones están en `legacy/database/migraciones-retiradas/`. Una instalación nueva ya no crea las tablas; en una base antigua siguen (el verificador de `migraciones:consolidar` las mostrará como tablas extra).
+
+## Tablas sin uso y resumen anual de cuadrilla en vivo (26/10/2026)
+
+Revisión de las tablas vacías (comparadas con `santarita3_pruebas`, copia del servidor antiguo). Migraciones en
+`legacy/database/migraciones-retiradas/`; en una base antigua las tablas siguen con sus datos.
+
+| Qué | Por qué se retiró |
+|---|---|
+| Migración `estadistica_mensuales` | Su modelo ya estaba en legacy (dashboard anterior); quedaba solo la migración. 56 filas en la base antigua, hasta 07/2026. |
+| `app/Models/InsKardexReporteCategoria.php`, migración `ins_kardex_reporte_categorias` | Solo la relación `InsKardexReporte::categorias()`, sin uso: el reporte de kardex agrupa por grupo operativo y usa `ins_kardex_reporte_detalles`. |
+| `app/Models/TransferenciaAlmacen.php`, migración `transferencias_almacen`, `app/Services/Almacen/StockServiceTransferencia.php` | `StockService::transferir()` no tenía llamadas (se movió aquí). |
+| `app/Models/DetalleMaquinariaConsumo.php`, migración `detalle_maquinaria_consumos` | Solo la relación `Maquinaria::detallesConsumo()`, sin uso. |
+| `app/Models/Observacion.php`, migración `observaciones` | Modelo sin uso (las observaciones de cochinilla están en `cochinilla_observaciones`). |
+| `app/Models/PesticidaCampania.php`, migración `pesticidas_campanias`, `app/Services/Almacen/AlmacenServicioPesticidas.php` | `AlmacenServicio::generarPesticidasXCampania()` y `generarResumenPesticidaPorPeriodo()` no tenían llamadas (se movieron aquí). Se quitó la tabla de `CampaniaRegistroImpactoConsulta`. |
+| `app/Models/CostoManoIndirecta.php`, migración `costo_mano_indirectas` | Cuadrilla → Resumen anual leía esta tabla, pero nada la llenaba (0 filas también en la base antigua): la pantalla siempre salía vacía. Ahora calcula jornales y bonos por mes en vivo desde `cuad_registros_diarios` + `cuad_bonos_actividades` (`App\Services\Cuadrilla\Resumen\CuadrillaResumenAnualConsulta`). Se quitó la fila "Reporte del mes" (enlace a un Excel guardado); el permiso `Cuadrilla Resumen Anual Exportar` queda sin uso. |

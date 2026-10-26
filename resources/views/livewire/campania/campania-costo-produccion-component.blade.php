@@ -8,32 +8,20 @@
             <div class="space-y-1">
                 <p class="font-semibold">Costos de producción</p>
                 <p class="text-sm text-muted-foreground">
-                    Se toman de la BDD de costos (resumen diario) y se guardan como una versión: si la BDD cambia, vuelve a
-                    consultar y queda una versión nueva. Montos por hectárea en US$ = costo S/ ÷ tipo de cambio ÷ área.
+                    En vivo desde la BDD de costos (resumen diario), con el área y el tipo de cambio actuales de la campaña.
+                    Montos por hectárea en US$ = costo S/ ÷ tipo de cambio ÷ área.
                 </p>
             </div>
-            <x-flex class="items-end flex-wrap">
-                @if ($versiones->count() > 1)
-                    <x-select wire:model.live="versionId" label="Versión" class="w-auto">
-                        @foreach ($versiones as $v)
-                            <option value="{{ $v->id }}">
-                                {{ $v->created_at->format('d/m/Y H:i') }} · {{ $v->generadoPor?->name ?? '—' }}
-                                {{ $loop->first ? '(última)' : '' }}
-                            </option>
-                        @endforeach
-                    </x-select>
-                @endif
-                <x-button wire:click="consultar" target="consultar">
-                    <i class="fa fa-sync"></i> {{ $version ? 'Volver a consultar' : 'Consultar costos' }}
-                </x-button>
-            </x-flex>
+            <x-button wire:click="$refresh">
+                <i class="fa fa-sync"></i> Actualizar
+            </x-button>
         </x-flex>
     </x-card>
 
-    @if (!$version)
+    @if (!$reporte['filas_origen'])
         <x-card>
             <p class="text-center text-muted-foreground py-6">
-                Aún no se han consultado los costos de esta campaña. Pulsa <b>Consultar costos</b>.
+                No hay costos de esta campaña en la BDD de costos. Consolida los meses de la campaña.
             </p>
         </x-card>
     @else
@@ -46,10 +34,10 @@
 
         <x-card>
             <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm mb-3">
-                <span><b>Área:</b> {{ $n($version->area, 4) }} ha</span>
-                <span><b>Tipo de cambio:</b> {{ $n($version->tipo_cambio, 4) }}</span>
-                <span><b>Costos del</b> {{ formatear_fecha($version->fecha_desde) ?? '—' }} <b>al</b> {{ formatear_fecha($version->fecha_hasta) ?? '—' }}</span>
-                <span class="text-muted-foreground">{{ number_format($version->filas_origen) }} registros · consultado {{ $version->created_at->format('d/m/Y H:i') }}</span>
+                <span><b>Área:</b> {{ $n($reporte['area'], 4) }} ha</span>
+                <span><b>Tipo de cambio:</b> {{ $n($reporte['tipo_cambio'], 4) }}</span>
+                <span><b>Costos del</b> {{ formatear_fecha($reporte['fecha_desde']) ?? '—' }} <b>al</b> {{ formatear_fecha($reporte['fecha_hasta']) ?? '—' }}</span>
+                <span class="text-muted-foreground">{{ number_format($reporte['filas_origen']) }} registros</span>
             </div>
 
             @foreach ($reporte['avisos'] as $aviso)
@@ -59,7 +47,7 @@
                 <x-warning class="mb-3">
                     Hay labores sin mano de obra asignada: aparecen en "Sin mano de obra asignada". Asígnalas en
                     <a class="underline" href="{{ route('campo.labores', ['mano_obra' => 'sin']) }}" target="_blank">Labores</a>
-                    y vuelve a consultar.
+                    y actualiza.
                 </x-warning>
             @endif
 
@@ -122,7 +110,7 @@
                             <td class="p-1.5 border border-border">TOTAL CAMPAÑA S/</td>
                             <td class="p-1.5 border border-border"></td>
                             <td class="p-1.5 border border-border text-right">
-                                {{ $t['total']['usd_ha'] !== null && $version->tipo_cambio ? $n($t['total']['usd_ha'] * $version->tipo_cambio) : '—' }}
+                                {{ $t['total']['usd_ha'] !== null && $reporte['tipo_cambio'] ? $n($t['total']['usd_ha'] * $reporte['tipo_cambio']) : '—' }}
                             </td>
                             <td class="p-1.5 border border-border text-right">{{ $n($t['total']['soles']) }}</td>
                         </tr>

@@ -2,7 +2,6 @@
 
 namespace App\Services\Campania\CostoProduccion;
 
-use App\Models\CampaniaCostoProduccion;
 use App\Models\CampoCampania;
 use App\Models\Labores;
 use App\Models\ManoObra;
@@ -13,7 +12,7 @@ use App\Support\FormatoHelper;
  * Costos de producción de una campaña (solo lectura).
  *
  * - agrupar(): arma las partidas en vivo desde resumen_costo_diarios (por nombre de campaña y campo).
- * - estructura(): convierte una versión guardada en el reporte por secciones, con montos por ha en US$.
+ * - estructura(): el reporte por secciones (sobre agrupar()), con montos por ha en US$.
  */
 class CampaniaCostoProduccionConsulta
 {
@@ -81,13 +80,14 @@ class CampaniaCostoProduccionConsulta
     }
 
     /**
-     * Reporte por secciones de una versión guardada. Montos por ha en US$ con el área y el tipo de cambio de la
-     * versión; si falta alguno, los montos por ha quedan en null y se avisa.
+     * Reporte por secciones, en vivo desde resumen_costo_diarios. Montos por ha en US$ con el área y el tipo de
+     * cambio actuales de la campaña; si falta alguno, los montos por ha quedan en null y se avisa.
      */
-    public function estructura(CampaniaCostoProduccion $version): array
+    public function estructura(CampoCampania $campania): array
     {
-        $area = (float) $version->area;
-        $tc = (float) $version->tipo_cambio;
+        $datos = $this->agrupar($campania);
+        $area = (float) $campania->area;
+        $tc = (float) $campania->tipo_cambio;
         $porHa = fn(?float $valor) => $valor === null || $area <= 0 ? null : $valor / $area;
         $dolaresHa = fn(float $soles) => $area > 0 && $tc > 0 ? $soles / $tc / $area : null;
 
@@ -99,22 +99,22 @@ class CampaniaCostoProduccionConsulta
             ];
         }
 
-        foreach ($version->detalles as $d) {
-            $s = &$secciones[$d->seccion];
-            $grupo = $d->grupo ?? '';
-            $s['grupos'][$grupo] ??= ['nombre' => $d->grupo, 'items' => [], 'cantidad' => $s['con_cantidad'] ? 0.0 : null, 'costo_soles' => 0.0];
+        foreach ($datos['filas'] as $d) {
+            $s = &$secciones[$d['seccion']];
+            $grupo = $d['grupo'] ?? '';
+            $s['grupos'][$grupo] ??= ['nombre' => $d['grupo'], 'items' => [], 'cantidad' => $s['con_cantidad'] ? 0.0 : null, 'costo_soles' => 0.0];
             $s['grupos'][$grupo]['items'][] = [
-                'item' => $d->item,
-                'codigo' => $d->codigo,
-                'cantidad_ha' => $porHa($d->cantidad),
-                'costo_usd_ha' => $dolaresHa($d->costo_soles),
-                'costo_soles' => $d->costo_soles,
+                'item' => $d['item'],
+                'codigo' => $d['codigo'],
+                'cantidad_ha' => $porHa($d['cantidad']),
+                'costo_usd_ha' => $dolaresHa($d['costo_soles']),
+                'costo_soles' => $d['costo_soles'],
             ];
-            $s['grupos'][$grupo]['costo_soles'] += $d->costo_soles;
-            $s['costo_soles'] += $d->costo_soles;
+            $s['grupos'][$grupo]['costo_soles'] += $d['costo_soles'];
+            $s['costo_soles'] += $d['costo_soles'];
             if ($s['con_cantidad']) {
-                $s['grupos'][$grupo]['cantidad'] += (float) $d->cantidad;
-                $s['cantidad'] += (float) $d->cantidad;
+                $s['grupos'][$grupo]['cantidad'] += (float) $d['cantidad'];
+                $s['cantidad'] += (float) $d['cantidad'];
             }
             unset($s);
         }
@@ -137,6 +137,11 @@ class CampaniaCostoProduccionConsulta
         $total = $produccion + $operativo + $fijo;
 
         return [
+            'area' => $area,
+            'tipo_cambio' => $tc,
+            'fecha_desde' => $datos['fecha_desde'],
+            'fecha_hasta' => $datos['fecha_hasta'],
+            'filas_origen' => $datos['filas_origen'],
             'secciones' => $secciones,
             'totales' => [
                 'produccion' => ['soles' => $produccion, 'usd_ha' => $dolaresHa($produccion)],
@@ -152,7 +157,7 @@ class CampaniaCostoProduccionConsulta
                 $area <= 0 ? 'La campaña no tiene área: no se pueden calcular los montos por hectárea.' : null,
                 $tc <= 0 ? 'La campaña no tiene tipo de cambio: no se pueden calcular los montos en US$.' : null,
                 $tc > 0 && $tc <= 1 ? 'El tipo de cambio de la campaña es ' . number_format($tc, 4)
-                    . ' (valor por defecto): los montos en US$ salen iguales a los soles. Corrígelo en Datos generales y vuelve a consultar.' : null,
+                    . ' (valor por defecto): los montos en US$ salen iguales a los soles. Corrígelo en Datos generales.' : null,
             ])),
         ];
     }

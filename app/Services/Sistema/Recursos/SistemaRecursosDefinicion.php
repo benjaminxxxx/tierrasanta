@@ -283,7 +283,7 @@ class SistemaRecursosDefinicion extends SistemaLibroExcelDefinicion
     {
         $existe = DB::table('campos')->where('nombre', $d['nombre'])->exists();
         $valores = ['campo_parent_nombre' => $d['padre'], 'grupo' => $d['grupo'], 'orden' => $d['orden'], 'etapa' => $d['etapa'],
-            'area' => $d['area'], 'alias' => $d['alias'], 'updated_at' => now()];
+            'area' => $d['area'], 'alias' => $d['alias'], 'bloqueado' => ($d['bloqueado'] ?? 'NO') === 'SI', 'updated_at' => now()];
         $existe ? DB::table('campos')->where('nombre', $d['nombre'])->update($valores)
             : DB::table('campos')->insert($valores + ['nombre' => $d['nombre'], 'created_at' => now()]);
     }

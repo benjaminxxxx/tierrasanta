@@ -27,10 +27,8 @@ class CampaniaRegistroImpactoConsulta
     /** tabla => [columna de campaña, columna de fecha, descripción] */
     private const TABLAS_CON_CAMPANIA = [
         'ins_res_fertilizante_campanias' => ['campo_campania_id', 'fecha', 'fertilizaciones'],
-        'pesticidas_campanias' => ['campo_campania_id', 'fecha', 'aplicaciones de pesticidas'],
         'eval_brotes_por_pisos' => ['campania_id', 'fecha', 'evaluaciones de brotes'],
         'venta_facturada_cochinillas' => ['campo_campania_id', 'fecha', 'ventas facturadas'],
-        'resumen_consumo_productos' => ['campos_campanias_id', 'fecha', 'consumos de productos'],
     ];
 
     /**

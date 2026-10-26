@@ -65,18 +65,6 @@ class Maquinaria extends Model
     }
 
     /**
-     * Relación con el modelo DetalleMaquinariaConsumo.
-     *
-     * Una maquinaria puede tener múltiples consumos de detalle.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
-    public function detallesConsumo()
-    {
-        return $this->hasMany(DetalleMaquinariaConsumo::class);
-    }
-
-    /**
      * Relación con el modelo AlmacenProductoSalida.
      *
      * Una maquinaria puede estar asociada a múltiples salidas de productos del almacén.

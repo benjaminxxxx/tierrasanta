@@ -181,16 +181,6 @@ class CampoCampania extends Model
         return $this->hasMany(EvalInfestacionPenca::class, 'campo_campania_id');
     }
 
-    public function camposCampaniasConsumo()
-    {
-        return $this->hasMany(CamposCampaniasConsumo::class, 'campos_campanias_id');
-    }
-
-    public function reporteCostoPlanilla()
-    {
-        return $this->hasMany(ReporteCostoPlanilla::class, 'campos_campanias_id');
-    }
-
     public function evaluacionPoblacionPlantas()
     {
         return $this->hasOne(EvalPoblacionPlanta::class, 'campania_id');
@@ -214,12 +204,6 @@ class CampoCampania extends Model
     public function distribucionesCostosMensuales()
     {
         return $this->hasMany(CostoMensualDistribucion::class, 'campo_campania_id');
-    }
-
-    // consumos()
-    public function resumenConsumoProductos()
-    {
-        return $this->hasMany(ResumenConsumoProductos::class, 'campos_campanias_id');
     }
 
     public function cochinillaIngreso()

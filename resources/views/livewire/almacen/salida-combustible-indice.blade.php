@@ -7,7 +7,6 @@
 
     <livewire:almacen.almacen-salida-kardex-component/>
     <livewire:producto.productos-form-component/>
-    <livewire:almacen.distribucion-combustible-calculo-component/>
     <livewire:almacen.distribucion-combustible-form-component />
     
 </x-app-layout>

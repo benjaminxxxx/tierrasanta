@@ -53,6 +53,7 @@ class SistemaRecursosExportarConsulta
         return DB::table('campos')->orderBy('orden')->orderBy('nombre')->get()->map(fn($c) => [
             'nombre' => $c->nombre, 'padre' => $c->campo_parent_nombre, 'grupo' => $c->grupo, 'orden' => $c->orden,
             'etapa' => $c->etapa, 'area' => $c->area, 'alias' => $c->alias,
+            'bloqueado' => SistemaRecursosReglas::sn($c->bloqueado ?? false),
         ])->all();
     }
 

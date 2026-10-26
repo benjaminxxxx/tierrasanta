@@ -2,87 +2,40 @@
 
 namespace App\Livewire\Cuadrilla;
 
-use App\Models\CostoManoIndirecta;
-use Illuminate\Support\Carbon;
+use App\Services\Cuadrilla\Resumen\CuadrillaResumenAnualConsulta;
+use Illuminate\Support\Facades\Session;
 use Livewire\Component;
-use Jantinnerezo\LivewireAlert\LivewireAlert;
-use Session;
 
+/** Cuadrilla → Resumen anual: jornales y bonos por mes, en vivo desde el registro diario. */
 class GestionCuadrillaResumenAnualComponent extends Component
 {
-    use LivewireAlert, \App\Traits\HandlesAlerts;
     public $aniosDisponibles = [];
-    public $totalCostoAnual = 0;
-    public $totalBonoAnual = 0;
-    public $totalSumadoAnual = 0;
     public $anioSeleccionado = null;
-    public $resumenMensual = [];
     public $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
     public function mount()
     {
         $this->aniosDisponibles = range(\App\Services\Sistema\Vigencia\SistemaVigenciaReglas::anioMinimo(2017), now()->year);
-        $this->anioSeleccionado = Session::get('anio', now()->year);
-        $this->obtenerResumenMensual();
+        $this->anioSeleccionado = (int) Session::get('anio', now()->year);
     }
-    public function obtenerResumenMensual()
-    {
-        if (!$this->anioSeleccionado)
-            return;
 
-        try {
-            $registros = CostoManoIndirecta::where('anio', $this->anioSeleccionado)
-                ->get()
-                ->keyBy('mes'); // Agrupa por mes para acceso rápido
-
-            $this->resumenMensual = [];
-
-            // Reiniciar totales
-            $this->totalCostoAnual = 0;
-            $this->totalBonoAnual = 0;
-            $this->totalSumadoAnual = 0;
-
-            for ($i = 1; $i <= 12; $i++) {
-                $resumen = $registros->get($i);
-
-                if ($resumen) {
-                    $totalCosto = $resumen->negro_cuadrillero_monto - $resumen->negro_cuadrillero_bono;
-                    $totalBono = $resumen->negro_cuadrillero_bono;
-                    $totalSumado = $resumen->negro_cuadrillero_monto;
-
-                    $this->resumenMensual[] = [
-                        'totalCosto' => $totalCosto,
-                        'totalBono' => $totalBono,
-                        'totalSumado' => $totalSumado,
-                        'reporteMes' => $resumen->negro_cuadrillero_file ?? null,
-                    ];
-
-                    $this->totalCostoAnual += $totalCosto;
-                    $this->totalBonoAnual += $totalBono;
-                    $this->totalSumadoAnual += $totalSumado;
-
-                } else {
-                    $this->resumenMensual[] = [
-                        'totalCosto' => 0,
-                        'totalBono' => 0,
-                        'totalSumado' => 0,
-                        'reporteMes' => null,
-                    ];
-                }
-            }
-
-            $this->dispatch('actualizarGraficoCuadrilla', $this->resumenMensual);
-
-        } catch (\Throwable $th) {
-            $this->errorAlert($th);
-        }
-    }
     public function updatedAnioSeleccionado()
     {
-        $this->obtenerResumenMensual();
+        $this->dispatch('actualizarGraficoCuadrilla', array_values($this->resumen()['meses']));
+    }
+
+    private function resumen(): array
+    {
+        return app(CuadrillaResumenAnualConsulta::class)->delAnio((int) $this->anioSeleccionado);
     }
 
     public function render()
     {
-        return view('livewire.cuadrilla.gestion-cuadrilla-resumen-anual-component');
+        $resumen = $this->resumen();
+
+        return view('livewire.cuadrilla.gestion-cuadrilla-resumen-anual-component', [
+            'resumenMensual' => array_values($resumen['meses']),
+            'totales' => $resumen['totales'],
+        ]);
     }
 }

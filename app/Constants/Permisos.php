@@ -25,7 +25,7 @@ namespace App\Constants;
  *    - CUADRILLA    → cuad_*
  *    - INSUMO       → ins_*, kardex_*, compra_*, almacen_*
  *    - CAMPO        → campos, labores, siembras, reg_*
- *    - CAMPAÑA      → campos_campanias, pesticidas_campanias
+ *    - CAMPAÑA      → campos_campanias
  *    - COCHINILLA   → cochinilla_*, venta_cochinillas, venta_facturada_cochinillas
  *    - PLANTA       → eval_poblacion_plantas*, poblacion_plantas*
  *    - EVALUACION   → eval_brotes*, eval_infestacion*, evaluacion_*, proyeccion_*
@@ -107,9 +107,7 @@ class Permisos
     const PROYECCION_EVALUACION_DETALLE = 'Evaluación de Campo Proyección Rendimiento Registrar Detalle';
     // =========================================================================
 // DOMINIO: CAMPAÑA (campañas agrícolas, costos, resúmenes por campo)
-// Tablas: campos_campanias, campos_campanias_consumos,
-//         , pesticidas_campanias,
-//         costo_mensual_distribuciones
+// Tablas: campos_campanias, costo_mensual_distribuciones
 // =========================================================================
 
     // — Módulo raíz
@@ -387,7 +385,7 @@ class Permisos
     //         nutrientes, producto_nutrientes, tabla_concentracion,
     //         compra_productos, almacen_producto_salidas, distribucion_combustibles,
     //         ins_kardexes, ins_kardex_movimientos, ins_kardex_reportes,
-    //         ins_kardex_reporte_detalles, ins_kardex_reporte_categorias
+    //         ins_kardex_reporte_detalles
     // =========================================================================
 
     // — Módulo raíz catálogo
@@ -460,7 +458,7 @@ class Permisos
 
     // =========================================================================
 // DOMINIO: CONTABILIDAD
-// Tablas: costos_mensuales, costo_fdm_mensuals, costo_mano_indirectas,
+// Tablas: costos_mensuales, costo_fdm_mensuals,
 //         costo_mensual_distribuciones, kardex_consolidados
 // =========================================================================
 
@@ -517,7 +515,7 @@ class Permisos
 
     // =========================================================================
 // DOMINIO: CAMPO — Maquinarias
-// Tablas: maquinarias, detalle_maquinaria_consumos
+// Tablas: maquinarias
 // =========================================================================
 
     const CAMPO_MAQUINARIA = 'Maquinarias';
@@ -528,8 +526,7 @@ class Permisos
 
     // =========================================================================
 // DOMINIO: REPORTE (reportes generales + auditoría)
-// Tablas: auditorias, reporte_costo_planillas,
-//         rpt_distribucion_combustibles
+// Tablas: auditorias
 // =========================================================================
 
     const REPORTE = 'Reporte y Auditoría';
