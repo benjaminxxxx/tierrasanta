@@ -120,6 +120,48 @@
                         </table>
                     </div>
                 </div>
+
+                {{-- Sustento del cese: contabilidad da de baja en el T-Registro solo con este documento --}}
+                @if ($contrato->fecha_fin && $contrato->motivo_cese_sunat || $contrato->documentos->isNotEmpty())
+                    @php
+                        $faltante = $contrato->fecha_fin
+                            ? \App\Services\Planilla\Laboral\PlanillaLaboralReglas::documentoCeseFaltante($contrato->motivo_cese_sunat, $contrato->documentos->pluck('tipo'))
+                            : null;
+                        $tiposDoc = \App\Services\Planilla\Laboral\PlanillaLaboralReglas::TIPOS_DOCUMENTO;
+                    @endphp
+                    <div class="border-t border-hairline px-4 py-3">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="text-xs font-medium uppercase text-graphite">Sustento del cese</span>
+                            <button type="button" wire:click="abrirDocumento({{ $contrato->id }})" class="{{ $btnLink }}"><i class="fa fa-paperclip"></i> Adjuntar documento</button>
+                        </div>
+                        @if ($faltante)
+                            <p class="mt-2 rounded-[6px] bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 dark:bg-amber-400/10 dark:text-amber-400">
+                                <i class="fa fa-triangle-exclamation"></i> Falta la {{ mb_strtolower($tiposDoc[$faltante]) }}: sin ella contabilidad no puede dar de baja en el T-Registro.
+                            </p>
+                        @endif
+                        @if ($contrato->documentos->isNotEmpty())
+                            <ul class="mt-2 divide-y divide-hairline text-[13px]">
+                                @foreach ($contrato->documentos as $d)
+                                    <li class="flex flex-wrap items-center gap-x-3 gap-y-1 py-1.5" wire:key="doc-{{ $d->id }}">
+                                        <i class="fa {{ str_contains((string) $d->mime, 'pdf') ? 'fa-file-pdf' : 'fa-file-image' }} text-steel"></i>
+                                        <span class="font-medium text-ink">{{ $tiposDoc[$d->tipo] ?? $d->tipo }}</span>
+                                        @if ($d->fecha_documento)
+                                            <span class="tabular-nums text-graphite">del {{ $f($d->fecha_documento) }}</span>
+                                        @endif
+                                        <span class="truncate text-xs text-pewter" title="{{ $d->nombre_original }}">{{ \Illuminate\Support\Str::limit($d->nombre_original, 40) }}</span>
+                                        @if ($d->observacion)
+                                            <span class="text-xs text-pewter">· {{ $d->observacion }}</span>
+                                        @endif
+                                        <span class="ml-auto flex items-center gap-3">
+                                            <button type="button" wire:click="descargarDocumento({{ $d->id }})" class="{{ $btnLink }}"><i class="fa fa-download"></i> Descargar</button>
+                                            <button type="button" wire:click="eliminarDocumento({{ $d->id }})" wire:confirm="¿Eliminar este documento?" class="text-xs text-red-700 underline-offset-4 hover:underline dark:text-red-400">Eliminar</button>
+                                        </span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
+                    </div>
+                @endif
             </div>
         @empty
             <div class="rounded-[10px] border border-dashed border-mist p-8 text-center text-sm text-pewter">
@@ -189,10 +231,36 @@
                         @endforeach
                     </x-select>
                     <x-input label="Comentario" wire:model="cierre.comentario_cese" />
+                    <div>
+                        <x-label value="Carta de renuncia / acta de despido" />
+                        @include('livewire.planilla.empleado.partials.input-documento')
+                        <p class="mt-1 text-xs text-pewter">Opcional ahora: si aún no la tienes, se puede adjuntar después y quedará en tareas pendientes.</p>
+                    </div>
                     <p class="text-xs text-pewter">Sus datos y su usuario del sistema (si tiene) se conservan para una recontratación.</p>
                     <div class="flex justify-end gap-2">
                         <button type="button" wire:click="cerrarPanel" class="{{ $btn2 }}">Cancelar</button>
-                        <button type="button" wire:click="confirmarFinalizar" class="{{ $btnPrincipal }}"><i class="fa fa-check"></i> Finalizar</button>
+                        <button type="button" wire:click="confirmarFinalizar" class="{{ $btnPrincipal }}" wire:loading.attr="disabled" wire:target="archivo,confirmarFinalizar"><i class="fa fa-check"></i> Finalizar</button>
+                    </div>
+                @elseif ($panel === 'documento')
+                    <h4 class="text-base font-semibold text-ink">Adjuntar documento</h4>
+                    <p class="text-xs text-pewter">
+                        Contrato {{ $f($contratoPanel?->fecha_inicio) }} – {{ $contratoPanel?->fecha_fin ? $f($contratoPanel->fecha_fin) : 'sin fin' }}.
+                        Escaneo o foto legible del documento firmado.
+                    </p>
+                    <x-select label="Tipo *" wire:model="doc.tipo">
+                        @foreach (\App\Services\Planilla\Laboral\PlanillaLaboralReglas::TIPOS_DOCUMENTO as $codigo => $texto)
+                            <option value="{{ $codigo }}">{{ $texto }}</option>
+                        @endforeach
+                    </x-select>
+                    <x-fecha label="Fecha del documento" wire:model="doc.fecha_documento" help="La que figura en la carta o el acta" />
+                    <div>
+                        <x-label value="Archivo *" />
+                        @include('livewire.planilla.empleado.partials.input-documento')
+                    </div>
+                    <x-input label="Observación" wire:model="doc.observacion" />
+                    <div class="flex justify-end gap-2">
+                        <button type="button" wire:click="cerrarPanel" class="{{ $btn2 }}">Cancelar</button>
+                        <button type="button" wire:click="guardarDocumento" class="{{ $btnPrincipal }}" wire:loading.attr="disabled" wire:target="archivo,guardarDocumento"><i class="fa fa-paperclip"></i> Adjuntar</button>
                     </div>
                 @endif
             </div>

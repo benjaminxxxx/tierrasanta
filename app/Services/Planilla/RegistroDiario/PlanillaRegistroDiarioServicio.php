@@ -128,7 +128,6 @@ class PlanillaRegistroDiarioServicio
                 // Validar existencia en el catálogo
 
                 if (!array_key_exists($r->asistencia, $tiposAsistencia)) {
-                    dd($r);
                     throw new Exception("El tipo de asistencia '{$r->asistencia}' no está registrado.");
                 }
 
@@ -301,7 +300,8 @@ class PlanillaRegistroDiarioServicio
             ->flip();
 
         foreach ($datos as $i => $informacion) {
-            $fila = $i + 1;
+            // En los mensajes: el nombre del trabajador (el número de fila no coincide con la tabla)
+            $fila = !empty($informacion['nombres']) ? "{$informacion['nombres']}" : (string) ($i + 1);
             $planillaMensualDetalleId = $informacion['plan_men_detalle_id'] ?? null;
             $asistencia = trim($informacion['asistencia'] ?? '');
 
@@ -343,15 +343,7 @@ class PlanillaRegistroDiarioServicio
                     throw new Exception("Fila {$fila}, tramo {$x}: la labor {$labor} es de suspensión ({$codigoSuspension}), su campo debe ser FDM (está en {$nombreCampoReal}).");
                 }
 
-                // Validación de campaña vigente para esta fecha
-                $tieneCampaniaVigente = CampoCampania::where('campo', $nombreCampoReal)
-                    ->where('fecha_inicio', '<=', $fecha)
-                    ->where(function ($q) use ($fecha) {
-                        $q->whereNull('fecha_fin')->orWhere('fecha_fin', '>=', $fecha);
-                    })
-                    ->exists();
-
-                // No entra al IF si existe campaña vigente O si el campo es 'FDM'
+                // Campaña vigente en la fecha (ya cargadas arriba). No entra al IF si existe campaña vigente O si el campo es 'FDM'
                 if (!isset($camposConCampaniaVigente[$nombreCampoReal]) && $nombreCampoReal !== 'FDM') {
                     $camposSinCampaniaVigente[$nombreCampoReal] = true;
                     continue;
@@ -411,8 +403,17 @@ class PlanillaRegistroDiarioServicio
     {
         // BDD de costos: regenerar la mano de obra de estas fechas al terminar la petición
         \App\Services\Costos\Consolidacion\BddManoObraServicio::registrarCambio($fecha);
+        // Nunca leer menos tramos de los que traen datos: los de más se borraban sin aviso al guardar la fila
+        $totalActividades = PlanillaRegistroDiarioReglas::totalActividades((int) $totalActividades, $datos);
+        $this->validarContratos($fecha, $datos);
         $datosLimpios = $this->procesarDatos($datos, $totalActividades, $fecha);
 
+        // Todo o nada: si falla una fila (p. ej. una suspensión que hay que partir) no queda medio día guardado
+        \Illuminate\Support\Facades\DB::transaction(fn() => $this->guardarProcesados($fecha, $datosLimpios));
+    }
+
+    private function guardarProcesados($fecha, array $datosLimpios): void
+    {
         foreach ($datosLimpios as $item) {
 
             // Leer el estado ANTERIOR antes de sobrescribirlo, para detectar el cambio
@@ -460,6 +461,43 @@ class PlanillaRegistroDiarioServicio
         $this->actualizarResumenAsistencia($fecha);
     }
 
+    /**
+     * La lista es del mes: quien cesó sigue en ella. Un día fuera de su contrato solo admite vacío o el código de
+     * renuncia (R); asistencias, faltas o labores ahí no corresponden (se pagarían o contarían sin contrato).
+     */
+    private function validarContratos(string $fecha, array $datos): void
+    {
+        $detalleIds = array_filter(array_map(fn($f) => $f['plan_men_detalle_id'] ?? null, $datos));
+        if (!$detalleIds) {
+            return;
+        }
+        $empleadoPorDetalle = PlanMensualDetalle::whereIn('id', $detalleIds)->pluck('plan_empleado_id', 'id');
+        $conContrato = \App\Models\PlanContrato::whereIn('plan_empleado_id', $empleadoPorDetalle->values())
+            ->where('tipo_planilla', 'agraria')
+            ->whereDate('fecha_inicio', '<=', $fecha)
+            ->where(fn($q) => $q->whereNull('fecha_fin')->orWhereDate('fecha_fin', '>=', $fecha))
+            ->pluck('plan_empleado_id')->flip();
+        $renuncia = PlanTipoAsistencia::codigosConRol(PlanTipoAsistencia::ROL_RENUNCIA);
+
+        $fuera = [];
+        foreach ($datos as $f) {
+            $empleado = $empleadoPorDetalle[$f['plan_men_detalle_id'] ?? 0] ?? null;
+            if (!$empleado || isset($conContrato[$empleado])) {
+                continue;
+            }
+            $codigo = trim((string) ($f['asistencia'] ?? ''));
+            $conTramos = PlanillaRegistroDiarioReglas::tramosUsados([$f]) > 0;
+            if (($codigo !== '' && !in_array($codigo, $renuncia, true)) || $conTramos) {
+                $fuera[] = $f['nombres'] ?? "trabajador {$empleado}";
+            }
+        }
+        if ($fuera) {
+            throw new \App\Exceptions\ErrorControlado('Sin contrato el ' . Carbon::parse($fecha)->format('d/m/Y') . ': '
+                . implode(', ', array_slice($fuera, 0, 5)) . (count($fuera) > 5 ? '…' : '')
+                . '. Ese día solo se puede dejar vacío o con R. Si sí trabajó, revisa las fechas de su contrato.');
+        }
+    }
+
     private function minutosTramo($inicio, $fin): int
     {
         return (int) Carbon::parse($inicio)->diffInMinutes(Carbon::parse($fin), false);
@@ -479,10 +517,15 @@ class PlanillaRegistroDiarioServicio
                 $ex->delete();
         }
 
-        // Crear los que no existen
+        // Crear los que no existen y dejar el orden de la tabla (tramo 1, 2, 3…)
+        $orden = 0;
         foreach ($nuevosMap as $key => $nuevo) {
-            if (!$existentesMap->has($key)) {
-                $registro->detalles()->create(array_merge($nuevo, ['orden' => 0])); // El orden se puede manejar por ID o index
+            $orden++;
+            $existente = $existentesMap->get($key);
+            if (!$existente) {
+                $registro->detalles()->create(array_merge($nuevo, ['orden' => $orden]));
+            } elseif ((int) $existente->orden !== $orden) {
+                $existente->update(['orden' => $orden]);
             }
         }
     }

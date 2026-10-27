@@ -52,6 +52,12 @@ class PlanContrato extends Model
         return $this->hasMany(PlanContratoRemuneracion::class, 'plan_contrato_id')->orderBy('desde');
     }
 
+    /** Documentos del contrato (sustento del cese: carta de renuncia, carta o acta de despido). */
+    public function documentos()
+    {
+        return $this->hasMany(PlanContratoDocumento::class, 'plan_contrato_id')->orderByDesc('created_at');
+    }
+
     public function creadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'creado_por');

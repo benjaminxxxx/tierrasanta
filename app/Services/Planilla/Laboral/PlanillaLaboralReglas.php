@@ -18,6 +18,41 @@ class PlanillaLaboralReglas
     public const TIPOS_INGRESO = ['planilla', 'honorarios'];
     public const MODALIDADES_PAGO = ['mensual', 'quincenal', 'semanal'];
 
+    /** Tipos de documento del contrato y su nombre. */
+    public const TIPOS_DOCUMENTO = [
+        'carta_renuncia' => 'Carta de renuncia',
+        'carta_despido' => 'Carta o acta de despido',
+        'otro' => 'Otro documento',
+    ];
+
+    /**
+     * Motivo de cese SUNAT => documento que lo sustenta. Contabilidad da de baja en el T-Registro solo con él;
+     * un contrato finalizado con estos motivos y sin su documento queda como tarea pendiente.
+     */
+    public const DOCUMENTO_POR_MOTIVO = [
+        '01' => 'carta_renuncia',
+        '02' => 'carta_despido',
+    ];
+
+    /** Archivos permitidos (escaneo o foto del documento) y tamaño máximo en KB. */
+    public const DOCUMENTO_EXTENSIONES = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
+    public const DOCUMENTO_MAX_KB = 10240;
+
+    /** Documento que le falta a un contrato finalizado (o null si no le falta ninguno). */
+    public static function documentoCeseFaltante(?string $motivoCese, iterable $tiposAdjuntos): ?string
+    {
+        $tipo = self::DOCUMENTO_POR_MOTIVO[$motivoCese] ?? null;
+        if (!$tipo) {
+            return null;
+        }
+        foreach ($tiposAdjuntos as $t) {
+            if ($t === $tipo) {
+                return null;
+            }
+        }
+        return $tipo;
+    }
+
     public static function texto(?string $fecha): string
     {
         return $fecha ? Carbon::parse($fecha)->format('d/m/Y') : 'sin fin';

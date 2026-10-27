@@ -2,6 +2,7 @@
 
 namespace App\Services\Planilla\Empleado;
 
+use App\Services\Planilla\Laboral\PlanillaLaboralReglas;
 use App\Models\PlanContrato;
 use App\Models\PlanSuspension;
 use App\Models\PlanTipoAsistencia;
@@ -15,16 +16,21 @@ use Illuminate\Support\Facades\DB;
  * Tareas pendientes de contratos a partir del registro diario de planilla (por mes):
  *
  * 1. contrato-sin-finalizar: hay un código con rol "renuncia" (R) y el contrato sigue abierto
- *    (o termina después). Acción: finalizarlo al último día trabajado, con motivo 01 Renuncia.
+ *    o termina después de la R. El cese es el día de la R (fecha de renuncia, criterio de contabilidad):
+ *    F, F, R los días 3, 4 y 5 → fin el 5. Un cese antes de la R también se acepta. Acción: finalizarlo
+ *    el día de la R, con motivo 01 Renuncia.
  * 2. posible-abandono: contrato activo sin ningún registro 5+ días hábiles seguidos hasta el
  *    último día registrado, o 3 faltas seguidas, sin R. Hay que colocar R (o su permiso).
  * 3. registros-despues-renuncia: después de la R hay registros de asistencia en el mismo mes.
+ * 4. cese-sin-documento: contrato finalizado en el mes por renuncia o despido sin su carta o acta adjunta
+ *    (contabilidad da de baja en el T-Registro solo con ese documento). Se adjunta en el panel del empleado.
  */
 class VerificacionContratosServicio
 {
     public const TIPO_SIN_FINALIZAR = 'contrato-sin-finalizar';
     public const TIPO_ABANDONO = 'posible-abandono';
     public const TIPO_POST_RENUNCIA = 'registros-despues-renuncia';
+    public const TIPO_SIN_DOCUMENTO = 'cese-sin-documento';
 
     public const DIAS_SIN_REGISTRO = 5;
     public const FALTAS_SEGUIDAS = 3;
@@ -84,10 +90,10 @@ class VerificacionContratosServicio
             $primeraR = $delEmpleado->first(fn($r) => in_array($r->codigo, $codigosRenuncia, true))?->fecha;
 
             if ($primeraR) {
-                // 1) contrato abierto (o que termina después) pese a la renuncia
+                // 1) contrato abierto o que termina después del día de la R (terminar ese día o antes es correcto)
                 $contrato = ($contratos->get($empleadoId) ?? collect())
                     ->first(fn($c) => Carbon::parse($c->fecha_inicio)->toDateString() <= $primeraR
-                        && (!$c->fecha_fin || Carbon::parse($c->fecha_fin)->toDateString() >= $primeraR));
+                        && (!$c->fecha_fin || Carbon::parse($c->fecha_fin)->toDateString() > $primeraR));
                 if ($contrato) {
                     $ultimoTrabajado = $delEmpleado
                         ->filter(fn($r) => $r->fecha < $primeraR && $r->codigo !== '' && !in_array($r->codigo, $codigosRenuncia, true) && $r->codigo !== 'F')
@@ -152,17 +158,18 @@ class VerificacionContratosServicio
         $this->registrarSinFinalizar($sinFinalizar, $claveMes, $nombreMes, $inicio, $fin);
         $this->registrarAbandono($abandono, $claveMes, $nombreMes, $inicio, $fin);
         $this->registrarPostRenuncia($postRenuncia, $claveMes, $nombreMes, $inicio, $fin);
+        $this->registrarSinDocumento($claveMes, $nombreMes, $inicio, $fin);
     }
 
-    /** Acción de la tarea: finaliza el contrato al último día trabajado con motivo Renuncia. */
-    public function finalizarContrato(int $contratoId, string $fechaFin, string $fechaRenuncia): void
+    /** Acción de la tarea: finaliza (o corrige) el contrato el día de la R con motivo Renuncia. */
+    public function finalizarContrato(int $contratoId, string $fechaFin, string $fechaRenuncia, ?string $ultimoTrabajado = null): void
     {
-        $fecha = Carbon::parse($fechaFin)->format('d/m/Y');
         app(ContratoServicio::class)->finalizarContrato($contratoId, [
             'fecha_fin' => $fechaFin,
             'motivo_cese_sunat' => self::MOTIVO_RENUNCIA,
-            'comentario_cese' => "Renuncia registrada en asistencia desde el " . Carbon::parse($fechaRenuncia)->format('d/m/Y')
-                . ". Último día trabajado: {$fecha} (finalizado desde tareas pendientes).",
+            'comentario_cese' => 'Renuncia registrada en asistencia el ' . Carbon::parse($fechaRenuncia)->format('d/m/Y')
+                . ($ultimoTrabajado ? '. Último día trabajado: ' . Carbon::parse($ultimoTrabajado)->format('d/m/Y') : '')
+                . ' (finalizado desde tareas pendientes).',
         ]);
     }
 
@@ -175,8 +182,8 @@ class VerificacionContratosServicio
             'tipo' => self::TIPO_SIN_FINALIZAR, 'clave' => $claveMes,
             'fecha_inicio' => $inicio, 'fecha_fin' => $fin,
             'titulo' => "Contratos sin finalizar — {$nombreMes}",
-            'descripcion' => 'Trabajadores con renuncia (R) en el registro diario cuyo contrato sigue abierto o termina después. '
-                . 'El botón lo finaliza al último día trabajado; si la fecha no es esa, finalízalo desde el panel del empleado.',
+            'descripcion' => 'Trabajadores con renuncia (R) en el registro diario cuyo contrato sigue abierto o termina después de la R. '
+                . 'El cese es el día de la R (fecha de renuncia); el botón finaliza el contrato ese día.',
             'variante' => 'danger',
             'cantidad_afectados' => count($casos),
             'servicio' => self::class, 'metodo_detectar' => 'detectarTareasPendientes', 'acciones' => [],
@@ -186,6 +193,7 @@ class VerificacionContratosServicio
         foreach ($casos as $c) {
             $clave = "{$claveMes}-emp{$c['empleadoId']}";
             $vigentes[] = $clave;
+            $diaR = Carbon::parse($c['primeraR'])->format('d/m/Y');
             $ultimo = Carbon::parse($c['ultimoTrabajado'])->format('d/m/Y');
             $contrato = $c['contrato'];
             $yaFinalizado = $contrato->estado === 'finalizado';
@@ -193,17 +201,16 @@ class VerificacionContratosServicio
             $registrador->registrarOActualizar([
                 'tipo' => self::TIPO_SIN_FINALIZAR, 'clave' => $clave, 'parent_id' => $padre?->id,
                 'fecha_inicio' => $inicio, 'fecha_fin' => $fin,
-                'titulo' => "{$c['nombre']}: R desde el " . Carbon::parse($c['primeraR'])->format('d/m/Y') . " — último día trabajado {$ultimo}"
-                    . ($yaFinalizado ? ' (su contrato está finalizado al ' . Carbon::parse($contrato->fecha_fin)->format('d/m/Y') . ')' : ''),
-                'descripcion' => $yaFinalizado
-                    ? 'La fecha de fin del contrato no coincide con la renuncia: corrígela desde el panel del empleado.'
-                    : "Se finalizará el contrato al {$ultimo} (motivo 01 Renuncia). Si no es ese día, hazlo desde el panel del empleado.",
+                'titulo' => "{$c['nombre']}: R el {$diaR}"
+                    . ($yaFinalizado ? ' — su contrato termina después, el ' . Carbon::parse($contrato->fecha_fin)->format('d/m/Y') : ' — contrato abierto'),
+                'descripcion' => "Se finalizará el contrato el {$diaR} (día de la R, motivo 01 Renuncia). Último día trabajado: {$ultimo}. "
+                    . 'Si la fecha de cese es otra, hazlo desde el panel del empleado.',
                 'variante' => 'danger', 'cantidad_afectados' => 1,
                 'servicio' => self::class, 'metodo_detectar' => 'detectarTareasPendientes',
-                'acciones' => $yaFinalizado ? [] : [[
-                    'titulo' => "Finalizar al {$ultimo}",
+                'acciones' => [[
+                    'titulo' => ($yaFinalizado ? 'Corregir cese al ' : 'Finalizar al ') . $diaR,
                     'metodo' => 'finalizarContrato',
-                    'parametros' => ['contratoId' => $contrato->id, 'fechaFin' => $c['ultimoTrabajado'], 'fechaRenuncia' => $c['primeraR']],
+                    'parametros' => ['contratoId' => $contrato->id, 'fechaFin' => $c['primeraR'], 'fechaRenuncia' => $c['primeraR'], 'ultimoTrabajado' => $c['ultimoTrabajado']],
                 ]],
             ]);
         }
@@ -284,6 +291,52 @@ class VerificacionContratosServicio
     }
 
     /** Cierra las subtareas del mes que ya no aparecen (se resolvieron). */
+    /** Contratos finalizados en el mes por renuncia o despido que aún no tienen su documento adjunto. */
+    private function registrarSinDocumento(string $claveMes, string $nombreMes, string $inicio, string $fin): void
+    {
+        $contratos = PlanContrato::with(['empleado', 'documentos:id,plan_contrato_id,tipo'])
+            ->whereBetween('fecha_fin', [$inicio, $fin])
+            ->whereIn('motivo_cese_sunat', array_keys(PlanillaLaboralReglas::DOCUMENTO_POR_MOTIVO))
+            ->orderBy('fecha_fin')
+            ->get()
+            ->filter(fn($c) => PlanillaLaboralReglas::documentoCeseFaltante($c->motivo_cese_sunat, $c->documentos->pluck('tipo')));
+
+        $registrador = app(TareaPendienteServicio::class);
+        $padre = $registrador->registrarOActualizar([
+            'tipo' => self::TIPO_SIN_DOCUMENTO, 'clave' => $claveMes,
+            'fecha_inicio' => $inicio, 'fecha_fin' => $fin,
+            'titulo' => "Ceses sin carta de renuncia o acta de despido — {$nombreMes}",
+            'descripcion' => 'Contabilidad da de baja en el T-Registro solo con el documento firmado. '
+                . 'Adjúntalo en el panel del empleado → Historial laboral → "Adjuntar documento".',
+            'variante' => 'warning',
+            'cantidad_afectados' => $contratos->count(),
+            'servicio' => self::class, 'metodo_detectar' => 'detectarTareasPendientes', 'acciones' => [],
+        ]);
+
+        $vigentes = [];
+        foreach ($contratos as $c) {
+            $clave = "{$claveMes}-emp{$c->plan_empleado_id}-c{$c->id}";
+            $vigentes[] = $clave;
+            $falta = PlanillaLaboralReglas::documentoCeseFaltante($c->motivo_cese_sunat, $c->documentos->pluck('tipo'));
+            $registrador->registrarOActualizar([
+                'tipo' => self::TIPO_SIN_DOCUMENTO, 'clave' => $clave, 'parent_id' => $padre?->id,
+                'fecha_inicio' => $inicio, 'fecha_fin' => $fin,
+                'titulo' => ($c->empleado?->nombre_completo ?? "Empleado {$c->plan_empleado_id}") . ': cese el '
+                    . $c->fecha_fin->format('d/m/Y') . ' — falta la ' . mb_strtolower(PlanillaLaboralReglas::TIPOS_DOCUMENTO[$falta]),
+                'descripcion' => 'Motivo: ' . (\App\Services\Planilla\Empleado\EmpleadoPerfilServicio::MOTIVOS_CESE[$c->motivo_cese_sunat] ?? $c->motivo_cese_sunat)
+                    . '. Adjunta el escaneo o la foto del documento firmado.',
+                'variante' => 'warning', 'cantidad_afectados' => 1,
+                'servicio' => self::class, 'metodo_detectar' => 'detectarTareasPendientes',
+                'acciones' => [[
+                    'titulo' => 'Adjuntar documento',
+                    'tipo_accion' => 'link',
+                    'url' => route('planilla.empleados', ['empleado' => $c->plan_empleado_id, 'tab' => 'contratos']),
+                ]],
+            ]);
+        }
+        $this->cerrarNoVigentes(self::TIPO_SIN_DOCUMENTO, $claveMes, $vigentes);
+    }
+
     private function cerrarNoVigentes(string $tipo, string $claveMes, array $vigentes): void
     {
         TareaPendiente::where('tipo', $tipo)->where('estado', 'pendiente')

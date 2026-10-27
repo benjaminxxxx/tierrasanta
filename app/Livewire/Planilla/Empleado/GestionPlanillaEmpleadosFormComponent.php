@@ -62,6 +62,15 @@ class GestionPlanillaEmpleadosFormComponent extends Component
         'abrirFormularioRegistroEmpleadoCargo' => 'abrirCargos',
     ];
 
+    /** /planilla/empleados?empleado=ID&tab=contratos (p. ej. desde Tareas pendientes) abre el panel de ese empleado. */
+    public function mount(): void
+    {
+        $id = request()->query('empleado');
+        if ($id && ctype_digit((string) $id)) {
+            $this->abrirEmpleado((int) $id, (string) request()->query('tab', 'perfil'));
+        }
+    }
+
     public function abrirEmpleado($id = null, string $tab = 'perfil'): void
     {
         $this->resetForm();

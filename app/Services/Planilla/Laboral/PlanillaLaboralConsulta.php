@@ -78,9 +78,15 @@ class PlanillaLaboralConsulta
      */
     public static function registrosDiariosSinContrato(PlanContrato $contrato, ?array $nuevo): array
     {
+        // La R (renuncia) y los días vacíos no son trabajo: pueden quedar fuera del contrato. Sin esto, la tarea
+        // "contrato sin finalizar" pedía cerrar al día antes de la R y el cierre se bloqueaba por esa misma R.
+        $renuncia = \App\Models\PlanTipoAsistencia::codigosConRol(\App\Models\PlanTipoAsistencia::ROL_RENUNCIA);
         $fechas = \App\Models\PlanRegistroDiario::query()
             ->join('plan_mensual_detalles as d', 'd.id', '=', 'plan_registros_diarios.plan_det_men_id')
             ->where('d.plan_empleado_id', $contrato->plan_empleado_id)
+            ->whereNotNull('plan_registros_diarios.asistencia')
+            ->where('plan_registros_diarios.asistencia', '<>', '')
+            ->whereNotIn('plan_registros_diarios.asistencia', $renuncia)
             ->whereDate('plan_registros_diarios.fecha', '>=', $contrato->fecha_inicio)
             ->when($contrato->fecha_fin, fn($q) => $q->whereDate('plan_registros_diarios.fecha', '<=', $contrato->fecha_fin))
             ->orderBy('plan_registros_diarios.fecha')

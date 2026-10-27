@@ -13,6 +13,12 @@ class GestionPlanillaRegistroDiarioComponent extends Component
     use ConFechaReporteDia, LivewireAlert, ConReporteDiarioExcel, \App\Traits\HandlesAlerts;
     public $mes;
     public $anio;
+    /**
+     * Lo que se elige en el selector de fecha. No cambia $fecha directo: el navegador primero revisa si la tabla
+     * tiene cambios sin guardar (registroDiarioGuardia) y luego llama a irAFecha().
+     */
+    public $fechaElegida;
+
     public function mount()
     {
         $this->inicializarFecha();
@@ -23,6 +29,14 @@ class GestionPlanillaRegistroDiarioComponent extends Component
         $fecha = Carbon::parse($this->fecha);
         $this->mes = $fecha->format('m');
         $this->anio = $fecha->format('Y');
+        $this->fechaElegida = $this->fecha;
+    }
+
+    public function updatedFechaElegida($valor): void
+    {
+        if (self::esFechaValida($valor) && $valor !== $this->fecha) {
+            $this->dispatch('registroDiarioPideFecha', fecha: $valor);
+        }
     }
     public function render()
     {

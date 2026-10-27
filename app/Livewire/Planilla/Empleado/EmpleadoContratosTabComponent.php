@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
+use Livewire\WithFileUploads;
+use App\Models\PlanContratoDocumento;
+use App\Services\Planilla\Laboral\PlanillaLaboralDocumentoProceso;
+use App\Services\Planilla\Laboral\PlanillaLaboralReglas;
 
 /**
  * Pestaña "Historial laboral" del panel del empleado (DESIGN.md): cada contrato (periodo legal) con su línea de tiempo
@@ -22,11 +26,11 @@ use Livewire\Component;
  */
 class EmpleadoContratosTabComponent extends Component
 {
-    use LivewireAlert, \App\Traits\HandlesAlerts;
+    use LivewireAlert, \App\Traits\HandlesAlerts, WithFileUploads;
 
     public int $empleadoId;
 
-    /** null | contrato | asignacion | remuneracion | finalizar */
+    /** null | contrato | asignacion | remuneracion | finalizar | documento */
     public ?string $panel = null;
     public ?int $contratoId = null;
     public ?int $particulaId = null;
@@ -35,6 +39,9 @@ class EmpleadoContratosTabComponent extends Component
     public array $a = [];
     public array $r = [];
     public array $cierre = [];
+    /** Documento a adjuntar (panel documento o al finalizar) y sus datos */
+    public $archivo = null;
+    public array $doc = [];
 
     // ------------------------------------------------------------------ contratos
 
@@ -84,6 +91,8 @@ class EmpleadoContratosTabComponent extends Component
     {
         $this->abrirPanel('finalizar', $this->contrato($id)->id);
         $this->cierre = ['fecha_fin' => null, 'motivo_cese_sunat' => null, 'comentario_cese' => null];
+        $this->archivo = null;
+        $this->doc = ['fecha_documento' => null];
     }
 
     public function confirmarFinalizar(PlanillaLaboralProceso $proceso): void
@@ -93,10 +102,82 @@ class EmpleadoContratosTabComponent extends Component
             if (blank($this->cierre['fecha_fin'] ?? null) || blank($this->cierre['motivo_cese_sunat'] ?? null)) {
                 throw new ErrorControlado('Indica la fecha de fin y el motivo de cese.');
             }
-            $proceso->finalizarContrato($this->contrato($this->contratoId), $this->cierre['fecha_fin'], $this->cierre['motivo_cese_sunat'], $this->cierre['comentario_cese'] ?? null);
-            $this->terminar('Contrato finalizado.');
+            $this->validarArchivo();
+            $contrato = $proceso->finalizarContrato($this->contrato($this->contratoId), $this->cierre['fecha_fin'], $this->cierre['motivo_cese_sunat'], $this->cierre['comentario_cese'] ?? null);
+            // Sustento del cese (opcional aquí: se puede adjuntar después)
+            $tipo = PlanillaLaboralReglas::DOCUMENTO_POR_MOTIVO[$this->cierre['motivo_cese_sunat']] ?? 'otro';
+            if ($this->archivo) {
+                app(PlanillaLaboralDocumentoProceso::class)->adjuntar($contrato, $this->archivo, $tipo, $this->doc['fecha_documento'] ?? null);
+            }
+            $this->terminar($this->archivo || !isset(PlanillaLaboralReglas::DOCUMENTO_POR_MOTIVO[$this->cierre['motivo_cese_sunat']])
+                ? 'Contrato finalizado.'
+                : 'Contrato finalizado. Falta adjuntar la ' . mb_strtolower(PlanillaLaboralReglas::TIPOS_DOCUMENTO[$tipo]) . ': queda en tareas pendientes.');
         } catch (\Throwable $e) {
             $this->errorAlert($e);
+        }
+    }
+
+    // ------------------------------------------------------------------ documentos del contrato (sustento del cese)
+
+    public function abrirDocumento(int $contratoId): void
+    {
+        $contrato = $this->contrato($contratoId);
+        $this->abrirPanel('documento', $contrato->id);
+        $this->archivo = null;
+        $this->doc = [
+            'tipo' => PlanillaLaboralReglas::DOCUMENTO_POR_MOTIVO[$contrato->motivo_cese_sunat] ?? 'otro',
+            'fecha_documento' => null,
+            'observacion' => null,
+        ];
+    }
+
+    public function guardarDocumento(PlanillaLaboralDocumentoProceso $proceso): void
+    {
+        try {
+            $this->exigir(Permisos::PERSONAL_CONTRATOS, 'contratos');
+            if (!$this->archivo) {
+                throw new ErrorControlado('Elige el archivo (PDF o foto del documento).');
+            }
+            $this->validarArchivo();
+            $proceso->adjuntar($this->contrato($this->contratoId), $this->archivo, $this->doc['tipo'] ?? 'otro',
+                $this->doc['fecha_documento'] ?? null, $this->doc['observacion'] ?? null);
+            $this->terminar('Documento adjuntado.');
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+        }
+    }
+
+    public function descargarDocumento(int $id, PlanillaLaboralDocumentoProceso $proceso)
+    {
+        try {
+            $this->exigir(Permisos::PERSONAL_CONTRATOS, 'contratos');
+            return $proceso->descargar($this->documento($id));
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+        }
+    }
+
+    public function eliminarDocumento(int $id, PlanillaLaboralDocumentoProceso $proceso): void
+    {
+        try {
+            $this->exigir(Permisos::PERSONAL_CONTRATOS, 'contratos');
+            $proceso->eliminar($this->documento($id));
+            $this->terminar('Documento eliminado.');
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+        }
+    }
+
+    private function documento(int $id): PlanContratoDocumento
+    {
+        return PlanContratoDocumento::whereHas('contrato', fn($q) => $q->where('plan_empleado_id', $this->empleadoId))->findOrFail($id);
+    }
+
+    private function validarArchivo(): void
+    {
+        if ($this->archivo) {
+            $this->validate(['archivo' => 'file|mimes:' . implode(',', PlanillaLaboralReglas::DOCUMENTO_EXTENSIONES) . '|max:' . PlanillaLaboralReglas::DOCUMENTO_MAX_KB],
+                ['archivo.mimes' => 'El documento debe ser PDF o imagen.', 'archivo.max' => 'El documento pesa más de 10 MB.']);
         }
     }
 
@@ -262,7 +343,7 @@ class EmpleadoContratosTabComponent extends Component
 
     public function cerrarPanel(): void
     {
-        $this->reset(['panel', 'contratoId', 'particulaId', 'c', 'a', 'r', 'cierre']);
+        $this->reset(['panel', 'contratoId', 'particulaId', 'c', 'a', 'r', 'cierre', 'archivo', 'doc']);
     }
 
     private function terminar(string $mensaje): void
@@ -276,7 +357,7 @@ class EmpleadoContratosTabComponent extends Component
 
     public function render()
     {
-        $contratos = PlanContrato::with(['asignaciones.cargo', 'asignaciones.grupo', 'remuneraciones'])
+        $contratos = PlanContrato::with(['asignaciones.cargo', 'asignaciones.grupo', 'remuneraciones', 'documentos'])
             ->where('plan_empleado_id', $this->empleadoId)->orderByDesc('fecha_inicio')->get();
         return view('livewire.planilla.empleado.empleado-contratos-tab-component', [
             'contratos' => $contratos,
