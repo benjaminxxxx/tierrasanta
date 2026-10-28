@@ -85,9 +85,27 @@ class ReporteDiarioAgregarRegadoresComponent extends Component
         }
     }
 
-    public function guardar(): void
+    /** Cuadrilleros elegidos que parecen ser de planilla (se pregunta antes de guardar). */
+    public array $sospechosos = [];
+
+    /** Cambia cada cuadrillero sospechoso por su ficha de planilla y guarda. */
+    public function usarPlanilla(): void
+    {
+        $cambio = collect($this->sospechosos)->keyBy('cuadrillero_id');
+        $this->elegidos = collect($this->elegidos)->map(fn($e) => $e['tipo'] === 'cuadrilleros' && $cambio->has((int) $e['id'])
+            ? ['id' => $cambio[(int) $e['id']]['empleado_id'], 'tipo' => 'empleados', 'nombre' => $cambio[(int) $e['id']]['empleado']]
+            : $e)->unique(fn($e) => $e['tipo'] . ':' . $e['id'])->values()->all();
+        $this->sospechosos = [];
+        $this->guardar(true);
+    }
+
+    public function guardar(bool $confirmado = false): void
     {
         try {
+            if (!$confirmado && ($this->sospechosos = app(RiegoRegadorProceso::class)->cuadrillerosQueSonDePlanilla($this->fecha, $this->elegidos))) {
+                return; // la vista muestra el aviso con "Usar su ficha de planilla" / "Es otra persona"
+            }
+            $this->sospechosos = [];
             $n = app(RiegoRegadorProceso::class)->agregar($this->fecha, $this->elegidos);
             $this->abierto = false;
             $this->dispatch('nuevosRegadoresHanSidoAgregados', fecha: $this->fecha);

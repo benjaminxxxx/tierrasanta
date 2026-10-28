@@ -173,11 +173,14 @@ class ReporteDiarioRiegoComponent extends Component
     public function confirmarEnvio(RiegoServicio $riegoServicio)
     {
         try {
-            $riegoServicio->registrarDiarioRegadores($this->fecha, $this->listaPorEnviarRegadores);
+            $avisos = $riegoServicio->registrarDiarioRegadores($this->fecha, $this->listaPorEnviarRegadores);
             app(VerificacionSincronizacionRiegoServicio::class)->verificarFechaYActualizarTareas($this->fecha);
             $this->dispatch('registroConsolidado');
-            $this->alert('success', 'Registros Diarios Enviados Correctamente.');
             $this->mostrarEnvioAReporteDiario = false;
+            // Lo que no se pudo dejar coherente (cuadrilleros sin registro, días pagados, tramos que no son FDM/81)
+            $avisos
+                ? $this->alert('warning', 'Enviado, con avisos: ' . implode(' · ', $avisos), ['timer' => 20000, 'toast' => false, 'position' => 'center'])
+                : $this->alert('success', 'Registros Diarios Enviados Correctamente.');
 
         } catch (\Throwable $th) {
             $this->errorAlert($th);

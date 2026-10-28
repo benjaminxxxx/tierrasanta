@@ -31,6 +31,8 @@ class TareaPendienteServicio
                 'cantidad_afectados' => $cantidad,
                 'titulo' => $datos['titulo'] ?? $abierta->titulo,
                 'descripcion' => $datos['descripcion'] ?? $abierta->descripcion,
+                // La gravedad puede cambiar entre detecciones (p. ej. de error a solo informativo)
+                'variante' => $datos['variante'] ?? $abierta->variante,
                 'acciones' => $datos['acciones'] ?? $abierta->acciones,
                 // Periodo de la tarea (null = sin periodo, se muestra siempre)
                 'fecha_inicio' => array_key_exists('fecha_inicio', $datos) ? $datos['fecha_inicio'] : $abierta->fecha_inicio,

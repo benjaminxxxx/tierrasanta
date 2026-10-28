@@ -167,6 +167,12 @@ class ConsolidarCostoPlanillaServicio
             ->groupBy(fn($r) => $r->consolidado->trabajador_id . '|' . Carbon::parse($r->fecha)->toDateString());
         $conConsolidadoRiego = ConsolidadoRiego::where('trabajador_type', PlanEmpleado::class)->whereBetween('fecha', [$inicio, $fin])
             ->get(['trabajador_id', 'fecha'])->mapWithKeys(fn($c) => [$c->trabajador_id . '|' . Carbon::parse($c->fecha)->toDateString() => true]);
+        // Uso de horas acumuladas (FDM, por acumulación): esas horas ya se costearon en los campos los días que regó de más
+        // (la BDD lleva todas las horas reales). El tramo de riego del día de uso no se vuelve a costear por esos minutos.
+        $usoAcumuladas = ReporteDiarioRiego::with('consolidado')->whereBetween('fecha', [$inicio, $fin])->where('por_acumulacion', true)->get()
+            ->filter(fn($r) => $r->consolidado && $r->consolidado->trabajador_type === PlanEmpleado::class && mb_strtoupper((string) $r->campo) === self::CAMPO_FDM)
+            ->groupBy(fn($r) => $r->consolidado->trabajador_id . '|' . Carbon::parse($r->fecha)->toDateString())
+            ->map(fn($g) => (int) $g->sum(fn($r) => $this->minutosRiego($r)));
 
         foreach ($registros as $r) {
             $fecha = Carbon::parse($r->fecha)->toDateString();
@@ -205,6 +211,20 @@ class ConsolidarCostoPlanillaServicio
                 $tramos = $tramos->reject($esTramoRiego);
             }
 
+            // Día de uso de horas acumuladas: los minutos usados del banco salen del tramo de riego (FDM/81)
+            $minUso = (int) ($usoAcumuladas[$clave] ?? 0);
+            $minUsoAplicado = 0;
+            if ($minUso > 0 && $riego->isEmpty()) {
+                $tramos = $tramos->map(function ($h) use ($esTramoRiego, $minUso, &$minUsoAplicado) {
+                    if ($esTramoRiego($h) && $h->minutos > 0 && $minUsoAplicado < $minUso) {
+                        $quitar = min($h->minutos, $minUso - $minUsoAplicado);
+                        $h->minutos -= $quitar;
+                        $minUsoAplicado += $quitar;
+                    }
+                    return $h;
+                })->filter(fn($h) => !$esTramoRiego($h) || $h->minutos > 0);
+            }
+
             foreach ($tramos as $h) {
                 $esMarcadorSinReporte = $esTramoRiego($h) && !isset($conConsolidadoRiego[$clave]);
                 $this->agregar($this->planillaPorCampo, $this->fila($fecha, 'planilla', (int) $h->id, $h->campo_nombre, $h->codigo_labor,
@@ -216,10 +236,14 @@ class ConsolidarCostoPlanillaServicio
             }
 
             // Minutos que quedan en la BDD este día frente a los pagados: la diferencia se explica en el arqueo
-            $minEnBdd = $minDetalle - ($riego->isNotEmpty() ? $minRiegoPagado : 0) + $minRiegoCampo + max(0, $pagados - $minDetalle);
+            $minEnBdd = $minDetalle - ($riego->isNotEmpty() ? $minRiegoPagado : 0) + $minRiegoCampo + max(0, $pagados - $minDetalle) - $minUsoAplicado;
             if (abs($minEnBdd - $pagados) >= 1) {
                 $causas = [];
                 $tipo = 'otro';
+                if ($minUsoAplicado > 0) {
+                    $tipo = 'uso_acumuladas';
+                    $causas[] = sprintf('Usó %s h acumuladas: ya se costearon en los campos los días que regó de más, no van otra vez a la BDD (úsalas en el mismo mes para que el cierre cuadre).', $this->h($minUsoAplicado));
+                }
                 if ($riego->isNotEmpty()) {
                     // Riego: lo regado (horas reales en campo, con uso de acumuladas) vs el jornal de riego vs lo pagado
                     $consolidado = $riego->first()->consolidado;
@@ -353,8 +377,12 @@ class ConsolidarCostoPlanillaServicio
     {
         $riegoCuadrilla = ReporteDiarioRiego::with('consolidado.trabajador')->whereBetween('fecha', [$inicio, $fin])->get()
             ->filter(fn($r) => $r->consolidado && $r->consolidado->trabajador_type !== PlanEmpleado::class);
-        $conRiego = ConsolidadoRiego::where('trabajador_type', Cuadrillero::class)->whereBetween('fecha', [$inicio, $fin])
-            ->get(['trabajador_id', 'fecha'])->mapWithKeys(fn($c) => [$c->trabajador_id . '|' . Carbon::parse($c->fecha)->toDateString() => true]);
+        // Cuadrilleros que regaron: horario del riego por cuadrillero y día. Todo tramo de cuadrilla en ese horario (no solo
+        // FDM/81) es el mismo tiempo que ya costea el reporte de riego por campo: no se suma otra vez.
+        $riegoCuad = \App\Services\Riego\Cuadrilla\RiegoCuadrillaConsulta::class;
+        $conRiego = ConsolidadoRiego::where('trabajador_type', Cuadrillero::class)->whereBetween('fecha', [$inicio, $fin])->get()
+            ->mapWithKeys(fn($c) => [$c->trabajador_id . '|' . Carbon::parse($c->fecha)->toDateString() => app($riegoCuad)->ventana($c)]);
+        $fueraDeRegla = []; // "cuadrillero|fecha" => tramos que se cruzaban con el riego y no eran FDM/81
         $jornales = DB::table('cuad_registros_diarios')->whereBetween('fecha', [$inicio, $fin])
             ->get(['cuadrillero_id', 'fecha', 'costo_personalizado_dia', 'jornal_aplicado'])
             ->mapWithKeys(fn($r) => [$r->cuadrillero_id . '|' . Carbon::parse($r->fecha)->toDateString() => (float) ($r->costo_personalizado_dia ?: $r->jornal_aplicado)]);
@@ -371,10 +399,17 @@ class ConsolidarCostoPlanillaServicio
             $codigoLabor = $detalle->codigo_labor;
             $fecha = Carbon::parse($rd->fecha)->toDateString();
 
-            // Marcador de riego en FDM: si hay reporte de riego, lo costea el riego de cuadrilleros
-            if (mb_strtoupper((string) $detalle->campo_nombre) === self::CAMPO_FDM && (string) $codigoLabor === self::LABOR_RIEGO
-                && isset($conRiego[$rd->cuadrillero_id . '|' . $fecha])) {
-                continue;
+            // Con reporte de riego, lo costea el riego de cuadrilleros: el marcador FDM/81 y cualquier tramo en su horario
+            $claveRiego = $rd->cuadrillero_id . '|' . $fecha;
+            if (isset($conRiego[$claveRiego])) {
+                if (\App\Services\Riego\Cuadrilla\RiegoCuadrillaReglas::esTramoRiego($detalle->campo_nombre, $codigoLabor)) {
+                    continue;
+                }
+                [$rIni, $rFin] = $conRiego[$claveRiego];
+                if (\App\Services\Riego\Cuadrilla\RiegoCuadrillaReglas::minutosCruce($detalle->hora_inicio, $detalle->hora_fin, $rIni, $rFin) > 0) {
+                    $fueraDeRegla[$claveRiego][] = "{$detalle->campo_nombre}/{$codigoLabor} " . substr((string) $detalle->hora_inicio, 0, 5) . '-' . substr((string) $detalle->hora_fin, 0, 5);
+                    continue;
+                }
             }
 
             // Labor a destajo = tiene bono con método sin estándar (mismo criterio que el trigger de horas_destajo)
@@ -403,11 +438,14 @@ class ConsolidarCostoPlanillaServicio
                 ? Carbon::parse($registro->hora_inicio)->diffInMinutes(Carbon::parse($registro->hora_fin))
                 : (int) round(($registro->horas_ponderadas ?? 0) * 60);
             $jornal = $jornales[$consolidado->trabajador_id . '|' . $fecha] ?? null;
+            $cruzados = $fueraDeRegla[$consolidado->trabajador_id . '|' . $fecha] ?? [];
             $this->agregar($this->cuadrillaPorCampo, $this->fila($fecha, 'cuadrilla', (int) $registro->id, $registro->campo, null,
                 $registro->por_acumulacion ? 'Uso de horas acumuladas (Riego)' : ($registro->tipo_labor ?? 'Riego'),
                 $consolidado->trabajador_nombre, null, $minutos, $jornal !== null ? $jornal * ($minutos / 480) : 0,
-                $this->unir($consolidado->sincronizado ? null : 'Las horas de riego no coinciden con el registro diario. Verificar.',
-                    $jornal === null ? 'El cuadrillero no tiene registro diario ni jornal para este día.' : null)));
+                $this->unir($consolidado->sincronizado ? null : 'Las horas de riego no coinciden con el registro de cuadrilla (ver tareas pendientes: riego de cuadrilleros).',
+                    $cruzados ? 'En el horario del riego el registro de cuadrilla tenía ' . implode(', ', array_unique($cruzados))
+                        . ': no se costeó dos veces (el riego de un cuadrillero se registra como FDM/81).' : null,
+                    $jornal === null ? 'El cuadrillero no tiene registro de cuadrilla ni jornal para este día: no se le paga.' : null)));
         }
 
         $bonos = CuadActividadBono::with(['registroDiario.cuadrillero', 'actividad'])

@@ -179,6 +179,7 @@ class ConsolidarManoObraIndirectaServicio
             $porTipo = $dias->get($p->plan_empleado_id, collect())->groupBy('tipo');
             $nombresTipo = [
                 'banco' => 'Banco de horas de riego (horas regadas por encima del jornal, aún sin usar)',
+                'uso_acumuladas' => 'Uso de horas acumuladas (ya costeadas los días que regó de más)',
                 'desincronizado' => 'Riego desincronizado (el registro diario no paga el jornal de riego): corregir',
                 'sin_ponderar' => 'Reporte de riego sin horas por campo calculadas: consolidar el riego de esos días',
                 'detalle' => 'Detalle por campo con más horas que las pagadas: corregir el registro diario',

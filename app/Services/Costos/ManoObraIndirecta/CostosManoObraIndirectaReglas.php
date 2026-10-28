@@ -23,6 +23,14 @@ class CostosManoObraIndirectaReglas
     /** Mes desde el que se pide calcular (tarea pendiente). Antes no hay PLAME cargado con lo pagado. */
     public const DESDE = '2026-01';
 
+    /** Primer mes a revisar: DESDE o el de la vigencia del sistema (SISTEMA_VIGENCIA_DESDE), el que sea más tarde. */
+    public static function primerMes(): \Illuminate\Support\Carbon
+    {
+        $desde = \Illuminate\Support\Carbon::parse(self::DESDE . '-01');
+        $vigencia = \App\Services\Sistema\Vigencia\SistemaVigenciaReglas::desde();
+        return $vigencia ? $desde->max(\Illuminate\Support\Carbon::parse($vigencia)->startOfMonth()) : $desde;
+    }
+
     /** Secciones del cálculo, en orden: clave => [título, explicación] */
     public const SECCIONES = [
         'planilla' => ['Planilla en FDM', 'Horas de planilla en FDM (labores, riego, feriados, descansos, vacaciones pagadas). '

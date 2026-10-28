@@ -34,4 +34,26 @@ class RiegoRegadorProceso
         DB::transaction(fn() => RiegoServicio::registrarRegadoresEnFecha($f, $regadores));
         return count($regadores);
     }
+
+    /**
+     * Cuadrilleros elegidos que parecen ser trabajadores de planilla con contrato ese día (caso "RICHARD ALVAREZ" ↔
+     * "ALVAREZ CHAVEZ, RICHARD"): su riego debe ir a su nombre de planilla.
+     *
+     * @return array<int, array{cuadrillero_id:int, cuadrillero:string, empleado_id:int, empleado:string}>
+     */
+    public function cuadrillerosQueSonDePlanilla(string $fecha, array $regadores): array
+    {
+        $f = Carbon::parse($fecha)->toDateString();
+        $personas = app(\App\Services\Cuadrilla\Persona\CuadrillaPersonaConsulta::class);
+        $sospechosos = [];
+        foreach ($regadores as $r) {
+            if (($r['tipo'] ?? '') !== 'cuadrilleros' || !($cu = \App\Models\Cuadrillero::find($r['id'] ?? 0))) {
+                continue;
+            }
+            if ($emp = $personas->empleadoConContrato($cu, $f)) {
+                $sospechosos[] = ['cuadrillero_id' => $cu->id, 'cuadrillero' => $cu->nombres, 'empleado_id' => $emp['id'], 'empleado' => $emp['nombre']];
+            }
+        }
+        return $sospechosos;
+    }
 }

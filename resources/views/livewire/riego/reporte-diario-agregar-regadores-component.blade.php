@@ -88,6 +88,23 @@
                     @endforelse
                 </div>
             </div>
+
+            {{-- Cuadrillero que parece ser trabajador de planilla: su riego debe ir a su nombre de planilla --}}
+            @if ($sospechosos)
+                <div class="mt-4 rounded-[10px] border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-300">
+                    <p class="font-medium"><i class="fa fa-triangle-exclamation"></i> ¿Son de planilla?</p>
+                    <ul class="mt-1 list-disc pl-5 text-[13px]">
+                        @foreach ($sospechosos as $s)
+                            <li><b>{{ $s['cuadrillero'] }}</b> (cuadrillero) parece ser <b>{{ $s['empleado'] }}</b>, de planilla con contrato ese día.</li>
+                        @endforeach
+                    </ul>
+                    <p class="mt-1 text-[13px]">Si es su jornada de planilla, usa su ficha de planilla. Si es trabajo extra que se paga como cuadrilla (domingo, horas de más), puedes agregarlo como cuadrillero, pero en la fecha real en que trabajó.</p>
+                    <div class="mt-2 flex flex-wrap justify-end gap-2">
+                        <button type="button" wire:click="guardar(true)" class="{{ $btn2 }}">Es otra persona, agregar igual</button>
+                        <button type="button" wire:click="usarPlanilla" class="{{ $btnPrincipal }}"><i class="fa fa-user-check"></i> Usar su ficha de planilla</button>
+                    </div>
+                </div>
+            @endif
         </x-slot>
 
         <x-slot name="footer">

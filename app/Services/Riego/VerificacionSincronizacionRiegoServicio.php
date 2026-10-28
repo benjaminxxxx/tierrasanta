@@ -19,9 +19,15 @@ class VerificacionSincronizacionRiegoServicio
 
         foreach ($consolidados as $item) {
 
-            // Cuadrilla: "aún no desarrollado, innecesario por el momento" — se omite de la verificación
+            // Cuadrillero regador: FDM/81 con el jornal de riego en su registro de cuadrilla (ver RiegoCuadrillaConsulta)
             if ($item->trabajador_type !== PlanEmpleado::class) {
-                $resultado['omitidos']++;
+                if ($item->trabajador_type !== \App\Models\Cuadrillero::class) {
+                    $resultado['omitidos']++;
+                    continue;
+                }
+                $coincide = app(\App\Services\Riego\Cuadrilla\RiegoCuadrillaConsulta::class)->revisarConsolidado($item)['sincronizado'];
+                $item->update(['sincronizado' => $coincide]);
+                $coincide ? $resultado['ok']++ : $resultado['desincronizados']++;
                 continue;
             }
 
@@ -66,6 +72,7 @@ class VerificacionSincronizacionRiegoServicio
     {
         $resultado = $this->verificarPorFecha($fecha);
         $this->detectarTareasPendientes();
+        app(\App\Services\Riego\Cuadrilla\RiegoCuadrillaDetector::class)->detectarTareasPendientes($fecha);
 
         return $resultado;
     }

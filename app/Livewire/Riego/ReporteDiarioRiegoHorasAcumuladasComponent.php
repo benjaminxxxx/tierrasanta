@@ -22,7 +22,27 @@ class ReporteDiarioRiegoHorasAcumuladasComponent extends Component
     public $resumenRiego;               // 👈 faltaba declararlo
     public $origenesAcumulados = [];    // 👈 nuevo: de dónde vienen las horas
 
-    protected $listeners = ["abrirModalHorasAcumuladas"];
+    /** Solo consulta: "¿cuántas horas tengo?" en cualquier fecha, aunque ese día ya no se puedan usar */
+    public bool $soloConsulta = false;
+    /** RiegoAcumulacionConsulta::saldoAl() de la fecha del registro */
+    public array $saldo = [];
+
+    protected $listeners = ["abrirModalHorasAcumuladas", "verHorasAcumuladas"];
+
+    /** Botón informativo: saldo de horas acumuladas al día del registro, de dónde vienen y dónde se usaron. */
+    public function verHorasAcumuladas($resumenRiegoId): void
+    {
+        $this->resumenRiego = ConsolidadoRiego::find($resumenRiegoId);
+        if (!$this->resumenRiego) {
+            $this->errorAlert('El resumen de riego ya no existe o fue eliminado.');
+            return;
+        }
+        $this->saldo = app(\App\Services\Riego\Acumulacion\RiegoAcumulacionConsulta::class)->saldoAl(
+            $this->resumenRiego->trabajador_type, (int) $this->resumenRiego->trabajador_id,
+            \Illuminate\Support\Carbon::parse($this->resumenRiego->fecha)->toDateString());
+        $this->soloConsulta = true;
+        $this->mostrarHorasAcumuladasForm = true;
+    }
 
     public function mount()
     {
@@ -42,6 +62,10 @@ class ReporteDiarioRiegoHorasAcumuladasComponent extends Component
 
         $this->reiniciarHorasAcumuladas();
         $this->cargarOrigenesAcumulados();
+        $this->soloConsulta = false;
+        $this->saldo = app(\App\Services\Riego\Acumulacion\RiegoAcumulacionConsulta::class)->saldoAl(
+            $this->resumenRiego->trabajador_type, (int) $this->resumenRiego->trabajador_id,
+            \Illuminate\Support\Carbon::parse($this->resumenRiego->fecha)->toDateString());
         $this->mostrarHorasAcumuladasForm = true;
     }
 

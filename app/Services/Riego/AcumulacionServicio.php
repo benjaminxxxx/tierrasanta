@@ -16,6 +16,8 @@ class AcumulacionServicio
         ResumenJornada::where('trabajador_type', $destino->trabajador_type)
             ->where('trabajador_id', $destino->trabajador_id)
             ->whereRaw('minutos_acumulados > minutos_utilizados')
+            // Solo lo acumulado ANTES del día de uso (no se puede usar lo que se acumula después)
+            ->whereDate('fecha', '<', \Illuminate\Support\Carbon::parse($destino->fecha)->toDateString())
             ->orderBy('fecha')
             ->each(function ($origen) use (&$pendiente, $destino) {
                 if ($pendiente <= 0) return false;

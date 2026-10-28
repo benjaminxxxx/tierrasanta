@@ -27,11 +27,13 @@ class RiegoServicio
      * @param array|Collection $registrosDiarios
      * @throws Exception
      */
-    public function registrarDiarioRegadores(string $fecha, $registrosDiarios): void
+    /** @return string[] avisos (cuadrilleros sin registro, días pagados, tramos que no son FDM/81…) */
+    public function registrarDiarioRegadores(string $fecha, $registrosDiarios): array
     {
         // BDD de costos: regenerar la mano de obra de estas fechas al terminar la petición
         \App\Services\Costos\Consolidacion\BddManoObraServicio::registrarCambio($fecha);
-        DB::transaction(function () use ($fecha, $registrosDiarios) {
+        $avisos = [];
+        DB::transaction(function () use ($fecha, $registrosDiarios, &$avisos) {
             $fechaCarbon = Carbon::parse($fecha);
             $mes = $fechaCarbon->month;
             $anio = $fechaCarbon->year;
@@ -61,7 +63,7 @@ class RiegoServicio
                         "salida_1" => $registro['hora_fin'],
                     ];
                 } elseif ($registro['tipo'] === 'cuadrilla') {
-                    $this->registrarRiegoEnCuadrilla($fecha, $registro);
+                    array_push($avisos, ...$this->registrarRiegoEnCuadrilla($fecha, $registro));
                 }
             }
 
@@ -73,29 +75,53 @@ class RiegoServicio
 
             ActividadServicio::detectarYCrearActividades($fecha);
         });
+
+        return $avisos;
     }
     /**
-     * Cuadrillero que riega (p. ej. el mensual de Santa Rita, que trabaja como planillero): su tramo de riego en el
-     * registro diario de cuadrilla (FDM, labor 81) pasa a ser su jornal de riego; el resto de sus tramos no se toca y
-     * las horas del día se recalculan. Se usa su registro del día (si tiene varios grupos, el que ya tenía riego).
+     * Pasa el riego de un cuadrillero a su registro de cuadrilla como FDM/81 (regla de la empresa): ese tramo pasa a ser
+     * su jornal de riego y las horas del día se recalculan. Se usa su registro del día (si tiene varios grupos, el que
+     * ya tenía riego). No toca un día ya pagado y no borra lo que se registró a mano: avisa para que se corrija.
+     *
+     * @return string[] avisos
      */
-    private function registrarRiegoEnCuadrilla(string $fecha, array $registro): void
+    private function registrarRiegoEnCuadrilla(string $fecha, array $registro): array
     {
+        $avisos = [];
+        $dia = Carbon::parse($fecha)->format('d/m');
+        $nombre = $registro['trabajador_name'] ?? "Cuadrillero {$registro['trabajador_id']}";
+        $cuadrillero = \App\Models\Cuadrillero::withTrashed()->find($registro['trabajador_id']);
+        if ($cuadrillero && ($emp = app(\App\Services\Cuadrilla\Persona\CuadrillaPersonaConsulta::class)->empleadoConContrato($cuadrillero, $fecha))) {
+            $avisos[] = "{$nombre}: parece ser {$emp['nombre']} (planilla). Si es trabajo extra pagado como cuadrilla, regístralo en la fecha real; si es su jornada, va como planilla.";
+        }
+
         $registros = \App\Models\CuadRegistroDiario::where('cuadrillero_id', $registro['trabajador_id'])->whereDate('fecha', $fecha)->get();
         if ($registros->isEmpty()) {
-            // Sin registro de cuadrilla ese día: no se crea uno (no se sabe su grupo ni su jornal). No bloquea a los
-            // demás regadores; queda desincronizado y lo muestra la verificación de riego.
-            return;
+            // No se crea uno (no se sabe su grupo ni su jornal): queda en tareas pendientes (riego de cuadrilleros)
+            $avisos[] = "{$nombre}: no tiene registro de cuadrilla el {$dia}. Agrégalo a su grupo (FDM/81); mientras tanto no se le paga ese riego.";
+            return $avisos;
         }
-        $esRiego = fn($d) => mb_strtoupper((string) $d->campo_nombre) === 'FDM' && (string) $d->codigo_labor === (string) $registro['labor'];
+        $esRiego = fn($d) => \App\Services\Riego\Cuadrilla\RiegoCuadrillaReglas::esTramoRiego($d->campo_nombre, $d->codigo_labor);
         $rd = $registros->first(fn($r) => \App\Models\CuadDetalleHora::where('registro_diario_id', $r->id)->get()->contains($esRiego)) ?? $registros->first();
+
+        if ($rd->esta_pagado) {
+            $avisos[] = "{$nombre}: el {$dia} ya está pagado en cuadrilla; no se cambió su registro. Si las horas de riego no coinciden, corrígelo con el pago.";
+            return $avisos;
+        }
 
         \App\Models\CuadDetalleHora::where('registro_diario_id', $rd->id)->where('campo_nombre', 'FDM')->where('codigo_labor', $registro['labor'])->delete();
         \App\Models\CuadDetalleHora::create(['registro_diario_id' => $rd->id, 'campo_nombre' => 'FDM', 'codigo_labor' => $registro['labor'],
             'hora_inicio' => $registro['hora_inicio'], 'hora_fin' => $registro['hora_fin']]);
-        $minutos = \App\Models\CuadDetalleHora::where('registro_diario_id', $rd->id)->get()
-            ->sum(fn($d) => Carbon::parse($d->hora_inicio)->diffInMinutes(Carbon::parse($d->hora_fin)));
+        $tramos = \App\Models\CuadDetalleHora::where('registro_diario_id', $rd->id)->get();
+        $malos = \App\Services\Riego\Cuadrilla\RiegoCuadrillaReglas::tramosFueraDeRegla($tramos, $registro['hora_inicio'], $registro['hora_fin']);
+        if ($malos) {
+            $avisos[] = "{$nombre}: el {$dia} tiene en el horario del riego tramos que no son FDM/81 (" . implode(', ', $malos)
+                . '): se pagarían dos veces. Quítalos del registro de cuadrilla.';
+        }
+        $minutos = $tramos->sum(fn($d) => Carbon::parse($d->hora_inicio)->diffInMinutes(Carbon::parse($d->hora_fin)));
         $rd->update(['total_horas' => round($minutos / 60, 2)]);
+
+        return $avisos;
     }
 
     /**

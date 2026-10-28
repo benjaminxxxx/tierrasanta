@@ -76,6 +76,12 @@
                                         @click="$wire.dispatch('abrirModalHorasAcumuladas',{resumenRiegoId: {{ $resumenRiego->id }}})">
                                         Usar {{ $resumenRiego->disponible_formateado }} Acumuladas
                                     </x-button>
+                                @else
+                                    {{-- Informativo: cuántas horas tenía para usar ese día (no se pueden usar el día que acumula) --}}
+                                    <x-button variant="secondary" title="Ver las horas acumuladas que tenía disponibles ese día, de dónde vienen y dónde se usaron"
+                                        @click="$wire.dispatch('verHorasAcumuladas',{resumenRiegoId: {{ $resumenRiego->id }}})">
+                                        <i class="fa fa-clock-rotate-left"></i> Acumuladas al {{ \Carbon\Carbon::parse($resumenRiego->fecha)->format('d/m') }}
+                                    </x-button>
                                 @endif
                                 <x-button variant="danger" title="Eliminar Regador"
                                     wire:confirm="¿Estás seguro que desea eliminar este registro?"

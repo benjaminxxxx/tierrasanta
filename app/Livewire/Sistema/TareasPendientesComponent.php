@@ -38,6 +38,9 @@ class TareasPendientesComponent extends Component
         \App\Services\Cochinilla\Recuperacion\CochinillaRecuperacionDetector::class,
         \App\Services\Costos\ManoObraIndirecta\CostosManoObraIndirectaDetector::class,
         \App\Services\Riego\Campania\RiegoCampaniaDetector::class,
+        \App\Services\Riego\Cuadrilla\RiegoCuadrillaDetector::class,
+        \App\Services\Riego\Acumulacion\RiegoAcumulacionDetector::class,
+        \App\Services\Cuadrilla\Persona\CuadrillaPersonaDetector::class,
         //aqui ir agregando mas tareas pendientes
     ];
 

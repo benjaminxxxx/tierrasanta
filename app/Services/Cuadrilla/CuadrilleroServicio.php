@@ -840,6 +840,19 @@ class CuadrilleroServicio
             throw ValidationException::withMessages($validator->errors()->toArray());
         }
 
+        // Cuadrilleros que regaron ese día: en el horario del riego solo FDM/81
+        $tramosNuevos = array_map(fn($a) => ['campo_nombre' => $a['campo'], 'codigo_labor' => $a['labor'],
+            'hora_inicio' => $a['inicio'], 'hora_fin' => $a['fin']], $actividades);
+        $erroresRiego = [];
+        foreach ($cuadrilleros as $cuadrillero) {
+            if ($msg = app(\App\Services\Riego\Cuadrilla\RiegoCuadrillaConsulta::class)->validarTramos((int) $cuadrillero['id'], $fecha, $tramosNuevos)) {
+                $erroresRiego[] = ($cuadrillero['nombres'] ?? "Cuadrillero {$cuadrillero['id']}") . ": {$msg}";
+            }
+        }
+        if ($erroresRiego) {
+            throw ValidationException::withMessages(['actividades' => $erroresRiego]);
+        }
+
         foreach ($cuadrilleros as $cuadrillero) {
             // 1️⃣ Buscar o crear el registro diario para ese cuadrillero y fecha
             $registroDiario = CuadRegistroDiario::firstOrCreate(
@@ -970,6 +983,13 @@ class CuadrilleroServicio
                             'hora_fin' => $fin,
                         ];
                     }
+                }
+
+                // Cuadrillero que regó ese día: en el horario del riego solo FDM/81 (el detalle por campo lo da el riego)
+                if ($msgRiego = app(\App\Services\Riego\Cuadrilla\RiegoCuadrillaConsulta::class)->validarTramos($cuadrilleroId, $fecha, $tramos)) {
+                    $nombre = $fila['cuadrillero_nombres'] ?? '';
+                    $errores[] = "Fila {$filaOrden}" . ($nombre ? " ({$nombre})" : '') . ": {$msgRiego}";
+                    continue;
                 }
 
                 // Obtener Registro Diario

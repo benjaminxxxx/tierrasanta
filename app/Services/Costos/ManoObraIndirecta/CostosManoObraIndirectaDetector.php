@@ -24,7 +24,8 @@ class CostosManoObraIndirectaDetector
         $guardados = CostoMensual::get(['anio', 'mes', 'moi_calculado_en', 'moi_concluyente'])->keyBy(fn($c) => sprintf('%04d-%02d', $c->anio, $c->mes));
         $hijas = [];
         $ultimo = Carbon::today()->startOfMonth()->subMonth();
-        for ($m = Carbon::parse(CostosManoObraIndirectaReglas::DESDE . '-01'); $m->lte($ultimo); $m->addMonth()) {
+        // Desde la vigencia del sistema: los meses de la empresa anterior no son tarea de esta
+        for ($m = CostosManoObraIndirectaReglas::primerMes(); $m->lte($ultimo); $m->addMonth()) {
             $clave = $m->format('Y-m');
             $c = $guardados->get($clave);
             if ($c?->moi_calculado_en && $c->moi_concluyente) {
