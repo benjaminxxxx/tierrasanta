@@ -226,6 +226,13 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
 
             $this->guardarReporteSemanal($fechaInicio, $fechaFin, $datos, $tramoLaboralId);
             CuadrilleroServicio::registrarTotalesEnResumenDiarioPlanilla($fechaInicio, $fechaFin);
+            // Días de la semana con riego: se vuelven a verificar solos
+            try {
+                app(\App\Services\Riego\VerificacionSincronizacionRiegoServicio::class)
+                    ->verificarRangoYActualizarTareas(\Illuminate\Support\Carbon::parse($fechaInicio)->toDateString(), \Illuminate\Support\Carbon::parse($fechaFin)->toDateString());
+            } catch (\Throwable $e) {
+                report($e);
+            }
 
             $this->obtenerReporteTramo();
             $this->alert('success', 'Información actualizada');

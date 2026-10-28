@@ -3,108 +3,151 @@
         :style="`position: fixed; top: ${top}px; left: ${left}px; z-index: 9999; cursor: ${dragging ? 'grabbing' : 'grab'};`"
         class="select-none">
         <button type="button" @click="onClick()"
-            class="w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg flex items-center justify-center opacity-70 hover:opacity-100 transition-all active:scale-95"
+            class="w-14 h-14 rounded-full bg-noche text-white ring-1 ring-white/15 shadow-[0_8px_24px_rgb(16_33_45/0.24)] flex items-center justify-center opacity-80 hover:opacity-100 transition-all active:scale-95 focus:outline-none focus:ring-[3px] focus:ring-carmin/25"
             title="Tareas pendientes">
             <i class="fa fa-list-check text-xl"></i>
         </button>
     </div>
-    <x-dialog-modal wire:model="mostrarFormularioTareasPendientes" maxWidth="full">
-        <x-slot name="title">
-            <x-flex class="justify-between">
-                <x-title>
-                    Tareas pendientes del sistema
-                </x-title>
+
+    @php
+        // Estilos de DESIGN.md (claro y oscuro), literales para que Tailwind los detecte.
+        // Los colores de estado solo comunican la gravedad: franja, ícono y chip.
+        $estados = [
+            'info' => ['franja' => 'bg-blue-600 dark:bg-blue-400', 'texto' => 'text-blue-700 dark:text-blue-400', 'chip' => 'bg-[#EFF4FF] text-blue-700 dark:bg-blue-400/10 dark:text-blue-400', 'icono' => 'fa-circle-info'],
+            'warning' => ['franja' => 'bg-amber-500 dark:bg-amber-400', 'texto' => 'text-amber-700 dark:text-amber-400', 'chip' => 'bg-[#FFF8EB] text-amber-700 dark:bg-amber-400/10 dark:text-amber-400', 'icono' => 'fa-triangle-exclamation'],
+            'danger' => ['franja' => 'bg-red-600 dark:bg-red-400', 'texto' => 'text-red-700 dark:text-red-400', 'chip' => 'bg-[#FEF2F2] text-red-700 dark:bg-red-400/10 dark:text-red-400', 'icono' => 'fa-circle-exclamation'],
+            'success' => ['franja' => 'bg-green-600 dark:bg-green-400', 'texto' => 'text-green-700 dark:text-green-400', 'chip' => 'bg-[#ECFDF3] text-green-700 dark:bg-green-400/10 dark:text-green-400', 'icono' => 'fa-circle-check'],
+        ];
+        $btn2 = 'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[10px] border border-mist bg-paper px-3 text-xs font-medium text-ink hover:bg-fog focus:outline-none focus:ring-[3px] focus:ring-carmin/25';
+        $btnFantasma = 'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[10px] px-2.5 text-xs font-medium text-graphite hover:bg-fog hover:text-ink focus:outline-none focus:ring-[3px] focus:ring-carmin/25';
+    @endphp
+
+    {{-- Cabecera y pie fijos; solo la lista hace scroll (el botón Cerrar siempre se ve) --}}
+    <x-modal wire:model="mostrarFormularioTareasPendientes" maxWidth="full">
+        <div class="flex max-h-[calc(100vh-2.5rem)] md:max-h-[calc(100vh-4.5rem)] flex-col rounded-lg bg-paper text-ink font-['Inter',ui-sans-serif,system-ui,sans-serif] tracking-[-0.01em]">
+            <div class="flex flex-wrap items-end justify-between gap-3 border-b border-hairline px-4 py-4 md:px-6">
+                <div class="min-w-0">
+                    <h2 class="text-xl font-semibold text-ink">Tareas pendientes del sistema</h2>
+                    <p class="text-xs text-pewter">
+                        {{ $tareas->count() }} tarea(s) en {{ $mes ? ucfirst(\Illuminate\Support\Carbon::parse($mes . '-01')->translatedFormat('F Y')) : 'el periodo' }}.
+                        Abre "Ver detalle" para ir al registro de cada caso.
+                    </p>
+                </div>
                 <div class="flex items-end gap-2">
                     {{-- Periodo: hoy por mes; internamente se trabaja con un rango de fechas --}}
-                    <x-input type="month" label="Periodo" wire:model.live="mes" class="w-44" />
-                    <x-button wire:click="detectarTareasPendientes">
-                        <i class="fa fa-search"></i> Buscar tareas pendientes
-                    </x-button>
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-graphite">Periodo</span>
+                        <input type="month" wire:model.live="mes"
+                            class="h-9 w-44 rounded-[10px] border border-mist bg-paper px-3 text-sm text-ink focus:border-carmin focus:outline-none focus:ring-[3px] focus:ring-carmin/25 dark:[color-scheme:dark]">
+                    </label>
+                    <button type="button" wire:click="detectarTareasPendientes" wire:loading.attr="disabled" wire:target="detectarTareasPendientes"
+                        class="inline-flex h-9 items-center gap-2 rounded-[10px] bg-carmin px-4 text-sm font-medium text-white hover:bg-carmin-hover disabled:opacity-60 focus:outline-none focus:ring-[3px] focus:ring-carmin/25">
+                        <i class="fa fa-search" wire:loading.remove wire:target="detectarTareasPendientes"></i>
+                        <i class="fa fa-spinner fa-spin" wire:loading wire:target="detectarTareasPendientes"></i>
+                        Buscar tareas pendientes
+                    </button>
+                    <button type="button" wire:click="$set('mostrarFormularioTareasPendientes', false)" title="Cerrar"
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-[10px] text-graphite hover:bg-fog hover:text-ink focus:outline-none focus:ring-[3px] focus:ring-carmin/25">
+                        <i class="fa fa-xmark text-lg"></i>
+                    </button>
                 </div>
-            </x-flex>
-        </x-slot>
-        <x-slot name="content">
-            @php
-                // Único lugar del sistema con clases de diseño para tareas pendientes —
-                // escritas literales, así el compilador de Tailwind las detecta.
-                $variantes = [
-                    'info' => 'bg-blue-50 border-blue-300 text-blue-800',
-                    'warning' => 'bg-amber-50 border-amber-300 text-amber-800',
-                    'danger' => 'bg-red-50 border-red-300 text-red-800',
-                    'success' => 'bg-green-50 border-green-300 text-green-800',
-                ];
-            @endphp
+            </div>
 
-            @forelse ($tareas as $tarea)
-                {{-- El detalle (subtareas) empieza colapsado: se abre con "Ver detalle" --}}
-                <div class="border rounded-lg p-4 mb-3 {{ $variantes[$tarea->variante] ?? $variantes['warning'] }}"
-                    x-data="{ detalle: false }" wire:key="tarea-{{ $tarea->id }}">
-                    <div class="flex justify-between items-start gap-4">
-                        <div>
-                            <p class="font-semibold">{{ $tarea->titulo }}</p>
-                            <p class="text-sm">{{ $tarea->descripcion }}</p>
-                            <p class="text-xs mt-1 opacity-75">
-                                {{ $tarea->cantidad_periodo }} registro(s) afectado(s)
-                                @if ($tarea->cantidad_periodo != $tarea->cantidad_afectados)
-                                    en este periodo · {{ $tarea->cantidad_afectados }} en total
-                                @endif
-                            </p>
-                        </div>
-                        <div class="flex gap-2 shrink-0">
-                            @foreach ($tarea->acciones ?? [] as $i => $accion)
-                                @if (($accion['tipo_accion'] ?? 'metodo') === 'link')
-                                    <x-button :href="$accion['url']" target="_blank" class="...">
-                                        {{ $accion['titulo'] }}
-                                    </x-button>
-                                @else
-                                    <x-button wire:click="ejecutar({{ $tarea->id }}, {{ $i }})">
-                                        {{ $accion['titulo'] }}
-                                    </x-button>
-                                @endif
-                            @endforeach
-                        </div>
-                    </div>
-
-                    @if ($tarea->subtareas->isNotEmpty())
-                        <button type="button" @click="detalle = !detalle"
-                            class="mt-2 inline-flex items-center gap-1.5 text-sm font-medium underline-offset-2 hover:underline">
-                            <i class="fa fa-chevron-right text-[10px] transition-transform" :class="detalle ? 'rotate-90' : ''"></i>
-                            <span x-text="detalle ? 'Ocultar detalle' : 'Ver detalle'"></span>
-                            ({{ $tarea->subtareas->count() }})
-                        </button>
-                        <div x-show="detalle" x-collapse x-cloak class="mt-3 pl-4 border-l-2 border-current/30 space-y-2">
-                            @foreach ($tarea->subtareas as $sub)
-                                <div class="flex justify-between items-center text-sm">
-                                    <span>{{ $sub->titulo }} ({{ $sub->cantidad_afectados }})</span>
-                                    <div class="flex gap-2">
-                                        @foreach ($sub->acciones ?? [] as $i => $accion)
-                                            @if (($accion['tipo_accion'] ?? 'metodo') === 'link')
-                                                <x-button :href="$accion['url']" target="_blank" variant="secondary">
-                                                    {{ $accion['titulo'] }}
-                                                </x-button>
-                                            @else
-                                                <x-button wire:click="ejecutar({{ $sub->id }}, {{ $i }})"
-                                                    variant="secondary">
-                                                    {{ $accion['titulo'] }}
-                                                </x-button>
-                                            @endif
-                                        @endforeach
-                                    </div>
+            <div class="min-h-0 flex-1 space-y-3 overflow-y-auto bg-fog px-4 py-4 md:px-6">
+                @forelse ($tareas as $tarea)
+                    @php $e = $estados[$tarea->variante] ?? $estados['warning']; @endphp
+                    {{-- El detalle (subtareas) empieza colapsado: se abre con "Ver detalle" --}}
+                    <div class="relative overflow-hidden rounded-[10px] border border-mist bg-paper" x-data="{ detalle: false }" wire:key="tarea-{{ $tarea->id }}">
+                        <span class="absolute inset-y-0 left-0 w-[3px] {{ $e['franja'] }}"></span>
+                        <div class="flex flex-wrap items-start justify-between gap-3 px-4 py-3 pl-5">
+                            <div class="flex min-w-0 flex-1 gap-3">
+                                <i class="fa {{ $e['icono'] }} mt-0.5 {{ $e['texto'] }}"></i>
+                                <div class="min-w-0">
+                                    <p class="text-base font-semibold text-ink">{{ $tarea->titulo }}</p>
+                                    <p class="text-sm text-graphite">{{ $tarea->descripcion }}</p>
+                                    <p class="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-pewter">
+                                        <span class="rounded-md px-2 py-0.5 font-medium tabular-nums {{ $e['chip'] }}">{{ $tarea->cantidad_periodo }} afectado(s)</span>
+                                        @if ($tarea->cantidad_periodo != $tarea->cantidad_afectados)
+                                            <span>en este periodo · {{ $tarea->cantidad_afectados }} en total</span>
+                                        @endif
+                                    </p>
                                 </div>
-                            @endforeach
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach ($tarea->acciones ?? [] as $i => $accion)
+                                    @if (($accion['tipo_accion'] ?? 'metodo') === 'link')
+                                        <a href="{{ $accion['url'] }}" target="_blank" class="{{ $btn2 }}">
+                                            <i class="fa fa-up-right-from-square text-[10px]"></i> {{ $accion['titulo'] }}
+                                        </a>
+                                    @else
+                                        <button type="button" wire:click="ejecutar({{ $tarea->id }}, {{ $i }})" wire:loading.attr="disabled" class="{{ $btn2 }}">
+                                            {{ $accion['titulo'] }}
+                                        </button>
+                                    @endif
+                                @endforeach
+                            </div>
                         </div>
-                    @endif
-                </div>
-            @empty
-                <p class="text-sm text-gray-500">No hay tareas pendientes.</p>
-            @endforelse
-        </x-slot>
-        <x-slot name="footer">
-            <x-button variant="secondary" wire:click="$set('mostrarFormularioTareasPendientes', false)">
-                Cerrar
-            </x-button>
-        </x-slot>
-    </x-dialog-modal>
+
+                        @if ($tarea->subtareas->isNotEmpty())
+                            <div class="border-t border-hairline px-4 py-2 pl-5">
+                                <button type="button" @click="detalle = !detalle"
+                                    class="inline-flex items-center gap-1.5 text-sm font-medium text-ink underline-offset-2 hover:underline">
+                                    <i class="fa fa-chevron-right text-[10px] text-steel transition-transform" :class="detalle ? 'rotate-90' : ''"></i>
+                                    <span x-text="detalle ? 'Ocultar detalle' : 'Ver detalle'"></span>
+                                    <span class="text-pewter tabular-nums">({{ $tarea->subtareas->count() }})</span>
+                                </button>
+                            </div>
+                            <div x-show="detalle" x-collapse x-cloak class="divide-y divide-hairline border-t border-hairline">
+                                @foreach ($tarea->subtareas as $sub)
+                                    @php $es = $estados[$sub->variante] ?? $e; @endphp
+                                    <div class="flex flex-wrap items-start justify-between gap-2 px-4 py-2.5 pl-5 hover:bg-fog/60" wire:key="sub-{{ $sub->id }}">
+                                        <div class="flex min-w-0 flex-1 gap-2.5">
+                                            <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full {{ $es['franja'] }}"></span>
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-medium text-ink">
+                                                    {{ $sub->titulo }}
+                                                    @if ($sub->cantidad_afectados > 1)
+                                                        <span class="font-normal text-pewter tabular-nums">({{ $sub->cantidad_afectados }})</span>
+                                                    @endif
+                                                </p>
+                                                @if ($sub->descripcion)
+                                                    <p class="text-xs text-graphite">{{ $sub->descripcion }}</p>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <div class="flex flex-wrap gap-1.5">
+                                            @foreach ($sub->acciones ?? [] as $i => $accion)
+                                                @if (($accion['tipo_accion'] ?? 'metodo') === 'link')
+                                                    <a href="{{ $accion['url'] }}" target="_blank" class="{{ $btn2 }}">
+                                                        <i class="fa fa-up-right-from-square text-[10px]"></i> {{ $accion['titulo'] }}
+                                                    </a>
+                                                @else
+                                                    <button type="button" wire:click="ejecutar({{ $sub->id }}, {{ $i }})" wire:loading.attr="disabled" class="{{ $btnFantasma }}">
+                                                        {{ $accion['titulo'] }}
+                                                    </button>
+                                                @endif
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                @empty
+                    <div class="rounded-[10px] border border-mist bg-paper px-4 py-10 text-center">
+                        <i class="fa fa-circle-check text-2xl text-green-700 dark:text-green-400"></i>
+                        <p class="mt-2 text-sm text-graphite">No hay tareas pendientes en este periodo.</p>
+                    </div>
+                @endforelse
+            </div>
+
+            <div class="flex justify-end gap-3 border-t border-hairline px-4 py-3 md:px-6">
+                <button type="button" wire:click="$set('mostrarFormularioTareasPendientes', false)" class="{{ $btn2 }} h-9 px-4 text-sm">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </x-modal>
 </div>
 
 @script

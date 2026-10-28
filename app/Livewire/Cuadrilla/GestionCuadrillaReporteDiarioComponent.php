@@ -163,7 +163,11 @@ class GestionCuadrillaReporteDiarioComponent extends Component
         try {
             $this->reporteDiarioCuadrillaServicio->guardarReporteDiario($this->fecha, $datos, $this->totalColumnas);
             $this->refrescarTabla($this->fecha);
-            $this->alert('success', 'Registro actualizado correctamente');
+            // Si ese día hubo riego, se vuelve a verificar solo (tarea "Registros de riego desincronizados")
+            $aviso = app(\App\Services\Riego\VerificacionSincronizacionRiegoServicio::class)
+                ->verificarDespuesDeGuardar($this->fecha, \App\Models\Cuadrillero::class);
+            $aviso ? $this->alert('warning', "Registro guardado. {$aviso}", ['timer' => 8000])
+                : $this->alert('success', 'Registro actualizado correctamente');
         } catch (\Throwable $e) {
             $this->errorAlert($e);
         }

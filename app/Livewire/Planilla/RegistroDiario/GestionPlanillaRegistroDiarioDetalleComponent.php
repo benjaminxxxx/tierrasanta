@@ -36,6 +36,9 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
     /** Trabajadores con código de suspensión nuevo al guardar: ¿hasta cuándo? */
     public array $preguntasHasta = [];
     public bool $mostrarPreguntaHasta = false;
+    /** Trabajadores a los que se les puso otro código sobre una suspensión que sigue: ¿regresó, solo hoy o error? */
+    public array $preguntasRegreso = [];
+    public bool $mostrarPreguntaRegreso = false;
     /** Filas de la carga inicial (solo para el primer render; no se guardan en el estado del componente). */
     protected array $empleadosIniciales = [];
     protected $listeners = ['actualizarListaPlanillaRegistroDiario' => 'recargarTabla'];
@@ -137,8 +140,11 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
                 $antes = \App\Models\PlanRegistroDiario::where('fecha', $this->fecha)
                     ->whereIn('plan_det_men_id', array_filter(array_column($datos, 'plan_men_detalle_id')))
                     ->pluck('asistencia', 'plan_det_men_id');
+                // Antes de guardar: quienes tenían una suspensión que sigue después de hoy y se les puso otro código
+                $interrumpidas = $this->suspensionesInterrumpidas($datos, $antes->all());
                 app(PlanillaRegistroDiarioServicio::class)->guardarRegistrosDiarios($this->fecha, $datos, $columnas);
                 $this->prepararPreguntaHasta($datos, $antes->all());
+                $this->prepararPreguntaRegreso($interrumpidas);
             }
             $this->resumenDiarioPlanilla->update(['total_actividades' => $columnas]);
             $this->obtenerResumenDiarioPlanilla();
@@ -146,7 +152,12 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
                 ActividadServicio::detectarYCrearActividades($this->fecha);
                 $this->cargarAusencias();
             }
-            $this->alert('success', count($datos) > 0 ? 'Registros guardados correctamente.' : 'Columnas guardadas.');
+            // Si ese día hubo riego, se vuelve a verificar solo (tarea "Registros de riego desincronizados")
+            $aviso = count($datos) > 0
+                ? app(\App\Services\Riego\VerificacionSincronizacionRiegoServicio::class)->verificarDespuesDeGuardar($this->fecha, \App\Models\PlanEmpleado::class)
+                : null;
+            $aviso ? $this->alert('warning', "Registros guardados. {$aviso}", ['timer' => 8000])
+                : $this->alert('success', count($datos) > 0 ? 'Registros guardados correctamente.' : 'Columnas guardadas.');
 
             return true;
         } catch (\Throwable $th) {
@@ -179,7 +190,8 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
                 ->where('tipo_suspension_id', $tipoPorCodigo[$codigo])
                 ->whereDate('fecha_inicio', '<=', $this->fecha)->whereDate('fecha_fin', '>=', $this->fecha)
                 ->first();
-            if (!$s) {
+            // Ya tiene un fin después de hoy (se puso antes, o viene de Permisos y suspensiones): no se vuelve a preguntar
+            if (!$s || !$s->fecha_fin || $s->fecha_fin->toDateString() > $this->fecha) {
                 continue;
             }
             $preguntas[] = [
@@ -195,6 +207,151 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
         }
         $this->preguntasHasta = $preguntas;
         $this->mostrarPreguntaHasta = (bool) $preguntas;
+    }
+
+    // ------------------------------------------------------------------ ¿regresó? (otro código sobre una suspensión)
+
+    /**
+     * Filas que tenían hoy el código de una suspensión que sigue después de hoy (V, DM, LSG…) y se guardan con otro
+     * código. Al guardar, el día sale de la suspensión y esta queda partida en dos; luego se pregunta qué pasó.
+     */
+    private function suspensionesInterrumpidas(array $datos, array $antes): array
+    {
+        $tipoPorCodigo = \App\Models\PlanTipoAsistencia::whereNotNull('plan_tipo_suspension_id')
+            ->whereNotIn('codigo', PlanillaRegistroDiarioReglas::SIN_PREGUNTA_HASTA)
+            ->pluck('plan_tipo_suspension_id', 'codigo');
+        $casos = [];
+        foreach ($datos as $f) {
+            $detalle = $f['plan_men_detalle_id'] ?? null;
+            $anterior = trim((string) ($antes[$detalle] ?? ''));
+            $nuevo = trim((string) ($f['asistencia'] ?? ''));
+            if (!$detalle || !isset($tipoPorCodigo[$anterior]) || $nuevo === $anterior) {
+                continue;
+            }
+            $empleadoId = (int) ($f['plan_empleado_id'] ?? \App\Models\PlanMensualDetalle::whereKey($detalle)->value('plan_empleado_id'));
+            $s = \App\Models\PlanSuspension::with('tipoSuspension')
+                ->where('plan_empleado_id', $empleadoId)->where('tipo_suspension_id', $tipoPorCodigo[$anterior])
+                ->whereDate('fecha_inicio', '<=', $this->fecha)
+                ->where(fn($q) => $q->whereNull('fecha_fin')->orWhereDate('fecha_fin', '>', $this->fecha))
+                ->first();
+            if ($s) {
+                $casos[] = [
+                    'plan_empleado_id' => $empleadoId,
+                    'plan_det_men_id' => (int) $detalle,
+                    'tipo_suspension_id' => $s->tipo_suspension_id,
+                    'nombre' => $f['nombres'] ?? '',
+                    'codigo' => $anterior,
+                    'nuevo' => $nuevo,
+                    'tipo' => $s->tipoSuspension?->descripcion ?? $anterior,
+                    'desde' => $s->fecha_inicio->toDateString(),
+                    'hasta' => $s->fecha_fin?->toDateString(),
+                ];
+            }
+        }
+        return $casos;
+    }
+
+    /** Después de guardar: busca la parte de la suspensión que quedó después de hoy y arma la pregunta. */
+    private function prepararPreguntaRegreso(array $casos): void
+    {
+        $preguntas = [];
+        foreach ($casos as $c) {
+            $resto = \App\Models\PlanSuspension::where('plan_empleado_id', $c['plan_empleado_id'])
+                ->where('tipo_suspension_id', $c['tipo_suspension_id'])
+                ->whereDate('fecha_inicio', '>', $this->fecha)
+                ->whereDate('fecha_inicio', '<=', Carbon::parse($this->fecha)->addDays(2))
+                ->when($c['hasta'], fn($q) => $q->whereDate('fecha_fin', $c['hasta']), fn($q) => $q->whereNull('fecha_fin'))
+                ->first();
+            $preguntas[] = $c + ['resto_id' => $resto?->id, 'decision' => 'regreso'];
+        }
+        $this->preguntasRegreso = $preguntas;
+        $this->mostrarPreguntaRegreso = (bool) $preguntas;
+        if ($preguntas) {
+            $this->mostrarPreguntaHasta = false; // se muestra después de responder esta
+        }
+    }
+
+    /**
+     * Aplica lo elegido por trabajador:
+     *  - regreso: la suspensión termina ayer y se quitan sus días siguientes del registro diario;
+     *  - solo_hoy: queda partida (hoy con el código nuevo, sigue después);
+     *  - error: hoy vuelve al código de la suspensión (se borran los tramos de hoy) y la suspensión se une otra vez.
+     */
+    public function confirmarRegreso(): void
+    {
+        try {
+            $this->authorize(Permisos::PLANILLA_SUSPENSION_GESTIONAR);
+            $diario = app(PlanillaSuspensionDiarioProceso::class);
+            $quitados = $corregidos = 0;
+            \Illuminate\Support\Facades\DB::transaction(function () use ($diario, &$quitados, &$corregidos) {
+                foreach ($this->preguntasRegreso as $p) {
+                    if ($p['decision'] === 'regreso' && $p['resto_id']) {
+                        $resto = \App\Models\PlanSuspension::find($p['resto_id']);
+                        if ($resto) {
+                            $quitados += $diario->regresoAnticipado($resto->id, $resto->fecha_inicio->toDateString())['revertidos'];
+                        }
+                    } elseif ($p['decision'] === 'error') {
+                        $this->volverAlCodigoDeSuspension($p);
+                        $corregidos++;
+                    }
+                }
+            });
+            $servicio = app(PlanillaRegistroDiarioServicio::class);
+            $servicio->actualizarResumenAsistencia($this->fecha);
+            \App\Services\Costos\Consolidacion\BddManoObraServicio::registrarCambio($this->fecha);
+            ActividadServicio::detectarYCrearActividades($this->fecha);
+
+            $this->cerrarPreguntaRegreso();
+            $this->obtenerResumenDiarioPlanilla();
+            $this->recargarTabla();
+            $this->cargarAusencias();
+            $this->alert('success', 'Listo.' . ($quitados ? " Se quitaron {$quitados} día(s) siguientes del registro diario." : '')
+                . ($corregidos ? " {$corregidos} trabajador(es) volvieron a su código de suspensión hoy." : ''));
+        } catch (\Throwable $th) {
+            $this->errorAlert($th);
+        }
+    }
+
+    /** "Dejar así" (o cerrar): queda como se guardó; si había "¿hasta cuándo?" pendiente, se muestra ahora. */
+    public function cerrarPreguntaRegreso(): void
+    {
+        $this->mostrarPreguntaRegreso = false;
+        $this->preguntasRegreso = [];
+        $this->mostrarPreguntaHasta = (bool) $this->preguntasHasta;
+    }
+
+    private function volverAlCodigoDeSuspension(array $p): void
+    {
+        $registro = \App\Models\PlanRegistroDiario::where('plan_det_men_id', $p['plan_det_men_id'])->whereDate('fecha', $this->fecha)->first();
+        $horas = \App\Models\PlanTipoAsistencia::where('codigo', $p['codigo'])->value('horas_jornal');
+        if ($registro) {
+            $registro->detalles()->delete();
+            $registro->update(['asistencia' => $p['codigo'], 'total_horas' => is_numeric($horas) ? (float) $horas : 0]);
+        } else {
+            \App\Models\PlanRegistroDiario::create(['plan_det_men_id' => $p['plan_det_men_id'], 'fecha' => $this->fecha,
+                'asistencia' => $p['codigo'], 'total_horas' => is_numeric($horas) ? (float) $horas : 0]);
+        }
+        // El código nuevo pudo ser otra suspensión (p. ej. DM de un día): se retira ese día de ella
+        if ($p['nuevo'] !== '') {
+            app(\App\Services\Planilla\SincronizarSuspensionDesdeAsistenciaServicio::class)
+                ->sincronizar($p['plan_empleado_id'], $this->fecha, $p['nuevo'], null);
+        }
+        // La suspensión vuelve a sus fechas de antes: se une la parte de antes de hoy con la de después
+        $resto = $p['resto_id'] ? \App\Models\PlanSuspension::find($p['resto_id']) : null;
+        $primera = \App\Models\PlanSuspension::where('plan_empleado_id', $p['plan_empleado_id'])
+            ->where('tipo_suspension_id', $p['tipo_suspension_id'])
+            ->whereDate('fecha_inicio', $p['desde'])->whereDate('fecha_fin', '<', $this->fecha)->first();
+        if ($primera) {
+            $primera->update(['fecha_fin' => $p['hasta']]);
+            $resto?->delete();
+        } elseif ($resto) {
+            $resto->update(['fecha_inicio' => $p['desde']]);
+        } else {
+            \App\Models\PlanSuspension::create(['plan_empleado_id' => $p['plan_empleado_id'], 'tipo_suspension_id' => $p['tipo_suspension_id'],
+                'fecha_inicio' => $p['desde'], 'fecha_fin' => $p['hasta']]);
+        }
+        \App\Services\Reporte\AuditoriaServicio::registrar(\App\Models\PlanSuspension::class, $primera?->id ?? $resto?->id ?? 0, 'editar', null,
+            ['fecha_inicio' => $p['desde'], 'fecha_fin' => $p['hasta']], "Registro diario {$this->fecha}: el {$p['nuevo']} fue un error, vuelve a {$p['codigo']}");
     }
 
     /** Guarda las fechas de fin elegidas: la suspensión se alarga (o acorta) y el registro diario se marca solo. */

@@ -7,66 +7,6 @@
         </div>
     @endif
 
-    {{-- Aviso: vacaciones, descansos y permisos que cubren este día (solo se ve en los días del rango) --}}
-    @if (count($ausencias))
-        @php
-            $estadosAusencia = [
-                'registrado' => ['Registrado', 'text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-400/10', 'fa-check'],
-                'sin_registro' => ['Sin registrar', 'text-amber-700 bg-amber-50 dark:text-amber-400 dark:bg-amber-400/10', 'fa-clock'],
-                'conflicto' => ['Registrado como', 'text-red-700 bg-red-50 dark:text-red-400 dark:bg-red-400/10', 'fa-triangle-exclamation'],
-            ];
-            $fmt = fn($f) => $f ? \Carbon\Carbon::parse($f)->format('d/m/Y') : 'sin fin';
-        @endphp
-        <div class="mt-4 rounded-[10px] border border-mist bg-paper font-['Inter',ui-sans-serif,system-ui,sans-serif] tracking-[-0.01em]"
-            x-data="{ abierto: true }">
-            <button type="button" @click="abierto = !abierto"
-                class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left">
-                <span class="text-sm font-semibold text-ink">
-                    <i class="fa fa-umbrella-beach text-pewter"></i>
-                    Ausencias programadas este día · {{ count($ausencias) }}
-                </span>
-                <span class="text-xs text-pewter">
-                    Vacaciones, descansos y permisos que cubren el
-                    {{ \Carbon\Carbon::parse($fecha)->format('d/m/Y') }}
-                    <i class="fa ml-1" :class="abierto ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-                </span>
-            </button>
-            <div x-show="abierto" x-collapse class="border-t border-hairline">
-                <ul class="divide-y divide-hairline text-[13px]">
-                    @foreach ($ausencias as $a)
-                        @php [$txt, $cls, $ico] = $estadosAusencia[$a['estado']]; @endphp
-                        <li class="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2" wire:key="aus-{{ $a['suspension_id'] }}">
-                            <span class="w-64 font-medium text-ink">{{ $a['nombre'] }}</span>
-                            <span class="flex items-center gap-2 text-graphite">
-                                <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $a['color'] }}"></span>
-                                {{ $a['codigo_esperado'] ?? $a['codigo'] }} · {{ \Illuminate\Support\Str::limit($a['descripcion'], 45) }}
-                            </span>
-                            <span class="tabular-nums text-graphite">
-                                del {{ $fmt($a['desde']) }} al {{ $fmt($a['hasta']) }}
-                                <span class="text-pewter">· día {{ $a['dia'] }} de {{ $a['dias'] }}</span>
-                            </span>
-                            <span class="rounded-[6px] px-2 py-0.5 text-xs font-medium {{ $cls }}">
-                                <i class="fa {{ $ico }}"></i> {{ $txt }}{{ $a['estado'] === 'conflicto' ? ' ' . $a['asistencia'] : '' }}
-                            </span>
-                            @can(\App\Constants\Permisos::PLANILLA_SUSPENSION_GESTIONAR)
-                                {{-- Recarga la tabla: primero se resuelven los cambios sin guardar --}}
-                                <button type="button"
-                                    @click="registroDiarioGuardia(() => { if (confirm(@js($a['nombre'] . ' regresó hoy: su ' . mb_strtolower($a['descripcion'] ?? 'suspensión') . ' ' . ($a['dia'] > 1 ? 'terminará el ' . \Carbon\Carbon::parse($fecha)->subDay()->format('d/m/Y') : 'se eliminará') . ' y se quitarán sus ' . ($a['codigo_esperado'] ?? '') . ' desde hoy hasta el ' . $fmt($a['hasta']) . '. ¿Continuar?'))) $wire.regresoAnticipado({{ $a['suspension_id'] }}) })"
-                                    class="ml-auto inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-mist bg-paper px-3 text-xs font-medium text-ink hover:bg-fog focus:outline-none focus:ring-[3px] focus:ring-carmin/25"
-                                    title="Termina la suspensión ayer y quita del registro diario los días que sobran">
-                                    <i class="fa fa-person-walking-arrow-loop-left"></i> Regresó hoy
-                                </button>
-                            @endcan
-                        </li>
-                    @endforeach
-                </ul>
-                <p class="border-t border-hairline px-4 py-2 text-xs text-pewter">
-                    Al programar una suspensión en Permisos y suspensiones, sus días se marcan solos aquí. Si regresa antes,
-                    usa "Regresó hoy" (o acorta el rango allá) y los días que sobran se quitan.
-                </p>
-            </div>
-        </div>
-    @endif
 
     <x-card class="mt-4">
 
@@ -81,6 +21,62 @@
                         <option :value="cod" x-text="cod"></option>
                     </template>
                 </x-select>
+
+                {{-- Ausencias del día (vacaciones, DM, licencias…): un botón compacto; la lista se abre encima de la tabla --}}
+                @if (count($ausencias))
+                    @php
+                        $estadosAusencia = [
+                            'registrado' => ['Registrado', 'text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-400/10', 'fa-check'],
+                            'sin_registro' => ['Sin registrar', 'text-amber-700 bg-amber-50 dark:text-amber-400 dark:bg-amber-400/10', 'fa-clock'],
+                            'conflicto' => ['Registrado como', 'text-red-700 bg-red-50 dark:text-red-400 dark:bg-red-400/10', 'fa-triangle-exclamation'],
+                        ];
+                        $fmt = fn($f) => $f ? \Carbon\Carbon::parse($f)->format('d/m/Y') : 'sin fin';
+                        $conAviso = collect($ausencias)->where('estado', '!=', 'registrado')->count();
+                    @endphp
+                    <div class="relative font-['Inter',ui-sans-serif,system-ui,sans-serif]" x-data="{ abierto: false }" @keydown.escape.window="abierto = false">
+                        <button type="button" @click="abierto = !abierto"
+                            class="inline-flex h-9 items-center gap-2 rounded-[10px] border border-mist bg-paper px-3 text-sm font-medium text-ink hover:bg-fog focus:outline-none focus:ring-[3px] focus:ring-carmin/25"
+                            title="Vacaciones, descansos y permisos que cubren este día">
+                            <i class="fa fa-umbrella-beach text-pewter"></i>
+                            Ausencias <span class="tabular-nums text-graphite">{{ count($ausencias) }}</span>
+                            @if ($conAviso)
+                                <span class="rounded-[6px] bg-amber-50 px-1.5 text-xs text-amber-700 dark:bg-amber-400/10 dark:text-amber-400" title="Sin registrar o con otro código">{{ $conAviso }} por revisar</span>
+                            @endif
+                            <i class="fa fa-chevron-down text-[10px] text-steel transition-transform" :class="abierto && 'rotate-180'"></i>
+                        </button>
+                        <div x-show="abierto" x-cloak x-transition.origin.top.left @click.outside="abierto = false"
+                            class="absolute left-0 top-full z-[300] mt-1 w-[min(46rem,calc(100vw-2rem))] rounded-[10px] border border-mist bg-paper shadow-[0_8px_24px_rgb(16_33_45/0.12)]">
+                            <ul class="max-h-80 divide-y divide-hairline overflow-y-auto text-[13px]">
+                                @foreach ($ausencias as $a)
+                                    @php [$txt, $cls, $ico] = $estadosAusencia[$a['estado']]; @endphp
+                                    <li class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2" wire:key="aus-{{ $a['suspension_id'] }}">
+                                        <span class="min-w-0 flex-1 truncate font-medium text-ink">{{ $a['nombre'] }}</span>
+                                        <span class="flex items-center gap-1.5 text-graphite" title="{{ $a['descripcion'] }}">
+                                            <span class="inline-block h-2 w-2 rounded-full" style="background: {{ $a['color'] }}"></span>
+                                            {{ $a['codigo_esperado'] ?? $a['codigo'] }}
+                                        </span>
+                                        <span class="tabular-nums text-graphite">{{ $fmt($a['desde']) }} – {{ $fmt($a['hasta']) }} <span class="text-pewter">· día {{ $a['dia'] }}/{{ $a['dias'] }}</span></span>
+                                        <span class="rounded-[6px] px-1.5 py-0.5 text-xs font-medium {{ $cls }}">
+                                            <i class="fa {{ $ico }}"></i> {{ $txt }}{{ $a['estado'] === 'conflicto' ? ' ' . $a['asistencia'] : '' }}
+                                        </span>
+                                        @can(\App\Constants\Permisos::PLANILLA_SUSPENSION_GESTIONAR)
+                                            {{-- Recarga la tabla: primero se resuelven los cambios sin guardar --}}
+                                            <button type="button"
+                                                @click="abierto = false; registroDiarioGuardia(() => { if (confirm(@js($a['nombre'] . ' regresó hoy: su ' . mb_strtolower($a['descripcion'] ?? 'suspensión') . ' ' . ($a['dia'] > 1 ? 'terminará el ' . \Carbon\Carbon::parse($fecha)->subDay()->format('d/m/Y') : 'se eliminará') . ' y se quitarán sus ' . ($a['codigo_esperado'] ?? '') . ' desde hoy hasta el ' . $fmt($a['hasta']) . '. ¿Continuar?'))) $wire.regresoAnticipado({{ $a['suspension_id'] }}) })"
+                                                class="inline-flex h-7 items-center gap-1 rounded-[10px] border border-mist bg-paper px-2 text-xs font-medium text-ink hover:bg-fog"
+                                                title="Termina la suspensión ayer y quita del registro diario los días que sobran">
+                                                <i class="fa fa-person-walking-arrow-loop-left"></i> Regresó hoy
+                                            </button>
+                                        @endcan
+                                    </li>
+                                @endforeach
+                            </ul>
+                            <p class="border-t border-hairline px-3 py-2 text-xs text-pewter">
+                                Sus días se marcan solos. Si regresó antes, usa "Regresó hoy" o escribe su asistencia en la tabla y al guardar se te preguntará.
+                            </p>
+                        </div>
+                    </div>
+                @endif
             </x-flex>
             @can(\App\Constants\Permisos::PLANILLA_ACTIVIDAD_GESTIONAR)
                 <x-flex>
@@ -209,7 +205,60 @@
         </x-slot>
     </x-dialog-modal>
 
-    <x-loading wire:loading wire:target="guardarInformacionRegistroPlanilla,regresoAnticipado,recargarTabla,confirmarHasta" />
+    {{-- ¿Regresó? Se puso otro código (A, F…) sobre un día de una suspensión que sigue después de hoy --}}
+    <x-dialog-modal wire:model.live="mostrarPreguntaRegreso" maxWidth="2xl">
+        <x-slot name="title">¿Regresó antes?</x-slot>
+        <x-slot name="content">
+            <div class="font-['Inter',ui-sans-serif,system-ui,sans-serif]">
+                <p class="text-sm text-graphite">
+                    Estos trabajadores tenían una ausencia programada que sigue después del
+                    {{ \Illuminate\Support\Carbon::parse($fecha)->format('d/m/Y') }} y hoy se les registró otra cosa. ¿Qué pasó?
+                </p>
+                <div class="mt-4 divide-y divide-hairline rounded-[10px] border border-mist">
+                    @foreach ($preguntasRegreso as $i => $p)
+                        @php
+                            $fin = $p['hasta'] ? \Illuminate\Support\Carbon::parse($p['hasta'])->format('d/m/Y') : 'sin fin';
+                            $ayer = \Illuminate\Support\Carbon::parse($fecha)->subDay()->format('d/m/Y');
+                            $opciones = [
+                                'regreso' => ['Regresó hoy', "La {$p['codigo']} termina el {$ayer}; se quitan sus {$p['codigo']} hasta el {$fin}."],
+                                'solo_hoy' => ['Solo hoy', "Hoy queda " . ($p['nuevo'] ?: 'vacío') . " y la {$p['codigo']} sigue mañana hasta el {$fin}."],
+                                'error' => ['Fue un error', "Hoy vuelve a {$p['codigo']} (se borran los tramos de hoy) y la ausencia queda como estaba."],
+                            ];
+                        @endphp
+                        <div class="px-3 py-3" wire:key="regreso-{{ $p['plan_det_men_id'] }}">
+                            <p class="text-sm font-medium text-ink">{{ $p['nombre'] }}</p>
+                            <p class="text-xs text-pewter">
+                                <span class="rounded-[6px] bg-fog px-1.5 py-0.5 font-medium text-graphite">{{ $p['codigo'] }}</span>
+                                {{ $p['tipo'] }} · {{ \Illuminate\Support\Carbon::parse($p['desde'])->format('d/m/Y') }} al {{ $fin }}
+                                · hoy se registró <span class="font-medium text-ink">{{ $p['nuevo'] ?: 'vacío' }}</span>
+                            </p>
+                            <div class="mt-2 grid gap-2 sm:grid-cols-3">
+                                @foreach ($opciones as $valor => [$titulo, $ayuda])
+                                    <label class="flex cursor-pointer gap-2 rounded-[10px] border px-2.5 py-2 has-[:checked]:border-carmin has-[:checked]:bg-carmin/5 border-mist hover:bg-fog">
+                                        <input type="radio" value="{{ $valor }}" wire:model="preguntasRegreso.{{ $i }}.decision" class="mt-0.5 text-carmin focus:ring-carmin/25">
+                                        <span>
+                                            <span class="block text-sm font-medium text-ink">{{ $titulo }}</span>
+                                            <span class="block text-xs text-pewter">{{ $ayuda }}</span>
+                                        </span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </x-slot>
+        <x-slot name="footer">
+            <x-button variant="secondary" wire:click="cerrarPreguntaRegreso">Dejar como se guardó</x-button>
+            @can(\App\Constants\Permisos::PLANILLA_SUSPENSION_GESTIONAR)
+                <x-button wire:click="confirmarRegreso" wire:loading.attr="disabled" wire:target="confirmarRegreso">
+                    <i class="fa fa-check"></i> Aplicar
+                </x-button>
+            @endcan
+        </x-slot>
+    </x-dialog-modal>
+
+    <x-loading wire:loading wire:target="guardarInformacionRegistroPlanilla,regresoAnticipado,recargarTabla,confirmarHasta,confirmarRegreso" />
 </div>
 @script
 <script>

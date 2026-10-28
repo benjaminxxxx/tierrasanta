@@ -312,15 +312,15 @@ class ReporteDiarioRiegoComponent extends Component
     }
     public function verificarSincronizacion()
     {
-        if (!$this->consolidados?->contains('trabajador_type', PlanEmpleado::class)) {
-            $this->alert('warning', 'No hay regadores de planilla ese día: no hay nada que verificar.');
+        if (!$this->consolidados?->isNotEmpty()) {
+            $this->alert('warning', 'No hay regadores ese día: no hay nada que verificar.');
             return;
         }
         $resultado = app(VerificacionSincronizacionRiegoServicio::class)->verificarFechaYActualizarTareas($this->fecha);
 
         $this->dispatch('registroConsolidado'); // refresca cada Detalle para que lea el nuevo valor de sincronizado
 
-        $this->alert('success', "Verificación completa: {$resultado['ok']} sincronizados, {$resultado['desincronizados']} con diferencias, {$resultado['omitidos']} omitidos (cuadrilla).");
+        $this->alert('success', "Verificación completa: {$resultado['ok']} sincronizados, {$resultado['desincronizados']} con diferencias, {$resultado['omitidos']} omitidos.");
     }
     public function render()
     {
