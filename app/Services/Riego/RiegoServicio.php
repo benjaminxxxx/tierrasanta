@@ -53,22 +53,19 @@ class RiegoServicio
                         throw new Exception("No se ha generado el registro mensual para {$registro['trabajador_name']} aún.");
                     }
 
-                    $dataPlanilla[] = [
-                        "plan_men_detalle_id" => $planillaMensual->id,
-                        "asistencia" => "A",
-                        "total_horas" => $registro['total_horas'],
-                        "campo_1" => $registro['campo'],
-                        "labor_1" => $registro['labor'],
-                        "entrada_1" => $registro['hora_inicio'],
-                        "salida_1" => $registro['hora_fin'],
-                    ];
+                    $fila = $this->filaPlanillaConRiego($fecha, $planillaMensual, $registro, $avisos);
+                    if ($fila) {
+                        $dataPlanilla[] = $fila;
+                    }
                 } elseif ($registro['tipo'] === 'cuadrilla') {
                     array_push($avisos, ...$this->registrarRiegoEnCuadrilla($fecha, $registro));
                 }
             }
 
             if (!empty($dataPlanilla)) {
-                app(PlanillaRegistroDiarioServicio::class)->guardarRegistrosDiarios($fecha, $dataPlanilla, 1);
+                $columnas = max(array_map(fn($f) => $f['_tramos'], $dataPlanilla));
+                $dataPlanilla = array_map(fn($f) => array_diff_key($f, ['_tramos' => true]), $dataPlanilla);
+                app(PlanillaRegistroDiarioServicio::class)->guardarRegistrosDiarios($fecha, $dataPlanilla, $columnas);
             }
 
            
@@ -78,6 +75,50 @@ class RiegoServicio
 
         return $avisos;
     }
+    /**
+     * Fila del registro diario de planilla con el riego: el tramo FDM/81 se reemplaza por el del reporte de riego y se
+     * conservan las otras labores del día (día mixto: 5 h de riego + 3 h en un campo). Antes se pisaba todo el día con
+     * un solo tramo. Si otra labor se cruza con el horario del riego, o el día tiene otra asistencia (V, DM…), no se
+     * toca y se avisa.
+     */
+    private function filaPlanillaConRiego(string $fecha, PlanMensualDetalle $detalle, array $registro, array &$avisos): ?array
+    {
+        $reglas = \App\Services\Riego\Cuadrilla\RiegoCuadrillaReglas::class;
+        $nombre = $registro['trabajador_name'] ?? 'Trabajador';
+        $existente = \App\Models\PlanRegistroDiario::with('detalles')->where('plan_det_men_id', $detalle->id)->whereDate('fecha', $fecha)->first();
+
+        if ($existente && !in_array(trim((string) $existente->asistencia), ['', 'A'], true)) {
+            $avisos[] = "{$nombre}: su registro diario de planilla tiene {$existente->asistencia}; no se cambió. Si regó, corrige su asistencia.";
+            return null;
+        }
+
+        $otros = ($existente?->detalles ?? collect())
+            ->reject(fn($d) => $reglas::esTramoRiego($d->campo_nombre, $d->codigo_labor))
+            ->map(fn($d) => ['campo' => $d->campo_nombre, 'labor' => $d->codigo_labor, 'inicio' => $reglas::hora($d->hora_inicio), 'fin' => $reglas::hora($d->hora_fin)])
+            ->values();
+        $riego = ['campo' => $registro['campo'], 'labor' => $registro['labor'], 'inicio' => $reglas::hora($registro['hora_inicio']), 'fin' => $reglas::hora($registro['hora_fin'])];
+
+        $cruces = $otros->filter(fn($t) => $reglas::minutosCruce($t['inicio'], $t['fin'], $riego['inicio'], $riego['fin']) > 0);
+        if ($cruces->isNotEmpty()) {
+            $avisos[] = "{$nombre}: tiene otras labores que se cruzan con el riego ({$riego['inicio']}-{$riego['fin']}): "
+                . $cruces->map(fn($t) => "{$t['campo']}/{$t['labor']} {$t['inicio']}-{$t['fin']}")->implode(', ')
+                . '. No se cambió su registro diario: ajusta las horas a mano (el riego va como FDM/81).';
+            return null;
+        }
+
+        $tramos = $otros->push($riego)->sortBy('inicio')->values();
+        $fila = ['plan_men_detalle_id' => $detalle->id, 'nombres' => $nombre, 'asistencia' => 'A', '_tramos' => $tramos->count(),
+            'total_horas' => round($tramos->sum(fn($t) => $reglas::minutos($t['inicio'], $t['fin'])) / 60, 2)];
+        foreach ($tramos as $i => $t) {
+            $n = $i + 1;
+            $fila += ["campo_{$n}" => $t['campo'], "labor_{$n}" => $t['labor'], "entrada_{$n}" => $t['inicio'], "salida_{$n}" => $t['fin']];
+        }
+        if ($otros->count()) {
+            $avisos[] = "{$nombre}: día mixto, se conservaron sus otras labores y el riego quedó como FDM/81 ({$riego['inicio']}-{$riego['fin']}).";
+        }
+        return $fila;
+    }
+
     /**
      * Pasa el riego de un cuadrillero a su registro de cuadrilla como FDM/81 (regla de la empresa): ese tramo pasa a ser
      * su jornal de riego y las horas del día se recalculan. Se usa su registro del día (si tiene varios grupos, el que

@@ -4,6 +4,12 @@
     $btnPrincipal = 'inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-carmin px-4 text-sm font-semibold text-white hover:bg-carmin-hover focus:outline-none focus:ring-[3px] focus:ring-carmin/25 disabled:opacity-50';
     $marcado = fn($id, $tipo) => collect($elegidos)->contains(fn($e) => $e['tipo'] === $tipo && (int) $e['id'] === (int) $id);
     $tipoTexto = ['empleados' => 'Planilla', 'cuadrilleros' => 'Cuadrilla'];
+    // Planilla = lo normal (neutro); Cuadrilla resalta en ámbar para que no se agregue por error
+    $chipTipo = [
+        'empleados' => 'rounded-[6px] bg-fog px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-graphite',
+        'cuadrilleros' => 'rounded-[6px] bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-800 dark:bg-amber-400/15 dark:text-amber-300',
+    ];
+    $cuadElegidos = collect($elegidos)->where('tipo', 'cuadrilleros');
 @endphp
 <div>
     <x-dialog-modal wire:model="abierto" maxWidth="3xl">
@@ -42,7 +48,7 @@
                                     </span>
                                     <span class="min-w-0 flex-1">
                                         <span class="block truncate text-sm font-medium text-ink">{{ $h['name'] }}</span>
-                                        <span class="block text-xs text-pewter">{{ $tipoTexto[$h['tipo']] }} · regó {{ $h['dias'] }} día(s)</span>
+                                        <span class="mt-0.5 flex items-center gap-1.5 text-xs text-pewter"><span class="{{ $chipTipo[$h['tipo']] }}">@if ($h['tipo'] === 'cuadrilleros')<i class="fa fa-people-group"></i> @endif{{ $tipoTexto[$h['tipo']] }}</span> regó {{ $h['dias'] }} día(s)</span>
                                     </span>
                                 </button>
                             @endforeach
@@ -60,7 +66,7 @@
                         <div class="inline-flex rounded-[10px] border border-mist p-0.5">
                             @foreach ($tipoTexto as $valor => $texto)
                                 <button type="button" wire:click="$set('tipoOtro', '{{ $valor }}')"
-                                    class="h-8 rounded-[8px] px-3 text-sm font-medium {{ $tipoOtro === $valor ? 'bg-fog text-ink' : 'text-graphite hover:text-ink' }}">
+                                    class="h-8 rounded-[8px] px-3 text-sm font-medium {{ $tipoOtro === $valor ? ($valor === 'cuadrilleros' ? 'bg-amber-100 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300' : 'bg-fog text-ink') : 'text-graphite hover:text-ink' }}">
                                     {{ $texto }} <span class="text-xs text-pewter">({{ count($valor === 'empleados' ? $planilleros : $cuadrilleros) }})</span>
                                 </button>
                             @endforeach
@@ -77,8 +83,13 @@
                     <p class="border-b border-hairline bg-fog px-3 py-2 text-xs font-medium text-graphite">Se agregarán ({{ count($elegidos) }})</p>
                     @forelse ($elegidos as $e)
                         <div class="flex items-center gap-3 border-t border-hairline px-3 py-2 first:border-t-0" wire:key="el-{{ $e['tipo'] }}-{{ $e['id'] }}">
-                            <span class="rounded-[6px] bg-fog px-1.5 py-0.5 text-xs font-medium text-graphite">{{ $tipoTexto[$e['tipo']] }}</span>
-                            <span class="flex-1 text-sm text-ink">{{ $e['nombre'] }}</span>
+                            <span class="{{ $chipTipo[$e['tipo']] }}">{{ $tipoTexto[$e['tipo']] }}</span>
+                            <span class="flex-1 text-sm text-ink">
+                                {{ $e['nombre'] }}
+                                @if ($e['tipo'] === 'cuadrilleros' && in_array((int) $e['id'], $sinRegistroCuadrilla, true))
+                                    <span class="ml-1 text-xs text-amber-700 dark:text-amber-400"><i class="fa fa-triangle-exclamation"></i> no figura en el registro de cuadrilla de esta fecha</span>
+                                @endif
+                            </span>
                             <button type="button" wire:click="alternar({{ $e['id'] }}, '{{ $e['tipo'] }}')" class="text-steel hover:text-red-700" title="Quitar">
                                 <i class="fa fa-xmark"></i>
                             </button>
@@ -87,6 +98,15 @@
                         <p class="px-3 py-4 text-center text-sm text-pewter">Marca regadores habituales o busca otro trabajador.</p>
                     @endforelse
                 </div>
+
+                {{-- Agregar como cuadrilla es la excepción: se avisa claro antes de guardar --}}
+                @if ($cuadElegidos->isNotEmpty())
+                    <div class="rounded-[10px] border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-800 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300">
+                        <p class="font-semibold"><i class="fa fa-people-group"></i> {{ $cuadElegidos->count() }} se agregará{{ $cuadElegidos->count() === 1 ? '' : 'n' }} como CUADRILLA:
+                            {{ $cuadElegidos->pluck('nombre')->implode(', ') }}</p>
+                        <p class="mt-0.5 text-[13px]">Su riego se paga en el registro de cuadrilla (FDM/81), no en planilla. Si es un trabajador de planilla, quítalo y búscalo en la pestaña Planilla.</p>
+                    </div>
+                @endif
             </div>
 
             {{-- Cuadrillero que parece ser trabajador de planilla: su riego debe ir a su nombre de planilla --}}
@@ -109,8 +129,12 @@
 
         <x-slot name="footer">
             <button type="button" wire:click="$set('abierto', false)" class="{{ $btn2 }}">Cancelar</button>
-            <button type="button" wire:click="guardar" wire:loading.attr="disabled" @disabled(!$elegidos) class="{{ $btnPrincipal }} ml-2">
+            <button type="button" wire:click="guardar" wire:loading.attr="disabled" @disabled(!$elegidos) class="{{ $btnPrincipal }} ml-2"
+                @if ($cuadElegidos->isNotEmpty()) wire:confirm="Se agregará{{ $cuadElegidos->count() === 1 ? '' : 'n' }} como CUADRILLA: {{ $cuadElegidos->pluck('nombre')->implode(', ') }}. ¿Es correcto?" @endif>
                 <i class="fa fa-plus"></i> Agregar {{ count($elegidos) ?: '' }} regador{{ count($elegidos) === 1 ? '' : 'es' }}
+                @if ($cuadElegidos->isNotEmpty())
+                    <span class="font-normal opacity-90">({{ $cuadElegidos->count() }} de cuadrilla)</span>
+                @endif
             </button>
         </x-slot>
     </x-dialog-modal>

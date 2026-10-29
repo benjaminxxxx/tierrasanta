@@ -54,7 +54,12 @@ class RiegoCuadrillaConsulta
 
         // 1) ¿Es de planilla? (el riego debió registrarse a su nombre de planilla)
         $empleado = $cuadrillero ? $this->personas->empleadoConContrato($cuadrillero, $fecha) : null;
-        if ($empleado) {
+        // Ya se justificó ese día (trabajo extra, otro día u otra persona): no se vuelve a marcar
+        $justificacion = $cuadrillero ? app(\App\Services\Cuadrilla\Persona\CuadrillaPersonaJustificacionProceso::class)->justificado($cuadrillero->id, $fecha) : null;
+        if ($justificacion?->motivo === 'otra_persona') {
+            $empleado = null; // homónimo: no es el de planilla
+        }
+        if ($empleado && !$justificacion) {
             $problemas['es_planilla'] = "Parece ser {$empleado['nombre']}, de planilla. Si es trabajo extra que se paga como cuadrilla (domingo, horas de más), está bien, "
                 . 'pero regístralo en la fecha real en que se trabajó; si es su jornada de planilla, regístralo como planilla.';
         }

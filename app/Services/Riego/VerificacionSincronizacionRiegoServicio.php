@@ -10,6 +10,7 @@ use App\Models\PlanRegistroDiario;
 use App\Models\TareaPendiente;
 use App\Services\Riego\Cuadrilla\RiegoCuadrillaConsulta;
 use App\Services\Riego\Cuadrilla\RiegoCuadrillaDetector;
+use App\Services\Riego\Cuadrilla\RiegoCuadrillaReglas;
 use App\Services\Sistema\TareasPendientes\TareaPendienteServicio;
 use App\Services\Sistema\Vigencia\SistemaVigenciaReglas;
 use Illuminate\Support\Carbon;
@@ -57,6 +58,16 @@ class VerificacionSincronizacionRiegoServicio
 
         if ($item->trabajador_type === Cuadrillero::class) {
             $r = app(RiegoCuadrillaConsulta::class)->revisarConsolidado($item);
+            // Sin detalle de riego: como en planilla, se recomienda quitarlo del reporte de regadores
+            $tramos = \App\Models\CuadDetalleHora::whereIn('registro_diario_id',
+                \App\Models\CuadRegistroDiario::where('cuadrillero_id', $item->trabajador_id)->whereDate('fecha', $fecha)->pluck('id'))->get();
+            $esRiego = fn($t) => RiegoCuadrillaReglas::esTramoRiego($t->campo_nombre, $t->codigo_labor);
+            $sinRiego = $this->sinDetalleDeRiego($item,
+                (int) $tramos->reject($esRiego)->sum(fn($t) => RiegoCuadrillaReglas::minutos($t->hora_inicio, $t->hora_fin)),
+                (int) $tramos->filter($esRiego)->sum(fn($t) => RiegoCuadrillaReglas::minutos($t->hora_inicio, $t->hora_fin)));
+            if ($sinRiego) {
+                return ['sincronizado' => false, 'origen' => 'cuadrilla', 'nombre' => $r['nombre'], 'motivo' => $sinRiego];
+            }
             // "es_planilla" y "costo" son informativos: no desincronizan (tienen su propia tarea de riego-cuadrilla)
             $motivos = array_values(array_diff_key($r['problemas'], ['costo' => true, 'es_planilla' => true]));
             return [
@@ -84,23 +95,52 @@ class VerificacionSincronizacionRiegoServicio
 
         $registroDiario = PlanRegistroDiario::where('plan_det_men_id', $detalleMensual->id)->whereDate('fecha', $fecha)->first();
 
-        // Horas trabajadas en el registro diario (sus tramos). El total pagado de un día de descanso médico,
-        // atención médica o vacaciones no es riego: con 0 h de riego ese día está sincronizado.
-        $minPlanilla = $registroDiario
-            ? (int) $registroDiario->detalles()->get()->sum(fn($d) => Carbon::parse($d->hora_inicio)->diffInMinutes(Carbon::parse($d->hora_fin)))
-            : 0;
+        // El riego se compara solo con sus tramos FDM/81: un día mixto (5 h de riego + 3 h en un campo) es válido si
+        // FDM/81 tiene las horas del riego. Un día de DM o vacaciones no tiene tramos: con 0 h de riego cuadra.
+        $tramos = $registroDiario ? $registroDiario->detalles()->get() : collect();
+        $min81 = (int) $tramos->filter(fn($d) => RiegoCuadrillaReglas::esTramoRiego($d->campo_nombre, $d->codigo_labor))
+            ->sum(fn($d) => RiegoCuadrillaReglas::minutos($d->hora_inicio, $d->hora_fin));
+        $minOtros = (int) $tramos->reject(fn($d) => RiegoCuadrillaReglas::esTramoRiego($d->campo_nombre, $d->codigo_labor))
+            ->sum(fn($d) => RiegoCuadrillaReglas::minutos($d->hora_inicio, $d->hora_fin));
 
-        if (abs($minPlanilla - $jornal) < self::TOLERANCIA_MIN) {
+        if ($sinRiego = $this->sinDetalleDeRiego($item, $minOtros, $min81)) {
+            return $base + ['sincronizado' => false, 'motivo' => $sinRiego];
+        }
+
+        if (abs($min81 - $jornal) < self::TOLERANCIA_MIN) {
             return $base + ['sincronizado' => true, 'motivo' => null];
         }
 
-        $motivo = !$registroDiario
-            ? 'Regó ' . self::h($jornal) . ' y no tiene registro diario de planilla ese día.'
-            : 'Jornal de riego ' . self::h($jornal) . '; su registro diario de planilla tiene ' . self::h($minPlanilla)
-                . ($registroDiario->asistencia ? " (asistencia {$registroDiario->asistencia})" : '') . '.';
+        if (!$registroDiario) {
+            $motivo = 'Regó ' . self::h($jornal) . ' y no tiene registro diario de planilla ese día.';
+        } else {
+            $motivo = 'Jornal de riego ' . self::h($jornal) . '; su registro diario tiene ' . self::h($min81) . ' en FDM/81'
+                . ($minOtros ? ' y ' . self::h($minOtros) . ' en otras labores' : '')
+                . ($registroDiario->asistencia && $registroDiario->asistencia !== 'A' ? " (asistencia {$registroDiario->asistencia})" : '') . '.';
+            if ($min81 === 0 && $minOtros > 0) {
+                $motivo .= ' Si el día fue mixto, una de sus líneas debe ser FDM/81 con las horas de riego y las demás, sus otras labores.';
+            }
+        }
 
         return $base + ['sincronizado' => false, 'motivo' => $motivo
             . ' Corrige el registro diario (o el reporte de riego, si el error está ahí) y guarda: se vuelve a verificar solo.'];
+    }
+
+    /**
+     * Está en el reporte de regadores pero no tiene ningún detalle de riego (ni ronda ni horas acumuladas): el sistema
+     * entiende que ese día regó 0 h. Si hizo otras labores, no debía agregarse como regador ese día.
+     * Una ronda "sin haberes" (jornal 0 con detalle) sí es válida.
+     */
+    private function sinDetalleDeRiego(ConsolidadoRiego $item, int $minOtros, int $min81): ?string
+    {
+        if ((int) $item->minutos_jornal > 0 || \App\Models\ReporteDiarioRiego::where('consolidado_id', $item->id)->exists()) {
+            return null;
+        }
+        if ($minOtros > 0 && $min81 === 0) {
+            return 'Está en el reporte de regadores, pero no tiene detalle de riego y ese día hizo otras labores ('
+                . self::h($minOtros) . ', sin FDM/81). Quítalo del reporte de regadores de ese día: si no, el sistema entiende que regó 0 h.';
+        }
+        return 'Está en el reporte de regadores sin ningún detalle de riego. Registra su riego o quítalo del reporte de regadores de ese día.';
     }
 
     /**

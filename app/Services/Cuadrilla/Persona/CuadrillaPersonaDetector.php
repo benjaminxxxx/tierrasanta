@@ -29,12 +29,17 @@ class CuadrillaPersonaDetector
     public function cruces(string $inicio, string $fin): array
     {
         $registros = CuadRegistroDiario::with('cuadrillero')->whereBetween('fecha', [$inicio, $fin])->get();
+        // Días ya justificados (trabajo extra, otro día, otra persona): no son tarea
+        $justificados = app(CuadrillaPersonaJustificacionProceso::class)->justificadosEnRango($inicio, $fin);
         $casos = [];
         foreach ($registros as $rc) {
             if (!$rc->cuadrillero || !($emp = $this->personas->empleadoDePlanilla($rc->cuadrillero))) {
                 continue;
             }
             $fecha = Carbon::parse($rc->fecha)->toDateString();
+            if (isset($justificados[$rc->cuadrillero_id . '|' . $fecha])) {
+                continue;
+            }
             $rp = PlanRegistroDiario::whereDate('fecha', $fecha)->with('detalles')
                 ->whereHas('detalleMensual', fn($q) => $q->where('plan_empleado_id', $emp['id']))->first();
             if (!$rp || $rp->detalles->isEmpty()) {
@@ -92,14 +97,32 @@ class CuadrillaPersonaDetector
                 'descripcion' => "Planilla: {$c['planilla']}. Cuadrilla: {$c['cuadrilla']}.",
                 'variante' => 'danger', 'cantidad_afectados' => 1,
                 'servicio' => self::class, 'metodo_detectar' => 'detectarTareasPendientes',
-                'acciones' => [
+                'acciones' => array_merge([
                     ['titulo' => 'Registro de planilla', 'tipo_accion' => 'link', 'url' => route('planilla.registro_diario', ['fecha' => $c['fecha']])],
                     ['titulo' => 'Registro de cuadrilla', 'tipo_accion' => 'link', 'url' => route('cuadrilla.registro_diario', ['fecha' => $c['fecha']])],
-                ],
+                ], self::accionesJustificar($c['cuadrillero_id'], $c['fecha'])),
             ]);
         }
         TareaPendiente::where('tipo', self::TIPO)->where('estado', 'pendiente')
             ->where('clave', 'like', "{$claveMes}-c%")->whereNotIn('clave', $vigentes)->get()
             ->each(fn($t) => $registrador->registrarOActualizar(['tipo' => self::TIPO, 'clave' => $t->clave, 'cantidad_afectados' => 0]));
+    }
+
+    /** Botones de la tarea para justificar el día (datos que ya existen). Se ejecutan con justificar(). */
+    public static function accionesJustificar(int $cuadrilleroId, string $fecha): array
+    {
+        $domingo = \Illuminate\Support\Carbon::parse(CuadrillaPersonaReglas::domingoAnterior($fecha))->format('d/m');
+        return [
+            ['titulo' => 'Trabajo extra', 'metodo' => 'justificar', 'parametros' => ['cuadrilleroId' => $cuadrilleroId, 'fecha' => $fecha, 'motivo' => 'trabajo_extra']],
+            ['titulo' => "Otro día (dom. {$domingo})", 'metodo' => 'justificar', 'parametros' => ['cuadrilleroId' => $cuadrilleroId, 'fecha' => $fecha, 'motivo' => 'otro_dia']],
+            ['titulo' => 'Otra persona', 'metodo' => 'justificar', 'parametros' => ['cuadrilleroId' => $cuadrilleroId, 'fecha' => $fecha, 'motivo' => 'otra_persona']],
+        ];
+    }
+
+    public function justificar(int $cuadrilleroId, string $fecha, string $motivo): void
+    {
+        app(CuadrillaPersonaJustificacionProceso::class)->justificar($cuadrilleroId, $fecha, $motivo);
+        // La otra tarea (riego de cuadrilleros) también usa la justificación
+        app(\App\Services\Riego\Cuadrilla\RiegoCuadrillaDetector::class)->detectarTareasPendientes($fecha);
     }
 }

@@ -25,6 +25,9 @@ class GestionCuadrillaReporteDiarioComponent extends Component
     public $campos = [];
     public $tramos = [];
     public $tramoSeleccionadoId;
+    /** Al guardar: cuadrilleros que parecen ser trabajadores de planilla que hoy también figuran en planilla */
+    public array $preguntasPlanilla = [];
+    public bool $mostrarPreguntaPlanilla = false;
     protected $listeners = ['registroDetalleHorasExterno' => 'refrescarTabla', 'guardarReporteConfirmado'];
     protected ReporteDiarioCuadrillaServicio $reporteDiarioCuadrillaServicio;
     public function boot(ReporteDiarioCuadrillaServicio $reporteDiarioCuadrillaServicio)
@@ -168,6 +171,29 @@ class GestionCuadrillaReporteDiarioComponent extends Component
                 ->verificarDespuesDeGuardar($this->fecha, \App\Models\Cuadrillero::class);
             $aviso ? $this->alert('warning', "Registro guardado. {$aviso}", ['timer' => 8000])
                 : $this->alert('success', 'Registro actualizado correctamente');
+            // Trabajadores de planilla que también figuran hoy en cuadrilla: ¿trabajo extra, otro día u otra persona?
+            $ids = array_values(array_filter(array_map(fn($f) => isset($f['cuadrillero_id']) ? (int) $f['cuadrillero_id'] : null, $datos)));
+            $this->preguntasPlanilla = collect(app(\App\Services\Cuadrilla\Persona\CuadrillaPersonaJustificacionProceso::class)->porPreguntar($this->fecha, $ids))
+                ->map(fn($c) => $c + ['motivo' => 'trabajo_extra'])->all();
+            $this->mostrarPreguntaPlanilla = (bool) $this->preguntasPlanilla;
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+        }
+    }
+
+    /** Guarda la respuesta de cada uno (es informativa: con ella ese día deja de salir en Tareas pendientes). */
+    public function confirmarPreguntaPlanilla(): void
+    {
+        try {
+            $proceso = app(\App\Services\Cuadrilla\Persona\CuadrillaPersonaJustificacionProceso::class);
+            foreach ($this->preguntasPlanilla as $p) {
+                $proceso->justificar($p['cuadrillero_id'], $this->fecha, $p['motivo'], $p['motivo'] === 'otro_dia' ? ($p['fecha_real'] ?: null) : null);
+            }
+            app(\App\Services\Cuadrilla\Persona\CuadrillaPersonaDetector::class)->detectarTareasPendientes($this->fecha);
+            app(\App\Services\Riego\Cuadrilla\RiegoCuadrillaDetector::class)->detectarTareasPendientes($this->fecha);
+            $this->mostrarPreguntaPlanilla = false;
+            $this->preguntasPlanilla = [];
+            $this->alert('success', 'Listo: quedó anotado.');
         } catch (\Throwable $e) {
             $this->errorAlert($e);
         }

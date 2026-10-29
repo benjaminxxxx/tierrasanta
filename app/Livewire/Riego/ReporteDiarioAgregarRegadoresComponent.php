@@ -117,6 +117,12 @@ class ReporteDiarioAgregarRegadoresComponent extends Component
 
     public function render()
     {
-        return view('livewire.riego.reporte-diario-agregar-regadores-component');
+        // Cuadrilleros elegidos que no figuran en el registro de cuadrilla de la fecha (pedido de Flavia: aviso, no bloquea,
+        // porque a veces el detalle de riego se llena antes que el registro de horas)
+        $idsCuad = collect($this->elegidos)->where('tipo', 'cuadrilleros')->pluck('id')->map(fn($id) => (int) $id);
+        $sinRegistroCuadrilla = $this->fecha && $idsCuad->isNotEmpty()
+            ? $idsCuad->diff(\App\Models\CuadRegistroDiario::whereIn('cuadrillero_id', $idsCuad)->whereDate('fecha', $this->fecha)->pluck('cuadrillero_id')->map(fn($id) => (int) $id))->values()->all()
+            : [];
+        return view('livewire.riego.reporte-diario-agregar-regadores-component', compact('sinRegistroCuadrilla'));
     }
 }

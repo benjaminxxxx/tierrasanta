@@ -50,6 +50,10 @@ class RiegoRegadorProceso
             if (($r['tipo'] ?? '') !== 'cuadrilleros' || !($cu = \App\Models\Cuadrillero::find($r['id'] ?? 0))) {
                 continue;
             }
+            // Ya justificado ese día (trabajo extra, otro día u otra persona): no se vuelve a preguntar
+            if (app(\App\Services\Cuadrilla\Persona\CuadrillaPersonaJustificacionProceso::class)->justificado($cu->id, $f)) {
+                continue;
+            }
             if ($emp = $personas->empleadoConContrato($cu, $f)) {
                 $sospechosos[] = ['cuadrillero_id' => $cu->id, 'cuadrillero' => $cu->nombres, 'empleado_id' => $emp['id'], 'empleado' => $emp['nombre']];
             }

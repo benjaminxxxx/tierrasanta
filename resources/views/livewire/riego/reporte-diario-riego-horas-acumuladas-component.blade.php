@@ -57,124 +57,107 @@
                 @endif
             </div>
         @else
-        <div class="space-y-4">
+        @php
+            // Días anteriores con horas acumuladas (saldo a esta fecha). Los usos de fechas posteriores no restan:
+            // al registrar, los usos del regador se reasignan en orden de fecha (RiegoAcumulacionProceso).
+            $fechaTxt = $fechaRegistro?->toDateString();
+            $origenesUso = collect($saldo['origenes'] ?? [])->filter(fn($o) => $o['disponible'] > 0 || $o['usos'])->values()->map(fn($o) => [
+                'fecha' => $o['fecha'],
+                'disponible' => $o['disponible'],
+                'acumulado' => $o['acumulado'],
+                'otro_mes' => $o['otro_mes'],
+                'antes' => collect($o['usos'])->where('fecha', '<', $fechaTxt)->values()->all(),
+                'despues' => collect($o['usos'])->where('fecha', '>', $fechaTxt)->values()->all(),
+            ])->all();
+        @endphp
+        <div class="space-y-4 font-['Inter',ui-sans-serif,system-ui,sans-serif] tracking-[-0.01em]"
+            x-data="{
+                inicio: @entangle('acumulado.horaInicio'),
+                fin: @entangle('acumulado.horaFin'),
+                origenes: @js($origenesUso),
+                get minutos() {
+                    if (!this.inicio || !this.fin) return 0;
+                    const [hi, mi] = this.inicio.split(':').map(Number);
+                    const [hf, mf] = this.fin.split(':').map(Number);
+                    return Math.max(0, (hf * 60 + mf) - (hi * 60 + mi));
+                },
+                get total() { return (this.minutos / 60).toFixed(2); },
+                // Lo que se tomará de cada día (lo más antiguo primero), según las horas escritas
+                get tomas() {
+                    let resto = this.minutos;
+                    return this.origenes.map(o => { const t = Math.min(o.disponible, Math.max(0, resto)); resto -= t; return t; });
+                },
+                get faltan() { return Math.max(0, this.minutos - this.origenes.reduce((s, o) => s + o.disponible, 0)); },
+                hm(m) { return Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'min'; },
+                dm(f) { const [a, b, c] = f.split('-'); return c + '/' + b; },
+            }">
 
-            {{-- Encabezado: campo + total disponible --}}
-            <div class="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-700
-                        bg-gray-50 dark:bg-gray-800/60 px-4 py-3">
+            <div class="flex items-center justify-between rounded-[10px] border border-mist bg-fog/50 px-4 py-3">
                 <div>
-                    <span class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Campo</span>
-                    <p class="text-lg font-bold text-gray-800 dark:text-white">FDM</p>
+                    <p class="text-xs text-pewter">{{ $resumenRiego?->trabajador_nombre }} · FDM</p>
+                    <p class="text-sm text-graphite">Disponible al {{ $fechaRegistro?->format('d/m/Y') }}</p>
                 </div>
-                @if ($resumenRiego)
-                    <div class="text-right">
-                        <span class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Disponible</span>
-                        <p class="text-lg font-bold text-green-600 dark:text-green-400">
-                            {{ $resumenRiego->disponible_formateado }}
-                        </p>
+                <p class="text-2xl font-semibold tabular-nums text-green-700 dark:text-green-400">{{ $resumenRiego?->disponible_formateado }}</p>
+            </div>
+
+            {{-- De qué días salen las horas --}}
+            <div>
+                <p class="mb-1.5 text-xs font-medium text-graphite"><i class="fa fa-clock-rotate-left text-steel"></i> Se toman de estos días (lo más antiguo primero)</p>
+                @if ($origenesUso)
+                    <div class="max-h-56 overflow-y-auto rounded-[10px] border border-mist">
+                        <table class="w-full text-[13px]">
+                            <thead class="sticky top-0 bg-fog text-xs text-graphite">
+                                <tr>
+                                    <th class="px-3 py-1.5 text-left font-medium">Acumulado el</th>
+                                    <th class="px-3 py-1.5 text-right font-medium">Queda</th>
+                                    <th class="px-3 py-1.5 text-right font-medium">Se usará</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="(o, i) in origenes" :key="o.fecha">
+                                    <tr class="border-t border-hairline align-top" :class="tomas[i] > 0 ? 'bg-green-50/60 dark:bg-green-400/5' : ''">
+                                        <td class="px-3 py-1.5">
+                                            <span class="tabular-nums text-ink" x-text="dm(o.fecha)"></span>
+                                            <span x-show="o.otro_mes && o.disponible > 0" class="ml-1 rounded-[6px] bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-400/10 dark:text-amber-400" title="Acumulado en otro mes: debió usarse en ese mes">otro mes</span>
+                                            <template x-if="o.antes.length">
+                                                <p class="text-[11px] text-pewter">Usado antes: <span x-text="o.antes.map(u => dm(u.fecha) + ' (' + hm(u.minutos) + ')').join(', ')"></span></p>
+                                            </template>
+                                            <template x-if="o.despues.length">
+                                                <p class="text-[11px] text-amber-700 dark:text-amber-400">
+                                                    Ya lo tomó el <span x-text="o.despues.map(u => dm(u.fecha) + ' (' + hm(u.minutos) + ')').join(', ')"></span>;
+                                                    si se usa hoy, ese día pasa a horas posteriores.
+                                                </p>
+                                            </template>
+                                        </td>
+                                        <td class="px-3 py-1.5 text-right tabular-nums" :class="o.disponible > 0 ? 'text-ink' : 'text-pewter'" x-text="hm(o.disponible)"></td>
+                                        <td class="px-3 py-1.5 text-right font-medium tabular-nums" :class="tomas[i] > 0 ? 'text-green-700 dark:text-green-400' : 'text-pewter'" x-text="tomas[i] > 0 ? hm(tomas[i]) : '—'"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
                     </div>
+                    <p x-show="faltan > 0" x-cloak class="mt-1.5 text-xs text-red-700 dark:text-red-400">
+                        <i class="fa fa-triangle-exclamation"></i> Faltan <span x-text="hm(faltan)"></span>: no tenía tantas horas acumuladas antes de este día.
+                    </p>
+                @else
+                    <p class="rounded-[10px] border border-dashed border-mist p-4 text-center text-sm text-pewter">No tiene horas acumuladas antes de este día.</p>
                 @endif
             </div>
 
-            {{-- Origen de las horas: contenedor con su propio scroll --}}
-            @if (!empty($origenesAcumulados))
-                <div>
-                    <div class="flex items-center gap-2 mb-2">
-                        <i class="fa fa-history text-blue-500 dark:text-blue-400 text-xs"></i>
-                        <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                            Estas horas provienen de
-                        </span>
-                    </div>
-
-                    <div class="max-h-32 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700
-                            divide-y divide-gray-100 dark:divide-gray-700
-                            bg-white dark:bg-gray-900">
-                        @foreach ($origenesAcumulados as $origen)
-                            <div
-                                class="flex items-center justify-between px-3 py-2 text-sm {{ $origen['disponible'] ? '' : 'bg-red-50/50 dark:bg-red-950/20' }}">
-
-                                {{-- Fecha del origen --}}
-                                <span class="text-gray-600 dark:text-gray-300">
-                                    {{ \Carbon\Carbon::parse($origen['fecha'])->format('d/m/Y') }}
-                                </span>
-
-                                {{-- Horas y estado de disponibilidad --}}
-                                <div class="flex items-center gap-3">
-                                    <span
-                                        class="font-semibold {{ $origen['disponible'] ? 'text-gray-800 dark:text-white' : 'text-red-600 dark:text-red-400 line-through' }}">
-                                        {{ $origen['formateado'] }}
-                                    </span>
-
-                                    @if ($origen['disponible'])
-                                        <span
-                                            class="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                                            <i class="fa fa-check text-[10px]"></i> Disponible
-                                        </span>
-                                    @else
-                                        <span
-                                            class="inline-flex items-center gap-1 text-xs font-medium text-red-600 bg-red-100 dark:bg-red-950/60 dark:text-red-400 px-2 py-0.5 rounded-full border border-red-200 dark:border-red-800">
-                                            <i class="fa fa-times text-[10px]"></i> Fecha futura
-                                        </span>
-                                    @endif
-                                </div>
-
-                            </div>
-                        @endforeach
+            {{-- Horas a usar --}}
+            <div class="rounded-[10px] border border-mist p-4">
+                <p class="mb-3 text-xs font-medium text-graphite">Horas a utilizar</p>
+                <div class="grid grid-cols-3 items-start gap-3">
+                    <x-input type="time" label="Hora de inicio" x-model="inicio" class="w-full" />
+                    <x-input type="time" label="Hora final" x-model="fin" class="w-full" />
+                    <div>
+                        <x-label class="text-sm">Total</x-label>
+                        <div class="mt-1 rounded-[10px] border border-mist bg-fog px-3 py-2 text-center text-lg font-semibold tabular-nums text-ink" x-text="total"></div>
                     </div>
                 </div>
-            @endif
-
-            {{-- Formulario de horas a usar --}}
-            <div x-data="{
-                    inicio: @entangle('acumulado.horaInicio'),
-                    fin: @entangle('acumulado.horaFin'),
-                    get total() {
-                        if (!this.inicio || !this.fin) return '';
-
-                        const [hi, mi] = this.inicio.split(':').map(Number);
-                        const [hf, mf] = this.fin.split(':').map(Number);
-
-                        let inicioMin = hi * 60 + mi;
-                        let finMin = hf * 60 + mf;
-
-                        if (finMin < inicioMin) {
-                            finMin += 24 * 60;
-                        }
-
-                        const diffHoras = (finMin - inicioMin) / 60;
-                        return diffHoras.toFixed(2);
-                    }
-                }" class="rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-900">
-
-                <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 block mb-3">
-                    Horas a utilizar
-                </span>
-
-                <div class="space-y-3">
-                    {{-- Grilla de inputs --}}
-                    <div class="grid grid-cols-3 gap-3 items-start">
-                        <div>
-                            <x-input type="time" label="Hora de Inicio" x-model="inicio" class="w-full" />
-                        </div>
-                        <div>
-                            <x-input type="time" label="Hora Final" x-model="fin" class="w-full" />
-                        </div>
-                        <div>
-                            <x-label class="text-sm">Total Horas</x-label>
-                            <div class="mt-1 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700
-                        px-3 py-2 text-center font-bold text-lg text-gray-800 dark:text-white"
-                                x-text="total || '0.00'">
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Error desplegado debajo de la grilla usando x-warning --}}
-                    @error('acumulado.horaFin')
-                        <x-warning>
-                            {{ $message }}
-                        </x-warning>
-                    @enderror
-                </div>
+                @error('acumulado.horaFin')
+                    <x-warning class="mt-3">{{ $message }}</x-warning>
+                @enderror
             </div>
         </div>
         @endif

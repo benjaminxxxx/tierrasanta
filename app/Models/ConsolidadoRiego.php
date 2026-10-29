@@ -106,20 +106,11 @@ class ConsolidadoRiego extends Model
     // En ConsolidadoRiego
     public function getMinutosDisponiblesAttribute(): int
     {
-        // 1. Sumar minutos acumulados solo de fechas estrictamente anteriores
-        $acumulado = self::where('trabajador_type', $this->trabajador_type)
-            ->where('trabajador_id', $this->trabajador_id)
-            ->where('fecha', '<', $this->fecha) // ⚠️ Filtro por fecha previa
-            ->sum('minutos_acumulados');
-
-        // 2. Sumar minutos consumidos provenientes de orígenes previos a esta fecha
-        $utilizado = AcumulacionUso::whereHas('consolidadoOrigen', function ($q) {
-            $q->where('trabajador_type', $this->trabajador_type)
-                ->where('trabajador_id', $this->trabajador_id)
-                ->where('fecha', '<', $this->fecha); // ⚠️ Filtro por fecha previa
-        })->sum('minutos_consumidos');
-
-        return max(0, $acumulado - $utilizado);
+        // Lo acumulado ANTES de esta fecha menos lo usado antes de esta fecha y en este mismo día
+        // (un uso de una fecha posterior todavía no cuenta: Claver 09/09 veía 0 por un uso del 01/10)
+        $saldo = (int) app(\App\Services\Riego\Acumulacion\RiegoAcumulacionConsulta::class)
+            ->saldoAl((string) $this->trabajador_type, (int) $this->trabajador_id, (string) $this->fecha)['disponible'];
+        return max(0, $saldo - (int) AcumulacionUso::where('consolidado_destino_id', $this->id)->sum('minutos_consumidos'));
     }
 
     public function getDisponibleFormateadoAttribute(): string

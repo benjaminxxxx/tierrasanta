@@ -342,7 +342,12 @@ public function consolidar(
         $minutosAcumuladosNuevos = 0;
 
         // Solo se generan nuevos minutos acumulados si lo trabajado FÍSICAMENTE hoy excede el límite
-        if ($minutosJornalBruto > $limiteMinutos && !$resumen->no_acumular_horas) {
+        if ($resumen->no_acumular_horas) {
+            // No acumula (cuadrilleros por defecto): no hay bolsa, se paga todo lo trabajado hoy, sin tope.
+            // Antes se topaba en el límite y lo de más se perdía (ni jornal ni bolsa), aunque el registro de
+            // cuadrilla y la BDD sí lo contaban (Andrés 02/10: 9.33 h trabajadas, jornal 9 h).
+            $minutosJornalTotal = $minutosTotalesPlanilla;
+        } elseif ($minutosJornalBruto > $limiteMinutos) {
             $minutosAcumuladosNuevos = $minutosJornalBruto - $limiteMinutos;
             $minutosJornalTotal = $limiteMinutos;
         } else {

@@ -234,7 +234,7 @@ class ConsolidarJornadaRiegoProceso
         }
 
         $minutosAUsar = $inicio->diffInMinutes($fin);
-        $disponibles = $this->acumulacion->minutosDisponibles($resumen);
+        $disponibles = $resumen->minutos_disponibles; // saldo a esta fecha (lo usado después no cuenta)
 
         if ($minutosAUsar > $disponibles) {
             throw new Exception("Solo tienes {$resumen->disponible_formateado} disponibles.");
@@ -273,7 +273,7 @@ class ConsolidarJornadaRiegoProceso
                 'campo_campania_id' => null,
             ]);
 
-            $this->acumulacion->consumirFIFO($resumen, $minutosAUsar);
+            app(\App\Services\Riego\Acumulacion\RiegoAcumulacionProceso::class)->reconstruir($resumen->trabajador_type, (int) $resumen->trabajador_id);
             $this->consolidador->consolidar($resumen);
         });
     }
@@ -289,8 +289,8 @@ class ConsolidarJornadaRiegoProceso
             ->firstOrFail();
 
         DB::transaction(function () use ($resumen, $registro) {
-            $this->acumulacion->liberarUsos($resumen);
             $registro->delete();
+            app(\App\Services\Riego\Acumulacion\RiegoAcumulacionProceso::class)->reconstruir($resumen->trabajador_type, (int) $resumen->trabajador_id);
             $this->consolidador->consolidar($resumen);
         });
     }

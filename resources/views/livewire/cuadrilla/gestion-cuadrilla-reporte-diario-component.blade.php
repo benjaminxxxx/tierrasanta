@@ -103,6 +103,51 @@
 
     <livewire:cuadrilla.gestion-cuadrilla-reporte-diario-form-component />
 
+    {{-- ¿Trabajo extra, otro día u otra persona? Trabajadores de planilla que hoy también figuran en cuadrilla --}}
+    <x-dialog-modal wire:model.live="mostrarPreguntaPlanilla" maxWidth="3xl">
+        <x-slot name="title">¿También trabajó en planilla?</x-slot>
+        <x-slot name="content">
+            <div class="font-['Inter',ui-sans-serif,system-ui,sans-serif]">
+                <p class="text-sm text-graphite">
+                    Estos cuadrilleros parecen ser trabajadores de planilla que el
+                    {{ \Illuminate\Support\Carbon::parse($fecha)->format('d/m/Y') }} también figuran en planilla. Indica qué pasó:
+                    es solo informativo y evita que salga en Tareas pendientes. No cambia pagos ni costos.
+                </p>
+                <div class="mt-4 divide-y divide-hairline rounded-[10px] border border-mist">
+                    @foreach ($preguntasPlanilla as $i => $p)
+                        <div class="px-3 py-3" wire:key="pp-{{ $p['cuadrillero_id'] }}">
+                            <p class="text-sm font-medium text-ink">{{ $p['cuadrillero'] }} <span class="font-normal text-pewter">(cuadrilla) = {{ $p['empleado'] }} (planilla)</span></p>
+                            <p class="text-xs text-pewter">Planilla: {{ $p['planilla'] }} · Cuadrilla: {{ $p['cuadrilla'] }}</p>
+                            <div class="mt-2 grid gap-2 sm:grid-cols-3">
+                                @foreach (\App\Services\Cuadrilla\Persona\CuadrillaPersonaReglas::MOTIVOS as $valor => $titulo)
+                                    <label class="flex cursor-pointer gap-2 rounded-[10px] border border-mist px-2.5 py-2 hover:bg-fog has-[:checked]:border-carmin has-[:checked]:bg-carmin/5">
+                                        <input type="radio" value="{{ $valor }}" wire:model.live="preguntasPlanilla.{{ $i }}.motivo" class="mt-0.5 text-carmin focus:ring-carmin/25">
+                                        <span>
+                                            <span class="block text-sm font-medium text-ink">{{ $titulo }}</span>
+                                            <span class="block text-xs text-pewter">{{ \App\Services\Cuadrilla\Persona\CuadrillaPersonaReglas::AYUDA[$valor] }}</span>
+                                        </span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            @if (($p['motivo'] ?? '') === 'otro_dia')
+                                <label class="mt-2 flex items-center gap-2 text-sm text-graphite">
+                                    Fecha en que realmente trabajó
+                                    <x-input type="date" wire:model="preguntasPlanilla.{{ $i }}.fecha_real" class="!h-9 !w-auto" />
+                                </label>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </x-slot>
+        <x-slot name="footer">
+            <x-button variant="secondary" wire:click="$set('mostrarPreguntaPlanilla', false)">Decidir después</x-button>
+            <x-button wire:click="confirmarPreguntaPlanilla" wire:loading.attr="disabled" wire:target="confirmarPreguntaPlanilla">
+                <i class="fa fa-check"></i> Guardar
+            </x-button>
+        </x-slot>
+    </x-dialog-modal>
+
     <x-loading wire:loading />
 </div>
 @script

@@ -101,14 +101,10 @@ class ReporteDiarioRiegoDetalleComponent extends Component
                     ->where('por_acumulacion', true)
                     ->firstOrFail();
 
-                // Devolver minutos a cada origen
-                AcumulacionUso::where('consolidado_destino_id', $this->resumenRiego->id)
-                    ->each(function ($uso) {
-                        $uso->consolidadoOrigen->decrement('minutos_utilizados', $uso->minutos_consumidos);
-                        $uso->delete();
-                    });
-
                 $registro->delete();
+                // Los usos del regador se reasignan en orden de fecha: lo que liberó este día puede cubrir otro uso
+                app(\App\Services\Riego\Acumulacion\RiegoAcumulacionProceso::class)
+                    ->reconstruir($this->resumenRiego->trabajador_type, (int) $this->resumenRiego->trabajador_id);
                 $horaInicioAlmuerzo = $this->resumenRiego->hora_inicio_almuerzo;
                 $horaFinAlmuerzo = $this->resumenRiego->hora_fin_almuerzo;
                 app(ConsolidadorServicio::class)->consolidar($this->resumenRiego, $horaInicioAlmuerzo, $horaFinAlmuerzo);
@@ -220,6 +216,15 @@ class ReporteDiarioRiegoDetalleComponent extends Component
     }
     public function render()
     {
-        return view('livewire.riego.reporte-diario-riego-detalle-component');
+        // Motivo del "No sincronizado" (el mismo texto de Tareas pendientes); solo se calcula si no cuadra
+        $motivoSincronizacion = null;
+        if ($this->resumenRiego && !$this->resumenRiego->sincronizado) {
+            try {
+                $motivoSincronizacion = app(\App\Services\Riego\VerificacionSincronizacionRiegoServicio::class)->revisar($this->resumenRiego)['motivo'] ?? null;
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+        return view('livewire.riego.reporte-diario-riego-detalle-component', compact('motivoSincronizacion'));
     }
 }

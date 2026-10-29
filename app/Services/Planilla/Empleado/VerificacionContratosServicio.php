@@ -307,7 +307,7 @@ class VerificacionContratosServicio
             'fecha_inicio' => $inicio, 'fecha_fin' => $fin,
             'titulo' => "Ceses sin carta de renuncia o acta de despido — {$nombreMes}",
             'descripcion' => 'Contabilidad da de baja en el T-Registro solo con el documento firmado. '
-                . 'Adjúntalo en el panel del empleado → Historial laboral → "Adjuntar documento".',
+                . 'Adjúntalo en el panel del empleado → Historial laboral → "Adjuntar carta de renuncia".',
             'variante' => 'warning',
             'cantidad_afectados' => $contratos->count(),
             'servicio' => self::class, 'metodo_detectar' => 'detectarTareasPendientes', 'acciones' => [],
@@ -328,7 +328,7 @@ class VerificacionContratosServicio
                 'variante' => 'warning', 'cantidad_afectados' => 1,
                 'servicio' => self::class, 'metodo_detectar' => 'detectarTareasPendientes',
                 'acciones' => [[
-                    'titulo' => 'Adjuntar documento',
+                    'titulo' => 'Adjuntar carta de renuncia',
                     'tipo_accion' => 'link',
                     'url' => route('planilla.empleados', ['empleado' => $c->plan_empleado_id, 'tab' => 'contratos']),
                 ]],

@@ -61,6 +61,13 @@ class ReporteDiarioRiegoHorasAcumuladasComponent extends Component
         }
 
         $this->reiniciarHorasAcumuladas();
+        // Propuesta: lo que puede usar (su saldo, sin pasar el límite del día con lo que ya regó), desde las 08:00
+        $limite = ParametroTemporal::limiteMinutosDiarios(\Illuminate\Support\Carbon::parse($this->resumenRiego->fecha)->toDateString());
+        $propuesta = min((int) $this->resumenRiego->minutos_disponibles, max(0, $limite - (int) $this->resumenRiego->minutos_jornal));
+        if ($propuesta > 0) {
+            $this->acumulado['horaFin'] = Carbon::parse('08:00')->addMinutes($propuesta)->format('H:i');
+            $this->acumulado['totalHoras'] = round($propuesta / 60, 2);
+        }
         $this->cargarOrigenesAcumulados();
         $this->soloConsulta = false;
         $this->saldo = app(\App\Services\Riego\Acumulacion\RiegoAcumulacionConsulta::class)->saldoAl(
@@ -269,13 +276,8 @@ class ReporteDiarioRiegoHorasAcumuladasComponent extends Component
 
             $minutosAUsar = $inicio->diffInMinutes($fin);
 
-            // 2. Calcular los minutos disponibles ANTERIORES a la fecha actual
-            $disponiblesPrevios = ConsolidadoRiego::where('trabajador_type', $this->resumenRiego->trabajador_type)
-                ->where('trabajador_id', $this->resumenRiego->trabajador_id)
-                ->where('fecha', '<', $this->resumenRiego->fecha) // ⚠️ Solo fechas anteriores
-                ->whereRaw('minutos_acumulados > minutos_utilizados')
-                ->selectRaw('SUM(minutos_acumulados - minutos_utilizados) as saldo_previo')
-                ->value('saldo_previo') ?? 0;
+            // 2. Saldo a esta fecha: lo acumulado antes menos lo usado antes (un uso de una fecha posterior no cuenta)
+            $disponiblesPrevios = $this->resumenRiego->minutos_disponibles;
 
             if ($disponiblesPrevios <= 0) {
                 $this->addError('acumulado.horaFin', "Anterior a la fecha ({$this->resumenRiego->fecha}) no existen minutos disponibles acumulados.");
@@ -335,33 +337,9 @@ class ReporteDiarioRiegoHorasAcumuladasComponent extends Component
                     'campo_campania_id' => null,
                 ]);
 
-                $pendiente = $minutosAUsar;
-
-                // 4. Consumir únicamente registros de fechas anteriores en orden cronológico
-                ConsolidadoRiego::where('trabajador_type', $this->resumenRiego->trabajador_type)
-                    ->where('trabajador_id', $this->resumenRiego->trabajador_id)
-                    ->where('fecha', '<', $this->resumenRiego->fecha) // ⚠️ Restricción por fecha
-                    ->whereRaw('minutos_acumulados > minutos_utilizados')
-                    ->orderBy('fecha', 'asc')
-                    ->each(function ($origen) use (&$pendiente) {
-                        if ($pendiente <= 0) {
-                            return false;
-                        }
-
-                        $disponibleOrigen = $origen->minutos_acumulados - $origen->minutos_utilizados;
-                        $consumir = min($disponibleOrigen, $pendiente);
-
-                        $origen->increment('minutos_utilizados', $consumir);
-
-                        AcumulacionUso::updateOrCreate([
-                            'consolidado_destino_id' => $this->resumenRiego->id,
-                            'consolidado_origen_id' => $origen->id,
-                        ], [
-                            'minutos_consumidos' => DB::raw("minutos_consumidos + {$consumir}"),
-                        ]);
-
-                        $pendiente -= $consumir;
-                    });
+                // 4. Todos los usos del regador se reasignan en orden de fecha (lo acumulado antes de cada día, lo más antiguo primero)
+                app(\App\Services\Riego\Acumulacion\RiegoAcumulacionProceso::class)
+                    ->reconstruir($this->resumenRiego->trabajador_type, (int) $this->resumenRiego->trabajador_id);
 
                 $horaInicioAlmuerzo = $this->resumenRiego->hora_inicio_almuerzo;
                 $horaFinAlmuerzo = $this->resumenRiego->hora_fin_almuerzo;

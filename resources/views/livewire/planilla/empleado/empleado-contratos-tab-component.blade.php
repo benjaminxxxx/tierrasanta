@@ -132,7 +132,7 @@
                     <div class="border-t border-hairline px-4 py-3">
                         <div class="flex flex-wrap items-center justify-between gap-2">
                             <span class="text-xs font-medium uppercase text-graphite">Sustento del cese</span>
-                            <button type="button" wire:click="abrirDocumento({{ $contrato->id }})" class="{{ $btnLink }}"><i class="fa fa-paperclip"></i> Adjuntar documento</button>
+                            <button type="button" wire:click="abrirDocumento({{ $contrato->id }})" class="{{ $btnLink }}"><i class="fa fa-paperclip"></i> Adjuntar carta de renuncia</button>
                         </div>
                         @if ($faltante)
                             <p class="mt-2 rounded-[6px] bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 dark:bg-amber-400/10 dark:text-amber-400">
@@ -242,7 +242,7 @@
                         <button type="button" wire:click="confirmarFinalizar" class="{{ $btnPrincipal }}" wire:loading.attr="disabled" wire:target="archivo,confirmarFinalizar"><i class="fa fa-check"></i> Finalizar</button>
                     </div>
                 @elseif ($panel === 'documento')
-                    <h4 class="text-base font-semibold text-ink">Adjuntar documento</h4>
+                    <h4 class="text-base font-semibold text-ink">Adjuntar carta de renuncia</h4>
                     <p class="text-xs text-pewter">
                         Contrato {{ $f($contratoPanel?->fecha_inicio) }} – {{ $contratoPanel?->fecha_fin ? $f($contratoPanel->fecha_fin) : 'sin fin' }}.
                         Escaneo o foto legible del documento firmado.

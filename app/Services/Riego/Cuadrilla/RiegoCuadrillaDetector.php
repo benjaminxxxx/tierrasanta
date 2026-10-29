@@ -27,6 +27,13 @@ class RiegoCuadrillaDetector
     {
     }
 
+    /** Botón de la tarea "es de planilla (¿trabajo extra?)": justifica el día (ver CuadrillaPersonaReglas). */
+    public function justificar(int $cuadrilleroId, string $fecha, string $motivo): void
+    {
+        app(\App\Services\Cuadrilla\Persona\CuadrillaPersonaJustificacionProceso::class)->justificar($cuadrilleroId, $fecha, $motivo);
+        app(\App\Services\Cuadrilla\Persona\CuadrillaPersonaDetector::class)->detectarTareasPendientes($fecha);
+    }
+
     public function detectarTareasPendientes(?string $fechaInicio = null, ?string $fechaFin = null): void
     {
         $inicio = Carbon::parse($fechaInicio ?? now()->startOfMonth())->startOfMonth()->toDateString();
@@ -66,10 +73,12 @@ class RiegoCuadrillaDetector
                 'variante' => $soloCosto ? 'warning' : 'danger',
                 'cantidad_afectados' => 1,
                 'servicio' => self::class, 'metodo_detectar' => 'detectarTareasPendientes',
-                'acciones' => [
+                'acciones' => array_merge([
                     ['titulo' => 'Registro de cuadrilla', 'tipo_accion' => 'link', 'url' => route('cuadrilla.registro_diario', ['fecha' => $f['fecha']])],
                     ['titulo' => 'Reporte de riego', 'tipo_accion' => 'link', 'url' => route('riego.reporte_diario', ['fecha' => $f['fecha']])],
-                ],
+                ], isset($f['problemas']['es_planilla'])
+                    ? \App\Services\Cuadrilla\Persona\CuadrillaPersonaDetector::accionesJustificar($f['cuadrillero_id'], $f['fecha'])
+                    : []),
             ]);
         }
 

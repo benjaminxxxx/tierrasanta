@@ -56,17 +56,23 @@
                                 :trabajadorType="$resumenRiego->trabajador_type"
                                 :trabajadorId="$resumenRiego->trabajador_id" :fecha="$fecha"
                                 wire:key="resumen_horas_{{ $resumenRiego->trabajador_type }}_{{ $resumenRiego->trabajador_id }}_{{ $fecha }}" />
-                            @if ($resumenRiego->trabajador_type === \App\Models\PlanEmpleado::class)
+                            @if (in_array($resumenRiego->trabajador_type, [\App\Models\PlanEmpleado::class, \App\Models\Cuadrillero::class], true))
                                 @if ($resumenRiego->sincronizado)
                                     <span class="text-green-600 dark:text-green-400 text-sm">
                                         <i class="fa fa-check-circle"></i> Sincronizado
                                     </span>
                                 @else
                                     <span class="text-amber-600 dark:text-amber-400 text-sm"
-                                        title="Las horas no coinciden con el registro diario de planilla">
+                                        title="El riego no coincide con su registro diario (FDM/81)">
                                         <i class="fa fa-exclamation-triangle"></i> No sincronizado
                                     </span>
                                 @endif
+                            @endif
+                            {{-- Por qué no cuadra y qué hacer (mismo texto que Tareas pendientes) --}}
+                            @if ($motivoSincronizacion)
+                                <p class="w-full max-w-3xl rounded-[6px] bg-amber-50 px-2.5 py-1.5 text-xs text-amber-800 dark:bg-amber-400/10 dark:text-amber-300">
+                                    {{ $motivoSincronizacion }}
+                                </p>
                             @endif
                         </div>
                         @can(\App\Constants\Permisos::CAMPO_RIEGO_REPORTE_GESTIONAR)
