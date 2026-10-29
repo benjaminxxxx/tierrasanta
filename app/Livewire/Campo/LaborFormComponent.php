@@ -79,7 +79,8 @@ class LaborFormComponent extends Component
                 'codigo' => $this->codigo,
                 'nombre_labor' => $this->nombre_labor,
                 'estandar_produccion' => $this->estandar_produccion,
-                'unidades' => $this->registra_produccion ? $this->unidades : null,
+                // Texto libre con sugerencias: una unidad nueva se agrega sola al catálogo
+                'unidades' => $this->registra_produccion ? \App\Services\Campo\Produccion\CampoProduccionReglas::asegurarUnidad($this->unidades) : null,
                 'registra_produccion' => $this->registra_produccion,
                 'tramos_bonificacion' => empty($this->tramos) ? null : json_encode($this->tramos),
                 'codigo_mano_obra' => $this->codigo_mano_obra,

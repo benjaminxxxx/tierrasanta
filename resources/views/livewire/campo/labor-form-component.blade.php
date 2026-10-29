@@ -30,7 +30,7 @@
                             @endforeach
                         </x-select>
     
-                        {{-- Registra producción: obliga a elegir la unidad del catálogo (Excel de recursos → Unidades de producción) --}}
+                        {{-- Registra producción: unidad con sugerencias (catálogo + comunes); una nueva se agrega sola al catálogo --}}
                         <div>
                             <label class="flex items-center gap-2 text-sm font-medium text-ink">
                                 <input type="checkbox" wire:model.live="registra_produccion" class="rounded border-mist text-carmin focus:ring-carmin/25" />
@@ -38,12 +38,14 @@
                             </label>
                             <p class="mt-0.5 text-xs text-pewter">Kilos, lavadores, cajas… que hace cada trabajador.</p>
                             @if ($registra_produccion)
-                                <x-select wire:model="unidades" label="Unidad de producción *" error="unidades" class="mt-2">
-                                    <option value="">Seleccionar…</option>
-                                    @foreach (\App\Models\ProduccionUnidad::where('activo', true)->orderBy('codigo')->get() as $u)
-                                        <option value="{{ $u->codigo }}">{{ $u->codigo }} · {{ $u->nombre }}</option>
+                                <x-input wire:model="unidades" label="Unidad de producción *" error="unidades" class="mt-2 uppercase"
+                                    list="unidades-produccion" placeholder="KG, LAVADOR, CAJA…" autocomplete="off" maxlength="20" />
+                                <datalist id="unidades-produccion">
+                                    @foreach (\App\Services\Campo\Produccion\CampoProduccionReglas::opcionesUnidad() as $codigo => $nombre)
+                                        <option value="{{ $codigo }}">{{ $nombre }}</option>
                                     @endforeach
-                                </x-select>
+                                </datalist>
+                                <p class="mt-1 text-xs text-pewter">Elige una de la lista o escribe otra: si es nueva, se agrega al catálogo al guardar.</p>
                             @endif
                         </div>
     

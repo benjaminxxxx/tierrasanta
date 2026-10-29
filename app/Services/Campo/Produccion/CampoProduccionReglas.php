@@ -25,7 +25,41 @@ class CampoProduccionReglas
 
     /** Nombres antiguos (texto libre) → código del catálogo; los usa la normalización y la lectura del Excel. */
     public const EQUIVALENCIAS = ['KG' => 'KG', 'KG.' => 'KG', 'KILOS' => 'KG', 'LAVADORES' => 'LAVADOR', 'LAVADEROS' => 'LAVADOR',
-        'LAVADOR' => 'LAVADOR', 'LAVADERO' => 'LAVADOR', 'HA' => 'HA', 'CAJAS' => 'CAJA', 'CAJA' => 'CAJA'];
+        'LAVADOR' => 'LAVADOR', 'LAVADERO' => 'LAVADOR', 'HA' => 'HA', 'CAJAS' => 'CAJA', 'CAJA' => 'CAJA',
+        'KILO' => 'KG', 'KILOGRAMOS' => 'KG', 'JABAS' => 'JABA', 'PLANTAS' => 'PLANTA', 'SURCOS' => 'SURCO',
+        'UNIDADES' => 'UNIDAD', 'HECTAREAS' => 'HA', 'HECTÁREAS' => 'HA'];
+
+    /** Unidades que se sugieren aunque el catálogo esté vacío: código => [nombre, decimales]. */
+    public const SUGERIDAS = ['KG' => ['Kilogramos', 2], 'LAVADOR' => ['Lavadores', 0], 'CAJA' => ['Cajas', 0],
+        'JABA' => ['Jabas', 0], 'PLANTA' => ['Plantas', 0], 'SURCO' => ['Surcos', 0], 'HA' => ['Hectáreas', 2], 'UNIDAD' => ['Unidades', 0]];
+
+    /** Sugerencias para el campo de unidad: las del catálogo (activas) y las sugeridas que aún no están. codigo => nombre */
+    public static function opcionesUnidad(): array
+    {
+        $catalogo = \App\Models\ProduccionUnidad::where('activo', true)->orderBy('codigo')->pluck('nombre', 'codigo')->all();
+        return $catalogo + array_map(fn($s) => $s[0], array_diff_key(self::SUGERIDAS, $catalogo));
+    }
+
+    /**
+     * La unidad escrita en el formulario de labores: si no está en el catálogo, se agrega (texto libre con sugerencias).
+     * Devuelve el código o null si está vacía.
+     */
+    public static function asegurarUnidad(?string $unidad): ?string
+    {
+        $codigo = self::codigo($unidad);
+        if (!$codigo) {
+            return null;
+        }
+        $codigo = mb_substr($codigo, 0, 20);
+        $existente = \App\Models\ProduccionUnidad::find($codigo);
+        if (!$existente) {
+            [$nombre, $decimales] = self::SUGERIDAS[$codigo] ?? [mb_convert_case(mb_strtolower($codigo), MB_CASE_TITLE), 2];
+            \App\Models\ProduccionUnidad::create(['codigo' => $codigo, 'nombre' => $nombre, 'decimales' => $decimales, 'activo' => true]);
+        } elseif (!$existente->activo) {
+            $existente->update(['activo' => true]);
+        }
+        return $codigo;
+    }
 
     /** Código de catálogo para un texto de unidad (null si está vacío o es "0"). */
     public static function codigo(?string $unidad): ?string
