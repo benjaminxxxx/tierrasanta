@@ -48,6 +48,7 @@
         <button type="button" wire:click="$set('pestania', 'registro')" class="-mb-px border-b-2 pb-2 {{ $tab('registro') }}">Registro</button>
         <button type="button" wire:click="$set('pestania', 'campos')" class="-mb-px border-b-2 pb-2 {{ $tab('campos') }}">Por campo</button>
         <button type="button" wire:click="$set('pestania', 'cuadre')" class="-mb-px border-b-2 pb-2 {{ $tab('cuadre') }}">Cuadre con ingreso</button>
+        <button type="button" wire:click="$set('pestania', 'infestacion')" class="-mb-px border-b-2 pb-2 {{ $tab('infestacion') }}">Cuadre de infestación</button>
     </div>
 
     <div class="grid grid-cols-1 gap-6 {{ ($actividad || $nuevoDia) && $pestania === 'registro' ? 'xl:grid-cols-[minmax(0,1fr)_34rem]' : '' }}">
@@ -111,6 +112,78 @@
                     @empty
                         <p class="text-sm text-pewter">Sin producción registrada en el periodo.</p>
                     @endforelse
+                </div>
+            @elseif ($pestania === 'infestacion')
+                <p class="mb-3 text-xs text-pewter">
+                    Por día y campo infestado: kg de mamá y envases (lavadores) del módulo de infestación, contra lo que registró el campo
+                    en sus labores ese día (con y sin bono). La diferencia de cada labor es contra los envases: si en campo figuran más
+                    lavadores que los que salieron, revisa a quién se le anotó de más. Aún sin semáforo: la proporción esperada se configurará después.
+                </p>
+                @php
+                    $tot = ['kg' => collect($infestacion['dias'])->sum('kg_madres'), 'env' => collect($infestacion['dias'])->sum('envases')];
+                    $totLabor = [];
+                    foreach ($infestacion['dias'] as $d) {
+                        foreach ($d['labores'] as $l) {
+                            $totLabor[$l['codigo']] = ($totLabor[$l['codigo']] ?? 0) + $l['cantidad'];
+                        }
+                    }
+                    $dif = fn($v) => $v == 0 ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400';
+                @endphp
+                <div class="overflow-x-auto rounded-[10px] border border-mist bg-paper">
+                    <table class="w-full text-[13px]">
+                        <thead class="bg-fog text-left text-xs text-graphite">
+                            <tr>
+                                <th class="px-3 py-2 font-medium">Fecha</th>
+                                <th class="px-3 py-2 font-medium">Campo</th>
+                                <th class="px-3 py-2 font-medium">Mamá de</th>
+                                <th class="px-3 py-2 text-right font-medium">Kg mamá</th>
+                                <th class="px-3 py-2 text-right font-medium">Envases</th>
+                                <th class="px-3 py-2 text-right font-medium">Kg / envase</th>
+                                @foreach ($infestacion['labores'] as $codigo => $nombre)
+                                    <th class="px-3 py-2 text-right font-medium" title="{{ $nombre }}">{{ $codigo }} · {{ \Illuminate\Support\Str::limit($nombre, 22) }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($infestacion['dias'] as $d)
+                                @php $porLabor = collect($d['labores'])->keyBy('codigo'); @endphp
+                                <tr class="border-t border-hairline">
+                                    <td class="px-3 py-2 tabular-nums">{{ $f($d['fecha']) }}</td>
+                                    <td class="px-3 py-2 font-medium">{{ $d['campo'] }} <span class="text-xs font-normal text-pewter">{{ $d['tipos'] }}</span></td>
+                                    <td class="px-3 py-2 text-xs text-graphite">{{ $d['origenes'] }}</td>
+                                    <td class="px-3 py-2 text-right tabular-nums">{{ $n($d['kg_madres']) }}</td>
+                                    <td class="px-3 py-2 text-right tabular-nums">{{ $n($d['envases'], 0) }}</td>
+                                    <td class="px-3 py-2 text-right tabular-nums">{{ $n($d['kg_por_envase']) }}</td>
+                                    @foreach ($infestacion['labores'] as $codigo => $nombre)
+                                        @php $l = $porLabor->get($codigo); @endphp
+                                        <td class="px-3 py-2 text-right tabular-nums">
+                                            @if ($l)
+                                                {{ $n($l['cantidad']) }}
+                                                <span class="ml-1 text-xs {{ $dif($l['diferencia']) }}">{{ $l['diferencia'] == 0 ? '✓' : ($l['diferencia'] > 0 ? '+' : '') . $n($l['diferencia']) }}</span>
+                                            @else
+                                                <span class="text-xs text-pewter">sin registro</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                            @empty
+                                <tr><td colspan="{{ 6 + count($infestacion['labores']) }}" class="px-3 py-6 text-center text-sm text-pewter">Sin infestaciones en el periodo.</td></tr>
+                            @endforelse
+                        </tbody>
+                        @if ($infestacion['dias'])
+                            <tfoot class="border-t border-mist bg-fog text-xs font-semibold text-ink">
+                                <tr>
+                                    <td class="px-3 py-2" colspan="3">Total del periodo</td>
+                                    <td class="px-3 py-2 text-right tabular-nums">{{ $n($tot['kg']) }}</td>
+                                    <td class="px-3 py-2 text-right tabular-nums">{{ $n($tot['env'], 0) }}</td>
+                                    <td class="px-3 py-2 text-right tabular-nums">{{ $tot['env'] > 0 ? $n($tot['kg'] / $tot['env']) : '—' }}</td>
+                                    @foreach ($infestacion['labores'] as $codigo => $nombre)
+                                        <td class="px-3 py-2 text-right tabular-nums">{{ $n($totLabor[$codigo] ?? 0) }}</td>
+                                    @endforeach
+                                </tr>
+                            </tfoot>
+                        @endif
+                    </table>
                 </div>
             @else
                 <p class="mb-3 text-xs text-pewter">

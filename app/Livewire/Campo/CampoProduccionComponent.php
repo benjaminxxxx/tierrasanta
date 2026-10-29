@@ -97,6 +97,7 @@ class CampoProduccionComponent extends Component
         $datos = match ($this->pestania) {
             'campos' => ['totales' => CampoProduccionConsulta::totalesPorCampo($desde, $hasta, $this->campo ?: null)],
             'cuadre' => ['cuadre' => CampoProduccionConsulta::cuadreIngreso($desde, $hasta, $this->campo ?: null)],
+            'infestacion' => ['infestacion' => CampoProduccionConsulta::cuadreInfestacion($desde, $hasta, $this->campo ?: null)],
             default => ['resumen' => CampoProduccionConsulta::resumen($desde, $hasta, $this->campo ?: null, $labor, trim($this->buscar) ?: null)],
         };
         $actividad = $this->actividadId ? Actividad::find($this->actividadId) : null;

@@ -126,14 +126,24 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
                 $totalesGranTotal['produccion_' . $i] = $totalesCuadrilla['produccion_' . $i] + $totalesPlanilla['produccion_' . $i];
             }
 
+            // Filas SIN BONO (producción sin trabajador o de personas sin bono): entran al total de producción
+            $filasSinBono = $this->filasSinBono($campoNombre, $codigoLabor);
+            foreach ($filasSinBono as $fila) {
+                for ($i = 1; $i <= $this->recojos; $i++) {
+                    $totalesGranTotal['produccion_' . $i] += (float) ($fila['produccion_' . $i] ?: 0);
+                }
+            }
+            $haySinBono = collect($filasSinBono)->contains(fn($f) => collect(range(1, $this->recojos))->contains(fn($i) => (float) ($f['produccion_' . $i] ?: 0) != 0));
+
             $rowGranTotal = $this->crearFilaTotal(
-                ($countCuadrilla + $countPlanilla) . " trabajadores (TOTAL)",
+                ($countCuadrilla + $countPlanilla) . ' trabajadores' . ($haySinBono ? ' + sin bono' : '') . ' (TOTAL)',
                 $campoNombre,
                 $codigoLabor,
                 $totalesGranTotal
             );
 
             // Anexar filas de totales a la tabla final
+            array_push($dataHandsontable, ...$filasSinBono);
             $dataHandsontable[] = $rowTotalCuadrilla;
             $dataHandsontable[] = $rowTotalPlanilla;
             $dataHandsontable[] = $rowGranTotal;
@@ -190,6 +200,67 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
         $row['total_horas'] = DateHelper::calcularTotalHorasFloat($row['rango_total_horas']);
 
         return $row;
+    }
+
+    /** Filas en blanco SIN BONO que siempre se ofrecen al final de la tabla (Flavia: "3 o 4 líneas en blanco"). */
+    private const FILAS_SIN_BONO = 4;
+
+    /**
+     * Filas SIN BONO de la tabla: las ya guardadas (producción de campo sin bono) y filas en blanco hasta tener al menos
+     * FILAS_SIN_BONO (mínimo 2 en blanco). Sin trabajador, la columna Trabajador es la observación (editable).
+     */
+    private function filasSinBono(string $campoNombre, string $codigoLabor): array
+    {
+        $filas = [];
+        foreach (\App\Services\Campo\Produccion\CampoProduccionConsulta::sinBono($this->actividad->id) as $f) {
+            $clave = $f['tipo'] ? ($f['tipo'] === 'cuadrilla' ? 'c:' : 'p:') . $f['trabajador_id'] : null;
+            $filas[] = $this->filaSinBono($campoNombre, $codigoLabor, $clave,
+                $clave ? "{$f['nombre']} (sin bono)" : ($f['observacion'] ?: 'Sin bono'), $f['observacion'], $f['recojos']);
+        }
+        $blancas = max(2, self::FILAS_SIN_BONO - count($filas));
+        for ($i = 0; $i < $blancas; $i++) {
+            $filas[] = $this->filaSinBono($campoNombre, $codigoLabor, null, 'Sin bono', null, []);
+        }
+        return $filas;
+    }
+
+    private function filaSinBono(string $campoNombre, string $codigoLabor, ?string $clave, string $texto, ?string $observacion, array $recojos): array
+    {
+        $fila = [
+            'registro_diario_id' => null, 'tipo' => 'SIN BONO', 'metodo_bonificacion' => '', 'cuadrillero_id' => null,
+            'nombre_trabajador' => $texto, 'campo' => $campoNombre, 'labor' => $codigoLabor, 'total_bono' => '', 'bono_manual' => false,
+            'horarios' => '', 'rango_total_horas' => '', 'total_horas' => '', 'estandar_dia' => '',
+            'sb_trabajador' => $clave, 'sb_observacion' => $observacion,
+        ];
+        for ($i = 1; $i <= max($this->recojos, ...array_keys($recojos ?: [1 => 0])); $i++) {
+            $fila['produccion_' . $i] = $recojos[$i] ?? '';
+        }
+        return $fila;
+    }
+
+    /**
+     * Filas SIN BONO de la tabla → filas de CampoProduccionProceso::guardarSinBono. Sin trabajador, el texto de la
+     * columna Trabajador es la observación.
+     */
+    private function sinBonoDesdeTabla(array $datos, int $recojos): array
+    {
+        $filas = [];
+        foreach ($datos as $fila) {
+            if (($fila['tipo'] ?? null) !== 'SIN BONO') {
+                continue;
+            }
+            $porRecojo = [];
+            for ($i = 1; $i <= $recojos; $i++) {
+                $porRecojo[$i] = $fila['produccion_' . $i] ?? null;
+            }
+            [$tipo, $id] = str_contains((string) ($fila['sb_trabajador'] ?? ''), ':') ? explode(':', $fila['sb_trabajador']) : [null, null];
+            $texto = trim((string) ($fila['nombre_trabajador'] ?? ''));
+            $filas[] = [
+                'tipo' => ['c' => 'cuadrilla', 'p' => 'planilla'][$tipo] ?? null, 'trabajador_id' => $id, 'recojos' => $porRecojo,
+                'observacion' => $tipo ? ($fila['sb_observacion'] ?? null) : ($texto !== '' ? $texto : 'Sin bono'),
+            ];
+        }
+        return $filas;
     }
 
     /**
@@ -301,15 +372,22 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
                 throw new Exception("La actividad ha caducado");
             }
 
-            GuardarBonificacionProceso::ejecutar(
-                $this->actividad,
-                $this->metodos,
-                $this->unidades,
-                $this->recojos,
-                $datos
-            );
+            // Filas SIN BONO: se guardan junto con los bonos (todo o nada)
+            $sinBono = $this->sinBonoDesdeTabla($datos, (int) $this->recojos);
+            $produccion = app(\App\Services\Campo\Produccion\CampoProduccionProceso::class);
+            $guardadosSinBono = \Illuminate\Support\Facades\DB::transaction(function () use ($datos, $sinBono, $produccion) {
+                GuardarBonificacionProceso::ejecutar(
+                    $this->actividad,
+                    $this->metodos,
+                    $this->unidades,
+                    $this->recojos,
+                    $datos
+                );
+                return $produccion->guardarSinBono($this->actividad, $sinBono);
+            });
 
-            $this->alert('success', 'Datos guardados correctamente.');
+            $this->alert('success', 'Datos guardados correctamente.' . ($guardadosSinBono ? " Producción sin bono: {$guardadosSinBono} registro(s)." : ''));
+            $this->dispatch('produccionActualizada');
         } catch (\Throwable $th) {
             $this->errorAlert($th);
         }

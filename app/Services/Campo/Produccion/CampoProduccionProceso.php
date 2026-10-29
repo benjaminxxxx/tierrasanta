@@ -25,7 +25,8 @@ class CampoProduccionProceso
         if (!$cuadrilleroId && !$empleadoId) {
             throw new ErrorControlado('Falta el trabajador de la bonificación.');
         }
-        $unidad = $this->unidad($actividad, array_filter($porRecojo, fn($v) => $v !== null && $v !== '' && (float) $v != 0));
+        // Sin unidad en la labor no se frena el pago del bono: se guarda sin unidad (las consultas usan la de la labor)
+        $unidad = CampoProduccionReglas::unidadDeLabor($actividad->codigo_labor, $actividad->fecha);
         $base = ProduccionRegistro::where('actividad_id', $actividad->id)->where('con_bono', true)
             ->where('cuadrillero_id', $cuadrilleroId)->where('plan_empleado_id', $empleadoId);
         (clone $base)->where('numero_recojo', '>', $recojos)->delete();

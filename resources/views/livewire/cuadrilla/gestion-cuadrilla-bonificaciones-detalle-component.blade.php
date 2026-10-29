@@ -118,8 +118,30 @@
         </x-flex>
     </x-card>
 
+    {{-- Aviso: el estándar es por 8 h; con otra jornada cambia lo que deben sacar para tener bono --}}
+    <template x-if="avisosHoras.length">
+        <div class="rounded-[10px] border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300">
+            <p class="font-semibold"><i class="fa fa-triangle-exclamation"></i> El estándar es por 8 horas y hoy hay jornadas de otra duración</p>
+            <ul class="mt-1 space-y-0.5">
+                <template x-for="a in avisosHoras" :key="`${a.estandar}-${a.horas}`">
+                    <li>
+                        Estándar <b x-text="a.estandar"></b> por 8 h → con <b x-text="Number(a.horas.toFixed(2))"></b> h deben sacar
+                        <b x-text="a.esperado.toFixed(2)"></b> {{ $unidades ?: 'kg' }} para tener bono
+                        (<span x-text="a.trabajadores"></span> trabajador(es)).
+                    </li>
+                </template>
+            </ul>
+            <p class="mt-1 text-xs">Mira la columna <b>Debe sacar</b>: quien no llega a esa cantidad tiene bono 0.</p>
+        </div>
+    </template>
+
     <!-- Tabla Handsontable con Recojos -->
     <x-card wire:ignore class="mt-6">
+        <p class="mb-3 text-xs text-pewter">
+            <span class="rounded-[6px] bg-sky-50 px-1.5 py-0.5 font-medium text-sky-800 dark:bg-sky-950/40 dark:text-sky-300">SIN BONO</span>
+            Al final de la tabla: kilos sin bono (lo que se juntó entre varios, o un día entero sin bono). Escribe la cantidad y,
+            en la columna Trabajador, una observación. Se suman al total cosechado y se guardan con "Actualizar bonificaciones".
+        </p>
         {{-- Fuera del @can o dentro según tu lógica de permisos --}}
         <x-flex class="justify-end mb-3">
             <x-label class="text-sm text-muted-foreground">
@@ -141,8 +163,6 @@
         <div x-ref="tableBonificacionesCuadrilleros"></div>
     </x-card>
 
-    {{-- Cantidades sin bono de esta misma actividad (personas o días sin bono): registro de producción de campo --}}
-    <livewire:campo.campo-produccion-sin-bono-component :actividad-id="$actividad->id" wire:key="sin-bono-{{ $actividad->id }}" />
 
     <!-- Botón Guardar -->
     @can(\App\Constants\Permisos::CUADRILLA_BONIFICACION_ACTUALIZAR)
@@ -165,6 +185,8 @@
         recojos: @entangle('recojos'),
         tableDataBonificados: @js($tableDataBonificados),
         isDark: JSON.parse(localStorage.getItem('darkMode')),
+        /** Jornadas distintas de 8 h con método de estándar: [{estandar, horas, esperado, trabajadores}] */
+        avisosHoras: [],
 
         init() {
             this.initTable();
@@ -214,6 +236,8 @@
             });
 
             this.inicializarBackups();
+            this.actualizarEstandarDia();
+            this.hot.render();
             this.refrescarCeldas();
         },
         inicializarBackups() {
@@ -250,6 +274,21 @@
                     ? '!bg-slate-800 !text-amber-400 font-bold border-t-2 border-slate-600 !text-center'
                     : '!bg-amber-100 !text-amber-950 font-bold border-t-2 border-amber-300 !text-center';
 
+                return cellProperties;
+            }
+
+            // -------------------------------------------------------------
+            // FILAS SIN BONO: solo cantidades y, sin trabajador, la observación (columna Trabajador)
+            // -------------------------------------------------------------
+            if (rowData.tipo === 'SIN BONO') {
+                const editable = String(colProp).startsWith('produccion_') || (colProp === 'nombre_trabajador' && !rowData.sb_trabajador);
+                cellProperties.readOnly = !editable;
+                if (['metodo_bonificacion', 'bono_manual', 'total_bono'].includes(colProp)) {
+                    cellProperties.renderer = (instance, td) => { td.innerHTML = ''; };
+                }
+                cellProperties.className = (this.isDark ? '!bg-sky-950/40 ' : '!bg-sky-50 ') +
+                    (colProp === 'nombre_trabajador' ? '!text-left italic' : '!text-center') +
+                    (String(colProp).startsWith('produccion_') ? ' !text-lg' : '');
                 return cellProperties;
             }
 
@@ -337,8 +376,8 @@
                 },*/
         toggleManualTodos(checked) {
             this.tableDataBonificados.forEach((row, rowIndex) => {
-                // Ignorar filas de totales
-                if (row.tipo === 'TOTAL') return;
+                // Ignorar filas de totales y SIN BONO
+                if (row.tipo === 'TOTAL' || row.tipo === 'SIN BONO') return;
 
                 row.bono_manual = checked;
 
@@ -407,6 +446,12 @@
                 title: 'Rango<br/>Horas',
                 readOnly: true,
                 className: 'font-bold !text-center !bg-muted'
+            }, {
+                // Lo que debe sacar para tener bono: estándar ÷ 8 × sus horas (solo métodos con estándar)
+                data: 'estandar_dia',
+                title: 'Debe sacar<br/>(estándar)',
+                readOnly: true,
+                className: '!text-center !bg-muted'
             });
 
             // Columnas Dinámicas de Producción por Recojo
@@ -518,6 +563,8 @@
          */
         calcularBonos() {
             this.tableDataBonificados.forEach(trabajador => {
+                // Filas de totales y SIN BONO no tienen bono
+                if (trabajador.tipo === 'TOTAL' || trabajador.tipo === 'SIN BONO') return;
 
                 if (trabajador.bono_manual) {
                     // Guardar backup y limpiar método visualmente
@@ -570,8 +617,35 @@
                 }
             });
 
+            this.actualizarEstandarDia();
             this.hot.render();
             this.refrescarCeldas();
+        },
+
+        /**
+         * "Debe sacar" de cada trabajador (estándar ÷ 8 × sus horas) y el aviso cuando la jornada no es de 8 h:
+         * con 9 h un estándar de 35 pasa a 39.38, y quien saca 37 no tiene bono.
+         */
+        actualizarEstandarDia() {
+            const avisos = {};
+            this.tableDataBonificados.forEach(fila => {
+                if (fila.tipo === 'TOTAL' || fila.tipo === 'SIN BONO') return;
+                const nombre = fila.metodo_bonificacion || fila._metodo_backup;
+                const metodo = this.metodos.find((m, i) => this.obtenerNombreMetodo(m, i) === nombre);
+                if (!metodo || !(metodo.estandar > 0)) {
+                    fila.estandar_dia = '';
+                    return;
+                }
+                const horas = this.convertirHorasDecimal(fila.rango_total_horas);
+                const esperado = metodo.estandar / 8 * horas;
+                fila.estandar_dia = esperado.toFixed(2);
+                if (horas > 0 && Math.abs(horas - 8) > 0.01) {
+                    const clave = `${metodo.estandar}|${horas}`;
+                    avisos[clave] ??= { estandar: metodo.estandar, horas, esperado, trabajadores: 0 };
+                    avisos[clave].trabajadores++;
+                }
+            });
+            this.avisosHoras = Object.values(avisos).sort((a, b) => b.trabajadores - a.trabajadores);
         },
 
         /**

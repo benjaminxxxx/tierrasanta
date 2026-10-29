@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\DB;
  */
 class CampoProduccionConsulta
 {
+    /** Unidad de un registro (p, a = actividad): la guardada o, si está vacía (registros copiados), la de la labor vigente. */
+    public const UNIDAD = "COALESCE(NULLIF(p.unidad, ''), (SELECT l.unidades FROM labores l WHERE l.codigo = a.codigo_labor
+        AND (l.vigente_desde IS NULL OR l.vigente_desde <= a.fecha) ORDER BY l.vigente_desde DESC LIMIT 1))";
+
     /** Clave de un trabajador: "c:ID" cuadrillero, "p:ID" empleado de planilla. */
     public static function clave(?int $cuadrilleroId, ?int $empleadoId): ?string
     {
@@ -76,7 +80,7 @@ class CampoProduccionConsulta
             ->when($buscar, fn($q) => $q->where(fn($q) => $q->where('a.nombre_labor', 'like', "%{$buscar}%")->orWhere('a.campo', 'like', "%{$buscar}%")))
             ->groupBy('a.id', 'a.fecha', 'a.campo', 'a.codigo_labor', 'a.nombre_labor')
             ->orderByDesc('a.fecha')->orderBy('a.campo')->orderBy('a.codigo_labor')
-            ->selectRaw('a.id as actividad_id, a.fecha, a.campo, a.codigo_labor, a.nombre_labor, MAX(p.unidad) as unidad,
+            ->selectRaw('a.id as actividad_id, a.fecha, a.campo, a.codigo_labor, a.nombre_labor, MAX('.self::UNIDAD.') as unidad,
                 SUM(CASE WHEN p.con_bono = 1 THEN p.cantidad ELSE 0 END) as con_bono,
                 SUM(CASE WHEN p.con_bono = 0 THEN p.cantidad ELSE 0 END) as sin_bono,
                 SUM(p.cantidad) as total,
@@ -92,9 +96,9 @@ class CampoProduccionConsulta
     {
         return DB::table('produccion_registros as p')->join('actividades as a', 'a.id', '=', 'p.actividad_id')
             ->whereBetween('a.fecha', [$desde, $hasta])->when($campo, fn($q) => $q->where('a.campo', $campo))
-            ->groupBy('a.campo', 'a.codigo_labor', 'a.nombre_labor', 'p.unidad')
+            ->groupBy('a.campo', 'a.codigo_labor', 'a.nombre_labor')
             ->orderBy('a.campo')->orderBy('a.codigo_labor')
-            ->selectRaw('a.campo, a.codigo_labor, a.nombre_labor, p.unidad,
+            ->selectRaw('a.campo, a.codigo_labor, a.nombre_labor, MAX(' . self::UNIDAD . ') as unidad,
                 SUM(CASE WHEN p.con_bono = 1 THEN p.cantidad ELSE 0 END) as con_bono,
                 SUM(CASE WHEN p.con_bono = 0 THEN p.cantidad ELSE 0 END) as sin_bono, SUM(p.cantidad) as total')
             ->get();
@@ -110,7 +114,7 @@ class CampoProduccionConsulta
         $codigosCosecha = DB::table('labores')->where('rol_campania', CampoProduccionReglas::ROL_CUADRE)->pluck('codigo');
         $campoDia = DB::table('produccion_registros as p')->join('actividades as a', 'a.id', '=', 'p.actividad_id')
             ->whereBetween('a.fecha', [$desde, $hasta])->when($campo, fn($q) => $q->where('a.campo', $campo))
-            ->where('p.unidad', CampoProduccionReglas::UNIDAD_CUADRE)->whereIn('a.codigo_labor', $codigosCosecha)
+            ->whereRaw(self::UNIDAD . ' = ?', [CampoProduccionReglas::UNIDAD_CUADRE])->whereIn('a.codigo_labor', $codigosCosecha)
             ->groupBy('a.campo', 'a.fecha')->selectRaw('a.campo, a.fecha, SUM(p.cantidad) as kg')->get();
         $ingresoDia = DB::table('cochinilla_ingresos')->whereBetween('fecha', [$desde, $hasta])->when($campo, fn($q) => $q->where('campo', $campo))
             ->whereIn('observacion', CampoProduccionReglas::INGRESOS_CUADRE)
@@ -143,6 +147,54 @@ class CampoProduccionConsulta
         usort($dias, fn($a, $b) => [$b['fecha'], $a['campo']] <=> [$a['fecha'], $b['campo']]);
         ksort($campos, SORT_NATURAL);
         return ['campos' => array_values($campos), 'dias' => array_values($dias)];
+    }
+
+    /**
+     * Cuadre de infestación por día y campo: lo que registró el módulo de infestación (kg de mamá que salieron y envases
+     * = lavadores) contra lo que registró el campo en sus labores ese día y en ese campo (llenada, colocación… con y sin
+     * bono). Sin semáforo: se muestra la diferencia de cada labor contra los envases y los kg de mamá por envase.
+     * @return array{dias: array, labores: array}
+     */
+    public static function cuadreInfestacion(string $desde, string $hasta, ?string $campo = null): array
+    {
+        $infestaciones = DB::table('cochinilla_infestaciones')->whereBetween('fecha', [$desde, $hasta])
+            ->when($campo, fn($q) => $q->where('campo_nombre', $campo))
+            ->groupBy('fecha', 'campo_nombre')
+            ->selectRaw('fecha, campo_nombre as campo, SUM(kg_madres) as kg_madres, SUM(numero_envases) as envases,
+                GROUP_CONCAT(DISTINCT campo_origen_nombre ORDER BY campo_origen_nombre SEPARATOR ", ") as origenes,
+                GROUP_CONCAT(DISTINCT tipo_infestacion SEPARATOR ", ") as tipos')
+            ->get();
+        if ($infestaciones->isEmpty()) {
+            return ['dias' => [], 'labores' => []];
+        }
+        $produccion = DB::table('produccion_registros as p')->join('actividades as a', 'a.id', '=', 'p.actividad_id')
+            ->whereBetween('a.fecha', [$desde, $hasta])->whereIn('a.campo', $infestaciones->pluck('campo')->unique())
+            ->groupBy('a.fecha', 'a.campo', 'a.codigo_labor', 'a.nombre_labor')
+            ->selectRaw('a.fecha, a.campo, a.codigo_labor, a.nombre_labor, MAX(' . self::UNIDAD . ') as unidad, SUM(p.cantidad) as cantidad')
+            ->get()->groupBy(fn($r) => Carbon::parse($r->fecha)->toDateString() . '|' . $r->campo);
+
+        $dias = [];
+        $labores = [];
+        foreach ($infestaciones as $i) {
+            $fecha = Carbon::parse($i->fecha)->toDateString();
+            $envases = (float) $i->envases;
+            $enCampo = [];
+            foreach ($produccion->get("{$fecha}|{$i->campo}", collect()) as $p) {
+                // Los kilos son de poda/cosecha, no de infestación
+                if ($p->unidad === CampoProduccionReglas::UNIDAD_CUADRE) {
+                    continue;
+                }
+                $enCampo[] = ['codigo' => $p->codigo_labor, 'nombre' => $p->nombre_labor, 'unidad' => $p->unidad,
+                    'cantidad' => (float) $p->cantidad, 'diferencia' => round((float) $p->cantidad - $envases, 2)];
+                $labores[$p->codigo_labor] = $p->nombre_labor;
+            }
+            $dias[] = ['fecha' => $fecha, 'campo' => $i->campo, 'tipos' => $i->tipos, 'origenes' => $i->origenes,
+                'kg_madres' => (float) $i->kg_madres, 'envases' => $envases,
+                'kg_por_envase' => $envases > 0 ? round((float) $i->kg_madres / $envases, 2) : null, 'labores' => $enCampo];
+        }
+        usort($dias, fn($a, $b) => [$b['fecha'], $a['campo']] <=> [$a['fecha'], $b['campo']]);
+        ksort($labores);
+        return ['dias' => $dias, 'labores' => $labores];
     }
 
     private static function diferencia(float $campo, float $ingreso): array
