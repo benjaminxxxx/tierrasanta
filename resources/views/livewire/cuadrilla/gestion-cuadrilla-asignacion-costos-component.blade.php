@@ -31,6 +31,7 @@
         </x-slot>
     </x-dialog-modal>
     <x-loading wire:loading />
+    @include('livewire.cuadrilla.partials.confirmar-bonos-jornal', ['accionConfirmar' => 'confirmarCambioJornal', 'accionCancelar' => 'cancelarCambioJornal'])
 </div>
 @script
     <script>

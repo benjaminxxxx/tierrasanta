@@ -162,12 +162,63 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
             $this->errorAlert($th);
         }
     }
+    /** Cambio de jornal que cambia bonos "respeta el jornal": se confirma antes de guardar */
+    public bool $mostrarConfirmacionBonos = false;
+    public array $bonosAfectados = [];
+
     public function registrarCostoPersonalizado(RegistroDiarioServicio $servicio)
     {
         try {
-            $tramoLaboralId = $this->tramoLaboral->id;
+            // Si el nuevo costo cambia bonos "respeta el jornal", primero se muestran para confirmar
+            [$desde, $hasta] = $this->rangoCostos();
+            $afectados = \App\Services\Cuadrilla\Bono\CuadrillaBonoProceso::simular(fn() => $this->guardarCostosPersonalizados($servicio), $desde, $hasta);
+            if ($afectados) {
+                $this->bonosAfectados = $afectados;
+                $this->mostrarConfirmacionBonos = true;
+                return;
+            }
+            $this->guardarCostosPersonalizados($servicio);
+            $this->obtenerReporteTramo();
+            $this->mostrarFormularioCostoHora = false;
+            $this->alert('success', 'Costos actualizados correctamente');
+        } catch (\Throwable $th) {
+            $this->errorAlert($th);
+        }
+    }
 
-            DB::transaction(function () use ($servicio, $tramoLaboralId) {
+    /** Confirmado: guarda los costos y actualiza los bonos que dependen del jornal (los pagados no se tocan). */
+    public function confirmarCambioJornal(RegistroDiarioServicio $servicio): void
+    {
+        try {
+            [$desde, $hasta] = $this->rangoCostos();
+            $n = DB::transaction(function () use ($servicio, $desde, $hasta) {
+                $this->guardarCostosPersonalizados($servicio);
+                return \App\Services\Cuadrilla\Bono\CuadrillaBonoProceso::aplicar($desde, $hasta);
+            });
+            $this->cancelarCambioJornal();
+            $this->obtenerReporteTramo();
+            $this->mostrarFormularioCostoHora = false;
+            $this->alert('success', "Costos actualizados. Se actualizaron {$n} bono(s).");
+        } catch (\Throwable $th) {
+            $this->errorAlert($th);
+        }
+    }
+
+    public function cancelarCambioJornal(): void
+    {
+        $this->reset(['mostrarConfirmacionBonos', 'bonosAfectados']);
+    }
+
+    private function rangoCostos(): array
+    {
+        $dias = array_values(array_filter($this->diasSemana));
+        return $dias ? [min($dias), max($dias)] : [(string) $this->tramoLaboral->fecha_inicio, (string) $this->tramoLaboral->fecha_fin];
+    }
+
+    private function guardarCostosPersonalizados(RegistroDiarioServicio $servicio): void
+    {
+        $tramoLaboralId = $this->tramoLaboral->id;
+        DB::transaction(function () use ($servicio, $tramoLaboralId) {
                 foreach ($this->cuadrillerosCostosPersonalizados as $cuadrilla) {
 
                     $cuadrilleroId = $cuadrilla['cuadrillero_id'];
@@ -190,15 +241,8 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
                     }
                 }
             });
-
-            $this->obtenerReporteTramo();
-            $this->mostrarFormularioCostoHora = false;
-            $this->alert('success', 'Costos actualizados correctamente');
-
-        } catch (\Throwable $th) {
-            $this->errorAlert($th);
-        }
     }
+
     public function obtenerReporteTramo($dispatched = true)
     {
         if (!$this->tramoLaboral)

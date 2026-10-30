@@ -14,6 +14,7 @@
             color: #000 !important;
         }
     </style>
+    @include('livewire.cuadrilla.partials.confirmar-bonos-jornal', ['accionConfirmar' => 'confirmarCambioJornal', 'accionCancelar' => 'cancelarCambioJornal'])
 </div>
 @script
 <script>
