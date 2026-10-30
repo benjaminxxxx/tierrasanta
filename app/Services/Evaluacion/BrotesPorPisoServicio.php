@@ -25,11 +25,13 @@ class BrotesPorPisoServicio
     /** Promedios de una evaluación (los mismos nombres que en la campaña, sin el prefijo). */
     public const PROMEDIOS = [
         'promedio_actual_brotes_2piso' => '2° piso actual',
-        'promedio_brotes_2piso_n_dias' => '2° piso +30 días',
+        'promedio_brotes_2piso_n_dias' => '2° piso para eliminar',
         'promedio_actual_brotes_3piso' => '3° piso actual',
-        'promedio_brotes_3piso_n_dias' => '3° piso +30 días',
-        'promedio_actual_total_brotes_2y3piso' => 'Total actual',
-        'promedio_total_brotes_2y3piso_n_dias' => 'Total +30 días',
+        'promedio_brotes_3piso_n_dias' => '3° piso para eliminar',
+        'promedio_actual_brotes_4piso' => '4° piso actual',
+        'promedio_brotes_4piso_n_dias' => '4° piso para eliminar',
+        'promedio_actual_total_brotes_2y3piso' => 'Total aptos',
+        'promedio_total_brotes_2y3piso_n_dias' => 'Total para eliminar',
     ];
 
     protected CampaniaServicio $campaniaServicio;
@@ -93,10 +95,12 @@ class BrotesPorPisoServicio
             ->map(function (EvalBrotesPorPiso $e) use (&$anterior) {
                 $promedios = [];
                 foreach (array_keys(self::PROMEDIOS) as $clave) {
-                    $valor = (float) $e->$clave;
+                    // 4° piso: null si la evaluación no lo tiene (no había)
+                    $valor = $e->$clave === null ? null : (float) $e->$clave;
+                    $previo = $anterior[$clave]['valor'] ?? null;
                     $promedios[$clave] = [
                         'valor' => $valor,
-                        'diferencia' => $anterior ? $valor - $anterior[$clave]['valor'] : null,
+                        'diferencia' => $valor !== null && $previo !== null ? $valor - $previo : null,
                     ];
                 }
                 $fila = [
@@ -124,10 +128,14 @@ class BrotesPorPisoServicio
             'brotes_aptos_2p_despues_n_dias' => $d->brotes_aptos_2p_despues_n_dias,
             'brotes_aptos_3p_actual' => $d->brotes_aptos_3p_actual,
             'brotes_aptos_3p_despues_n_dias' => $d->brotes_aptos_3p_despues_n_dias,
+            'brotes_aptos_4p_actual' => $d->brotes_aptos_4p_actual,
+            'brotes_aptos_4p_despues_n_dias' => $d->brotes_aptos_4p_despues_n_dias,
             'brotes_2p_actual_por_mt' => round($d->brotes_2p_actual_por_mt, 2),
             'brotes_2p_despues_por_mt' => round($d->brotes_2p_despues_por_mt, 2),
             'brotes_3p_actual_por_mt' => round($d->brotes_3p_actual_por_mt, 2),
             'brotes_3p_despues_por_mt' => round($d->brotes_3p_despues_por_mt, 2),
+            'brotes_4p_actual_por_mt' => $d->brotes_aptos_4p_actual === null ? null : round($d->brotes_4p_actual_por_mt, 2),
+            'brotes_4p_despues_por_mt' => $d->brotes_aptos_4p_despues_n_dias === null ? null : round($d->brotes_4p_despues_por_mt, 2),
             'total_actual_por_mt' => round($d->total_actual_por_mt, 2),
             'total_despues_por_mt' => round($d->total_despues_por_mt, 2),
         ])->all();
@@ -211,7 +219,8 @@ class BrotesPorPisoServicio
             'evaluador' => $e->evaluador,
             'metros_cama_ha' => (float) $e->metros_cama_ha,
             'camas' => $e->detalles->map(fn($d) => $d->only(['numero_cama', 'longitud_cama', 'brotes_aptos_2p_actual',
-                'brotes_aptos_2p_despues_n_dias', 'brotes_aptos_3p_actual', 'brotes_aptos_3p_despues_n_dias']))->values()->all(),
+                'brotes_aptos_2p_despues_n_dias', 'brotes_aptos_3p_actual', 'brotes_aptos_3p_despues_n_dias',
+                'brotes_aptos_4p_actual', 'brotes_aptos_4p_despues_n_dias']))->values()->all(),
         ];
     }
 
@@ -241,6 +250,8 @@ class BrotesPorPisoServicio
                     'brotes_2p_despues_n_dias' => $detalle->brotes_aptos_2p_despues_n_dias,
                     'brotes_3p_actual' => $detalle->brotes_aptos_3p_actual,
                     'brotes_3p_despues_n_dias' => $detalle->brotes_aptos_3p_despues_n_dias,
+                    'brotes_4p_actual' => $detalle->brotes_aptos_4p_actual,
+                    'brotes_4p_despues_n_dias' => $detalle->brotes_aptos_4p_despues_n_dias,
                 ];
             }
         }
@@ -264,6 +275,8 @@ class BrotesPorPisoServicio
             'brotexpiso_brotes_2piso_n_dias' => $eval->promedio_brotes_2piso_n_dias,
             'brotexpiso_actual_brotes_3piso' => $eval->promedio_actual_brotes_3piso,
             'brotexpiso_brotes_3piso_n_dias' => $eval->promedio_brotes_3piso_n_dias,
+            'brotexpiso_actual_brotes_4piso' => $eval->promedio_actual_brotes_4piso,
+            'brotexpiso_brotes_4piso_n_dias' => $eval->promedio_brotes_4piso_n_dias,
             'brotexpiso_actual_total_brotes_2y3piso' => $eval->promedio_actual_total_brotes_2y3piso,
             'brotexpiso_total_brotes_2y3piso_n_dias' => $eval->promedio_total_brotes_2y3piso_n_dias,
         ];
@@ -287,6 +300,8 @@ class BrotesPorPisoServicio
             'brotes_aptos_2p_despues_n_dias' => $entero($fila, 'brotes_aptos_2p_despues_n_dias'),
             'brotes_aptos_3p_actual' => $entero($fila, 'brotes_aptos_3p_actual'),
             'brotes_aptos_3p_despues_n_dias' => $entero($fila, 'brotes_aptos_3p_despues_n_dias'),
+            'brotes_aptos_4p_actual' => $entero($fila, 'brotes_aptos_4p_actual'),
+            'brotes_aptos_4p_despues_n_dias' => $entero($fila, 'brotes_aptos_4p_despues_n_dias'),
             'created_at' => now(),
             'updated_at' => now(),
         ])->toArray();
@@ -317,7 +332,8 @@ class BrotesPorPisoServicio
     {
         // Filas vacías fuera antes de validar
         if (isset($datos['detalles']) && is_array($datos['detalles'])) {
-            $campos = ['numero_cama', 'longitud_cama', 'brotes_aptos_2p_actual', 'brotes_aptos_2p_despues_n_dias', 'brotes_aptos_3p_actual', 'brotes_aptos_3p_despues_n_dias'];
+            $campos = ['numero_cama', 'longitud_cama', 'brotes_aptos_2p_actual', 'brotes_aptos_2p_despues_n_dias', 'brotes_aptos_3p_actual', 'brotes_aptos_3p_despues_n_dias',
+                'brotes_aptos_4p_actual', 'brotes_aptos_4p_despues_n_dias'];
             $datos['detalles'] = array_values(array_filter($datos['detalles'], fn($fila) => collect($campos)
                 ->contains(fn($c) => isset($fila[$c]) && $fila[$c] !== '')));
         }
@@ -362,6 +378,8 @@ class BrotesPorPisoServicio
                 'brotes_aptos_2p_despues_n_dias' => 'nullable|integer|min:0',
                 'brotes_aptos_3p_actual' => 'nullable|integer|min:0',
                 'brotes_aptos_3p_despues_n_dias' => 'nullable|integer|min:0',
+                'brotes_aptos_4p_actual' => 'nullable|integer|min:0',
+                'brotes_aptos_4p_despues_n_dias' => 'nullable|integer|min:0',
             ], [], ['numero_cama' => 'N° de cama', 'longitud_cama' => 'longitud de cama']);
 
             if ($filaValidator->fails()) {

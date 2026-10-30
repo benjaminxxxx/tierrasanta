@@ -19,6 +19,14 @@
 </x-td>
 
 <x-td class="text-center" x-show="bloques.brotes">
+    {{$campania->brotexpiso_actual_brotes_4piso ?? '—'}}
+</x-td>
+
+<x-td class="text-center" x-show="bloques.brotes">
+    {{$campania->brotexpiso_brotes_4piso_n_dias ?? '—'}}
+</x-td>
+
+<x-td class="text-center" x-show="bloques.brotes">
     {{$campania->brotexpiso_actual_total_brotes_2y3piso}}
 </x-td>
 

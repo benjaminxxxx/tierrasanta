@@ -116,6 +116,9 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
                 ->whereNotNull('costo_personalizado_dia')
                 ->get(['cuadrillero_id', 'codigo_grupo', 'fecha', 'costo_personalizado_dia']);
 
+            $jornalesGrupo = \App\Models\CuadCostoDiarioGrupo::whereBetween('fecha', [$inicio, $fin])->get()
+                ->mapWithKeys(fn($c) => [trim($c->codigo_grupo) . '|' . \Illuminate\Support\Carbon::parse($c->fecha)->toDateString() => (float) $c->jornal])->all();
+
             $diasSemana = [];
 
             // Inicializar las fechas de la semana vacías
@@ -152,6 +155,8 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
                     });
 
                     $registroCuadrilla[$indiceCuadrilla]['costos'][$key] = $costoPersonalizado?->costo_personalizado_dia;
+                    // Jornal del grupo ese día: lo que se cobra si la celda queda vacía (se muestra como ayuda)
+                    $registroCuadrilla[$indiceCuadrilla]['jornal_grupo'][$key] = $jornalesGrupo[$codigoGrupo . '|' . $fechaStr] ?? null;
                 }
             }
             $this->diasSemana = $diasSemana;
@@ -162,6 +167,19 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
             $this->errorAlert($th);
         }
     }
+    /**
+     * Vacía los costos personalizados en el modal (una persona o todas). No guarda: se guarda con "Registrar costo".
+     * Vacío = se cobra el jornal del grupo de ese día.
+     */
+    public function vaciarCostosPersonalizados(?string $clave = null): void
+    {
+        foreach ($this->cuadrillerosCostosPersonalizados as $k => $fila) {
+            if ($clave === null || $k === $clave) {
+                $this->cuadrillerosCostosPersonalizados[$k]['costos'] = array_fill_keys(array_keys($fila['costos']), null);
+            }
+        }
+    }
+
     /** Cambio de jornal que cambia bonos "respeta el jornal": se confirma antes de guardar */
     public bool $mostrarConfirmacionBonos = false;
     public array $bonosAfectados = [];

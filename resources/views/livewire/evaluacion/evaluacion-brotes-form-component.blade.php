@@ -6,7 +6,7 @@
 
         <x-slot name="content">
             @php
-                $n0 = fn($v) => number_format((float) $v, 0);
+                $n0 = fn($v) => $v === null ? '—' : number_format((float) $v, 0);
                 $abierta = collect($evaluaciones)->firstWhere('id', $editando);
             @endphp
 
@@ -181,19 +181,26 @@
                 const d2 = this.porHectarea(f.brotes_aptos_2p_despues_n_dias, f.longitud_cama);
                 const a3 = this.porHectarea(f.brotes_aptos_3p_actual, f.longitud_cama);
                 const d3 = this.porHectarea(f.brotes_aptos_3p_despues_n_dias, f.longitud_cama);
+                const a4 = this.porHectarea(f.brotes_aptos_4p_actual, f.longitud_cama);
+                const d4 = this.porHectarea(f.brotes_aptos_4p_despues_n_dias, f.longitud_cama);
+                const suma = (...v) => v.every(x => x === null) ? null : v.reduce((t, x) => t + (x || 0), 0);
                 set('brotes_2p_actual_por_mt', a2);
                 set('brotes_2p_despues_por_mt', d2);
                 set('brotes_3p_actual_por_mt', a3);
                 set('brotes_3p_despues_por_mt', d3);
-                set('total_actual_por_mt', a2 === null && a3 === null ? null : (a2 || 0) + (a3 || 0));
-                set('total_despues_por_mt', d2 === null && d3 === null ? null : (d2 || 0) + (d3 || 0));
+                set('brotes_4p_actual_por_mt', a4);
+                set('brotes_4p_despues_por_mt', d4);
+                // Total aptos 2° + 3° + 4° por ha (el que sirve); para eliminar, solo informativo
+                set('total_actual_por_mt', suma(a2, a3, a4));
+                set('total_despues_por_mt', suma(d2, d3, d4));
             },
             initTable() {
                 const num = { pattern: '0,0', culture: 'en-US' };
                 const entrada = (data) => ({ data, type: 'numeric', numericFormat: num, className: '!text-center' });
                 const calculada = (data, total = false) => ({
                     data, type: 'numeric', readOnly: true, numericFormat: num,
-                    className: total ? (this.isDark ? '!text-center !bg-muted font-bold' : '!text-center !bg-[#FABF8F] htDimmed font-bold !text-black') : '!text-center !bg-muted',
+                    // DESIGN.md: solo lectura en Grafito sobre Niebla; el total que sirve, en Tinta y negrita (sin fondos de color)
+                    className: total ? '!text-right !bg-fog font-semibold !text-ink' : '!text-right !bg-fog !text-graphite',
                 });
 
                 this.hot = new Handsontable(this.$refs.tableContainer, {
@@ -208,21 +215,25 @@
                         entrada('brotes_aptos_2p_despues_n_dias'), calculada('brotes_2p_despues_por_mt'),
                         entrada('brotes_aptos_3p_actual'), calculada('brotes_3p_actual_por_mt'),
                         entrada('brotes_aptos_3p_despues_n_dias'), calculada('brotes_3p_despues_por_mt'),
+                        entrada('brotes_aptos_4p_actual'), calculada('brotes_4p_actual_por_mt'),
+                        entrada('brotes_aptos_4p_despues_n_dias'), calculada('brotes_4p_despues_por_mt'),
                         calculada('total_actual_por_mt', true),
-                        calculada('total_despues_por_mt', true),
+                        calculada('total_despues_por_mt'),
                     ],
                     nestedHeaders: [
                         [
                             { label: 'N° DE<br/>CAMA<br/>MUESTREADA', colspan: 1 },
                             { label: 'LONGITUD<br/>CAMA<br/>(m)', colspan: 1 },
                             { label: 'N° ACTUAL<br/>BROTES<br/>APTOS<br/>2° PISO', colspan: 2 },
-                            { label: 'BROTES<br/>APTOS 2° PISO<br/>DESPUÉS<br/>30 DÍAS', colspan: 2 },
+                            { label: 'N° BROTES<br/>2° PISO<br/>PARA<br/>ELIMINAR', colspan: 2 },
                             { label: 'N° ACTUAL<br/>BROTES<br/>APTOS<br/>3° PISO', colspan: 2 },
-                            { label: 'BROTES<br/>APTOS 3° PISO<br/>DESPUÉS<br/>30 DÍAS', colspan: 2 },
-                            { label: 'TOTAL<br/>BROTES APTOS<br/>2° Y 3° PISO', colspan: 1 },
-                            { label: 'TOTAL BROTES<br/>APTOS 2° Y<br/>3° PISO<br/>DESPUÉS 30 DÍAS', colspan: 1 },
+                            { label: 'N° BROTES<br/>3° PISO<br/>PARA<br/>ELIMINAR', colspan: 2 },
+                            { label: 'N° ACTUAL<br/>BROTES<br/>APTOS<br/>4° PISO', colspan: 2 },
+                            { label: 'N° BROTES<br/>4° PISO<br/>PARA<br/>ELIMINAR', colspan: 2 },
+                            { label: 'TOTAL ACTUAL<br/>BROTES APTOS<br/>2°, 3° Y 4° PISO', colspan: 1 },
+                            { label: 'TOTAL<br/>PARA ELIMINAR<br/>(informativo)', colspan: 1 },
                         ],
-                        ['-', '-', '-', '/ha', '-', '/ha', '-', '/ha', '-', '/ha', '/ha', '/ha'],
+                        ['-', '-', '-', '/ha', '-', '/ha', '-', '/ha', '-', '/ha', '-', '/ha', '-', '/ha', '/ha', '/ha'],
                     ],
                     width: '100%',
                     height: 'auto',
@@ -239,7 +250,8 @@
                 });
             },
             enviar() {
-                const campos = ['numero_cama', 'longitud_cama', 'brotes_aptos_2p_actual', 'brotes_aptos_2p_despues_n_dias', 'brotes_aptos_3p_actual', 'brotes_aptos_3p_despues_n_dias'];
+                const campos = ['numero_cama', 'longitud_cama', 'brotes_aptos_2p_actual', 'brotes_aptos_2p_despues_n_dias', 'brotes_aptos_3p_actual', 'brotes_aptos_3p_despues_n_dias',
+                    'brotes_aptos_4p_actual', 'brotes_aptos_4p_despues_n_dias'];
                 const filas = [];
                 for (let row = 0; row < this.hot.countRows(); row++) {
                     const f = this.hot.getSourceDataAtRow(row) || {};

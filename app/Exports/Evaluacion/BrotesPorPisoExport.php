@@ -92,7 +92,7 @@ class BrotesPorPisoExport implements FromArray, WithEvents, WithTitle
                 // Este es el punto donde arrancan las tablas ↓
                 $filaInicioCampo = 8;
                 $altoBloqueCampo = 26;
-                $anchoBloqueCampania = 14;
+                $anchoBloqueCampania = 18; // 17 columnas (con 4° piso) + 1 de separación
 
 
 
@@ -192,30 +192,28 @@ class BrotesPorPisoExport implements FromArray, WithEvents, WithTitle
                         $sheet->setCellValueByColumnAndRow($baseCol + 1, $baseRow + 1, 'N° DE CAMA MUESTREADA');
                         $sheet->setCellValueByColumnAndRow($baseCol + 2, $baseRow + 1, 'LONGITUD CAMA (metros)');
 
-                        $sheet->mergeCellsByColumnAndRow($baseCol + 3, $baseRow + 1, $baseCol + 4, $baseRow + 1);
-                        $sheet->setCellValueByColumnAndRow($baseCol + 3, $baseRow + 1, "N° ACTUAL DE BROTES APTOS  2° PISO POR HECTAREA");
-
-                        $sheet->mergeCellsByColumnAndRow($baseCol + 5, $baseRow + 1, $baseCol + 6, $baseRow + 1);
-                        $sheet->setCellValueByColumnAndRow($baseCol + 5, $baseRow + 1, "N° DE BROTES APTOS 2° PISO DESPUES DE 30 DIAS");
-
-                        $sheet->mergeCellsByColumnAndRow($baseCol + 7, $baseRow + 1, $baseCol + 8, $baseRow + 1);
-                        $sheet->setCellValueByColumnAndRow($baseCol + 7, $baseRow + 1, "N° ACTUAL DE BROTES APTOS  3° PISO");
-
-                        $sheet->mergeCellsByColumnAndRow($baseCol + 9, $baseRow + 1, $baseCol + 10, $baseRow + 1);
-                        $sheet->setCellValueByColumnAndRow($baseCol + 9, $baseRow + 1, "N° DE BROTES APTOS 3° PISO DESPUES DE 30 DIAS");
-
-                        $sheet->setCellValueByColumnAndRow($baseCol + 11, $baseRow + 1, 'TOTAL ACTUAL DE BROTES APTOS 2° Y 3° PISO');
-                        $sheet->setCellValueByColumnAndRow($baseCol + 12, $baseRow + 1, 'TOTAL DE BROTES APTOS 2° Y 3° PISO DESPUES DE 30 DIAS');
+                        // Pares (cama, por ha) por piso; el 4° piso es opcional (evaluaciones desde oct-2026)
+                        $pares = [
+                            3 => 'N° ACTUAL DE BROTES APTOS 2° PISO POR HECTÁREA',
+                            5 => 'N° DE BROTES DEL 2° PISO PARA ELIMINAR',
+                            7 => 'N° ACTUAL DE BROTES APTOS 3° PISO',
+                            9 => 'N° DE BROTES DEL 3° PISO PARA ELIMINAR',
+                            11 => 'N° ACTUAL DE BROTES APTOS 4° PISO',
+                            13 => 'N° DE BROTES DEL 4° PISO PARA ELIMINAR',
+                        ];
+                        foreach ($pares as $desde => $titulo) {
+                            $sheet->mergeCellsByColumnAndRow($baseCol + $desde, $baseRow + 1, $baseCol + $desde + 1, $baseRow + 1);
+                            $sheet->setCellValueByColumnAndRow($baseCol + $desde, $baseRow + 1, $titulo);
+                        }
+                        $sheet->setCellValueByColumnAndRow($baseCol + 15, $baseRow + 1, 'TOTAL ACTUAL DE BROTES APTOS 2°, 3° Y 4° PISO');
+                        $sheet->setCellValueByColumnAndRow($baseCol + 16, $baseRow + 1, 'TOTAL DE BROTES PARA ELIMINAR (informativo)');
 
                         // ------------------------------------------------------------------
                         // ESTILOS DEL ENCABEZADO DE COLUMNAS
                         // ------------------------------------------------------------------
-    
-                        // Rango completo del encabezado (solo la fila baseRow+1)
                         $headerRange = $this->col($baseCol) . ($baseRow + 1) . ':' .
                             $this->col($baseCol + $anchoBloqueCampania - 2) . ($baseRow + 1);
 
-                        // Toda la fila → negrita + bordes thin
                         $sheet->getStyle($headerRange)->applyFromArray([
                             'font' => ['bold' => true],
                             'borders' => [
@@ -229,242 +227,118 @@ class BrotesPorPisoExport implements FromArray, WithEvents, WithTitle
                             ]
                         ]);
 
-                        // ------------------------------------------------------------------
-                        // ORIENTAR TEXTO HACIA ARRIBA
-                        // (3 primeras columnas + 2 últimas)
-                        // ------------------------------------------------------------------
-    
+                        // Texto hacia arriba: 3 primeras columnas + 2 de totales
                         $rotateCols = [];
-
-                        // 3 primeras columnas
                         for ($i = 0; $i < 3; $i++) {
                             $rotateCols[] = $this->col($baseCol + $i);
                         }
-
-                        // 2 últimas columnas
-                        $rotateCols[] = $this->col($baseCol + $anchoBloqueCampania - 3);
-                        $rotateCols[] = $this->col($baseCol + $anchoBloqueCampania - 2);
-
-                        // Aplicar rotación ↑ a cada columna
+                        $rotateCols[] = $this->col($baseCol + 15);
+                        $rotateCols[] = $this->col($baseCol + 16);
                         foreach ($rotateCols as $colLetter) {
-                            $sheet->getStyle($colLetter . ($baseRow + 1))
-                                ->getAlignment()
-                                ->setTextRotation(90); // Girar texto hacia arriba
+                            $sheet->getStyle($colLetter . ($baseRow + 1))->getAlignment()->setTextRotation(90);
                         }
 
-                        // 4) DETALLES (8 filas siempre)
+                        // 4) DETALLES (12 filas siempre)
                         $startRow = $baseRow + 2;
-                        $endRow = $startRow + 11; // 12 filas
-    
-                        // --- MERGE VERTICAL DE LOTE ---
-                        $sheet->mergeCells(
-                            $this->col($baseCol) . $startRow . ":" . $this->col($baseCol) . $endRow
-                        );
-                        $sheet->getStyle(
-                            $this->col($baseCol) . $startRow . ":" . $this->col($baseCol + 1) . $endRow
-                        )->applyFromArray([
-                                    'alignment' => [
-                                        'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
-                                        'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
-                                    ]
-                                ]);
+                        $endRow = $startRow + 11;
 
-                        // --- DETALLES: 8 filas ---
+                        $sheet->mergeCells($this->col($baseCol) . $startRow . ":" . $this->col($baseCol) . $endRow);
+                        $sheet->getStyle($this->col($baseCol) . $startRow . ":" . $this->col($baseCol + 1) . $endRow)->applyFromArray([
+                            'alignment' => [
+                                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                                'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                            ]
+                        ]);
+
+                        $col = fn($i) => $this->col($baseCol + $i);
+                        // Valor metros de cama por ha (celda absoluta)
+                        $metrosPorCamaCelda = $this->col($baseCol + 3) . $metrosCamaHaRow;
+                        // Columna de entrada => dato del detalle
+                        $entradas = [3 => 'brotes_2p_actual', 5 => 'brotes_2p_despues_n_dias', 7 => 'brotes_3p_actual',
+                            9 => 'brotes_3p_despues_n_dias', 11 => 'brotes_4p_actual', 13 => 'brotes_4p_despues_n_dias'];
+
                         $row = $startRow;
                         for ($i = 0; $i < 12; $i++) {
-
                             $detalle = $info["detalles"][$i] ?? null;
 
                             if ($detalle) {
-                                /*
-                                array:6 [▼ // app\Exports\Produccion\MateriaPrima\BrotesPorPisoExport.php:279
-                                 "numero_cama" => 1
-                                 "longitud_cama" => "124.00"
-                                 "brotes_2p_actual" => 12
-                                 "brotes_2p_despues_n_dias" => 14
-                                 "brotes_3p_actual" => 0
-                                 "brotes_3p_despues_n_dias" => 0
-                                 ]
-                                 */
-
                                 $sheet->setCellValueByColumnAndRow($baseCol, $row, $campo);
                                 $sheet->setCellValueByColumnAndRow($baseCol + 1, $row, $detalle["numero_cama"]);
                                 $sheet->setCellValueByColumnAndRow($baseCol + 2, $row, $detalle["longitud_cama"]);
 
-                                $sheet->setCellValueByColumnAndRow($baseCol + 3, $row, $detalle["brotes_2p_actual"]);
-                                $sheet->setCellValueByColumnAndRow($baseCol + 5, $row, $detalle["brotes_2p_despues_n_dias"]);
-                                $sheet->setCellValueByColumnAndRow($baseCol + 7, $row, $detalle["brotes_3p_actual"]);
-                                $sheet->setCellValueByColumnAndRow($baseCol + 9, $row, $detalle["brotes_3p_despues_n_dias"]);
-                                // ---------------------------------------------------------------
-// FORMULAS POR FILA
-// ---------------------------------------------------------------
-    
-                                // Para evitar escribir muchas veces la función col()
-                                $col = fn($i) => $this->col($baseCol + $i);
+                                foreach ($entradas as $c => $clave) {
+                                    $valor = $detalle[$clave] ?? null;
+                                    if ($valor !== null) {
+                                        $sheet->setCellValueByColumnAndRow($baseCol + $c, $row, $valor);
+                                    }
+                                    // Por ha = (brotes / longitud) * metros de cama por ha
+                                    $sheet->setCellValue($col($c + 1) . $row,
+                                        "=IFERROR(({$col($c)}{$row}/{$col(2)}{$row})*\${$metrosPorCamaCelda},0)");
+                                }
 
-                                // Columnas base
-                                $colC = $col(2);  // longitud de cama
-                                $colD = $col(3);
-                                $colF = $col(5);
-                                $colH = $col(7);
-                                $colJ = $col(9);
-
-                                // Valor metros por cama ha (celda absoluta tipo $D$10)
-                                $metrosPorCamaCelda = $this->col($baseCol + 3) . $metrosCamaHaRow;
-
-                                // 1) =SI.ERROR((D/C) * $D$10 ; 0)
-                                $sheet->setCellValue(
-                                    $col(4) . $row,   // E
-                                    "=IFERROR(($colD$row/$colC$row)*\${$metrosPorCamaCelda},0)"
-                                );
-
-                                // 2) =SI.ERROR((F/C) * $D$10 ; 0)
-                                $sheet->setCellValue(
-                                    $col(6) . $row,   // G
-                                    "=IFERROR(($colF$row/$colC$row)*\${$metrosPorCamaCelda},0)"
-                                );
-
-                                // 3) =SI.ERROR((H/C) * $D$10 ; 0)
-                                $sheet->setCellValue(
-                                    $col(8) . $row,   // I
-                                    "=IFERROR(($colH$row/$colC$row)*\${$metrosPorCamaCelda},0)"
-                                );
-
-                                // 4) =SI.ERROR((J/C) * $D$10 ; 0)
-                                $sheet->setCellValue(
-                                    $col(10) . $row,   // K
-                                    "=IFERROR(($colJ$row/$colC$row)*\${$metrosPorCamaCelda},0)"
-                                );
-
-                                // 5) =E + I
-                                $sheet->setCellValue(
-                                    $col(11) . $row,   // L
-                                    "= {$col(4)}{$row} + {$col(8)}{$row}"
-                                );
-
-                                // 6) =G + K
-                                $sheet->setCellValue(
-                                    $col(12) . $row,   // M
-                                    "= {$col(6)}{$row} + {$col(10)}{$row}"
-                                );
-
-
+                                // Total aptos = 2° + 3° + 4° por ha; total para eliminar (informativo)
+                                $sheet->setCellValue($col(15) . $row, "={$col(4)}{$row}+{$col(8)}{$row}+{$col(12)}{$row}");
+                                $sheet->setCellValue($col(16) . $row, "={$col(6)}{$row}+{$col(10)}{$row}+{$col(14)}{$row}");
                             }
-
-                            // ⭐ CENTRADO TOTAL DE TODA LA FILA (columnas baseCol → baseCol+7)
-                            $sheet->getStyle(
-                                $this->col($baseCol) . $row . ':' . $this->col($baseCol + 7) . $row
-                            )->applyFromArray([
-                                        'alignment' => [
-                                            'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
-                                            'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
-                                        ]
-                                    ]);
 
                             $row++;
                         }
+
                         // ---------------------------------------------------------------
-                        // PROMEDIOS POR COLUMNA (E, G, I, K, L, M)
+                        // PROMEDIOS POR COLUMNA (por ha y total aptos; el total para eliminar no se promedia)
                         // ---------------------------------------------------------------
-    
-                        $filaProm = $startRow + 12;      // Fila donde irán los promedios
+                        $filaProm = $startRow + 12;
                         $firstRow = $startRow;
-                        $lastRow = $startRow + 11;      // 11 filas exactas
-    
-                        $col = fn($i) => $this->col($baseCol + $i);
+                        $lastRow = $startRow + 11;
 
-                        // Fórmulas PROMEDIO.SI (>0)
-                        $sheet->setCellValue(
-                            $col(4) . $filaProm,
-                            "=IFERROR(AVERAGEIF({$col(4)}{$firstRow}:{$col(4)}{$lastRow},\">0\"),0)"
-                        );
+                        foreach ([4, 6, 8, 10, 12, 14, 15] as $c) {
+                            $sheet->setCellValue($col($c) . $filaProm,
+                                "=IFERROR(AVERAGEIF({$col($c)}{$firstRow}:{$col($c)}{$lastRow},\">0\"),0)");
+                        }
 
-                        $sheet->setCellValue(
-                            $col(6) . $filaProm,
-                            "=IFERROR(AVERAGEIF({$col(6)}{$firstRow}:{$col(6)}{$lastRow},\">0\"),0)"
-                        );
-
-                        $sheet->setCellValue(
-                            $col(8) . $filaProm,
-                            "=IFERROR(AVERAGEIF({$col(8)}{$firstRow}:{$col(8)}{$lastRow},\">0\"),0)"
-                        );
-
-                        $sheet->setCellValue(
-                            $col(10) . $filaProm,
-                            "=IFERROR(AVERAGEIF({$col(10)}{$firstRow}:{$col(10)}{$lastRow},\">0\"),0)"
-                        );
-
-                        $sheet->setCellValue(
-                            $col(11) . $filaProm,
-                            "=IFERROR(AVERAGEIF({$col(11)}{$firstRow}:{$col(11)}{$lastRow},\">0\"),0)"
-                        );
-
-                        $sheet->setCellValue(
-                            $col(12) . $filaProm,
-                            "=IFERROR(AVERAGEIF({$col(12)}{$firstRow}:{$col(12)}{$lastRow},\">0\"),0)"
-                        );
-
-                        // ---------------------------------------------------------------
-                        // FORMATO – COLORES
-                        // ---------------------------------------------------------------
                         // ==================================================================
                         // ESTILOS FINALES (Bordes, Colores, Formatos)
                         // ==================================================================
-    
-                        // 1. BORDE AL TÍTULO PRINCIPAL ("CONTEO DE BROTES...")
+                        $ultima = 16;
                         $sheet->getStyleByColumnAndRow($baseCol, $baseRow, $baseCol + $anchoBloqueCampania - 2, $baseRow)
                             ->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
-                        // 2. BORDE A TODO EL CONTENIDO (Encabezados + Datos + Promedios)
-                        // Desde la fila de encabezados ($baseRow + 1) hasta la fila de promedios ($filaProm)
-                        // Desde columna 0 hasta columna 12
-                        $rangoCompleto = $col(0) . ($baseRow + 1) . ':' . $col(12) . $filaProm;
-                        $sheet->getStyle($rangoCompleto)
+                        $sheet->getStyle($col(0) . ($baseRow + 1) . ':' . $col($ultima) . $filaProm)
                             ->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
-                        // 2) Promedios normales (E,G,I,K) — Gris suave
-                        $sheet->getStyle($col(4) . $filaProm . ':' . $col(10) . $filaProm)
+                        // Promedios por piso — gris suave
+                        $sheet->getStyle($col(4) . $filaProm . ':' . $col(14) . $filaProm)
                             ->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
                             ->getStartColor()->setARGB('EDEDED');
 
-                        // 3. COLOR AMARILLO CLARO EN COLUMNAS DE FÓRMULAS (5, 7, 9, 11 -> Índices 4, 6, 8, 10)
-                        $columnasAmarillas = [4, 6, 8, 10];
-                        foreach ($columnasAmarillas as $idx) {
-                            $rangoAmarillo = $col($idx) . $startRow . ':' . $col($idx) . $filaProm;
-                            $sheet->getStyle($rangoAmarillo)->applyFromArray([
+                        // Columnas por ha — amarillo claro
+                        foreach ([4, 6, 8, 10, 12, 14] as $idx) {
+                            $sheet->getStyle($col($idx) . $startRow . ':' . $col($idx) . $filaProm)->applyFromArray([
                                 'fill' => [
                                     'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                                    'startColor' => ['argb' => 'FFFFE0'], // Amarillo Claro
+                                    'startColor' => ['argb' => 'FFFFE0'],
                                 ]
                             ]);
                         }
 
-                        // 3) Promedios columnas finales (L, M) — Verde
-                        $sheet->getStyle($col(11) . $firstRow . ':' . $col(12) . $filaProm)
+                        // Total aptos (el que sirve) — naranja como el formato del ingeniero; para eliminar — gris
+                        $sheet->getStyle($col(15) . $firstRow . ':' . $col(15) . $filaProm)
                             ->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-                            ->getStartColor()->setARGB('A9D08E');
+                            ->getStartColor()->setARGB('FFC000');
+                        $sheet->getStyle($col(16) . $firstRow . ':' . $col(16) . $filaProm)
+                            ->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                            ->getStartColor()->setARGB('EDEDED');
 
-                        // Formato 0 decimales
-                        $sheet->getStyle($col(11) . $firstRow . ':' . $col(12) . $filaProm)->getNumberFormat()->setFormatCode('0');
+                        // Negrita en la fila de promedios
+                        $sheet->getStyle($col(0) . $filaProm . ':' . $col($ultima) . $filaProm)->getFont()->setBold(true);
 
-                        // 5. NEGRITA EN LA FILA DE PROMEDIOS
-                        $sheet->getStyle($col(0) . $filaProm . ':' . $col(12) . $filaProm)
-                            ->getFont()->setBold(true);
-
-                        // 6. FORMATO NUMÉRICO (#,##0) Y CENTRADO
-                        // Aplicamos esto a todas las celdas numéricas (desde Col 1 hasta Col 12, filas startRow a filaProm)
-                        // Excluimos Col 0 (Campo) que es texto.
-                        $rangoNumerico = $col(1) . $startRow . ':' . $col(12) . $filaProm;
-
-                        $sheet->getStyle($rangoNumerico)->applyFromArray([
+                        // Formato numérico y centrado
+                        $sheet->getStyle($col(1) . $startRow . ':' . $col($ultima) . $filaProm)->applyFromArray([
                             'alignment' => [
                                 'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
                                 'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
                             ],
-                            'numberFormat' => [
-                                // Formato entero con separador de miles, redondea visualmente a 0 decimales
-                                'formatCode' => '#,##0'
-                            ]
+                            'numberFormat' => ['formatCode' => '#,##0'],
                         ]);
 
                         $columnaInicioCampania += $anchoBloqueCampania;

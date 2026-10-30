@@ -22,11 +22,13 @@
                     'columns' => [
                         'Fecha evaluación brotes por piso',
                         'Actual brotes aptos 2° piso',
-                        'Brotes 2° piso después de N días',
+                        'Brotes 2° piso para eliminar',
                         'Actual brotes aptos 3° piso',
-                        'Brotes 3° piso después de N días',
-                        'Total actual brotes 2° + 3° piso',
-                        'Total brotes 2° + 3° piso después de N días',
+                        'Brotes 3° piso para eliminar',
+                        'Actual brotes aptos 4° piso',
+                        'Brotes 4° piso para eliminar',
+                        'Total actual brotes aptos 2° + 3° + 4° piso',
+                        'Total brotes para eliminar (informativo)',
                     ],
                 ],
 

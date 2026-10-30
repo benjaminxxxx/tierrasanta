@@ -51,6 +51,8 @@ class CampoCampania extends Model
         'brotexpiso_brotes_2piso_n_dias',
         'brotexpiso_actual_brotes_3piso',
         'brotexpiso_brotes_3piso_n_dias',
+        'brotexpiso_actual_brotes_4piso',
+        'brotexpiso_brotes_4piso_n_dias',
         'brotexpiso_actual_total_brotes_2y3piso',
         'brotexpiso_total_brotes_2y3piso_n_dias',
 

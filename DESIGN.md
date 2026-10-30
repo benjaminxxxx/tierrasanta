@@ -215,3 +215,5 @@ Definidos en `resources/css/app.css` (`:root` y `.dark`) y expuestos en `tailwin
 | Campañas (/campania/resumen): vista Lista, contadores, filtros, menú y estado de cosecha (la Tabla técnica sigue sin migrar) | 24/10/2026 |
 | Costo mensual (/costos/mensual): resumen, campañas del mes con tarjeta y cierre, costos en Handsontable, campos bloqueados, Excel (el modal "Distribuir costos" sigue sin migrar) | 26/10/2026 |
 | Panel "Tareas pendientes" (botón flotante y modal con cabecera y pie fijos, lista con scroll) | 28/10/2026 |
+| Evaluación de brotes por piso: lista con detalle por cama (sin fondos de color en el total) y columnas calculadas de la tabla de camas (el modal sigue sin migrar) | 30/10/2026 |
+| Cuadrilla: modal "Costo personalizado por cuadrillero" (jornal del grupo como ayuda, quitar personalizados) | 30/10/2026 |

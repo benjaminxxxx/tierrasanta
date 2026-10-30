@@ -156,13 +156,25 @@ class CampaniaInformeMensualFormatoReglas
                     'Plantas por metro' => 'cantidad', 'Plantas por ha' => 'numero'], $filas, self::HOJA_EVALUACIONES,
                     nota: "Plantas por ha = plantas por metro × {$metros} metros de cama por ha.");
             } else {
-                $filas = array_map(fn($c) => [$c['cama'], $c['longitud'], $c['b2_actual'], $c['b3_actual'], $c['total_ha'], $c['b2_despues'], $c['b3_despues'], $c['total_despues_ha']], $r['camas']);
-                $filas[] = ['celdas' => ['PROMEDIO', null, null, null, $r['valor'], null, null, $r['valor_n_dias'] ?? null],
-                    'estilo' => 'total', 'ancla' => $r['clave'], 'ancla_col' => 4];
-                $tablas[] = self::tabla("eval_{$r['clave']}", $titulo, ['Cama' => 'entero', 'Longitud (m)' => 'numero', '2° piso actual' => 'numero',
-                    '3° piso actual' => 'numero', 'Total actual por ha' => 'numero', '2° piso a N días' => 'numero', '3° piso a N días' => 'numero',
-                    'Total a N días por ha' => 'numero'], $filas, self::HOJA_EVALUACIONES,
-                    nota: "Por ha = brotes ÷ longitud de la cama × {$metros} metros de cama por ha (2° + 3° piso).");
+                // Columnas del 4° piso solo si la evaluación lo tiene (las anteriores a oct-2026 se ven como siempre)
+                $cuarto = collect($r['camas'])->contains(fn($c) => ($c['b4_actual'] ?? null) !== null || ($c['b4_despues'] ?? null) !== null);
+                $filas = array_map(fn($c) => $cuarto
+                    ? [$c['cama'], $c['longitud'], $c['b2_actual'], $c['b3_actual'], $c['b4_actual'], $c['total_ha'], $c['b2_despues'], $c['b3_despues'], $c['b4_despues'], $c['total_despues_ha']]
+                    : [$c['cama'], $c['longitud'], $c['b2_actual'], $c['b3_actual'], $c['total_ha'], $c['b2_despues'], $c['b3_despues'], $c['total_despues_ha']], $r['camas']);
+                $filas[] = ['celdas' => $cuarto
+                    ? ['PROMEDIO', null, null, null, null, $r['valor'], null, null, null, null]
+                    : ['PROMEDIO', null, null, null, $r['valor'], null, null, null],
+                    'estilo' => 'total', 'ancla' => $r['clave'], 'ancla_col' => $cuarto ? 5 : 4];
+                $columnas = $cuarto
+                    ? ['Cama' => 'entero', 'Longitud (m)' => 'numero', '2° piso actual' => 'numero', '3° piso actual' => 'numero', '4° piso actual' => 'numero',
+                        'Total aptos por ha' => 'numero', '2° piso para eliminar' => 'numero', '3° piso para eliminar' => 'numero', '4° piso para eliminar' => 'numero',
+                        'Total para eliminar por ha' => 'numero']
+                    : ['Cama' => 'entero', 'Longitud (m)' => 'numero', '2° piso actual' => 'numero', '3° piso actual' => 'numero',
+                        'Total aptos por ha' => 'numero', '2° piso para eliminar' => 'numero', '3° piso para eliminar' => 'numero',
+                        'Total para eliminar por ha' => 'numero'];
+                $tablas[] = self::tabla("eval_{$r['clave']}", $titulo, $columnas, $filas, self::HOJA_EVALUACIONES,
+                    nota: "Por ha = brotes ÷ longitud de la cama × {$metros} metros de cama por ha. Total aptos = 2° + 3°" . ($cuarto ? ' + 4°' : '')
+                        . ' piso. El total para eliminar es informativo (sin promedio).');
             }
         }
         return $tablas;
@@ -176,7 +188,7 @@ class CampaniaInformeMensualFormatoReglas
             'estilo' => 'normal',
             'enlaces' => isset($r['clave']) ? [2 => ['url' => self::urlEvaluacion($r), 'ancla' => $r['clave']]] : [],
         ], $ev);
-        return self::tabla('evaluaciones', 'Población de plantas y evaluación de brotes', ['Evaluación' => 'texto', 'Fecha' => 'fecha', 'Valor' => 'numero', 'Unidad' => 'texto', 'A los N días' => 'numero'], $filas);
+        return self::tabla('evaluaciones', 'Población de plantas y evaluación de brotes', ['Evaluación' => 'texto', 'Fecha' => 'fecha', 'Valor' => 'numero', 'Unidad' => 'texto', 'Para eliminar / a los N días' => 'numero'], $filas);
     }
 
     private static function infestaciones(array $res): array
@@ -371,7 +383,7 @@ class CampaniaInformeMensualFormatoReglas
         $filas = [
             $fila('PRODUCCIÓN DE PENCAS EN FUNCIÓN DEL NITRÓGENO', [], null, 'seccion'),
             $fila('Nitrógeno aplicado (kg/ha)', $i['nitrogeno_kg_ha'], $suma($i['nitrogeno_kg_ha'])),
-            $fila('Pencas (brotes aptos 2°+3° piso/ha, última evaluación de la etapa)', $i['pencas_ha']),
+            $fila('Pencas (brotes aptos 2°+3°+4° piso/ha, última evaluación de la etapa)', $i['pencas_ha']),
             $fila('Gramos de nitrógeno por penca', $i['gramos_n_por_penca']),
             $fila('Agua (m³/ha)', $i['agua_m3_ha'], $suma($i['agua_m3_ha'])),
             $fila('PRODUCCIÓN DE COCHINILLA', [], null, 'seccion'),

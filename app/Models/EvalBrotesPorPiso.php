@@ -24,6 +24,8 @@ class EvalBrotesPorPiso extends Model
         'promedio_brotes_2piso_n_dias',
         'promedio_actual_brotes_3piso',
         'promedio_brotes_3piso_n_dias',
+        'promedio_actual_brotes_4piso',
+        'promedio_brotes_4piso_n_dias',
         'promedio_actual_total_brotes_2y3piso',
         'promedio_total_brotes_2y3piso_n_dias',
     ];
@@ -79,7 +81,20 @@ class EvalBrotesPorPiso extends Model
     }
 
     // ----------------------------
-    // Totales
+    //  Promedios 4° piso (null en evaluaciones sin 4° piso)
+    // ----------------------------
+    public function getPromedioActualBrotes4pisoAttribute()
+    {
+        return $this->detalles->whereNotNull('brotes_aptos_4p_actual')->isEmpty() ? null : $this->avgOrZero($this->detalles, 'brotes_4p_actual_por_mt');
+    }
+
+    public function getPromedioBrotes4pisoNDiasAttribute()
+    {
+        return $this->detalles->whereNotNull('brotes_aptos_4p_despues_n_dias')->isEmpty() ? null : $this->avgOrZero($this->detalles, 'brotes_4p_despues_por_mt');
+    }
+
+    // ----------------------------
+    // Totales (2° + 3° + 4°; el de para eliminar es solo informativo)
     // ----------------------------
     public function getPromedioActualTotalBrotes2y3pisoAttribute()
     {

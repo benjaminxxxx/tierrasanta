@@ -172,7 +172,7 @@ class CampaniaInformeMensualConsulta
         $brotes = EvalBrotesPorPiso::with('detalles')->where('campania_id', $c->id)->where('fecha', '<=', $corte)->orderBy('fecha')->get()
             ->map(fn($e) => [
                 'id' => $e->id, 'campania_id' => $c->id, 'modelo' => 'brotes', 'clave' => "brotes-{$e->id}",
-                'tipo' => 'Brotes aptos 2° y 3° piso', 'fecha' => Carbon::parse($e->fecha)->toDateString(),
+                'tipo' => $e->detalles->whereNotNull('brotes_aptos_4p_actual')->isNotEmpty() ? 'Brotes aptos 2°, 3° y 4° piso' : 'Brotes aptos 2° y 3° piso', 'fecha' => Carbon::parse($e->fecha)->toDateString(),
                 'valor' => $e->promedio_actual_total_brotes_2y3piso, 'unidad' => 'brotes/ha',
                 'valor_n_dias' => $e->promedio_total_brotes_2y3piso_n_dias,
                 'evaluador' => $e->evaluador, 'metros_cama_ha' => (float) $e->metros_cama_ha,
@@ -180,6 +180,9 @@ class CampaniaInformeMensualConsulta
                     'cama' => $d->numero_cama, 'longitud' => (float) $d->longitud_cama,
                     'b2_actual' => (float) $d->brotes_aptos_2p_actual, 'b2_despues' => (float) $d->brotes_aptos_2p_despues_n_dias,
                     'b3_actual' => (float) $d->brotes_aptos_3p_actual, 'b3_despues' => (float) $d->brotes_aptos_3p_despues_n_dias,
+                    // 4° piso: null en evaluaciones sin 4° piso
+                    'b4_actual' => $d->brotes_aptos_4p_actual === null ? null : (float) $d->brotes_aptos_4p_actual,
+                    'b4_despues' => $d->brotes_aptos_4p_despues_n_dias === null ? null : (float) $d->brotes_aptos_4p_despues_n_dias,
                     'total_ha' => round((float) $d->total_actual_por_mt, 2), 'total_despues_ha' => round((float) $d->total_despues_por_mt, 2),
                 ])->values()->all(),
             ]);
@@ -497,7 +500,7 @@ class CampaniaInformeMensualConsulta
 
     /**
      * Índices productivos (bloque "Índices productivos de evaluación" del Excel), por etapa:
-     * - pencas: brotes aptos 2° + 3° piso por ha de la última evaluación de brotes dentro de la etapa;
+     * - pencas: brotes aptos 2° + 3° + 4° piso por ha de la última evaluación de brotes dentro de la etapa;
      * - nitrógeno: kg/ha de N aportado en la etapa (según el % de N de cada fertilizante);
      * - agua: m³/ha de riego; hormonas: giberelina y Dropp (productos de sanidad cuyo nombre los contiene);
      * - cochinilla: kg/ha vendibles cosechados, kg de N por kg y gramos por infestador.

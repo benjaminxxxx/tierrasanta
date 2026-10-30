@@ -150,8 +150,27 @@ class RptProduccionPlanificacionCampania
         // Guardamos la última fila con datos
         $filaFinDatos = $fila - 1;
 
+        // Brotes con 4° piso (oct-2026): se insertan 2 columnas antes de N y todo lo siguiente se desplaza 2 columnas.
+        // "Después de N días" siempre fue "para eliminar"; el total actual ahora es 2° + 3° + 4°.
+        $hoja->insertNewColumnBefore('N', 2);
+        $hoja->setCellValue('K6', 'BROTES 2° PISO PARA ELIMINAR');
+        $hoja->setCellValue('M6', 'BROTES 3° PISO PARA ELIMINAR');
+        $hoja->setCellValue('N6', 'ACTUAL BROTES APTOS 4° PISO');
+        $hoja->setCellValue('O6', 'BROTES 4° PISO PARA ELIMINAR');
+        $hoja->setCellValue('P6', 'TOTAL ACTUAL BROTES APTOS 2° + 3° + 4° PISO');
+        $hoja->setCellValue('Q6', 'TOTAL BROTES PARA ELIMINAR (informativo)');
+        $hoja->duplicateStyle($hoja->getStyle('M6'), 'N6:O6');
+        $hoja->getColumnDimension('N')->setWidth($hoja->getColumnDimension('M')->getWidth());
+        $hoja->getColumnDimension('O')->setWidth($hoja->getColumnDimension('M')->getWidth());
+        $filaCuarto = $filaInicioDatos;
+        foreach ($registros as $reg) {
+            $hoja->setCellValue("N{$filaCuarto}", $reg->brotexpiso_actual_brotes_4piso);
+            $hoja->setCellValue("O{$filaCuarto}", $reg->brotexpiso_brotes_4piso_n_dias);
+            $filaCuarto++;
+        }
+
         // 5️⃣ Agregar bordes a todo el rango A7:J(última fila)
-        $rango = "A{$filaInicioDatos}:CD{$filaFinDatos}";
+        $rango = "A{$filaInicioDatos}:CF{$filaFinDatos}"; // CD + las 2 columnas del 4° piso
 
         $hoja->getStyle($rango)->applyFromArray([
             'borders' => [
