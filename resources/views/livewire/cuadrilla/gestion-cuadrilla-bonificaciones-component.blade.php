@@ -23,6 +23,36 @@
         </x-flex>
     </x-flex>
 
+    {{-- Días con el cálculo antiguo de destajo (descuenta horas del jornal): solo informa, se corrigen a mano --}}
+    @if ($destajoAntiguo->isNotEmpty())
+        <div x-data="{ abierto: false }" class="rounded-[10px] border border-amber-300 bg-amber-50 text-sm text-amber-900 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300">
+            <button type="button" @click="abierto = !abierto" class="flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left">
+                <span><i class="fa fa-clock-rotate-left"></i> <b>{{ $destajoAntiguo->count() }} actividad(es)</b> con el cálculo antiguo de destajo
+                    (las horas no cobran jornal). Ábrelas y activa "Respeta el jornal" para corregirlas.</span>
+                <i class="fa" :class="abierto ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+            </button>
+            <div x-show="abierto" x-cloak class="max-h-72 overflow-y-auto border-t border-amber-300/60 dark:border-amber-400/20">
+                <table class="w-full text-[13px]">
+                    <tbody>
+                        @foreach ($destajoAntiguo as $d)
+                            <tr class="border-b border-amber-200/60 last:border-0 dark:border-amber-400/10">
+                                <td class="px-4 py-1.5 tabular-nums">{{ \Carbon\Carbon::parse($d->fecha)->format('d/m/Y') }}</td>
+                                <td class="px-2 py-1.5">Campo {{ $d->campo }}</td>
+                                <td class="px-2 py-1.5">{{ $d->codigo_labor }} · {{ $d->nombre_labor }}</td>
+                                <td class="px-2 py-1.5 text-right tabular-nums">{{ $d->trabajadores }} trab.</td>
+                                <td class="px-2 py-1.5 text-right tabular-nums">S/ {{ number_format($d->bono, 2) }}</td>
+                                <td class="px-4 py-1.5 text-right">
+                                    <button type="button" wire:click="abrirActividad('{{ \Carbon\Carbon::parse($d->fecha)->toDateString() }}', {{ $d->actividad_id }})"
+                                        class="font-medium underline hover:no-underline">Abrir</button>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
     @if ($actividadSeleccionada)
         <livewire:cuadrilla.gestion-cuadrilla-bonificaciones-detalle-component
             :actividadSeleccionada="$actividadSeleccionada" wire:key="actividad_{{ $actividadSeleccionada }}" />

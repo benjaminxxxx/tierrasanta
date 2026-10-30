@@ -173,6 +173,8 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
             'labor' => $codigoLabor,
             'total_bono' => $totalBonoCalculado,
             'bono_manual' => (bool) optional($registro->actividadesBonos->first())->bono_manual,
+            // Jornal del día para el destajo que respeta el jornal. Solo cuadrilla: planilla tiene sueldo fijo y su bono es aparte
+            'jornal_dia' => $tipo === 'CUADRILLA' ? (float) ($registro->costo_personalizado_dia ?: $registro->jornal_aplicado) : null,
         ];
 
         // Cantidades por recojo del trabajador (registro de producción de campo)
@@ -394,6 +396,9 @@ class GestionCuadrillaBonificacionesDetalleComponent extends Component
     }
     public function render()
     {
-        return view('livewire.cuadrilla.gestion-cuadrilla-bonificaciones-detalle-component');
+        // Destajo antiguo ya guardado (descuenta horas del jornal): se avisa para corregirlo a mano
+        $destajoAntiguo = $this->actividad ? \App\Models\CuadActividadBono::where('actividad_id', $this->actividad->id)
+            ->whereHas('metodo', fn($q) => $q->whereNull('estandar')->where('respeta_jornal', false))->count() : 0;
+        return view('livewire.cuadrilla.gestion-cuadrilla-bonificaciones-detalle-component', ['destajoAntiguo' => $destajoAntiguo]);
     }
 }

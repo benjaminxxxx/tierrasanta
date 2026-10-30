@@ -257,8 +257,18 @@ class GestionCuadrillaBonificacionesComponent extends Component
         }
     }
 
+    /** Desde la lista de días con destajo antiguo: abre esa fecha y esa actividad. */
+    public function abrirActividad(string $fecha, int $actividadId): void
+    {
+        $this->fecha = $fecha;
+        $this->obtenerActividades();
+        $this->actividadSeleccionada = $actividadId;
+    }
+
     public function render()
     {
-        return view('livewire.cuadrilla.gestion-cuadrilla-bonificaciones-component');
+        return view('livewire.cuadrilla.gestion-cuadrilla-bonificaciones-component', [
+            'destajoAntiguo' => \App\Services\Cuadrilla\Bono\CuadrillaBonoConsulta::diasDestajoAntiguo(),
+        ]);
     }
 }

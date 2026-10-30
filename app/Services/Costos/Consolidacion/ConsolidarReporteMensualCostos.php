@@ -191,7 +191,7 @@ class ConsolidarReporteMensualCostos
             $bonos = $rd->actividadesBonos->where('se_paga_con_jornal', true)->where('total_bono', '>', 0)->values();
             // Labores a destajo del día: bono con método sin estándar (mismo criterio que el trigger)
             $laboresDestajo = $rd->actividadesBonos
-                ->filter(fn($b) => $b->metodo_id && $b->metodo && $b->metodo->estandar === null)
+                ->filter(fn($b) => \App\Services\Cuadrilla\Bono\CuadrillaBonoReglas::descuentaJornal($b->metodo_id ? $b->metodo : null))
                 ->map(fn($b) => (string) $b->actividad?->codigo_labor)
                 ->all();
             $usados = [];

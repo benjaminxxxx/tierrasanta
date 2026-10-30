@@ -27,6 +27,8 @@ class GuardarBonificacionProceso
             // 3. Recalcular bonificaciones de empleados asignados
           
             EmpleadoServicio::guardarBonificaciones($actividad->id, $datos, $recojos, $mapaMetodos);
+            // Si solo cambió "respeta el jornal", los triggers no se disparan: recalcular horas_destajo
+            \App\Services\Cuadrilla\Bono\CuadrillaBonoProceso::recalcularHorasDestajo($actividad->id);
         });
     }
 }

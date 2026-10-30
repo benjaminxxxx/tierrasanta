@@ -20,6 +20,8 @@ class ActividadMetodoServicio
                 [
                     'titulo' => $titulo,
                     'estandar' => $datosMetodo['estandar'] ?: null,
+                    // Solo destajo: el bono es lo que supera al jornal y no se descuentan horas del jornal
+                    'respeta_jornal' => !($datosMetodo['estandar'] ?? null) && !empty($datosMetodo['respeta_jornal']),
                     'orden' => $orden + 1,
                 ]
             );
@@ -72,8 +74,10 @@ class ActividadMetodoServicio
     private static function generarTitulo(array $datosMetodo, int $indice): string
     {
         $numero = $indice + 1;
-        return $datosMetodo['estandar']
-            ? "Método x Sobreestandar #{$numero}"
-            : "Método x Jornal #{$numero}";
+        // Mismo texto que obtenerNombreMetodo() en la vista de bonificaciones
+        if ($datosMetodo['estandar'] ?? null) {
+            return "Método x Sobreestandar #{$numero}";
+        }
+        return !empty($datosMetodo['respeta_jornal']) ? "Método x Destajo con jornal #{$numero}" : "Método x Jornal #{$numero}";
     }
 }

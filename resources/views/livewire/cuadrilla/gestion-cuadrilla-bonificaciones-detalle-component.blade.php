@@ -33,7 +33,7 @@
                             x-text="obtenerNombreMetodo(metodo, index)">
                         </x-h4>
                         <x-label class="text-xs text-muted-foreground mt-1"
-                            x-text="metodo.estandar ? 'Bonificación por sobreestandar' : 'Bonificación por destajo'">
+                            x-text="metodo.estandar ? 'Bonificación por sobreestandar' : (metodo.respeta_jornal ? 'Destajo que respeta el jornal' : 'Bonificación por destajo (descuenta horas del jornal)')">
                         </x-label>
                     </div>
                     <x-button variant="danger" @click="eliminarMetodo(index)">
@@ -45,13 +45,38 @@
                 <div class="mb-6">
                     <x-flex>
                         <x-label>Estándar de producción (por 8 horas):</x-label>
-                        <x-input type="number" x-model.number="metodo.estandar" @input="actualizarNombreMetodo"
-                            step="0.1" class="!w-32" placeholder="Dejar vacío para destajo" />
+                        <x-input type="number" x-model.number="metodo.estandar" @focus="metodo._nombreAntes = obtenerNombreMetodo(metodo, index)"
+                            @input="actualizarNombreMetodo(index)" step="0.1" class="!w-32" placeholder="Dejar vacío para destajo" />
                         <x-label>{{ $unidades ?? 'KG' }}</x-label>
                         <x-label class="text-xs text-muted-foreground ml-4"
                             x-text="metodo.estandar ? '(Modo: Sobreestandar)' : '(Modo: Destajo)'">
                         </x-label>
                     </x-flex>
+                </div>
+
+                {{-- Destajo que respeta el jornal: cobra su jornal completo y el bono es solo lo que supera a ese jornal --}}
+                <div class="mb-6 rounded-[10px] border border-mist p-3" x-show="!metodo.estandar">
+                    <label class="flex cursor-pointer items-start gap-2 text-sm text-ink">
+                        <input type="checkbox" class="mt-0.5 rounded border-mist text-carmin focus:ring-carmin/25"
+                            :checked="!!metodo.respeta_jornal" @change="cambiarRespetaJornal(index, $event.target.checked)" />
+                        <span>
+                            <b>Respeta el jornal</b> <span class="text-xs font-normal text-pewter">(cuadrilla)</span>
+                            <span class="block text-xs text-pewter">
+                                No se descuentan horas del jornal. El bono es solo lo que el destajo supera al jornal de esas horas;
+                                si no lo supera, bono 0. En planilla no cambia nada: tiene sueldo fijo y su bono es el destajo completo, aparte.
+                            </span>
+                        </span>
+                    </label>
+                    <template x-if="metodo.respeta_jornal">
+                        <div class="mt-2 space-y-0.5 text-xs text-graphite">
+                            <p class="font-medium text-ink">Mínimo para tener bono (8 h):</p>
+                            <template x-for="j in minimosPorJornal(metodo)" :key="j.jornal">
+                                <p>Jornal S/ <span x-text="j.jornal.toFixed(2)"></span> → <b x-text="j.minimo === null ? 'no alcanza' : j.minimo.toFixed(2)"></b> {{ $unidades ?: 'kg' }}
+                                    (<span x-text="j.trabajadores"></span> trabajador(es))</p>
+                            </template>
+                            <p class="text-pewter">Con otras horas se ajusta: mira la columna <b>Debe sacar</b>.</p>
+                        </div>
+                    </template>
                 </div>
 
                 <!-- Tramos -->
@@ -117,6 +142,17 @@
                 automáticamente.</p>
         </x-flex>
     </x-card>
+
+    {{-- Cálculo antiguo guardado: destajo que descuenta horas del jornal. Nada automático: se corrige a mano. --}}
+    @if ($destajoAntiguo)
+        <div class="rounded-[10px] border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300">
+            <p class="font-semibold"><i class="fa fa-clock-rotate-left"></i> Este día tiene el cálculo antiguo de destajo ({{ $destajoAntiguo }} trabajador(es))</p>
+            <p class="mt-0.5">
+                Sus horas no cobran jornal y se pagan solo con el destajo. Para corregirlo, activa <b>Respeta el jornal</b> en el método
+                destajo y pulsa "Actualizar bonificaciones": cobrarán su jornal y el bono será solo lo que supere a ese jornal.
+            </p>
+        </div>
+    @endif
 
     {{-- Aviso: el estándar es por 8 h; con otra jornada cambia lo que deben sacar para tener bono --}}
     <template x-if="avisosHoras.length">
@@ -449,7 +485,7 @@
             }, {
                 // Lo que debe sacar para tener bono: estándar ÷ 8 × sus horas (solo métodos con estándar)
                 data: 'estandar_dia',
-                title: 'Debe sacar<br/>(estándar)',
+                title: 'Debe sacar<br/>(mínimo)',
                 readOnly: true,
                 className: '!text-center !bg-muted'
             });
@@ -529,13 +565,62 @@
             this.calcularBonos();
         },
 
+        // Mismo texto que ActividadMetodoServicio::generarTitulo()
         obtenerNombreMetodo(metodo, index) {
             const numeroMetodo = index + 1;
             if (metodo.estandar) {
                 return `Método x Sobreestandar #${numeroMetodo}`;
-            } else {
-                return `Método x Jornal #${numeroMetodo}`;
             }
+            return metodo.respeta_jornal ? `Método x Destajo con jornal #${numeroMetodo}` : `Método x Jornal #${numeroMetodo}`;
+        },
+
+        /** Al cambiar el nombre de un método (estándar o flag), los trabajadores asignados lo siguen teniendo. */
+        renombrarAsignados(nombreAntes, nombreNuevo) {
+            if (!nombreAntes || nombreAntes === nombreNuevo) return;
+            this.tableDataBonificados.forEach(fila => {
+                if (fila.metodo_bonificacion === nombreAntes) fila.metodo_bonificacion = nombreNuevo;
+                if (fila._metodo_backup === nombreAntes) fila._metodo_backup = nombreNuevo;
+            });
+        },
+
+        cambiarRespetaJornal(index, activo) {
+            const metodo = this.metodos[index];
+            const antes = this.obtenerNombreMetodo(metodo, index);
+            metodo.respeta_jornal = activo;
+            this.renombrarAsignados(antes, this.obtenerNombreMetodo(metodo, index));
+            this.hot.updateSettings({ columns: this.generarColumnasDinamicas() });
+            this.calcularBonos();
+        },
+
+        /** Monto del destajo para un monto dado → cantidad mínima (inversa de aplicarTramos). null = no se alcanza. */
+        cantidadParaMonto(monto, tramos) {
+            if (monto <= 0) return 0;
+            const lista = [...(tramos || [])].filter(t => t.hasta !== '' || t.monto !== '')
+                .map(t => [parseFloat(t.hasta) || 0, parseFloat(t.monto) || 0]).sort((a, b) => a[0] - b[0]);
+            let cantidad = 0, falta = monto;
+            for (const [hasta, tarifa] of lista) {
+                if (tarifa > 0 && hasta * tarifa >= falta) return cantidad + falta / tarifa;
+                cantidad += hasta;
+                falta -= hasta * tarifa;
+            }
+            const ultima = lista.length ? lista[lista.length - 1][1] : 0;
+            return ultima > 0 ? cantidad + falta / ultima : null;
+        },
+
+        /** Para la tarjeta del método: mínimo en 8 h por cada jornal de los trabajadores asignados (o de todos). */
+        minimosPorJornal(metodo) {
+            const index = this.metodos.indexOf(metodo);
+            const nombre = this.obtenerNombreMetodo(metodo, index);
+            let filas = this.tableDataBonificados.filter(f => f.tipo === 'CUADRILLA'); // solo cuadrilla: planilla tiene sueldo fijo
+            const asignadas = filas.filter(f => (f.metodo_bonificacion || f._metodo_backup) === nombre);
+            if (asignadas.length) filas = asignadas;
+            const grupos = {};
+            filas.forEach(f => {
+                const j = parseFloat(f.jornal_dia) || 0;
+                grupos[j] ??= { jornal: j, trabajadores: 0, minimo: j > 0 ? this.cantidadParaMonto(j, metodo.tramos) : null };
+                grupos[j].trabajadores++;
+            });
+            return Object.values(grupos).sort((a, b) => a.jornal - b.jornal);
         },
 
         obtenerNombresMetodos() {
@@ -546,8 +631,15 @@
             return nombres;
         },
 
-        actualizarNombreMetodo() {
-            // Se actualiza automáticamente por Alpine
+        actualizarNombreMetodo(index = null) {
+            // Si el estándar cambió el nombre (destajo ↔ sobreestándar), los asignados lo siguen teniendo
+            if (index !== null && this.metodos[index]) {
+                const metodo = this.metodos[index];
+                if (metodo.estandar) metodo.respeta_jornal = false; // el flag es solo de destajo
+                const nuevo = this.obtenerNombreMetodo(metodo, index);
+                this.renombrarAsignados(metodo._nombreAntes, nuevo);
+                metodo._nombreAntes = nuevo;
+            }
             this.hot.updateSettings({
                 columns: this.generarColumnasDinamicas()
             });
@@ -608,6 +700,12 @@
                         produccionTotal,
                         metodo
                     );
+                } else if (metodo.respeta_jornal && trabajador.tipo === 'CUADRILLA') {
+                    // Destajo que respeta el jornal: solo lo que supera al jornal de esas horas (sin jornal → 0, revisar)
+                    const jornal = parseFloat(trabajador.jornal_dia) || 0;
+                    const jornalHoras = jornal / 8 * this.convertirHorasDecimal(trabajador.rango_total_horas);
+                    const destajo = this.aplicarTramos(produccionTotal, metodo.tramos);
+                    trabajador.total_bono = jornal > 0 ? Math.max(0, destajo - jornalHoras).toFixed(2) : '0.00';
                 } else {
                     // Por destajo
                     trabajador.total_bono = this.calcularBonoPorDestajo(
@@ -632,6 +730,17 @@
                 if (fila.tipo === 'TOTAL' || fila.tipo === 'SIN BONO') return;
                 const nombre = fila.metodo_bonificacion || fila._metodo_backup;
                 const metodo = this.metodos.find((m, i) => this.obtenerNombreMetodo(m, i) === nombre);
+                if (metodo && !metodo.estandar && metodo.respeta_jornal) {
+                    // Planilla: sueldo fijo, su bono es el destajo completo (como siempre) → sin mínimo
+                    if (fila.tipo !== 'CUADRILLA') { fila.estandar_dia = ''; return; }
+                    // Kilos para igualar el jornal de sus horas; desde ahí hay bono
+                    const jornal = parseFloat(fila.jornal_dia) || 0;
+                    const minimo = jornal > 0
+                        ? this.cantidadParaMonto(jornal / 8 * this.convertirHorasDecimal(fila.rango_total_horas), metodo.tramos)
+                        : null;
+                    fila.estandar_dia = jornal <= 0 ? 'sin jornal' : (minimo === null ? '—' : minimo.toFixed(2));
+                    return;
+                }
                 if (!metodo || !(metodo.estandar > 0)) {
                     fila.estandar_dia = '';
                     return;

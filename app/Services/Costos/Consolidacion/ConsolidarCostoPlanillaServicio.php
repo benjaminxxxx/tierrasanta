@@ -413,7 +413,7 @@ class ConsolidarCostoPlanillaServicio
             }
 
             // Labor a destajo = tiene bono con método sin estándar (mismo criterio que el trigger de horas_destajo)
-            $esDestajo = $rd->actividadesBonos->contains(fn($b) => $b->metodo_id && $b->metodo && $b->metodo->estandar === null
+            $esDestajo = $rd->actividadesBonos->contains(fn($b) => \App\Services\Cuadrilla\Bono\CuadrillaBonoReglas::descuentaJornal($b->metodo_id ? $b->metodo : null)
                 && (string) $b->actividad?->codigo_labor === (string) $codigoLabor);
             $minutos = CalculoHelper::obtenerDiferenciaMinutos($detalle->hora_inicio, $detalle->hora_fin);
             $jornal = (float) ($rd->costo_personalizado_dia ?: $rd->jornal_aplicado);

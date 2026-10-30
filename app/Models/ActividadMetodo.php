@@ -13,8 +13,10 @@ class ActividadMetodo extends Model
         'actividad_id',
         'titulo',
         'estandar',
+        'respeta_jornal',
         'orden',
     ];
+    protected $casts = ['respeta_jornal' => 'boolean'];
     public function actividad(): BelongsTo
     {
         return $this->belongsTo(Actividad::class);
