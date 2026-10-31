@@ -334,7 +334,7 @@ class PlanillaOficinaExcel
 
     private function cabecera(Worksheet $h, string $titulo, string $periodo, string $ultima): void
     {
-        $h->setCellValue('A1', 'TIERRA SANTA HOLDING S.A.C.');
+        $h->setCellValue('A1', mb_strtoupper(\App\Services\Sistema\Empresa\SistemaEmpresaProceso::nombre()));
         $h->setCellValue('A2', $titulo);
         $h->setCellValue('A3', "Periodo: {$periodo} · Tipo: OFICINA");
         $h->getStyle('A1:A2')->getFont()->setBold(true)->setSize(12);

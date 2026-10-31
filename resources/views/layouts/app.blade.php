@@ -7,9 +7,9 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="shortcut icon" href="{{ asset('images/icon/favicon.png') }}" type="image/png">
+    <link rel="shortcut icon" href="{{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::logoSubido('icono') ? \App\Services\Sistema\Empresa\SistemaEmpresaProceso::logoUrl('icono') : asset('images/icon/favicon.png') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title ??  'Tierra Santa Holding S.A.C.'}}</title>
+    <title>{{ $title ?? \App\Services\Sistema\Empresa\SistemaEmpresaProceso::nombre() }}</title>
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('css/fontawesome.min.css') }}" />
     {{-- https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js --}}

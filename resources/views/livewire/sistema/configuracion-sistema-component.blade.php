@@ -14,7 +14,7 @@
         </div>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div class="sm:col-span-2">
-                <x-input wire:model="empresa.razon_social" label="Razón social" placeholder="Ej.: TIERRA SANTA HOLDING SAC" />
+                <x-input wire:model="empresa.razon_social" label="Razón social" placeholder="Ej.: EMPRESA AGRÍCOLA S.A.C." />
             </div>
             <div>
                 <x-input wire:model="empresa.ruc" label="RUC" maxlength="11" inputmode="numeric" placeholder="11 dígitos" />
@@ -25,6 +25,52 @@
         </div>
         <div class="flex justify-end">
             <x-button wire:click="guardarEmpresa" wire:loading.attr="disabled"><i class="fa fa-save"></i> Guardar datos de la empresa</x-button>
+        </div>
+        <p class="text-xs text-pewter">
+            La razón social es el nombre que se ve en el sistema (título del navegador, inicio de sesión, encabezados de planilla y Excel).
+        </p>
+    </x-card>
+
+    {{-- Logos de la empresa: se guardan en este servidor (no van con el código), así cada sistema tiene los suyos --}}
+    <x-card class="space-y-4 max-w-3xl">
+        <div>
+            <h3 class="font-semibold text-foreground">Logos de la empresa</h3>
+            <p class="text-sm text-muted-foreground">
+                Se guardan solo en este servidor: el otro sistema conserva los suyos. SVG, PNG, JPG o WEBP de hasta 1 MB.
+                Si no subes uno, se usa el logo de siempre.
+            </p>
+        </div>
+        <div class="divide-y divide-hairline rounded-[10px] border border-mist">
+            @foreach (\App\Services\Sistema\Empresa\SistemaEmpresaProceso::LOGOS as $tipo => [$nombreLogo, $defecto])
+                @php
+                    $subido = \App\Services\Sistema\Empresa\SistemaEmpresaProceso::logoSubido($tipo);
+                    $oscuro = $tipo === 'horizontal_claro';
+                @endphp
+                <div class="flex flex-wrap items-center gap-4 p-4" wire:key="logo-{{ $tipo }}">
+                    {{-- Vista previa sobre el fondo en que se usa --}}
+                    <div class="flex h-20 w-40 shrink-0 items-center justify-center rounded-[10px] border border-hairline {{ $oscuro ? 'bg-noche' : 'bg-white' }} p-2">
+                        @if (($logos[$tipo] ?? null) && method_exists($logos[$tipo], 'temporaryUrl') && $logos[$tipo]->getClientOriginalExtension() !== 'svg')
+                            <img src="{{ $logos[$tipo]->temporaryUrl() }}" alt="" class="max-h-full max-w-full object-contain" />
+                        @else
+                            <img src="{{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::logoUrl($tipo) }}" alt="" class="max-h-full max-w-full object-contain" />
+                        @endif
+                    </div>
+                    <div class="min-w-[14rem] flex-1">
+                        <p class="text-sm font-medium text-ink">{{ $nombreLogo }}</p>
+                        <p class="text-xs text-pewter">{{ $subido ? 'Logo subido en este servidor.' : 'Usando el logo de siempre.' }}</p>
+                        <input type="file" accept=".svg,.png,.jpg,.jpeg,.webp" wire:model="logos.{{ $tipo }}"
+                            class="mt-2 block w-full text-xs text-graphite file:mr-3 file:rounded-[10px] file:border file:border-mist file:bg-paper file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-ink hover:file:bg-fog" />
+                    </div>
+                    <div class="flex gap-2">
+                        @if ($subido)
+                            <x-button variant="secondary" wire:click="quitarLogo('{{ $tipo }}')" wire:confirm="¿Volver al logo de siempre?">Quitar</x-button>
+                        @endif
+                        <x-button wire:click="subirLogo('{{ $tipo }}')" wire:loading.attr="disabled" wire:target="logos.{{ $tipo }},subirLogo">
+                            <i class="fa fa-upload"></i> Subir
+                        </x-button>
+                    </div>
+                </div>
+            @endforeach
         </div>
     </x-card>
 

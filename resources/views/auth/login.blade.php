@@ -5,7 +5,7 @@
 
             {{-- Panel de marca --}}
             <div class="relative hidden lg:flex lg:w-[45%] flex-col justify-between bg-noche p-10 text-white">
-                <img src="{{ asset('images/logo/logo-horizontal.svg') }}" alt="Tierra Santa" class="h-14 w-auto self-start" />
+                <img src="{{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::logoUrl('horizontal_claro') }}" alt="{{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::nombre() }}" class="h-14 w-auto self-start" />
 
                 <div>
                     <p class="text-[32px] font-semibold leading-tight tracking-[-0.02em]">
@@ -18,15 +18,15 @@
 
                 <div class="flex items-center gap-2 text-xs text-white/50">
                     <span class="h-1.5 w-6 rounded-full bg-carmin"></span>
-                    {{ config('app.name', 'Tierra Santa') }}
+                    {{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::nombre() }}
                 </div>
             </div>
 
             {{-- Formulario --}}
             <div class="flex flex-1 items-center justify-center px-6 py-10 sm:px-10">
                 <div class="w-full max-w-sm">
-                    <img src="{{ asset('images/logo/logo-horizontal-color.svg') }}" alt="Tierra Santa" class="mb-8 h-12 w-auto lg:hidden dark:hidden" />
-                    <img src="{{ asset('images/logo/logo-horizontal.svg') }}" alt="Tierra Santa" class="mb-8 hidden h-12 w-auto dark:block lg:!hidden" />
+                    <img src="{{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::logoUrl('horizontal') }}" alt="{{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::nombre() }}" class="mb-8 h-12 w-auto lg:hidden dark:hidden" />
+                    <img src="{{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::logoUrl('horizontal_claro') }}" alt="{{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::nombre() }}" class="mb-8 hidden h-12 w-auto dark:block lg:!hidden" />
 
                     <h1 class="text-2xl font-semibold tracking-[-0.01em] text-ink">Iniciar sesión</h1>
                     <p class="mt-1 text-sm text-graphite">Ingresa con tu correo y tu clave.</p>

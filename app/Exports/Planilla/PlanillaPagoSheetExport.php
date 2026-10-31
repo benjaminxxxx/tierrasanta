@@ -237,7 +237,7 @@ class PlanillaPagoSheetExport implements FromArray, WithHeadings, WithStyles, Wi
     {
         $heading = [
             [
-                "PLANILLA ESPECIAL TIERRA SANTA HOLDING SAC  - {$this->mesCadena} {$this->anio}",
+                "PLANILLA ESPECIAL " . mb_strtoupper(\App\Services\Sistema\Empresa\SistemaEmpresaProceso::nombre()) . " - {$this->mesCadena} {$this->anio}",
             ],
             [
                 "",

@@ -179,7 +179,7 @@ class PlanillaBonosSheetExport implements FromArray, WithHeadings, WithStyles, W
     {
         $heading = [
             [
-                "PLANILLA ESPECIAL TIERRA SANTA HOLDING SAC  - {$this->mesCadena} {$this->anio} - BONOS",
+                "PLANILLA ESPECIAL " . mb_strtoupper(\App\Services\Sistema\Empresa\SistemaEmpresaProceso::nombre()) . " - {$this->mesCadena} {$this->anio} - BONOS",
             ],
             [
                 "",

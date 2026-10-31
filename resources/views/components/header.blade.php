@@ -30,7 +30,7 @@
             <!-- Hamburger Toggle BTN -->
           
             <a href="{{route('inicio')}}" class="block flex-shrink-0 lg:hidden">
-              <img src="{{asset('images/logo/logo-horizontal-color.svg')}}" class="h-12" alt="Logo" />
+              <img src="{{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::logoUrl('horizontal') }}" class="h-12" alt="{{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::nombre() }}" />
             </a>
         </div>
         <div>

@@ -71,6 +71,10 @@ use App\Livewire\Sistema\RolesPermisosFormComponent;
 | - Las URL antiguas redirigen a las nuevas (ver final del archivo).
 */
 
+// Logo de la empresa (subido en Configuración, fuera de git). Público: también se ve en el login.
+Route::get('/empresa/logo/{tipo}', fn(string $tipo) => \App\Services\Sistema\Empresa\SistemaEmpresaProceso::respuestaLogo($tipo))
+    ->whereIn('tipo', array_keys(\App\Services\Sistema\Empresa\SistemaEmpresaProceso::LOGOS))->name('empresa.logo');
+
 Route::middleware([
     'auth:sanctum',
     CheckUserStatus::class,

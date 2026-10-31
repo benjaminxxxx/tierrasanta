@@ -15,7 +15,10 @@ use Livewire\Component;
 #[Title('Configuración')]
 class ConfiguracionSistemaComponent extends Component
 {
-    use LivewireAlert, \App\Traits\HandlesAlerts;
+    use LivewireAlert, \App\Traits\HandlesAlerts, \Livewire\WithFileUploads;
+
+    /** Archivo elegido para cada logo (icono, horizontal, horizontal_claro) */
+    public array $logos = [];
 
     /** @var array<int, mixed> días de la 1ª, 2ª… evaluación */
     public array $diasBrotes = [];
@@ -56,6 +59,33 @@ class ConfiguracionSistemaComponent extends Component
                 ->guardar($this->empresa['ruc'], $this->empresa['razon_social'], $this->empresa['establecimiento']);
             $this->empresa = array_map(fn($v) => (string) $v, \App\Services\Sistema\Empresa\SistemaEmpresaProceso::datos());
             $this->alert('success', 'Datos de la empresa guardados. Los reportes y Excel nuevos ya los usan.');
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+        }
+    }
+
+    /** Sube el logo elegido para ese tipo (se guarda en el servidor, fuera de git). */
+    public function subirLogo(string $tipo): void
+    {
+        try {
+            $archivo = $this->logos[$tipo] ?? null;
+            if (!$archivo instanceof \Illuminate\Http\UploadedFile) {
+                throw new \App\Exceptions\ErrorControlado('Elige primero el archivo del logo.');
+            }
+            app(\App\Services\Sistema\Empresa\SistemaEmpresaProceso::class)->guardarLogo($tipo, $archivo);
+            unset($this->logos[$tipo]);
+            $this->alert('success', 'Logo guardado. Recarga la página para verlo en el menú.');
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+        }
+    }
+
+    public function quitarLogo(string $tipo): void
+    {
+        try {
+            app(\App\Services\Sistema\Empresa\SistemaEmpresaProceso::class)->quitarLogo($tipo);
+            unset($this->logos[$tipo]);
+            $this->alert('success', 'Se volvió al logo de siempre.');
         } catch (\Throwable $e) {
             $this->errorAlert($e);
         }

@@ -5,9 +5,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link rel="shortcut icon" href="{{asset('images/icon/favicon.png')}}" type="image/png">
+    <link rel="shortcut icon" href="{{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::logoSubido('icono') ? \App\Services\Sistema\Empresa\SistemaEmpresaProceso::logoUrl('icono') : asset('images/icon/favicon.png') }}">
 
-    <title>{{ config('app.name', 'Tierra Santa Holding S.A.C.') }}</title>
+    <title>{{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::nombre() }}</title>
 
     <!-- Fuente e íconos (los mismos del sistema; ver DESIGN.md) -->
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">

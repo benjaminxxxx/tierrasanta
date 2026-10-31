@@ -115,8 +115,8 @@
             <i class="fa fa-bars text-lg"></i>
         </button>
         <a href="{{ route('inicio') }}" class="flex items-center gap-2">
-            <img src="{{ asset('images/logo/logotipo.svg') }}" class="w-7 h-7" alt="Logo" />
-            <span class="font-semibold text-ink">THS</span>
+            <img src="{{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::logoUrl('icono') }}" class="w-7 h-7 object-contain" alt="Logo" />
+            <span class="font-semibold text-ink" title="{{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::nombre() }}">{{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::siglas() }}</span>
         </a>
     </div>
 
@@ -131,8 +131,8 @@
         <div class="px-4 h-14 flex items-center border-b border-mist">
             <div class="flex w-full items-center justify-between">
                 <a class="flex items-center gap-3" href="{{ route('inicio') }}">
-                    <img src="{{ asset('images/logo/logotipo.svg') }}" class="w-8 h-8 flex-shrink-0" alt="Logo" />
-                    <span x-show="isExpanded" class="font-semibold text-ink text-nowrap">THS</span>
+                    <img src="{{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::logoUrl('icono') }}" class="w-8 h-8 flex-shrink-0 object-contain" alt="Logo" />
+                    <span x-show="isExpanded" class="font-semibold text-ink text-nowrap" title="{{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::nombre() }}">{{ \App\Services\Sistema\Empresa\SistemaEmpresaProceso::siglas() }}</span>
                 </a>
                 <button x-show="isExpanded && !esMovil" x-on:click="togglePin" class="text-steel hover:text-ink"
                     :title="isPinned ? 'Dejar de fijar el menú' : 'Fijar el menú expandido'">

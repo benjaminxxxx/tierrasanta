@@ -45,7 +45,7 @@ class CampaniaInformeMensualExcel
     public function generar(CampaniaInformeMensual $informe): Spreadsheet
     {
         $libro = new Spreadsheet();
-        $libro->getProperties()->setCreator('Tierra Santa')->setTitle($this->titulo($informe));
+        $libro->getProperties()->setCreator(\App\Services\Sistema\Empresa\SistemaEmpresaProceso::nombre())->setTitle($this->titulo($informe));
         $this->anclas = [];
         $this->enlaces = [];
         $tablas = CampaniaInformeMensualFormatoReglas::tablas($informe->datos + ['advertencias' => $informe->advertenciasVigentes()]);

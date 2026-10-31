@@ -106,7 +106,7 @@ class SistemaLibroExcel
 
         $libro = new Spreadsheet();
         $props = $libro->getProperties();
-        $props->setTitle($reglas::TITULO)->setCreator(config('app.name'))
+        $props->setTitle($reglas::TITULO)->setCreator(\App\Services\Sistema\Empresa\SistemaEmpresaProceso::nombre())
             ->setCustomProperty(self::PROPIEDAD_LIBRO, $reglas::PREFIJO_ARCHIVO)
             ->setCustomProperty(self::PROPIEDAD_FIRMA, $this->firma($def, $hojas, $filas))
             ->setCustomProperty(self::PROPIEDAD_DESCARGA, now()->format('Y-m-d H:i:s'))

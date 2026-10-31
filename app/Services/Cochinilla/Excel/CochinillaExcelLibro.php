@@ -31,7 +31,7 @@ class CochinillaExcelLibro
     public function crear(int $anio, array $datos, array $listas): Spreadsheet
     {
         $libro = new Spreadsheet();
-        $libro->getProperties()->setTitle("Cochinilla {$anio}")->setCreator('Tierra Santa');
+        $libro->getProperties()->setTitle("Cochinilla {$anio}")->setCreator(\App\Services\Sistema\Empresa\SistemaEmpresaProceso::nombre());
         $this->ingreso($libro->getActiveSheet()->setTitle(CochinillaExcelReglas::HOJA_INGRESO), $datos['ingreso'] ?? []);
         $this->venteado($libro->createSheet()->setTitle(CochinillaExcelReglas::HOJA_VENTEADO), $datos['venteado'] ?? []);
         $this->filtrado($libro->createSheet()->setTitle(CochinillaExcelReglas::HOJA_FILTRADO), $datos['filtrado'] ?? []);
