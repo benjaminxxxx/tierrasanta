@@ -102,6 +102,37 @@ class CampaniaCoberturaConsulta
             ->all();
     }
 
+    /**
+     * Detalle de las actividades del rango, una fila por día y labor: para explicar por qué un hueco bloquea.
+     *
+     * @return array<int, array{fecha: string, codigo: ?int, labor: string, cosecha: bool, registros: int, registrado_por: string}>
+     */
+    public function detalleActividades(string $campo, string $desde, string $hasta): array
+    {
+        $cosecha = \App\Services\Campania\Cosecha\CampaniaCosechaReglas::laboresCosecha();
+
+        return Actividad::query()
+            ->leftJoin('users', 'users.id', '=', 'actividades.creado_por')
+            ->where('actividades.campo', $campo)
+            ->whereBetween('actividades.fecha', [$desde, $hasta])
+            ->orderBy('actividades.fecha')->orderBy('actividades.codigo_labor')
+            ->get(['actividades.fecha', 'actividades.codigo_labor', 'actividades.nombre_labor', 'users.name as usuario'])
+            ->groupBy(fn($a) => Carbon::parse($a->fecha)->toDateString() . '|' . $a->codigo_labor)
+            ->map(function ($g) use ($cosecha) {
+                $a = $g->first();
+                return [
+                    'fecha' => Carbon::parse($a->fecha)->toDateString(),
+                    'codigo' => $a->codigo_labor !== null ? (int) $a->codigo_labor : null,
+                    'labor' => $a->nombre_labor ?: "Labor {$a->codigo_labor}",
+                    'cosecha' => in_array((int) $a->codigo_labor, $cosecha, true),
+                    'registros' => $g->count(),
+                    'registrado_por' => $g->pluck('usuario')->filter()->unique()->implode(', ') ?: '—',
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
     private function hueco(string $campo, string $desde, string $hasta, CampoCampania $vecina): array
     {
         return [

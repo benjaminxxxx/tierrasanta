@@ -31,12 +31,12 @@ class AlmacenServicio
     {
     }
     /**
-     * Elimina múltiples salidas, revierte sus movimientos de stock y auditoría.
+     * Elimina múltiples salidas, revierte sus movimientos de stock y deja en la auditoría quién, cuándo y el motivo.
      */
-    public static function eliminarSalidasAgrupadas(array $ids): void
+    public static function eliminarSalidasAgrupadas(array $ids, ?string $motivo = null): void
     {
-        DB::transaction(function () use ($ids) {
-            $salidas = AlmacenProductoSalida::whereIn('id', $ids)->get();
+        DB::transaction(function () use ($ids, $motivo) {
+            $salidas = AlmacenProductoSalida::with('producto')->whereIn('id', $ids)->get();
 
             if ($salidas->isEmpty()) {
                 throw new Exception("No se encontraron los registros seleccionados.");
@@ -48,7 +48,8 @@ class AlmacenServicio
                     modelo: AlmacenProductoSalida::class,
                     modeloId: $salida->id,
                     accion: 'eliminar',
-                    antes: $salida->toArray(),
+                    antes: array_merge(collect($salida->getAttributes())->all(), ['producto' => $salida->producto?->nombre_comercial]),
+                    observacion: $motivo !== null ? trim($motivo) : null,
                     camposIgnorados: ['creado_por', 'editado_por', 'created_at', 'updated_at']
                 );
 

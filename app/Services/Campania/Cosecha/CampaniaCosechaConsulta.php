@@ -95,6 +95,60 @@ class CampaniaCosechaConsulta
     }
 
     /**
+     * De dónde sale la cosecha (y la fecha de cierre sugerida): ingresos de cochinilla y labores de cosecha del campo
+     * entre el primer y el último día de cosecha, con quién los registró. Sirve para detectar un registro mal digitado
+     * (p. ej. una "Poda Mama" en otro campo) que empuja la fecha sugerida.
+     *
+     * @return array<int, array{fecha: string, tipo: string, detalle: string, registrado_por: string}>
+     */
+    public function detalleCosecha(CampoCampania $campania, ?array $estado = null): array
+    {
+        $estado ??= $this->estado($campania);
+        if (!$estado['primera_cosecha']) {
+            return [];
+        }
+        $desde = $estado['primera_cosecha']->toDateString();
+        $hasta = $estado['ultima_cosecha']->toDateString();
+        $usuarios = \App\Models\User::pluck('name', 'id');
+        $filas = [];
+
+        $ingresos = CochinillaIngreso::query()
+            ->where('campo', $campania->campo)
+            ->whereBetween('fecha', [$desde, $hasta])
+            ->where(fn($q) => $q->whereNull('observacion')->orWhereNotIn('observacion', CampaniaCosechaReglas::observacionesNoCosecha()))
+            ->with('observacionRelacionada')
+            ->get(['id', 'fecha', 'total_kilos', 'observacion', 'creado_por']);
+        foreach ($ingresos as $i) {
+            $filas[] = [
+                'fecha' => Carbon::parse($i->fecha)->toDateString(),
+                'tipo' => 'Ingreso de cochinilla',
+                'detalle' => number_format((float) $i->total_kilos, 2) . ' kg'
+                    . ($i->observacion ? ' · ' . ($i->observacionRelacionada?->descripcion ?? $i->observacion) : ''),
+                'registrado_por' => $usuarios[$i->creado_por] ?? '—',
+            ];
+        }
+
+        $labores = Actividad::query()
+            ->where('campo', $campania->campo)
+            ->whereIn('codigo_labor', CampaniaCosechaReglas::laboresCosecha())
+            ->whereBetween('fecha', [$desde, $hasta])
+            ->get(['fecha', 'codigo_labor', 'nombre_labor', 'creado_por'])
+            ->groupBy(fn($a) => Carbon::parse($a->fecha)->toDateString() . '|' . $a->codigo_labor);
+        foreach ($labores as $g) {
+            $a = $g->first();
+            $filas[] = [
+                'fecha' => Carbon::parse($a->fecha)->toDateString(),
+                'tipo' => 'Labor de cosecha',
+                'detalle' => "{$a->codigo_labor} · " . ($a->nombre_labor ?: 'Labor'),
+                'registrado_por' => $g->pluck('creado_por')->map(fn($id) => $usuarios[$id] ?? null)->filter()->unique()->implode(', ') ?: '—',
+            ];
+        }
+
+        usort($filas, fn($x, $y) => [$x['fecha'], $x['tipo']] <=> [$y['fecha'], $y['tipo']]);
+        return $filas;
+    }
+
+    /**
      * Ventas hechas después del plazo de su cosecha (15 días, o 100 si la cochinilla fue para mamá).
      * La venta se relaciona con su cosecha por el ingreso de cochinilla (cochinilla_ingreso_id).
      *

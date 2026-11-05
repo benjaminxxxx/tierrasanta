@@ -3,6 +3,7 @@
 namespace App\Livewire\Campania;
 
 use App\Models\CampoCampania;
+use App\Services\Campania\Cobertura\CampaniaCoberturaConsulta;
 use App\Services\Campania\Cosecha\CampaniaCosechaConsulta;
 use App\Services\Campania\Registro\CampaniaRegistroImpactoConsulta;
 use App\Services\Campania\Registro\CampaniaRegistroProceso;
@@ -28,6 +29,15 @@ class CampaniaCerrarComponent extends Component
 
     /** Avisos del cambio (costos que se mueven, registros reasignados…). */
     public array $avisos = [];
+
+    /** De dónde sale la cosecha / fecha sugerida: [{fecha, tipo, detalle, registrado_por}]. */
+    public array $detalleCosecha = [];
+
+    /**
+     * Días con actividades que quedarían sin campaña con la fecha elegida (lo que impide cerrar):
+     * [lado, vecina, vecina_id, desde, hasta, filas: [{fecha, codigo, labor, cosecha, registros, registrado_por}], cerrar_el]
+     */
+    public ?array $bloqueo = null;
 
     protected $listeners = ['cerrarCampania'];
 
@@ -61,6 +71,7 @@ class CampaniaCerrarComponent extends Component
                 ? $estado['actividad_posterior']['labor'] . ' el ' . formatear_fecha($estado['actividad_posterior']['fecha'])
                 : null,
         ];
+        $this->detalleCosecha = app(CampaniaCosechaConsulta::class)->detalleCosecha($campania, $estado);
         $this->calcularAvisos();
         $this->mostrar = true;
     }
@@ -94,6 +105,7 @@ class CampaniaCerrarComponent extends Component
     private function calcularAvisos(): void
     {
         $this->avisos = [];
+        $this->bloqueo = null;
         if (!$this->campaniaId || !$this->fechaCierre) {
             return;
         }
@@ -106,8 +118,47 @@ class CampaniaCerrarComponent extends Component
             $this->avisos[] = 'La fecha es anterior al último día de cosecha (' . formatear_fecha($this->resumen['ultima_cosecha'])
                 . '): esos días de cosecha quedarán fuera de la campaña.';
         }
+        $this->bloqueo = $this->bloqueoPorCobertura($campania);
         $this->avisos = array_merge($this->avisos,
             app(CampaniaRegistroImpactoConsulta::class)->analizar($campania, $campania->fecha_inicio->toDateString(), $this->fechaCierre)['avisos']);
+    }
+
+    /** Abre "Corregir fechas" de la campaña siguiente (para adelantar su inicio) y cierra este modal. */
+    public function corregirSiguiente(): void
+    {
+        if ($this->bloqueo['vecina_id'] ?? null) {
+            $this->mostrar = false;
+            $this->dispatch('corregirFechasCampania', campaniaId: $this->bloqueo['vecina_id']);
+        }
+    }
+
+    /**
+     * Hueco sin campaña con actividades que dejaría la fecha elegida (misma regla que CampaniaRegistroValidador::validarCobertura),
+     * con el detalle de esas labores y la fecha de cierre que lo evita.
+     */
+    private function bloqueoPorCobertura(CampoCampania $campania): ?array
+    {
+        $cobertura = app(CampaniaCoberturaConsulta::class);
+        $huecos = $cobertura->huecos($campania->campo, $campania->fecha_inicio->toDateString(), $this->fechaCierre, $campania->id);
+        foreach (['despues', 'antes'] as $lado) {
+            $hueco = $huecos[$lado];
+            if (!$hueco || !$hueco['actividades']) {
+                continue;
+            }
+            $filas = $cobertura->detalleActividades($campania->campo, $hueco['desde'], $hueco['hasta']);
+            return [
+                'lado' => $lado,
+                'vecina' => $hueco['vecina']->nombre_campania,
+                'vecina_id' => $hueco['vecina']->id,
+                'vecina_inicio' => $hueco['vecina']->fecha_inicio->toDateString(),
+                'desde' => $hueco['desde'],
+                'hasta' => $hueco['hasta'],
+                'filas' => $filas,
+                // Cerrando el último día con actividad del hueco, ya no queda ninguno sin campaña
+                'cerrar_el' => $lado === 'despues' ? collect($filas)->max('fecha') : null,
+            ];
+        }
+        return null;
     }
 
     public function render()

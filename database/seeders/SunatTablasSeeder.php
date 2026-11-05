@@ -25,6 +25,8 @@ class SunatTablasSeeder extends Seeder
             ['05', 'TONELADAS CORTAS', 'TNC'], ['06', 'GRAMOS', 'GR'], ['07', 'UNIDADES', 'UND'], ['08', 'LITROS', 'LT'],
             ['09', 'GALONES', 'GL'], ['10', 'BARRILES', 'BL'], ['11', 'LATAS', 'LAT'], ['12', 'CAJAS', 'CAJ'], ['13', 'MILLARES', 'MIL'],
             ['14', 'METROS CÚBICOS', 'M3'], ['15', 'METROS', 'M'], ['99', 'OTROS (ESPECIFICAR)', 'OTR'],
+            // Unidades propias (no son de SUNAT): en el kardex salen como "99 - nombre" (otros, especificar)
+            ['CAM', 'CAMIÓN', 'CAMIÓN'],
         ]);
     }
 

@@ -142,7 +142,7 @@ class InsumoKardexMovimientosServicio
                 'codigo_existencia' => $insumoKardex->codigo_existencia,
                 'tipo' => $insumoKardex->producto->tabla5->codigo . ' - ' . $insumoKardex->producto->tabla5->descripcion,
                 'descripcion' => $insumoKardex->producto->nombre_comercial,
-                'codigo_unidad_medida' => $insumoKardex->producto->tabla6->codigo . ' - ' . $insumoKardex->producto->tabla6->descripcion,
+                'codigo_unidad_medida' => $insumoKardex->producto->tabla6->codigo_sunat . ' - ' . $insumoKardex->producto->tabla6->descripcion,
                 'metodo_valuacion' => 'PROMEDIO',
             ],
         ];

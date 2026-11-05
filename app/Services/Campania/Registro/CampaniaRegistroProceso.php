@@ -109,6 +109,139 @@ class CampaniaRegistroProceso
             'Cierre de campaña el ' . formatear_fecha($fechaCierre));
     }
 
+    /**
+     * Plan para corregir la fecha de inicio y/o de cierre (o reabrir). Si la campaña vecina estaba pegada (la siguiente
+     * empezaba el día después del cierre, o la anterior terminaba el día antes del inicio) o quedaría encimada, y
+     * $moverVecinas, la vecina se mueve con ella para que sigan pegadas. No guarda nada.
+     *
+     * @return array{cambios: array<int, array{campania: CampoCampania, inicio: string, fin: ?string}>, avisos: string[], vecinas: array}
+     * @throws ValidationException
+     */
+    public function planCorreccionFechas(int $campaniaId, string $inicio, ?string $fin, bool $moverVecinas = true): array
+    {
+        $campania = CampoCampania::findOrFail($campaniaId);
+        $inicio = Carbon::parse($inicio)->toDateString();
+        $fin = $fin ? Carbon::parse($fin)->toDateString() : null;
+        $viejoInicio = $campania->fecha_inicio->toDateString();
+        $viejoFin = $campania->fecha_fin?->toDateString();
+        if ($fin && $fin < $inicio) {
+            throw ValidationException::withMessages(['fecha_fin' => 'La fecha de cierre debe ser igual o posterior a la de inicio.']);
+        }
+
+        $anterior = CampoCampania::where('campo', $campania->campo)->where('id', '<>', $campania->id)
+            ->whereDate('fecha_inicio', '<', $viejoInicio)->orderByDesc('fecha_inicio')->first();
+        $siguiente = CampoCampania::where('campo', $campania->campo)->where('id', '<>', $campania->id)
+            ->whereDate('fecha_inicio', '>', $viejoInicio)->orderBy('fecha_inicio')->first();
+
+        $cambios = [$campania->id => ['campania' => $campania, 'inicio' => $inicio, 'fin' => $fin]];
+        $vecinas = [];
+
+        if ($siguiente) {
+            $sigInicio = $siguiente->fecha_inicio->toDateString();
+            if ($fin === null) {
+                throw ValidationException::withMessages(['fecha_fin' => "No se puede reabrir: después está la campaña {$siguiente->nombre_campania} "
+                    . '(desde ' . formatear_fecha($sigInicio) . '). Solo se reabre la última campaña del campo.']);
+            }
+            $pegada = $viejoFin && $sigInicio === Carbon::parse($viejoFin)->addDay()->toDateString();
+            $encima = $fin >= $sigInicio;
+            $nuevoSigInicio = Carbon::parse($fin)->addDay()->toDateString();
+            if (($pegada || $encima) && $nuevoSigInicio !== $sigInicio) {
+                if (!$moverVecinas && $encima) {
+                    throw ValidationException::withMessages(['fecha_fin' => "El cierre se cruza con {$siguiente->nombre_campania}, que empieza el " . formatear_fecha($sigInicio) . '.']);
+                }
+                if ($moverVecinas) {
+                    if ($siguiente->fecha_fin && $nuevoSigInicio > $siguiente->fecha_fin->toDateString()) {
+                        throw ValidationException::withMessages(['fecha_fin' => "El cierre deja sin días a {$siguiente->nombre_campania} (termina el " . formatear_fecha($siguiente->fecha_fin) . ').']);
+                    }
+                    $cambios[$siguiente->id] = ['campania' => $siguiente, 'inicio' => $nuevoSigInicio, 'fin' => $siguiente->fecha_fin?->toDateString()];
+                }
+                $vecinas['siguiente'] = ['nombre' => $siguiente->nombre_campania, 'antes' => $sigInicio, 'despues' => $nuevoSigInicio, 'se_mueve' => $moverVecinas];
+            }
+        }
+
+        if ($anterior && $anterior->fecha_fin) {
+            $antFin = $anterior->fecha_fin->toDateString();
+            $pegada = $antFin === Carbon::parse($viejoInicio)->subDay()->toDateString();
+            $encima = $inicio <= $antFin;
+            $nuevoAntFin = Carbon::parse($inicio)->subDay()->toDateString();
+            if (($pegada || $encima) && $nuevoAntFin !== $antFin) {
+                if (!$moverVecinas && $encima) {
+                    throw ValidationException::withMessages(['fecha_inicio' => "El inicio se cruza con {$anterior->nombre_campania}, que termina el " . formatear_fecha($antFin) . '.']);
+                }
+                if ($moverVecinas) {
+                    if ($nuevoAntFin < $anterior->fecha_inicio->toDateString()) {
+                        throw ValidationException::withMessages(['fecha_inicio' => "El inicio deja sin días a {$anterior->nombre_campania} (empieza el " . formatear_fecha($anterior->fecha_inicio) . ').']);
+                    }
+                    $cambios[$anterior->id] = ['campania' => $anterior, 'inicio' => $anterior->fecha_inicio->toDateString(), 'fin' => $nuevoAntFin];
+                }
+                $vecinas['anterior'] = ['nombre' => $anterior->nombre_campania, 'antes' => $antFin, 'despues' => $nuevoAntFin, 'se_mueve' => $moverVecinas];
+            }
+        }
+
+        // Validación del estado final: cada una contra las demás (las que también cambian se comparan con su rango nuevo)
+        $ids = array_keys($cambios);
+        foreach ($cambios as $id => $c) {
+            $this->validador->validar(['campo' => $c['campania']->campo, 'nombre_campania' => $c['campania']->nombre_campania,
+                'fecha_inicio' => $c['inicio'], 'fecha_fin' => $c['fin']], $id, $ids);
+            foreach ($cambios as $otroId => $o) {
+                if ($otroId !== $id && $c['inicio'] <= ($o['fin'] ?? '9999-12-31') && ($c['fin'] ?? '9999-12-31') >= $o['inicio']) {
+                    throw ValidationException::withMessages(['fecha_inicio' => "{$c['campania']->nombre_campania} y {$o['campania']->nombre_campania} quedarían encimadas."]);
+                }
+            }
+        }
+
+        $avisos = [];
+        foreach ($cambios as $c) {
+            foreach ($this->impacto->analizar($c['campania'], $c['inicio'], $c['fin'])['avisos'] as $a) {
+                $avisos[] = (count($cambios) > 1 ? "{$c['campania']->nombre_campania}: " : '') . $a;
+            }
+        }
+        $sinCambio = $inicio === $viejoInicio && $fin === $viejoFin;
+        return ['cambios' => $cambios, 'avisos' => $avisos, 'vecinas' => $vecinas, 'sin_cambio' => $sinCambio];
+    }
+
+    /**
+     * Corrige la fecha de inicio y/o de cierre (o reabre) con motivo; mueve la vecina pegada si corresponde.
+     * Todo en una transacción: si queda algún día con actividades sin campaña, no se guarda nada.
+     *
+     * @throws ValidationException
+     */
+    public function corregirFechas(int $campaniaId, string $inicio, ?string $fin, string $motivo, bool $moverVecinas = true): array
+    {
+        if (trim($motivo) === '') {
+            throw ValidationException::withMessages(['motivo' => 'Indica el motivo de la corrección.']);
+        }
+        $plan = $this->planCorreccionFechas($campaniaId, $inicio, $fin, $moverVecinas);
+        if ($plan['sin_cambio']) {
+            return $plan;
+        }
+        $tramos = [];
+        foreach ($plan['cambios'] as $c) {
+            $a = $this->impacto->analizar($c['campania'], $c['inicio'], $c['fin']);
+            $tramos = array_merge($tramos, $a['salen'], $a['entran']);
+        }
+
+        DB::transaction(function () use ($plan, $motivo, $tramos) {
+            // Primero las que se achican (para no encimarse), luego las que crecen
+            $orden = collect($plan['cambios'])->sortBy(fn($c) => ($c['fin'] !== null && $c['campania']->fecha_fin && $c['fin'] < $c['campania']->fecha_fin->toDateString())
+                || $c['inicio'] > $c['campania']->fecha_inicio->toDateString() ? 0 : 1);
+            foreach ($orden as $c) {
+                $campania = $c['campania'];
+                $antes = formatear_fecha($campania->fecha_inicio) . ' – ' . ($campania->fecha_fin ? formatear_fecha($campania->fecha_fin) : 'abierta');
+                $despues = formatear_fecha($c['inicio']) . ' – ' . ($c['fin'] ? formatear_fecha($c['fin']) : 'abierta');
+                $this->crud->actualizar($campania, ['fecha_inicio' => $c['inicio'], 'fecha_fin' => $c['fin']],
+                    "Corrección de fechas: {$antes} → {$despues}. Motivo: " . trim($motivo));
+            }
+            // Ningún día con actividades sin campaña (ya con las fechas nuevas)
+            foreach ($plan['cambios'] as $id => $c) {
+                $this->validador->validarCobertura($c['campania']->campo, $c['inicio'], $c['fin'], $id);
+            }
+            $primera = collect($plan['cambios'])->first()['campania'];
+            $this->regenerar($primera, $tramos);
+        });
+        return $plan;
+    }
+
     public function eliminar(int $campaniaId): void
     {
         $campania = CampoCampania::findOrFail($campaniaId);

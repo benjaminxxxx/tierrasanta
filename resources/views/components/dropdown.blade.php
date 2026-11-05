@@ -21,6 +21,7 @@ switch ($align) {
 // Se modificó esta sección para que sea responsiva
 $widthClasses = match ($width) {
     '60' => 'w-full sm:w-60', // Ancho completo en móvil, w-60 en pantallas sm y superiores
+    '72' => 'w-full sm:w-72',
     'full' => 'w-full',      // Siempre ancho completo
     default => 'w-full sm:w-60', // Ancho completo en móvil, w-48 en pantallas sm y superiores
 };

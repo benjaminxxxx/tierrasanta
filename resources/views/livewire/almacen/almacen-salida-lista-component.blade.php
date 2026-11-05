@@ -77,6 +77,9 @@
                             — {{ $entrada['usuario_nombre'] ?? 'Sistema' }}
                         </span>
                     </div>
+                    @if (!empty($entrada['observacion']))
+                        <p class="mt-1 text-xs text-graphite">Motivo: {{ $entrada['observacion'] }}</p>
+                    @endif
                     @if(!empty($entrada['cambios']) && $entrada['accion'] === 'editar')
                         <table class="mt-2 w-full text-xs text-gray-700">
                             <thead>
@@ -243,13 +246,18 @@
                                     return;
                                 }
 
-                                const mensaje = idsAEliminar.length === 1
-                                    ? '¿Eliminar la salida seleccionada?'
-                                    : `¿Eliminar las ${idsAEliminar.length} salidas seleccionadas?`;
+                                const mensaje = (idsAEliminar.length === 1
+                                    ? 'Vas a eliminar la salida seleccionada.'
+                                    : `Vas a eliminar ${idsAEliminar.length} salidas.`)
+                                    + '\nEl stock se devuelve al almacén y queda en la auditoría quién la eliminó.\n\nMotivo de la eliminación:';
 
-                                if (confirm(mensaje)) {
-                                    $wire.eliminarSalidas(idsAEliminar);
+                                const motivo = prompt(mensaje);
+                                if (motivo === null) return;
+                                if (motivo.trim().length < 5) {
+                                    alert('Escribe el motivo (mínimo 5 letras). No se eliminó nada.');
+                                    return;
                                 }
+                                $wire.eliminarSalidas(idsAEliminar, motivo.trim());
                             }
                         }
                     },

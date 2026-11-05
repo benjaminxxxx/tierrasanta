@@ -189,47 +189,7 @@
                                     {{ $campaniasGenerales->firstItem() + $loop->index }}
                                 </x-td>
                                 <x-td class="text-center">
-                                    @can(\App\Constants\Permisos::CAMPAÑA_GESTIONAR)
-                                        <x-dropdown align="left">
-                                            <x-slot name="trigger">
-                                                <x-button type="button" size="sm">
-                                                    Opciones <i class="fa fa-chevron-down"></i>
-                                                </x-button>
-                                            </x-slot>
-
-                                            <x-slot name="content">
-                                                <x-dropdown-link href="{{ route('campania.por_campo', ['campania' => $campania->id]) }}">
-                                                    Gestionar detalle
-                                                </x-dropdown-link>
-                                                <x-dropdown-link class="cursor-pointer"
-                                                    @click="$wire.dispatch('verHistoriaCampania', {campaniaId: {{ $campania->id }}})">
-                                                    Historia de la campaña
-                                                </x-dropdown-link>
-                                                <x-dropdown-link class="cursor-pointer"
-                                                    @click="$wire.dispatch('editarCampania', {campaniaId: {{ $campania->id }}})">
-                                                    Editar campaña
-                                                </x-dropdown-link>
-                                                @if ($c && $c['recomendar_cierre'])
-                                                    <x-dropdown-link class="cursor-pointer !text-red-600"
-                                                        @click="$wire.dispatch('cerrarCampania', {campaniaId: {{ $campania->id }}, fecha: '{{ $c['fecha_cierre_sugerida']->toDateString() }}'})">
-                                                        Cerrar campaña ({{ formatear_fecha($c['fecha_cierre_sugerida']) }})
-                                                    </x-dropdown-link>
-                                                @elseif (!$campania->fecha_fin)
-                                                    <x-dropdown-link class="cursor-pointer"
-                                                        @click="$wire.dispatch('cerrarCampania', {campaniaId: {{ $campania->id }}})">
-                                                        Cerrar campaña
-                                                    </x-dropdown-link>
-                                                @endif
-                                                <x-dropdown-link class="cursor-pointer !text-red-600"
-                                                    wire:confirm="¿Estás seguro de eliminar esta campaña?"
-                                                    wire:click="eliminarCampania({{ $campania->id }})">
-                                                    Eliminar campaña
-                                                </x-dropdown-link>
-                                            </x-slot>
-                                        </x-dropdown>
-                                    @else
-                                        -
-                                    @endcan
+                                    <x-campania.opciones :campania="$campania" :cosecha="$c" trigger="boton" align="left" />
                                 </x-td>
                                 <x-td class="text-center font-semibold">{{ $campania->nombre_campania }}</x-td>
                                 <x-td class="text-center">{{ $campania->campo }}</x-td>

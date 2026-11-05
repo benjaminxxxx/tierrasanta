@@ -181,45 +181,13 @@
                                     <i class="fa fa-calendar-days text-steel"></i> Mensuales
                                 </a>
                             @endif
-                            <x-dropdown align="right" width="60">
-                                <x-slot name="trigger">
-                                    <button type="button" class="{{ $btnChico }} !px-2" title="Más acciones"><i class="fa fa-ellipsis-vertical text-steel"></i></button>
-                                </x-slot>
-                                <x-slot name="content">
-                                    <x-dropdown-link href="{{ route('campania.por_campo', ['campania' => $campania->id]) }}">
-                                        <i class="fa fa-folder-open w-4 text-steel"></i> Detalle de la campaña
-                                    </x-dropdown-link>
-                                    <x-dropdown-link class="cursor-pointer" @click="$wire.dispatch('verHistoriaCampania', {campaniaId: {{ $campania->id }}})">
-                                        <i class="fa fa-book-open w-4 text-steel"></i> Historia de la campaña
-                                    </x-dropdown-link>
-                                    @if ($puedeInforme)
-                                        <x-dropdown-link class="cursor-pointer" wire:click="descargarInforme({{ $campania->id }})">
-                                            <i class="fa fa-file-excel w-4 text-steel"></i> Excel del {{ $cerrada ? 'informe final' : 'informe actual' }}
-                                        </x-dropdown-link>
-                                    @endif
-                                    @if ($puedeGestionar)
-                                        <div class="my-1 border-t border-hairline"></div>
-                                        <x-dropdown-link class="cursor-pointer" @click="$wire.dispatch('editarCampania', {campaniaId: {{ $campania->id }}})">
-                                            <i class="fa fa-pen w-4 text-steel"></i> Editar campaña
-                                        </x-dropdown-link>
-                                        @if ($c && $c['recomendar_cierre'])
-                                            <x-dropdown-link class="cursor-pointer !text-red-700 dark:!text-red-400"
-                                                @click="$wire.dispatch('cerrarCampania', {campaniaId: {{ $campania->id }}, fecha: '{{ $c['fecha_cierre_sugerida']->toDateString() }}'})">
-                                                <i class="fa fa-flag-checkered w-4"></i> Cerrar campaña ({{ formatear_fecha($c['fecha_cierre_sugerida']) }})
-                                            </x-dropdown-link>
-                                        @elseif (!$cerrada)
-                                            <x-dropdown-link class="cursor-pointer" @click="$wire.dispatch('cerrarCampania', {campaniaId: {{ $campania->id }}})">
-                                                <i class="fa fa-flag-checkered w-4 text-steel"></i> Cerrar campaña
-                                            </x-dropdown-link>
-                                        @endif
-                                        <x-dropdown-link class="cursor-pointer !text-red-700 dark:!text-red-400"
-                                            wire:confirm="¿Eliminar la campaña {{ $campania->nombre_campania }} del campo {{ $campania->campo }}?"
-                                            wire:click="eliminarCampania({{ $campania->id }})">
-                                            <i class="fa fa-trash w-4"></i> Eliminar campaña
-                                        </x-dropdown-link>
-                                    @endif
-                                </x-slot>
-                            </x-dropdown>
+                            <x-campania.opciones :campania="$campania" :cosecha="$c">
+                                @if ($puedeInforme)
+                                    <button type="button" class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-ink hover:bg-fog" wire:click="descargarInforme({{ $campania->id }})">
+                                        <i class="fa fa-file-excel w-4 text-center text-steel"></i> Excel del {{ $cerrada ? 'informe final' : 'informe actual' }}
+                                    </button>
+                                @endif
+                            </x-campania.opciones>
                         </div>
                     </div>
                 @empty
@@ -270,6 +238,7 @@
     {{-- Modales de campaña: se montan solo en las páginas que los usan --}}
     <livewire:campania.campania-ficha-component />
     <livewire:campania.campania-cerrar-component />
+    <livewire:campania.campania-corregir-fechas-component />
     <livewire:campania.campania-historia-component />
 </div>
 @script

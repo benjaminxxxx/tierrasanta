@@ -14,7 +14,7 @@
                 subtotal: $wire.entangle('subtotal'),
                 igvTotal: $wire.entangle('igvTotal'),
                 total: $wire.entangle('total')
-            })" class="grid gap-6 md:grid-cols-[360px_1fr]">
+            })" class="grid gap-6 md:grid-cols-[360px_minmax(0,1fr)]">
 
                 {{-- ===== Columna izquierda: Datos de la compra ===== --}}
                 <div class="space-y-4">
@@ -124,7 +124,7 @@
                 </div>
 
                 {{-- ===== Columna derecha: Productos y Totales ===== --}}
-                <div class="space-y-4">
+                <div class="min-w-0 space-y-4">
                     <div class="space-y-4">
                         <div>
                             <x-label for="productoSeleccionadoId" value="Buscar y agregar producto" />
@@ -135,7 +135,7 @@
 
                         <div>
                             {{-- Detalle en Handsontable (wire:ignore: Livewire no debe tocar la tabla). Eliminar: clic derecho. --}}
-                            <div wire:ignore>
+                            <div wire:ignore class="w-full">
                                 <div x-ref="tablaDetalle" class="w-full"></div>
                             </div>
                             <p x-show="detalles.length === 0" class="text-center py-3 text-muted-foreground italic text-sm">

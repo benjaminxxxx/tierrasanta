@@ -2,10 +2,12 @@
 
 namespace App\Livewire\Almacen;
 
+use App\Constants\Permisos;
 use App\Models\Compra;
-use App\Services\Almacen\StockService;
+use App\Services\Almacen\Compra\AlmacenCompraConsulta;
+use App\Services\Almacen\Compra\AlmacenCompraProceso;
 use App\Traits\HandlesAlerts;
-use DB;
+use Illuminate\Validation\ValidationException;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
@@ -14,6 +16,12 @@ use Livewire\Component;
 use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
 
+/**
+ * Lista de compras (DESIGN.md). Dos vistas:
+ * - Compras: cada comprobante con sus productos y cantidades;
+ * - Por producto: las líneas de los productos buscados (en qué compras, cuánto y a qué costo) con totales.
+ * Eliminar y restaurar piden motivo y quedan en la auditoría (AlmacenCompraProceso).
+ */
 #[Title('Compras')]
 class ListaComprasComponent extends Component
 {
@@ -21,6 +29,9 @@ class ListaComprasComponent extends Component
 
     #[Url]
     public string $search = '';
+
+    #[Url]
+    public string $producto = '';
 
     #[Url]
     public string $tipoComprobante = '';
@@ -31,6 +42,9 @@ class ListaComprasComponent extends Component
     #[Url]
     public string $fechaHasta = '';
 
+    #[Url]
+    public string $vista = 'compras';
+
     public ?int $proveedorId = null;
     public ?string $proveedorLabel = null;
 
@@ -38,7 +52,27 @@ class ListaComprasComponent extends Component
     public string $sortDirection = 'desc';
     public bool $verEliminadas = false;
 
+    /** Modal eliminar / restaurar: compra, acción y motivo. */
+    public bool $modalMotivo = false;
+    public string $accionMotivo = 'eliminar';
+    public ?int $compraMotivoId = null;
+    public string $motivo = '';
+
+    /** Modal historial de una compra. */
+    public bool $modalHistorial = false;
+    public array $historial = [];
+    public string $historialTitulo = '';
+
     protected $listeners = ['nuevaCompraActualizada' => '$refresh', 'nuevaCompraRegistrada'];
+
+    /** /compras/{producto_id}: abre la vista "Por producto" de ese producto. */
+    public function mount($producto_id = null): void
+    {
+        if ($producto_id && ($nombre = \App\Models\Producto::withTrashed()->whereKey($producto_id)->value('nombre_comercial'))) {
+            $this->producto = $nombre;
+            $this->vista = 'producto';
+        }
+    }
 
     #[On('entity-selected')]
     public function handleEntitySelected(string $context, int $id, string $label): void
@@ -59,11 +93,20 @@ class ListaComprasComponent extends Component
             $this->resetPage();
         }
     }
-    public function nuevaCompraRegistrada()
+
+    public function nuevaCompraRegistrada(): void
     {
         $this->resetPage();
     }
-    public function sortBy($field)
+
+    public function updated($propiedad): void
+    {
+        if (in_array($propiedad, ['search', 'producto', 'tipoComprobante', 'fechaDesde', 'fechaHasta', 'verEliminadas', 'vista'], true)) {
+            $this->resetPage();
+        }
+    }
+
+    public function sortBy($field): void
     {
         if ($this->sortField === $field) {
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
@@ -72,67 +115,85 @@ class ListaComprasComponent extends Component
             $this->sortDirection = 'asc';
         }
     }
+
     public function clearFilters(): void
     {
-        $this->reset('search', 'tipoComprobante', 'fechaDesde', 'fechaHasta', 'proveedorId', 'proveedorLabel');
+        $this->reset('search', 'producto', 'tipoComprobante', 'fechaDesde', 'fechaHasta', 'proveedorId', 'proveedorLabel');
         $this->resetPage();
     }
 
-    public function getComprasProperty()
+    /** Desde un producto de la lista: ver todas sus compras. */
+    public function verProducto(string $nombre): void
     {
-        return Compra::query()
-            ->with(['proveedor.persona', 'almacen'])
-            ->when($this->verEliminadas, fn($q) => $q->onlyTrashed())
-            ->when($this->search, function ($q) {
-                $q->where(function ($sub) {
-                    $sub->where('numero', 'like', "%{$this->search}%")
-                        ->orWhere('serie', 'like', "%{$this->search}%")
-                        ->orWhereHas('proveedor.persona', fn($p) => $p->where('razon_social', 'like', "%{$this->search}%")
-                            ->orWhere('nombres', 'like', "%{$this->search}%"));
-                });
-            })
-            ->when($this->tipoComprobante, fn($q) => $q->where('tipo_comprobante_codigo', $this->tipoComprobante))
-            ->when($this->proveedorId, fn($q) => $q->where('proveedor_id', $this->proveedorId))
-            ->when($this->fechaDesde, fn($q) => $q->whereDate('fecha_emision', '>=', $this->fechaDesde))
-            ->when($this->fechaHasta, fn($q) => $q->whereDate('fecha_emision', '<=', $this->fechaHasta))
-            ->orderBy($this->sortField, $this->sortDirection)
-            ->paginate(10);
+        $this->producto = $nombre;
+        $this->vista = 'producto';
+        $this->resetPage();
     }
 
-    public function deletePurchase(int $purchaseId): void
+    private function filtros(): array
     {
-        try {
-            // Revierte el movimiento de cada línea y aplica soft delete.
-            // Si el kardex del periodo está cerrado, lanza RuntimeException.
-            app(\App\Services\Almacen\CompraService::class)->eliminar(Compra::findOrFail($purchaseId));
+        return [
+            'buscar' => $this->search,
+            'producto' => $this->producto,
+            'tipoComprobante' => $this->tipoComprobante,
+            'proveedorId' => $this->proveedorId,
+            'fechaDesde' => $this->fechaDesde,
+            'fechaHasta' => $this->fechaHasta,
+        ];
+    }
 
-            $this->alert('success', 'Compra eliminada correctamente y stock descontado del almacén.');
-        } catch (\RuntimeException $e) {
-            // Excepción de control (ej. si el movimiento ya fue registrado en el Kardex)
-            $this->alert('warning', $e->getMessage());
-        } catch (\Throwable $th) {
-            $this->errorAlert($th);
+    // ── Eliminar / restaurar con motivo ─────────────────────────
+
+    public function pedirMotivo(int $compraId, string $accion): void
+    {
+        $this->resetErrorBag();
+        $this->compraMotivoId = $compraId;
+        $this->accionMotivo = $accion === 'restaurar' ? 'restaurar' : 'eliminar';
+        $this->motivo = '';
+        $this->modalMotivo = true;
+    }
+
+    public function confirmarMotivo(): void
+    {
+        abort_unless(auth()->user()?->can(Permisos::INSUMO_COMPRA_GESTIONAR), 403, 'No tienes permiso para gestionar compras.');
+        try {
+            $proceso = app(AlmacenCompraProceso::class);
+            if ($this->accionMotivo === 'restaurar') {
+                $proceso->restaurar($this->compraMotivoId, $this->motivo);
+                $this->alert('success', 'Compra restaurada y stock reingresado.');
+            } else {
+                $proceso->eliminar($this->compraMotivoId, $this->motivo);
+                $this->alert('success', 'Compra eliminada y stock descontado. Puedes verla en "Ver eliminadas".');
+            }
+            $this->modalMotivo = false;
+        } catch (ValidationException $e) {
+            $this->addError('motivo', $e->validator->errors()->first('motivo'));
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
         }
     }
 
-    public function restorePurchase(int $purchaseId): void
+    public function verHistorial(int $compraId): void
     {
-        try {
-            // Restaura y vuelve a registrar el movimiento de cada línea (bloquea si el kardex está cerrado)
-            app(\App\Services\Almacen\CompraService::class)->restaurar(Compra::onlyTrashed()->findOrFail($purchaseId));
-
-            $this->alert('success', 'Compra restaurada correctamente y stock reingresado.');
-        } catch (\Throwable $th) {
-            $this->errorAlert($th);
-        }
+        $compra = Compra::withTrashed()->find($compraId);
+        $this->historialTitulo = $compra ? trim(($compra->serie ? $compra->serie . '-' : '') . $compra->numero) : "#{$compraId}";
+        $this->historial = app(AlmacenCompraConsulta::class)->historial($compraId);
+        $this->modalHistorial = true;
     }
-
-    // Exportar / importar Excel: AlmacenCompraExcelComponent (el antiguo exportToExcel usaba un servicio que no existía)
 
     public function render()
     {
-        return view('livewire.almacen.lista-compras-component', [
-            'compras' => $this->compras,
-        ]);
+        $consulta = app(AlmacenCompraConsulta::class);
+        $porProducto = $this->vista === 'producto' && trim($this->producto) !== '';
+
+        $compras = $porProducto ? null : $consulta->lista($this->filtros(), $this->verEliminadas, $this->sortField, $this->sortDirection);
+        $detalle = $porProducto ? $consulta->lineasDeProducto($this->filtros(), $this->verEliminadas) : null;
+        $eliminaciones = $this->verEliminadas && $compras ? $consulta->eliminaciones($compras->pluck('id')->all()) : [];
+
+        $compraMotivo = $this->modalMotivo && $this->compraMotivoId
+            ? Compra::withTrashed()->with(['proveedor.persona', 'detalles.producto'])->find($this->compraMotivoId)
+            : null;
+
+        return view('livewire.almacen.lista-compras-component', compact('compras', 'detalle', 'eliminaciones', 'compraMotivo', 'porProducto'));
     }
 }

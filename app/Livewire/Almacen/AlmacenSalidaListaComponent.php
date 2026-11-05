@@ -116,14 +116,19 @@ class AlmacenSalidaListaComponent extends Component
         $this->auditoriaHistorialSalida = AuditoriaServicio::getAuditoria(AlmacenProductoSalida::class, $id);
         $this->modalAuditoriaSalida = true;
     }
-    public function eliminarSalidas(array $ids): void
+    /** Elimina las salidas con motivo obligatorio (queda en la auditoría con quién y cuándo). */
+    public function eliminarSalidas(array $ids, ?string $motivo = null): void
     {
         try {
-            AlmacenServicio::eliminarSalidasAgrupadas($ids);
+            if (mb_strlen(trim((string) $motivo)) < 5) {
+                $this->errorAlert('Escribe el motivo de la eliminación (mínimo 5 letras): queda en la auditoría.');
+                return;
+            }
+            AlmacenServicio::eliminarSalidasAgrupadas($ids, $motivo);
             $this->alert('success', count($ids) === 1 ? 'Salida eliminada.' : 'Salidas eliminadas correctamente.');
             $this->notificarTabla();
-        } catch (\Exception $e) {
-            $this->errorAlert('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
         }
     }
 

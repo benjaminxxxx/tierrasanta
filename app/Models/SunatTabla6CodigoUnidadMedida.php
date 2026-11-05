@@ -17,4 +17,10 @@ class SunatTabla6CodigoUnidadMedida extends Model
     ];
 
     public $timestamps = false;
+
+    /** Código para el kardex: las unidades propias (no numéricas, p. ej. CAM = camión) van como 99 (otros, especificar). */
+    public function getCodigoSunatAttribute(): string
+    {
+        return ctype_digit((string) $this->codigo) ? $this->codigo : '99';
+    }
 }

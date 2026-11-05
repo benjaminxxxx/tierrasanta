@@ -20,5 +20,6 @@
     <livewire:costos.costos-mensuales-distribucion-form-component />
     {{-- Modal "Cerrar campaña" (lo abre la tarjeta de cada campaña) --}}
     <livewire:campania.campania-cerrar-component />
+    <livewire:campania.campania-corregir-fechas-component />
     <x-loading wire:loading />
 </div>

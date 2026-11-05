@@ -227,7 +227,7 @@ class KardexReporteServicio
                 'codigo_existencia' => $kardex->codigo_existencia,
                 'nombre_producto' => $producto->nombre_completo,
                 'condicion' => $kardex->estado,
-                'unidad_medida' => $producto->tabla6 ? "{$producto->tabla6->codigo} - {$producto->tabla6->alias}" : null,
+                'unidad_medida' => $producto->tabla6 ? "{$producto->tabla6->codigo_sunat} - {$producto->tabla6->alias}" : null,
                 'total_entradas_unidades' => $entradasUnidades,
                 'total_entradas_importe' => $entradasImporte,
                 'total_salidas_unidades' => $salidasUnidades,

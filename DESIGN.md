@@ -217,3 +217,6 @@ Definidos en `resources/css/app.css` (`:root` y `.dark`) y expuestos en `tailwin
 | Panel "Tareas pendientes" (botón flotante y modal con cabecera y pie fijos, lista con scroll) | 28/10/2026 |
 | Evaluación de brotes por piso: lista con detalle por cama (sin fondos de color en el total) y columnas calculadas de la tabla de camas (el modal sigue sin migrar) | 30/10/2026 |
 | Cuadrilla: modal "Costo personalizado por cuadrillero" (jornal del grupo como ayuda, quitar personalizados) | 30/10/2026 |
+| Compras (lista): vista Compras con productos por comprobante, vista "Por producto", modales de eliminar/restaurar con motivo e historial (el formulario de compra sigue sin migrar) | 05/11/2026 |
+| Campañas: menú de opciones común `x-campania.opciones` (Lista, Tabla técnica y Campañas por campo) | 05/11/2026 |
+| Campañas: modal "Cerrar campaña" (registros que forman la cosecha, labores que impiden cerrar y qué hacer) | 05/11/2026 |
