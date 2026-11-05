@@ -287,16 +287,19 @@ class AlmacenServicio
                     );
                 }
 
+                // El grid manda '' en las celdas vacías: en columnas numéricas debe ser null (MySQL estricto rechaza '').
+                $nulo = fn($v) => ($v === '' || $v === null) ? null : $v;
+
                 $datos = [
                     'fecha_reporte' => $fila['fecha_reporte'],
                     'producto_id' => $fila['producto_id'],
                     'cantidad' => $fila['cantidad'],
                     'campo_nombre' => $esCombustible ? '' : ($fila['campo_nombre'] ?? ''),
-                    'maquinaria_id' => $esCombustible ? ($fila['maquinaria_id'] ?? null) : null,
-                    'uso_id' => $esCombustible ? null : ($fila['uso_id'] ?? null),
-                    'costo_por_kg' => $fila['costo_por_kg'] ?? null,
-                    'total_costo' => $fila['total_costo'] ?? null,
-                    'indice' => $fila['indice'] ?? null,
+                    'maquinaria_id' => $esCombustible ? $nulo($fila['maquinaria_id'] ?? null) : null,
+                    'uso_id' => $esCombustible ? null : $nulo($fila['uso_id'] ?? null),
+                    'costo_por_kg' => $nulo($fila['costo_por_kg'] ?? null),
+                    'total_costo' => $nulo($fila['total_costo'] ?? null),
+                    'indice' => $nulo($fila['indice'] ?? null),
                     'tipo_kardex' => $fila['tipo_kardex'],
                 ];
 

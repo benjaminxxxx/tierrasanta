@@ -10,16 +10,35 @@ use Illuminate\Support\Carbon;
 class DistribucionCombustibleServicio
 {
     /**
-     * Fecha de una fila de la tabla en Y-m-d. Acepta 2026-10-24, 24/10/2026, 24-10-2026…; un texto que no es fecha
-     * completa (p. ej. "24-Feb" pegado de Excel) se rechaza con el número de fila, en vez de fallar al guardar.
+     * Fecha de una fila de la tabla en Y-m-d. Acepta 2026-10-24, 24/10/2026, 24-oct-2026… (DateHelper) y también
+     * día-mes sin año, como "03-Ago" o "03/08" pegado de Excel: el año se toma de la salida (el más cercano a ella).
+     * Si no se entiende, se rechaza con el número de fila en vez de fallar al guardar.
      */
-    private static function fecha($valor, int $fila): string
+    private static function fecha($valor, int $fila, $referencia = null): string
     {
-        $fecha = \App\Support\FormatoHelper::parseFecha(is_scalar($valor) ? (string) $valor : null);
-        if (!$fecha) {
-            throw new \App\Exceptions\ErrorControlado("Fila {$fila}: la fecha \"{$valor}\" no es válida. Escríbela completa, por ejemplo 24/10/2026 o 2026-10-24.");
+        $texto = is_scalar($valor) ? trim((string) $valor) : '';
+        try {
+            if ($fecha = \App\Support\DateHelper::normalizarFecha($texto)) {
+                return $fecha;
+            }
+        } catch (\Exception) {
         }
-        return $fecha;
+
+        $meses = ['ene' => 1, 'jan' => 1, 'feb' => 2, 'mar' => 3, 'abr' => 4, 'apr' => 4, 'may' => 5, 'jun' => 6, 'jul' => 7,
+            'ago' => 8, 'aug' => 8, 'sep' => 9, 'set' => 9, 'oct' => 10, 'nov' => 11, 'dic' => 12, 'dec' => 12];
+        if ($referencia && preg_match('/^(\d{1,2})[-\/. ]([a-z]{3})[a-z]*\.?$|^(\d{1,2})[-\/.](\d{1,2})$/u', mb_strtolower($texto), $m)) {
+            $dia = (int) ($m[1] !== '' ? $m[1] : $m[3]);
+            $mes = $m[1] !== '' ? ($meses[$m[2]] ?? 0) : (int) $m[4];
+            $ref = Carbon::parse($referencia)->startOfDay();
+            $candidatas = collect([$ref->year - 1, $ref->year, $ref->year + 1])
+                ->filter(fn($y) => checkdate($mes, $dia, $y))
+                ->map(fn($y) => Carbon::create($y, $mes, $dia));
+            if ($candidatas->isNotEmpty()) {
+                return $candidatas->sortBy(fn($c) => abs($c->diffInDays($ref)))->first()->toDateString();
+            }
+        }
+
+        throw new \App\Exceptions\ErrorControlado("Fila {$fila}: la fecha \"{$valor}\" no es válida. Escríbela completa, por ejemplo 24/10/2026 o 2026-10-24.");
     }
 
     public static function previsualizar(array $filas, int $salidaId): array
@@ -52,7 +71,7 @@ class DistribucionCombustibleServicio
                 throw new \Exception("La hora de fin debe ser mayor a la de inicio. (fila " . ($i + 1) . ")");
             }
 
-            $fechaFila = Carbon::parse(self::fecha($fila['fecha'], $i + 1))->startOfDay();
+            $fechaFila = Carbon::parse(self::fecha($fila['fecha'], $i + 1, $salida->fecha_reporte))->startOfDay();
 
             // Salida "natural" según fecha: la más cercana con fecha_reporte <= fecha de la fila
             $sugerida = $salidas
@@ -123,7 +142,7 @@ class DistribucionCombustibleServicio
                 }
 
                 $datos = [
-                    'fecha' => self::fecha($fila['fecha'], $n + 1),
+                    'fecha' => self::fecha($fila['fecha'], $n + 1, $salida->fecha_reporte),
                     'campo' => $fila['campo_nombre'],
                     'hora_inicio' => $fila['hora_inicio'],
                     'hora_salida' => $fila['hora_fin'],
