@@ -57,8 +57,12 @@
                         <x-td value="{{ $grupo->nombre }}" />
                         <x-td value="{{ ucfirst($grupo->modalidad_pago) }}" class="text-center" />
                         <x-td value="{{ $grupo->cuadrilleros_count }}" class="text-center" />
-                        <x-td value="{{ $grupo->costo_dia_sugerido }}"
-                            class="text-center text-black  text-lg font-bold" />
+                        <x-td class="text-center">
+                            <span class="text-lg font-bold text-black dark:text-white">{{ $grupo->costo_dia_sugerido }}</span>
+                            @if ($grupo->costo_dia_maximo)
+                                <span class="block text-xs text-gray-500" title="Tope del costo personalizado por día">máx. S/ {{ number_format($grupo->costo_dia_maximo, 2) }}</span>
+                            @endif
+                        </x-td>
                         <x-td class="text-center">
                             @if ($grupo->ultimo_tramo)
                                 <div>{{ formatear_fecha($grupo->ultimo_tramo) }}</div>

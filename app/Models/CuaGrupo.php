@@ -22,6 +22,7 @@ class CuaGrupo extends Model
         'color',
         'nombre',
         'costo_dia_sugerido',
+        'costo_dia_maximo', // tope del costo personalizado por día (vacío = 3 veces el jornal)
         'modalidad_pago',
         'creado_por',
         'editado_por',

@@ -6,6 +6,7 @@
         @include('livewire.cuadrilla.partial.personalizar-costo-hora-form')
         @include('livewire.cuadrilla.partial.reordenar-grupo-form')
         @include('livewire.cuadrilla.partial.reemplazar-cuadrillero')
+        @include('livewire.cuadrilla.partial.detalle-horas-modal')
     </x-card>
 
     <x-loading wire:loading />
@@ -155,6 +156,11 @@
                 contextMenu: {
                     items: {
 
+                        "ver_detalle_horas": {
+                            name: 'Ver detalle de las horas',
+                            callback: () => this.verDetalleHoras(),
+                            hidden: () => !this.seleccionDetalle().cuadrilleros.length
+                        },
                         "customize_cuadrillero": {
                             name: 'Personalizar costo por día',
                             callback: () => this.customizeCuadrillero(),
@@ -334,9 +340,40 @@
 
             if (!cuadrillero_id || !codigo_grupo) return;
 
-            if (confirm(`¿Estás seguro de eliminar a ${registro.nombres} del grupo?`)) {
+            if (confirm(`¿Quitar a ${registro.nombres} del grupo ${codigo_grupo} en esta semana?
+
+Solo se puede si no tiene horas registradas. Si tiene horas, el sistema no lo quitará.`)) {
                 $wire.eliminarCuadrillero(cuadrillero_id, codigo_grupo);
             }
+        },
+        /**
+         * Lo seleccionado en la tabla para "Ver detalle de las horas": cuadrilleros de las filas y días de las columnas
+         * de horas, jornal o bono (dia_N, jornal_N, bono_N). Varios rangos (Ctrl + clic) se suman.
+         */
+        seleccionDetalle() {
+            if (!this.hot) return { cuadrilleros: [], fechas: [] };
+            const cuadrilleros = new Set(), dias = new Set();
+            (this.hot.getSelected() || []).forEach(([r1, c1, r2, c2]) => {
+                for (let r = Math.max(0, Math.min(r1, r2)); r <= Math.max(r1, r2); r++) {
+                    const fila = this.hot.getSourceDataAtRow(r);
+                    if (fila?.cuadrillero_id) cuadrilleros.add(fila.cuadrillero_id);
+                }
+                for (let c = Math.max(0, Math.min(c1, c2)); c <= Math.max(c1, c2); c++) {
+                    const m = String(this.hot.colToProp(c) || '').match(/^(?:dia|jornal|bono)_(\d+)$/);
+                    if (m) dias.add(Number(m[1]));
+                }
+            });
+            const fechas = [...dias].sort((a, b) => a - b).map(n => {
+                const d = this.toLocalDate(this.fechaInicio);
+                d.setDate(d.getDate() + n - 1);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            });
+            return { cuadrilleros: [...cuadrilleros], fechas };
+        },
+        verDetalleHoras() {
+            const { cuadrilleros, fechas } = this.seleccionDetalle();
+            if (!cuadrilleros.length) return;
+            $wire.verDetalleHoras(cuadrilleros, fechas);
         },
         esFilaEncabezado() {
             if (!this.hot) return false;

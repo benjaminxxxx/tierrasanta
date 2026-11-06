@@ -191,10 +191,10 @@ class TramoLaboralServicio
     }
 
     /**
-     * Quita cuadrilleros de un grupo del tramo y borra sus registros de ese tramo (horas, detalle, bonos). No deja
-     * quitar a quien ya tiene días o bonos pagados.
-     *
-     * @param int[] $cuadrilleroIds
+     * Quita cuadrilleros de un grupo del tramo. Solo si no tienen nada registrado en el tramo: ni horas, ni detalle
+     * de horas (campo/labor), ni bonos, ni pagos. Sus registros vacíos se borran y la salida queda en la auditoría.
+     * Con algo registrado se rechaza: primero se borran sus horas en el registro diario (o se usa "Reemplazar
+     * cuadrillero" si fue un error de nombre). Antes borraba en cascada horas y detalle sin poder recuperarlos.
      */
     public function quitarCuadrillerosDelGrupo(CuadTramoLaboralGrupo $grupo, array $cuadrilleroIds): int
     {
@@ -205,14 +205,33 @@ class TramoLaboralServicio
             $tramoCuadrilleros = CuadTramoLaboralCuadrillero::where('cuad_tramo_laboral_grupo_id', $grupo->id)
                 ->whereIn('cuadrillero_id', $cuadrilleroIds)->get();
             $registros = CuadRegistroDiario::whereIn('tramo_cuadrillero_id', $tramoCuadrilleros->pluck('id'))->get();
-            $pagados = self::registrosPagados($registros);
-            if ($pagados->isNotEmpty()) {
-                $nombres = $tramoCuadrilleros->whereIn('id', $pagados->pluck('tramo_cuadrillero_id'))->pluck('nombres')->unique()->implode(', ');
-                throw new \Exception("No se puede quitar a {$nombres} del grupo {$grupo->codigo_grupo}: tiene(n) {$pagados->count()} día(s) ya pagado(s) en un desglose. "
-                    . 'Si es un error, primero quite el pago en el desglose.');
+
+            $ids = $registros->pluck('id');
+            $conDetalle = DB::table('cuad_detalles_horas')->whereIn('registro_diario_id', $ids)->distinct()->pluck('registro_diario_id');
+            $conBono = DB::table('cuad_bonos_actividades')->whereIn('registro_diario_id', $ids)->distinct()->pluck('registro_diario_id');
+            $pagados = self::registrosPagados($registros)->pluck('id');
+            $conDatos = $registros->filter(fn($r) => (float) $r->total_horas > 0 || (float) $r->total_bono != 0 || $r->costo_personalizado_dia !== null
+                || $conDetalle->contains($r->id) || $conBono->contains($r->id) || $pagados->contains($r->id));
+
+            if ($conDatos->isNotEmpty()) {
+                $lineas = $conDatos->groupBy('tramo_cuadrillero_id')->map(function ($regs, $tcId) use ($tramoCuadrilleros, $pagados) {
+                    $nombre = $tramoCuadrilleros->firstWhere('id', $tcId)?->nombres ?? 'Cuadrillero';
+                    $dias = $regs->sortBy('fecha')->map(fn($r) => Carbon::parse($r->fecha)->format('d/m')
+                        . ((float) $r->total_horas > 0 ? ' (' . rtrim(rtrim(number_format((float) $r->total_horas, 2), '0'), '.') . ' h)' : '')
+                        . ($pagados->contains($r->id) ? ' pagado' : ''))->implode(', ');
+                    return "{$nombre}: {$dias}";
+                })->implode('; ');
+                throw new \App\Exceptions\ErrorControlado("No se puede quitar del grupo {$grupo->codigo_grupo} porque tiene registros en esta semana — {$lineas}. "
+                    . 'Para quitarlo, primero borra sus horas en el registro diario de esos días. Si fue un error de nombre, usa "Reemplazar cuadrillero" (conserva las horas).');
             }
-            // Detalle de horas, bonos y producción se van en cascada con cada registro (no tienen nada pagado)
-            CuadRegistroDiario::whereIn('id', $registros->pluck('id'))->delete();
+
+            foreach ($tramoCuadrilleros as $tc) {
+                \App\Services\Reporte\AuditoriaServicio::registrar('CuadTramoLaboralCuadrillero', $tc->id, 'eliminar',
+                    ['cuadrillero_id' => $tc->cuadrillero_id, 'nombres' => $tc->nombres, 'grupo' => $grupo->codigo_grupo,
+                        'tramo_laboral_id' => $grupo->cuad_tramo_laboral_id, 'registros_vacios' => $registros->where('tramo_cuadrillero_id', $tc->id)->count()],
+                    null, 'Quitado del grupo en el reporte semanal (sin horas registradas)');
+            }
+            CuadRegistroDiario::whereIn('id', $ids)->delete();
             return CuadTramoLaboralCuadrillero::whereIn('id', $tramoCuadrilleros->pluck('id'))->delete();
         });
     }

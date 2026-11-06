@@ -30,6 +30,12 @@
                 <x-input id="costo_dia_sugerido" type="number" label="Costo Día Sugerido (*)" step="0.01"
                     class="w-full" error="costo_dia_sugerido" wire:model="costo_dia_sugerido" />
 
+                <div>
+                    <x-input id="costo_dia_maximo" type="number" label="Costo máximo por día (opcional)" step="0.01"
+                        class="w-full" error="costo_dia_maximo" wire:model="costo_dia_maximo" placeholder="Vacío = hasta 3 veces el jornal" />
+                    <p class="text-xs text-muted-foreground mt-1">Tope del costo personalizado de un día. Úsalo en grupos que cobran por producción (ej. cargadores, por camión). Vacío: se frena lo que pase de 3 veces el jornal del grupo.</p>
+                </div>
+
                 <!-- Color -->
                 <div>
                     <x-label for="color" value="Color del Grupo" />

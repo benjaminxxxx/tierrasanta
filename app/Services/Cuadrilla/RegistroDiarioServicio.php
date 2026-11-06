@@ -109,30 +109,34 @@ class RegistroDiarioServicio
     /** Un costo personalizado mayor a estas veces el jornal del grupo se toma como mal digitado (ej. 1101 por 110). */
     public const VECES_JORNAL_MAXIMO = 3;
 
-    /** Frena un costo personalizado que parece mal digitado: más de VECES_JORNAL_MAXIMO veces el jornal del grupo ese día. */
+    /**
+     * Frena un costo personalizado que parece mal digitado. Si el grupo tiene "costo máximo por día" (p. ej. cargadores,
+     * que cobran por camión) ese es el tope; si no, VECES_JORNAL_MAXIMO veces el jornal del grupo ese día.
+     */
     public static function validarCostoPersonalizado(?float $costo, string $codigoGrupo, string $fecha): void
     {
         if ($costo === null) {
             return;
         }
+        $dia = \Illuminate\Support\Carbon::parse($fecha)->format('d/m/Y');
+        $monto = 'S/ ' . number_format($costo, 2);
+
+        $maximo = \App\Models\CuaGrupo::withTrashed()->whereKey($codigoGrupo)->value('costo_dia_maximo');
+        if ($maximo !== null && (float) $maximo > 0) {
+            if ($costo > (float) $maximo) {
+                throw new \App\Exceptions\ErrorControlado("El costo del día {$dia} ({$monto}) supera el máximo por día del grupo {$codigoGrupo} "
+                    . '(S/ ' . number_format((float) $maximo, 2) . '). Corrígelo o sube el máximo en Cuadrilla → Grupos.');
+            }
+            return;
+        }
+
         $jornal = (float) CuadCostoDiarioGrupo::where('codigo_grupo', $codigoGrupo)->whereDate('fecha', $fecha)->value('jornal');
         $tope = $jornal > 0 ? $jornal * self::VECES_JORNAL_MAXIMO : 500;
         if ($costo > $tope) {
-            $dia = \Illuminate\Support\Carbon::parse($fecha)->format('d/m/Y');
-            throw new \App\Exceptions\ErrorControlado("El costo del día {$dia} (S/ " . number_format($costo, 2) . ') parece mal digitado: '
+            throw new \App\Exceptions\ErrorControlado("El costo del día {$dia} ({$monto}) parece mal digitado: "
                 . ($jornal > 0 ? "el jornal del grupo {$codigoGrupo} es S/ " . number_format($jornal, 2) . '.' : 'es mayor a S/ 500.')
-                . ' Corrígelo (ej. 1101 → 110).');
+                . ' Corrígelo (ej. 1101 → 110). Si el grupo cobra por producción (p. ej. cargadores), ponle un "costo máximo por día" en Cuadrilla → Grupos.');
         }
     }
-
-    /**
-     * Pasa los registros diarios de un cuadrillero a otro dentro de un tramo laboral.
-     * (Antes en App\Services\Cuadrillas\RegistroDiarioServicio.)
-     */
-    public function reemplazarCuadrillero(int $tramoLaboralId, int $anteriorId, int $nuevoId): void
-    {
-        CuadRegistroDiario::where('tramo_laboral_id', $tramoLaboralId)
-            ->where('cuadrillero_id', $anteriorId)
-            ->update(['cuadrillero_id' => $nuevoId]);
-    }
+    // Reemplazar un cuadrillero en un tramo: App\Services\Cuadrilla\Reemplazo\CuadrillaReemplazoProceso
 }

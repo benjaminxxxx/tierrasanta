@@ -19,6 +19,7 @@ class CuadrillaGrupoFormComponent extends Component
     public $color;
     public $modalidad_pago = 'semanal';
     public $costo_dia_sugerido;
+    public $costo_dia_maximo;
     protected $listeners = ['registrarGrupo','editarGrupo'];
 
     public function registrarGrupo()
@@ -37,6 +38,7 @@ class CuadrillaGrupoFormComponent extends Component
             $this->color = $grupo->color;
             $this->modalidad_pago = $grupo->modalidad_pago;
             $this->costo_dia_sugerido = $grupo->costo_dia_sugerido;
+            $this->costo_dia_maximo = $grupo->costo_dia_maximo;
             $this->mostrarFormularioGrupoCuadrilla = true;
         }else{
             $this->errorAlert('El grupo ha dejado de existir');
@@ -55,6 +57,7 @@ class CuadrillaGrupoFormComponent extends Component
             'color' => 'nullable|string|max:7', // Formato hexadecimal
             'modalidad_pago' => 'required|string|in:semanal,quincenal,mensual', // Valores específicos
             'costo_dia_sugerido' => 'required|numeric|min:0', // Número positivo
+            'costo_dia_maximo' => 'nullable|numeric|gt:0',
         ], [
             'nombre.required' => 'El nombre es obligatorio',
             'codigo.required' => 'El código es obligatorio',
@@ -63,6 +66,7 @@ class CuadrillaGrupoFormComponent extends Component
             'modalidad_pago.in' => 'La modalidad de pago no es válida',
             'costo_dia_sugerido.required' => 'El costo sugerido es obligatorio',
             'costo_dia_sugerido.numeric' => 'El costo debe ser un número',
+            'costo_dia_maximo.gt' => 'El máximo debe ser mayor a 0 (o déjalo vacío)',
         ]);
 
         $data = [
@@ -71,6 +75,7 @@ class CuadrillaGrupoFormComponent extends Component
             'color' => $this->color,
             'modalidad_pago' => $this->modalidad_pago,
             'costo_dia_sugerido' => $this->costo_dia_sugerido,
+            'costo_dia_maximo' => $this->costo_dia_maximo === '' || $this->costo_dia_maximo === null ? null : $this->costo_dia_maximo,
         ];
 
         try {
@@ -95,7 +100,7 @@ class CuadrillaGrupoFormComponent extends Component
         $this->codigo = CuadrillaGrupoReglas::sugerirCodigo($this->nombre, $this->modalidad_pago, $existentes);
     }
     public function resetForm(){
-        $this->reset(['grupoId','nombre','codigo','color','costo_dia_sugerido']);
+        $this->reset(['grupoId','nombre','codigo','color','costo_dia_sugerido','costo_dia_maximo']);
         $this->modalidad_pago = 'semanal';
     }
     public function render()

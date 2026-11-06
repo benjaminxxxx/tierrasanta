@@ -162,6 +162,7 @@ class SistemaRecursosReglas extends SistemaLibroExcelReglas
             'color' => ['t' => 'Color', 'tipo' => 'texto', 'req' => true],
             'modalidad_pago' => ['t' => 'Modalidad de pago', 'tipo' => 'texto', 'op' => 'modalidad_pago', 'def' => 'mensual'],
             'costo_dia' => ['t' => 'Costo día sugerido', 'tipo' => 'decimal', 'req' => true],
+            'costo_maximo' => ['t' => 'Costo máximo por día', 'tipo' => 'decimal'],
             'activo' => ['t' => 'Activo', 'tipo' => 'sino', 'def' => 'SI'],
         ]],
         'observaciones' => ['Observaciones cochinilla', ['codigo'], [

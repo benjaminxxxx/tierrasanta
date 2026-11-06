@@ -30,17 +30,18 @@ class GestionCuadrillaReporteSemanalTramoAgregarCuadrilleroComponent extends Com
 
         $this->tramoLaboral = CuadTramoLaboral::find($tramoId);
         $this->listarGrupos();
-        if ($this->grupos->isNotEmpty()) {
-            $this->codigo_grupo = $this->grupos->first()->codigo;
+        if ($this->grupos) {
+            $this->codigo_grupo = $this->grupos[0]['codigo'];
         }
         $this->listaCuadrilleros = Cuadrillero::select('id', 'nombres', 'dni')
             ->orderBy('nombres')
             ->get()
             ->toArray();
     }
+    /** Grupos ordenados por uso: los de esta semana, los usados recientemente y el resto (con su etiqueta). */
     public function listarGrupos()
     {
-        $this->grupos = CuaGrupo::all();
+        $this->grupos = app(\App\Services\Cuadrilla\Grupo\CuadrillaGrupoConsulta::class)->paraSelector($this->tramoLaboral);
     }
     public function grupoRegistrado($grupo)
     {
@@ -230,6 +231,7 @@ class GestionCuadrillaReporteSemanalTramoAgregarCuadrilleroComponent extends Com
             $this->codigo_grupo = $codigo_grupo;
         }
 
+        $this->listarGrupos(); // las etiquetas cambian al agregar grupos a la semana
         $this->obtenerCuadrillerosAgregados();
         $this->mostrarAgregarCuadrillero = true;
     }

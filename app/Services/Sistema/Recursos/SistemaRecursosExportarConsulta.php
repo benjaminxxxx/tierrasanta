@@ -184,7 +184,7 @@ class SistemaRecursosExportarConsulta
     {
         return DB::table('cuad_grupos')->orderBy('codigo')->get()->map(fn($g) => [
             'codigo' => $g->codigo, 'nombre' => $g->nombre, 'color' => $g->color, 'modalidad_pago' => $g->modalidad_pago,
-            'costo_dia' => $g->costo_dia_sugerido, 'activo' => SistemaRecursosReglas::sn(!$g->deleted_at),
+            'costo_dia' => $g->costo_dia_sugerido, 'costo_maximo' => $g->costo_dia_maximo, 'activo' => SistemaRecursosReglas::sn(!$g->deleted_at),
         ])->all();
     }
 

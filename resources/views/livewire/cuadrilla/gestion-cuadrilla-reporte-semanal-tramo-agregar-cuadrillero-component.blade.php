@@ -10,14 +10,9 @@
                     <x-label for="codigo_grupo"
                         value="Primero seleccione el grupo donde desea agregar cuadrilleros para esta semana" />
                     <div class="flex items-center gap-2">
-                        <x-select wire:model.live="codigo_grupo" class="mt-1 w-full"
-                            wire:key="codigo_grupo-{{ $codigo_grupo ?? Str::random(4) }}">
-                            <option value="">SELECCIONAR GRUPO</option>
-                            @foreach ($grupos as $grupo)
-                                <option value="{{ $grupo->codigo }}">{{ $grupo->codigo }} - {{ $grupo->nombre }}
-                                </option>
-                            @endforeach
-                        </x-select>
+                        <div class="min-w-0 flex-1" wire:key="selector-grupo-{{ count($grupos) }}-{{ collect($grupos)->where('seccion', 'tramo')->count() }}">
+                            <x-cuadrilla.selector-grupo :grupos="$grupos" model="codigo_grupo" />
+                        </div>
 
                         <x-button type="button" wire:click="$dispatch('registrarGrupo')" title="Registrar Grupo">
                             <i class="fa fa-plus"></i>

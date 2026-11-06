@@ -400,6 +400,9 @@ class SistemaRecursosDefinicion extends SistemaLibroExcelDefinicion
         $actual = DB::table('cuad_grupos')->where('codigo', $d['codigo'])->first();
         $valores = ['nombre' => $d['nombre'], 'color' => $d['color'], 'modalidad_pago' => $d['modalidad_pago'],
             'costo_dia_sugerido' => (float) $d['costo_dia'], 'updated_at' => now()];
+        if (array_key_exists('costo_maximo', $d)) { // un Excel anterior sin la columna no borra el máximo
+            $valores['costo_dia_maximo'] = $d['costo_maximo'] !== null && (float) $d['costo_maximo'] > 0 ? (float) $d['costo_maximo'] : null;
+        }
         if ($d['activo'] === 'SI') {
             $valores += ['deleted_at' => null, 'eliminado_por' => null];
         } elseif (!$actual || !$actual->deleted_at) {

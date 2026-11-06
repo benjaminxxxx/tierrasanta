@@ -220,3 +220,6 @@ Definidos en `resources/css/app.css` (`:root` y `.dark`) y expuestos en `tailwin
 | Compras (lista): vista Compras con productos por comprobante, vista "Por producto", modales de eliminar/restaurar con motivo e historial (el formulario de compra sigue sin migrar) | 05/11/2026 |
 | Campañas: menú de opciones común `x-campania.opciones` (Lista, Tabla técnica y Campañas por campo) | 05/11/2026 |
 | Campañas: modal "Cerrar campaña" (registros que forman la cosecha, labores que impiden cerrar y qué hacer) | 05/11/2026 |
+| Cuadrilla: selector de grupo `x-cuadrilla.selector-grupo` (buscador, orden por uso y etiquetas) en "Agregar cuadrilleros" (el resto del modal sigue sin migrar) | 05/11/2026 |
+| Cuadrilla: modal "Detalle de las horas" del reporte semanal (tab por día, tramos como etiquetas, leyenda de labores) | 05/11/2026 |
+| Cuadrilla: modal "Reemplazar cuadrillero" (qué pasa al nuevo, opción de riego) | 05/11/2026 |

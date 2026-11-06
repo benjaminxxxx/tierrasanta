@@ -7,7 +7,6 @@ use App\Models\CuadRegistroDiario;
 use App\Models\Cuadrillero;
 use App\Models\CuadTramoLaboralCuadrillero;
 use App\Models\CuadTramoLaboralGrupo;
-use App\Services\Cuadrilla\ReemplazarCuadrillero;
 use App\Services\Cuadrilla\CuadrilleroServicio;
 use App\Services\Cuadrilla\RegistroDiarioServicio;
 use App\Services\Cuadrilla\TramoLaboralServicio;
@@ -41,6 +40,12 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
     public array $cuadrilleros = [];
     public $cuadrilleroARemplazarSeleccionado;
     public $cuadrilleroPorReemplazar;
+    /** Lo que se moverá al reemplazar (registros, horas, producción, riego…) y si el riego va con él. */
+    public array $resumenReemplazo = [];
+    public bool $moverRiego = true;
+    /** Modal "Ver detalle de las horas": días (tabs) con los cuadrilleros elegidos y leyenda de labores. */
+    public bool $mostrarDetalleHoras = false;
+    public array $detalleHoras = ['dias' => [], 'leyenda' => []];
     protected $listeners = [
         'cuadrillerosAgregadosEnTramo' => 'renovarListaYResumir',
         'costosSemanalesModificados' => 'renovarListaYResumir'
@@ -71,19 +76,41 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
             ])
             ->toArray();
     }
+    /**
+     * Detalle de horas (campo, labor, horario) y bonos de los cuadrilleros y días seleccionados en la tabla.
+     * Sin días seleccionados (p. ej. solo la columna de nombres) muestra toda la semana.
+     */
+    public function verDetalleHoras(array $cuadrilleroIds, array $fechas = []): void
+    {
+        try {
+            if (!$fechas) {
+                $fechas = collect(CarbonPeriod::create($this->tramoLaboral->fecha_inicio, $this->tramoLaboral->fecha_fin))
+                    ->map(fn($d) => $d->toDateString())->all();
+            }
+            $this->detalleHoras = app(\App\Services\Cuadrilla\RegistroDiario\CuadrillaRegistroDiarioConsulta::class)
+                ->detalleHoras($this->tramoLaboral, $cuadrilleroIds, $fechas);
+            $this->mostrarDetalleHoras = true;
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+        }
+    }
     public function reemplazarCuadrillero($cuadrilleroId)
     {
         $this->cuadrilleroARemplazarSeleccionado = null;
-        $this->cuadrilleroPorReemplazar = Cuadrillero::find($cuadrilleroId);
+        $this->moverRiego = true;
+        $this->cuadrilleroPorReemplazar = Cuadrillero::withTrashed()->find($cuadrilleroId);
+        $this->resumenReemplazo = app(\App\Services\Cuadrilla\Reemplazo\CuadrillaReemplazoProceso::class)
+            ->resumen($this->tramoLaboral, (int) $cuadrilleroId);
         $this->mostrarReemplazarCuadrilleroForm = true;
     }
     public function confirmarReemplazo()
     {
         try {
-            app(ReemplazarCuadrillero::class)->ejecutar(
-                tramoLaboralId: $this->tramoLaboral->id,
-                anteriorId: $this->cuadrilleroPorReemplazar->id,
-                nuevoId: (int) $this->cuadrilleroARemplazarSeleccionado,
+            app(\App\Services\Cuadrilla\Reemplazo\CuadrillaReemplazoProceso::class)->ejecutar(
+                $this->tramoLaboral,
+                $this->cuadrilleroPorReemplazar->id,
+                (int) $this->cuadrilleroARemplazarSeleccionado,
+                $this->moverRiego,
             );
             $this->obtenerReporteTramo();
             $this->mostrarReemplazarCuadrilleroForm = false;
@@ -497,7 +524,14 @@ class GestionCuadrillaReporteSemanalTramoComponent extends Component
             ->exists();
 
         if ($tieneCuadrilleros) {
-            $this->errorAlert('No se puede eliminar el grupo porque tiene cuadrilleros asignados.');
+            $this->errorAlert('No se puede eliminar el grupo porque tiene cuadrilleros asignados. Quítalos primero con "Eliminar cuadrillero" (se borran sus horas de la semana; los que tienen días pagados no se pueden quitar).');
+            return;
+        }
+        // Sin cuadrilleros no quedan registros diarios (cada uno pertenece a un cuadrillero del grupo); los gastos sí quedarían sueltos
+        $gastos = \App\Models\GastoAdicionalPorGrupoCuadrilla::where('cuad_tramo_laboral_id', $this->tramoLaboral->id)
+            ->where('codigo_grupo', $codigo_grupo)->count();
+        if ($gastos > 0) {
+            $this->errorAlert("No se puede eliminar el grupo porque tiene {$gastos} gasto(s) adicional(es) en esta semana. Elimínalos o muévelos primero.");
             return;
         }
 

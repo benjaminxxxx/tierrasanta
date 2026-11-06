@@ -51,6 +51,58 @@ class CuadrillaGrupoConsulta
         return $query->orderByRaw("{$columna} IS NULL")->orderBy($columna, $direccion)->orderBy('cuad_grupos.codigo');
     }
 
+    /** Semanas hacia atrás en que un grupo cuenta como "usado recientemente" en el selector. */
+    public const SEMANAS_RECIENTE = 8;
+
+    /**
+     * Grupos activos para el selector de un tramo, con etiqueta de uso y en este orden:
+     * 1) los que ya están en el tramo, 2) los usados en las últimas SEMANAS_RECIENTE semanas (el más reciente primero),
+     * 3) el resto por código. Solo cuentan tramos que empiezan antes o igual que el tramo (no los futuros).
+     *
+     * @return array<int, array{codigo:string, nombre:string, color:?string, seccion:string, etiqueta:string, ultimo:?string}>
+     */
+    public function paraSelector(?\App\Models\CuadTramoLaboral $tramo): array
+    {
+        $referencia = $tramo ? \Illuminate\Support\Carbon::parse($tramo->fecha_inicio) : now();
+        $enTramo = $tramo
+            ? DB::table('cuad_tramo_grupos')->where('cuad_tramo_laboral_id', $tramo->id)->pluck('codigo_grupo')->all()
+            : [];
+        $ultimos = DB::table('cuad_tramo_grupos as tg')
+            ->join('cuad_tramos_laborales as t', 't.id', '=', 'tg.cuad_tramo_laboral_id')
+            ->when($tramo, fn($q) => $q->where('t.id', '!=', $tramo->id))
+            ->whereDate('t.fecha_inicio', '<=', $referencia->toDateString())
+            ->groupBy('tg.codigo_grupo')
+            ->selectRaw('tg.codigo_grupo, MAX(t.fecha_inicio) AS ultimo')
+            ->pluck('ultimo', 'codigo_grupo');
+
+        $limite = $referencia->copy()->subWeeks(self::SEMANAS_RECIENTE)->toDateString();
+
+        return CuaGrupo::orderBy('codigo')->get(['codigo', 'nombre', 'color'])
+            ->map(function ($g) use ($enTramo, $ultimos, $limite, $referencia) {
+                $ultimo = $ultimos[$g->codigo] ?? null;
+                $ultimo = $ultimo ? \Illuminate\Support\Carbon::parse($ultimo)->toDateString() : null;
+                if (in_array($g->codigo, $enTramo, true)) {
+                    [$seccion, $etiqueta] = ['tramo', 'En esta semana'];
+                } elseif ($ultimo && $ultimo >= $limite) {
+                    $semanas = (int) floor(\Illuminate\Support\Carbon::parse($ultimo)->diffInDays($referencia) / 7);
+                    $seccion = 'reciente';
+                    $etiqueta = $semanas <= 1 ? 'Semana pasada' : "Hace {$semanas} semanas";
+                } else {
+                    $seccion = 'otros';
+                    $etiqueta = $ultimo ? 'Último ' . \Illuminate\Support\Carbon::parse($ultimo)->format('d/m/Y') : 'Sin uso';
+                }
+                return ['codigo' => $g->codigo, 'nombre' => $g->nombre, 'color' => $g->color,
+                    'seccion' => $seccion, 'etiqueta' => $etiqueta, 'ultimo' => $ultimo];
+            })
+            ->sortBy(fn($g) => [
+                ['tramo' => 0, 'reciente' => 1, 'otros' => 2][$g['seccion']],
+                $g['seccion'] === 'reciente' ? -strtotime($g['ultimo']) : 0,
+                $g['codigo'],
+            ])
+            ->values()
+            ->all();
+    }
+
     /** Antes de esta fecha sin tramo, el grupo se considera inactivo. */
     public static function fechaLimiteInactivo(): string
     {
