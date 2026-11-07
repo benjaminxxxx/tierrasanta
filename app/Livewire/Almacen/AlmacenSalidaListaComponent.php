@@ -17,7 +17,7 @@ use Livewire\WithPagination;
 
 class AlmacenSalidaListaComponent extends Component
 {
-    use LivewireAlert, WithPagination, WithoutUrlPagination, HandlesAlerts;
+    use LivewireAlert, WithPagination, WithoutUrlPagination, HandlesAlerts, \App\Livewire\Traits\ConPreguntaRegenerarKardex;
 
     public $anio;
     public $mes;
@@ -124,9 +124,12 @@ class AlmacenSalidaListaComponent extends Component
                 $this->errorAlert('Escribe el motivo de la eliminación (mínimo 5 letras): queda en la auditoría.');
                 return;
             }
+            $claves = \App\Models\AlmacenProductoSalida::whereIn('id', $ids)->get(['producto_id', 'fecha_reporte', 'tipo_kardex'])
+                ->map(fn($s) => ['producto_id' => $s->producto_id, 'anio' => $s->fecha_reporte?->year, 'tipo' => $s->tipo_kardex])->all();
             AlmacenServicio::eliminarSalidasAgrupadas($ids, $motivo);
             $this->alert('success', count($ids) === 1 ? 'Salida eliminada.' : 'Salidas eliminadas correctamente.');
             $this->notificarTabla();
+            $this->preguntarRegenerarKardex($claves);
         } catch (\Throwable $e) {
             $this->errorAlert($e);
         }
@@ -188,6 +191,8 @@ class AlmacenSalidaListaComponent extends Component
                 'tipo_kardex' => $item->tipo_kardex ?? '',
                 // En el método formatearParaHandsontable:
                 'categoria' => $item->producto?->categoria?->grupo_operativo ?? '',
+                // Para qué se usó o qué daño se trató (queresa, hongo de penca, desalitrante…): se elige en el formulario
+                'uso' => $item->uso?->nombre ?? '',
                 'costo_por_kg' => (float) ($item->costo_por_kg ?? 0),
                 'total_costo' => (float) ($item->total_costo ?? 0),
                 'distribuciones_count' => (int) ($item->distribuciones_count ?? 0),

@@ -24,7 +24,7 @@ use Livewire\Component;
  */
 class GestionPlanillaRegistroDiarioDetalleComponent extends Component
 {
-    use ConArrayPlanTipoAsistencia, ConArrayCampos, LivewireAlert, \App\Traits\HandlesAlerts;
+    use ConArrayPlanTipoAsistencia, ConArrayCampos, LivewireAlert, \App\Traits\HandlesAlerts, \App\Livewire\Traits\ConActividadesCampo;
     public $fecha;
     public $resumenDiarioPlanilla;
     /** Columnas de tramos guardadas (nunca menos que los tramos con datos). */
@@ -41,7 +41,7 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
     public bool $mostrarPreguntaRegreso = false;
     /** Filas de la carga inicial (solo para el primer render; no se guardan en el estado del componente). */
     protected array $empleadosIniciales = [];
-    protected $listeners = ['actualizarListaPlanillaRegistroDiario' => 'recargarTabla'];
+    protected $listeners = ['actualizarListaPlanillaRegistroDiario' => 'recargarTabla', 'guardarPlanillaActividadesConfirmado'];
 
     public function mount($fecha)
     {
@@ -120,7 +120,7 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
      * Guarda las filas modificadas y el número de columnas. Se puede guardar solo el cambio de columnas.
      * Devuelve true si guardó (el navegador limpia sus marcas de cambios solo entonces).
      */
-    public function guardarInformacionRegistroPlanilla($datos, $totalActividades = null): bool
+    public function guardarInformacionRegistroPlanilla($datos, $totalActividades = null, bool $actividadesConfirmadas = false): bool
     {
         if (!$this->fecha || !$this->resumenDiarioPlanilla || !is_array($datos)) {
             return false;
@@ -140,6 +140,14 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
                 $antes = \App\Models\PlanRegistroDiario::where('fecha', $this->fecha)
                     ->whereIn('plan_det_men_id', array_filter(array_column($datos, 'plan_men_detalle_id')))
                     ->pluck('asistencia', 'plan_det_men_id');
+                $this->validarDiasFijos($datos);
+                // Un campo con más de un código ese día: "¿es correcto?" antes de guardar (puede ser una metida de mano)
+                $conEmpleado = $this->conPlanEmpleadoId($datos);
+                if (!$actividadesConfirmadas && $this->preguntarActividadesCampo($this->fecha, self::tramosDeFilas($conEmpleado, 'planilla', 'plan_empleado_id', $columnas),
+                    array_values(array_unique(array_filter(array_column($conEmpleado, 'plan_empleado_id')))), [],
+                    'guardarPlanillaActividadesConfirmado', ['datos' => $datos, 'total' => $columnas])) {
+                    return false;
+                }
                 // Antes de guardar: quienes tenían una suspensión que sigue después de hoy y se les puso otro código
                 $interrumpidas = $this->suspensionesInterrumpidas($datos, $antes->all());
                 app(PlanillaRegistroDiarioServicio::class)->guardarRegistrosDiarios($this->fecha, $datos, $columnas);
@@ -156,6 +164,10 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
             $aviso = count($datos) > 0
                 ? app(\App\Services\Riego\VerificacionSincronizacionRiegoServicio::class)->verificarDespuesDeGuardar($this->fecha, \App\Models\PlanEmpleado::class)
                 : null;
+            // Códigos aceptados que ya nadie hizo en su campo (se corrigió una metida de mano): se quitan y se avisa
+            if (count($datos) > 0 && ($quitados = $this->limpiarActividadesCampo($this->fecha))) {
+                $aviso = trim(($aviso ?? '') . ' ' . $quitados);
+            }
             $aviso ? $this->alert('warning', "Registros guardados. {$aviso}", ['timer' => 8000])
                 : $this->alert('success', count($datos) > 0 ? 'Registros guardados correctamente.' : 'Columnas guardadas.');
 
@@ -163,6 +175,67 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
         } catch (\Throwable $th) {
             $this->errorAlert($th);
             return false;
+        }
+    }
+
+    /** "Sí, es correcto" de las actividades por campo: las acepta, guarda y recarga la tabla (limpia sus marcas). */
+    public function guardarPlanillaActividadesConfirmado($data): void
+    {
+        try {
+            $this->aceptarActividadesCampo($this->fecha, $data);
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+            return;
+        }
+        if ($this->guardarInformacionRegistroPlanilla($data['datos'] ?? [], $data['total'] ?? null, true)) {
+            $this->recargarTabla();
+        }
+    }
+
+    /** Filas con plan_empleado_id (si no vino, se toma de su detalle mensual). */
+    private function conPlanEmpleadoId(array $datos): array
+    {
+        $sinId = array_filter(array_map(fn($f) => empty($f['plan_empleado_id']) ? ($f['plan_men_detalle_id'] ?? null) : null, $datos));
+        $mapa = $sinId ? \App\Models\PlanMensualDetalle::whereIn('id', $sinId)->pluck('plan_empleado_id', 'id')->all() : [];
+        return array_map(function ($f) use ($mapa) {
+            $f['plan_empleado_id'] = (int) ($f['plan_empleado_id'] ?? 0) ?: (int) ($mapa[$f['plan_men_detalle_id'] ?? 0] ?? 0);
+            return $f;
+        }, $datos);
+    }
+
+    // ------------------------------------------------------------------ suspensiones de fechas fijas (DM, maternidad)
+
+    /**
+     * Un día cubierto por una suspensión de duración fija (descanso médico, maternidad…) no se puede cambiar a otro
+     * código: no puede regresar antes. Si el certificado cambió, se corrigen sus fechas con clic derecho → Suspensiones.
+     * Se permite si la suspensión es solo de hoy (se acaba de poner y fue un error de digitación).
+     */
+    private function validarDiasFijos(array $datos): void
+    {
+        $fijas = collect(app(PlanillaSuspensionConsulta::class)->vigentesEn($this->fecha))
+            ->filter(fn($a) => $a['fija'] && !($a['desde'] === $this->fecha && $a['hasta'] === $this->fecha))
+            ->keyBy('plan_empleado_id');
+        if ($fijas->isEmpty()) {
+            return;
+        }
+        $domingo = Carbon::parse($this->fecha)->isSunday();
+        $errores = [];
+        foreach ($datos as $f) {
+            $detalle = $f['plan_men_detalle_id'] ?? null;
+            $empleadoId = (int) ($f['plan_empleado_id'] ?? ($detalle ? \App\Models\PlanMensualDetalle::whereKey($detalle)->value('plan_empleado_id') : 0));
+            $a = $fijas[$empleadoId] ?? null;
+            $codigo = trim((string) ($f['asistencia'] ?? ''));
+            if (!$a || $codigo === $a['codigo_esperado'] || ($domingo && $codigo === '')) {
+                continue;
+            }
+            $nombreCodigo = \App\Models\PlanTipoAsistencia::where('codigo', $a['codigo_esperado'])->value('descripcion');
+            $errores[] = "{$a['nombre']} tiene {$a['codigo_esperado']}" . ($nombreCodigo ? " ({$nombreCodigo})" : '') . ' del '
+                . Carbon::parse($a['desde'])->format('d/m') . ' al ' . Carbon::parse($a['hasta'])->format('d/m/Y')
+                . " (" . ($codigo !== '' ? "pusiste {$codigo}" : 'lo dejaste vacío') . ')';
+        }
+        if ($errores) {
+            throw new \App\Exceptions\ErrorControlado('No se guardó. Estas ausencias son de fechas fijas y no pueden regresar antes: ' . implode('; ', $errores)
+                . '. Si el certificado cambió, corrige sus fechas con clic derecho sobre el trabajador → Suspensiones.');
         }
     }
 
@@ -203,6 +276,10 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
                 'desde' => $s->fecha_inicio->toDateString(),
                 'hasta' => $s->fecha_fin->toDateString(),
                 'hasta_actual' => $s->fecha_fin->toDateString(),
+                'fija' => (bool) $s->tipoSuspension?->duracion_fija,
+                // Nota que aparece al hacer clic en su asistencia (como el comentario del Excel): certificado, motivo…
+                'observacion' => (string) $s->observaciones,
+                'observacion_actual' => (string) $s->observaciones,
             ];
         }
         $this->preguntasHasta = $preguntas;
@@ -367,14 +444,15 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
                 if ($hasta < $this->fecha) {
                     throw \Illuminate\Validation\ValidationException::withMessages(["preguntasHasta.{$i}.hasta" => "{$p['nombre']}: el fin no puede ser antes del " . Carbon::parse($this->fecha)->format('d/m/Y') . '.']);
                 }
-                if ($hasta === $p['hasta_actual']) {
+                $observacion = trim((string) ($p['observacion'] ?? '')) ?: null;
+                if ($hasta === $p['hasta_actual'] && (string) $observacion === trim((string) ($p['observacion_actual'] ?? ''))) {
                     continue;
                 }
                 $s = \App\Models\PlanSuspension::findOrFail($p['suspension_id']);
                 $r = $crud->guardarRangos($p['plan_empleado_id'], [[
                     'id' => $s->id, 'tipo_suspension_id' => $s->tipo_suspension_id,
                     'fecha_inicio' => $s->fecha_inicio->toDateString(), 'fecha_fin' => $hasta,
-                    'observaciones' => $s->observaciones,
+                    'observaciones' => $observacion,
                 ]], [$s->id]);
                 $marcados += $r['registrados'];
                 $conflictos = array_merge($conflictos, $r['conflictos']);

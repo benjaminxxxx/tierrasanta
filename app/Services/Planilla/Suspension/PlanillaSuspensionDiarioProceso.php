@@ -107,8 +107,11 @@ class PlanillaSuspensionDiarioProceso
      */
     public function regresoAnticipado(int $suspensionId, string $fechaRegreso): array
     {
-        $s = PlanSuspension::findOrFail($suspensionId);
+        $s = PlanSuspension::with('tipoSuspension')->findOrFail($suspensionId);
         $regreso = Carbon::parse($fechaRegreso)->startOfDay();
+        if ($s->tipoSuspension?->duracion_fija) {
+            throw new ErrorControlado('Esta ausencia (descanso médico, maternidad…) es de fechas fijas: no puede regresar antes. Si el certificado cambió, corrige las fechas con clic derecho → Suspensiones.');
+        }
         if ($regreso->lt($s->fecha_inicio) || ($s->fecha_fin && $regreso->gt($s->fecha_fin))) {
             throw new ErrorControlado('La fecha de regreso debe estar dentro de la suspensión (' . $s->fecha_inicio->format('d/m/Y')
                 . ($s->fecha_fin ? ' al ' . $s->fecha_fin->format('d/m/Y') : '') . ').');

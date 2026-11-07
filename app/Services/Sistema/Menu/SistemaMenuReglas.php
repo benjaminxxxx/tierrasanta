@@ -84,6 +84,7 @@ class SistemaMenuReglas
                 $op('Evaluaciones', 'Brotes por piso', 'evaluacion.brotes', Permisos::BROTE_EVALUACION, Permisos::EVALUACION, 'fa fa-seedling'),
                 $op('Evaluaciones', 'Infestación a la cosecha', 'evaluacion.infestacion_cosecha', Permisos::INFESTACION_EVALUACION, Permisos::EVALUACION, 'fa fa-microscope'),
                 $op('Evaluaciones', 'Proyección rendimiento poda', 'evaluacion.proyeccion_rendimiento_poda', Permisos::PROYECCION_EVALUACION, Permisos::EVALUACION, 'fa fa-chart-line'),
+                $op('Campo', 'Actividades por campo', 'campo.actividades', Permisos::CAMPO, Permisos::CAMPO, 'fa fa-list-ul'),
                 $op('Campo', 'Producción de campo', 'campo.produccion', Permisos::CAMPO_PRODUCCION, Permisos::CAMPO, 'fa fa-weight-hanging'),
                 $op('Campo', 'Siembras', 'campo.siembras', Permisos::CAMPO_SIEMBRA, Permisos::CAMPO, 'fa fa-spa'),
                 $op('Campo', 'Servicios en campo', 'campo.servicios', Permisos::CAMPO, Permisos::CAMPO, 'fa fa-tractor'),

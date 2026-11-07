@@ -192,6 +192,8 @@ Route::middleware([
             ->name('campos')->middleware('can:' . Permisos::CAMPO_PARCELA);
         Route::view('/labores', 'livewire.campo.labores-indice')
             ->name('labores')->middleware('can:' . Permisos::CAMPO_LABOR);
+        Route::get('/actividades', \App\Livewire\Campo\CampoActividadesComponent::class)
+            ->name('actividades')->middleware('can:' . Permisos::CAMPO);
         Route::get('/produccion', \App\Livewire\Campo\CampoProduccionComponent::class)
             ->name('produccion')->middleware('can:' . Permisos::CAMPO_PRODUCCION);
         Route::view('/siembras', 'livewire.campo.siembra-indice')

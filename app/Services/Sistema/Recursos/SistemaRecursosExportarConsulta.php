@@ -66,7 +66,7 @@ class SistemaRecursosExportarConsulta
     {
         return DB::table('plan_tipos_suspension')->orderBy('codigo')->get()->map(fn($s) => [
             'codigo' => $s->codigo, 'grupo' => $s->grupo, 'descripcion' => $s->descripcion, 'descripcion_corta' => $s->descripcion_corta,
-            'incluye_domingos' => SistemaRecursosReglas::sn($s->incluye_domingos),
+            'incluye_domingos' => SistemaRecursosReglas::sn($s->incluye_domingos), 'duracion_fija' => SistemaRecursosReglas::sn($s->duracion_fija ?? false),
         ])->all();
     }
 

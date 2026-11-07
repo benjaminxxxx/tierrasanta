@@ -54,6 +54,7 @@ class SistemaRecursosReglas extends SistemaLibroExcelReglas
             'descripcion' => ['t' => 'Descripción', 'tipo' => 'texto', 'req' => true],
             'descripcion_corta' => ['t' => 'Descripción corta', 'tipo' => 'texto', 'req' => true],
             'incluye_domingos' => ['t' => 'Incluye domingos', 'tipo' => 'sino', 'def' => 'NO'],
+            'duracion_fija' => ['t' => 'Duración fija', 'tipo' => 'sino', 'def' => 'NO'],
         ]],
         'tipos_asistencia' => ['Tipos de asistencia', ['codigo'], [
             'codigo' => ['t' => 'Código', 'tipo' => 'texto', 'req' => true],

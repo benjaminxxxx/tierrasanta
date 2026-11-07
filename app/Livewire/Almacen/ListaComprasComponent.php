@@ -25,7 +25,7 @@ use Livewire\WithPagination;
 #[Title('Compras')]
 class ListaComprasComponent extends Component
 {
-    use WithPagination, WithoutUrlPagination, LivewireAlert, HandlesAlerts;
+    use WithPagination, WithoutUrlPagination, LivewireAlert, HandlesAlerts, \App\Livewire\Traits\ConPreguntaRegenerarKardex;
 
     #[Url]
     public string $search = '';
@@ -166,6 +166,12 @@ class ListaComprasComponent extends Component
                 $this->alert('success', 'Compra eliminada y stock descontado. Puedes verla en "Ver eliminadas".');
             }
             $this->modalMotivo = false;
+            $compra = \App\Models\Compra::withTrashed()->with('detalles')->find($this->compraMotivoId);
+            if ($compra) {
+                $anio = \Illuminate\Support\Carbon::parse($compra->fecha_emision)->year;
+                $this->preguntarRegenerarKardex($compra->detalles->pluck('producto_id')
+                    ->map(fn($p) => ['producto_id' => $p, 'anio' => $anio, 'tipo' => $compra->tipo_kardex])->all());
+            }
         } catch (ValidationException $e) {
             $this->addError('motivo', $e->validator->errors()->first('motivo'));
         } catch (\Throwable $e) {

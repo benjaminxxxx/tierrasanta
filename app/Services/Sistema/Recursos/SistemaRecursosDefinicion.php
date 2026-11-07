@@ -298,7 +298,7 @@ class SistemaRecursosDefinicion extends SistemaLibroExcelDefinicion
         $this->upsert('plan_tipos_suspension', ['codigo' => $d['codigo']], [
             'grupo' => $d['grupo'], 'descripcion' => $d['descripcion'], 'descripcion_corta' => $d['descripcion_corta'],
             'incluye_domingos' => $d['incluye_domingos'] === 'SI',
-        ]);
+        ] + (array_key_exists('duracion_fija', $d) ? ['duracion_fija' => $d['duracion_fija'] === 'SI'] : [])); // un Excel anterior sin la columna no la cambia
     }
 
     protected function guardarTiposAsistencia(array $d): void

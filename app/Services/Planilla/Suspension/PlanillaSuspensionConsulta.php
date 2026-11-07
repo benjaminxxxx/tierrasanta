@@ -169,6 +169,9 @@ class PlanillaSuspensionConsulta
                     'dias' => $s->duracion_dias,
                     'asistencia' => $asistencia ?: null,
                     'codigo_esperado' => $propios->first(),
+                    // Descanso médico, maternidad…: no puede regresar antes (el registro diario no deja cambiar sus días)
+                    'fija' => (bool) $s->tipoSuspension?->duracion_fija,
+                    'observaciones' => $s->observaciones,
                     'estado' => $f->isSunday() && $estado === 'sin_registro' ? 'registrado' : $estado,
                 ];
             })

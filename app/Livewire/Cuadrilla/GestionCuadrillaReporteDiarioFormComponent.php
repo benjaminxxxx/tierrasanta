@@ -11,7 +11,7 @@ use Livewire\Component;
 
 class GestionCuadrillaReporteDiarioFormComponent extends Component
 {
-    use LivewireAlert, \App\Traits\HandlesAlerts;
+    use LivewireAlert, \App\Traits\HandlesAlerts, \App\Livewire\Traits\ConActividadesCampo;
     public $mostrarFormularioRegistroDiarioCuadrilla = false;
     public $cuadrilleros = [];
     public $labores = [];
@@ -20,7 +20,7 @@ class GestionCuadrillaReporteDiarioFormComponent extends Component
     public $todosCuadrilleros = [];
     public $cuadrilleroSeleccionado;
     public $fecha;
-    protected $listeners = ['registrarReporteDiarioCuadrilla'];
+    protected $listeners = ['registrarReporteDiarioCuadrilla', 'guardarRegistroActividadesConfirmado'];
     public function mount()
     {
         $todos = CuadrilleroServicio::getCuadrillerosCompleto();
@@ -73,9 +73,31 @@ class GestionCuadrillaReporteDiarioFormComponent extends Component
         unset($this->actividades[$index]);
         $this->actividades = array_values($this->actividades); // reindexar
     }
-    public function guardarRegistroDiarioCuadrilla()
+    /** "Sí, es correcto" de las actividades por campo */
+    public function guardarRegistroActividadesConfirmado($data = null)
     {
         try {
+            $this->aceptarActividadesCampo($this->fecha, $data);
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+            return;
+        }
+        $this->guardarRegistroDiarioCuadrilla(true);
+    }
+
+    public function guardarRegistroDiarioCuadrilla(bool $actividadesConfirmadas = false)
+    {
+        try {
+            // Un campo con más de un código ese día: "¿es correcto?" antes de guardar (aquí se agregan horas, no se reemplazan)
+            $tramos = [];
+            foreach ($this->actividades as $a) {
+                foreach ($this->cuadrillerosAgregados as $c) {
+                    $tramos[] = ['campo' => $a['campo'] ?? '', 'labor' => $a['labor'] ?? '', 'origen' => 'cuadrilla', 'trabajador_id' => $c['id'] ?? null];
+                }
+            }
+            if (!$actividadesConfirmadas && $this->fecha && $this->preguntarActividadesCampo($this->fecha, $tramos, [], [], 'guardarRegistroActividadesConfirmado', [])) {
+                return;
+            }
             CuadrilleroServicio::registrarActividadDiaria(
                 $this->fecha,
                 $this->cuadrillerosAgregados,

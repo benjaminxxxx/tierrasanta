@@ -16,7 +16,7 @@ use Livewire\Component;
 #[Title('Nueva compra')]
 class CompraFormComponent extends Component
 {
-    use HandlesAlerts, LivewireAlert;
+    use HandlesAlerts, LivewireAlert, \App\Livewire\Traits\ConPreguntaRegenerarKardex;
 
     public bool $mostrarModal = false;
     public ?int $compraId = null;
@@ -283,8 +283,12 @@ class CompraFormComponent extends Component
 
         try {
 
+            $antes = [];
             if ($this->modo === 'editar') {
                 $compra = Compra::findOrFail($this->compraId);
+                // Lo que movía antes (si cambió producto, tipo o fecha, el kardex anterior también cambia)
+                $antes = $compra->detalles()->pluck('producto_id')->map(fn($p) => ['producto_id' => $p,
+                    'anio' => \Illuminate\Support\Carbon::parse($compra->fecha_emision)->year, 'tipo' => $compra->tipo_kardex])->all();
                 $servicio->actualizar($compra, $cabecera, $this->detalles);
 
                 $this->dispatch('nuevaCompraActualizada');
@@ -297,7 +301,14 @@ class CompraFormComponent extends Component
             $this->mostrarModal = false;
             // El kardex no se regenera al registrar (es pesado): queda como tarea pendiente "Kardex por regenerar"
             $productos = collect($this->detalles)->pluck('producto_id')->unique()->count();
-            $this->alert('success', 'Compra guardada. El kardex ' . $this->tipoKardex . " de {$productos} producto(s) queda pendiente de regenerar (Tareas pendientes → Kardex por regenerar).", ['timer' => 7000]);
+            if ($this->modo === 'editar') {
+                $this->alert('success', 'Compra actualizada.');
+                $anio = \Illuminate\Support\Carbon::parse($this->fechaEmision)->year;
+                $this->preguntarRegenerarKardex(array_merge($antes, collect($this->detalles)->pluck('producto_id')->filter()
+                    ->map(fn($p) => ['producto_id' => $p, 'anio' => $anio, 'tipo' => $this->tipoKardex])->all()));
+            } else {
+                $this->alert('success', 'Compra guardada. El kardex ' . $this->tipoKardex . " de {$productos} producto(s) queda pendiente de regenerar (Tareas pendientes → Kardex por regenerar).", ['timer' => 7000]);
+            }
         } catch (\Throwable $th) {
             $this->errorAlert($th);
         }

@@ -13,6 +13,8 @@ class PlanTipoSuspension extends Model
         'descripcion',
         'descripcion_corta',
         'incluye_domingos', // los domingos intermedios cuentan como parte de la suspensión
+        'duracion_fija', // descanso médico, maternidad…: no se puede regresar antes del fin
     ];
+    protected $casts = ['incluye_domingos' => 'boolean', 'duracion_fija' => 'boolean'];
     
 }

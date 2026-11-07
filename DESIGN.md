@@ -223,3 +223,4 @@ Definidos en `resources/css/app.css` (`:root` y `.dark`) y expuestos en `tailwin
 | Cuadrilla: selector de grupo `x-cuadrilla.selector-grupo` (buscador, orden por uso y etiquetas) en "Agregar cuadrilleros" (el resto del modal sigue sin migrar) | 05/11/2026 |
 | Cuadrilla: modal "Detalle de las horas" del reporte semanal (tab por día, tramos como etiquetas, leyenda de labores) | 05/11/2026 |
 | Cuadrilla: modal "Reemplazar cuadrillero" (qué pasa al nuevo, opción de riego) | 05/11/2026 |
+| Campo: página "Actividades por campo" (/campo/actividades) y pregunta "¿Las actividades de cada campo son correctas?" al guardar horas (`livewire.campo.partial.aviso-actividades`) | 07/11/2026 |

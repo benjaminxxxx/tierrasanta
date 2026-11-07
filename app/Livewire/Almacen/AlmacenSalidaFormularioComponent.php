@@ -19,7 +19,7 @@ use Livewire\Component;
 
 class AlmacenSalidaFormularioComponent extends Component
 {
-    use LivewireAlert, \App\Traits\HandlesAlerts;
+    use LivewireAlert, \App\Traits\HandlesAlerts, \App\Livewire\Traits\ConPreguntaRegenerarKardex;
 
     public bool $mostrar = false;
     public string $tipo = 'productos';
@@ -214,6 +214,14 @@ class AlmacenSalidaFormularioComponent extends Component
 
             $this->dispatch('salidaGuardada', mes: $mesDestino, anio: $anioDestino);
             $this->cerrar();
+            // Salidas editadas o eliminadas: su kardex cambió (las nuevas quedan en Tareas pendientes, como siempre)
+            if ($resultados['actualizados'] > 0 || $resultados['eliminados'] > 0) {
+                $this->preguntarRegenerarKardex(collect($data)->filter(fn($f) => !empty($f['id']) && !empty($f['producto_id']))
+                    ->map(function ($f) {
+                        $fecha = \App\Support\DateHelper::normalizarFecha($f['fecha_reporte'] ?? null);
+                        return ['producto_id' => $f['producto_id'], 'anio' => $fecha ? (int) substr($fecha, 0, 4) : $this->anio, 'tipo' => $f['tipo_kardex'] ?? null];
+                    })->values()->all());
+            }
         } catch (\Throwable $e) {
             $this->errorAlert($e);
         }

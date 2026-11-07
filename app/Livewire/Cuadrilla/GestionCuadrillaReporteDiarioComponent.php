@@ -14,7 +14,7 @@ use Livewire\Component;
 
 class GestionCuadrillaReporteDiarioComponent extends Component
 {
-    use LivewireAlert, ConFechaReporteDia, ConManejarErrores, ConReporteDiarioExcel, \App\Traits\HandlesAlerts;
+    use LivewireAlert, ConFechaReporteDia, ConManejarErrores, ConReporteDiarioExcel, \App\Traits\HandlesAlerts, \App\Livewire\Traits\ConActividadesCampo;
 
     #region VARIABLES E INICIALIZACION
     public $trabajadores = [];
@@ -28,7 +28,7 @@ class GestionCuadrillaReporteDiarioComponent extends Component
     /** Al guardar: cuadrilleros que parecen ser trabajadores de planilla que hoy también figuran en planilla */
     public array $preguntasPlanilla = [];
     public bool $mostrarPreguntaPlanilla = false;
-    protected $listeners = ['registroDetalleHorasExterno' => 'refrescarTabla', 'guardarReporteConfirmado'];
+    protected $listeners = ['registroDetalleHorasExterno' => 'refrescarTabla', 'guardarReporteConfirmado', 'guardarReporteActividadesConfirmado'];
     protected ReporteDiarioCuadrillaServicio $reporteDiarioCuadrillaServicio;
     public function boot(ReporteDiarioCuadrillaServicio $reporteDiarioCuadrillaServicio)
     {
@@ -95,9 +95,15 @@ class GestionCuadrillaReporteDiarioComponent extends Component
             $this->errorAlert($e);
         }
     }*/
-    public function storeTableDataGuardarActividadDiaria($datos)
+    public function storeTableDataGuardarActividadDiaria($datos, bool $actividadesConfirmadas = false)
     {
         try {
+            // Un campo con más de un código ese día: "¿es correcto?" antes de guardar (puede ser una metida de mano)
+            if (!$actividadesConfirmadas && $this->preguntarActividadesCampo($this->fecha, self::tramosDeFilas($datos, 'cuadrilla', 'cuadrillero_id'), [],
+                array_values(array_filter(array_map(fn($f) => (int) ($f['cuadrillero_id'] ?? 0), $datos))),
+                'guardarReporteActividadesConfirmado', ['datos' => $datos])) {
+                return;
+            }
             // 1. Validar si hay bonos que se van a perder por quitar labores
             $afectados = CuadrilleroServicio::detectarBonosAEliminar($this->fecha, $datos);
 
@@ -155,6 +161,18 @@ class GestionCuadrillaReporteDiarioComponent extends Component
         }
     }
 
+    /** "Sí, es correcto" de las actividades por campo: las acepta y sigue con el guardado (y la revisión de bonos). */
+    public function guardarReporteActividadesConfirmado($data)
+    {
+        try {
+            $this->aceptarActividadesCampo($this->fecha, $data);
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+            return;
+        }
+        $this->storeTableDataGuardarActividadDiaria($data['datos'] ?? [], true);
+    }
+
     public function guardarReporteConfirmado($data)
     {
         $datos = $data['datos'] ?? [];
@@ -169,6 +187,10 @@ class GestionCuadrillaReporteDiarioComponent extends Component
             // Si ese día hubo riego, se vuelve a verificar solo (tarea "Registros de riego desincronizados")
             $aviso = app(\App\Services\Riego\VerificacionSincronizacionRiegoServicio::class)
                 ->verificarDespuesDeGuardar($this->fecha, \App\Models\Cuadrillero::class);
+            // Códigos aceptados que ya nadie hizo en su campo (se corrigió una metida de mano): se quitan y se avisa
+            if ($quitados = $this->limpiarActividadesCampo($this->fecha)) {
+                $aviso = trim(($aviso ?? '') . ' ' . $quitados);
+            }
             $aviso ? $this->alert('warning', "Registro guardado. {$aviso}", ['timer' => 8000])
                 : $this->alert('success', 'Registro actualizado correctamente');
             // Trabajadores de planilla que también figuran hoy en cuadrilla: ¿trabajo extra, otro día u otra persona?

@@ -59,7 +59,16 @@
                                         <span class="rounded-[6px] px-1.5 py-0.5 text-xs font-medium {{ $cls }}">
                                             <i class="fa {{ $ico }}"></i> {{ $txt }}{{ $a['estado'] === 'conflicto' ? ' ' . $a['asistencia'] : '' }}
                                         </span>
+                                        @if ($a['fija'])
+                                            <span class="rounded-[6px] bg-fog px-1.5 py-0.5 text-xs font-medium text-graphite" title="No puede regresar antes. Si el certificado cambió: clic derecho sobre el trabajador → Suspensiones">
+                                                <i class="fa fa-lock"></i> Fijo
+                                            </span>
+                                        @endif
+                                        @if ($a['observaciones'])
+                                            <span class="w-full truncate text-xs text-pewter" title="{{ $a['observaciones'] }}"><i class="fa fa-comment"></i> {{ $a['observaciones'] }}</span>
+                                        @endif
                                         @can(\App\Constants\Permisos::PLANILLA_SUSPENSION_GESTIONAR)
+                                            @if (!$a['fija'])
                                             {{-- Recarga la tabla: primero se resuelven los cambios sin guardar --}}
                                             <button type="button"
                                                 @click="abierto = false; registroDiarioGuardia(() => { if (confirm(@js($a['nombre'] . ' regresó hoy: su ' . mb_strtolower($a['descripcion'] ?? 'suspensión') . ' ' . ($a['dia'] > 1 ? 'terminará el ' . \Carbon\Carbon::parse($fecha)->subDay()->format('d/m/Y') : 'se eliminará') . ' y se quitarán sus ' . ($a['codigo_esperado'] ?? '') . ' desde hoy hasta el ' . $fmt($a['hasta']) . '. ¿Continuar?'))) $wire.regresoAnticipado({{ $a['suspension_id'] }}) })"
@@ -67,12 +76,13 @@
                                                 title="Termina la suspensión ayer y quita del registro diario los días que sobran">
                                                 <i class="fa fa-person-walking-arrow-loop-left"></i> Regresó hoy
                                             </button>
+                                            @endif
                                         @endcan
                                     </li>
                                 @endforeach
                             </ul>
                             <p class="border-t border-hairline px-3 py-2 text-xs text-pewter">
-                                Sus días se marcan solos. Si regresó antes, usa "Regresó hoy" o escribe su asistencia en la tabla y al guardar se te preguntará.
+                                Sus días se marcan solos. Vacaciones y licencias pueden acortarse con "Regresó hoy" (o escribiendo su asistencia y guardando); descanso médico y maternidad son fijos. Clic en su asistencia para ver el detalle.
                             </p>
                         </div>
                     </div>
@@ -181,6 +191,9 @@
                                 <p class="text-xs text-pewter">
                                     <span class="rounded-[6px] bg-fog px-1.5 py-0.5 font-medium text-graphite">{{ $p['codigo'] }}</span>
                                     {{ $p['tipo'] }} · desde {{ \Illuminate\Support\Carbon::parse($p['desde'])->format('d/m/Y') }}
+                                    @if ($p['fija'])
+                                        · <span class="font-medium text-graphite"><i class="fa fa-lock"></i> fijo: no puede regresar antes</span>
+                                    @endif
                                 </p>
                             </div>
                             <label class="flex items-center gap-2 text-sm text-graphite">
@@ -188,6 +201,8 @@
                                 <x-input type="date" wire:model="preguntasHasta.{{ $i }}.hasta" class="!h-9 !w-auto"
                                     min="{{ $fecha }}" />
                             </label>
+                            <x-input type="text" wire:model="preguntasHasta.{{ $i }}.observacion" class="!h-9 w-full" maxlength="250"
+                                placeholder="Nota (opcional): certificado, motivo… se ve al hacer clic en su asistencia" />
                             @error("preguntasHasta.{$i}.hasta") <p class="w-full text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
                     @endforeach
@@ -278,6 +293,7 @@
         guardando: false,
         guardia: { abierta: false, accion: null, alCancelar: null },
         fechaTexto: @json(\Illuminate\Support\Carbon::parse($fecha)->format('d/m/Y')),
+        fechaIso: @json(\Illuminate\Support\Carbon::parse($fecha)->toDateString()),
         mes: @json((int) \Illuminate\Support\Carbon::parse($fecha)->month),
         anio: @json((int) \Illuminate\Support\Carbon::parse($fecha)->year),
         codigosRenuncia: @json(array_merge([''], \App\Models\PlanTipoAsistencia::codigosConRol(\App\Models\PlanTipoAsistencia::ROL_RENUNCIA))),
@@ -303,6 +319,8 @@
                 this.hot.loadData(this.tableData);
             });
             this.initTable();
+            // Al guardar cambian las ausencias (nuevas, "¿hasta cuándo?"): se vuelven a pintar comentarios y bloqueos
+            $wire.$watch('ausencias', () => this.hot?.render());
 
             // Para los botones de fuera de la tabla (fecha, Gestionar lista, Enviar reporte…)
             this._guardia = (accion, alCancelar = null) => this.pedirGuardia(accion, alCancelar);
@@ -355,6 +373,22 @@
             const s = new Set(this.filasModificadas);
             s.add(fisica);
             this.filasModificadas = s; // nuevo Set para que Alpine lo note
+        },
+
+        // ---- Ausencias del día (vacaciones, DM, licencias): comentario en ASIST ----
+        ausenciaDe(planEmpleadoId) {
+            if (!planEmpleadoId) return null;
+            return ($wire.ausencias || []).find(a => Number(a.plan_empleado_id) === Number(planEmpleadoId)) || null;
+        },
+        textoAusencia(a) {
+            const f = d => d ? d.split('-').reverse().join('/') : 'sin fin';
+            const lineas = [
+                `${a.codigo_esperado || a.codigo} · ${a.descripcion || ''}`,
+                `Del ${f(a.desde)} al ${f(a.hasta)} (día ${a.dia} de ${a.dias})`,
+                a.fija ? 'Fijo: no puede regresar antes.' : 'Puede regresar antes: escribe su asistencia y guarda.',
+            ];
+            if (a.observaciones) lineas.push(`Nota: ${a.observaciones}`);
+            return lineas.join('\n');
         },
 
         // ---- Menú contextual ----
@@ -426,6 +460,8 @@
                 filters: true,
                 dropdownMenu: false,
                 fixedColumnsLeft: 3,
+                // Comentario en ASIST de quien tiene una ausencia (como en el Excel): al pasar el mouse o al hacer clic
+                comments: { displayDelay: 150 },
                 licenseKey: 'non-commercial-and-evaluation',
                 // Clic derecho sobre un trabajador: sus suspensiones (vacaciones, DM, licencias) en el mismo modal de Permisos
                 // Clic derecho sobre un trabajador: su relación con el registro diario (contrato del día, ficha, suspensiones)
@@ -497,12 +533,35 @@
                         return cellProperties;
                     }
 
+                    // Ausencia del día (vacaciones, DM…): comentario en ASIST; si es de fechas fijas, la fila no se edita
+                    const ausencia = self.ausenciaDe(rowData.plan_empleado_id);
+                    if (ausencia) {
+                        const prop = this.instance.colToProp(col);
+                        if (prop === 'asistencia') {
+                            cellProperties.comment = { value: self.textoAusencia(ausencia), readOnly: true, style: { width: 280, height: 115 } };
+                        }
+                        if (ausencia.fija && rowData.asistencia === ausencia.codigo_esperado && !(ausencia.desde === self.fechaIso && ausencia.hasta === self.fechaIso)) {
+                            cellProperties.readOnly = true;
+                            cellProperties.className = '!bg-muted !text-pewter' + (prop === 'nombres' ? '' : ' !text-center');
+                            return cellProperties;
+                        }
+                    }
+
                     if (this.instance.colToProp(col) === 'total_horas') {
                         const bloqueado = ['A', 'LSG', 'F'].includes(rowData.asistencia) || rowData.nombres == 'CUADRILLA';
                         cellProperties.readOnly = bloqueado;
                         cellProperties.className = bloqueado ? '!bg-muted !text-center font-bold' : '!text-center font-bold';
                     }
                     return cellProperties;
+                },
+                // Clic en ASIST de alguien con ausencia: se abre su comentario (sin esperar el mouse encima)
+                afterSelectionEnd: (r, c) => {
+                    const comentarios = this.hot.getPlugin('comments');
+                    if (this.hot.colToProp(c) === 'asistencia' && this.hot.getCellMeta(r, c).comment) {
+                        comentarios.showAtCell(r, c);
+                    } else {
+                        comentarios.hide();
+                    }
                 },
                 afterChange: (changes, source) => {
                     if (!changes || source === 'recalculado' || source === 'loadData') return;

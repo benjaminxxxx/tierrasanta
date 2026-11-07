@@ -14,7 +14,7 @@ use Jantinnerezo\LivewireAlert\LivewireAlert;
 
 class InsumoKardexFormComponent extends Component
 {
-    use LivewireAlert, HandlesAlerts;
+    use LivewireAlert, HandlesAlerts, \App\Livewire\Traits\ConPreguntaRegenerarKardex;
 
     public $mostrarFormularioKardex = false;
     public $insumoKardexId;
@@ -212,6 +212,10 @@ class InsumoKardexFormComponent extends Component
             $this->mostrarFormularioKardex = false;
             $textoCreado = $this->insumoKardexId ? 'actualizado' : 'creado';
             $this->alert('success', "Kardex {$textoCreado} correctamente.");
+            // Editar saldo inicial, tipo, año… cambia sus movimientos: ¿regenerar de una vez?
+            if ($this->insumoKardexId) {
+                $this->preguntarRegenerarKardex([], [$kardex->id]);
+            }
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Los campos del formulario están bajo "kardex."

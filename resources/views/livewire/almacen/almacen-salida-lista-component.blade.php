@@ -330,6 +330,14 @@
                     className: '!text-center',
                     readOnly: true,
                 },
+                // Para qué se usó / qué daño se trató (no aplica a combustible)
+                ...(esCombustible ? [] : [{
+                    data: 'uso',
+                    type: 'text',
+                    title: 'USO',
+                    width: 140,
+                    readOnly: true,
+                }]),
                 {
                     data: 'costo_por_kg',
                     type: 'numeric',
