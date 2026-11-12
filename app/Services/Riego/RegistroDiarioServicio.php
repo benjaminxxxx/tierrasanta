@@ -36,7 +36,16 @@ class RegistroDiarioServicio
                 'por_acumulacion'  => false,
                 // Columna "De otro día" (checkbox de la grilla): estricto, para no tomar otro valor como verdadero
                 'referido_otro_dia' => ($row[7] ?? false) === true,
+                // Columna "Zona" (9, al final de la grilla): vacía = zona general del campo
+                'zona'             => self::zona($row[9] ?? null),
             ]);
         }
+    }
+
+    /** Zona escrita en la grilla: sin espacios de más, en mayúscula inicial; vacía = null. */
+    public static function zona($valor): ?string
+    {
+        $z = preg_replace('/\s+/', ' ', trim((string) $valor));
+        return $z === '' ? null : mb_substr(mb_convert_case($z, MB_CASE_TITLE), 0, 40);
     }
 }

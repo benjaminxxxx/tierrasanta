@@ -158,6 +158,7 @@ class ReporteDiarioRiegoDetalleComponent extends Component
                     'sh' => (bool) $registro->sh,
                     'referido_otro_dia' => (bool) $registro->referido_otro_dia,
                     'horas_ponderadas' => $registro->horas_ponderadas,
+                    'zona' => $registro->zona,
                 ];
             })
             ->toArray();

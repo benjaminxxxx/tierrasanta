@@ -219,7 +219,7 @@ class CampaniaHistoriaConsulta
         return $eventos;
     }
 
-    /** Cosecha recogida en el campo (sin los retornos de infestadores, que se cuentan aparte). */
+    /** Cosecha recogida en el campo (los lotes de infestadores son el retorno de su mamá: van en recuperaciones()). */
     private function cosechas(CampoCampania $c, string $inicio, string $fin): Collection
     {
         $tipos = DB::table('cochinilla_observaciones')->pluck('descripcion', 'codigo');
@@ -228,7 +228,6 @@ class CampaniaHistoriaConsulta
             ->orderBy('fecha')->get(['id', 'lote', 'fecha', 'observacion', 'total_kilos', 'campo_origen', 'campania_origen_id']);
 
         $eventos = collect();
-        $infestadores = $ingresos->filter(fn($i) => str_starts_with((string) $i->observacion, 'infestador'));
         $cosecha = $ingresos->reject(fn($i) => str_starts_with((string) $i->observacion, 'infestador'));
 
         foreach ($this->rachas($cosecha, 'fecha', CochinillaOrigenProceso::DIAS_MISMA_INFESTACION) as $racha) {
@@ -241,18 +240,6 @@ class CampaniaHistoriaConsulta
             $eventos->push($this->evento($desde, 'cosecha',
                 'Se cosechó ' . ($dias === 1 ? 'el ' . $this->fecha($desde) : "durante {$dias} días (" . $this->fecha($desde) . ' al ' . $this->fecha($hasta) . ')')
                 . ": {$porTipo}. Lotes " . $racha->pluck('lote')->implode(', ') . '.'));
-        }
-
-        foreach ($this->rachas($infestadores, 'fecha', CochinillaOrigenProceso::DIAS_MISMA_INFESTACION) as $racha) {
-            $desde = $racha->first()->fecha;
-            $origenes = DB::table('cochinilla_ingreso_origenes')->whereIn('cochinilla_ingreso_id', $racha->pluck('id'))
-                ->selectRaw('campo_origen, SUM(kg) kg')->groupBy('campo_origen')->pluck('kg', 'campo_origen');
-            $de = $origenes->isNotEmpty()
-                ? $origenes->map(fn($kg, $campo) => "{$campo} " . number_format($kg, 2) . ' kg')->implode(', ')
-                : $racha->groupBy('campo_origen')->map(fn($g, $campo) => ($campo ?: '¿?') . ' ' . number_format($g->sum('total_kilos'), 2) . ' kg')->implode(', ');
-            $eventos->push($this->evento($desde, 'recojo',
-                'Se recogieron los infestadores: ' . number_format($racha->sum('total_kilos'), 2) . ' kg (lotes ' . $racha->pluck('lote')->implode(', ')
-                . "). Los kilos son de los campos de donde vino la mamá: {$de}. La mano de obra es de este campo."));
         }
         return $eventos;
     }
@@ -290,28 +277,33 @@ class CampaniaHistoriaConsulta
         })->values();
     }
 
-    /** Lo que volvió de la mamá de este campo puesta en otros campos (repartos de infestadores). */
+    /**
+     * Lo que volvió de la mamá de este campo puesta en otros campos: los lotes de infestadores se registran con el
+     * campo que dio la mamá y son de la campaña que se cosechó (campania_origen_id). Uno por envío de mamá.
+     */
     private function recuperaciones(CampoCampania $c): Collection
     {
-        $filas = DB::table('cochinilla_ingreso_origenes as o')->join('cochinilla_ingresos as i', 'i.id', '=', 'o.cochinilla_ingreso_id')
-            ->where('o.campania_origen_id', $c->id)->where('i.campo', '<>', $c->campo)
-            ->orderBy('i.fecha')->get(['i.campo', 'i.fecha', 'i.lote', 'o.kg']);
+        $lotes = DB::table('cochinilla_ingresos')->where('campania_origen_id', $c->id)->where('observacion', 'like', 'infestador%')
+            ->orderBy('fecha')->get(['campo', 'fecha', 'lote', 'total_kilos']);
         $factor = CochinillaRecuperacionReglas::factorSeco();
+        $origen = app(CochinillaOrigenProceso::class);
 
-        return $filas->groupBy('campo')->map(function ($g, $campo) use ($c, $factor) {
-            $desde = Carbon::parse($g->min('fecha'));
-            $puesto = (float) DB::table('cochinilla_infestaciones')->where('campo_nombre', $campo)->where('campo_origen_nombre', $c->campo)
-                ->whereBetween('fecha', [$desde->copy()->subDays(CochinillaOrigenProceso::DIAS_INFESTADORES)->toDateString(), $desde->toDateString()])
-                ->sum('kg_madres');
-            $kg = (float) $g->sum('kg');
-            $texto = "Se recuperó de la mamá puesta en el campo {$campo}: " . number_format($kg, 2) . ' kg (lotes ' . $g->pluck('lote')->unique()->implode(', ') . ')';
-            if ($puesto > 0) {
-                $esperado = $puesto / $factor;
-                $texto .= ', de ' . number_format($puesto, 2) . ' kg frescos puestos (~' . number_format($esperado, 0) . ' kg secos esperados, '
-                    . number_format($kg / $esperado * 100, 0) . ' %)';
-            }
-            return $this->evento($desde->toDateString(), 'recuperacion', $texto . '.');
-        })->values();
+        return $lotes->groupBy(fn($l) => $origen->envio($l->campo, Carbon::parse($l->fecha)->toDateString())['inicio'] ?? 'sin')
+            ->map(function ($g, $inicio) use ($origen, $factor) {
+                $primero = $g->first();
+                $kg = (float) $g->sum('total_kilos');
+                $lotes = ' (lotes ' . $g->pluck('lote')->unique()->implode(', ') . ')';
+                $envio = $inicio !== 'sin' ? $origen->envio($primero->campo, Carbon::parse($primero->fecha)->toDateString()) : null;
+                if (!$envio) {
+                    return $this->evento(Carbon::parse($primero->fecha)->toDateString(), 'recuperacion',
+                        'Volvieron infestadores sin un envío de mamá registrado antes: ' . number_format($kg, 2) . " kg{$lotes}. Revisar.");
+                }
+                $esperado = $envio['kg'] / $factor;
+                return $this->evento(Carbon::parse($primero->fecha)->toDateString(), 'recuperacion',
+                    'Se recuperó la mamá puesta en ' . implode(', ', array_keys($envio['destinos'])) . ': ' . number_format($kg, 2) . " kg{$lotes}, de "
+                    . number_format($envio['kg'], 2) . ' kg frescos puestos (~' . number_format($esperado, 0) . ' kg secos esperados, '
+                    . number_format($kg / $esperado * 100, 0) . ' %).');
+            })->values();
     }
 
     /** Riego por mes: días regados y horas. */

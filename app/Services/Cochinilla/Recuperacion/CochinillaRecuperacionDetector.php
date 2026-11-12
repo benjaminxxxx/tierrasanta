@@ -6,8 +6,8 @@ use App\Models\TareaPendiente;
 use App\Services\Sistema\TareasPendientes\TareaPendienteServicio;
 
 /**
- * Tarea pendiente: infestaciones que pasaron los días de aviso (Sistema → Configuración) sin darse por recuperadas.
- * Tarea de estado: una subtarea por infestación; desaparece al darla por recuperada.
+ * Tarea pendiente: envíos de mamá que pasaron los días de aviso (Sistema → Configuración) sin darse por recuperados.
+ * Tarea de estado: una subtarea por envío; desaparece al darlo por recuperado.
  */
 class CochinillaRecuperacionDetector
 {
@@ -23,9 +23,9 @@ class CochinillaRecuperacionDetector
         $hijas = $this->consulta->tandas('alerta')->map(fn($t) => [
             'clave' => $t['clave'],
             'campo' => $t['campo'],
-            'titulo' => "{$t['campo']}: infestación del " . \Carbon\Carbon::parse($t['inicio'])->format('d/m/Y') . " sin recuperar ({$t['dias']} días)",
-            'descripcion' => number_format($t['kg_madres'], 2) . ' kg de mamá de ' . implode(', ', array_keys($t['origenes']))
-                . '; recuperado ' . number_format($t['kg_recuperados'], 2) . ' kg. Si ya se recogió todo, dala por recuperada.',
+            'titulo' => "{$t['campo']}: mamá del " . \Carbon\Carbon::parse($t['inicio'])->format('d/m/Y') . " sin recuperar ({$t['dias']} días)",
+            'descripcion' => number_format($t['kg_madres'], 2) . " kg de mamá de {$t['campo']} puestos en " . implode(', ', array_keys($t['destinos']))
+                . '; volvió ' . number_format($t['kg_recuperados'], 2) . ' kg. Si ya se recogió todo, dala por recuperada.',
         ])->values()->all();
 
         $padre = $this->registrador->registrarOActualizar([
@@ -34,7 +34,7 @@ class CochinillaRecuperacionDetector
             'fecha_inicio' => null,
             'fecha_fin' => null,
             'titulo' => 'Cochinilla por recuperar',
-            'descripcion' => count($hijas) . " infestación(es) con más de {$dias} días sin darse por recuperadas.",
+            'descripcion' => count($hijas) . " envío(s) de mamá con más de {$dias} días sin darse por recuperados.",
             'variante' => 'warning',
             'cantidad_afectados' => count($hijas),
             'servicio' => self::class,

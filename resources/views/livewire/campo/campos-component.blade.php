@@ -381,6 +381,7 @@
     <livewire:campania.campania-ficha-component />
     <livewire:campania.campania-cerrar-component />
     <livewire:campania.campania-corregir-fechas-component />
+    <livewire:campania.campania-mapa-etapas-component />
     {{-- Excel de recursos: solo las hojas de esta página (DESIGN.md) --}}
     <livewire:sistema.sistema-libro-excel-component libro="recursos" :hojas="['campos']" :flotante="true" :permiso="\App\Constants\Permisos::CAMPO_PARCELA_GESTIONAR" />
 </div>

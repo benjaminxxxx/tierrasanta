@@ -224,3 +224,5 @@ Definidos en `resources/css/app.css` (`:root` y `.dark`) y expuestos en `tailwin
 | Cuadrilla: modal "Detalle de las horas" del reporte semanal (tab por día, tramos como etiquetas, leyenda de labores) | 05/11/2026 |
 | Cuadrilla: modal "Reemplazar cuadrillero" (qué pasa al nuevo, opción de riego) | 05/11/2026 |
 | Campo: página "Actividades por campo" (/campo/actividades) y pregunta "¿Las actividades de cada campo son correctas?" al guardar horas (`livewire.campo.partial.aviso-actividades`) | 07/11/2026 |
+| Campañas: modal "Mapa de etapas" (`campania-mapa-etapas-component`): hileras del campo por grupo y etapa, línea de tiempo por grupo y edición; opción en `x-campania.opciones` | 12/11/2026 |
+| Campo: "Actividades por campo" con vista **Por campaña** (campaña en encabezado vertical, grupos de hileras en horizontal, columnas Sin etapa / Fuera de etapa, total de horas); opción "Labores de la campaña" en `x-campania.opciones` | 12/11/2026 |

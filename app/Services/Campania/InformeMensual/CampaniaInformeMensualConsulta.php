@@ -231,11 +231,10 @@ class CampaniaInformeMensualConsulta
     /**
      * Cochinilla PRODUCIDA por la campaña (por sublote si lo tiene), agrupada por tipo.
      *
-     * Se cuenta por dueño (campania_origen_id), no por el campo donde se recogió: la cosecha de mamá infesta otros
-     * campos y vuelve como ingreso de infestadores en ese otro campo semanas después, y esos kilos son de la campaña
-     * cosechada (regla del ingeniero, 19/10/2026). Ingresos sin dueño registrado: los del propio campo.
-     * Un retorno de infestadores con mamá de varios campos se reparte (cochinilla_ingreso_origenes): a esta campaña
-     * le toca solo su parte, aplicada en proporción a cada sublote.
+     * Se cuenta por dueño (campania_origen_id), no por la fecha: la cosecha de mamá infesta otros campos y vuelve
+     * semanas después como ingreso de infestadores, registrado con el campo que dio la mamá; esos kilos son de la
+     * campaña cosechada (regla del ingeniero, 19/10/2026; ver CochinillaOrigenProceso). Ingresos sin dueño
+     * registrado: los del propio campo. cochinilla_ingreso_origenes tiene una fila por lote de infestador (100 %).
      */
     private function cosecha(CampoCampania $c, string $corte, float $area): array
     {

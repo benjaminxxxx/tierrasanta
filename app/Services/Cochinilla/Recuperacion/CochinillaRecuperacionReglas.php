@@ -62,26 +62,4 @@ class CochinillaRecuperacionReglas
             'descripcion' => 'Días desde la infestación sin dar por recuperados sus infestadores para avisar',
         ]);
     }
-
-    /**
-     * Reparto sugerido de $kgTotal entre orígenes según sus kg de mamá. Redondeado a 2 decimales; el último origen
-     * absorbe el redondeo para que la suma sea exacta.
-     *
-     * @param array<string, float> $kgMadres campo de origen => kg de mamá aportados
-     * @return array<string, array{kg_madres: float, porcentaje: float, kg: float}>
-     */
-    public static function repartoSugerido(float $kgTotal, array $kgMadres): array
-    {
-        $totalMadres = array_sum($kgMadres);
-        $reparto = [];
-        $asignado = 0.0;
-        $campos = array_keys($kgMadres);
-        foreach ($campos as $i => $campo) {
-            $porcentaje = $totalMadres > 0 ? $kgMadres[$campo] / $totalMadres : 1 / max(1, count($campos));
-            $kg = $i === count($campos) - 1 ? round($kgTotal - $asignado, 2) : round($kgTotal * $porcentaje, 2);
-            $asignado += $kg;
-            $reparto[$campo] = ['kg_madres' => (float) $kgMadres[$campo], 'porcentaje' => round($porcentaje * 100, 4), 'kg' => $kg];
-        }
-        return $reparto;
-    }
 }

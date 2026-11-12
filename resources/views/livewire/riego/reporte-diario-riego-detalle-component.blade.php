@@ -354,6 +354,15 @@
                 title: 'JORNAL',
                 readOnly: true,
                 className: '!text-center !bg-muted',
+            },
+            {
+                // Parte del campo (ej. Baja, Ingreso): regadores del mismo campo en zonas distintas no son riego cruzado.
+                // Debe quedar en la columna 9 (ver RegistroDiarioServicio y ValidarCruceRiegoServicio).
+                data: 'zona',
+                type: 'text',
+                width: 80,
+                title: 'ZONA',
+                className: '!text-center',
             }
             ];
         },
@@ -375,6 +384,20 @@
                 minSpareRows: 1,
                 stretchH: 'all',
                 autoColumnSize: true,
+                // Clic derecho → "Calcular Suma de Selección" (riego por gravedad repartido en varios campos):
+                // suma TOTAL HORAS y JORNAL por campo; las horas de inicio/fin y los textos no se suman
+                sumadorSeleccion: {
+                    columnaAgrupar: 0,
+                    columnasOmitir: [0, 1, 2, 4, 5, 6, 7, 9],
+                },
+                contextMenu: {
+                    items: {
+                        sumar_seleccion_custom: {
+                            name: 'Calcular Suma de Selección',
+                            callback: () => this.hot.getPlugin('SumadorSeleccion').ejecutarSuma(),
+                        },
+                    },
+                },
                 licenseKey: 'non-commercial-and-evaluation',
                 afterChange: (changes, source) => {
                     // Evitar procesar eventos automáticos o cargas iniciales

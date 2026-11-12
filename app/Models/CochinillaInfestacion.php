@@ -119,14 +119,14 @@ class CochinillaInfestacion extends Model
     #endregion
 
     /**
-     * Una infestación nueva, corregida o eliminada cambia de quién es la cochinilla de los infestadores que luego se
-     * recogen en ese campo: se recalculan sus ingresos de infestador.
+     * Una infestación nueva, corregida o eliminada cambia la campaña dueña de los infestadores que vuelven: esos lotes
+     * se registran con el campo que dio la mamá (CochinillaOrigenProceso), así que se recalculan los de ese campo.
      */
     protected static function booted(): void
     {
         $recalcular = function (self $infestacion) {
             $proceso = app(\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::class);
-            foreach (array_unique(array_filter([$infestacion->campo_nombre, $infestacion->getOriginal('campo_nombre')])) as $campo) {
+            foreach (array_unique(array_filter([$infestacion->campo_origen_nombre, $infestacion->getOriginal('campo_origen_nombre')])) as $campo) {
                 $proceso->recalcularPorCampo($campo);
             }
         };

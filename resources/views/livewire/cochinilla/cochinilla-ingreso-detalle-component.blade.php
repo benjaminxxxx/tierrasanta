@@ -104,51 +104,18 @@
                     </x-success>
                 @endif
 
-                {{-- Cochinilla de infestadores: de qué campos es (kilos por campo de origen; a cada campaña se le carga lo suyo) --}}
-                @if ($reparto)
-                    @php
-                        $repartoActual = $cochinillaIngreso->origenes;
-                        $cuadra = $repartoActual->isEmpty() || abs($repartoActual->sum('kg') - (float) $cochinillaIngreso->total_kilos) <= 0.01;
-                        $confirmado = $cochinillaIngreso->origen_estado === 'manual' && $cuadra;
-                    @endphp
-                    <div class="mt-4 rounded-lg border p-3 {{ $confirmado ? 'border-border' : 'border-amber-400 bg-amber-50 dark:bg-amber-900/20' }}">
-                        <div class="flex flex-wrap items-start justify-between gap-2">
-                            <div>
-                                <p class="text-sm font-semibold">¿De qué campos es esta cochinilla?</p>
-                                <p class="text-xs text-muted-foreground">
-                                    Los infestadores se recogieron en {{ $cochinillaIngreso->campo }} (ahí va el costo del recojo); los kilos son de los
-                                    campos de donde vino la mamá.
-                                </p>
-                            </div>
-                            @if ($reparto['origenes'])
-                                <x-button size="sm" wire:click="repartirOrigen"><i class="fa fa-balance-scale"></i> {{ $confirmado ? 'Cambiar reparto' : 'Repartir por campo' }}</x-button>
-                            @endif
-                        </div>
-                        @if ($reparto['origenes'])
-                            <table class="text-xs mt-2 w-full">
-                                <thead><tr class="text-muted-foreground"><th class="text-left">Campo de origen</th><th class="text-right">Kg de mamá</th><th class="text-right">% sugerido</th><th class="text-right">Kg asignados</th></tr></thead>
-                                <tbody>
-                                    @foreach ($reparto['origenes'] as $campoOrigen => $o)
-                                        <tr><td>{{ $campoOrigen }} <span class="text-muted-foreground">{{ $o['campania'] }}</span></td><td class="text-right">{{ number_format($o['kg_madres'], 2) }}</td>
-                                            <td class="text-right">{{ number_format($o['porcentaje'], 1) }} %</td><td class="text-right font-semibold">{{ $o['kg'] !== null ? number_format($o['kg'], 2) : '—' }}</td></tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                            <p class="text-xs mt-1 {{ $confirmado ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400' }}">
-                                @if (!$cuadra)
-                                    El reparto ya no suma los {{ number_format($cochinillaIngreso->total_kilos, 2) }} kg del lote (cambiaron los sublotes): vuelve a repartir.
-                                @elseif ($confirmado)
-                                    Reparto confirmado.
-                                @else
-                                    Sugerido por el % de mamá que aportó cada campo: revísalo y confírmalo.
-                                @endif
-                            </p>
-                        @else
-                            <p class="text-xs text-red-600 mt-1">No se encontró una infestación de {{ $cochinillaIngreso->campo }} en los meses anteriores: revisa la fecha del ingreso o registra la infestación.</p>
-                        @endif
+                {{-- Lote de infestadores: se registra con el campo que dio la mamá; es de la campaña que se cosechó para ese envío --}}
+                @if ($origenInfestador)
+                    @php $sinEnvio = $cochinillaIngreso->origen_estado !== 'infestacion'; @endphp
+                    <div class="mt-4 rounded-lg border p-3 {{ $sinEnvio ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20' : 'border-border' }}">
+                        <p class="text-sm font-semibold">
+                            Cochinilla de {{ $cochinillaIngreso->campo }}{{ $origenInfestador['campania'] ? ' · ' . $origenInfestador['campania'] : '' }}
+                        </p>
+                        <p class="text-xs {{ $sinEnvio ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground' }}">
+                            {{ $cochinillaIngreso->origen_detalle ?: 'Los infestadores se registran con el campo que dio la mamá.' }}
+                        </p>
                     </div>
                 @endif
-
                 <ul class="space-y-1 text-gray-500 list-disc list-inside dark:text-gray-400 mt-4">
                     <li>No es necesario digitar el sublote, el sistema le dará su código automáticamente.</li>
                     <li>Todos los campos son obligatorios, sino esa fila no se registrará.</li>

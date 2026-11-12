@@ -540,6 +540,12 @@
                         if (prop === 'asistencia') {
                             cellProperties.comment = { value: self.textoAusencia(ausencia), readOnly: true, style: { width: 280, height: 115 } };
                         }
+                        // Las horas del día sí se editan (como en TSH: un DM o AM puede pagarse con menos horas)
+                        if (ausencia.fija && prop === 'total_horas' && rowData.asistencia === ausencia.codigo_esperado) {
+                            cellProperties.readOnly = false;
+                            cellProperties.className = '!text-center font-bold';
+                            return cellProperties;
+                        }
                         if (ausencia.fija && rowData.asistencia === ausencia.codigo_esperado && !(ausencia.desde === self.fechaIso && ausencia.hasta === self.fechaIso)) {
                             cellProperties.readOnly = true;
                             cellProperties.className = '!bg-muted !text-pewter' + (prop === 'nombres' ? '' : ' !text-center');

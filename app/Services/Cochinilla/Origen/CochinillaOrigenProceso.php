@@ -5,6 +5,7 @@ namespace App\Services\Cochinilla\Origen;
 use App\Models\CampoCampania;
 use App\Models\CochinillaInfestacion;
 use App\Models\CochinillaIngreso;
+use App\Models\CochinillaIngresoOrigen;
 use App\Models\CochinillaObservacion;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -13,21 +14,23 @@ use Illuminate\Support\Facades\DB;
  * Campaña dueña de la cochinilla de un ingreso (a la que se le carga la venta).
  *
  * - Cosecha, pre-cosecha, poda, mamá…: la cochinilla es del campo cosechado → su propia campaña.
- * - Infestadores (cajitas, tubos, malla): la cochinilla vino de otro campo, que se cosechó para infestar. Se busca
- *   la infestación que la puso ahí y su campo de origen; la campaña dueña es la que tenía ese campo de origen
- *   cuando se cosechó para esa infestación (la del ingreso de mamá de esos días, o la que corría antes).
- *   El costo de recoger las cajitas sigue siendo del campo donde estaban (campo_campania_id no cambia).
- *
- * Los ingresos de infestador se registran con el campo donde estaban las cajitas; algunos antiguos, con el campo
- * de origen. Se consideran las dos formas.
+ * - Infestadores (cajitas, tubos, malla): se registran con el CAMPO QUE DIO LA MAMÁ, no con el campo donde se
+ *   recogieron (así lo lleva el Excel de cochinilla; confirmado por Flavia el 11/11/2026 y por los datos: en 160 de
+ *   162 lotes de TSH el campo había dado mamá 0 a 45 días antes). Ej.: A5 se cosechó (Poda Mama 04–13/03/2026), su
+ *   mamá infestó Limonero4, 18, B3 y A8 (06–14/03) y esos infestadores volvieron como lotes 1502–1506 "campo A5".
+ *   El dueño es el mismo campo del lote, en la campaña que se cosechó para ese envío de mamá (la del ingreso de
+ *   mamá de esos días, o la que cerró con esa cosecha). Un lote = un solo campo: no se reparte.
+ *   La mano de obra de infestar y de recoger sigue siendo de los campos infestados (viene de planilla/cuadrilla).
  */
 class CochinillaOrigenProceso
 {
-    /** Días máximos entre la infestación y el recojo de sus infestadores. */
+    /** Días máximos entre el envío de mamá y el retorno de sus infestadores (en los datos: hasta 45). */
+    public const DIAS_RETORNO = 90;
+    /** Ventana para buscar el ingreso de una venta por su campo (VentaServicio). */
     public const DIAS_INFESTADORES = 180;
-    /** Infestaciones de un mismo campo con días de diferencia se consideran la misma (para detectar varios orígenes). */
+    /** Infestaciones con hasta estos días de diferencia son el mismo envío / la misma tanda. */
     public const DIAS_MISMA_INFESTACION = 15;
-    /** Días antes de la infestación en que se busca el ingreso de mamá del campo de origen. */
+    /** Días antes del envío en que se busca el ingreso de mamá del campo de origen. */
     public const DIAS_COSECHA_MAMA = 20;
 
     private ?array $observacionesMama = null;
@@ -37,19 +40,12 @@ class CochinillaOrigenProceso
         return $observacion !== null && str_starts_with($observacion, 'infestador');
     }
 
-    /** Calcula y guarda el origen de un ingreso (salvo que se haya puesto a mano). */
+    /** Calcula y guarda el origen de un ingreso y su fila de origen (cochinilla_ingreso_origenes). */
     public function recalcular(CochinillaIngreso $ingreso): void
     {
-        if ($ingreso->origen_estado === 'manual') {
-            return;
-        }
-        $ingreso->forceFill($this->resolver($ingreso))->saveQuietly();
-        // Reparto entre campos de origen sugerido por % de mamá (hasta que alguien lo confirme)
-        try {
-            app(\App\Services\Cochinilla\Recuperacion\CochinillaRecuperacionProceso::class)->sincronizarAutomatico($ingreso);
-        } catch (\App\Exceptions\ErrorControlado) {
-            // Sin infestación encontrada o sin kg: queda solo el origen principal; se reparte al registrar
-        }
+        $datos = $this->resolver($ingreso);
+        $ingreso->forceFill($datos)->saveQuietly();
+        $this->sincronizarOrigen($ingreso, $datos);
     }
 
     /** @return int ingresos recalculados */
@@ -65,7 +61,7 @@ class CochinillaOrigenProceso
         return $n;
     }
 
-    /** Recalcula los ingresos de infestador que podrían venir de infestaciones de ese campo (al guardar infestaciones). */
+    /** Al guardar infestaciones con mamá de $campo: sus ingresos de infestador pueden cambiar de campaña dueña. */
     public function recalcularPorCampo(string $campo): void
     {
         CochinillaIngreso::where('observacion', 'like', 'infestador%')->where('campo', $campo)->get()->each(fn($i) => $this->recalcular($i));
@@ -84,195 +80,98 @@ class CochinillaOrigenProceso
             return $propio;
         }
 
-        $fecha = Carbon::parse($ingreso->fecha)->startOfDay();
-        $desde = $fecha->copy()->subDays(self::DIAS_INFESTADORES)->toDateString();
-
-        // 1. El campo del ingreso es donde estaban los infestadores: la última infestación que recibió
-        $ultima = CochinillaInfestacion::where('campo_nombre', $ingreso->campo)
-            ->whereBetween('fecha', [$desde, $fecha->toDateString()])
-            ->orderByDesc('fecha')->first();
-        if ($ultima) {
-            $tanda = $this->tanda($ingreso->campo, $ultima);
-            $origenes = $tanda['origenes'];
-            $varios = count($origenes) > 1;
-            // Varios orígenes: por orden de recojo (las cajitas que se pusieron primero se recogen primero)
-            $origen = $varios ? $this->origenPorOrden($ingreso, $tanda) : array_key_first($origenes);
-            $campania = $this->campaniaOrigen($origen, $origenes[$origen]['hasta']);
-            $fmt = fn($f) => Carbon::parse($f)->format('d/m');
-
-            return [
-                'campo_origen' => $origen,
-                'campania_origen_id' => $campania?->id,
-                'origen_estado' => $varios ? 'sugerido' : 'infestacion',
-                'origen_detalle' => mb_substr(($varios
-                    ? 'Infestado desde varios campos: ' . collect($origenes)->map(fn($o, $c) => "{$c} (" . round($o['kg'], 1) . " kg, {$fmt($o['desde'])}"
-                        . ($o['desde'] !== $o['hasta'] ? "–{$fmt($o['hasta'])}" : '') . ')')->implode(', ')
-                        . ". Por el orden de recojo se sugiere {$origen}: confírmalo al registrar el ingreso."
-                    : "Infestación {$ultima->tipo_infestacion} del " . Carbon::parse($ultima->fecha)->format('d/m/Y') . " con cochinilla de {$origen}.")
-                    . " Infestadores recogidos en {$ingreso->campo}." . ($campania ? '' : ' No se encontró la campaña de origen.'), 0, 300),
-            ];
+        $envio = $this->envio($ingreso->campo, Carbon::parse($ingreso->fecha)->toDateString());
+        if (!$envio) {
+            return ['origen_estado' => 'sin_infestacion', 'origen_detalle' => mb_substr("{$ingreso->campo} no dio mamá para infestar en los "
+                . self::DIAS_RETORNO . ' días anteriores a este lote: se deja la campaña del campo por fecha. Revisar el campo o la fecha del lote.', 0, 300)] + $propio;
         }
 
-        // 2. Registrado con el campo de origen: la infestación que hizo ese campo antes del ingreso
-        $comoOrigen = CochinillaInfestacion::where('campo_origen_nombre', $ingreso->campo)
-            ->whereBetween('fecha', [$desde, $fecha->toDateString()])
-            ->orderByDesc('fecha')->first();
-        if ($comoOrigen) {
-            $campania = $this->campaniaOrigen($ingreso->campo, $comoOrigen->fecha);
-            return [
-                'campo_origen' => $ingreso->campo,
-                'campania_origen_id' => $campania?->id,
-                'origen_estado' => 'infestacion',
-                'origen_detalle' => mb_substr("Registrado con el campo de origen: infestó {$comoOrigen->campo_nombre} el "
-                    . Carbon::parse($comoOrigen->fecha)->format('d/m/Y') . '.' . ($campania ? '' : ' No se encontró la campaña de origen.'), 0, 300),
-            ];
-        }
-
-        return ['origen_estado' => 'sin_infestacion', 'origen_detalle' => 'Ingreso de infestadores sin infestación en los '
-            . self::DIAS_INFESTADORES . ' días anteriores: se deja la campaña del campo donde se recogió. Revisar.'] + $propio;
+        $campania = $this->campaniaOrigen($ingreso->campo, $envio['fin']);
+        $fmt = fn($f) => Carbon::parse($f)->format('d/m/Y');
+        return [
+            'campo_origen' => $ingreso->campo,
+            'campania_origen_id' => $campania?->id ?? $ingreso->campo_campania_id,
+            'origen_estado' => 'infestacion',
+            'origen_detalle' => mb_substr("Mamá de {$ingreso->campo} que infestó " . implode(', ', array_keys($envio['destinos']))
+                . ' (' . number_format($envio['kg'], 2) . ' kg, ' . ($envio['inicio'] === $envio['fin'] ? $fmt($envio['inicio']) : $fmt($envio['inicio']) . ' al ' . $fmt($envio['fin']))
+                . '): estos infestadores volvieron de esos campos.' . ($campania ? '' : ' No se encontró la campaña cosechada; queda la del campo por fecha.'), 0, 300),
+        ];
     }
 
     /**
-     * La tanda de infestación de un campo que termina en $ultima (días seguidos, separados por menos de
-     * DIAS_MISMA_INFESTACION): sus orígenes en el orden en que se pusieron, con sus kg y fechas.
+     * El envío de mamá de un campo del que vuelve un lote: la última vez que el campo dio mamá (hasta DIAS_RETORNO
+     * días antes), con las infestaciones seguidas de ese envío (separadas por menos de DIAS_MISMA_INFESTACION).
      *
-     * @return array{inicio:string, fin:string, segmentos: array<int, array{campo:string, kg:float}>, origenes: array<string, array{kg:float, desde:string, hasta:string}>}
+     * @return array{inicio:string, fin:string, kg:float, destinos: array<string, float>}|null
      */
-    public function tanda(string $campo, CochinillaInfestacion $ultima): array
+    public function envio(string $campo, string $fecha): ?array
     {
-        $previas = CochinillaInfestacion::where('campo_nombre', $campo)->where('fecha', '<=', $ultima->fecha)
-            ->orderByDesc('fecha')->orderByDesc('id')->get(['id', 'fecha', 'campo_origen_nombre', 'kg_madres']);
-        $tanda = [];
+        $ultima = CochinillaInfestacion::where('campo_origen_nombre', $campo)
+            ->whereBetween('fecha', [Carbon::parse($fecha)->subDays(self::DIAS_RETORNO)->toDateString(), $fecha])
+            ->max('fecha');
+        if (!$ultima) {
+            return null;
+        }
+        $previas = CochinillaInfestacion::where('campo_origen_nombre', $campo)->where('fecha', '<=', $ultima)
+            ->orderByDesc('fecha')->orderByDesc('id')->get(['fecha', 'campo_nombre', 'kg_madres']);
+        $filas = [];
         $anterior = null;
         foreach ($previas as $inf) {
             if ($anterior && Carbon::parse($inf->fecha)->diffInDays(Carbon::parse($anterior)) > self::DIAS_MISMA_INFESTACION) {
                 break;
             }
-            $tanda[] = $inf;
+            $filas[] = $inf;
             $anterior = $inf->fecha;
         }
-        $tanda = array_reverse($tanda);
-
-        $segmentos = [];
-        $origenes = [];
-        foreach ($tanda as $inf) {
-            $c = $inf->campo_origen_nombre;
-            $f = Carbon::parse($inf->fecha)->toDateString();
-            $ultimo = count($segmentos) - 1;
-            if ($ultimo >= 0 && $segmentos[$ultimo]['campo'] === $c) {
-                $segmentos[$ultimo]['kg'] += (float) $inf->kg_madres;
-            } else {
-                $segmentos[] = ['campo' => $c, 'kg' => (float) $inf->kg_madres];
-            }
-            $origenes[$c] ??= ['kg' => 0.0, 'desde' => $f, 'hasta' => $f];
-            $origenes[$c]['kg'] += (float) $inf->kg_madres;
-            $origenes[$c]['hasta'] = max($origenes[$c]['hasta'], $f);
+        $destinos = [];
+        foreach (array_reverse($filas) as $inf) {
+            $destinos[$inf->campo_nombre] = ($destinos[$inf->campo_nombre] ?? 0) + (float) $inf->kg_madres;
         }
-
         return [
-            'inicio' => Carbon::parse($tanda[0]->fecha)->toDateString(),
-            'fin' => Carbon::parse($ultima->fecha)->toDateString(),
-            'segmentos' => $segmentos,
-            'origenes' => $origenes,
+            'inicio' => Carbon::parse(end($filas)->fecha)->toDateString(),
+            'fin' => Carbon::parse($ultima)->toDateString(),
+            'kg' => round(array_sum($destinos), 2),
+            'destinos' => $destinos,
         ];
     }
 
-    /**
-     * Origen sugerido por orden de recojo: los recojos de infestadores de la tanda, en orden, se reparten sobre los
-     * días de infestación en el mismo orden según su proporción de kg (un recojo cae en el origen del punto medio
-     * de sus kg). Sin cálculos proporcionales en la venta: cada lote queda con un solo origen.
-     */
-    private function origenPorOrden(CochinillaIngreso $ingreso, array $tanda): string
+    /** Campaña cosechada de un campo para un envío de mamá (público para la recuperación y la historia). */
+    public function campaniaParaOrigen(string $campoOrigen, string $fechaEnvio): ?CampoCampania
     {
-        $siguiente = CochinillaInfestacion::where('campo_nombre', $ingreso->campo)->where('fecha', '>', $tanda['fin'])->min('fecha');
-        $recojos = CochinillaIngreso::where('campo', $ingreso->campo)->where('observacion', 'like', 'infestador%')
-            ->where('fecha', '>', $tanda['inicio'])
-            ->where('fecha', '<=', Carbon::parse($tanda['fin'])->addDays(self::DIAS_INFESTADORES)->toDateString())
-            ->when($siguiente, fn($q) => $q->where('fecha', '<', $siguiente))
-            ->orderBy('fecha')->orderBy('lote')->get(['id', 'total_kilos']);
-
-        $totalRecojo = max(0.0001, (float) $recojos->sum('total_kilos'));
-        $antes = 0.0;
-        $propio = (float) $ingreso->total_kilos;
-        foreach ($recojos as $r) {
-            if ($r->id === $ingreso->id) {
-                break;
-            }
-            $antes += (float) $r->total_kilos;
-        }
-        $punto = ($antes + $propio / 2) / $totalRecojo;
-
-        $totalMadres = max(0.0001, array_sum(array_column($tanda['segmentos'], 'kg')));
-        $acumulado = 0.0;
-        foreach ($tanda['segmentos'] as $s) {
-            $acumulado += $s['kg'] / $totalMadres;
-            if ($punto <= $acumulado + 1e-9) {
-                return $s['campo'];
-            }
-        }
-        return end($tanda['segmentos'])['campo'];
-    }
-
-    /** Campaña de origen para un origen elegido a mano (al confirmar o cambiar la sugerencia). */
-    public function campaniaParaOrigen(string $campoOrigen, string $fechaInfestacion): ?CampoCampania
-    {
-        return $this->campaniaOrigen($campoOrigen, $fechaInfestacion);
+        return $this->campaniaOrigen($campoOrigen, $fechaEnvio);
     }
 
     /**
-     * Orígenes posibles de un ingreso de infestadores (los de su tanda), con el sugerido. Para elegir al registrar.
-     *
-     * @return array{opciones: array<string, string>, sugerido: ?string}
+     * Una sola fila de origen por lote de infestador (el informe mensual, la historia y la corrección de fechas de
+     * campañas la leen): su campo y su campaña dueña, con todos sus kilos. Los demás ingresos no tienen fila.
      */
-    public function opciones(CochinillaIngreso $ingreso): array
+    private function sincronizarOrigen(CochinillaIngreso $ingreso, array $datos): void
     {
-        if (!self::esDeInfestador($ingreso->observacion)) {
-            return ['opciones' => [], 'sugerido' => null];
+        $ingreso->origenes()->delete();
+        if (!self::esDeInfestador($ingreso->observacion) || $datos['origen_estado'] !== 'infestacion' || (float) $ingreso->total_kilos <= 0) {
+            return;
         }
-        $ultima = CochinillaInfestacion::where('campo_nombre', $ingreso->campo)
-            ->whereBetween('fecha', [Carbon::parse($ingreso->fecha)->subDays(self::DIAS_INFESTADORES)->toDateString(), Carbon::parse($ingreso->fecha)->toDateString()])
-            ->orderByDesc('fecha')->first();
-        if (!$ultima) {
-            return ['opciones' => [], 'sugerido' => null];
-        }
-        $tanda = $this->tanda($ingreso->campo, $ultima);
-        $fmt = fn($f) => Carbon::parse($f)->format('d/m/Y');
-        return [
-            'opciones' => collect($tanda['origenes'])->mapWithKeys(fn($o, $c) => [$c => "{$c} — " . round($o['kg'], 1) . " kg de madres, {$fmt($o['desde'])}"
-                . ($o['desde'] !== $o['hasta'] ? " a {$fmt($o['hasta'])}" : '')])->all(),
-            'sugerido' => count($tanda['origenes']) > 1 ? $this->origenPorOrden($ingreso, $tanda) : array_key_first($tanda['origenes']),
-            'fechas' => collect($tanda['origenes'])->map(fn($o) => $o['hasta'])->all(),
-        ];
+        CochinillaIngresoOrigen::create([
+            'cochinilla_ingreso_id' => $ingreso->id,
+            'campo_origen' => $datos['campo_origen'],
+            'campania_origen_id' => $datos['campania_origen_id'],
+            'kg' => round((float) $ingreso->total_kilos, 2),
+            'kg_madres' => null,
+            'porcentaje_sugerido' => 100,
+            'registrado_por' => null,
+        ]);
     }
 
     /**
-     * Quien registra el ingreso confirma o cambia el origen: queda como elegido a mano y ya no se recalcula.
+     * La campaña del campo de origen que se cosechó para ese envío: la del ingreso de mamá de esos días; si no hay,
+     * la que cerró con esa cosecha, o la que corría antes del envío.
      */
-    public function confirmar(CochinillaIngreso $ingreso, string $campoOrigen): void
-    {
-        $opciones = $this->opciones($ingreso);
-        $fecha = $opciones['fechas'][$campoOrigen] ?? $ingreso->fecha;
-        $campania = $this->campaniaOrigen($campoOrigen, $fecha);
-        $ingreso->forceFill([
-            'campo_origen' => $campoOrigen,
-            'campania_origen_id' => $campania?->id,
-            'origen_estado' => 'manual',
-            'origen_detalle' => mb_substr('Origen elegido al registrar' . ($opciones['sugerido'] && $opciones['sugerido'] !== $campoOrigen ? " (se sugería {$opciones['sugerido']})" : '')
-                . ' por ' . (auth()->user()?->name ?? 'sistema') . '. Infestadores recogidos en ' . $ingreso->campo . '.'
-                . ($campania ? '' : ' No se encontró la campaña de origen.'), 0, 300),
-        ])->saveQuietly();
-    }
-
-    /**
-     * La campaña del campo de origen que se cosechó para esa infestación: la del ingreso de mamá de esos días; si
-     * no hay, la que corría antes de la infestación.
-     */
-    private function campaniaOrigen(?string $campo, $fechaInfestacion): ?CampoCampania
+    private function campaniaOrigen(?string $campo, $fechaEnvio): ?CampoCampania
     {
         if (!$campo) {
             return null;
         }
-        $f = Carbon::parse($fechaInfestacion)->startOfDay();
+        $f = Carbon::parse($fechaEnvio)->startOfDay();
         $this->observacionesMama ??= CochinillaObservacion::where('es_cosecha_mama', true)->pluck('codigo')->all();
 
         $ingresoMama = CochinillaIngreso::where('campo', $campo)
@@ -284,7 +183,7 @@ class CochinillaOrigenProceso
             return $ingresoMama->campoCampania;
         }
 
-        // La campaña que cerró con esa cosecha (la siguiente pudo empezar antes de la infestación)
+        // La campaña que cerró con esa cosecha (la siguiente pudo empezar antes del envío)
         $cerrada = CampoCampania::where('campo', $campo)
             ->whereBetween(DB::raw('COALESCE(cosch_fecha, fecha_fin)'), [$f->copy()->subDays(self::DIAS_COSECHA_MAMA)->toDateString(), $f->copy()->addDays(5)->toDateString()])
             ->orderByDesc(DB::raw('COALESCE(cosch_fecha, fecha_fin)'))->first();

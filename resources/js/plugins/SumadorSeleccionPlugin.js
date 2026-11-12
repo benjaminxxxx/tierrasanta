@@ -7,6 +7,11 @@ export class SumadorSeleccionPlugin extends BasePlugin
         super(hotInstance);
         this.columnaAgruparIndex = 1;
         this.columnasOmitir = [0, 1];
+        // Por nombre de columna (data): solo estas se suman / esta da el nombre de cada fila. Útil cuando hay
+        // columnas de texto con fechas o códigos que no deben sumarse (kardex, salidas, compras).
+        this.columnasSumar = null;
+        this.columnaAgruparProp = null;
+        this.titulos = {}; // data => título a mostrar (tablas con cabeceras en dos niveles)
     }
 
     isEnabled() {
@@ -24,6 +29,12 @@ export class SumadorSeleccionPlugin extends BasePlugin
 
             if (options.columnasOmitir !== undefined)
                 this.columnasOmitir = options.columnasOmitir;
+            if (Array.isArray(options.columnasSumar))
+                this.columnasSumar = options.columnasSumar;
+            if (options.columnaAgruparProp !== undefined)
+                this.columnaAgruparProp = options.columnaAgruparProp;
+            if (options.titulos && typeof options.titulos === "object")
+                this.titulos = options.titulos;
         }
 
         const itemSuma = {
@@ -98,14 +109,16 @@ export class SumadorSeleccionPlugin extends BasePlugin
 
             for (let r = rMin; r <= rMax; r++) {
                 for (let c = cMin; c <= cMax; c++) {
-                    if (this.columnasOmitir.includes(c)) continue;
+                    if (this.columnasSumar
+                        ? !this.columnasSumar.includes(this.hot.colToProp(c))
+                        : this.columnasOmitir.includes(c)) continue;
 
                     const cellKey = `${r}_${c}`;
                     if (celdasProcesadas.has(cellKey)) continue;
                     celdasProcesadas.add(cellKey);
 
                     if (!mapaColumnas.has(c)) {
-                        const propOrHeader = this.hot.getColHeader(c);
+                        const propOrHeader = this.titulos[this.hot.colToProp(c)] ?? this.hot.getColHeader(c);
                         mapaColumnas.set(c, {
                             index: c,
                             titulo:
@@ -117,10 +130,9 @@ export class SumadorSeleccionPlugin extends BasePlugin
                     }
 
                     if (!mapaFilas.has(r)) {
-                        let nombreTrabajador = this.hot.getDataAtCell(
-                            r,
-                            this.columnaAgruparIndex,
-                        );
+                        let nombreTrabajador = this.columnaAgruparProp
+                            ? this.hot.getDataAtRowProp(r, this.columnaAgruparProp)
+                            : this.hot.getDataAtCell(r, this.columnaAgruparIndex);
                         if (
                             !nombreTrabajador ||
                             String(nombreTrabajador).trim() === ""

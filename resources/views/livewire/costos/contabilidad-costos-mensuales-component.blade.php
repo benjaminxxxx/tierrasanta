@@ -21,5 +21,6 @@
     {{-- Modal "Cerrar campaña" (lo abre la tarjeta de cada campaña) --}}
     <livewire:campania.campania-cerrar-component />
     <livewire:campania.campania-corregir-fechas-component />
+    <livewire:campania.campania-mapa-etapas-component />
     <x-loading wire:loading />
 </div>

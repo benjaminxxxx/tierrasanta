@@ -49,7 +49,6 @@ class CochinillaIngresoDetalleComponent extends Component
         'agregarIngreso',
         'editarIngreso',
         'storeTableDataCochinillaIngreso',
-        'repartoGuardado' => '$refresh',
     ];
 
     public function mount()
@@ -333,24 +332,15 @@ class CochinillaIngresoDetalleComponent extends Component
             mb_substr("{$que} del lote {$lote}. Motivo: " . trim($this->motivoEdicion), 0, 255));
     }
 
-    /** Abre el reparto por campo de origen (componente compartido con "Cochinilla por recuperar"). */
-    public function repartirOrigen(): void
-    {
-        if ($this->cochinillaIngreso) {
-            // Se cierra este modal: dos modales con foco bloqueado (x-trap) a la vez no dejan escribir en el segundo
-            $this->mostrarFormulario = false;
-            $this->dispatch('repartirIngreso', ingresoId: $this->cochinillaIngreso->id);
-        }
-    }
 
     public function render()
     {
-        $reparto = null;
+        $origenInfestador = null;
         if ($this->step === 3 && $this->cochinillaIngreso
             && \App\Services\Cochinilla\Origen\CochinillaOrigenProceso::esDeInfestador($this->cochinillaIngreso->observacion)) {
-            $this->cochinillaIngreso->load('origenes', 'creadoPor:id,name', 'editadoPor:id,name');
-            $reparto = app(\App\Services\Cochinilla\Recuperacion\CochinillaRecuperacionProceso::class)->opciones($this->cochinillaIngreso);
+            $this->cochinillaIngreso->refresh()->load('creadoPor:id,name', 'editadoPor:id,name');
+            $origenInfestador = ['campania' => \App\Models\CampoCampania::find($this->cochinillaIngreso->campania_origen_id)?->nombre_campania];
         }
-        return view('livewire.cochinilla.cochinilla-ingreso-detalle-component', ['reparto' => $reparto]);
+        return view('livewire.cochinilla.cochinilla-ingreso-detalle-component', ['origenInfestador' => $origenInfestador]);
     }
 }

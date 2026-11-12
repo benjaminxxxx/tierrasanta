@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-/** Código de labor aceptado para un campo en un día (ver CampoActividadProceso). */
+/** Código de labor aceptado para un campo en un día (histórico: la pregunta "más de una actividad" se reemplazó por las etapas de los grupos de hileras). */
 class CampoActividadAceptada extends Model
 {
     protected $table = 'campo_actividades_aceptadas';

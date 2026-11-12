@@ -432,6 +432,20 @@
                 ],
                 width: '100%',
                 licenseKey: 'non-commercial-and-evaluation',
+                // Clic derecho → "Calcular Suma de Selección": cantidades y costos totales de entradas y salidas, por fecha
+                sumadorSeleccion: {
+                    columnaAgruparProp: 'fecha',
+                    columnasSumar: ['entrada_cantidad_fmt', 'entrada_costo_total_fmt', 'salida_cantidad_fmt', 'salida_costo_total_fmt'],
+                    titulos: { entrada_cantidad_fmt: 'ENT. CANTIDAD', entrada_costo_total_fmt: 'ENT. COSTO TOTAL', salida_cantidad_fmt: 'SAL. CANTIDAD', salida_costo_total_fmt: 'SAL. COSTO TOTAL' },
+                },
+                contextMenu: {
+                    items: {
+                        sumar_seleccion_custom: {
+                            name: 'Calcular Suma de Selección',
+                            callback: () => this.hot.getPlugin('SumadorSeleccion').ejecutarSuma(),
+                        },
+                    },
+                },
 
                 columns: [
                     // Documento

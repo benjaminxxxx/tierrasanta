@@ -18,7 +18,8 @@ class Campo extends Model
         'campo_parent_nombre',
         'grupo',   // Grupo al que pertenece el campo
         'orden',   // Orden en el grupo
-        'area',    // Área del campo en metros cuadrados
+        'area',
+        'hileras', // Número de hileras (mapa de etapas de la campaña)    // Área del campo en metros cuadrados
         'bloqueado', // ya no se usa: se conserva su historia, no aparece en selectores
     ];
     protected $casts = [

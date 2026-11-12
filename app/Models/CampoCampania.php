@@ -13,6 +13,34 @@ class CampoCampania extends Model
 
     protected $table = 'campos_campanias';
 
+    /**
+     * Al crear, eliminar o cambiar las fechas de una campaña, los triggers mueven los ingresos de cochinilla a su
+     * nueva campaña; la campaña dueña de los lotes de infestadores de ese campo sigue a su cosecha de mamá, así que
+     * se recalcula (CochinillaOrigenProceso).
+     */
+    protected static function booted(): void
+    {
+        $recalcular = function (self $c) {
+            try {
+                app(\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::class)->recalcularPorCampo((string) $c->campo);
+            } catch (\Throwable $e) {
+                report($e); // no debe frenar el guardado de la campaña; se corrige con cochinilla:recalcular-origen
+            }
+        };
+        static::saved(function (self $c) use ($recalcular) {
+            if ($c->wasRecentlyCreated || $c->wasChanged(['fecha_inicio', 'fecha_fin', 'cosch_fecha', 'campo'])) {
+                $recalcular($c);
+            }
+        });
+        static::deleted($recalcular);
+    }
+
+    /** Grupos de hileras de la campaña con sus etapas (mapa de etapas). */
+    public function sectores()
+    {
+        return $this->hasMany(CampaniaSector::class, 'campo_campania_id')->orderBy('hilera_desde');
+    }
+
     protected $fillable = [
         'nombre_campania',
         'campo',

@@ -13,9 +13,8 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 
 /**
- * Cochinilla → Por recuperar: cada infestación de un campo (con la mamá de 1 a 3 campos), cuánto volvió ya como
- * infestadores, cuántos días van y si se pasó del plazo de aviso. Desde aquí se reparte cada retorno entre los campos
- * de origen y se da por recuperada la infestación.
+ * Cochinilla → Por recuperar: cada envío de mamá de un campo (a qué campos fue), cuánto volvió ya como infestadores
+ * (lotes con ese mismo campo), cuántos días van y si se pasó del plazo de aviso. Se da por recuperado el envío.
  */
 #[Title('Cochinilla por recuperar')]
 class CochinillaRecuperacionComponent extends Component
@@ -31,8 +30,6 @@ class CochinillaRecuperacionComponent extends Component
     public ?string $cerrarClave = null;
     public string $nota = '';
 
-    protected $listeners = ['repartoGuardado' => '$refresh'];
-
     public function pedirCerrar(string $clave): void
     {
         $this->cerrarClave = $clave;
@@ -47,7 +44,7 @@ class CochinillaRecuperacionComponent extends Component
             [$campo, $inicio] = explode('|', (string) $this->cerrarClave);
             app(CochinillaRecuperacionProceso::class)->cerrar($campo, $inicio, trim($this->nota) ?: null);
             $this->mostrarCerrar = false;
-            $this->alert('success', "Infestación de {$campo} dada por recuperada.");
+            $this->alert('success', "Envío de mamá de {$campo} dado por recuperado.");
         } catch (\Throwable $e) {
             $this->errorAlert($e);
         }

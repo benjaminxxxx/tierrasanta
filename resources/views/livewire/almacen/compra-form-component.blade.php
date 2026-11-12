@@ -248,6 +248,8 @@
                         const item = this.hot?.getSourceDataAtRow(fila) || {};
                         return { source: ['(unidad base)', ...(item.presentaciones || []).map(p => `${p.nombre} x${parseInt(p.factor_conversion)}`)] };
                     },
+                    // Clic derecho → "Calcular Suma de Selección": cantidades, IGV y subtotales, por producto
+                    sumadorSeleccion: { columnaAgruparProp: 'producto_nombre', columnasSumar: ['cantidad', 'igv_linea', 'total_linea'] },
                     contextMenu: {
                         items: {
                             eliminar: {

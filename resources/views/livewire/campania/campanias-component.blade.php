@@ -239,6 +239,7 @@
     <livewire:campania.campania-ficha-component />
     <livewire:campania.campania-cerrar-component />
     <livewire:campania.campania-corregir-fechas-component />
+    <livewire:campania.campania-mapa-etapas-component />
     <livewire:campania.campania-historia-component />
 </div>
 @script

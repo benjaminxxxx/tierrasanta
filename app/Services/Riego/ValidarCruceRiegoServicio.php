@@ -9,6 +9,11 @@ use App\Support\CalculoHelper;
 use App\Support\FormatoHelper;
 use Exception;
 
+/**
+ * Riego cruzado: dos regadores con 'Riego' en el mismo campo y ZONA con horas que se cruzan (aviso, no frena el guardado
+ * ni cambia el costo: cada regador cuesta sus propias horas). Zonas distintas del mismo campo (ej. FDM Baja / Ingreso) no
+ * se cruzan; la zona vacía es la zona general. 'Apoyo en Riego' debe tener un riego real en su mismo campo y zona.
+ */
 class ValidarCruceRiegoServicio
 {
     /**
@@ -32,6 +37,7 @@ class ValidarCruceRiegoServicio
 
             $entrantes[] = [
                 'campo' => trim($row[0]),
+                'zona' => RegistroDiarioServicio::zona($row[9] ?? null),
                 'inicio' => CalculoHelper::horaAMinutos(FormatoHelper::normalizarHora($row[1] ?? '00:00')),
                 'fin' => CalculoHelper::horaAMinutos(FormatoHelper::normalizarHora($row[2] ?? '00:00')),
                 'es_riego' => (bool) ($labor?->es_riego),
@@ -49,6 +55,7 @@ class ValidarCruceRiegoServicio
                 $labor = $labores->get(mb_strtolower(trim($reg->tipo_labor)));
                 return [
                     'campo' => $reg->campo,
+                    'zona' => RegistroDiarioServicio::zona($reg->zona),
                     'inicio' => CalculoHelper::horaAMinutos($reg->hora_inicio),
                     'fin' => CalculoHelper::horaAMinutos($reg->hora_fin),
                     'es_riego' => (bool) ($labor?->es_riego),
@@ -59,9 +66,11 @@ class ValidarCruceRiegoServicio
             ->toArray();
 
         $todos = array_merge($entrantes, $registrosOtros);
-        $porCampo = collect($todos)->groupBy('campo');
+        // Mismo campo (sin importar mayúsculas) y misma zona
+        $porCampo = collect($todos)->groupBy(fn($r) => mb_strtolower($r['campo']) . '|' . mb_strtolower((string) $r['zona']));
 
-        foreach ($porCampo as $campo => $filas) {
+        foreach ($porCampo as $filas) {
+            $campo = $filas->first()['campo'] . ($filas->first()['zona'] ? ' (zona ' . $filas->first()['zona'] . ')' : '');
 
             $riegosReales = $filas->where('es_riego', true)->values();
             $apoyos = $filas->where('es_apoyo', true)->values();
@@ -85,7 +94,8 @@ class ValidarCruceRiegoServicio
                             "(" . CalculoHelper::minutosAHora($a['inicio']) . "-" . CalculoHelper::minutosAHora($a['fin']) . ") y {$nombreB} " .
                             "(" . CalculoHelper::minutosAHora($b['inicio']) . "-" . CalculoHelper::minutosAHora($b['fin']) . "). " .
                             "Solo uno debería tener 'Riego'; el otro debería ser 'Apoyo en Riego'. " .
-                            "Si es trabajo de otro día anotado aquí (ej. un domingo que se paga el lunes), marca 'De otro día'.";
+                            "Si es trabajo de otro día anotado aquí (ej. un domingo que se paga el lunes), marca 'De otro día'. " .
+                            "Si regaron partes distintas del campo, escribe la zona de cada uno (ej. Baja, Ingreso).";
                     }
                 }
             }

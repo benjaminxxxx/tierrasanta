@@ -48,37 +48,29 @@ class CampoActividadConsulta
     }
 
     /**
-     * Histórico: por día y campo, cada código con trabajadores de planilla, de cuadrilla, horas y si fue aceptado.
+     * Histórico: por día y campo, cada código con su etapa, trabajadores de planilla, de cuadrilla y horas.
      *
-     * @return array [['fecha', 'campo', 'aceptado_por', 'actividades' => [['codigo', 'labor', 'planilla', 'cuadrilla', 'horas', 'aceptada']]]]
+     * @return array [['fecha', 'campo', 'actividades' => [['codigo', 'labor', 'etapa', 'planilla', 'cuadrilla', 'horas']]]]
      */
     public function historial(string $desde, string $hasta, ?string $campo = null): array
     {
         $tramos = $this->tramos($desde, $hasta, $campo ? [$campo] : null);
-        $nombres = DB::table('labores')->whereNotNull('codigo')->pluck('nombre_labor', 'codigo');
-        $aceptadas = DB::table('campo_actividades_aceptadas as a')->leftJoin('users as u', 'u.id', '=', 'a.aceptado_por')
-            ->whereBetween('a.fecha', [$desde, $hasta])->when($campo, fn($q) => $q->where('a.campo_nombre', $campo))
-            ->get(['a.fecha', 'a.campo_nombre', 'a.codigo_labor', 'u.name', 'a.updated_at'])
-            ->groupBy(fn($a) => substr((string) $a->fecha, 0, 10) . '|' . $a->campo_nombre);
+        $labores = DB::table('labores')->whereNotNull('codigo')->get(['codigo', 'nombre_labor', 'codigo_mano_obra'])->keyBy('codigo');
 
         return $tramos->groupBy(fn($t) => "{$t->fecha}|{$t->campo}")
-            ->map(function ($filas, $clave) use ($nombres, $aceptadas) {
+            ->map(function ($filas, $clave) use ($labores) {
                 [$fecha, $campo] = explode('|', $clave, 2);
-                $acep = $aceptadas->get($clave, collect());
                 $actividades = $filas->groupBy('labor')->map(fn($porLabor, $codigo) => [
                     'codigo' => (int) $codigo,
-                    'labor' => $nombres[$codigo] ?? '',
+                    'labor' => $labores[$codigo]->nombre_labor ?? '',
+                    'etapa' => \App\Services\Campania\Sector\CampaniaSectorReglas::etapaDeManoObra($labores[$codigo]->codigo_mano_obra ?? null),
                     'planilla' => $porLabor->where('origen', 'planilla')->count(),
                     'cuadrilla' => $porLabor->where('origen', 'cuadrilla')->count(),
                     'horas' => round($porLabor->sum('minutos') / 60, 2),
-                    'aceptada' => $acep->contains(fn($a) => (int) $a->codigo_labor === (int) $codigo),
                 ])->sortByDesc(fn($a) => $a['planilla'] + $a['cuadrilla'])->values()->all();
                 return [
                     'fecha' => $fecha,
                     'campo' => $campo,
-                    'revisado' => CampoActividadReglas::seRevisa($campo),
-                    'aceptado_por' => $acep->pluck('name')->filter()->unique()->implode(', '),
-                    'aceptado_el' => $acep->max('updated_at'),
                     'actividades' => $actividades,
                 ];
             })

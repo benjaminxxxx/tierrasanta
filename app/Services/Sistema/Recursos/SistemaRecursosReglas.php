@@ -41,6 +41,7 @@ class SistemaRecursosReglas extends SistemaLibroExcelReglas
             'orden' => ['t' => 'Orden', 'tipo' => 'entero'],
             'etapa' => ['t' => 'Etapa', 'tipo' => 'texto'],
             'area' => ['t' => 'Área (ha)', 'tipo' => 'decimal'],
+            'hileras' => ['t' => 'Hileras', 'tipo' => 'entero', 'def' => '10'],
             'alias' => ['t' => 'Alias (separados por coma)', 'tipo' => 'texto'],
             'bloqueado' => ['t' => 'Bloqueado (ya no se usa)', 'tipo' => 'sino', 'def' => 'NO'],
         ]],

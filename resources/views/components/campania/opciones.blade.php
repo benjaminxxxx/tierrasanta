@@ -14,7 +14,7 @@
     Slot: opciones propias de la pantalla (reportes, Excel…), van antes de las de gestión.
 
     Necesita en la página: campania-historia (verHistoriaCampania), el formulario de campaña (editarCampania),
-    campania-corregir-fechas-component y campania-cerrar-component.
+    campania-corregir-fechas-component, campania-cerrar-component y campania-mapa-etapas-component.
 --}}
 @props([
     'campania',
@@ -78,6 +78,12 @@
             <button type="button" class="{{ $item }}" @click="$wire.dispatch('verHistoriaCampania', {campaniaId: {{ $id }}})">
                 <i class="fa fa-book-open {{ $icono }}"></i> Historia de la campaña
             </button>
+            <button type="button" class="{{ $item }}" @click="$wire.dispatch('verMapaEtapas', {campaniaId: {{ $id }}})">
+                <i class="fa fa-layer-group {{ $icono }}"></i> Mapa de etapas (hileras)
+            </button>
+            <a href="{{ route('campo.actividades', ['vista' => 'campania', 'campania' => $id, 'campo' => $campania->campo]) }}" class="{{ $item }}">
+                <i class="fa fa-list-check {{ $icono }}"></i> Labores de la campaña
+            </a>
 
             @if (trim($slot) !== '')
                 <div class="my-1 border-t border-hairline"></div>

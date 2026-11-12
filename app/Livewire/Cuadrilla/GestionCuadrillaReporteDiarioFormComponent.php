@@ -73,7 +73,7 @@ class GestionCuadrillaReporteDiarioFormComponent extends Component
         unset($this->actividades[$index]);
         $this->actividades = array_values($this->actividades); // reindexar
     }
-    /** "Sí, es correcto" de las actividades por campo */
+    /** "Sí, pasar de etapa": avanza los grupos de hileras y guarda */
     public function guardarRegistroActividadesConfirmado($data = null)
     {
         try {
@@ -88,7 +88,7 @@ class GestionCuadrillaReporteDiarioFormComponent extends Component
     public function guardarRegistroDiarioCuadrilla(bool $actividadesConfirmadas = false)
     {
         try {
-            // Un campo con más de un código ese día: "¿es correcto?" antes de guardar (aquí se agregan horas, no se reemplazan)
+            // Etapas de los grupos de hileras (aquí se agregan horas, no se reemplazan)
             $tramos = [];
             foreach ($this->actividades as $a) {
                 foreach ($this->cuadrillerosAgregados as $c) {

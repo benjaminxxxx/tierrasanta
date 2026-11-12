@@ -16,6 +16,7 @@ class ReporteDiarioRiego extends Model
     protected $fillable = [
         'consolidado_id',
         'campo',
+        'zona', // parte del campo (ej. Baja, Ingreso): en zonas distintas no hay riego cruzado
         'hora_inicio',
         'hora_fin',
         //'total_horas',

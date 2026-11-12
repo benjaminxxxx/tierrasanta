@@ -2,53 +2,44 @@
 
 namespace App\Livewire\Traits;
 
-use App\Services\Campo\Actividad\CampoActividadProceso;
+use App\Services\Campania\Sector\CampaniaSectorRevision;
 
 /**
- * Antes de guardar horas: "Este día los siguientes campos tienen las siguientes actividades, ¿es correcto?" cuando un
- * campo tiene más de un código y alguno no fue aceptado (CampoActividadProceso). "Sí, es correcto" vuelve a llamar al
- * listener $evento con $data + 'actividades_aceptar' (campo => códigos) para guardar; "Corregir" solo cierra.
+ * Antes de guardar horas: cada labor de etapa debe caer en la etapa de algún grupo de hileras del campo ese día
+ * (CampaniaSectorRevision, mapa de etapas de la campaña).
+ *  - Labor que no cabe → ErrorControlado (no se guarda; el catch del componente lo muestra con errorAlert).
+ *  - Labor de la etapa siguiente → "¿El grupo X pasa a infestación desde hoy?". "Sí" vuelve a llamar al listener
+ *    $evento con $data + 'etapas_avanzar'; "Corregir" solo cierra.
  * Requiere LivewireAlert + HandlesAlerts y el listener registrado en el componente.
  */
 trait ConActividadesCampo
 {
-    /** Devuelve true si se mostró la pregunta (no se debe guardar todavía). */
+    /** Devuelve true si se mostró la pregunta (no se debe guardar todavía). Lanza ErrorControlado si una labor no cabe. */
     protected function preguntarActividadesCampo(string $fecha, array $tramos, array $excluirPlan, array $excluirCuad, string $evento, array $data): bool
     {
-        $campos = app(CampoActividadProceso::class)->revisar($fecha, $tramos, $excluirPlan, $excluirCuad);
-        if (!$campos) {
+        $avances = app(CampaniaSectorRevision::class)->revisar($fecha, $tramos, $excluirPlan, $excluirCuad);
+        if (!$avances) {
             return false;
         }
-        $this->confirm('¿Las actividades de cada campo son correctas?', [
-            'html' => view('livewire.campo.partial.aviso-actividades', ['campos' => $campos, 'fecha' => $fecha])->render(),
+        $this->confirm(count($avances) === 1 ? '¿Pasa a la siguiente etapa?' : '¿Pasan a la siguiente etapa?', [
+            'html' => view('livewire.campo.partial.aviso-actividades', ['avances' => $avances, 'fecha' => $fecha])->render(),
             'icon' => 'question',
-            'width' => 760,
+            'width' => 720,
             'showCancelButton' => true,
-            'confirmButtonText' => 'Sí, es correcto',
+            'confirmButtonText' => 'Sí, pasar de etapa y guardar',
             'cancelButtonText' => 'Corregir',
             'onConfirmed' => $evento,
-            'data' => $data + ['actividades_aceptar' => collect($campos)->mapWithKeys(fn($c) => [$c['campo'] => array_column($c['codigos'], 'codigo')])->all()],
+            'data' => $data + ['etapas_avanzar' => $avances],
         ]);
         return true;
     }
 
-    /** Guarda lo aceptado en la pregunta (si vino). */
+    /** "Sí" de la pregunta: pasa los grupos de hileras a su nueva etapa (antes de guardar las horas). */
     protected function aceptarActividadesCampo(string $fecha, $data): void
     {
-        if (!empty($data['actividades_aceptar'])) {
-            app(CampoActividadProceso::class)->aceptar($fecha, (array) $data['actividades_aceptar']);
-        }
-    }
-
-    /** Después de guardar: quita códigos aceptados que ya nadie hizo y avisa. Devuelve el texto del aviso o null. */
-    protected function limpiarActividadesCampo(string $fecha): ?string
-    {
-        try {
-            $mensajes = app(CampoActividadProceso::class)->limpiar($fecha);
-            return $mensajes ? implode(' ', $mensajes) : null;
-        } catch (\Throwable $e) {
-            report($e); // la limpieza es una ayuda: no debe frenar el guardado
-            return null;
+        $avances = CampaniaSectorRevision::limpiarAvances($data['etapas_avanzar'] ?? []);
+        if ($avances) {
+            app(CampaniaSectorRevision::class)->avanzar($avances);
         }
     }
 

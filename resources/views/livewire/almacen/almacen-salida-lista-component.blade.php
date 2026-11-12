@@ -154,6 +154,8 @@
                 data: this.tableDataLista,
                 themeName: this.isDark ? 'ht-theme-main-dark' : 'ht-theme-main',
                 columns: this.getColumnsLista(),
+                // Clic derecho → "Calcular Suma de Selección": cantidad y costo, por producto
+                sumadorSeleccion: { columnaAgruparProp: 'producto', columnasSumar: ['cantidad', 'total_costo'] },
                 contextMenu: {
                     items: {
                         // Distribución combustible (solo si aplica)

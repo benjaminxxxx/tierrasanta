@@ -141,7 +141,7 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
                     ->whereIn('plan_det_men_id', array_filter(array_column($datos, 'plan_men_detalle_id')))
                     ->pluck('asistencia', 'plan_det_men_id');
                 $this->validarDiasFijos($datos);
-                // Un campo con más de un código ese día: "¿es correcto?" antes de guardar (puede ser una metida de mano)
+                // Etapas: labor que no cabe en la etapa de ningún grupo de hileras → no se guarda; de la etapa siguiente → "¿pasa de etapa?"
                 $conEmpleado = $this->conPlanEmpleadoId($datos);
                 if (!$actividadesConfirmadas && $this->preguntarActividadesCampo($this->fecha, self::tramosDeFilas($conEmpleado, 'planilla', 'plan_empleado_id', $columnas),
                     array_values(array_unique(array_filter(array_column($conEmpleado, 'plan_empleado_id')))), [],
@@ -164,10 +164,6 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
             $aviso = count($datos) > 0
                 ? app(\App\Services\Riego\VerificacionSincronizacionRiegoServicio::class)->verificarDespuesDeGuardar($this->fecha, \App\Models\PlanEmpleado::class)
                 : null;
-            // Códigos aceptados que ya nadie hizo en su campo (se corrigió una metida de mano): se quitan y se avisa
-            if (count($datos) > 0 && ($quitados = $this->limpiarActividadesCampo($this->fecha))) {
-                $aviso = trim(($aviso ?? '') . ' ' . $quitados);
-            }
             $aviso ? $this->alert('warning', "Registros guardados. {$aviso}", ['timer' => 8000])
                 : $this->alert('success', count($datos) > 0 ? 'Registros guardados correctamente.' : 'Columnas guardadas.');
 
@@ -178,7 +174,7 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
         }
     }
 
-    /** "Sí, es correcto" de las actividades por campo: las acepta, guarda y recarga la tabla (limpia sus marcas). */
+    /** "Sí, pasar de etapa": avanza los grupos de hileras, guarda y recarga la tabla (limpia sus marcas). */
     public function guardarPlanillaActividadesConfirmado($data): void
     {
         try {

@@ -5,7 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** Kg de un retorno de infestadores que pertenecen a un campo/campaña de origen (ver CochinillaRecuperacionProceso). */
+/**
+ * Campaña dueña de un lote de infestadores: una fila por lote, con su mismo campo y todos sus kilos
+ * (CochinillaOrigenProceso). Antes del 12/11/2026 se repartía entre varios campos con un criterio equivocado.
+ */
 class CochinillaIngresoOrigen extends Model
 {
     protected $table = 'cochinilla_ingreso_origenes';

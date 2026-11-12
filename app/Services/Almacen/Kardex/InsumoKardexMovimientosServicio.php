@@ -257,14 +257,16 @@ class InsumoKardexMovimientosServicio
             ->with('origen') // morphTo -> CompraProducto | AlmacenProductoSalida
             ->get();
 
-        // Orden: fecha, y dentro del mismo día, el "indice" manual de las salidas
-        // pesa más que el orden natural de creación (igual que antes).
+        // Orden: fecha; el mismo día primero TODAS las entradas (compras) y luego las salidas, aunque la compra se haya
+        // registrado después (si no, el saldo queda negativo). Dentro de las salidas, el "indice" manual pesa más que
+        // el orden de creación.
         return $movimientos->sortBy(function (MovimientoStock $mov) {
-            $ordenSecundario = $mov->direccion === 'entrada'
+            $esEntrada = $mov->direccion === 'entrada';
+            $ordenSecundario = $esEntrada
                 ? $mov->id
                 : (($mov->origen->indice ?? 0) * 1000 + $mov->id);
 
-            return $mov->fecha_movimiento . '-' . str_pad($ordenSecundario, 10, '0', STR_PAD_LEFT);
+            return substr((string) $mov->fecha_movimiento, 0, 10) . '-' . ($esEntrada ? '0' : '1') . '-' . str_pad($ordenSecundario, 12, '0', STR_PAD_LEFT);
         })->values();
     }
 

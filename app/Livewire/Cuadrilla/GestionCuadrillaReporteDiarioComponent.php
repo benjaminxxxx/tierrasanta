@@ -98,7 +98,7 @@ class GestionCuadrillaReporteDiarioComponent extends Component
     public function storeTableDataGuardarActividadDiaria($datos, bool $actividadesConfirmadas = false)
     {
         try {
-            // Un campo con más de un código ese día: "¿es correcto?" antes de guardar (puede ser una metida de mano)
+            // Etapas: labor que no cabe en la etapa de ningún grupo de hileras → no se guarda; de la etapa siguiente → "¿pasa de etapa?"
             if (!$actividadesConfirmadas && $this->preguntarActividadesCampo($this->fecha, self::tramosDeFilas($datos, 'cuadrilla', 'cuadrillero_id'), [],
                 array_values(array_filter(array_map(fn($f) => (int) ($f['cuadrillero_id'] ?? 0), $datos))),
                 'guardarReporteActividadesConfirmado', ['datos' => $datos])) {
@@ -161,7 +161,7 @@ class GestionCuadrillaReporteDiarioComponent extends Component
         }
     }
 
-    /** "Sí, es correcto" de las actividades por campo: las acepta y sigue con el guardado (y la revisión de bonos). */
+    /** "Sí, pasar de etapa": avanza los grupos de hileras y sigue con el guardado (y la revisión de bonos). */
     public function guardarReporteActividadesConfirmado($data)
     {
         try {
@@ -187,10 +187,6 @@ class GestionCuadrillaReporteDiarioComponent extends Component
             // Si ese día hubo riego, se vuelve a verificar solo (tarea "Registros de riego desincronizados")
             $aviso = app(\App\Services\Riego\VerificacionSincronizacionRiegoServicio::class)
                 ->verificarDespuesDeGuardar($this->fecha, \App\Models\Cuadrillero::class);
-            // Códigos aceptados que ya nadie hizo en su campo (se corrigió una metida de mano): se quitan y se avisa
-            if ($quitados = $this->limpiarActividadesCampo($this->fecha)) {
-                $aviso = trim(($aviso ?? '') . ' ' . $quitados);
-            }
             $aviso ? $this->alert('warning', "Registro guardado. {$aviso}", ['timer' => 8000])
                 : $this->alert('success', 'Registro actualizado correctamente');
             // Trabajadores de planilla que también figuran hoy en cuadrilla: ¿trabajo extra, otro día u otra persona?
