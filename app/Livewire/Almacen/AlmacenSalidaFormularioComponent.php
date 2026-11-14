@@ -87,9 +87,10 @@ class AlmacenSalidaFormularioComponent extends Component
 
         $this->registros = AlmacenProductoSalida::with(['producto.categoria', 'distribuciones'])
             ->whereIn('id', $this->ids)
-            // Mantiene el mismo orden en que fueron capturados originalmente.
+            // En el orden del día (indice): al guardar, el grupo vuelve a su lugar con este orden
             ->orderBy('fecha_reporte')
-            ->orderBy('created_at')
+            ->orderByRaw('indice IS NULL, indice')
+            ->orderBy('id')
             ->get()
             ->map(function ($salida) {
                 $distribuciones = $salida->distribuciones ?? [];

@@ -258,15 +258,14 @@ class InsumoKardexMovimientosServicio
             ->get();
 
         // Orden: fecha; el mismo día primero TODAS las entradas (compras) y luego las salidas, aunque la compra se haya
-        // registrado después (si no, el saldo queda negativo). Dentro de las salidas, el "indice" manual pesa más que
-        // el orden de creación.
+        // registrado después (si no, el saldo queda negativo). Las salidas del día van en el orden en que se llenaron
+        // (indice = 1, 2, 3…, ver AlmacenSalidaOrdenProceso); las antiguas sin indice, en el orden de registro.
         return $movimientos->sortBy(function (MovimientoStock $mov) {
             $esEntrada = $mov->direccion === 'entrada';
-            $ordenSecundario = $esEntrada
-                ? $mov->id
-                : (($mov->origen->indice ?? 0) * 1000 + $mov->id);
+            $indice = $esEntrada ? 0 : ($mov->origen->indice ?? 999999999);
 
-            return substr((string) $mov->fecha_movimiento, 0, 10) . '-' . ($esEntrada ? '0' : '1') . '-' . str_pad($ordenSecundario, 12, '0', STR_PAD_LEFT);
+            return substr((string) $mov->fecha_movimiento, 0, 10) . '-' . ($esEntrada ? '0' : '1')
+                . '-' . str_pad((string) (int) $indice, 9, '0', STR_PAD_LEFT) . '-' . str_pad((string) $mov->id, 12, '0', STR_PAD_LEFT);
         })->values();
     }
 

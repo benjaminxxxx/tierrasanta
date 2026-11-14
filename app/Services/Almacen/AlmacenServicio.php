@@ -229,6 +229,9 @@ class AlmacenServicio
 
         DB::transaction(function () use ($filas, $tipo, $almacenId, &$resultados, &$idsSalidasParaReconciliar, $esCombustible) {
             $usuarioId = Auth::id();
+            // Orden del día: las filas guardadas en el orden en que vienen (tabla o Excel); ver AlmacenSalidaOrdenProceso
+            $lote = [];
+            $fechasQueSeVacian = [];
 
             foreach ($filas as $numero => $fila) {
                 $id = $fila['id'] ?? null;
@@ -256,6 +259,7 @@ class AlmacenServicio
                             camposIgnorados: self::CAMPOS_IGNORADOS,
                         );
 
+                        $fechasQueSeVacian[] = $salida->fecha_reporte;
                         $salida->delete();
                         $resultados['eliminados']++;
                     }
@@ -299,7 +303,6 @@ class AlmacenServicio
                     'uso_id' => $esCombustible ? null : $nulo($fila['uso_id'] ?? null),
                     'costo_por_kg' => $nulo($fila['costo_por_kg'] ?? null),
                     'total_costo' => $nulo($fila['total_costo'] ?? null),
-                    'indice' => $nulo($fila['indice'] ?? null),
                     'tipo_kardex' => $fila['tipo_kardex'],
                 ];
 
@@ -308,6 +311,8 @@ class AlmacenServicio
                 if ($id) {
                     $salida = AlmacenProductoSalida::findOrFail($id);
                     $antes = $salida->toArray();
+                    $lote[] = ['id' => $salida->id, 'fecha' => $fila['fecha_reporte'], 'fecha_antes' => $salida->fecha_reporte, 'indice_antes' => $salida->indice];
+                    $fechasQueSeVacian[] = $salida->fecha_reporte;
 
                     $cambiaProducto = (int) $salida->producto_id !== (int) $fila['producto_id'];
                     $cambiaTipoKardex = $salida->tipo_kardex !== $fila['tipo_kardex'];
@@ -383,6 +388,7 @@ class AlmacenServicio
                     $salida = AlmacenProductoSalida::create(
                         array_merge($datos, ['creado_por' => $usuarioId])
                     );
+                    $lote[] = ['id' => $salida->id, 'fecha' => $salida->fecha_reporte, 'fecha_antes' => null, 'indice_antes' => null];
 
                     AuditoriaServicio::registrar(
                         modelo: AlmacenProductoSalida::class,
@@ -415,6 +421,12 @@ class AlmacenServicio
                 if ($esCombustible && $salida->maquinaria_id) {
                     $idsSalidasParaReconciliar[] = $salida->id;
                 }
+            }
+
+            // Orden del día: el lote queda en el orden de la tabla o del Excel, en el lugar donde estaba; si una salida
+            // cambió de lugar, su kardex debe regenerarse (el costo promedio depende del orden)
+            foreach (app(\App\Services\Almacen\Salida\AlmacenSalidaOrdenProceso::class)->ordenarLote($lote, $fechasQueSeVacian) as $movida) {
+                $this->stockService->marcarMovimientoModificado(AlmacenProductoSalida::class, $movida);
             }
         });
 
@@ -1018,9 +1030,10 @@ class AlmacenServicio
 
         // ----------------------------------------------------
 
+        // Mismo orden que el kardex: fecha y, dentro del día, el orden en que se llenaron (indice; las antiguas por registro)
         return $query->orderBy('fecha_reporte')
-            ->orderBy('created_at', 'asc')
-            ->orderByRaw('COALESCE(indice, 0) ASC')
+            ->orderByRaw('indice IS NULL, indice')
+            ->orderBy('id')
             ->paginate(15);
     }
 

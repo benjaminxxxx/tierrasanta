@@ -282,8 +282,9 @@
             guardarSalida() {
                 const totalRows = this.hot.countRows();
                 const data = [];
+                // En el orden que se ve (filas insertadas en medio incluidas): ese es el orden del día al guardar
                 for (let i = 0; i < totalRows; i++) {
-                    const fila = this.hot.getSourceDataAtRow(i);
+                    const fila = this.hot.getSourceDataAtRow(this.hot.toPhysicalRow(i));
                     if (fila && Object.values(fila).some(v => v !== null && v !== '')) {
                         data.push(fila);
                     }
