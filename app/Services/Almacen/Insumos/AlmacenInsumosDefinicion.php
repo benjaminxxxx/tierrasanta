@@ -246,7 +246,10 @@ class AlmacenInsumosDefinicion extends SistemaLibroExcelDefinicion
         $subcategoria = $d['subcategoria'] ? DB::table('ins_subcategorias')->where('categoria_codigo', $d['categoria'])
             ->whereRaw('LOWER(nombre) = ?', [mb_strtolower($d['subcategoria'])])->value('id') : null;
         $valores = ['nombre_comercial' => $d['nombre'], 'ingrediente_activo' => $d['ingrediente'], 'categoria_codigo' => $d['categoria'],
-            'subcategoria_id' => $subcategoria, 'codigo_unidad_medida' => $d['unidad'], 'codigo_tipo_existencia' => $d['existencia'], 'updated_at' => now()]
+            'subcategoria_id' => $subcategoria, 'codigo_unidad_medida' => $d['unidad'],
+            // Vacío no borra el tipo de existencia (el kardex lo necesita); un producto nuevo sin tipo toma 06 (suministros)
+            'codigo_tipo_existencia' => $d['existencia'] ?: ($actual->codigo_tipo_existencia ?? \App\Services\Almacen\Compra\AlmacenCompraReglas::TIPO_EXISTENCIA_DEFECTO),
+            'updated_at' => now()]
             + ($d['activo'] === 'SI' ? ['deleted_at' => null, 'eliminado_por' => null]
                 : ((!$actual || !$actual->deleted_at) ? ['deleted_at' => now(), 'eliminado_por' => auth()->id()] : []));
         if ($actual) {

@@ -28,6 +28,9 @@ class InsumoKardexMovimientosServicio
     private const METODO_PROMEDIO = 'PROMEDIO_PONDERADO';
     private const EPSILON = 0.000000001; // Margen de tolerancia para números flotantes
 
+    /** Aviso de la última regeneración (ej. no se generó el Excel porque el producto no tiene tipo de existencia) */
+    public ?string $aviso = null;
+
     // Variables acumulativas para el stock y costo, manteniendo alta precisión (decimales)
     private float $stockAcumulado = 0.0;
     private float $costoTotalAcumulado = 0.0;
@@ -41,6 +44,7 @@ class InsumoKardexMovimientosServicio
      */
     public function generarMovimientos(InsKardex $insumoKardex): void
     {
+        $this->aviso = null;
         $this->inicializarAcumuladores($insumoKardex);
         $movimientosOrdenados = $this->obtenerMovimientosBase($insumoKardex);
 
@@ -83,8 +87,23 @@ class InsumoKardexMovimientosServicio
      */
     private function generarReporteKardex($insumoKardex)
     {
+        // Sin tipo de existencia o unidad SUNAT no se puede armar el Excel oficial, pero los movimientos y saldos sí se
+        // regeneran (antes se deshacía todo el kardex): se avisa qué corregir en el producto.
+        $faltan = $this->faltantesExcel($insumoKardex);
+        if ($faltan) {
+            $this->aviso = "Kardex regenerado, pero sin Excel: el producto {$insumoKardex->producto->nombre_comercial} no tiene {$faltan}. Corrígelo en el producto (o en el Excel de insumos) y vuelve a generar.";
+            return;
+        }
         $insumoKardex->file = $this->guardarExcelKardex($insumoKardex);
         $insumoKardex->save();
+    }
+
+    /** Datos del producto que exige el Excel oficial del kardex y faltan (texto) o null. */
+    public function faltantesExcel(InsKardex $insumoKardex): ?string
+    {
+        $p = $insumoKardex->producto;
+        $faltan = array_filter([!$p?->tabla5 ? 'tipo de existencia (tabla 5)' : null, !$p?->tabla6 ? 'unidad de medida SUNAT (tabla 6)' : null]);
+        return $faltan ? implode(' ni ', $faltan) : null;
     }
 
     /**
@@ -121,10 +140,8 @@ class InsumoKardexMovimientosServicio
     {
         $empresa = Empresa::first();
         $listaKardex = $this->construirListaKardex($insumoKardex);
-        $tieneTipo = $insumoKardex->producto->tabla5;
-        if (!$tieneTipo) {
-            throw new Exception("El producto no tiene un tipo, editar el producto.");
-
+        if ($faltan = $this->faltantesExcel($insumoKardex)) {
+            throw new Exception("El producto {$insumoKardex->producto->nombre_comercial} no tiene {$faltan}: corrígelo en el producto (o en el Excel de insumos).");
         }
 
         $periodo = Carbon::parse($insumoKardex->anio)->format('Y');
