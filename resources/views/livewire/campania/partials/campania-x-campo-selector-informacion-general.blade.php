@@ -20,7 +20,7 @@
 
 <x-tr>
     <x-td>Campaña:</x-td>
-    <x-td>{{ $campania->nombre_campania }}</x-td>
+    <x-td><x-campania.nombre :campania="$campania" /></x-td>
 </x-tr>
 
 <x-tr>

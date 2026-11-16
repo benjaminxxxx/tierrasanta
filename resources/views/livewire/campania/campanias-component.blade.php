@@ -113,7 +113,7 @@
                             </div>
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <span class="truncate font-semibold text-ink">{{ $campania->nombre_campania }}</span>
+                                    <x-campania.nombre :campania="$campania" :campo="false" class="truncate" />
                                     @if ($cerrada)
                                         <span class="rounded-[6px] bg-fog px-1.5 py-0.5 text-[11px] font-medium text-graphite">Cerrada</span>
                                     @else
@@ -240,6 +240,7 @@
     <livewire:campania.campania-cerrar-component />
     <livewire:campania.campania-corregir-fechas-component />
     <livewire:campania.campania-mapa-etapas-component />
+    <livewire:campania.campania-tarjeta-component />
     <livewire:campania.campania-historia-component />
 </div>
 @script

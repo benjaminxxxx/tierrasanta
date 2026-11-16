@@ -21,12 +21,13 @@ trait ConActividadesCampo
         if (!$avances) {
             return false;
         }
-        $this->confirm(count($avances) === 1 ? '¿Pasa a la siguiente etapa?' : '¿Pasan a la siguiente etapa?', [
+        $soloRelleno = collect($avances)->every(fn($a) => ($a['tipo'] ?? '') === 'nueva_siembra');
+        $this->confirm($soloRelleno ? '¿Es una nueva siembra (relleno)?' : (count($avances) === 1 ? '¿Pasa a la siguiente etapa?' : '¿Pasan a la siguiente etapa?'), [
             'html' => view('livewire.campo.partial.aviso-actividades', ['avances' => $avances, 'fecha' => $fecha])->render(),
             'icon' => 'question',
-            'width' => 720,
+            'width' => 760,
             'showCancelButton' => true,
-            'confirmButtonText' => 'Sí, pasar de etapa y guardar',
+            'confirmButtonText' => 'Sí, es correcto: guardar',
             'cancelButtonText' => 'Corregir',
             'onConfirmed' => $evento,
             'data' => $data + ['etapas_avanzar' => $avances],
@@ -34,7 +35,7 @@ trait ConActividadesCampo
         return true;
     }
 
-    /** "Sí" de la pregunta: pasa los grupos de hileras a su nueva etapa (antes de guardar las horas). */
+    /** "Sí" de la pregunta: pasa las siembras a su nueva etapa o agrega el relleno (antes de guardar las horas). */
     protected function aceptarActividadesCampo(string $fecha, $data): void
     {
         $avances = CampaniaSectorRevision::limpiarAvances($data['etapas_avanzar'] ?? []);

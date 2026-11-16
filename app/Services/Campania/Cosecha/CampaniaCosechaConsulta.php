@@ -81,6 +81,15 @@ class CampaniaCosechaConsulta
                 } elseif ($estado['dias_desde_cosecha'] >= CampaniaCosechaReglas::DIAS_SUGERIR_CIERRE) {
                     $estado['recomendar_cierre'] = 'tiempo';
                 }
+                // Campaña con varias siembras (relleno): se cierra con la cosecha de la última, no con la primera
+                if (!empty($estado['recomendar_cierre'])) {
+                    $pendientes = \App\Models\CampaniaSector::where('campo_campania_id', $campania->id)
+                        ->whereDoesntHave('etapas', fn($q) => $q->where('etapa', 'cosecha'))->pluck('nombre');
+                    if ($pendientes->isNotEmpty() && \App\Models\CampaniaSector::where('campo_campania_id', $campania->id)->count() > 1) {
+                        $estado['recomendar_cierre'] = null;
+                        $estado['siembras_sin_cosecha'] = $pendientes->all();
+                    }
+                }
             }
 
             $estados[$id] = $estado;

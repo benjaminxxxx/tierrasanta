@@ -191,7 +191,7 @@
                                 <x-td class="text-center">
                                     <x-campania.opciones :campania="$campania" :cosecha="$c" trigger="boton" align="left" />
                                 </x-td>
-                                <x-td class="text-center font-semibold">{{ $campania->nombre_campania }}</x-td>
+                                <x-td class="text-center"><x-campania.nombre :campania="$campania" :campo="false" /></x-td>
                                 <x-td class="text-center">{{ $campania->campo }}</x-td>
                                 <x-td class="text-center">{{ $campania->area }}</x-td>
                                 <x-td class="text-center">{{ formatear_fecha($campania->fecha_siembra) }}</x-td>

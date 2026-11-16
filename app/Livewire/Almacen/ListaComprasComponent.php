@@ -36,11 +36,12 @@ class ListaComprasComponent extends Component
     #[Url]
     public string $tipoComprobante = '';
 
+    // Nullable: x-fecha manda null al borrar la fecha (con string, Livewire desarmaba la propiedad: tickets #5/#6)
     #[Url]
-    public string $fechaDesde = '';
+    public ?string $fechaDesde = null;
 
     #[Url]
-    public string $fechaHasta = '';
+    public ?string $fechaHasta = null;
 
     #[Url]
     public string $vista = 'compras';

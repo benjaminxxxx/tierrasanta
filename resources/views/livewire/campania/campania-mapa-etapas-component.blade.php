@@ -1,4 +1,4 @@
-{{-- Modal "Mapa de etapas" (DESIGN.md): hileras del campo por grupo y etapa, línea de tiempo y edición --}}
+{{-- Modal "Mapa de etapas" (DESIGN.md): hileras del campo por siembra y etapa, línea de tiempo y edición --}}
 @php
     use App\Services\Campania\Sector\CampaniaSectorReglas as R;
     $f = fn($d) => $d ? formatear_fecha($d) : '—';
@@ -45,7 +45,7 @@
                             <input type="date" wire:model.live="fecha" min="{{ $dibujo['inicio'] }}" max="{{ $dibujo['fin'] }}" class="{{ $input }}" />
                         </label>
                         <input type="range" min="0" max="{{ $totalDias }}" x-model="dia" class="mb-2 min-w-[180px] flex-1 accent-[#BC002D]"
-                            @change="$wire.set('fecha', aFecha(dia))" title="Mueve para ver cómo avanzó cada grupo de hileras" />
+                            @change="$wire.set('fecha', aFecha(dia))" title="Mueve para ver cómo avanzó cada siembra" />
                         <p class="mb-2 text-xs text-graphite">Campaña del {{ $f($dibujo['inicio']) }} al {{ $campania->fecha_fin ? $f($campania->fecha_fin) : 'hoy' }}</p>
                     </div>
 
@@ -62,7 +62,7 @@
                                     <div class="flex items-stretch gap-2">
                                         <div class="flex-1 space-y-[2px]">
                                             @foreach ($b['filas'] as $fila)
-                                                <div class="flex items-center gap-1" title="Hilera {{ $fila['hilera'] }}{{ $s ? ' · ' . $s['nombre'] . ' · ' . R::nombre($fila['etapa']) : ' · sin grupo' }}">
+                                                <div class="flex items-center gap-1" title="Hilera {{ $fila['hilera'] }}{{ $s ? ' · ' . $s['nombre'] . ' · ' . R::nombre($fila['etapa']) : ' · sin siembra' }}">
                                                     <span class="w-5 text-right text-[10px] tabular-nums text-pewter">{{ $numerar || $fila['hilera'] % 5 === 0 || $fila['hilera'] === 1 ? $fila['hilera'] : '' }}</span>
                                                     <div class="flex-1 rounded-[3px]" style="height: {{ $alto }}px; background: {{ $fila['color'] }}; {{ $s ? '' : 'background-image: repeating-linear-gradient(45deg, transparent 0 4px, rgb(0 0 0 / .06) 4px 8px)' }}"></div>
                                                 </div>
@@ -74,7 +74,7 @@
                                                 <p class="text-graphite">hileras {{ $s['hilera_desde'] }}–{{ $s['hilera_hasta'] }}</p>
                                                 <p class="mt-0.5"><span class="{{ $chip }}" style="background: {{ R::color($etapa) }}">{{ R::nombre($etapa) }}</span></p>
                                             @else
-                                                <p class="text-pewter">Sin grupo</p>
+                                                <p class="text-pewter">Sin siembra</p>
                                             @endif
                                         </div>
                                     </div>
@@ -82,15 +82,15 @@
                             </div>
                         </div>
 
-                        {{-- Línea de tiempo de cada grupo --}}
+                        {{-- Línea de tiempo de cada siembra --}}
                         <div>
-                            <p class="mb-1 text-xs font-semibold uppercase text-graphite">Etapas de cada grupo en el tiempo</p>
+                            <p class="mb-1 text-xs font-semibold uppercase text-graphite">Etapas de cada siembra en el tiempo</p>
                             <div class="space-y-3 rounded-[10px] border border-mist bg-paper p-3">
                                 @foreach ($dibujo['lineas'] as $linea)
                                     @php $s = $sectores[$linea['sector']] ?? null; @endphp
                                     <div>
                                         <div class="mb-1 flex items-center justify-between text-xs">
-                                            <span class="font-medium text-ink">{{ $s['nombre'] ?? '' }} <span class="font-normal text-pewter">· hileras {{ $s['hilera_desde'] ?? '' }}–{{ $s['hilera_hasta'] ?? '' }}</span></span>
+                                            <span class="font-medium text-ink">{{ $s['nombre'] ?? '' }} <span class="font-normal text-pewter">@if (!empty($s['fecha_siembra'])) · sembrada el {{ $f($s['fecha_siembra']) }} @endif · hileras {{ $s['hilera_desde'] ?? '' }}–{{ $s['hilera_hasta'] ?? '' }}</span></span>
                                             @if (($s['origen'] ?? '') === 'detectado')
                                                 <span class="text-pewter" title="Armado por el sistema con las labores registradas; corrígelo si sabes cómo fue">detectado</span>
                                             @endif
@@ -135,9 +135,9 @@
                             @if ($fuera->isNotEmpty())
                                 <p class="mt-2 rounded-[10px] bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-400/10 dark:text-amber-400">
                                     <i class="fa fa-triangle-exclamation"></i>
-                                    {{ $fuera->pluck('fecha')->unique()->count() }} día(s) con labores fuera de su etapa en todos los grupos
+                                    {{ $fuera->pluck('fecha')->unique()->count() }} día(s) con labores fuera de su etapa en todas las siembras
                                     (ej. {{ $fuera->take(3)->map(fn($r) => $f($r['fecha']) . ' ' . $r['labor'] . ' · ' . $r['nombre'])->implode('; ') }}).
-                                    Revisa si es un error de código o si algún grupo de hileras iba en esa etapa.
+                                    Revisa si es un error de código, un replante, o si alguna siembra iba en esa etapa.
                                 </p>
                             @endif
                         </div>
@@ -151,21 +151,23 @@
                                     <span class="mb-1 block text-xs font-medium text-graphite">Hileras del campo {{ $campania->campo }}</span>
                                     <input type="number" min="1" max="500" wire:model.blur="hileras" class="{{ $input }} w-28" />
                                 </label>
-                                <p class="mb-2 flex-1 text-xs text-graphite">Es propio del campo (vale para todas sus campañas). Al cambiarlo, los grupos se ajustan en proporción.</p>
-                                <button type="button" class="{{ $btn2 }}" wire:click="agregarGrupo"><i class="fa fa-plus"></i> Grupo de hileras</button>
+                                <p class="mb-2 flex-1 text-xs text-graphite">Es propio del campo (vale para todas sus campañas). Al cambiarlo, las siembras se ajustan en proporción.</p>
+                                <button type="button" class="{{ $btn2 }}" wire:click="agregarGrupo"><i class="fa fa-plus"></i> Siembra (relleno)</button>
                             </div>
                             @foreach ($sectores as $i => $s)
                                 <div class="rounded-[10px] border border-mist p-2" wire:key="sector-{{ $i }}">
                                     <div class="flex flex-wrap items-end gap-2">
                                         <label class="block"><span class="mb-1 block text-xs text-graphite">Nombre</span>
                                             <input type="text" wire:model.blur="sectores.{{ $i }}.nombre" maxlength="40" class="{{ $input }} w-36" /></label>
+                                        <label class="block"><span class="mb-1 block text-xs text-graphite">Fecha de siembra{{ count($sectores) > 1 ? ' *' : '' }}</span>
+                                            <input type="date" wire:model.blur="sectores.{{ $i }}.fecha_siembra" class="{{ $input }}" /></label>
                                         <label class="block"><span class="mb-1 block text-xs text-graphite">Hilera desde</span>
                                             <input type="number" min="1" max="{{ $hileras }}" wire:model.live.debounce.500ms="sectores.{{ $i }}.hilera_desde" class="{{ $input }} w-24" /></label>
                                         <label class="block"><span class="mb-1 block text-xs text-graphite">hasta</span>
                                             <input type="number" min="1" max="{{ $hileras }}" wire:model.live.debounce.500ms="sectores.{{ $i }}.hilera_hasta" class="{{ $input }} w-24" /></label>
                                         <button type="button" class="{{ $btn2 }}" wire:click="agregarEtapa({{ $i }})"><i class="fa fa-plus"></i> Etapa</button>
                                         @if (count($sectores) > 1)
-                                            <button type="button" class="{{ $btn2 }} !text-red-700" wire:click="quitarGrupo({{ $i }})" title="Quitar grupo"><i class="fa fa-trash"></i></button>
+                                            <button type="button" class="{{ $btn2 }} !text-red-700" wire:click="quitarGrupo({{ $i }})" title="Quitar siembra"><i class="fa fa-trash"></i></button>
                                         @endif
                                     </div>
                                     <div class="mt-2 space-y-1">
@@ -189,8 +191,9 @@
                                 </div>
                             @endforeach
                             <p class="text-xs text-graphite">
-                                Cada grupo está en una etapa desde su fecha hasta que empieza la siguiente. No se puede guardar si una labor ya registrada
-                                (preparación, siembra, infestación o poda) queda fuera de su etapa en todos los grupos.
+                                Una campaña tiene otra siembra solo si parte del campo se sembró en otra fecha (ej. relleno a 2 m meses después): cada una
+                                necesita su fecha de siembra y lleva su propia infestación y cosecha. Cada siembra está en una etapa desde su fecha hasta que
+                                empieza la siguiente. No se puede guardar si una labor ya registrada queda fuera de su etapa en todas las siembras.
                             </p>
                         </div>
                     @endif
@@ -202,7 +205,7 @@
                 <div>
                     @if ($puedeEditar && $editando)
                         <button type="button" class="{{ $btn2 }}" wire:click="redetectar"
-                            wire:confirm="¿Volver a armar los grupos con las labores registradas? Se pierde lo corregido a mano en esta campaña.">
+                            wire:confirm="¿Volver a armar las siembras con las labores registradas? Se pierde lo corregido a mano en esta campaña.">
                             <i class="fa fa-wand-magic-sparkles"></i> Volver a detectar
                         </button>
                     @endif

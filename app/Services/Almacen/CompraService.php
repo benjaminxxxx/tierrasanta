@@ -168,11 +168,42 @@ class CompraService
         ]);
     }
 
+    /** Máximo de las columnas decimal(12,4) de compra_detalles (cantidad, costo_unitario, total_linea). */
+    private const MAXIMO_COLUMNA = 99999999.9999;
+
+    /**
+     * Cantidad y precio con el punto decimal perdido (tickets "Out of range value for column 'costo_unitario'"):
+     * en un navegador en español "215.084" puede leerse como 215084 y el precio como 214799799148. En vez del error
+     * de base de datos, se avisa qué línea revisar: valores que no caben o cantidad × precio muy lejos del subtotal.
+     */
+    private function validarNumerosLinea(array $item): void
+    {
+        $nombre = $item['producto_nombre'] ?? $item['nombre_comercial']
+            ?? (isset($item['producto_id']) ? \App\Models\Producto::whereKey($item['producto_id'])->value('nombre_comercial') : null) ?? 'un producto';
+        $cantidad = (float) ($item['cantidad'] ?? 0);
+        $precio = (float) ($item['costo_unitario'] ?? 0);
+        $total = (float) ($item['total_linea'] ?? 0);
+        $pista = ' Revisa los decimales: se escriben con punto (215.084) y sin separador de miles.';
+        foreach (['cantidad' => $cantidad, 'precio unitario' => $precio, 'subtotal' => $total] as $campo => $valor) {
+            if (abs($valor) > self::MAXIMO_COLUMNA) {
+                throw new \App\Exceptions\ErrorControlado("No se guardó: en {$nombre} el {$campo} es " . number_format($valor, 4, '.', ',') . ', un número demasiado grande.' . $pista);
+            }
+        }
+        if ($total > 0 && $cantidad > 0 && $precio > 0) {
+            $calculado = $cantidad * $precio * (1 - (float) ($item['porcentaje_descuento'] ?? 0) / 100);
+            if (abs($calculado - $total) > max(1.0, $total * 0.05)) {
+                throw new \App\Exceptions\ErrorControlado("No se guardó: en {$nombre}, cantidad × precio = " . number_format($calculado, 2, '.', ',')
+                    . ' no coincide con el subtotal ' . number_format($total, 2, '.', ',') . '.' . $pista);
+            }
+        }
+    }
+
     /**
      * Atributos de una línea de compra a partir de lo ingresado (precio y total con IGV).
      */
     private function calcularLinea(array $item): array
     {
+        $this->validarNumerosLinea($item);
         // El formulario envía 'factor_conversion' (antes se ignoraba y toda presentación contaba como 1)
         $factorConversion = (float) ($item['factor_conversion_usado'] ?? $item['factor_conversion'] ?? $item['conversion_factor'] ?? 1) ?: 1;
         $cantidadBase = (float) $item['cantidad'] * $factorConversion;

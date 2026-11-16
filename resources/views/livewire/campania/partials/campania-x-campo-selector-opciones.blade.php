@@ -9,6 +9,10 @@
                 </x-button>
             @endif
         @endcan
+        <button type="button" x-on:click="Livewire.dispatch('verTarjetaCampania', { campaniaId: {{ $campania->id }} })"
+            class="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-mist bg-paper px-3 text-sm font-medium text-ink hover:bg-fog focus:outline-none focus:ring-[3px] focus:ring-carmin/25">
+            <i class="fa fa-id-card text-steel"></i> Ver tarjeta
+        </button>
         <x-campania.opciones :campania="$campania" trigger="boton" :detalle="false">
             @can(\App\Constants\Permisos::CAMPAÑA_POR_CAMPO_GESTIONAR)
                 <button type="button" class="{{ $itemReporte }}" wire:click="generarBdd({{ $campania->id }})"

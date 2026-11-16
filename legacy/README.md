@@ -330,3 +330,10 @@ Revisión de las tablas vacías (comparadas con `santarita3_pruebas`, copia del 
 | `app/Models/Observacion.php`, migración `observaciones` | Modelo sin uso (las observaciones de cochinilla están en `cochinilla_observaciones`). |
 | `app/Models/PesticidaCampania.php`, migración `pesticidas_campanias`, `app/Services/Almacen/AlmacenServicioPesticidas.php` | `AlmacenServicio::generarPesticidasXCampania()` y `generarResumenPesticidaPorPeriodo()` no tenían llamadas (se movieron aquí). Se quitó la tabla de `CampaniaRegistroImpactoConsulta`. |
 | `app/Models/CostoManoIndirecta.php`, migración `costo_mano_indirectas` | Cuadrilla → Resumen anual leía esta tabla, pero nada la llenaba (0 filas también en la base antigua): la pantalla siempre salía vacía. Ahora calcula jornales y bonos por mes en vivo desde `cuad_registros_diarios` + `cuad_bonos_actividades` (`App\Services\Cuadrilla\Resumen\CuadrillaResumenAnualConsulta`). Se quitó la fila "Reporte del mes" (enlace a un Excel guardado); el permiso `Cuadrilla Resumen Anual Exportar` queda sin uso. |
+
+### Kardex por insumo (14/11/2026)
+
+| Qué | Por qué se retiró |
+|---|---|
+| `app/Livewire/Almacen/Kardex/InsumoKardexCrearComponent.php` y la vista `livewire/almacen/kardex/insumo-kardex-crear-component.blade.php` | Página "Kardex por insumo" (`/almacen/kardex/crear`, ruta `almacen.kardex.crear`): servía para ver rápido cuántos kardex tenía un producto mientras se importaban; el nombre decía "crear" aunque no creaba nada. La lista de kardex (`/almacen/kardex`) ya busca por producto. La ruta quedó como redirección a `/almacen/kardex` (también la URL antigua `/gestion_insumos/kardex/crear`) y se quitó la opción del menú (`SistemaMenuReglas`, comentario `LEGACY`). |
+| `legacy/app/Services/Producto/ProductoServicioKardexPorInsumo.php` | `encontrar()` y `kardexAgrupadosPorAnio()`, que estaban en `App\Services\Producto\ProductoServicio` y solo usaba esa página. |

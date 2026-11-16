@@ -99,7 +99,7 @@ class CampaniaMapaEtapasComponent extends Component
         $this->hileras = $nuevo;
     }
 
-    /** Nuevo grupo: con las hileras libres, o partiendo en dos el grupo más grande. */
+    /** Nueva siembra (relleno): con las hileras libres, o partiendo en dos la siembra más grande. Necesita su fecha de siembra. */
     public function agregarGrupo(): void
     {
         $ocupadas = [];
@@ -120,7 +120,7 @@ class CampaniaMapaEtapasComponent extends Component
             $i = collect($this->sectores)->sortByDesc(fn($s) => $s['hilera_hasta'] - $s['hilera_desde'])->keys()->first();
             $s = $this->sectores[$i];
             if ($s['hilera_hasta'] === $s['hilera_desde']) {
-                $this->errorAlert('Ya no hay hileras para otro grupo: aumenta el número de hileras del campo.');
+                $this->errorAlert('Ya no hay hileras para otra siembra: aumenta el número de hileras del campo.');
                 return;
             }
             $mitad = intdiv($s['hilera_desde'] + $s['hilera_hasta'], 2);
@@ -129,7 +129,8 @@ class CampaniaMapaEtapasComponent extends Component
             $hasta = $s['hilera_hasta'];
             $etapas = $s['etapas'];
         }
-        $this->sectores[] = ['nombre' => 'Grupo ' . (count($this->sectores) + 1), 'hilera_desde' => $desde, 'hilera_hasta' => $hasta, 'origen' => 'manual', 'etapas' => $etapas];
+        $this->sectores[] = ['nombre' => CampaniaSectorReglas::nombreSiembra(count($this->sectores) + 1), 'fecha_siembra' => null,
+            'hilera_desde' => $desde, 'hilera_hasta' => $hasta, 'origen' => 'manual', 'etapas' => $etapas];
         $this->sectores = collect($this->sectores)->sortBy('hilera_desde')->values()->all();
     }
 

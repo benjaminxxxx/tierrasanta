@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 // Almacén
 use App\Livewire\Almacen\Kardex\InsumoKardexComponent;
-use App\Livewire\Almacen\Kardex\InsumoKardexCrearComponent;
 use App\Livewire\Almacen\Kardex\KardexCargaComponent;
 use App\Livewire\Almacen\Kardex\InsumoKardexDetalleComponent;
 use App\Livewire\Almacen\Kardex\InsumoKardexReporteComponent;
@@ -302,8 +301,8 @@ Route::middleware([
         Route::prefix('kardex')->name('kardex')->group(function () {
             Route::get('/', InsumoKardexComponent::class)
                 ->middleware('can:' . Permisos::INSUMO_KARDEX);
-            Route::get('/crear', InsumoKardexCrearComponent::class)
-                ->name('.crear')->middleware('can:' . Permisos::INSUMO_KARDEX);
+            // LEGACY: "Kardex por insumo" (InsumoKardexCrearComponent, en legacy/): la lista de kardex ya busca por producto
+            Route::redirect('/crear', '/almacen/kardex')->name('.crear');
             Route::get('/carga-anual', KardexCargaComponent::class)
                 ->name('.carga')->middleware('can:' . Permisos::INSUMO_KARDEX);
             Route::get('/detalle/{insumoKardexId}', InsumoKardexDetalleComponent::class)
@@ -374,7 +373,7 @@ Route::middleware([
         '/almacen/salida_de_combustible' => 'almacen.salida_combustible',
         '/almacen/distribucion_combustible' => 'almacen.distribucion_combustible',
         '/gestion_insumos/kardex' => 'almacen.kardex',
-        '/gestion_insumos/kardex/crear' => 'almacen.kardex.crear',
+        '/gestion_insumos/kardex/crear' => 'almacen.kardex', // LEGACY: "Kardex por insumo" retirado (va a la lista)
         '/kardex/detalle/{insumoKardexId}' => 'almacen.kardex.detalle',
         '/gestion_insumos/kardex/reportes' => 'almacen.kardex.reportes',
         '/gestion_insumos/kardex/reporte/{insumoKardexReporteId}' => 'almacen.kardex.reporte',

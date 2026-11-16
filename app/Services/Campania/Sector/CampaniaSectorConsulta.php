@@ -119,6 +119,7 @@ class CampaniaSectorConsulta
         return $c->sectores()->with('etapas')->get()->map(fn($s) => [
             'id' => $s->id,
             'nombre' => $s->nombre,
+            'fecha_siembra' => $s->fecha_siembra?->toDateString(),
             'hilera_desde' => $s->hilera_desde,
             'hilera_hasta' => $s->hilera_hasta,
             'origen' => $s->origen,

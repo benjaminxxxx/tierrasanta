@@ -43,6 +43,12 @@ class CampaniaSectorReglas
     /** Días sin colocar infestadores o sin podar para considerar que empezó otro grupo de hileras (detección). */
     public const DIAS_GRUPO = 7;
 
+    /**
+     * Una tanda de labores de siembra después de infestar o cosechar es un RELLENO (otra siembra) si suma al menos
+     * estos jornales (trabajador-día); menos que eso es replante de rutina de la misma siembra.
+     */
+    public const RELLENO_MIN_JORNALES = 10;
+
     /** Más grupos que esto en la detección se toma como ruido: se deja este máximo y se revisa a mano. */
     public const MAX_GRUPOS = 6;
 
@@ -64,6 +70,12 @@ class CampaniaSectorReglas
         }
         $i = array_search(self::familia($actual), self::ORDEN_FAMILIAS, true);
         return $i !== false && (self::ORDEN_FAMILIAS[$i + 1] ?? null) === $nueva;
+    }
+
+    /** Nombre de la siembra n (1 → "1ª siembra"). */
+    public static function nombreSiembra(int $n): string
+    {
+        return "{$n}ª siembra";
     }
 
     public static function etapaDeManoObra(?string $manoObra): ?string

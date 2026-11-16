@@ -95,7 +95,7 @@ class SistemaMenuReglas
                 $op('Movimientos', 'Salidas: combustible', 'almacen.salida_combustible', Permisos::INSUMO_COMBUSTIBLE, Permisos::INSUMO, 'fa fa-gas-pump'),
                 $op('Movimientos', 'Distribución de combustible', 'almacen.distribucion_combustible', Permisos::INSUMO_DISTRIBUCION, Permisos::INSUMO, 'fa fa-share-nodes'),
                 $op('Kardex', 'Kardex de insumos', 'almacen.kardex', Permisos::INSUMO_KARDEX, Permisos::INSUMO, 'fa fa-boxes-stacked'),
-                $op('Kardex', 'Kardex por insumo', 'almacen.kardex.crear', Permisos::INSUMO_KARDEX, Permisos::INSUMO, 'fa fa-box'),
+                // LEGACY: 'Kardex por insumo' (almacen.kardex.crear) retirado el 14/11/2026: la lista de kardex ya busca por producto
                 $op('Kardex', 'Carga de kardex anual', 'almacen.kardex.carga', Permisos::INSUMO_KARDEX, Permisos::INSUMO, 'fa fa-upload'),
                 $op('Kardex', 'Reporte de kardex', 'almacen.kardex.reportes', Permisos::INSUMO_KARDEX_REPORTE, Permisos::INSUMO, 'fa fa-file-lines'),
             ]],

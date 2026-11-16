@@ -79,7 +79,7 @@
                 <i class="fa fa-book-open {{ $icono }}"></i> Historia de la campaña
             </button>
             <button type="button" class="{{ $item }}" @click="$wire.dispatch('verMapaEtapas', {campaniaId: {{ $id }}})">
-                <i class="fa fa-layer-group {{ $icono }}"></i> Mapa de etapas (hileras)
+                <i class="fa fa-layer-group {{ $icono }}"></i> Siembras y etapas (mapa)
             </button>
             <a href="{{ route('campo.actividades', ['vista' => 'campania', 'campania' => $id, 'campo' => $campania->campo]) }}" class="{{ $item }}">
                 <i class="fa fa-list-check {{ $icono }}"></i> Labores de la campaña

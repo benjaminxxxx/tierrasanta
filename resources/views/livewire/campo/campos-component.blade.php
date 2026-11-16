@@ -150,8 +150,8 @@
                             {{-- Campaña activa --}}
                             <x-td>
                                 @if($campo->campana_activa)
-                                    <div class="text-sm font-semibold text-emerald-400">
-                                        {{ $campo->campana_activa->nombre_campania }}
+                                    <div class="text-sm">
+                                        <x-campania.nombre :campania="$campo->campana_activa" :campo="false" />
                                     </div>
                                     <div class="text-[11px] text-muted-foreground">
                                         desde {{ \Carbon\Carbon::parse($campo->campana_activa->fecha_inicio)->format('d/m/Y') }}
@@ -163,8 +163,8 @@
                                         </div>
                                     @endif
                                 @elseif($campo->ultima_campana)
-                                    <div class="text-sm text-muted-foreground">
-                                        {{ $campo->ultima_campana->nombre_campania }}
+                                    <div class="text-sm">
+                                        <x-campania.nombre :campania="$campo->ultima_campana" :campo="false" class="!font-medium !text-graphite" />
                                     </div>
                                     <div class="text-[11px] text-muted-foreground/60">
                                         cerrada {{ \Carbon\Carbon::parse($campo->ultima_campana->fecha_fin)->format('d/m/Y') }}
@@ -382,6 +382,7 @@
     <livewire:campania.campania-cerrar-component />
     <livewire:campania.campania-corregir-fechas-component />
     <livewire:campania.campania-mapa-etapas-component />
+    <livewire:campania.campania-tarjeta-component />
     {{-- Excel de recursos: solo las hojas de esta página (DESIGN.md) --}}
     <livewire:sistema.sistema-libro-excel-component libro="recursos" :hojas="['campos']" :flotante="true" :permiso="\App\Constants\Permisos::CAMPO_PARCELA_GESTIONAR" />
 </div>
