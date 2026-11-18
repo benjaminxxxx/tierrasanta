@@ -46,16 +46,24 @@ class CampaniaTarjetaConsulta
         $hileras = CampaniaSectorConsulta::hilerasDelCampo($c->campo);
         $dibujo = $grupos ? $this->sectores->dibujo($c, $hileras, $grupos, $corte) : null;
 
-        // Registro de siembras del campo: la que dio inicio a la campaña y las de durante la campaña
-        $registro = Siembra::where('campo_nombre', $c->campo)->orderBy('fecha_siembra')->get(['id', 'fecha_siembra']);
-        $base = $registro->filter(fn($s) => $s->fecha_siembra->toDateString() <= $inicio)->last();
-        $durante = $registro->filter(fn($s) => $s->fecha_siembra->toDateString() > $inicio && $s->fecha_siembra->toDateString() <= $fin)->values();
-        $siembras = collect($base ? [$base] : [])->concat($durante)->values()
-            ->map(fn($s, $k) => [
-                'fecha' => $s->fecha_siembra->toDateString(),
-                'meses' => round($s->fecha_siembra->floatDiffInMonths(Carbon::parse($corte)), 1),
-                'durante' => $s->fecha_siembra->toDateString() > $inicio,
-            ])->all();
+        // Registro de siembras (misma fuente que el mapa): de dónde salió cada siembra
+        $registros = Siembra::whereIn('id', array_filter(array_column($grupos, 'siembra_id')))
+            ->with('sectores.campania:id,nombre_campania,fecha_inicio')->get()->keyBy('id');
+        $siembras = collect($grupos)->map(fn($g) => $registros[$g['siembra_id']] ?? null)->filter()->map(fn($s) => [
+            'id' => $s->id,
+            'fecha' => $s->fecha_siembra->toDateString(),
+            'tipo' => $s->tipo,
+            'origen' => $s->origen,
+            'origen_texto' => $s->origen_texto,
+            'origen_corto' => Siembra::ORIGENES_CORTO[$s->origen] ?? $s->origen,
+            'motivo' => $s->motivo,
+            'detalle' => $s->detalle,
+            'creado_por' => $s->creado_por,
+            'creado_el' => $s->created_at?->toDateTimeString(),
+            // Una plantación sirve a varias campañas (hasta que se vuelve a sembrar); un relleno, solo a la suya
+            'campanias' => $s->sectores->pluck('campania')->filter()->unique('id')->sortBy('fecha_inicio')->pluck('nombre_campania')->values()->all(),
+        ])->values()->all();
+        $porId = collect($siembras)->keyBy('id');
 
         $listaGrupos = [];
         foreach ($grupos as $k => $g) {
@@ -74,6 +82,9 @@ class CampaniaTarjetaConsulta
                 'siembra' => $g['fecha_siembra'] ? ['fecha' => $g['fecha_siembra'],
                     'meses' => round(Carbon::parse($g['fecha_siembra'])->floatDiffInMonths(Carbon::parse($corte)), 1)] : null,
                 'cosechada' => collect($g['etapas'])->contains('etapa', 'cosecha'),
+                'registro' => $porId[$g['siembra_id']] ?? null,
+                'etapas' => collect($g['etapas'])->map(fn($e) => ['etapa' => $e['etapa'], 'nombre' => CampaniaSectorReglas::nombre($e['etapa']),
+                    'color' => CampaniaSectorReglas::color($e['etapa']), 'desde' => $e['fecha_desde']])->values()->all(),
             ];
         }
 
@@ -103,6 +114,8 @@ class CampaniaTarjetaConsulta
             'grupos' => $listaGrupos,
             'siembras' => $siembras,
             'aviso_siembras' => $aviso,
+            // Tandas de siembra después de infestar: ¿relleno (otra siembra) o replante? Lo decide una persona
+            'posibles_rellenos' => $this->sectores->posiblesRellenos($c),
             'linea' => $dibujo ? ['inicio' => $dibujo['inicio'], 'fin' => $dibujo['fin'], 'marca' => $dibujo['marca']] : null,
         ];
     }

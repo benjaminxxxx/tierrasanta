@@ -191,6 +191,8 @@ class CampoCampania extends Model
     protected $casts = [
         'fecha_inicio' => 'date',
         'fecha_fin' => 'date',
+        // Tandas de siembra descartadas como relleno ("Es replante" en la tarjeta)
+        'rellenos_descartados' => 'array',
     ];
 
     public function ventasFacturadas()
@@ -588,10 +590,15 @@ class CampoCampania extends Model
     {
         $date = Carbon::parse($this->fecha_inicio);
 
-        return Siembra::where('fecha_siembra', '<=', $date)
+        // La plantación más reciente antes del inicio (registro de siembras); si no hay, la 1ª siembra del mapa de
+        // etapas (misma fuente). Siempre Carbon o null: antes devolvía texto y "->format()" fallaba en población.
+        $fecha = Siembra::plantaciones()->where('fecha_siembra', '<=', $date)
             ->where('campo_nombre', $this->campo)
-            ->latest('fecha_siembra') // Obtiene la siembra más reciente antes de fecha_inicio
-            ->value('fecha_siembra') ?? null; // Devuelve solo la fecha o una cadena vacía si no hay resultados
+            ->latest('fecha_siembra')
+            ->value('fecha_siembra')
+            ?? $this->sectores()->whereNotNull('fecha_siembra')->orderBy('hilera_desde')->value('fecha_siembra');
+
+        return $fecha ? Carbon::parse($fecha) : null;
     }
 
     public static function masProximaAntesDe($fecha, $campo)

@@ -49,6 +49,8 @@
                             <x-th class="text-center">#</x-th>
                             <x-th class="text-center" sortable="campo_nombre">Campo</x-th>
                             <x-th class="text-center" sortable="fecha_siembra">Fecha de Siembra</x-th>
+                            <x-th class="text-center">Tipo</x-th>
+                            <x-th>Origen</x-th>
                             <x-th class="text-center">Fecha de Renovación</x-th>
                             <x-th class="text-center">N° de Campañas</x-th>
                             <x-th class="text-center">Creado Por</x-th>
@@ -61,8 +63,24 @@
                                 <x-td class="text-center">{{ $index + 1 }}</x-td>
                                 <x-td class="text-center">{{ $siembra->campo_nombre }}</x-td>
                                 <x-td class="text-center">{{ formatear_fecha($siembra->fecha_siembra) }}</x-td>
-                                <x-td class="text-center">{{ formatear_fecha($siembra->fecha_renovacion) ?? '-' }}</x-td>
-                                <x-td class="text-center">{{ $siembra->numero_campanias }}</x-td>
+                                <x-td class="text-center">
+                                    @if ($siembra->tipo === 'relleno')
+                                        <span class="rounded-[6px] bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-400/10 dark:text-amber-400">Relleno</span>
+                                    @else
+                                        <span class="rounded-[6px] bg-green-50 px-1.5 py-0.5 text-[11px] font-medium text-green-700 dark:bg-green-400/10 dark:text-green-400">Siembra</span>
+                                    @endif
+                                    @if ($siembra->campania)
+                                        <div class="mt-0.5 text-[11px]"><x-campania.nombre :campania="$siembra->campania" :campo="false" class="!text-xs !font-medium" /></div>
+                                    @endif
+                                </x-td>
+                                <x-td class="max-w-xs text-xs">
+                                    <div class="font-medium">{{ $siembra->origen_texto }}</div>
+                                    @if ($siembra->motivo)
+                                        <div class="text-muted-foreground">{{ $siembra->motivo }}</div>
+                                    @endif
+                                </x-td>
+                                <x-td class="text-center">{{ $siembra->tipo === 'relleno' ? '—' : (formatear_fecha($siembra->fecha_renovacion) ?? '-') }}</x-td>
+                                <x-td class="text-center">{{ $siembra->tipo === 'relleno' ? '—' : $siembra->numero_campanias }}</x-td>
                                 <x-td class="text-center">{{ $siembra->creado_por ?? '-' }}</x-td>
                                 <x-td class="text-center">
                                     <x-flex class="justify-center">
@@ -177,9 +195,9 @@
                                                                 <div>
                                                                     <span class="font-semibold">{{ $key }}:</span>
                                                                     @if($entrada->accion === 'crear')
-                                                                        <span class="text-green-600"> {{ $cambio }}</span>
+                                                                        <span class="text-green-600"> {{ is_array($cambio) ? json_encode($cambio, JSON_UNESCAPED_UNICODE) : $cambio }}</span>
                                                                     @elseif($entrada->accion === 'eliminar')
-                                                                        <span class="text-red-600"> {{ $cambio }}</span>
+                                                                        <span class="text-red-600"> {{ is_array($cambio) ? json_encode($cambio, JSON_UNESCAPED_UNICODE) : $cambio }}</span>
                                                                     @endif
                                                                 </div>
                                                             @endforeach

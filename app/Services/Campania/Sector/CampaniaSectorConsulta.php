@@ -82,6 +82,54 @@ class CampaniaSectorConsulta
         return $infestaciones->concat($cosechas)->values();
     }
 
+    /**
+     * Posibles rellenos: tandas de labores de siembra con al menos RELLENO_MIN_JORNALES después de que el campo ya se
+     * infestó o cosechó, que no son ya una siembra del mapa ni se descartaron como replante. Una persona decide (en las
+     * labores un relleno y un replante se registran igual).
+     *
+     * @return array<int, array{desde:string, hasta:string, jornales:int, dias:int, labores:array<string,int>}>
+     */
+    public function posiblesRellenos(CampoCampania $c, ?Collection $registros = null): array
+    {
+        if (!$c->fecha_inicio) {
+            return [];
+        }
+        $registros ??= $this->registros($c);
+        $primera = $registros->whereIn('familia', ['infestacion', 'cosecha'])->min('fecha');
+        $eventos = $this->eventosCochinilla($c)->whereIn('etapa', ['infestacion', 'reinfestacion', 'cosecha_madres', 'cosecha'])->min('fecha');
+        $primera = collect([$primera, $eventos])->filter()->min();
+        if (!$primera) {
+            return [];
+        }
+        $siembras = $registros->where('etapa', 'siembra')->where('fecha', '>', $primera)->groupBy('fecha')->sortKeys();
+        $tandas = [];
+        foreach ($siembras as $fecha => $filas) {
+            $ultima = count($tandas) - 1;
+            if ($ultima < 0 || Carbon::parse($tandas[$ultima]['hasta'])->diffInDays(Carbon::parse($fecha)) > CampaniaSectorReglas::DIAS_GRUPO) {
+                $tandas[] = ['desde' => $fecha, 'hasta' => $fecha, 'jornales' => 0, 'dias' => 0, 'labores' => []];
+                $ultima++;
+            }
+            $tandas[$ultima]['hasta'] = $fecha;
+            $tandas[$ultima]['dias']++;
+            foreach ($filas as $f) {
+                $tandas[$ultima]['jornales'] += $f['trabajadores'];
+                $clave = "{$f['labor']} · {$f['nombre']}";
+                $tandas[$ultima]['labores'][$clave] = ($tandas[$ultima]['labores'][$clave] ?? 0) + $f['trabajadores'];
+            }
+        }
+        $fechasSiembra = $c->sectores()->whereNotNull('fecha_siembra')->pluck('fecha_siembra')->map(fn($f) => Carbon::parse($f)->toDateString());
+        $descartados = (array) ($c->rellenos_descartados ?? []);
+        return collect($tandas)
+            ->filter(fn($t) => $t['jornales'] >= CampaniaSectorReglas::RELLENO_MIN_JORNALES)
+            ->reject(fn($t) => in_array($t['desde'], $descartados, true))
+            // Ya es una siembra del mapa (con unos días de margen)
+            ->reject(fn($t) => $fechasSiembra->contains(fn($f) => abs(Carbon::parse($f)->diffInDays(Carbon::parse($t['desde']), false)) <= CampaniaSectorReglas::DIAS_GRUPO))
+            ->map(function ($t) {
+                arsort($t['labores']);
+                return $t;
+            })->values()->all();
+    }
+
     /** Etapa de una lista de etapas [['etapa','fecha_desde'], …] en una fecha (la última que empezó). */
     public static function etapaEn(array $etapas, string $fecha): ?string
     {
@@ -120,6 +168,7 @@ class CampaniaSectorConsulta
             'id' => $s->id,
             'nombre' => $s->nombre,
             'fecha_siembra' => $s->fecha_siembra?->toDateString(),
+            'siembra_id' => $s->siembra_id,
             'hilera_desde' => $s->hilera_desde,
             'hilera_hasta' => $s->hilera_hasta,
             'origen' => $s->origen,

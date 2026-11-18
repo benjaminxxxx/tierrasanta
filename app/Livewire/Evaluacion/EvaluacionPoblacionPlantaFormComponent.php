@@ -55,7 +55,8 @@ class EvaluacionPoblacionPlantaFormComponent extends Component
         try {
             $this->campania = CampoCampania::findOrFail($this->campaniaSeleccionada);
             $this->buscarArea();
-            $this->fecha_siembra = $this->campania->fecha_siembra->format('Y-m-d');
+            // Sin plantación registrada la fecha de siembra queda vacía (no es un error de la campaña)
+            $this->fecha_siembra = $this->campania->fecha_siembra?->format('Y-m-d');
             $evaluacionPoblacion = EvalPoblacionPlanta::where('campania_id', $this->campania->id)
                 ->first();
 
@@ -103,9 +104,13 @@ class EvaluacionPoblacionPlantaFormComponent extends Component
             } else {
                 $this->dispatch('cargarData', []);
             }
-        } catch (\Throwable $th) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             $this->fecha_siembra = null;
             $this->errorAlert('La campaña seleccionada no es válida.');
+        } catch (\Throwable $th) {
+            // Otro error: se muestra tal cual (y queda ticket), no se disfraza de "campaña no válida"
+            $this->fecha_siembra = null;
+            $this->errorAlert($th);
         }
     }
     public function updatedCampaniaSeleccionada()

@@ -74,10 +74,10 @@ class GestionCuadrillaReporteDiarioFormComponent extends Component
         $this->actividades = array_values($this->actividades); // reindexar
     }
     /** "Sí, pasar de etapa": avanza los grupos de hileras y guarda */
-    public function guardarRegistroActividadesConfirmado($data = null)
+    public function guardarRegistroActividadesConfirmado($data = null, $isDenied = false)
     {
         try {
-            $this->aceptarActividadesCampo($this->fecha, $data);
+            $this->aceptarActividadesCampo($this->fecha, $data, (bool) $isDenied);
         } catch (\Throwable $e) {
             $this->errorAlert($e);
             return;

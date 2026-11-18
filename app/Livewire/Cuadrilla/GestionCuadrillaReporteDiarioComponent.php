@@ -162,10 +162,10 @@ class GestionCuadrillaReporteDiarioComponent extends Component
     }
 
     /** "Sí, pasar de etapa": avanza los grupos de hileras y sigue con el guardado (y la revisión de bonos). */
-    public function guardarReporteActividadesConfirmado($data)
+    public function guardarReporteActividadesConfirmado($data, $isDenied = false)
     {
         try {
-            $this->aceptarActividadesCampo($this->fecha, $data);
+            $this->aceptarActividadesCampo($this->fecha, $data, (bool) $isDenied);
         } catch (\Throwable $e) {
             $this->errorAlert($e);
             return;

@@ -138,7 +138,8 @@ class Campo extends Model
 
     public function siembras()
     {
-        return $this->hasMany(Siembra::class, 'campo_nombre', 'nombre')
+        // Solo plantaciones (los rellenos de una campaña no son una siembra del campo)
+        return $this->hasMany(Siembra::class, 'campo_nombre', 'nombre')->where('tipo', 'siembra')
             ->orderByDesc('fecha_siembra');
     }
 }

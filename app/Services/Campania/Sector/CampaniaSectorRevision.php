@@ -104,7 +104,9 @@ class CampaniaSectorRevision
                 if ($i === false && $l['familia'] === 'siembra') {
                     // Sembrar cuando el campo ya pasó la siembra: con pocos jornales es replante de la misma siembra (se guarda
                     // sin cambiar el mapa); con RELLENO_MIN_JORNALES o más ese día es un relleno: otra siembra con su fecha
-                    if (!$nuevaSiembra && $this->jornalesSiembra($campo, $quedan, $trabajadoresNuevos[$campo] ?? [], $etapaDe) >= CampaniaSectorReglas::RELLENO_MIN_JORNALES) {
+                    $descartado = collect((array) ($campania->rellenos_descartados ?? []))
+                        ->contains(fn($d) => abs(Carbon::parse($d)->diffInDays(Carbon::parse($fecha), false)) <= CampaniaSectorReglas::DIAS_GRUPO);
+                    if (!$nuevaSiembra && !$descartado && $this->jornalesSiembra($campo, $quedan, $trabajadoresNuevos[$campo] ?? [], $etapaDe) >= CampaniaSectorReglas::RELLENO_MIN_JORNALES) {
                         $nuevaSiembra = [$l];
                     }
                     continue;
@@ -213,7 +215,7 @@ class CampaniaSectorRevision
                     $sectores = self::conEtapa($sectores, $i, $a['etapa'], $fecha);
                     $textos[] = "{$sectores[$i]['nombre']} → " . CampaniaSectorReglas::nombre($a['etapa']) . ' desde ' . Carbon::parse($fecha)->format('d/m/Y');
                 }
-                $this->proceso->guardar($c, $hileras, $sectores, 'Al registrar horas: ' . implode(', ', $textos));
+                $this->proceso->guardar($c, $hileras, $sectores, 'Al registrar horas: ' . implode(', ', $textos), 'horas');
             }
         });
     }

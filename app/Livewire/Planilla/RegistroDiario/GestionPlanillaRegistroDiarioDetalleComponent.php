@@ -175,10 +175,10 @@ class GestionPlanillaRegistroDiarioDetalleComponent extends Component
     }
 
     /** "Sí, pasar de etapa": avanza los grupos de hileras, guarda y recarga la tabla (limpia sus marcas). */
-    public function guardarPlanillaActividadesConfirmado($data): void
+    public function guardarPlanillaActividadesConfirmado($data, $isDenied = false): void
     {
         try {
-            $this->aceptarActividadesCampo($this->fecha, $data);
+            $this->aceptarActividadesCampo($this->fecha, $data, (bool) $isDenied);
         } catch (\Throwable $e) {
             $this->errorAlert($e);
             return;

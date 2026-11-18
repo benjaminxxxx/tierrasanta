@@ -29,6 +29,7 @@ class SiembraServicio
     public static function listar(array $filtros, string $sortField = 'fecha_siembra', string $sortDirection = 'asc', int $perPage = 10)
     {
         return self::query($filtros)
+            ->with('campania:id,nombre_campania,campo')
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage);
     }
@@ -66,6 +67,8 @@ class SiembraServicio
     public static function crear(array $datos): Siembra
     {
         $datos['creado_por'] = Auth::user()->name;
+        // A mano en Campo → Siembras: es una plantación del campo
+        $datos += ['tipo' => 'siembra', 'origen' => 'registro'];
 
         $siembra = Siembra::create($datos);
 
@@ -91,6 +94,12 @@ class SiembraServicio
     public static function eliminar(int $id): void
     {
         $siembra = Siembra::findOrFail($id);
+        // Es la misma siembra que la del mapa de etapas: se quita desde ahí (si no, el mapa quedaría sin su registro)
+        $enMapa = $siembra->sectores()->with('campania:id,nombre_campania,campo')->first();
+        if ($enMapa) {
+            throw new \App\Exceptions\ErrorControlado("Esta siembra es la «{$enMapa->nombre}» de la campaña {$enMapa->campania?->nombre_campania} (campo {$enMapa->campania?->campo}). "
+                . 'Quítala o cambia su fecha en Campañas → Siembras y etapas de esa campaña.');
+        }
 
         $siembraData = $siembra->toArray();
         $siembraData['eliminado_por'] = Auth::user()->name;

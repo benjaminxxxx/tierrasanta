@@ -22,23 +22,41 @@ trait ConActividadesCampo
             return false;
         }
         $soloRelleno = collect($avances)->every(fn($a) => ($a['tipo'] ?? '') === 'nueva_siembra');
+        $hayRelleno = collect($avances)->contains(fn($a) => ($a['tipo'] ?? '') === 'nueva_siembra');
         $this->confirm($soloRelleno ? '¿Es una nueva siembra (relleno)?' : (count($avances) === 1 ? '¿Pasa a la siguiente etapa?' : '¿Pasan a la siguiente etapa?'), [
             'html' => view('livewire.campo.partial.aviso-actividades', ['avances' => $avances, 'fecha' => $fecha])->render(),
             'icon' => 'question',
             'width' => 760,
             'showCancelButton' => true,
-            'confirmButtonText' => 'Sí, es correcto: guardar',
+            'confirmButtonText' => $soloRelleno ? 'Sí, es otra siembra: guardar' : 'Sí, es correcto: guardar',
+            // Un relleno y un replante se registran igual: "es replante" guarda sin agregar la siembra
+            'showDenyButton' => $hayRelleno,
+            'denyButtonText' => 'No, es replante: guardar',
+            'denyButtonColor' => '#475569',
             'cancelButtonText' => 'Corregir',
             'onConfirmed' => $evento,
+            'onDenied' => $evento,
             'data' => $data + ['etapas_avanzar' => $avances],
         ]);
         return true;
     }
 
-    /** "Sí" de la pregunta: pasa las siembras a su nueva etapa o agrega el relleno (antes de guardar las horas). */
-    protected function aceptarActividadesCampo(string $fecha, $data): void
+    /**
+     * Respuesta de la pregunta (antes de guardar las horas): pasa las siembras a su nueva etapa y agrega el relleno.
+     * $isDenied = "No, es replante": el relleno no se agrega (y esa tanda no se vuelve a proponer en la tarjeta).
+     */
+    protected function aceptarActividadesCampo(string $fecha, $data, bool $isDenied = false): void
     {
         $avances = CampaniaSectorRevision::limpiarAvances($data['etapas_avanzar'] ?? []);
+        if ($isDenied) {
+            foreach (collect($avances)->where('tipo', 'nueva_siembra') as $a) {
+                $c = \App\Models\CampoCampania::find($a['campania_id']);
+                if ($c) {
+                    $c->forceFill(['rellenos_descartados' => array_values(array_unique(array_merge((array) ($c->rellenos_descartados ?? []), [$a['fecha']])))])->save();
+                }
+            }
+            $avances = collect($avances)->reject(fn($a) => $a['tipo'] === 'nueva_siembra')->values()->all();
+        }
         if ($avances) {
             app(CampaniaSectorRevision::class)->avanzar($avances);
         }

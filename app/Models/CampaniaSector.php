@@ -11,13 +11,19 @@ class CampaniaSector extends Model
 {
     protected $table = 'campania_sectores';
 
-    protected $fillable = ['campo_campania_id', 'nombre', 'fecha_siembra', 'hilera_desde', 'hilera_hasta', 'origen'];
+    protected $fillable = ['campo_campania_id', 'nombre', 'fecha_siembra', 'siembra_id', 'hilera_desde', 'hilera_hasta', 'origen'];
 
     protected $casts = ['hilera_desde' => 'integer', 'hilera_hasta' => 'integer', 'fecha_siembra' => 'date'];
 
     public function campania(): BelongsTo
     {
         return $this->belongsTo(CampoCampania::class, 'campo_campania_id');
+    }
+
+    /** Registro de siembras (misma fuente que Campo → Siembras) */
+    public function siembra(): BelongsTo
+    {
+        return $this->belongsTo(Siembra::class, 'siembra_id');
     }
 
     public function etapas(): HasMany

@@ -187,7 +187,7 @@ class CochinillaIngreso extends Model
     {
         $date = Carbon::parse($this->fecha);
 
-        return Siembra::where('fecha_siembra', '<=', $date)
+        return Siembra::plantaciones()->where('fecha_siembra', '<=', $date)
             ->where('campo_nombre', $this->campo)
             ->latest('fecha_siembra') // Obtiene la siembra más reciente antes de fecha_inicio
             ->value('fecha_siembra') ?? null; // Devuelve solo la fecha o una cadena vacía si no hay resultados

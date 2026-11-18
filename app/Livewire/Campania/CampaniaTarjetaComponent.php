@@ -26,6 +26,9 @@ class CampaniaTarjetaComponent extends Component
     /** Formulario "+ Siembra (relleno)" dentro de la tarjeta */
     public bool $agregandoSiembra = false;
     public ?string $fechaNuevaSiembra = null;
+    public ?string $motivoNuevaSiembra = null;
+    /** Ventana "Detalle de siembras" (de dónde salió cada una) */
+    public bool $verSiembras = false;
 
     #[On('verTarjetaCampania')]
     public function verTarjetaCampania(int $campaniaId): void
@@ -33,6 +36,8 @@ class CampaniaTarjetaComponent extends Component
         $this->campaniaId = $campaniaId;
         $this->agregandoSiembra = false;
         $this->fechaNuevaSiembra = null;
+        $this->motivoNuevaSiembra = null;
+        $this->verSiembras = false;
         $this->mostrar = true;
     }
 
@@ -42,10 +47,43 @@ class CampaniaTarjetaComponent extends Component
         try {
             abort_unless($this->puedeGestionar(), 403);
             app(\App\Services\Campania\Sector\CampaniaSectorProceso::class)
-                ->agregarSiembra(CampoCampania::findOrFail($this->campaniaId), (string) $this->fechaNuevaSiembra);
+                ->agregarSiembra(CampoCampania::findOrFail($this->campaniaId), (string) $this->fechaNuevaSiembra, $this->motivoNuevaSiembra);
             $this->agregandoSiembra = false;
             $this->fechaNuevaSiembra = null;
+            $this->motivoNuevaSiembra = null;
             $this->alert('success', 'Siembra agregada. Sus hileras se repartieron parejo: corrígelas en "Editar siembras y etapas" si hace falta.');
+        } catch (\Throwable $th) {
+            $this->errorAlert($th);
+        }
+    }
+
+    /** Posible relleno confirmado: era otra siembra (se agrega con su fecha y las labores como motivo). */
+    public function confirmarRelleno(string $desde): void
+    {
+        try {
+            abort_unless($this->puedeGestionar(), 403);
+            $c = CampoCampania::findOrFail($this->campaniaId);
+            $tanda = collect(app(\App\Services\Campania\Sector\CampaniaSectorConsulta::class)->posiblesRellenos($c))->firstWhere('desde', $desde);
+            $labores = $tanda ? collect($tanda['labores'])->map(fn($j, $l) => "{$l} ({$j})")->take(3)->implode(', ') : '';
+            app(\App\Services\Campania\Sector\CampaniaSectorProceso::class)->agregarSiembra($c, $desde,
+                'confirmado en la tarjeta' . ($tanda ? " por labores de siembra: {$labores}, {$tanda['jornales']} jornales" : ''));
+            $this->alert('success', 'Relleno agregado como otra siembra. Sus hileras se repartieron parejo: corrígelas en "Editar siembras y etapas" si hace falta.');
+        } catch (\Throwable $th) {
+            $this->errorAlert($th);
+        }
+    }
+
+    /** Posible relleno descartado: fue replante de la misma siembra; no se vuelve a proponer. */
+    public function descartarRelleno(string $desde): void
+    {
+        try {
+            abort_unless($this->puedeGestionar(), 403);
+            $c = CampoCampania::findOrFail($this->campaniaId);
+            $antes = (array) ($c->rellenos_descartados ?? []);
+            $c->forceFill(['rellenos_descartados' => array_values(array_unique(array_merge($antes, [$desde])))])->save();
+            \App\Services\Reporte\AuditoriaServicio::registrar(CampoCampania::class, $c->id, 'editar', ['rellenos_descartados' => $antes],
+                ['rellenos_descartados' => $c->rellenos_descartados], "Labores de siembra del {$desde} en {$c->nombre_campania}: replante, no es otra siembra");
+            $this->alert('success', 'Marcado como replante: no se volverá a proponer.');
         } catch (\Throwable $th) {
             $this->errorAlert($th);
         }

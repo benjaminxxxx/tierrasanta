@@ -19,13 +19,14 @@ use Illuminate\Support\Facades\DB;
  * sembrados a 4 m y meses después rellenados a 2 m en el intermedio: dos edades, dos infestaciones, dos cosechas; la
  * campaña se cierra con la última cosecha). Las tandas de infestación o de poda NO son motivo de otro grupo.
  *
- * Detección: la siembra del inicio (registro de siembras o primeras labores de siembra) y un relleno por cada tanda de
- * labores de siembra con al menos RELLENO_MIN_JORNALES después de que el campo ya se infestó o cosechó (una siembra
- * del registro durante la campaña no cuenta: suele ser una renovación). Las hileras se reparten parejo. Cada tanda de infestación, cosecha… va a la
- * siembra más antigua (ya sembrada en esa fecha) que todavía no pasó por esa etapa. Es una aproximación: se corrige a mano.
+ * Detección: una sola siembra, la del inicio (tanda grande de labores de siembra antes de infestar, o la última
+ * plantación del registro). Los rellenos NO se detectan solos (en las labores un relleno y un replante se ven igual):
+ * se proponen como "posibles rellenos" en la tarjeta y una persona los confirma (o al registrar horas). Con varias
+ * siembras, cada tanda de infestación, cosecha… va a la siembra más antigua que todavía no pasó por esa etapa.
  *
  * Corrección: con más de una siembra, cada una necesita su fecha de siembra (distinta); no se puede dejar fuera de su
- * etapa una labor ya registrada que antes sí caía en ella.
+ * etapa una labor ya registrada que antes sí caía en ella. Cada siembra queda enlazada con el registro de siembras
+ * (Campo → Siembras) con su origen y motivo (sincronizarRegistro).
  */
 class CampaniaSectorProceso
 {
@@ -44,7 +45,6 @@ class CampaniaSectorProceso
         }
         $hileras = CampaniaSectorConsulta::hilerasDelCampo($c->campo);
         $inicioCampania = Carbon::parse($c->fecha_inicio)->toDateString();
-        $finCampania = CampaniaSectorConsulta::fin($c);
         $registros = $this->consulta->registros($c);
 
         // Días de cada etapa y tandas de lo que la empieza (colocar infestadores, podar), con las labores del registro
@@ -52,6 +52,7 @@ class CampaniaSectorProceso
         $dias = [];
         $inicios = [];
         $jornalesSiembra = [];
+        $laboresSiembra = []; // fecha => [codigo · nombre => jornales] (el detalle de por qué existe cada siembra)
         foreach ($registros as $r) {
             $dias[$r['etapa']][$r['fecha']] = true;
             if (CampaniaSectorReglas::iniciaGrupo($r['etapa'], $r['nombre'])) {
@@ -59,6 +60,8 @@ class CampaniaSectorProceso
             }
             if ($r['etapa'] === 'siembra') {
                 $jornalesSiembra[$r['fecha']] = ($jornalesSiembra[$r['fecha']] ?? 0) + $r['trabajadores'];
+                $clave = "{$r['labor']} · {$r['nombre']}";
+                $laboresSiembra[$r['fecha']][$clave] = ($laboresSiembra[$r['fecha']][$clave] ?? 0) + $r['trabajadores'];
             }
         }
         foreach ($this->consulta->eventosCochinilla($c) as $e) {
@@ -68,26 +71,49 @@ class CampaniaSectorProceso
             }
         }
 
-        // Rellenos: tandas grandes de siembra después de infestar o cosechar
+        // Tandas de labores de siembra con sus jornales y labores
         $primeraInfestacionOCosecha = collect(['infestacion', 'reinfestacion', 'cosecha_madres', 'cosecha'])
             ->flatMap(fn($e) => array_keys($dias[$e] ?? []))->min();
         $diasSiembra = array_keys($dias['siembra'] ?? []);
-        $posteriores = $primeraInfestacionOCosecha ? array_values(array_filter($diasSiembra, fn($f) => $f > $primeraInfestacionOCosecha)) : [];
-        $rellenos = [];
-        foreach ($this->tandas($posteriores) as $tanda) {
-            if (array_sum(array_map(fn($f) => $jornalesSiembra[$f] ?? 0, $tanda)) >= CampaniaSectorReglas::RELLENO_MIN_JORNALES) {
-                $rellenos = array_merge($rellenos, $tanda);
+        $tandasSiembra = array_map(function ($tanda) use ($jornalesSiembra, $laboresSiembra) {
+            $labores = [];
+            foreach ($tanda as $f) {
+                foreach ($laboresSiembra[$f] ?? [] as $labor => $j) {
+                    $labores[$labor] = ($labores[$labor] ?? 0) + $j;
+                }
+            }
+            arsort($labores);
+            return ['dias' => $tanda, 'desde' => $tanda[0], 'hasta' => end($tanda),
+                'jornales' => array_sum(array_map(fn($f) => $jornalesSiembra[$f] ?? 0, $tanda)), 'labores' => $labores];
+        }, $this->tandas($diasSiembra));
+        $grande = fn($t) => $t['jornales'] >= CampaniaSectorReglas::RELLENO_MIN_JORNALES;
+
+        // Siembra del inicio: una tanda grande de siembra antes de infestar (el campo se plantó en esta campaña) o, si
+        // no, la última plantación del registro antes del inicio. Los RELLENOS no se crean solos: con las labores no se
+        // distingue un relleno de un replante (los rellenos de los campos 2 y 18 se registraron como "Replante"); se
+        // muestran como posibles rellenos en la tarjeta y una persona los confirma (CampaniaSectorConsulta::posiblesRellenos).
+        $baseTanda = collect($tandasSiembra)->first(fn($t) => $grande($t) && (!$primeraInfestacionOCosecha || $t['desde'] < $primeraInfestacionOCosecha));
+        $tandasRelleno = [];
+        // Labores de siembra después de infestar: replantes o rellenos sin confirmar, no mueven la etapa
+        $fechasRelleno = $primeraInfestacionOCosecha ? array_values(array_filter($diasSiembra, fn($f) => $f > $primeraInfestacionOCosecha)) : [];
+        $registrada = Siembra::plantaciones()->where('campo_nombre', $c->campo)->whereDate('fecha_siembra', '<=', $inicioCampania)
+            ->max('fecha_siembra');
+        $base = $baseTanda['desde'] ?? ($registrada ? Carbon::parse($registrada)->toDateString() : null);
+
+        $fechasSiembra = array_merge([$base], array_map(fn($t) => $t['desde'], $tandasRelleno));
+        $fechasSiembra = array_slice($fechasSiembra, 0, max(1, min(CampaniaSectorReglas::MAX_GRUPOS, $hileras)));
+        // Por qué existe cada siembra (se guarda en el registro de siembras si no estaba)
+        $porque = [];
+        foreach (array_merge([$baseTanda], $tandasRelleno) as $k => $t) {
+            if ($t && isset($fechasSiembra[$k])) {
+                $porque[$fechasSiembra[$k]] = [
+                    'motivo' => ($k === 0 ? 'Plantación detectada' : 'Relleno detectado') . ' por labores de siembra del '
+                        . Carbon::parse($t['desde'])->format('d/m/Y') . ($t['hasta'] !== $t['desde'] ? ' al ' . Carbon::parse($t['hasta'])->format('d/m/Y') : '')
+                        . " ({$t['jornales']} jornales)",
+                    'detalle' => ['desde' => $t['desde'], 'hasta' => $t['hasta'], 'jornales' => $t['jornales'], 'dias' => count($t['dias']), 'labores' => $t['labores']],
+                ];
             }
         }
-        $registradas = Siembra::where('campo_nombre', $c->campo)->whereDate('fecha_siembra', '<=', $finCampania)
-            ->orderBy('fecha_siembra')->pluck('fecha_siembra')->map(fn($f) => Carbon::parse($f)->toDateString());
-        // Solo las labores marcan un relleno: una siembra del registro durante la campaña suele ser una renovación
-        $fechasRelleno = $rellenos;
-        $base = $registradas->filter(fn($f) => $f <= $inicioCampania)->last()
-            ?? collect($diasSiembra)->reject(fn($f) => in_array($f, $rellenos, true))->min();
-
-        $fechasSiembra = array_merge([$base], array_map(fn($t) => $t[0], $this->tandas(array_values(array_unique($fechasRelleno)))));
-        $fechasSiembra = array_slice($fechasSiembra, 0, max(1, min(CampaniaSectorReglas::MAX_GRUPOS, $hileras)));
         $n = count($fechasSiembra);
         $rangos = CampaniaSectorReglas::repartirHileras($hileras, $n);
 
@@ -98,7 +124,13 @@ class CampaniaSectorProceso
                 continue;
             }
             if ($n === 1) {
-                $etapasPorSiembra[0][$etapa] = min(array_keys($dias[$etapa]));
+                $diasEtapa = array_keys($dias[$etapa]);
+                if ($etapa === 'siembra') {
+                    $diasEtapa = array_values(array_diff($diasEtapa, $fechasRelleno));
+                }
+                if ($diasEtapa) {
+                    $etapasPorSiembra[0][$etapa] = min($diasEtapa);
+                }
                 continue;
             }
             if ($etapa === 'siembra') {
@@ -138,7 +170,74 @@ class CampaniaSectorProceso
                 }
             }
         });
+        $this->sincronizarRegistro($c, 'deteccion', null, $porque);
         return count($rangos);
+    }
+
+    /**
+     * Enlaza cada siembra del mapa con el registro de siembras (misma fuente): si no hay un registro del campo con esa
+     * fecha se crea (la 1ª como plantación, las demás como relleno) con su origen, motivo y detalle. Los rellenos de la
+     * campaña que ya no están en el mapa (se quitaron o se cambió su fecha) se borran del registro, salvo los
+     * registrados a mano en Campo → Siembras.
+     *
+     * @param array $porque fecha_siembra => ['motivo', 'detalle'] (si no, se usa $motivo)
+     */
+    public function sincronizarRegistro(CampoCampania $c, string $origen, ?string $motivo = null, array $porque = []): void
+    {
+        $inicio = Carbon::parse($c->fecha_inicio)->toDateString();
+        $usuario = auth()->user()?->name ?? 'Sistema';
+        DB::transaction(function () use ($c, $origen, $motivo, $porque, $inicio, $usuario) {
+            foreach ($c->sectores()->orderBy('hilera_desde')->get()->values() as $k => $sector) {
+                if (!$sector->fecha_siembra) {
+                    $sector->update(['siembra_id' => null]);
+                    continue;
+                }
+                $fecha = $sector->fecha_siembra->toDateString();
+                $siembra = Siembra::where('campo_nombre', $c->campo)->whereDate('fecha_siembra', $fecha)->first();
+                if (!$siembra) {
+                    $tipo = $k === 0 ? 'siembra' : 'relleno';
+                    // La 1ª siembra sin plantación en el registro toma su propio motivo (no el del relleno que se agregó)
+                    if ($k === 0 && !isset($porque[$fecha])) {
+                        $porque[$fecha] = ['motivo' => "Siembra con la que empezó la campaña {$c->nombre_campania}"
+                            . ($fecha === $inicio ? ' (sin plantación en el registro: se tomó el inicio de la campaña)' : ''), 'detalle' => null];
+                    }
+                    $siembra = Siembra::create([
+                        'campo_nombre' => $c->campo,
+                        'campo_campania_id' => $tipo === 'relleno' || $fecha >= $inicio ? $c->id : null,
+                        'fecha_siembra' => $fecha,
+                        'tipo' => $tipo,
+                        'origen' => $origen,
+                        'motivo' => mb_substr((string) ($porque[$fecha]['motivo'] ?? $motivo ?? ''), 0, 255) ?: null,
+                        'detalle' => $porque[$fecha]['detalle'] ?? null,
+                        'creado_por' => $usuario,
+                    ]);
+                    AuditoriaServicio::registrar(Siembra::class, $siembra->id, 'crear', null, $siembra->toArray(),
+                        "{$siembra->tipo} del campo {$c->campo} desde la campaña {$c->nombre_campania}");
+                }
+                if ((int) $sector->siembra_id !== (int) $siembra->id) {
+                    $sector->update(['siembra_id' => $siembra->id]);
+                }
+            }
+            // Lo que el sistema creó para esta campaña y ya no está en el mapa
+            foreach (Siembra::where('campo_campania_id', $c->id)->where('origen', '<>', 'registro')->whereDoesntHave('sectores')->get() as $huerfana) {
+                AuditoriaServicio::registrar(Siembra::class, $huerfana->id, 'eliminar', $huerfana->toArray(), null,
+                    "Ya no está en el mapa de etapas de {$c->nombre_campania} (campo {$c->campo})");
+                $huerfana->delete();
+            }
+        });
+    }
+
+    /** Enlaza todas las campañas con el registro de siembras (después de migrar). */
+    public function sincronizarTodas(): int
+    {
+        $n = 0;
+        CampoCampania::query()->whereNotNull('fecha_inicio')->whereHas('sectores')->orderBy('id')->chunkById(100, function ($campanias) use (&$n) {
+            foreach ($campanias as $c) {
+                $this->sincronizarRegistro($c, 'deteccion');
+                $n++;
+            }
+        });
+        return $n;
     }
 
     /** @return array{campanias:int, con_varios_grupos:int, respetadas:int} */
@@ -161,8 +260,9 @@ class CampaniaSectorProceso
      * Guarda las hileras del campo y las siembras con sus etapas (corrección a mano).
      *
      * @param array $sectores [['nombre', 'fecha_siembra', 'hilera_desde', 'hilera_hasta', 'etapas' => [['etapa', 'fecha_desde'], …]], …]
+     * @param string $origen de una siembra nueva en el registro: mapa | tarjeta | horas
      */
-    public function guardar(CampoCampania $c, int $hileras, array $sectores, ?string $motivo = null): void
+    public function guardar(CampoCampania $c, int $hileras, array $sectores, ?string $motivo = null, string $origen = 'mapa'): void
     {
         $limpios = $this->validar($c, $hileras, $sectores);
 
@@ -205,13 +305,14 @@ class CampaniaSectorProceso
                 ['hileras' => $hileras, 'siembras' => $this->resumen($limpios)],
                 mb_substr("Mapa de etapas de {$c->nombre_campania} (campo {$c->campo})" . ($motivo ? ". {$motivo}" : ''), 0, 255));
         });
+        $this->sincronizarRegistro($c, $origen, $motivo);
     }
 
     /**
      * Agrega una siembra (relleno) sembrada en $fecha: queda en siembra desde ese día y las hileras se reparten parejo
      * (se corrige en el mapa). Desde la tarjeta de la campaña o al registrar horas.
      */
-    public function agregarSiembra(CampoCampania $c, string $fecha, ?string $motivo = null): void
+    public function agregarSiembra(CampoCampania $c, string $fecha, ?string $motivo = null, string $origen = 'tarjeta'): void
     {
         // Vacía no es "hoy" (Carbon::parse('') daría hoy): la fecha de siembra es obligatoria
         if (trim($fecha) === '') {
@@ -230,7 +331,8 @@ class CampaniaSectorProceso
         }
         $hileras = CampaniaSectorConsulta::hilerasDelCampo($c->campo);
         $sectores = self::conSiembraNueva($this->consulta->sectores($c), $fecha, $hileras, $c);
-        $this->guardar($c, $hileras, $sectores, $motivo ?? ('Nueva siembra (relleno) sembrada el ' . Carbon::parse($fecha)->format('d/m/Y')));
+        $texto = 'Relleno sembrado el ' . Carbon::parse($fecha)->format('d/m/Y') . (trim((string) $motivo) !== '' ? ': ' . trim($motivo) : '');
+        $this->guardar($c, $hileras, $sectores, $texto, $origen);
     }
 
     /** Las siembras con una más (relleno) en $fecha. Las anteriores sin fecha de siembra toman la del registro o el inicio. */
@@ -239,7 +341,7 @@ class CampaniaSectorProceso
         if (count($sectores) + 1 > $hileras) {
             throw new ErrorControlado("El campo {$c->campo} tiene {$hileras} hilera(s): no alcanzan para otra siembra. Aumenta las hileras en el mapa de etapas.");
         }
-        $registro = Siembra::where('campo_nombre', $c->campo)->whereDate('fecha_siembra', '<', $fecha)->max('fecha_siembra');
+        $registro = Siembra::plantaciones()->where('campo_nombre', $c->campo)->whereDate('fecha_siembra', '<', $fecha)->max('fecha_siembra');
         foreach ($sectores as $k => $s) {
             if (empty($s['fecha_siembra'])) {
                 $sectores[$k]['fecha_siembra'] = $k === 0 && $registro ? Carbon::parse($registro)->toDateString() : Carbon::parse($c->fecha_inicio)->toDateString();

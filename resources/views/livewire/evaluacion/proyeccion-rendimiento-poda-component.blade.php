@@ -40,7 +40,7 @@
                                 </p>
                                 <p>
                                     Fecha Siembra
-                                    {{ $campania->fecha_siembra ?? '' }}
+                                    {{ formatear_fecha($campania->fecha_siembra) }}
                                 </p>
                             </x-success>
                             <form wire:submit.prevent="guardarDatosRendimientoPoda">
