@@ -31,8 +31,12 @@ class CochinillaInfestacionMasivoComponent extends Component
         $this->inicializarMesAnio();
         $this->listaCampos = $this->cargarListaHstCampos();
     }
-    public function abrirModalInfestacionMasivo()
+    public function abrirModalInfestacionMasivo($mes = null, $anio = null)
     {
+        if ($mes && $anio) {
+            $this->mes = (int) $mes;
+            $this->anio = (int) $anio;
+        }
         $this->modalInfestacionMasivo = true;
         $this->listarInfestaciones();
     }

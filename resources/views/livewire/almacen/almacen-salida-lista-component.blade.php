@@ -8,7 +8,7 @@
 
             <x-group-field>
                 <label class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Producto</label>
-                <x-select wire:model.live="filtros.productoId">
+                <x-select searchable class="w-72" placeholder="Todos los productos" wire:model.live="filtros.productoId">
                     <option value="">Todos</option>
                     @foreach ($listaProductos as $p)
                         <option value="{{ $p['id'] }}">{{ $p['label'] }}</option>

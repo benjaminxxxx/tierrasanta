@@ -4,6 +4,8 @@ namespace App\Services\Cochinilla;
 
 use App\Models\CochinillaFiltrado;
 use App\Models\CochinillaIngreso;
+use App\Exceptions\ErrorControlado;
+use App\Services\Cochinilla\Lote\CochinillaLoteProceso;
 use App\Support\FormatoHelper;
 use DB;
 
@@ -39,9 +41,9 @@ class FiltradoServicio
      * Lógica CRUD: Guarda o actualiza los registros de filtrado.
      * Soporta tanto el Formulario Livewire como el Seeder (Excel).
      */
-    public function registrarFiltrados(array $datos, ?int $loteFijo = null,?int $ingresoId = null): int
+    public function registrarFiltrados(array $datos, ?int $loteFijo = null, ?int $ingresoId = null, ?string $motivo = null): int
     {
-        return DB::transaction(function () use ($datos, $loteFijo,$ingresoId) {
+        return DB::transaction(function () use ($datos, $loteFijo, $ingresoId, $motivo) {
 
             $rows = [];
 
@@ -53,15 +55,26 @@ class FiltradoServicio
                 $rows[] = $this->prepararFila($fila, $loteFijo);
             }
 
-            if ($rows) {
-                if ($ingresoId) {
+            // Con ingreso: si ya tenía filtrado y cambia, pide motivo y queda el antes/después (tabla vacía = eliminar)
+            $ingreso = $ingresoId ? CochinillaIngreso::find($ingresoId) : null;
+            $antes = $ingreso ? CochinillaLoteProceso::lineasFiltrado($ingreso->filtrados()->get()) : [];
+            $despues = CochinillaLoteProceso::lineasFiltrado($rows);
+            if (!$rows && !$antes) {
+                throw new ErrorControlado('No hay datos para registrar.');
+            }
+            $cambia = $antes && $antes !== $despues;
+            if ($cambia) {
+                $motivo = CochinillaLoteProceso::exigirMotivo($motivo);
+            }
 
-                    $ingreso = CochinillaIngreso::find($ingresoId);
-                    if ($ingreso) {
-                        $ingreso->filtrados()->delete();
-                    }
-                }
+            if ($ingreso) {
+                $ingreso->filtrados()->delete();
+            }
+            if ($rows) {
                 CochinillaFiltrado::insert($rows);
+            }
+            if ($cambia) {
+                CochinillaLoteProceso::auditarProceso($ingreso->id, (int) $ingreso->lote, 'Filtrado', $antes, $despues, $motivo);
             }
 
             return count($rows);

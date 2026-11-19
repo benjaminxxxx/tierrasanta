@@ -85,7 +85,7 @@ class InfestacionServicio
         return $resultados;
     }
 
-    public static function eliminarInfestacion(int $id): void
+    public static function eliminarInfestacion(int $id, ?string $motivo = null): void
     {
         $infestacion = CochinillaInfestacion::with('ingresos')->findOrFail($id);
         $snapshot = $infestacion->withoutRelations()->toArray();
@@ -104,7 +104,9 @@ class InfestacionServicio
             modeloId: $id,
             accion: 'eliminar',
             antes: $snapshot,
-            observacion: 'Registro eliminado en guardado masivo',
+            observacion: $motivo
+                ? mb_substr('Infestación de ' . ($snapshot['campo_nombre'] ?? '?') . ' del ' . Carbon::parse($snapshot['fecha'])->format('d/m/Y') . ' eliminada. Motivo: ' . $motivo, 0, 255)
+                : 'Registro eliminado en guardado masivo (fila vaciada)',
         );
     }
     public static function guardarInfestacion(array $datosInfestacion, array $ingresosRelacionados, ?int $infestacionId = null): int

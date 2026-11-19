@@ -98,6 +98,9 @@
 
                                             <x-slot name="content">
                                                 <div class="w-60">
+                                                    <x-dropdown-link class="text-center" wire:click="abrirCorreccion({{ $cochinillaVenteado->id }}, 'lote')">
+                                                        <i class="fa fa-pen"></i> Corregir n° de lote
+                                                    </x-dropdown-link>
                                                     <x-dropdown-link class="text-center" wire:click="eliminarVenteado({{ $cochinillaVenteado->id }})">
                                                         <i class="fa fa-trash"></i> Eliminar Venteado
                                                     </x-dropdown-link>
@@ -118,5 +121,6 @@
         </div>
     </x-card>
 
+    @include('livewire.cochinilla.partials.correccion-fila', ['que' => 'venteado'])
     <x-loading wire:loading />
 </div>

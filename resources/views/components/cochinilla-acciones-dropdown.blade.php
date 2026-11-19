@@ -18,6 +18,9 @@
             <x-dropdown-link class="text-center" @click="$wire.dispatch('editarIngreso',{lote:{{ $ingreso->lote }}})">
                 <i class="fa fa-list"></i> Sublotes
             </x-dropdown-link>
+            <x-dropdown-link class="text-center" @click="$wire.dispatch('editarIngreso',{lote:{{ $ingreso->lote }}, paso: 2})">
+                <i class="fa fa-pen"></i> Editar lote (n°, campo, fecha)
+            </x-dropdown-link>
             <x-dropdown-link class="text-center"
                 @click="$wire.dispatch('agregarVenteado',{ingresoId:{{ $ingreso->id }}})">
                 <i class="fas fa-wind"></i> Venteado

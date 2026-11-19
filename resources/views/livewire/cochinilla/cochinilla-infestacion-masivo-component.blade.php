@@ -40,6 +40,8 @@
         filasModificadas: @entangle('filasModificadas'),
         isDark: JSON.parse(localStorage.getItem('darkMode')),
         listaCampos: @js($listaCampos),
+        // Área de cada campo: se llena sola al elegir el campo (se puede corregir a mano)
+        areasCampos: @js(\App\Models\Campo::pluck('area', 'nombre')),
         init() {
             this.initTable([]);
             $watch('darkMode', value => {
@@ -86,6 +88,21 @@
                             this.filasModificadas = [...this.filasModificadas, row];
                         }
                     });
+
+                    // Al elegir/pegar el campo, su área sale sola ('edit' para que recalcule kg/ha e infestadores/ha)
+                    if (['edit', 'CopyPaste.paste', 'Autofill.fill', 'validator'].includes(source)) {
+                        const areas = [];
+                        changes.forEach(([row, prop, antes, ahora]) => {
+                            if (prop !== 'campo_nombre' || !ahora || antes === ahora) return;
+                            const area = this.areasCampos[ahora];
+                            if (area !== undefined && area !== null && area !== '') {
+                                areas.push([row, 'area', parseFloat(area)]);
+                            }
+                        });
+                        if (areas.length) {
+                            setTimeout(() => hot.setDataAtRowProp(areas, null, null, 'edit'), 0);
+                        }
+                    }
 
                     if (!['edit', 'CopyPaste.paste', 'Autofill.fill'].includes(source)) return;
 

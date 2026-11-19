@@ -12,13 +12,14 @@ use Livewire\WithPagination;
 
 class CochinillaFiltradoComponent extends Component
 {
-    use WithPagination, WithoutUrlPagination,LivewireAlert, \App\Traits\HandlesAlerts;
+    use WithPagination, WithoutUrlPagination,LivewireAlert, \App\Traits\HandlesAlerts, \App\Livewire\Traits\ConCorreccionFilaCochinilla;
+    private const CLASE_FILA = CochinillaFiltrado::class;
     public $lote;
     public $anioSeleccionado;
     public $campoSeleccionado;
     public $aniosDisponibles = [];
     public $verLotesSinIngresos = false;
-    protected $listeners = ["filtradoAgregado" => '$refresh','eliminarFiltradoConfirmado'];
+    protected $listeners = ["filtradoAgregado" => '$refresh'];
     public function updatedLote()
     {
         $this->resetPage();
@@ -31,24 +32,10 @@ class CochinillaFiltradoComponent extends Component
     {
         $this->resetPage();
     }
-    public function eliminarFiltrado($id){
-        $this->confirm('¿Estás seguro de eliminar este registro de filtrado?', [
-            'confirmButtonText' => 'Sí, eliminar',
-            'cancelButtonText' => 'Cancelar',
-            'onConfirmed' => 'eliminarFiltradoConfirmado',
-            'data' => ['id' => $id],
-        ]);
-    }
-    public function eliminarFiltradoConfirmado($data){
-        $filtrado = CochinillaFiltrado::find($data['id']);
-       
-        if($filtrado){
-            $filtrado->delete();
-            $this->alert('success', 'Registro de filtrado eliminado correctamente.');
-            $this->resetPage();
-        }else{
-            $this->errorAlert('El registro de filtrado no existe.');
-        }
+    /** Fila suelta: eliminar o corregir su lote pide motivo y queda en auditoría */
+    public function eliminarFiltrado($id)
+    {
+        $this->abrirCorreccion((int) $id, 'eliminar');
     }
     public function render(FiltradoServicio $service)
     {

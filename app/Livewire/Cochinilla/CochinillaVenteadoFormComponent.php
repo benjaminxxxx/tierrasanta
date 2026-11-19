@@ -17,6 +17,8 @@ class CochinillaVenteadoFormComponent extends Component
     public $mostrarFormulario = false;
     public $cochinillaIngreso;
     public $idTable;
+    /** Al cambiar o borrar lo ya registrado: queda en la auditoría */
+    public string $motivo = '';
     protected $listeners = ["agregarVenteado", "storeTableDataCochinillaIngresoVenteado"];
     public function mount()
     {
@@ -28,15 +30,11 @@ class CochinillaVenteadoFormComponent extends Component
             if (!is_array($datos)) {
                 throw new \Exception("Datos inválidos para el registro de venteado.");
             }
-            if (empty($datos) || count($datos) == 0) {
-                throw new \Exception("No hay datos para registrar.");
-            }
-
             $servicio = app(VenteadoServicio::class);
             $loteManual = $this->cochinillaIngreso ? $this->cochinillaIngreso->lote : null;
             $ingresoId = $this->cochinillaIngreso ? $this->cochinillaIngreso->id : null;
-            $conteo = $servicio->registrarVenteado($datos, $loteManual,$ingresoId);
-            $this->alert('success', 'Registro exitoso. Se procesaron ' . $conteo . ' filas.');
+            $conteo = $servicio->registrarVenteado($datos, $loteManual,$ingresoId, $this->motivo);
+            $this->alert('success', $conteo ? 'Registro exitoso. Se procesaron ' . $conteo . ' filas.' : 'Venteado del lote eliminado. Quedó en la auditoría con tu nombre y el motivo.');
             if ($this->cochinillaIngreso) {
                 $this->agregarVenteado($this->cochinillaIngreso->id);
             } else {
@@ -50,6 +48,8 @@ class CochinillaVenteadoFormComponent extends Component
         }
     }
     public function agregarVenteado($ingresoId = null){
+        $this->motivo = '';
+        $this->resetErrorBag();
         if($ingresoId){
             $this->cochinillaIngreso = CochinillaIngreso::find($ingresoId);
             if ($this->cochinillaIngreso) {

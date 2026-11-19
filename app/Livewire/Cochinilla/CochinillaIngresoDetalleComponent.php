@@ -24,6 +24,8 @@ class CochinillaIngresoDetalleComponent extends Component
 
     // Paso 1
     public $loteBuscado;
+    /** Al editar: n° de lote corregido (error de digitación) */
+    public $loteNuevo;
 
     // Contexto cargado / en edición
     public $cochinillaIngreso; // instancia de CochinillaIngreso o null si es nuevo
@@ -70,12 +72,16 @@ class CochinillaIngresoDetalleComponent extends Component
         $this->mostrarFormulario = true;
     }
 
-    public function editarIngreso($lote)
+    /** $paso 2 abre directo los datos del lote (n°, campo, fecha) */
+    public function editarIngreso($lote, $paso = null)
     {
         $this->resetWizard();
         $this->loteBuscado = $lote;
         $this->mostrarFormulario = true;
         $this->buscarLote();
+        if ((int) $paso === 2 && $this->cochinillaIngreso) {
+            $this->step = 2;
+        }
     }
 
     public function resetWizard()
@@ -84,6 +90,7 @@ class CochinillaIngresoDetalleComponent extends Component
         $this->reset([
             'step',
             'loteBuscado',
+            'loteNuevo',
             'cochinillaIngreso',
             'esNuevo',
             'editandoExistente',
@@ -124,6 +131,7 @@ class CochinillaIngresoDetalleComponent extends Component
         $this->esNuevo = false;
         $this->editandoExistente = true;
 
+        $this->loteNuevo = $ingreso->lote;
         $this->campoSeleccionado = $ingreso->campo;
         $this->area = $ingreso->area;
         $this->campania = $ingreso->campoCampania;
@@ -186,6 +194,40 @@ class CochinillaIngresoDetalleComponent extends Component
         }
         $antes = $this->cochinillaIngreso?->only(self::CAMPOS_AUDITADOS);
 
+        // Lote ya registrado: se actualiza tal cual (puede cambiar su n° si se digitó mal)
+        if ($this->editandoExistente && $this->cochinillaIngreso) {
+            $this->validate(['loteNuevo' => 'required|integer|min:1'], [], ['loteNuevo' => 'N° de lote']);
+            try {
+                $movidos = DB::transaction(function () {
+                    $ingreso = $this->cochinillaIngreso->fresh();
+                    $movidos = app(\App\Services\Cochinilla\Lote\CochinillaLoteProceso::class)->cambiarNumero($ingreso, (int) $this->loteNuevo);
+                    $ingreso->update([
+                        'campo' => $this->campoSeleccionado,
+                        'area' => $this->area,
+                        'campo_campania_id' => $this->campania->id,
+                        'observacion' => $this->observacionSeleccionada,
+                        'fecha' => $this->fecha,
+                    ]);
+                    $this->cochinillaIngreso = $ingreso->fresh();
+                    return $movidos;
+                });
+            } catch (\Throwable $e) {
+                return $this->errorAlert($e);
+            }
+            $this->loteBuscado = $this->cochinillaIngreso->lote;
+            $this->auditar($antes, $this->cochinillaIngreso->only(self::CAMPOS_AUDITADOS), 'Datos');
+            if ((int) $antes['lote'] !== (int) $this->cochinillaIngreso->lote) {
+                $adoptados = $movidos['venteados_adoptados'] + $movidos['filtrados_adoptados'];
+                $this->alert('success', "Lote {$antes['lote']} cambiado a {$this->cochinillaIngreso->lote}: pasaron sus sublotes, "
+                    . "{$movidos['venteados']} venteado(s) y {$movidos['filtrados']} filtrado(s)"
+                    . ($adoptados ? " y se unieron {$adoptados} registro(s) que estaban sin ingreso con el n° {$this->cochinillaIngreso->lote}." : '.'));
+            }
+            $this->dispatch('detalleIngresoAgregado');
+            $this->dispatch('cargarData', $this->cochinillaIngreso->detalles->toArray());
+            $this->step = 3;
+            return;
+        }
+
         try {
             $this->cochinillaIngreso = CochinillaIngreso::updateOrCreate(
                 ['lote' => $this->loteBuscado],
@@ -204,7 +246,7 @@ class CochinillaIngresoDetalleComponent extends Component
             throw $e;
         }
 
-        $this->auditar($antes, $this->cochinillaIngreso->only(self::CAMPOS_AUDITADOS), 'Datos del lote');
+        $this->auditar($antes, $this->cochinillaIngreso->only(self::CAMPOS_AUDITADOS), 'Datos');
         $this->esNuevo = false;
         $this->dispatch('cargarData', $this->cochinillaIngreso->detalles->toArray());
         $this->step = 3;

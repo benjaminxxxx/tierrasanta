@@ -4,6 +4,8 @@ namespace App\Services\Cochinilla;
 
 use App\Models\CochinillaIngreso;
 use App\Models\CochinillaVenteado;
+use App\Exceptions\ErrorControlado;
+use App\Services\Cochinilla\Lote\CochinillaLoteProceso;
 use App\Support\FormatoHelper;
 use DB;
 
@@ -34,9 +36,13 @@ class VenteadoServicio
             ->orderByDesc('lote')
             ->paginate($perPage);
     }
-    public function registrarVenteado(array $datos, ?int $loteFijo = null, ?int $ingresoId = null): int
+    /**
+     * Guarda el venteado de la tabla. Con ingreso reemplaza el del lote; si ya tenía datos y cambian, pide motivo
+     * y deja el antes/después en la auditoría (la tabla vacía elimina el venteado del lote).
+     */
+    public function registrarVenteado(array $datos, ?int $loteFijo = null, ?int $ingresoId = null, ?string $motivo = null): int
     {
-        return DB::transaction(function () use ($datos, $loteFijo, $ingresoId) {
+        return DB::transaction(function () use ($datos, $loteFijo, $ingresoId, $motivo) {
 
             $rows = [];
 
@@ -49,15 +55,25 @@ class VenteadoServicio
                 $rows[] = $this->prepararFilaVenteado($fila, $loteFijo);
             }
 
-            if ($rows) {
-                if ($ingresoId) {
+            $ingreso = $ingresoId ? CochinillaIngreso::find($ingresoId) : null;
+            $antes = $ingreso ? CochinillaLoteProceso::lineasVenteado($ingreso->venteados()->get()) : [];
+            $despues = CochinillaLoteProceso::lineasVenteado($rows);
+            if (!$rows && !$antes) {
+                throw new ErrorControlado('No hay datos para registrar.');
+            }
+            $cambia = $antes && $antes !== $despues;
+            if ($cambia) {
+                $motivo = CochinillaLoteProceso::exigirMotivo($motivo);
+            }
 
-                    $ingreso = CochinillaIngreso::find($ingresoId);
-                    if ($ingreso) {
-                        $ingreso->venteados()->delete();
-                    }
-                }
+            if ($ingreso) {
+                $ingreso->venteados()->delete();
+            }
+            if ($rows) {
                 CochinillaVenteado::insert($rows);
+            }
+            if ($cambia) {
+                CochinillaLoteProceso::auditarProceso($ingreso->id, (int) $ingreso->lote, 'Venteado', $antes, $despues, $motivo);
             }
 
             return count($rows);

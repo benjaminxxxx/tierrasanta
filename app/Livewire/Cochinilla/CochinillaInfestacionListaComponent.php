@@ -455,6 +455,43 @@ class CochinillaInfestacionListaComponent extends Component
 
         return $query;
     }
+    /** Editar: abre la tabla de infestaciones del mes de esa fila (allí cada cambio queda en auditoría) */
+    public function editarInfestacion(int $id): void
+    {
+        $infestacion = CochinillaInfestacion::find($id);
+        if (!$infestacion) {
+            $this->errorAlert('La infestación ya no existe.');
+            return;
+        }
+        $fecha = \Illuminate\Support\Carbon::parse($infestacion->fecha);
+        $this->dispatch('abrirRegistroInfestacion', mes: (int) $fecha->month, anio: (int) $fecha->year);
+    }
+
+    /** Eliminar pide motivo: la fila completa queda en la auditoría con el usuario */
+    public bool $mostrarEliminar = false;
+    public ?int $eliminarId = null;
+    public string $motivoEliminacion = '';
+
+    public function eliminarInfestacion(int $id): void
+    {
+        $this->resetErrorBag();
+        $this->eliminarId = $id;
+        $this->motivoEliminacion = '';
+        $this->mostrarEliminar = true;
+    }
+
+    public function confirmarEliminarInfestacion(): void
+    {
+        try {
+            $motivo = \App\Services\Cochinilla\Lote\CochinillaLoteProceso::exigirMotivo($this->motivoEliminacion);
+            \App\Services\Cochinilla\InfestacionServicio::eliminarInfestacion((int) $this->eliminarId, $motivo);
+            $this->reset(['mostrarEliminar', 'eliminarId', 'motivoEliminacion']);
+            $this->alert('success', 'Infestación eliminada. Quedó en la auditoría con tu nombre y el motivo.');
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+        }
+    }
+
     public function verAuditoria(int $id): void
     {
         $this->auditoriaModeloId = $id;

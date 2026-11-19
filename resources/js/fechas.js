@@ -57,8 +57,12 @@ export function parsearFecha(valor) {
     return null;
 }
 
-/** Formato tipo moment de Handsontable: YYYY, MM, DD, M, D. */
+/**
+ * Formato tipo moment: YYYY, MM, DD, M, D. Desde Handsontable 18 el `dateFormat` de la columna es un objeto
+ * Intl (solo para mostrar) y el dato guardado debe ser ISO: si el formato no es texto se usa YYYY-MM-DD.
+ */
 export function formatearFecha({ y, m, d }, formato = "YYYY-MM-DD") {
+    if (typeof formato !== "string" || !formato) formato = "YYYY-MM-DD";
     const dos = (n) => String(n).padStart(2, "0");
     return formato
         .replace("YYYY", String(y))
@@ -70,6 +74,16 @@ export function formatearFecha({ y, m, d }, formato = "YYYY-MM-DD") {
 
 /** Convierte las fechas que entran a columnas de tipo fecha de cualquier tabla Handsontable. */
 export function registrarFechasHandsontable(Handsontable) {
+    // Handsontable 18 muestra la fecha con Intl y el idioma de la tabla (por defecto en-US → 06/20/2026).
+    // En toda columna de fecha: día/mes/año como en Perú; el dato sigue guardándose ISO (AAAA-MM-DD).
+    Handsontable.hooks.add("afterGetCellMeta", function (fila, columna, meta) {
+        if (meta.type !== "date") return;
+        meta.locale = "es-PE";
+        if (typeof meta.dateFormat !== "object" || meta.dateFormat === null) {
+            meta.dateFormat = { day: "2-digit", month: "2-digit", year: "numeric" };
+        }
+    });
+
     Handsontable.hooks.add("beforeChange", function (cambios) {
         if (!cambios) return;
         for (const cambio of cambios) {

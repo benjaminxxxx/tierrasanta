@@ -162,6 +162,7 @@
                             <x-th>Infestadores</x-th>
                             <x-th>Mad/Inf</x-th>
                             <x-th>Inf/Ha</x-th>
+                            <x-th class="text-center">Acciones</x-th>
                         </x-tr>
                     </x-slot>
                     <x-slot name="tbody">
@@ -211,6 +212,14 @@
                                             {{ ($infestadores > 0 && $item->area > 0)
                             ? number_format($infestadores / $item->area, 2)
                             : '—' }}
+                                        </x-td>
+                                        <x-td class="text-center whitespace-nowrap">
+                                            <x-button wire:click="editarInfestacion({{ $item->id }})" variant="ghost" size="xs" title="Editar (abre la tabla del mes)">
+                                                <i class="fa fa-pen"></i>
+                                            </x-button>
+                                            <x-button wire:click="eliminarInfestacion({{ $item->id }})" variant="ghost" size="xs" title="Eliminar con motivo">
+                                                <i class="fa fa-trash text-destructive"></i>
+                                            </x-button>
                                         </x-td>
                                     </x-tr>
                         @endforeach
@@ -486,6 +495,25 @@
 
         <x-slot name="footer">
             <x-button variant="secondary" wire:click="$set('modalAuditoria', false)">Cerrar</x-button>
+        </x-slot>
+    </x-dialog-modal>
+    {{-- Eliminar con motivo (queda en auditoría) --}}
+    <x-dialog-modal wire:model.live="mostrarEliminar" maxWidth="lg">
+        <x-slot name="title">Eliminar infestación</x-slot>
+        <x-slot name="content">
+            @php $aEliminar = $eliminarId ? \App\Models\CochinillaInfestacion::find($eliminarId) : null; @endphp
+            @if ($aEliminar)
+                <p class="text-sm mb-3">{{ ucfirst($aEliminar->tipo_infestacion) }} · <b>{{ $aEliminar->campo_nombre }}</b> ·
+                    {{ formatear_fecha($aEliminar->fecha) }} · {{ number_format($aEliminar->kg_madres, 2) }} kg madres de {{ $aEliminar->campo_origen_nombre }}</p>
+                <p class="text-xs text-muted-foreground mb-2">La fila se borra (y se devuelve el stock de los lotes que usaba), pero queda guardada completa en la auditoría con tu nombre y el motivo.</p>
+            @endif
+            <x-input type="text" wire:model="motivoEliminacion" class="w-full" label="Motivo (obligatorio)" placeholder="Ej. infestación registrada dos veces" />
+        </x-slot>
+        <x-slot name="footer">
+            <div class="flex gap-2">
+                <x-button variant="secondary" wire:click="$set('mostrarEliminar', false)">Cancelar</x-button>
+                <x-button variant="danger" wire:click="confirmarEliminarInfestacion"><i class="fa fa-trash"></i> Eliminar</x-button>
+            </div>
         </x-slot>
     </x-dialog-modal>
     <x-loading wire:loading />

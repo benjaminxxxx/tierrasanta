@@ -11,13 +11,14 @@ use Livewire\WithPagination;
 
 class CochinillaVenteadoComponent extends Component
 {
-    use WithPagination,LivewireAlert, \App\Traits\HandlesAlerts;
+    use WithPagination,LivewireAlert, \App\Traits\HandlesAlerts, \App\Livewire\Traits\ConCorreccionFilaCochinilla;
+    private const CLASE_FILA = CochinillaVenteado::class;
     public $lote;
     public $anioSeleccionado;
     public $campoSeleccionado;
     public $aniosDisponibles = [];
     public $verLotesSinIngresos = false;
-    protected $listeners = ["venteadoAgregado" => '$refresh','eliminarVenteadoConfirmado'];
+    protected $listeners = ["venteadoAgregado" => '$refresh'];
     public function updatedLote()
     {
         $this->resetPage();
@@ -30,24 +31,10 @@ class CochinillaVenteadoComponent extends Component
     {
         $this->resetPage();
     }
-    public function eliminarVenteado($id){
-       $this->confirm('¿Estás seguro de eliminar este registro?', [
-            'confirmButtonText' => 'Sí, eliminar',
-            'cancelButtonText' => 'Cancelar',
-            'onConfirmed' => 'eliminarVenteadoConfirmado',
-            'data' => ['id' => $id],
-        ]);
-    }
-    public function eliminarVenteadoConfirmado($data){
-        $venteado = CochinillaVenteado::find($data['id']);
-       
-        if($venteado){
-            $venteado->delete();
-            $this->alert('success', 'Registro de venteado eliminado correctamente.');
-            $this->resetPage();
-        }else{
-            $this->errorAlert('El registro de venteado no existe.');
-        }
+    /** Fila suelta: eliminar o corregir su lote pide motivo y queda en auditoría */
+    public function eliminarVenteado($id)
+    {
+        $this->abrirCorreccion((int) $id, 'eliminar');
     }
     public function render(VenteadoServicio $service)
     {

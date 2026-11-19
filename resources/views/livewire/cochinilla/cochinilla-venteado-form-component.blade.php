@@ -50,6 +50,16 @@
                     Debe ingresar como mínimo la fecha del proceso y los kilos ingresados para realizar el registro.
                 </li>
             </ul>
+            <div>{{-- contenedor fijo: la tabla de abajo no se mueve al aparecer el motivo --}}
+            @if ($cochinillaIngreso && $cochinillaIngreso->venteados()->exists())
+                <div class="mt-4 rounded-lg border border-amber-400 bg-amber-50 dark:bg-amber-900/20 p-3">
+                    <x-input type="text" wire:model="motivo" class="w-full"
+                        label="Motivo del cambio (obligatorio si corriges o eliminas lo registrado)"
+                        placeholder="Ej. se digitó mal los kilos del 12/03" />
+                    <p class="text-xs text-muted-foreground mt-1">El venteado de este lote ya estaba registrado: el antes y después, quién lo cambió y este motivo quedan en la auditoría. Para eliminarlo, borra todas las filas y guarda.</p>
+                </div>
+            @endif
+            </div>
             <div x-data="{{ $idTable }}" wire:ignore class="my-4">
                 <div x-ref="tableContainerVenteado" ></div>
             </div>
@@ -81,9 +91,9 @@
                 this.listeners.push(
                     Livewire.on('cargarDataVenteado', (data) => {
                     
+                        // Se recargan los datos en la misma tabla: destruirla y crearla de nuevo dejaba el editor
+                        // de fecha de la tabla destruida activo y ya no se podía editar otra celda (Handsontable 18)
                         this.tableData = data[0];
-                        this.hot.destroy();
-                        this.initTable();
                         this.hot.loadData(this.tableData);
                     })
                 );

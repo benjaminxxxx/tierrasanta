@@ -47,6 +47,13 @@
                     @endif
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                    @if ($editandoExistente)
+                        <div class="md:col-span-2">
+                            <x-input type="number" label="N° de lote" step="1" min="1" wire:model="loteNuevo" error="loteNuevo" class="w-full" />
+                            <p class="text-xs text-muted-foreground mt-1">¿Se digitó mal? Cámbialo aquí: pasan con él sus sublotes, venteado y filtrado,
+                                y se le une el venteado/filtrado que se registró con el número correcto.</p>
+                        </div>
+                    @endif
                     <x-select label="Campo" wire:model.live="campoSeleccionado" error="campoSeleccionado" fullWidth="true">
                         <option value="">Seleccionar campo</option>
                         @foreach ($campos as $campo)
@@ -119,7 +126,8 @@
                 <ul class="space-y-1 text-gray-500 list-disc list-inside dark:text-gray-400 mt-4">
                     <li>No es necesario digitar el sublote, el sistema le dará su código automáticamente.</li>
                     <li>Todos los campos son obligatorios, sino esa fila no se registrará.</li>
-                    <li>¿Te equivocaste de campo? Usa "Atrás" para corregirlo - se aplicará a todos los sublotes.</li>
+                    <li>¿Te equivocaste de n° de lote, campo o fecha? Usa "Atrás" para corregirlo - se aplicará a todos los sublotes.</li>
+                    <li>Para quitar un sublote, borra su fila y guarda (queda en la auditoría con el motivo).</li>
                 </ul>
 
                 <div x-data="{{ $idTable }}" wire:ignore class="my-4">
