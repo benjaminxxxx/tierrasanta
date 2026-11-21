@@ -37,7 +37,12 @@ export default function searchableSelect(config) {
             if (this.modo === "nativo") {
                 this.select = this.$refs.nativo;
                 this.opciones = this.leerNativo();
-                this.valor = this.select.value || null;
+                // Al cargar (p. ej. ?filtroCampo=17) Livewire aún no puso el valor en el <select>: leerlo del componente
+                const inicial = this.modelo ? this.$wire.get(this.modelo) : null;
+                this.valor = this.select.value || (vacio(inicial) ? null : String(inicial));
+                this.$nextTick(() => {
+                    if (this.select.value) this.valor = this.select.value;
+                });
                 // Livewire cambia las <option> al volver a dibujar
                 this._observador = new MutationObserver(() => {
                     this.opciones = this.leerNativo();

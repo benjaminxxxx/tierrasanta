@@ -126,9 +126,8 @@ class CompraFormComponent extends Component
                 $this->detalles[] = [
                     'id' => $detalle->id, // línea existente: al guardar se actualiza en su lugar (sin id = nueva)
                     'producto_id' => $detalle->producto_id,
-                    'producto_nombre' => $detalle->producto?->marca
-                        ? "{$detalle->producto->nombre} ({$detalle->producto->marca})"
-                        : $detalle->producto?->nombre ?? 'Producto no encontrado',
+                    // Mismo nombre que al agregar un producto (el modelo ya no tiene nombre/marca: nombre_comercial)
+                    'producto_nombre' => $detalle->producto?->nombre_completo ?? 'Producto no encontrado',
                     'presentacion_id' => $detalle->presentacion_id ?: '',
                     'factor_conversion' => $detalle->presentacion?->factor_conversion ?? 1,
                     'cantidad' => (string) $detalle->cantidad,

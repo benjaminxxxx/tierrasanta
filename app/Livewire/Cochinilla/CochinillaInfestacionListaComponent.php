@@ -68,6 +68,10 @@ class CochinillaInfestacionListaComponent extends Component
         $this->listaCampos = Campo::orderBy('orden')->pluck('nombre')->toArray();
         $this->listaCamposOrigen = $this->listaCampos;
         $this->cargarCampanias();
+        // Enlaces viejos (?filtroCampania=nombre) o campaña que no es del campo: se descarta
+        if ($this->filtroCampania !== '' && !collect($this->listaCampanias)->contains('id', (int) $this->filtroCampania)) {
+            $this->filtroCampania = '';
+        }
     }
     /**
      * Abre el modal y analiza TODAS las infestaciones sin campo_campania_id.
@@ -213,17 +217,23 @@ class CochinillaInfestacionListaComponent extends Component
             $this->errorAlert($th);
         }
     }
-    // Cuando cambia el filtro de campaña, restringir campos disponibles
-    public function updatedFiltroCampania(): void
-    {
-        $this->resetPage();
-        $this->filtroCampo = '';
-        $this->cargarCamposPorCampania();
-    }
-
+    // Primero el campo; recién entonces se listan sus campañas
     public function updatedFiltroCampo(): void
     {
         $this->resetPage();
+        $this->filtroCampania = '';
+        $this->filtroFechaDesde = '';
+        $this->filtroFechaHasta = '';
+        $this->cargarCampanias();
+    }
+
+    // Al elegir la campaña se llenan las fechas con su inicio y cierre (si lo tiene)
+    public function updatedFiltroCampania(): void
+    {
+        $this->resetPage();
+        $campania = collect($this->listaCampanias)->firstWhere('id', (int) $this->filtroCampania);
+        $this->filtroFechaDesde = $campania['fecha_inicio'] ?? '';
+        $this->filtroFechaHasta = $campania['fecha_fin'] ?? '';
     }
 
     public function updatedFiltroTipo(): void
@@ -247,27 +257,22 @@ class CochinillaInfestacionListaComponent extends Component
         $this->resetPage();
     }
 
+    /** Campañas del campo elegido (sin campo no hay lista). */
     private function cargarCampanias(): void
     {
-        $this->listaCampanias = CampoCampania::select('nombre_campania')
-            ->distinct()
-            ->orderBy('nombre_campania')
-            ->pluck('nombre_campania')
-            ->toArray();
-    }
-
-    private function cargarCamposPorCampania(): void
-    {
-        if (empty($this->filtroCampania)) {
-            $this->listaCampos = Campo::orderBy('orden')->pluck('nombre')->toArray();
+        if ($this->filtroCampo === '') {
+            $this->listaCampanias = [];
             return;
         }
-
-        // Solo mostrar campos que tengan campaña con esa descripción
-        $this->listaCampos = CampoCampania::where('nombre_campania', $this->filtroCampania)
-            ->orderBy('campo')
-            ->pluck('campo')
-            ->toArray();
+        $this->listaCampanias = CampoCampania::where('campo', $this->filtroCampo)
+            ->orderByDesc('fecha_inicio')
+            ->get(['id', 'nombre_campania', 'fecha_inicio', 'fecha_fin'])
+            ->map(fn($c) => [
+                'id' => $c->id,
+                'nombre' => $c->nombre_campania,
+                'fecha_inicio' => $c->fecha_inicio ? substr((string) $c->fecha_inicio, 0, 10) : '',
+                'fecha_fin' => $c->fecha_fin ? substr((string) $c->fecha_fin, 0, 10) : '',
+            ])->toArray();
     }
 
     public function ordenarPor(string $campo): void
@@ -292,7 +297,7 @@ class CochinillaInfestacionListaComponent extends Component
         $this->filtroFechaHasta = '';
         $this->ordenCampo = 'fecha';
         $this->ordenDireccion = 'desc';
-        $this->listaCampos = Campo::orderBy('orden')->pluck('nombre')->toArray();
+        $this->listaCampanias = [];
         $this->resetPage();
     }
     public function exportarReporte()
@@ -319,7 +324,7 @@ class CochinillaInfestacionListaComponent extends Component
             };
             $ordenLabel .= ' (' . strtoupper($this->ordenDireccion) . ')';
 
-            $hoja->setCellValue('B2', $this->filtroCampania ?: 'Todas');
+            $hoja->setCellValue('B2', collect($this->listaCampanias)->firstWhere('id', (int) $this->filtroCampania)['nombre'] ?? 'Todas');
             $hoja->setCellValue('B3', $this->filtroTipo ? ucfirst($this->filtroTipo) : 'Todas');
             $hoja->setCellValue('B4', $this->filtroFechaDesde ?: '-');
             $hoja->setCellValue('B5', $this->filtroFechaHasta ?: '-');
@@ -437,11 +442,7 @@ class CochinillaInfestacionListaComponent extends Component
             ->when($this->filtroMetodo, fn($q) => $q->where('metodo', $this->filtroMetodo))
             ->when($this->filtroFechaDesde, fn($q) => $q->whereDate('fecha', '>=', $this->filtroFechaDesde))
             ->when($this->filtroFechaHasta, fn($q) => $q->whereDate('fecha', '<=', $this->filtroFechaHasta))
-            ->when($this->filtroCampania, function ($q) {
-                // Filtrar por descripción de campaña a través de la relación
-    
-                $q->whereHas('campoCampania', fn($r) => $r->where('nombre_campania', $this->filtroCampania));
-            });
+            ->when($this->filtroCampania, fn($q) => $q->where('campo_campania_id', (int) $this->filtroCampania));
 
         $columnasOrden = [
             'fecha' => 'fecha',

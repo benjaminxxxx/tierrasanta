@@ -22,30 +22,29 @@
 
         <x-flex>
 
-            {{-- Campaña (distinct) --}}
+            {{-- Campo (con buscador): primero se elige el campo --}}
             <div>
-                <x-label>Campaña</x-label>
-                <x-select wire:model.live="filtroCampania" class="w-auto">
-                    <option value="">Todas las campañas</option>
-                    @foreach ($listaCampanias as $campania)
-                        <option value="{{ $campania }}">{{ $campania }}</option>
-                    @endforeach
-                </x-select>
-            </div>
-
-            {{-- Campo (se filtra según campaña elegida) --}}
-            <div>
-                <x-label>
-                    Campo
-                    @if ($filtroCampania)
-                        <span class="text-xs text-muted-foreground ml-1">(filtrado por campaña)</span>
-                    @endif
-                </x-label>
-                <x-select wire:model.live="filtroCampo" class="w-auto">
+                <x-label>Campo</x-label>
+                <x-select searchable class="w-48" placeholder="Todos los campos" wire:model.live="filtroCampo">
                     <option value="">Todos los campos</option>
                     @foreach ($listaCampos as $campo)
                         <option value="{{ $campo }}">{{ $campo }}</option>
                     @endforeach
+                </x-select>
+            </div>
+
+            {{-- Campaña: solo las del campo elegido; al elegirla se llenan las fechas --}}
+            <div>
+                <x-label>Campaña</x-label>
+                <x-select wire:model.live="filtroCampania" class="w-auto" :disabled="$filtroCampo === ''">
+                    @if ($filtroCampo === '')
+                        <option value="">Primero elige un campo</option>
+                    @else
+                        <option value="">Todas las campañas</option>
+                        @foreach ($listaCampanias as $campania)
+                            <option value="{{ $campania['id'] }}">{{ $campania['nombre'] }}</option>
+                        @endforeach
+                    @endif
                 </x-select>
             </div>
 
