@@ -224,4 +224,81 @@
             </div>
         </x-slot>
     </x-dialog-modal>
+
+    {{-- Candado: la siembra que se quita tiene evaluaciones --}}
+    <x-dialog-modal wire:model="avisoEvaluaciones" maxWidth="4xl">
+        <x-slot name="title">
+            <span class="text-amber-700 dark:text-amber-400"><i class="fa fa-triangle-exclamation"></i> Advertencia: siembra con evaluaciones</span>
+        </x-slot>
+        <x-slot name="content">
+            <div class="space-y-3 text-sm">
+                <p class="text-ink">
+                    {{ collect($evaluacionesVinculadas)->pluck('siembra')->unique()->implode(', ') }} tiene {{ count($evaluacionesVinculadas) }} evaluación(es) vinculada(s).
+                    Si quitas la siembra, <strong>cada una debe pasar a otra siembra o eliminarse</strong>. Nada cambia hasta que presiones Guardar en el mapa.
+                </p>
+                <div class="overflow-x-auto rounded-[10px] border border-mist">
+                    <table class="w-full text-[13px]">
+                        <thead class="bg-fog text-left text-xs text-graphite">
+                            <tr>
+                                <th class="px-3 py-2 font-medium">Evaluación</th>
+                                <th class="px-3 py-2 font-medium">Fecha</th>
+                                <th class="px-3 py-2 font-medium">Evaluador</th>
+                                <th class="px-3 py-2 text-right font-medium">Camas</th>
+                                <th class="px-3 py-2 font-medium">Por fecha corresponde a</th>
+                                <th class="px-3 py-2 font-medium">Qué hacer</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($evaluacionesVinculadas as $e)
+                                @php
+                                    $sugerida = \App\Services\Evaluacion\Siembra\EvaluacionSiembraConsulta::sugerida($e['fecha'], $destinosEvaluacion);
+                                    $accion = $decisiones[$e['clave']]['accion'] ?? 'mover';
+                                @endphp
+                                <tr class="border-t border-hairline" wire:key="aviso-{{ $e['clave'] }}">
+                                    <td class="px-3 py-2 font-medium text-ink">{{ $e['nombre_tipo'] }} <span class="block text-xs font-normal text-pewter">{{ $e['siembra'] }}</span></td>
+                                    <td class="px-3 py-2 tabular-nums">{{ $f($e['fecha']) }}</td>
+                                    <td class="px-3 py-2">{{ $e['evaluador'] ?: '—' }}</td>
+                                    <td class="px-3 py-2 text-right tabular-nums">{{ $e['camas'] }}</td>
+                                    <td class="px-3 py-2">
+                                        @if ($sugerida)
+                                            {{ $sugerida['nombre'] }}
+                                        @else
+                                            <span class="text-amber-700 dark:text-amber-400"><i class="fa fa-triangle-exclamation"></i> Ninguna otra siembra existía ese día</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-3 py-2">
+                                        <div class="flex flex-wrap gap-2">
+                                            <select wire:model.live="decisiones.{{ $e['clave'] }}.accion" class="{{ $input }}" aria-label="Qué hacer con la evaluación">
+                                                <option value="mover">Pasar a otra siembra</option>
+                                                <option value="eliminar">Eliminar evaluación</option>
+                                            </select>
+                                            @if ($accion === 'mover')
+                                                <select wire:model.live="decisiones.{{ $e['clave'] }}.destino" class="{{ $input }}" aria-label="Siembra de destino">
+                                                    <option value="">Elige la siembra…</option>
+                                                    @foreach ($destinosEvaluacion as $d)
+                                                        <option value="{{ $d['clave'] }}">{{ $d['nombre'] }}{{ $d['fecha_siembra'] ? ' · ' . $f($d['fecha_siembra']) : '' }}</option>
+                                                    @endforeach
+                                                </select>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <div class="flex flex-wrap items-end gap-2 rounded-[10px] bg-fog p-3">
+                    <label class="block"><span class="mb-1 block text-xs font-medium text-graphite">¿Son de una siembra que falta? Agrégala con su fecha</span>
+                        <input type="date" wire:model="fechaSiembraDestino" class="{{ $input }}" /></label>
+                    <button type="button" class="{{ $btn2 }}" wire:click="agregarSiembraDestino"><i class="fa fa-plus"></i> Nueva siembra</button>
+                </div>
+            </div>
+        </x-slot>
+        <x-slot name="footer">
+            <div class="flex gap-2">
+                <button type="button" class="{{ $btn2 }}" wire:click="cancelarAviso">No quitar la siembra</button>
+                <button type="button" class="{{ $btnPrincipal }}" wire:click="confirmarAviso"><i class="fa fa-check"></i> Continuar</button>
+            </div>
+        </x-slot>
+    </x-dialog-modal>
 </div>

@@ -149,11 +149,13 @@ class CampaniaInformeMensualConsulta
     {
         // Cada evaluación lleva su id, de qué pantalla viene (modelo) y el detalle por cama: así el informe enlaza a la
         // pantalla de la evaluación y el Excel a su hoja "Evaluaciones", y se puede comprobar de dónde sale el valor.
-        $poblacion = EvalPoblacionPlanta::with('detalles')->where('campania_id', $c->id)->get()
-            ->flatMap(function ($e) use ($corte, $c) {
+        $variasSiembras = $c->sectores()->count() > 1;
+        $deSiembra = fn($e) => $variasSiembras ? ' · ' . ($e->sector?->nombre ?? 'Sin siembra') : '';
+        $poblacion = EvalPoblacionPlanta::with(['detalles', 'sector'])->where('campania_id', $c->id)->get()
+            ->flatMap(function ($e) use ($corte, $c, $deSiembra) {
                 $etapa = fn(string $tipo, string $clave, $fecha, $valor, string $campoHilera, string $campoMetro) => [
                     'id' => $e->id, 'campania_id' => $c->id, 'modelo' => 'poblacion', 'clave' => "poblacion-{$e->id}-{$clave}",
-                    'tipo' => $tipo, 'fecha' => Carbon::parse($fecha)->toDateString(),
+                    'tipo' => $tipo . $deSiembra($e), 'fecha' => Carbon::parse($fecha)->toDateString(),
                     'valor' => $valor !== null ? round((float) $valor, 2) : null, 'unidad' => 'plantas/ha',
                     'evaluador' => $e->evaluador, 'metros_cama_ha' => (float) $e->metros_cama_ha,
                     'camas' => $e->detalles->sortBy('numero_cama')->map(fn($d) => [
@@ -169,10 +171,10 @@ class CampaniaInformeMensualConsulta
                         ? $etapa('Población después de resiembra', 'resiembra', $e->fecha_eval_resiembra, $e->promedio_plantas_ha_resiembra, 'eval_resiembra_plantas_x_hilera', 'plantas_por_metro_resiembra') : null,
                 ]);
             });
-        $brotes = EvalBrotesPorPiso::with('detalles')->where('campania_id', $c->id)->where('fecha', '<=', $corte)->orderBy('fecha')->get()
+        $brotes = EvalBrotesPorPiso::with(['detalles', 'sector'])->where('campania_id', $c->id)->where('fecha', '<=', $corte)->orderBy('fecha')->get()
             ->map(fn($e) => [
                 'id' => $e->id, 'campania_id' => $c->id, 'modelo' => 'brotes', 'clave' => "brotes-{$e->id}",
-                'tipo' => $e->detalles->whereNotNull('brotes_aptos_4p_actual')->isNotEmpty() ? 'Brotes aptos 2°, 3° y 4° piso' : 'Brotes aptos 2° y 3° piso', 'fecha' => Carbon::parse($e->fecha)->toDateString(),
+                'tipo' => ($e->detalles->whereNotNull('brotes_aptos_4p_actual')->isNotEmpty() ? 'Brotes aptos 2°, 3° y 4° piso' : 'Brotes aptos 2° y 3° piso') . $deSiembra($e), 'fecha' => Carbon::parse($e->fecha)->toDateString(),
                 'valor' => $e->promedio_actual_total_brotes_2y3piso, 'unidad' => 'brotes/ha',
                 'valor_n_dias' => $e->promedio_total_brotes_2y3piso_n_dias,
                 'evaluador' => $e->evaluador, 'metros_cama_ha' => (float) $e->metros_cama_ha,
@@ -510,8 +512,10 @@ class CampaniaInformeMensualConsulta
 
         $brotes = EvalBrotesPorPiso::with('detalles')->where('campania_id', $c->id)->orderBy('fecha')->get();
         $pencas = $porEtapa(function ($r) use ($brotes) {
-            $ultima = $brotes->filter(fn($b) => ($f = Carbon::parse($b->fecha)->toDateString()) >= $r['desde'] && $f <= $r['hasta'])->last();
-            return $ultima ? round((float) $ultima->promedio_actual_total_brotes_2y3piso, 2) : null;
+            // Con varias siembras: la suma de la última evaluación de cada una dentro de la etapa
+            $ultimas = $brotes->filter(fn($b) => ($f = Carbon::parse($b->fecha)->toDateString()) >= $r['desde'] && $f <= $r['hasta'])
+                ->groupBy(fn($b) => (int) $b->campania_sector_id)->map->last();
+            return $ultimas->isNotEmpty() ? round($ultimas->sum(fn($b) => (float) $b->promedio_actual_total_brotes_2y3piso), 2) : null;
         });
         $nitrogeno = $datos['fertilizacion']['nitrogeno_etapa_kg_ha'];
         $gramosNPenca = [];

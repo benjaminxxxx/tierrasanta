@@ -79,7 +79,7 @@ class CampaniaEtapaConsulta
             'total_dias' => $totalDias,
             'hoy_dia' => $inicio && !$c->fecha_fin ? (int) $inicio->diffInDays($hoy, false) : null,
             'hitos' => $hitos,
-            'sugeridas' => $this->sugeridas($c, $evaluaciones->count()),
+            'sugeridas' => $this->sugeridas($c),
             'actual' => $actual,
         ];
     }
@@ -97,7 +97,8 @@ class CampaniaEtapaConsulta
         if (!$c->fecha_inicio || $c->fecha_fin || $c->infestacion_fecha) {
             return [];
         }
-        $registradas ??= EvalBrotesPorPiso::where('campania_id', $c->id)->count();
+        // Rondas hechas: con varias siembras, las de la siembra más evaluada (no la suma)
+        $registradas ??= (int) EvalBrotesPorPiso::where('campania_id', $c->id)->selectRaw('COUNT(*) n')->groupBy('campania_sector_id')->pluck('n')->max();
         $inicio = Carbon::parse($c->fecha_inicio)->startOfDay();
         $transcurridos = (int) $inicio->diffInDays(now()->startOfDay(), false);
 
@@ -126,7 +127,8 @@ class CampaniaEtapaConsulta
     {
         $dias = CampaniaEtapaReglas::diasEvaluacionBrotes();
         $tope = now()->subDays(CampaniaEtapaReglas::diasMaximoSugerencia())->toDateString();
-        $conteo = EvalBrotesPorPiso::selectRaw('campania_id, COUNT(*) n')->groupBy('campania_id')->pluck('n', 'campania_id');
+        $conteo = EvalBrotesPorPiso::selectRaw('campania_id, campania_sector_id, COUNT(*) n')->groupBy('campania_id', 'campania_sector_id')->get()
+            ->groupBy('campania_id')->map(fn($g) => (int) $g->max('n'));
 
         $abiertas = CampoCampania::whereNull('fecha_fin')->whereNotNull('fecha_inicio')->where('fecha_inicio', '>=', $tope)
             ->orderBy('campo')->get();

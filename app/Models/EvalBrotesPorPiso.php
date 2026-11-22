@@ -10,6 +10,7 @@ class EvalBrotesPorPiso extends Model
 
     protected $fillable = [
         'campania_id',
+        'campania_sector_id',
         'fecha',
         'metros_cama_ha',
         'evaluador',
@@ -33,6 +34,13 @@ class EvalBrotesPorPiso extends Model
     {
         return $this->belongsTo(CampoCampania::class, 'campania_id');
     }
+
+    /** Siembra evaluada (grupo de hileras de la campaña) */
+    public function sector()
+    {
+        return $this->belongsTo(CampaniaSector::class, 'campania_sector_id');
+    }
+
     public function creadoPor()
     {
         return $this->belongsTo(User::class, 'creado_por');

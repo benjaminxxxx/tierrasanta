@@ -54,7 +54,7 @@ class EvaluacionBrotesComponent extends Component
     public function eliminarBrotesXPiso($brotesId)
     {
         $e = \App\Models\EvalBrotesPorPiso::find($brotesId);
-        $this->confirm('¿Eliminar la evaluación del ' . $e?->fecha?->format('d/m/Y') . '? Es la última de la campaña; queda registrada en la auditoría.', [
+        $this->confirm('¿Eliminar la evaluación del ' . $e?->fecha?->format('d/m/Y') . '? Es la última de esta siembra; queda registrada en la auditoría.', [
             'onConfirmed' => 'confirmareliminarBrotesXPiso',
             'data' => [
                 'evaluacionBrotesXPisoId' => $brotesId,

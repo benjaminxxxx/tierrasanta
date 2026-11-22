@@ -3,11 +3,15 @@
 namespace App\Livewire\Campania;
 
 use App\Constants\Permisos;
+use App\Exceptions\ErrorControlado;
+use App\Exceptions\SiembraConEvaluaciones;
 use App\Models\CampoCampania;
 use App\Services\Campania\Sector\CampaniaSectorConsulta;
 use App\Services\Campania\Sector\CampaniaSectorProceso;
 use App\Services\Campania\Sector\CampaniaSectorReglas;
+use App\Services\Evaluacion\Siembra\EvaluacionSiembraConsulta;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -30,6 +34,17 @@ class CampaniaMapaEtapasComponent extends Component
     public array $sectores = [];
     /** Fecha en que se ve el mapa */
     public ?string $fecha = null;
+
+    /** Aviso al quitar una siembra con evaluaciones */
+    public bool $avisoEvaluaciones = false;
+    /** Clave de la siembra que se quiere quitar (null = lo pidió el guardado); el índice cambia si se agrega otra */
+    public ?string $siembraPorQuitar = null;
+    public array $evaluacionesVinculadas = [];
+    /** clave de la evaluación => ['accion' => mover|eliminar, 'destino' => clave de la siembra] */
+    public array $decisiones = [];
+    /** Lo ya decidido, se aplica al guardar el mapa */
+    public array $decisionesConfirmadas = [];
+    public ?string $fechaSiembraDestino = null;
 
     #[On('verMapaEtapas')]
     public function verMapaEtapas(int $campaniaId): void
@@ -77,7 +92,14 @@ class CampaniaMapaEtapasComponent extends Component
     public function cancelar(): void
     {
         $this->editando = false;
+        $this->limpiarAviso();
+        $this->decisionesConfirmadas = [];
         $this->cargar($this->campania());
+    }
+
+    private function limpiarAviso(): void
+    {
+        $this->reset(['avisoEvaluaciones', 'siembraPorQuitar', 'evaluacionesVinculadas', 'decisiones', 'fechaSiembraDestino']);
     }
 
     /** Al cambiar el número de hileras, los grupos se estiran o encogen en proporción. */
@@ -129,15 +151,131 @@ class CampaniaMapaEtapasComponent extends Component
             $hasta = $s['hilera_hasta'];
             $etapas = $s['etapas'];
         }
-        $this->sectores[] = ['nombre' => CampaniaSectorReglas::nombreSiembra(count($this->sectores) + 1), 'fecha_siembra' => null,
+        $this->sectores[] = ['clave' => 'n' . Str::random(10), 'nombre' => CampaniaSectorReglas::nombreSiembra(count($this->sectores) + 1), 'fecha_siembra' => null,
             'hilera_desde' => $desde, 'hilera_hasta' => $hasta, 'origen' => 'manual', 'etapas' => $etapas];
         $this->sectores = collect($this->sectores)->sortBy('hilera_desde')->values()->all();
     }
 
+    /** Candado: si la siembra tiene evaluaciones, primero se decide qué pasa con ellas. */
     public function quitarGrupo(int $i): void
     {
+        try {
+            $id = $this->sectores[$i]['id'] ?? null;
+            $c = $this->campania();
+            $vinculadas = $id ? app(EvaluacionSiembraConsulta::class)->evaluaciones($c, [(int) $id]) : [];
+            if ($vinculadas) {
+                EvaluacionSiembraConsulta::exigirAbierta($c);
+                $this->abrirAviso($vinculadas, $this->claveDe($this->sectores[$i]));
+                return;
+            }
+            $this->sacarSiembra($i);
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+        }
+    }
+
+    private function sacarSiembra(int $i): void
+    {
+        $clave = $this->claveDe($this->sectores[$i] ?? []);
         unset($this->sectores[$i]);
         $this->sectores = array_values($this->sectores);
+        // Lo que iba a pasar a esta siembra (aún sin guardar) vuelve a preguntarse al guardar
+        $this->decisionesConfirmadas = array_filter($this->decisionesConfirmadas,
+            fn($d) => $d['accion'] !== 'mover' || (string) $d['destino'] !== $clave);
+    }
+
+    /** Identifica a la siembra en el mapa aunque cambien sus hileras o su fecha antes de guardar. */
+    private function claveDe(array $s): string
+    {
+        return (string) ($s['clave'] ?? (!empty($s['id']) ? "s{$s['id']}" : ''));
+    }
+
+    private function abrirAviso(array $vinculadas, ?string $clave): void
+    {
+        $this->siembraPorQuitar = $clave;
+        $this->evaluacionesVinculadas = $vinculadas;
+        $this->fechaSiembraDestino = null;
+        $destinos = $this->destinos();
+        $this->decisiones = [];
+        foreach ($vinculadas as $e) {
+            $sugerida = EvaluacionSiembraConsulta::sugerida($e['fecha'], $destinos);
+            $this->decisiones[$e['clave']] = $this->decisionesConfirmadas[$e['clave']]
+                ?? ['accion' => 'mover', 'destino' => $sugerida['clave'] ?? ''];
+        }
+        $this->avisoEvaluaciones = true;
+    }
+
+    /** Siembras que quedan en el mapa y pueden recibir las evaluaciones. */
+    private function destinos(): array
+    {
+        $quitadas = array_unique(array_column($this->evaluacionesVinculadas, 'sector_id'));
+        return collect($this->sectores)
+            ->reject(fn($s) => !empty($s['id']) && in_array((int) $s['id'], $quitadas, false))
+            ->map(fn($s) => ['clave' => $this->claveDe($s), 'nombre' => $s['nombre'], 'fecha_siembra' => $s['fecha_siembra'] ?? null])
+            ->values()->all();
+    }
+
+    /** "Corregir con una siembra nueva": se agrega al mapa y queda como destino de las evaluaciones sin destino. */
+    public function agregarSiembraDestino(): void
+    {
+        try {
+            $fecha = trim((string) $this->fechaSiembraDestino);
+            if ($fecha === '') {
+                throw new ErrorControlado('Elige la fecha de la siembra nueva.');
+            }
+            $fecha = Carbon::parse($fecha)->toDateString();
+            if (collect($this->sectores)->contains(fn($s) => ($s['fecha_siembra'] ?? null) === $fecha)) {
+                throw new ErrorControlado('Ya hay una siembra con esa fecha: elígela en la lista.');
+            }
+            $antes = array_map(fn($s) => $this->claveDe($s), $this->sectores);
+            $this->agregarGrupo();
+            $i = collect($this->sectores)->search(fn($s) => !in_array($this->claveDe($s), $antes, true));
+            if ($i === false) {
+                return; // sin hileras: agregarGrupo ya avisó
+            }
+            $inicio = Carbon::parse($this->campania()->fecha_inicio)->toDateString();
+            $this->sectores[$i]['fecha_siembra'] = $fecha;
+            $this->sectores[$i]['etapas'] = [['etapa' => 'siembra', 'fecha_desde' => max($fecha, $inicio)]];
+            $nueva = $this->claveDe($this->sectores[$i]);
+            foreach ($this->decisiones as $clave => $d) {
+                if ($d['accion'] === 'mover' && !$d['destino']) {
+                    $this->decisiones[$clave]['destino'] = $nueva;
+                }
+            }
+            $this->fechaSiembraDestino = null;
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+        }
+    }
+
+    public function cancelarAviso(): void
+    {
+        $this->limpiarAviso();
+    }
+
+    /** Guarda lo decidido; se aplica junto con el mapa, al presionar Guardar. */
+    public function confirmarAviso(): void
+    {
+        try {
+            $claves = array_column($this->destinos(), 'clave');
+            foreach ($this->evaluacionesVinculadas as $e) {
+                $d = $this->decisiones[$e['clave']] ?? [];
+                if (($d['accion'] ?? '') === 'mover' && !in_array((string) ($d['destino'] ?? ''), $claves, true)) {
+                    throw new ErrorControlado("Elige a qué siembra pasa la evaluación de {$e['nombre_tipo']} del " . Carbon::parse($e['fecha'])->format('d/m/Y') . ', o márcala para eliminar.');
+                }
+            }
+            $this->decisionesConfirmadas = array_merge($this->decisionesConfirmadas, $this->decisiones);
+            if ($this->siembraPorQuitar !== null) {
+                $i = collect($this->sectores)->search(fn($s) => $this->claveDe($s) === $this->siembraPorQuitar);
+                if ($i !== false) {
+                    $this->sacarSiembra($i);
+                }
+            }
+            $this->limpiarAviso();
+            $this->alert('info', 'Presiona Guardar para aplicar los cambios.');
+        } catch (\Throwable $e) {
+            $this->errorAlert($e);
+        }
     }
 
     public function agregarEtapa(int $i): void
@@ -156,11 +294,14 @@ class CampaniaMapaEtapasComponent extends Component
         try {
             abort_unless($this->puedeEditar(), 403);
             $c = $this->campania();
-            app(CampaniaSectorProceso::class)->guardar($c, (int) $this->hileras, $this->sectores);
+            app(CampaniaSectorProceso::class)->guardar($c, (int) $this->hileras, $this->sectores, null, 'mapa', $this->decisionesConfirmadas);
             $this->editando = false;
+            $this->decisionesConfirmadas = [];
             $this->cargar($c);
             $this->alert('success', 'Mapa de etapas guardado.');
             $this->dispatch('campaniaInsertada');
+        } catch (SiembraConEvaluaciones $e) {
+            $this->abrirAviso($e->evaluaciones, null);
         } catch (\Throwable $e) {
             $this->errorAlert($e);
         }
@@ -211,6 +352,7 @@ class CampaniaMapaEtapasComponent extends Component
             'fuera' => $fuera,
             'etapas' => CampaniaSectorReglas::ETAPAS,
             'puedeEditar' => $this->puedeEditar(),
+            'destinosEvaluacion' => $this->avisoEvaluaciones ? $this->destinos() : [],
         ]);
     }
 }

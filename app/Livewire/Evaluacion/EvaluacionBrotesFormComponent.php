@@ -18,17 +18,17 @@ use Livewire\Component;
 
 /**
  * Evaluaciones de brotes por piso de una campaña:
- * 1. Campo y campaña.
- * 2. Metros de cama/ha (los mismos para todas las evaluaciones de la campaña) y todas las evaluaciones por fecha,
- *    con sus promedios y la diferencia contra la anterior (para ver la evolución).
- * 3. Al elegir una (o "Nueva evaluación"): fecha, evaluador y la tabla de camas.
+ * 1. Campo, campaña y qué siembra se evalúa (se puede agregar otra desde aquí).
+ * 2. Metros de cama/ha de esa siembra y todas sus evaluaciones por fecha, con sus promedios y la diferencia contra la
+ *    anterior (para ver la evolución).
+ * 3. Al elegir una (o "Nueva evaluación"): fecha, evaluador y la tabla de camas. En campaña cerrada, solo consulta.
  *
  * Hay una sola tabla de camas a la vez. Sus eventos llevan el id de este componente ($idTable) para no
  * confundirse con otra tabla de la página.
  */
 class EvaluacionBrotesFormComponent extends Component
 {
-    use LivewireAlert, \App\Traits\HandlesAlerts;
+    use LivewireAlert, \App\Traits\HandlesAlerts, \App\Traits\ConSiembraEvaluacion;
 
     public $mostrarFormulario = false;
     public $idTable;
@@ -73,7 +73,10 @@ class EvaluacionBrotesFormComponent extends Component
         $this->mostrarFormulario = true;
         if ($campania = $campaniaId ? CampoCampania::find($campaniaId) : null) {
             $this->elegirCampania($campania);
-            $this->nuevaEvaluacion();
+            // Con varias siembras primero se elige cuál; en campaña cerrada solo se consulta
+            if ($this->siembraId && !$this->campaniaCerrada) {
+                $this->nuevaEvaluacion();
+            }
         }
     }
 
@@ -81,11 +84,14 @@ class EvaluacionBrotesFormComponent extends Component
     #[On('editarEvaluacionBrotesPorPiso')]
     public function editarEvaluacionBrotesPorPiso($evaluacionBrotesXPisoId)
     {
-        abort_unless($this->puede(Permisos::BROTE_EVALUACION_EDITAR), 403);
+        abort_unless($this->puede(Permisos::BROTE_EVALUACION_VER) || $this->puede(Permisos::BROTE_EVALUACION_EDITAR), 403);
         $this->limpiar();
         $evaluacion = EvalBrotesPorPiso::with('campania')->findOrFail($evaluacionBrotesXPisoId);
         $this->mostrarFormulario = true;
         $this->elegirCampania($evaluacion->campania);
+        $evaluacion->refresh(); // pudo vincularse a su siembra al abrir la campaña
+        $this->siembraId = $evaluacion->campania_sector_id;
+        $this->metros_cama_ha = $this->siembraId ? $this->servicio()->metrosCamaDeSiembra($this->siembraId) : null;
         $this->abrirEvaluacion($evaluacion->id);
     }
 
@@ -94,12 +100,38 @@ class EvaluacionBrotesFormComponent extends Component
         $this->campoSeleccionado = $campania->campo;
         $this->campaniasDisponibles = app(CampaniaServicio::class)->buscarCampaniasPorCampo($campania->campo);
         $this->campaniaSeleccionada = $campania->id;
-        $this->metros_cama_ha = $this->servicio()->metrosCamaDeCampania($campania->id);
+        $this->cargarSiembras($campania);
+        $this->metros_cama_ha = $this->siembraId ? $this->servicio()->metrosCamaDeSiembra($this->siembraId) : null;
+    }
+
+    // ------------------------------------------------------------------ siembra evaluada
+
+    protected function alCambiarSiembra(): void
+    {
+        $this->reset(['editando', 'fecha', 'evaluador']);
+        $this->metros_cama_ha = $this->siembraId ? $this->servicio()->metrosCamaDeSiembra($this->siembraId) : null;
+        $this->cargarTabla([]);
+    }
+
+    protected function campaniaDeSiembras(): ?CampoCampania
+    {
+        return $this->campaniaSeleccionada ? CampoCampania::find($this->campaniaSeleccionada) : null;
+    }
+
+    protected function puedeAgregarSiembra(): bool
+    {
+        return $this->puede(Permisos::BROTE_EVALUACION_CREAR);
+    }
+
+    protected function puedeCorregirSiembra(): bool
+    {
+        return $this->puede(Permisos::BROTE_EVALUACION_EDITAR);
     }
 
     public function updatedCampoSeleccionado()
     {
         $this->reset(['campaniaSeleccionada', 'metros_cama_ha', 'editando', 'fecha', 'evaluador']);
+        $this->limpiarSiembras();
         $this->campaniasDisponibles = $this->campoSeleccionado
             ? app(CampaniaServicio::class)->buscarCampaniasPorCampo($this->campoSeleccionado) : [];
         $this->cargarTabla([]);
@@ -109,7 +141,12 @@ class EvaluacionBrotesFormComponent extends Component
     {
         $this->reset(['editando', 'fecha', 'evaluador']);
         $this->resetErrorBag();
-        $this->metros_cama_ha = $this->campaniaSeleccionada ? $this->servicio()->metrosCamaDeCampania((int) $this->campaniaSeleccionada) : null;
+        $this->limpiarSiembras();
+        $this->metros_cama_ha = null;
+        if ($campania = $this->campaniaDeSiembras()) {
+            $this->cargarSiembras($campania);
+            $this->metros_cama_ha = $this->siembraId ? $this->servicio()->metrosCamaDeSiembra($this->siembraId) : null;
+        }
         $this->cargarTabla([]);
     }
 
@@ -129,6 +166,14 @@ class EvaluacionBrotesFormComponent extends Component
     public function nuevaEvaluacion(): void
     {
         abort_unless($this->puede(Permisos::BROTE_EVALUACION_CREAR), 403);
+        if ($this->campaniaCerrada) {
+            $this->errorAlert('La campaña está cerrada: sus evaluaciones son solo de consulta.');
+            return;
+        }
+        if (!$this->siembraId) {
+            $this->errorAlert('Elige primero qué siembra vas a evaluar.');
+            return;
+        }
         $this->resetErrorBag();
         $this->editando = 'nueva';
         $this->fecha = Carbon::now()->toDateString();
@@ -152,12 +197,14 @@ class EvaluacionBrotesFormComponent extends Component
             $id = $this->servicio()->registrar([
                 'id' => $esNueva ? null : $this->editando,
                 'campania_id' => $this->campaniaSeleccionada,
+                'campania_sector_id' => $this->siembraId,
                 'fecha' => $this->fecha,
                 'evaluador' => $this->evaluador,
                 'metros_cama_ha' => $this->metros_cama_ha,
                 'detalles' => $filas,
             ]);
             $this->resetErrorBag();
+            $this->cargarSiembras(CampoCampania::findOrFail($this->campaniaSeleccionada), $this->siembraId);
             $this->dispatch('brotesPorPisoRegistrado');
             $this->abrirEvaluacion($id); // la tabla vuelve con los valores por hectárea recalculados
             $this->alert('success', $esNueva ? 'Evaluación registrada.' : 'Evaluación actualizada.');
@@ -178,6 +225,7 @@ class EvaluacionBrotesFormComponent extends Component
             if ((string) $this->editando === (string) $id) {
                 $this->cerrarEditor();
             }
+            $this->cargarSiembras(CampoCampania::findOrFail($this->campaniaSeleccionada), $this->siembraId);
             $this->dispatch('brotesPorPisoRegistrado');
             $this->alert('success', 'Evaluación eliminada (queda en la auditoría).');
         } catch (\Throwable $th) {
@@ -187,13 +235,15 @@ class EvaluacionBrotesFormComponent extends Component
 
     private function cargarTabla(array $filas): void
     {
-        $this->dispatch("cargarDataBrotesXPiso-{$this->idTable}", filas: $filas);
+        $soloLectura = $this->campaniaCerrada || ($this->editando !== 'nueva' && !$this->puede(Permisos::BROTE_EVALUACION_EDITAR));
+        $this->dispatch("cargarDataBrotesXPiso-{$this->idTable}", filas: $filas, soloLectura: $soloLectura);
     }
 
     private function limpiar(): void
     {
         $this->resetErrorBag();
         $this->reset(['campoSeleccionado', 'campaniasDisponibles', 'campaniaSeleccionada', 'metros_cama_ha', 'editando', 'fecha', 'evaluador']);
+        $this->limpiarSiembras();
         $this->cargarTabla([]);
     }
 
@@ -203,11 +253,15 @@ class EvaluacionBrotesFormComponent extends Component
 
         return view('livewire.evaluacion.evaluacion-brotes-form-component', [
             'campania' => $campania,
-            'evaluaciones' => $campania ? $this->servicio()->evaluacionesDeCampania($campania->id) : [],
+            'evaluaciones' => $campania && $this->siembraId ? $this->servicio()->evaluacionesDeSiembra($campania->id, $this->siembraId) : [],
+            'siembraActual' => $this->siembraActual(),
             'promedios' => BrotesPorPisoServicio::PROMEDIOS,
-            'puedeCrear' => $this->puede(Permisos::BROTE_EVALUACION_CREAR),
-            'puedeEditar' => $this->puede(Permisos::BROTE_EVALUACION_EDITAR),
-            'puedeEliminar' => $this->puede(Permisos::BROTE_EVALUACION_ELIMINAR),
+            // En campaña cerrada las evaluaciones son solo datos
+            'puedeCrear' => !$this->campaniaCerrada && $this->puede(Permisos::BROTE_EVALUACION_CREAR),
+            'puedeEditar' => !$this->campaniaCerrada && $this->puede(Permisos::BROTE_EVALUACION_EDITAR),
+            'puedeEliminar' => !$this->campaniaCerrada && $this->puede(Permisos::BROTE_EVALUACION_ELIMINAR),
+            'puedeAgregarSiembra' => !$this->campaniaCerrada && $this->puedeAgregarSiembra(),
+            'puedeCorregirSiembra' => !$this->campaniaCerrada && $this->puedeCorregirSiembra(),
         ]);
     }
 }

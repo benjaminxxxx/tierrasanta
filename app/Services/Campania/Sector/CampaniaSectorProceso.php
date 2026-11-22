@@ -3,10 +3,13 @@
 namespace App\Services\Campania\Sector;
 
 use App\Exceptions\ErrorControlado;
+use App\Exceptions\SiembraConEvaluaciones;
 use App\Models\CampaniaSector;
 use App\Models\Campo;
 use App\Models\CampoCampania;
 use App\Models\Siembra;
+use App\Services\Evaluacion\Siembra\EvaluacionSiembraConsulta;
+use App\Services\Evaluacion\Siembra\EvaluacionSiembraProceso;
 use App\Services\Reporte\AuditoriaServicio;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -154,21 +157,37 @@ class CampaniaSectorProceso
             }
         }
 
-        DB::transaction(function () use ($c, $rangos, $fechasSiembra, $etapasPorSiembra) {
-            $c->sectores()->delete();
+        // Las siembras que quedan conservan su id (las evaluaciones apuntan a él); una que sobra no puede tener evaluaciones
+        $existentes = $c->sectores()->get()->values();
+        $sobran = $existentes->slice(count($rangos));
+        $vinculadas = app(EvaluacionSiembraConsulta::class)->evaluaciones($c, $sobran->pluck('id')->all());
+        if ($vinculadas) {
+            throw new ErrorControlado('No se volvió a detectar: ' . $sobran->whereIn('id', array_column($vinculadas, 'sector_id'))->pluck('nombre')->implode(', ')
+                . ' tiene ' . count($vinculadas) . ' evaluación(es). Quita esa siembra desde "Corregir hileras y etapas" para decidir qué hacer con ellas.');
+        }
+
+        DB::transaction(function () use ($c, $rangos, $fechasSiembra, $etapasPorSiembra, $existentes, $sobran) {
             foreach ($rangos as $k => [$desde, $hasta]) {
-                $sector = CampaniaSector::create([
+                $datos = [
                     'campo_campania_id' => $c->id,
                     'nombre' => CampaniaSectorReglas::nombreSiembra($k + 1),
                     'fecha_siembra' => $fechasSiembra[$k] ?? null,
                     'hilera_desde' => $desde,
                     'hilera_hasta' => $hasta,
                     'origen' => 'detectado',
-                ]);
+                ];
+                $sector = $existentes[$k] ?? null;
+                if ($sector) {
+                    $sector->update($datos);
+                } else {
+                    $sector = CampaniaSector::create($datos);
+                }
+                $sector->etapas()->delete();
                 foreach ($etapasPorSiembra[$k] as $etapa => $fecha) {
                     $sector->etapas()->create(['etapa' => $etapa, 'fecha_desde' => $fecha]);
                 }
             }
+            CampaniaSector::whereIn('id', $sobran->pluck('id'))->delete();
         });
         $this->sincronizarRegistro($c, 'deteccion', null, $porque);
         return count($rangos);
@@ -246,7 +265,11 @@ class CampaniaSectorProceso
         $n = $varios = $respetadas = 0;
         CampoCampania::query()->whereNotNull('fecha_inicio')->orderBy('id')->chunkById(100, function ($campanias) use ($forzar, &$n, &$varios, &$respetadas) {
             foreach ($campanias as $c) {
-                $grupos = $this->detectar($c, $forzar);
+                try {
+                    $grupos = $this->detectar($c, $forzar);
+                } catch (ErrorControlado) {
+                    $grupos = 0; // Tiene evaluaciones en una siembra que la detección quitaría: se respeta
+                }
                 $grupos === 0 ? $respetadas++ : $n++;
                 if ($grupos > 1) {
                     $varios++;
@@ -260,11 +283,26 @@ class CampaniaSectorProceso
      * Guarda las hileras del campo y las siembras con sus etapas (corrección a mano).
      *
      * @param array $sectores [['nombre', 'fecha_siembra', 'hilera_desde', 'hilera_hasta', 'etapas' => [['etapa', 'fecha_desde'], …]], …]
-     * @param string $origen de una siembra nueva en el registro: mapa | tarjeta | horas
+     * @param string $origen de una siembra nueva en el registro: mapa | tarjeta | horas | evaluacion
+     * @param array $decisiones qué pasa con las evaluaciones de las siembras que se quitan:
+     *                          clave => ['accion' => 'eliminar'] o ['accion' => 'mover', 'destino' => clave de la siembra]
+     * @throws SiembraConEvaluaciones si se quita una siembra con evaluaciones sin decidir
      */
-    public function guardar(CampoCampania $c, int $hileras, array $sectores, ?string $motivo = null, string $origen = 'mapa'): void
+    public function guardar(CampoCampania $c, int $hileras, array $sectores, ?string $motivo = null, string $origen = 'mapa', array $decisiones = []): void
     {
         $limpios = $this->validar($c, $hileras, $sectores);
+
+        // Candado: una siembra con evaluaciones no se quita sin decidir qué pasa con ellas (en campaña cerrada, nunca)
+        $quedan = array_values(array_filter(array_column($limpios, 'id')));
+        $quitadas = $c->sectores()->pluck('id')->diff($quedan)->values()->all();
+        $vinculadas = app(EvaluacionSiembraConsulta::class)->evaluaciones($c, $quitadas);
+        if ($vinculadas) {
+            EvaluacionSiembraConsulta::exigirAbierta($c);
+            $sinDecidir = array_values(array_filter($vinculadas, fn($e) => !in_array($decisiones[$e['clave']]['accion'] ?? null, ['mover', 'eliminar'], true)));
+            if ($sinDecidir) {
+                throw new SiembraConEvaluaciones($vinculadas);
+            }
+        }
 
         // No dejar fuera de su etapa labores que hoy sí están en ella
         $registros = $this->consulta->registros($c);
@@ -281,25 +319,40 @@ class CampaniaSectorProceso
                 . 'Alguna siembra debe estar en esa etapa en esas fechas (o corrige primero la labor en el registro diario).');
         }
 
-        DB::transaction(function () use ($c, $hileras, $limpios, $antes, $motivo) {
+        DB::transaction(function () use ($c, $hileras, $limpios, $antes, $motivo, $quitadas, $vinculadas, $decisiones) {
             $campoAntes = (int) Campo::whereKey($c->campo)->value('hileras');
             if ($campoAntes !== $hileras) {
                 Campo::whereKey($c->campo)->update(['hileras' => $hileras]);
             }
-            $c->sectores()->delete();
+            // Cada siembra conserva su id al editarla: las evaluaciones siguen en ella aunque cambien sus hileras o fecha
+            $sectorPorClave = [];
             foreach ($limpios as $s) {
-                $sector = CampaniaSector::create([
+                $datos = [
                     'campo_campania_id' => $c->id,
                     'nombre' => $s['nombre'],
                     'fecha_siembra' => $s['fecha_siembra'],
                     'hilera_desde' => $s['hilera_desde'],
                     'hilera_hasta' => $s['hilera_hasta'],
                     'origen' => 'manual',
-                ]);
+                ];
+                $sector = !empty($s['id']) ? CampaniaSector::find($s['id']) : null;
+                if ($sector) {
+                    $sector->update($datos);
+                } else {
+                    $sector = CampaniaSector::create($datos);
+                }
+                $sector->etapas()->delete();
                 foreach ($s['etapas'] as $e) {
                     $sector->etapas()->create($e);
                 }
+                if ($s['clave']) {
+                    $sectorPorClave[$s['clave']] = $sector->id;
+                }
             }
+            if ($vinculadas) {
+                app(EvaluacionSiembraProceso::class)->aplicarDecisiones($c, $vinculadas, $decisiones, $sectorPorClave);
+            }
+            CampaniaSector::whereIn('id', $quitadas)->delete();
             AuditoriaServicio::registrar(CampoCampania::class, $c->id, 'editar',
                 ['hileras' => $campoAntes, 'siembras' => $this->resumen($antes)],
                 ['hileras' => $hileras, 'siembras' => $this->resumen($limpios)],
@@ -379,6 +432,7 @@ class CampaniaSectorProceso
         $limpios = [];
         $ocupadas = [];
         $fechasSiembra = [];
+        $idsPropios = $c->sectores()->pluck('id')->flip();
         foreach (array_values($sectores) as $i => $s) {
             $nombre = trim((string) ($s['nombre'] ?? '')) ?: CampaniaSectorReglas::nombreSiembra($i + 1);
             $desde = (int) ($s['hilera_desde'] ?? 0);
@@ -438,7 +492,9 @@ class CampaniaSectorProceso
                 $etapas["{$etapa}|{$fecha}"] = ['etapa' => $etapa, 'fecha_desde' => $fecha];
             }
             $etapas = collect($etapas)->sortBy('fecha_desde')->values()->all();
-            $limpios[] = ['nombre' => mb_substr($nombre, 0, 40), 'fecha_siembra' => $fechaSiembra ?: null,
+            $idPropio = isset($s['id'], $idsPropios[$s['id']]) ? (int) $s['id'] : null;
+            $limpios[] = ['id' => $idPropio, 'clave' => $s['clave'] ?? ($idPropio ? "s{$idPropio}" : null),
+                'nombre' => mb_substr($nombre, 0, 40), 'fecha_siembra' => $fechaSiembra ?: null,
                 'hilera_desde' => $desde, 'hilera_hasta' => $hasta, 'etapas' => $etapas];
         }
         return collect($limpios)->sortBy('hilera_desde')->values()->all();

@@ -13,7 +13,7 @@
     <div class="flex flex-wrap items-end justify-between gap-3">
         <div>
             <h1 class="text-2xl font-semibold text-ink">Evaluación de brotes por piso</h1>
-            <p class="text-sm text-graphite">Última evaluación de cada campaña. Por ha = brotes ÷ longitud de cama × metros de cama por ha.</p>
+            <p class="text-sm text-graphite">Última evaluación de cada siembra. Por ha = brotes ÷ longitud de cama × metros de cama por ha.</p>
         </div>
         @can(\App\Constants\Permisos::BROTE_EVALUACION_CREAR)
             <button type="button" class="{{ $btnPrincipal }}" @click="$wire.dispatch('agregarEvaluacionBrote')">
@@ -74,7 +74,10 @@
                             class="border-t border-hairline {{ $resaltada ? 'bg-amber-50 dark:bg-amber-400/10' : 'hover:bg-fog' }}"
                             @if ($resaltada) x-init="$el.scrollIntoView({ block: 'center' })" @endif>
                             <td class="{{ $td }} text-right tabular-nums text-pewter">{{ $evaluacionesBrotes->firstItem() + $index }}</td>
-                            <td class="{{ $td }} font-medium text-ink">{{ $e->campania->campo }} · {{ $e->campania->nombre_campania }}</td>
+                            <td class="{{ $td }} font-medium text-ink">
+                                {{ $e->campania->campo }} · {{ $e->campania->nombre_campania }}
+                                <span class="block text-xs font-normal text-pewter">{{ $e->sector?->nombre ?? 'Sin siembra' }}@if ($e->campania->fecha_fin) · <i class="fa fa-lock"></i> cerrada @endif</span>
+                            </td>
                             <td class="{{ $td }} tabular-nums text-ink">
                                 {{ formatear_fecha($e->fecha) }}
                                 @if ($e->evaluaciones_campania > 1)
@@ -107,18 +110,25 @@
                                             <i class="fa fa-file-excel text-xs"></i>
                                         </a>
                                     @endif
-                                    @can(\App\Constants\Permisos::BROTE_EVALUACION_EDITAR)
-                                        <button type="button" class="{{ $icono }}" title="Editar"
+                                    @if ($e->campania->fecha_fin)
+                                        <button type="button" class="{{ $icono }}" title="Ver (campaña cerrada)"
                                             @click="$wire.dispatch('editarEvaluacionBrotesPorPiso',{evaluacionBrotesXPisoId:{{ $e->id }}})">
-                                            <i class="fa fa-pen text-xs"></i>
+                                            <i class="fa fa-eye text-xs"></i>
                                         </button>
-                                    @endcan
-                                    @can(\App\Constants\Permisos::BROTE_EVALUACION_ELIMINAR)
-                                        <button type="button" class="{{ $icono }} hover:!text-red-700 dark:hover:!text-red-400" title="Eliminar"
-                                            wire:click="eliminarBrotesXPiso({{ $e->id }})">
-                                            <i class="fa fa-trash text-xs"></i>
-                                        </button>
-                                    @endcan
+                                    @else
+                                        @can(\App\Constants\Permisos::BROTE_EVALUACION_EDITAR)
+                                            <button type="button" class="{{ $icono }}" title="Editar"
+                                                @click="$wire.dispatch('editarEvaluacionBrotesPorPiso',{evaluacionBrotesXPisoId:{{ $e->id }}})">
+                                                <i class="fa fa-pen text-xs"></i>
+                                            </button>
+                                        @endcan
+                                        @can(\App\Constants\Permisos::BROTE_EVALUACION_ELIMINAR)
+                                            <button type="button" class="{{ $icono }} hover:!text-red-700 dark:hover:!text-red-400" title="Eliminar"
+                                                wire:click="eliminarBrotesXPiso({{ $e->id }})">
+                                                <i class="fa fa-trash text-xs"></i>
+                                            </button>
+                                        @endcan
+                                    @endif
                                 </div>
                             </td>
                         </tr>

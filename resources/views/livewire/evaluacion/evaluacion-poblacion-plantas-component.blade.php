@@ -87,10 +87,11 @@
                             {{-- COL 2: Campo + Campaña --}}
                             <x-td class="text-center">
                                 {{ $p->campania->campo }} - {{ $p->campania->nombre_campania }}
+                                <span class="block text-xs text-muted-foreground">{{ $p->sector?->nombre ?? 'Sin siembra' }}@if ($p->campania->fecha_fin) · <i class="fa fa-lock"></i> cerrada @endif</span>
                             </x-td>
 
                             <x-td class="text-center">{{ $p->area_lote }}</x-td>
-                            <x-td class="text-center">{{ formatear_fecha($p->campania->fecha_siembra) }}</x-td>
+                            <x-td class="text-center">{{ formatear_fecha($p->sector?->fecha_siembra ?? $p->campania->fecha_siembra) }}</x-td>
                             <x-td class="text-center">{{ $p->evaluador }}</x-td>
                             <x-td class="text-center">{{ $p->metros_cama_ha }}</x-td>
 
@@ -140,18 +141,25 @@
                                         <i class="fa fa-chevron-down transition-transform duration-200"
                                             :class="abiertos[{{ $p->id }}] ? 'rotate-180' : ''"></i>
                                     </x-button>
-                                    @can(\App\Constants\Permisos::PLANTA_EVALUACION_EDITAR)
-                                        <x-button variant="secondary"
+                                    @if ($p->campania->fecha_fin)
+                                        <x-button variant="secondary" title="Ver (campaña cerrada)"
                                             @click="$wire.dispatch('editarPoblacionPlanta', { poblacionId: {{ $p->id }} })">
-                                            <i class="fa fa-edit"></i>
+                                            <i class="fa fa-eye"></i>
                                         </x-button>
-                                    @endcan
+                                    @else
+                                        @can(\App\Constants\Permisos::PLANTA_EVALUACION_EDITAR)
+                                            <x-button variant="secondary"
+                                                @click="$wire.dispatch('editarPoblacionPlanta', { poblacionId: {{ $p->id }} })">
+                                                <i class="fa fa-edit"></i>
+                                            </x-button>
+                                        @endcan
 
-                                    @can(\App\Constants\Permisos::PLANTA_EVALUACION_ELIMINAR)
-                                        <x-button variant="danger" wire:click="eliminarPoblacionPlanta({{ $p->id }})">
-                                            <i class="fa fa-trash"></i>
-                                        </x-button>
-                                    @endcan
+                                        @can(\App\Constants\Permisos::PLANTA_EVALUACION_ELIMINAR)
+                                            <x-button variant="danger" wire:click="eliminarPoblacionPlanta({{ $p->id }})">
+                                                <i class="fa fa-trash"></i>
+                                            </x-button>
+                                        @endcan
+                                    @endif
 
 
                                 </x-flex>

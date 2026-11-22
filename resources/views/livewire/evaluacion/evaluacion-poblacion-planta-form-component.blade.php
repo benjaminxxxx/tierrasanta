@@ -7,6 +7,17 @@
 
         <x-slot name="content">
 
+            @if ($campaniaSeleccionada && $siembras)
+                <div class="mb-4">
+                    @include('livewire.evaluacion.partials.selector-siembra', [
+                        'tipoEvaluacion' => 'poblacion',
+                        'evaluacionId' => $poblacionPlantaId,
+                        'puedeAgregar' => $puedeAgregarSiembra,
+                        'puedeCorregir' => $puedeCorregirSiembra,
+                    ])
+                </div>
+            @endif
+
             <div class="flex gap-5">
                 <div class="w-[10rem] space-y-2">
                     @if ($modoEdicion)
@@ -28,24 +39,35 @@
                         </x-select>
                     @endif
 
-                    @if ($campaniaSeleccionada)
+                    @if ($campaniaSeleccionada && $siembraId)
                         <x-input type="date" wire:model.live="fecha_siembra" label="Fecha de Siembra" readonly />
 
-                        <x-selector-dia wire:model.live="fecha_eval_cero" error="fecha_eval_cero" label="Evaluación Cero" />
+                        @if ($puedeGuardar)
+                            <x-selector-dia wire:model.live="fecha_eval_cero" error="fecha_eval_cero" label="Evaluación Cero" />
 
-                        <x-selector-dia wire:model.live="fecha_eval_resiembra" error="fecha_eval_resiembra"
-                            label="Evaluación Resiembra" />
+                            <x-selector-dia wire:model.live="fecha_eval_resiembra" error="fecha_eval_resiembra"
+                                label="Evaluación Resiembra" />
 
-                        <x-input-number wire:model="area_lote" label="Área" placeholder="1.5" />
+                            <x-input-number wire:model="area_lote" :label="count($siembras) > 1 ? 'Área de esta siembra' : 'Área'" placeholder="1.5" />
 
-                        <x-group-field>
-                            <x-autocomplete wire:model="evaluador" label="Evaluador" :sugerencias="$evaluadoresNombres"
-                                placeholder="Buscar evaluador..." />
+                            <x-group-field>
+                                <x-autocomplete wire:model="evaluador" label="Evaluador" :sugerencias="$evaluadoresNombres"
+                                    placeholder="Buscar evaluador..." />
 
-                            <x-input-error for="evaluador" />
-                        </x-group-field>
-                        <x-input-number wire:model="metros_cama_ha" label="Metros de Cama/Ha" placeholder="5000"
-                            error="metros_cama_ha" />
+                                <x-input-error for="evaluador" />
+                            </x-group-field>
+                            <x-input-number wire:model="metros_cama_ha" :label="count($siembras) > 1 ? 'Metros de Cama/Ha de esta siembra' : 'Metros de Cama/Ha'" placeholder="5000"
+                                error="metros_cama_ha" />
+                            @if (count($siembras) > 1)
+                                <p class="text-xs text-muted-foreground">Por hectárea del campo: el total de la campaña suma las siembras.</p>
+                            @endif
+                        @else
+                            <x-input type="date" :value="$fecha_eval_cero" label="Evaluación Cero" disabled />
+                            <x-input type="date" :value="$fecha_eval_resiembra" label="Evaluación Resiembra" disabled />
+                            <x-input :value="$area_lote" label="Área" disabled />
+                            <x-input :value="$evaluador" label="Evaluador" disabled />
+                            <x-input :value="$metros_cama_ha" label="Metros de Cama/Ha" disabled />
+                        @endif
                     @endif
                 </div>
                 <div class="flex-1">
@@ -58,11 +80,7 @@
                         <x-input-error for="detalle" />
                     </div>
 
-                    @if ($campania && $poblacionPlantaId)
-                        @php
-                            $eval = $campania->evaluacionPoblacionPlantas;
-                        @endphp
-
+                    @if ($campania && $eval)
                         <div class="mt-4 border border-border rounded-lg overflow-hidden text-xs">
 
                             {{-- HEADER PRINCIPAL --}}
@@ -156,13 +174,15 @@
                     wire:loading.attr="disabled">
                     Cerrar
                 </x-button>
-                <x-button type="button" @click="$wire.dispatch('guardadoConfirmadoPoblacionPlanta')">
-                    @if ($poblacionPlantaId)
-                        <i class="fa fa-pencil"></i> Actualizar
-                    @else
-                        <i class="fa fa-save"></i> Registrar
-                    @endif
-                </x-button>
+                @if ($puedeGuardar)
+                    <x-button type="button" @click="$wire.dispatch('guardadoConfirmadoPoblacionPlanta')">
+                        @if ($poblacionPlantaId)
+                            <i class="fa fa-pencil"></i> Actualizar
+                        @else
+                            <i class="fa fa-save"></i> Registrar
+                        @endif
+                    </x-button>
+                @endif
             </x-flex>
         </x-slot>
     </x-dialog-modal>
@@ -181,10 +201,12 @@
         tableData: @json($detalleEvaluacionPoblacionPlanta),
         isDark: JSON.parse(localStorage.getItem('darkMode')),
         hot: null,
+        soloLectura: false,
         init() {
             this.initTable();
             Livewire.on('cargarData', (data) => {
                 this.tableData = data[0];
+                this.soloLectura = !!data[1];
                 this.hot.destroy();
                 this.initTable();
                 this.hot.loadData(this.tableData);
@@ -327,7 +349,8 @@
                 height: 'auto',
                 manualColumnResize: false,
                 manualRowResize: true,
-                minSpareRows: 1,
+                readOnly: this.soloLectura,
+                minSpareRows: this.soloLectura ? 0 : 1,
                 stretchH: 'all',
                 autoColumnSize: true,
                 licenseKey: 'non-commercial-and-evaluation',

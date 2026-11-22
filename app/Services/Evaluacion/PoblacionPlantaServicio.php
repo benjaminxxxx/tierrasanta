@@ -3,10 +3,14 @@
 namespace App\Services\Evaluacion;
 
 use App\Exports\Evaluacion\PoblacionPlantaExport;
+use App\Models\CampoCampania;
 use App\Models\EvalPoblacionPlanta;
 use App\Services\Campania\CampaniaServicio;
+use App\Services\Evaluacion\Siembra\EvaluacionSiembraConsulta;
+use App\Services\Reporte\AuditoriaServicio;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -27,13 +31,15 @@ class PoblacionPlantaServicio
     public function ordenarDatosExport(array $filtros, array $datos)
     {
         $resultado = [];
+        $porCampania = array_count_values(array_column($datos, 'campania_id'));
 
         foreach ($datos as $item) {
             // 1. Obtener campo
             $campo = $item['campania']['campo'] ?? 'SIN_CAMPO';
 
-            // 2. Obtener la campaña (puede ser código, nombre, id)
-            $campania = $item['campania']['nombre_campania'] ?? 'SIN_CAMPANIA';
+            // 2. Obtener la campaña (con varias siembras, cada una va en su bloque)
+            $campania = ($item['campania']['nombre_campania'] ?? 'SIN_CAMPANIA')
+                . (($porCampania[$item['campania_id']] ?? 1) > 1 ? ' · ' . ($item['sector']['nombre'] ?? 'Sin siembra') : '');
 
             // 3. Crear estructura base
             $resultado[$campo][$campania] = [
@@ -72,7 +78,7 @@ class PoblacionPlantaServicio
     public static function buscar(array $filtros, $paginado = true)
     {
         $query = EvalPoblacionPlanta::query()
-            ->with(['campania', 'detalles']);
+            ->with(['campania', 'detalles', 'sector']);
 
         if (!empty($filtros['campo'])) {
             $query->whereHas('campania', callback: function ($q) use ($filtros) {
@@ -103,8 +109,20 @@ class PoblacionPlantaServicio
         DB::beginTransaction();
 
         try {
-            $poblacion = EvalPoblacionPlanta::findOrFail($id);
+            $poblacion = EvalPoblacionPlanta::with(['detalles', 'campania', 'sector'])->findOrFail($id);
+            EvaluacionSiembraConsulta::exigirAbierta($poblacion->campania);
             $campaniaId = $poblacion->campania_id;
+            AuditoriaServicio::registrar(EvalPoblacionPlanta::class, $poblacion->id, 'eliminar', [
+                'campania_id' => $campaniaId,
+                'siembra' => $poblacion->sector?->nombre,
+                'fecha_eval_cero' => $poblacion->fecha_eval_cero,
+                'fecha_eval_resiembra' => $poblacion->fecha_eval_resiembra,
+                'evaluador' => $poblacion->evaluador,
+                'area_lote' => (float) $poblacion->area_lote,
+                'metros_cama_ha' => (float) $poblacion->metros_cama_ha,
+                'camas' => $poblacion->detalles->map(fn($d) => $d->only(['numero_cama', 'longitud_cama', 'eval_cero_plantas_x_hilera',
+                    'eval_resiembra_plantas_x_hilera', 'brazos2_piso_x_hilera_cero', 'brazos3_piso_x_hilera_cero']))->values()->all(),
+            ], null, 'Eliminación de evaluación de población · ' . $poblacion->campania->campo . ' / ' . $poblacion->campania->nombre_campania);
             $poblacion->delete();
 
             // 4. Actualizar Campaña (Usando el servicio externo)
@@ -124,6 +142,7 @@ class PoblacionPlantaServicio
         try {
             // 1. Validar todo (Cabecera y Detalles)
             $this->validarDatos($datos);
+            EvaluacionSiembraConsulta::exigirAbierta(CampoCampania::findOrFail($datos['campania_id']));
 
             // 2. Guardar Cabecera
             $poblacion = $this->guardarCabecera($datos);
@@ -165,8 +184,11 @@ class PoblacionPlantaServicio
             'evaluador' => 'required|string|max:255',
             'metros_cama_ha' => 'required|numeric|min:0.1',
             'campania_id' => 'required|integer|exists:campos_campanias,id',
+            'campania_sector_id' => ['required', 'integer', Rule::exists('campania_sectores', 'id')->where('campo_campania_id', $datos['campania_id'] ?? 0)],
             'detalles' => 'required|array|min:1',
         ], [
+            'campania_sector_id.required' => 'Elige qué siembra estás evaluando.',
+            'campania_sector_id.exists' => 'La siembra elegida no es de esta campaña.',
             'detalles.required' => 'Debe ingresar filas en la tabla.',
             'metros_cama_ha.required' => 'Los metros de cama por hectárea son obligatorios.',
             'area_lote.required' => 'El área del lote es obligatoria.'
@@ -211,6 +233,7 @@ class PoblacionPlantaServicio
             'evaluador' => $datos['evaluador'] ?? null,
             'metros_cama_ha' => $datos['metros_cama_ha'],
             'campania_id' => $datos['campania_id'],
+            'campania_sector_id' => $datos['campania_sector_id'],
             'fecha_eval_cero' => $datos['fecha_eval_cero'],
             'fecha_eval_resiembra' => $datos['fecha_eval_resiembra'] ?? null,
         ];
@@ -225,10 +248,10 @@ class PoblacionPlantaServicio
         }
 
         // --------------------------------------------------------------------
-        // B. Validar unicidad por campaña
-        //    Solo puede existir UNA evaluación por campaña.
+        // B. Validar unicidad por siembra
+        //    Solo puede existir UNA evaluación por siembra de la campaña.
         // --------------------------------------------------------------------
-        $existe = EvalPoblacionPlanta::where('campania_id', $datos['campania_id'])->first();
+        $existe = EvalPoblacionPlanta::where('campania_sector_id', $datos['campania_sector_id'])->first();
 
         if ($existe) {
             // Actualizar si ya existe

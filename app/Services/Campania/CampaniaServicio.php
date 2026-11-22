@@ -271,9 +271,9 @@ class CampaniaServicio
      */
     public function actualizarMetricasPoblacion(int $campaniaId): void
     {
-        // Cargar campaña con su evaluación única
-        $campania = Campania::with('evaluacionPoblacionPlantas')->findOrFail($campaniaId);
-        $evaluacion = $campania->evaluacionPoblacionPlantas; // relación uno-uno
+        $campania = Campania::findOrFail($campaniaId);
+        // Una evaluación por siembra: cada una mide sus metros de cama por ha del campo, así que el total es la suma
+        $evaluaciones = \App\Models\EvalPoblacionPlanta::with('detalles')->where('campania_id', $campaniaId)->get();
 
         // Valores por defecto
         $data = [
@@ -283,14 +283,21 @@ class CampaniaServicio
             'pp_resiembra_numero_pencas_madre' => null,
         ];
 
-        if ($evaluacion) {
-
-            // Día cero
+        if ($evaluaciones->count() === 1) {
+            $evaluacion = $evaluaciones->first();
             $data['pp_dia_cero_fecha_evaluacion'] = $evaluacion->fecha_eval_cero;
             $data['pp_dia_cero_numero_pencas_madre'] = $evaluacion->promedio_plantas_ha_cero;
             $data['pp_resiembra_fecha_evaluacion'] = $evaluacion->fecha_eval_resiembra;
             $data['pp_resiembra_numero_pencas_madre'] = $evaluacion->promedio_plantas_ha_resiembra;
-
+        } elseif ($evaluaciones->isNotEmpty()) {
+            $data['pp_dia_cero_fecha_evaluacion'] = $evaluaciones->max('fecha_eval_cero');
+            $data['pp_dia_cero_numero_pencas_madre'] = $evaluaciones->sum(fn($e) => (float) $e->promedio_plantas_ha_cero);
+            if ($evaluaciones->whereNotNull('fecha_eval_resiembra')->isNotEmpty()) {
+                $data['pp_resiembra_fecha_evaluacion'] = $evaluaciones->max('fecha_eval_resiembra');
+                // La siembra que no tuvo resiembra sigue con las plantas de su día cero
+                $data['pp_resiembra_numero_pencas_madre'] = $evaluaciones->sum(fn($e) => (float) ($e->fecha_eval_resiembra
+                    ? $e->promedio_plantas_ha_resiembra : $e->promedio_plantas_ha_cero));
+            }
         }
 
         // Guardar métricas en campaña

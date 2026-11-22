@@ -14,6 +14,7 @@ class EvalPoblacionPlanta extends Model
         'evaluador',
         'metros_cama_ha',
         'campania_id',
+        'campania_sector_id',
         'fecha_eval_cero',
         'fecha_eval_resiembra',
 
@@ -38,6 +39,12 @@ class EvalPoblacionPlanta extends Model
     public function campania()
     {
         return $this->belongsTo(CampoCampania::class, 'campania_id');
+    }
+
+    /** Siembra evaluada (grupo de hileras de la campaña) */
+    public function sector()
+    {
+        return $this->belongsTo(CampaniaSector::class, 'campania_sector_id');
     }
 
     // ------------------------------------------------------

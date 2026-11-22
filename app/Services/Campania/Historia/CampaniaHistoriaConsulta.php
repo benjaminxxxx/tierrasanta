@@ -349,15 +349,17 @@ class CampaniaHistoriaConsulta
     private function evaluaciones(CampoCampania $c): Collection
     {
         $eventos = collect();
+        $sectores = DB::table('campania_sectores')->where('campo_campania_id', $c->id)->pluck('nombre', 'id');
+        $deSiembra = fn($e) => $sectores->count() > 1 && isset($sectores[$e->campania_sector_id]) ? " de la {$sectores[$e->campania_sector_id]}" : '';
         foreach (DB::table('eval_brotes_por_pisos')->where('campania_id', $c->id)->orderBy('fecha')->get() as $e) {
             $eventos->push($this->evento(Carbon::parse($e->fecha)->toDateString(), 'evaluacion',
-                'Se evaluaron los brotes por piso' . ($e->evaluador ? " ({$e->evaluador})" : '') . '.'));
+                'Se evaluaron los brotes por piso' . $deSiembra($e) . ($e->evaluador ? " ({$e->evaluador})" : '') . '.'));
         }
         foreach (DB::table('eval_poblacion_plantas')->where('campania_id', $c->id)->get() as $e) {
             foreach (['fecha_eval_cero' => 'día cero', 'fecha_eval_resiembra' => 'resiembra'] as $col => $nombre) {
                 if ($e->$col) {
                     $eventos->push($this->evento(Carbon::parse($e->$col)->toDateString(), 'evaluacion',
-                        "Se evaluó la población de plantas ({$nombre})" . ($e->evaluador ? ", evaluador {$e->evaluador}" : '') . '.'));
+                        "Se evaluó la población de plantas{$deSiembra($e)} ({$nombre})" . ($e->evaluador ? ", evaluador {$e->evaluador}" : '') . '.'));
                 }
             }
         }

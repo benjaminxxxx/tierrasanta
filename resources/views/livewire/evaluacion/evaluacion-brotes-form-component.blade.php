@@ -25,23 +25,39 @@
                         </x-select>
                     </div>
                 @endif
-                @if ($campania)
+                @if ($campania && $siembraId)
                     <div>
-                        <x-input type="number" step="0.001" wire:model.live.debounce.500ms="metros_cama_ha" label="Metros de cama/ha (toda la campaña)"
-                            error="metros_cama_ha" />
+                        <x-input type="number" step="0.001" wire:model.live.debounce.500ms="metros_cama_ha" label="Metros de cama/ha de esta siembra"
+                            error="metros_cama_ha" :disabled="$campaniaCerrada" />
                     </div>
                 @endif
             </div>
             @if ($campania)
-                <p class="text-xs text-muted-foreground mt-1">Los metros de cama/ha son los mismos para todas las evaluaciones de la campaña: si los cambias, al guardar se aplican a todas.</p>
+                <div class="mt-3">
+                    @include('livewire.evaluacion.partials.selector-siembra', [
+                        'tipoEvaluacion' => 'brotes',
+                        'evaluacionId' => is_numeric($editando) ? $editando : null,
+                        'puedeAgregar' => $puedeAgregarSiembra,
+                        'puedeCorregir' => $puedeCorregirSiembra,
+                    ])
+                </div>
+                @if ($siembraId)
+                    <p class="text-xs text-muted-foreground mt-1">
+                        @if (count($siembras) > 1)
+                            Ingresa solo los metros de cama de esta siembra por hectárea del campo: el total de la campaña suma la última evaluación de cada siembra.
+                        @else
+                            Los metros de cama/ha son los mismos para todas las evaluaciones de la siembra: si los cambias, al guardar se aplican a todas.
+                        @endif
+                    </p>
+                @endif
             @endif
 
-            {{-- 2. Todas las evaluaciones de la campaña, por fecha, con su evolución --}}
-            @if ($campania)
+            {{-- 2. Todas las evaluaciones de la siembra, por fecha, con su evolución --}}
+            @if ($campania && $siembraId)
                 <div class="mt-4 rounded-lg border border-border">
                     <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-muted">
                         <span class="text-sm font-semibold">
-                            Evaluaciones de {{ $campania->campo }} / {{ $campania->nombre_campania }}
+                            Evaluaciones de {{ $campania->campo }} / {{ $campania->nombre_campania }} · {{ $siembraActual['nombre'] ?? '' }}
                             <span class="font-normal text-muted-foreground">({{ count($evaluaciones) }})</span>
                         </span>
                         @if ($puedeCrear)
@@ -105,9 +121,9 @@
                                 </tbody>
                             </table>
                         </div>
-                        <p class="px-3 py-1 text-[11px] text-muted-foreground">Debajo de cada promedio: la diferencia con la evaluación anterior. La campaña muestra siempre la última.</p>
+                        <p class="px-3 py-1 text-[11px] text-muted-foreground">Debajo de cada promedio: la diferencia con la evaluación anterior de esta siembra.</p>
                     @else
-                        <p class="p-3 text-sm text-muted-foreground">Esta campaña aún no tiene evaluaciones.</p>
+                        <p class="p-3 text-sm text-muted-foreground">Esta siembra aún no tiene evaluaciones.</p>
                     @endif
                 </div>
             @endif
@@ -115,14 +131,18 @@
             {{-- 3. Evaluación abierta: fecha, evaluador y tabla de camas (una sola tabla a la vez) --}}
             <div x-data="{{ $idTable }}" class="mt-4" x-show="$wire.editando !== null" x-cloak>
                 @if ($editando !== null)
-                    @php $soloVer = $editando !== 'nueva' && !$puedeEditar; @endphp
+                    @php $soloVer = $campaniaCerrada || ($editando !== 'nueva' && !$puedeEditar); @endphp
                     <div class="flex flex-wrap items-end gap-3">
                         <x-h3 class="mr-2">
                             {{ $editando === 'nueva' ? 'Nueva evaluación' : 'Evaluación del ' . \Illuminate\Support\Carbon::parse($abierta['fecha'] ?? $fecha)->format('d/m/Y') }}
                         </x-h3>
                         <x-selector-dia wire:model="fecha" error="fecha" label="Fecha de evaluación" :disabled="$soloVer" />
                         <x-group-field>
-                            <x-autocomplete wire:model="evaluador" label="Evaluador" :sugerencias="$evaluadoresNombres" placeholder="Buscar evaluador..." />
+                            @if ($soloVer)
+                                <x-input label="Evaluador" :value="$evaluador" disabled />
+                            @else
+                                <x-autocomplete wire:model="evaluador" label="Evaluador" :sugerencias="$evaluadoresNombres" placeholder="Buscar evaluador..." />
+                            @endif
                             <x-input-error for="evaluador" />
                         </x-group-field>
                         <div class="flex gap-2 ml-auto">
@@ -152,7 +172,7 @@
         </x-slot>
     </x-dialog-modal>
 
-    <x-loading wire:loading wire:target="campoSeleccionado,campaniaSeleccionada,abrirEvaluacion,nuevaEvaluacion,guardarEvaluacion,eliminarEvaluacion" />
+    <x-loading wire:loading wire:target="campoSeleccionado,campaniaSeleccionada,abrirEvaluacion,nuevaEvaluacion,guardarEvaluacion,eliminarEvaluacion,elegirSiembra,guardarNuevaSiembra,corregirSiembra" />
 </div>
 @script
     <script>
@@ -162,7 +182,8 @@
             isDark: JSON.parse(localStorage.getItem('darkMode')),
             init() {
                 this.initTable();
-                Livewire.on('cargarDataBrotesXPiso-{{ $idTable }}', ({ filas }) => {
+                Livewire.on('cargarDataBrotesXPiso-{{ $idTable }}', ({ filas, soloLectura }) => {
+                    this.hot.updateSettings({ readOnly: !!soloLectura, minSpareRows: soloLectura ? 0 : 1 });
                     this.hot.loadData(JSON.parse(JSON.stringify(filas || [])));
                     // La tabla pudo estar oculta: se vuelve a medir cuando ya se ve
                     setTimeout(() => { this.hot.refreshDimensions(); this.hot.render(); }, 60);

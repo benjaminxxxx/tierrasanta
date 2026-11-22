@@ -27,6 +27,7 @@ class Siembra extends Model
         'tarjeta' => 'Agregada desde la tarjeta de la campaña',
         'mapa' => 'Agregada en el mapa de etapas',
         'horas' => 'Aceptada al registrar horas',
+        'evaluacion' => 'Agregada al registrar una evaluación',
     ];
 
     public const ORIGENES_CORTO = [
@@ -35,6 +36,7 @@ class Siembra extends Model
         'tarjeta' => 'agregada desde la tarjeta',
         'mapa' => 'agregada en el mapa de etapas',
         'horas' => 'aceptada al registrar horas',
+        'evaluacion' => 'agregada al registrar una evaluación',
     ];
 
     protected $fillable = [
