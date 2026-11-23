@@ -34,12 +34,19 @@
             {{-- PASO 2: DATOS DEL LOTE --}}
             @if ($step === 2)
                 <div class="space-y-3">
-                    @if ($campania)
+                    @php $campaniaLote = $duenaPaso2['campania'] ?? $campania; @endphp
+                    @if ($campaniaLote)
                         <x-success>
-                            <p>Campaña: {{ $campania->nombre_campania ?? '' }}</p>
-                            <p>Variedad: {{ $campania->variedad_tuna ?? '' }}</p>
-                            <p>Fecha de Inicio: {{ $campania->fecha_inicio ?? '' }}</p>
+                            <p>Campaña: {{ $campaniaLote->nombre_campania ?? '' }}</p>
+                            <p>Variedad: {{ $campaniaLote->variedad_tuna ?? '' }}</p>
+                            <p>Fecha de Inicio: {{ $campaniaLote->fecha_inicio ?? '' }}</p>
+                            @if ($duenaPaso2 && !$duenaPaso2['sin_envio'])
+                                <p class="mt-1 text-xs">Infestador: pertenece a la campaña cosechada, aunque se recoja después de su cierre.</p>
+                            @endif
                         </x-success>
+                        @if ($duenaPaso2 && $duenaPaso2['sin_envio'])
+                            <x-warning>{{ $duenaPaso2['detalle'] }}</x-warning>
+                        @endif
                     @else
                         <x-warning>
                             No hay campañas registradas para este campo y esta fecha.
@@ -62,7 +69,7 @@
                     </x-select>
                     <x-input type="number" label="Área" wire:model="area" class="w-full" />
                     <x-input type="date" label="Fecha" wire:model.live="fecha" error="fecha" class="w-full" />
-                    <x-select label="Observación" wire:model="observacionSeleccionada" fullWidth="true"
+                    <x-select label="Observación" wire:model.live="observacionSeleccionada" fullWidth="true"
                         error="observacionSeleccionada">
                         <option value="">Seleccionar observación</option>
                         @foreach ($observaciones as $observacion)
@@ -84,7 +91,7 @@
                                 </tr>
                                 <tr>
                                     <th class="text-left pe-4">Campaña</th>
-                                    <td>{{ $cochinillaIngreso->campoCampania?->nombre_campania }}</td>
+                                    <td>{{ $cochinillaIngreso->campania_duena?->nombre_campania }}</td>
                                 </tr>
                                 <tr>
                                     <th class="text-left pe-4">Lote principal</th>
@@ -113,7 +120,7 @@
 
                 {{-- Lote de infestadores: se registra con el campo que dio la mamá; es de la campaña que se cosechó para ese envío --}}
                 @if ($origenInfestador)
-                    @php $sinEnvio = $cochinillaIngreso->origen_estado !== 'infestacion'; @endphp
+                    @php $sinEnvio = !in_array($cochinillaIngreso->origen_estado, ['infestacion', 'cosecha'], true); @endphp
                     <div class="mt-4 rounded-lg border p-3 {{ $sinEnvio ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20' : 'border-border' }}">
                         <p class="text-sm font-semibold">
                             Cochinilla de {{ $cochinillaIngreso->campo }}{{ $origenInfestador['campania'] ? ' · ' . $origenInfestador['campania'] : '' }}

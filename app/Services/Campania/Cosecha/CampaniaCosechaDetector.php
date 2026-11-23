@@ -131,7 +131,7 @@ class CampaniaCosechaDetector
             $ingreso = $fila['ingreso'];
             $clave = "venta-{$venta->id}";
             $vigentes[] = $clave;
-            $campania = $ingreso->campoCampania;
+            $campania = $ingreso->campania_duena;
 
             $this->registrador->registrarOActualizar([
                 'tipo' => self::TIPO_VENTA,

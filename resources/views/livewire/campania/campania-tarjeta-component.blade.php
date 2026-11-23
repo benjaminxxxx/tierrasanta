@@ -80,6 +80,16 @@
                                 </div>
                             </div>
                         @endif
+                        @if ($siembraExistenteMensaje)
+                            <div class="border-b border-hairline bg-amber-50 px-3 py-3 text-sm text-amber-700 dark:bg-amber-400/10 dark:text-amber-400" role="alert">
+                                <p class="font-medium"><i class="fa fa-triangle-exclamation"></i> {{ $siembraExistenteMensaje }}</p>
+                                <p class="mt-1 text-xs">Si confirmas, pasa a ser una siembra parcial de esta campaña y los registros repetidos se unen en uno.</p>
+                                <div class="mt-2 flex flex-wrap gap-2">
+                                    <button type="button" wire:click="confirmarSiembraExistente" wire:loading.attr="disabled" class="{{ $btn }}"><i class="fa fa-check"></i> Sí, es esta siembra</button>
+                                    <button type="button" wire:click="noEsSiembraExistente" class="{{ $btn }}">No, corregir la fecha</button>
+                                </div>
+                            </div>
+                        @endif
                         @forelse ($t['grupos'] as $g)
                             <div class="grid grid-cols-1 gap-2 border-b border-hairline px-3 py-2.5 last:border-0 md:grid-cols-[13rem_1fr] md:items-center">
                                 <div class="min-w-0">

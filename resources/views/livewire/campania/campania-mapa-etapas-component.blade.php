@@ -190,6 +190,16 @@
                                     </div>
                                 </div>
                             @endforeach
+                            @if ($siembraExistenteMensaje)
+                                <div class="rounded-[10px] bg-amber-50 p-3 text-sm text-amber-700 dark:bg-amber-400/10 dark:text-amber-400" role="alert">
+                                    <p class="font-medium"><i class="fa fa-triangle-exclamation"></i> {{ $siembraExistenteMensaje }}</p>
+                                    <p class="mt-1 text-xs">Si confirmas, pasa a ser una siembra parcial de esta campaña y los registros repetidos se unen en uno.</p>
+                                    <div class="mt-2 flex flex-wrap gap-2">
+                                        <button type="button" class="{{ $btn2 }}" wire:click="guardar(true)" wire:loading.attr="disabled"><i class="fa fa-check"></i> Sí, es esta siembra</button>
+                                        <button type="button" class="{{ $btn2 }}" wire:click="noEsSiembraExistente">No, corregir la fecha</button>
+                                    </div>
+                                </div>
+                            @endif
                             <p class="text-xs text-graphite">
                                 Una campaña tiene otra siembra solo si parte del campo se sembró en otra fecha (ej. relleno a 2 m meses después): cada una
                                 necesita su fecha de siembra y lleva su propia infestación y cosecha. Cada siembra está en una etapa desde su fecha hasta que

@@ -41,7 +41,8 @@ class CochinillaRecalcularOrigenCommand extends Command
 
             $revisar = $despues->where('origen_estado', 'sin_infestacion');
             if ($revisar->isNotEmpty()) {
-                $this->warn("Para revisar (el campo no dio mamá en los " . CochinillaOrigenProceso::DIAS_RETORNO . ' días anteriores al lote):');
+                $this->warn("Para revisar (el campo no dio mamá en los " . CochinillaOrigenProceso::DIAS_RETORNO . ' días anteriores al lote ni tuvo cosecha en los '
+                    . CochinillaOrigenProceso::DIAS_RECUPERACION . '):');
                 foreach ($revisar as $r) {
                     $a = $antes[$r->id];
                     $this->line("  lote {$a->lote} · " . substr((string) $a->fecha, 0, 10) . " · campo {$a->campo} · " . number_format($a->total_kilos, 2) . ' kg');

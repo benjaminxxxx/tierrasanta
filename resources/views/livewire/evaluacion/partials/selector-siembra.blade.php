@@ -44,6 +44,16 @@
                 <button type="button" class="{{ $btn2 }}" wire:click="cancelarAgregarSiembra">Cancelar</button>
                 <button type="button" class="{{ $btn2 }}" wire:click="guardarNuevaSiembra" wire:loading.attr="disabled"><i class="fa fa-check"></i> Agregar siembra</button>
             </div>
+            @if ($siembraExistenteMensaje)
+                <div class="mt-3 rounded-[10px] bg-amber-50 p-3 text-sm text-amber-700 dark:bg-amber-400/10 dark:text-amber-400" role="alert">
+                    <p class="font-medium"><i class="fa fa-triangle-exclamation"></i> {{ $siembraExistenteMensaje }}</p>
+                    <p class="mt-1 text-xs">Si confirmas, pasa a ser una siembra parcial de esta campaña y los registros repetidos se unen en uno.</p>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        <button type="button" class="{{ $btn2 }}" wire:click="guardarNuevaSiembra(true)" wire:loading.attr="disabled"><i class="fa fa-check"></i> Sí, es esta siembra</button>
+                        <button type="button" class="{{ $btn2 }}" wire:click="noEsSiembraExistente">No, corregir la fecha</button>
+                    </div>
+                </div>
+            @endif
         </div>
     @endif
 

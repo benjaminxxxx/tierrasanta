@@ -16,7 +16,7 @@
                         </tr>
                         <tr>
                             <th class="text-left">Campaña</th>
-                            <td>{{$cochinillaIngreso->campoCampania?->nombre_campania}}</td>
+                            <td>{{$cochinillaIngreso->campania_duena?->nombre_campania}}</td>
                         </tr>
                         <tr>
                             <th class="text-left">Lote principal</th>

@@ -32,6 +32,11 @@ class CochinillaOrigenProceso
     public const DIAS_MISMA_INFESTACION = 15;
     /** Días antes del envío en que se busca el ingreso de mamá del campo de origen. */
     public const DIAS_COSECHA_MAMA = 20;
+    /**
+     * Infestador sin envío de mamá registrado (poda cosecha): días después de la última cosecha o del cierre en que su
+     * cochinilla sigue siendo de esa campaña (Ing. Lucio: se recupera a los 15–25 días; en los datos, hasta 45).
+     */
+    public const DIAS_RECUPERACION = 45;
 
     private ?array $observacionesMama = null;
 
@@ -43,6 +48,9 @@ class CochinillaOrigenProceso
     /** Calcula y guarda el origen de un ingreso y su fila de origen (cochinilla_ingreso_origenes). */
     public function recalcular(CochinillaIngreso $ingreso): void
     {
+        // La campaña por fecha la ponen los triggers de la base: el modelo recién guardado puede no tenerla
+        $ingreso->setAttribute('campo_campania_id', CochinillaIngreso::whereKey($ingreso->id)->value('campo_campania_id'));
+        $ingreso->syncOriginalAttribute('campo_campania_id');
         $datos = $this->resolver($ingreso);
         $ingreso->forceFill($datos)->saveQuietly();
         $this->sincronizarOrigen($ingreso, $datos);
@@ -82,8 +90,18 @@ class CochinillaOrigenProceso
 
         $envio = $this->envio($ingreso->campo, Carbon::parse($ingreso->fecha)->toDateString());
         if (!$envio) {
+            if ($cosecha = $this->cosechaReciente((string) $ingreso->campo, Carbon::parse($ingreso->fecha)->toDateString())) {
+                return [
+                    'campo_origen' => $ingreso->campo,
+                    'campania_origen_id' => $cosecha['campania']->id,
+                    'origen_estado' => 'cosecha',
+                    'origen_detalle' => mb_substr("Cochinilla recuperada de la cosecha de {$ingreso->campo} {$cosecha['campania']->nombre_campania} (lote {$cosecha['lote']}, "
+                        . Carbon::parse($cosecha['fecha'])->format('d/m/Y') . ').', 0, 300),
+                ];
+            }
             return ['origen_estado' => 'sin_infestacion', 'origen_detalle' => mb_substr("{$ingreso->campo} no dio mamá para infestar en los "
-                . self::DIAS_RETORNO . ' días anteriores a este lote: se deja la campaña del campo por fecha. Revisar el campo o la fecha del lote.', 0, 300)] + $propio;
+                . self::DIAS_RETORNO . ' días anteriores a este lote ni tuvo una cosecha en los ' . self::DIAS_RECUPERACION
+                . ' días anteriores: se deja la campaña del campo por fecha. Revisar el campo o la fecha del lote.', 0, 300)] + $propio;
         }
 
         $campania = $this->campaniaOrigen($ingreso->campo, $envio['fin']);
@@ -96,6 +114,33 @@ class CochinillaOrigenProceso
                 . ' (' . number_format($envio['kg'], 2) . ' kg, ' . ($envio['inicio'] === $envio['fin'] ? $fmt($envio['inicio']) : $fmt($envio['inicio']) . ' al ' . $fmt($envio['fin']))
                 . '): estos infestadores volvieron de esos campos.' . ($campania ? '' : ' No se encontró la campaña cosechada; queda la del campo por fecha.'), 0, 300),
         ];
+    }
+
+    /**
+     * La última cosecha del campo hasta esa fecha, si el lote entra dentro de DIAS_RECUPERACION desde esa cosecha o desde
+     * el cierre de su campaña.
+     *
+     * @return array{campania: CampoCampania, lote: int, fecha: string}|null
+     */
+    private function cosechaReciente(string $campo, string $fecha): ?array
+    {
+        $cosecha = CochinillaIngreso::with('campoCampania')->where('campo', $campo)
+            ->where('observacion', 'not like', 'infestador%')
+            ->whereNotNull('campo_campania_id')
+            ->whereDate('fecha', '<=', $fecha)
+            ->orderByDesc('fecha')->orderByDesc('id')->first();
+        if (!$cosecha?->campoCampania) {
+            return null;
+        }
+        $desde = Carbon::parse($cosecha->fecha)->toDateString();
+        $cierre = $cosecha->campoCampania->fecha_fin ? Carbon::parse($cosecha->campoCampania->fecha_fin)->toDateString() : null;
+        if ($cierre && $cierre > $desde && $cierre <= $fecha) {
+            $desde = $cierre;
+        }
+        if (Carbon::parse($desde)->diffInDays(Carbon::parse($fecha)) > self::DIAS_RECUPERACION) {
+            return null;
+        }
+        return ['campania' => $cosecha->campoCampania, 'lote' => (int) $cosecha->lote, 'fecha' => Carbon::parse($cosecha->fecha)->toDateString()];
     }
 
     /**
@@ -148,7 +193,7 @@ class CochinillaOrigenProceso
     private function sincronizarOrigen(CochinillaIngreso $ingreso, array $datos): void
     {
         $ingreso->origenes()->delete();
-        if (!self::esDeInfestador($ingreso->observacion) || $datos['origen_estado'] !== 'infestacion' || (float) $ingreso->total_kilos <= 0) {
+        if (!self::esDeInfestador($ingreso->observacion) || !in_array($datos['origen_estado'], ['infestacion', 'cosecha'], true) || (float) $ingreso->total_kilos <= 0) {
             return;
         }
         CochinillaIngresoOrigen::create([

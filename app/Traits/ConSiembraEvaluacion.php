@@ -18,6 +18,9 @@ trait ConSiembraEvaluacion
     public bool $agregandoSiembra = false;
     public ?string $nuevaSiembraFecha = null;
     public ?string $nuevaSiembraMotivo = null;
+    /** La fecha ya existe como plantación: mensaje y fecha que la persona debe confirmar */
+    public ?string $siembraExistenteMensaje = null;
+    public ?string $siembraExistenteFecha = null;
     /** Sin tipo: el select manda '' cuando no hay nada elegido */
     public $siembraDestino = null;
 
@@ -38,12 +41,13 @@ trait ConSiembraEvaluacion
         $ids = array_column($this->siembras, 'id');
         // Con varias siembras se pregunta cuál se evalúa; con una, es esa
         $this->siembraId = in_array($elegida, $ids, true) ? $elegida : (count($ids) === 1 ? $ids[0] : null);
-        $this->reset(['agregandoSiembra', 'nuevaSiembraFecha', 'nuevaSiembraMotivo', 'siembraDestino']);
+        $this->reset(['agregandoSiembra', 'nuevaSiembraFecha', 'nuevaSiembraMotivo', 'siembraDestino', 'siembraExistenteMensaje', 'siembraExistenteFecha']);
     }
 
     protected function limpiarSiembras(): void
     {
-        $this->reset(['siembras', 'siembraId', 'campaniaCerrada', 'agregandoSiembra', 'nuevaSiembraFecha', 'nuevaSiembraMotivo', 'siembraDestino']);
+        $this->reset(['siembras', 'siembraId', 'campaniaCerrada', 'agregandoSiembra', 'nuevaSiembraFecha', 'nuevaSiembraMotivo', 'siembraDestino',
+            'siembraExistenteMensaje', 'siembraExistenteFecha']);
     }
 
     protected function siembraActual(): ?array
@@ -70,19 +74,29 @@ trait ConSiembraEvaluacion
 
     public function cancelarAgregarSiembra(): void
     {
-        $this->reset(['agregandoSiembra', 'nuevaSiembraFecha', 'nuevaSiembraMotivo']);
+        $this->reset(['agregandoSiembra', 'nuevaSiembraFecha', 'nuevaSiembraMotivo', 'siembraExistenteMensaje', 'siembraExistenteFecha']);
     }
 
-    public function guardarNuevaSiembra(): void
+    public function noEsSiembraExistente(): void
+    {
+        $this->reset(['siembraExistenteMensaje', 'siembraExistenteFecha']);
+    }
+
+    /** $unir: la persona confirmó que la plantación ya registrada en esa fecha es esta siembra. */
+    public function guardarNuevaSiembra(bool $unir = false): void
     {
         abort_unless($this->puedeAgregarSiembra(), 403);
         try {
             $c = $this->campaniaDeSiembras();
-            $nueva = app(EvaluacionSiembraProceso::class)->agregarSiembra($c, $this->nuevaSiembraFecha, $this->nuevaSiembraMotivo);
+            $unir = $unir && $this->siembraExistenteFecha === $this->nuevaSiembraFecha;
+            $nueva = app(EvaluacionSiembraProceso::class)->agregarSiembra($c, $this->nuevaSiembraFecha, $this->nuevaSiembraMotivo, $unir);
             $this->cargarSiembras($c->fresh(), $nueva);
             $this->alCambiarSiembra();
             $this->dispatch('campaniaInsertada');
             $this->alert('success', 'Siembra agregada. Ya puedes registrar su evaluación.');
+        } catch (\App\Exceptions\SiembraYaRegistrada $e) {
+            $this->siembraExistenteMensaje = $e->getMessage();
+            $this->siembraExistenteFecha = $e->fecha;
         } catch (\Throwable $e) {
             $this->errorAlert($e);
         }

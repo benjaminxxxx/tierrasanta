@@ -127,7 +127,28 @@ class CochinillaIngreso extends Model
     {
         return $this->belongsTo(CampoCampania::class, 'campania_origen_id');
     }
-    
+
+    /**
+     * La campaña que se muestra y por la que se filtra: la dueña de la cochinilla. En infestadores, campo_campania_id
+     * es solo la campaña que corría en la fecha del lote (la siguiente, si ya se cerró la cosechada).
+     */
+    public function getCampaniaDuenaAttribute(): ?CampoCampania
+    {
+        return $this->campaniaOrigen ?? $this->campoCampania;
+    }
+
+    public function scopeDeCampania($query, int $campaniaId)
+    {
+        return $query->whereRaw('COALESCE(cochinilla_ingresos.campania_origen_id, cochinilla_ingresos.campo_campania_id) = ?', [$campaniaId]);
+    }
+
+    public function scopeDeNombreCampania($query, string $nombre)
+    {
+        return $query->whereIn(\Illuminate\Support\Facades\DB::raw('COALESCE(cochinilla_ingresos.campania_origen_id, cochinilla_ingresos.campo_campania_id)'),
+            CampoCampania::where('nombre_campania', $nombre)->select('id'));
+    }
+
+
     protected $appends = [
         'total_filtrado_kilos',
         'total_filtrado_primera',
@@ -186,6 +207,11 @@ class CochinillaIngreso extends Model
     public function getFechaSiembraAttribute()
     {
         $date = Carbon::parse($this->fecha);
+        // Infestadores que vuelven después del cierre: la siembra de su campaña dueña, no la replantación posterior
+        $finDuena = $this->campaniaOrigen?->fecha_fin;
+        if ($finDuena && Carbon::parse($finDuena)->lt($date)) {
+            $date = Carbon::parse($finDuena);
+        }
 
         return Siembra::plantaciones()->where('fecha_siembra', '<=', $date)
             ->where('campo_nombre', $this->campo)
@@ -415,7 +441,22 @@ class CochinillaIngreso extends Model
         });
         static::saved(function (self $ingreso) {
             if ($ingreso->wasRecentlyCreated || $ingreso->wasChanged(['campo', 'fecha', 'observacion', 'campo_campania_id', 'total_kilos'])) {
-                app(\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::class)->recalcular($ingreso);
+                $proceso = app(\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::class);
+                $proceso->recalcular($ingreso);
+                // Una cosecha registrada o corregida después puede ser la dueña de los infestadores de su campo
+                if (!$proceso::esDeInfestador($ingreso->observacion)) {
+                    $proceso->recalcularPorCampo((string) $ingreso->campo);
+                    $campoAnterior = $ingreso->getOriginal('campo'); // en "saved" aún es el valor anterior
+                    if ($campoAnterior && $campoAnterior !== $ingreso->campo) {
+                        $proceso->recalcularPorCampo((string) $campoAnterior);
+                    }
+                }
+            }
+        });
+        static::deleted(function (self $ingreso) {
+            $proceso = app(\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::class);
+            if (!$proceso::esDeInfestador($ingreso->observacion)) {
+                $proceso->recalcularPorCampo((string) $ingreso->campo);
             }
         });
     }

@@ -179,6 +179,7 @@ class CochinillaIngresoComponent extends Component
                 ->with([
                     'detalles.observacionRelacionada',
                     'campoCampania',
+                    'campaniaOrigen',
                     'observacionRelacionada',
                     'venteados',
                     'filtrados',
@@ -250,8 +251,8 @@ class CochinillaIngresoComponent extends Component
                 $hojaIngreso->getStyle("C{$filaLote}")->getNumberFormat()->setFormatCode('dd/mm/yyyy');
                 $hojaIngreso->setCellValue("D{$filaLote}", $ingreso->campo);
                 $hojaIngreso->setCellValue("E{$filaLote}", $ingreso->area);
-                $hojaIngreso->setCellValue("F{$filaLote}", $ingreso->campoCampania?->nombre_campania);
-                $hojaIngreso->setCellValue("G{$filaLote}", $ingreso->campoCampania?->variedad_tuna);
+                $hojaIngreso->setCellValue("F{$filaLote}", $ingreso->campania_duena?->nombre_campania);
+                $hojaIngreso->setCellValue("G{$filaLote}", $ingreso->campania_duena?->variedad_tuna);
 
                 if ($ingreso->fecha_siembra) {
                     $hojaIngreso->setCellValueExplicit(
@@ -547,11 +548,7 @@ class CochinillaIngresoComponent extends Component
 
         if ($this->campaniaSeleccionado) {
             $nombreCampania = $this->campaniaSeleccionado;
-            $query->whereHas('ingreso', function ($q) use ($nombreCampania) {
-                $q->whereHas('campoCampania', function ($q2) use ($nombreCampania) {
-                    $q2->where('nombre_campania', $nombreCampania);
-                });
-            });
+            $query->whereHas('ingreso', fn($q) => $q->deNombreCampania($nombreCampania));
         }
 
         if ($this->observacionSeleccionado) {
@@ -590,10 +587,7 @@ class CochinillaIngresoComponent extends Component
             $query->where('campo', $this->campoSeleccionado);
         }
         if ($this->campaniaSeleccionado) {
-            $nombreCampania = $this->campaniaSeleccionado;
-            $query->whereHas('campoCampania', function ($q) use ($nombreCampania) {
-                $q->where('nombre_campania', $nombreCampania);
-            });
+            $query->deNombreCampania($this->campaniaSeleccionado);
         }
         if ($this->observacionSeleccionado) {
             $query->where('observacion', $this->observacionSeleccionado);
@@ -604,7 +598,7 @@ class CochinillaIngresoComponent extends Component
     public function render()
     {
         $query = $this->construirQueryFiltrada()
-            ->with(['detalles', 'campoCampania', 'detalles.observacionRelacionada', 'venteados', 'filtrados']);
+            ->with(['detalles', 'campoCampania', 'campaniaOrigen', 'detalles.observacionRelacionada', 'venteados', 'filtrados']);
 
         // Clonamos antes de aplicar el año, para no perder años disponibles
         $this->aniosDisponibles = (clone $query)

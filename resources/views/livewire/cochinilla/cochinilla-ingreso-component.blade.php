@@ -98,8 +98,8 @@
                         <x-th class="text-center">{{ $cochinillaIngreso->fecha }}</x-th>
                         <x-th class="text-center">{{ $cochinillaIngreso->campo }}</x-th>
                         <x-th class="text-center">{{ $cochinillaIngreso->area }}</x-th>
-                        <x-th class="text-center">{{ $cochinillaIngreso->campoCampania?->nombre_campania }}</x-th>
-                        <x-th class="text-center">{{ $cochinillaIngreso->campoCampania?->variedad_tuna }}</x-th>
+                        <x-th class="text-center">{{ $cochinillaIngreso->campania_duena?->nombre_campania }}</x-th>
+                        <x-th class="text-center">{{ $cochinillaIngreso->campania_duena?->variedad_tuna }}</x-th>
                         <x-th class="text-center">{{ formatear_fecha($cochinillaIngreso->fecha_siembra) }}</x-th>
                         <x-th class="text-center">{{ $cochinillaIngreso->filtrado123 }}</x-th>
                         <x-th class="text-center">{{ $cochinillaIngreso->filtrado123_x_ha }}</x-th>
@@ -110,7 +110,7 @@
                                 <span class="block text-xs font-normal text-muted-foreground" title="{{ $cochinillaIngreso->origen_detalle }}">
                                     Cochinilla de {{ $cochinillaIngreso->campo_origen ?? '?' }}
                                 </span>
-                                @if ($cochinillaIngreso->origen_estado !== 'manual' && $cochinillaIngreso->origen_estado !== 'infestacion')
+                                @if (!in_array($cochinillaIngreso->origen_estado, ['manual', 'infestacion', 'cosecha'], true))
                                     <button type="button" class="text-xs font-semibold text-amber-700 dark:text-amber-400 underline"
                                         @click="$wire.dispatch('editarIngreso', { lote: {{ $cochinillaIngreso->lote }} })" title="{{ $cochinillaIngreso->origen_detalle }}">
                                         Confirmar origen

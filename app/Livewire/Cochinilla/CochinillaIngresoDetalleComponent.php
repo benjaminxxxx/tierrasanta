@@ -383,6 +383,29 @@ class CochinillaIngresoDetalleComponent extends Component
             $this->cochinillaIngreso->refresh()->load('creadoPor:id,name', 'editadoPor:id,name');
             $origenInfestador = ['campania' => \App\Models\CampoCampania::find($this->cochinillaIngreso->campania_origen_id)?->nombre_campania];
         }
-        return view('livewire.cochinilla.cochinilla-ingreso-detalle-component', ['origenInfestador' => $origenInfestador]);
+        return view('livewire.cochinilla.cochinilla-ingreso-detalle-component', [
+            'origenInfestador' => $origenInfestador,
+            'duenaPaso2' => $this->duenaPaso2(),
+        ]);
+    }
+
+    /** Al registrar un infestador: a qué campaña pertenecerá (la que dio la mamá), antes de guardar. */
+    private function duenaPaso2(): ?array
+    {
+        if ($this->step !== 2 || !$this->campoSeleccionado || !$this->fecha
+            || !\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::esDeInfestador($this->observacionSeleccionada)) {
+            return null;
+        }
+        $datos = app(\App\Services\Cochinilla\Origen\CochinillaOrigenProceso::class)->resolver((new CochinillaIngreso())->forceFill([
+            'campo' => $this->campoSeleccionado,
+            'fecha' => $this->fecha,
+            'observacion' => $this->observacionSeleccionada,
+            'campo_campania_id' => $this->campania?->id,
+        ]));
+        return [
+            'campania' => CampoCampania::find($datos['campania_origen_id']),
+            'sin_envio' => !in_array($datos['origen_estado'], ['infestacion', 'cosecha'], true),
+            'detalle' => $datos['origen_detalle'],
+        ];
     }
 }

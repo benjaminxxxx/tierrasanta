@@ -58,13 +58,11 @@ class CochinillaCosechaMamasComponent extends Component
     }
     public function render()
     {
-        $query = CochinillaIngresoDetalle::query()->with(['ingreso', 'ingreso.campoCampania']);
+        $query = CochinillaIngresoDetalle::query()->with(['ingreso', 'ingreso.campoCampania', 'ingreso.campaniaOrigen']);
 
-        // FILTROS
+        // FILTROS (por la campaña dueña de la cochinilla)
         if ($this->campaniaUnica && $this->campaniaId) {
-            $query->whereHas('ingreso', function ($q) {
-                $q->where('campo_campania_id', $this->campaniaId);
-            });
+            $query->whereHas('ingreso', fn($q) => $q->deCampania((int) $this->campaniaId));
         } else {
             if ($this->campoSeleccionado) {
                 $query->whereHas('ingreso', function ($q) {
@@ -73,9 +71,7 @@ class CochinillaCosechaMamasComponent extends Component
             }
 
             if ($this->campaniaSeleccionado) {
-                $query->whereHas('ingreso.campoCampania', function ($q) {
-                    $q->where('nombre_campania', $this->campaniaSeleccionado);
-                });
+                $query->whereHas('ingreso', fn($q) => $q->deNombreCampania($this->campaniaSeleccionado));
             }
         }
 

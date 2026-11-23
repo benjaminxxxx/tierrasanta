@@ -69,11 +69,11 @@ class EvaluacionSiembraProceso
     }
 
     /** Agrega una siembra desde la evaluación. Devuelve su id. */
-    public function agregarSiembra(CampoCampania $c, ?string $fecha, ?string $motivo): int
+    public function agregarSiembra(CampoCampania $c, ?string $fecha, ?string $motivo, bool $unirRegistro = false): int
     {
         EvaluacionSiembraConsulta::exigirAbierta($c);
         $antes = $c->sectores()->pluck('id')->all();
-        app(CampaniaSectorProceso::class)->agregarSiembra($c, (string) $fecha, $motivo, 'evaluacion');
+        app(CampaniaSectorProceso::class)->agregarSiembra($c, (string) $fecha, $motivo, 'evaluacion', $unirRegistro);
         return (int) $c->sectores()->whereNotIn('id', $antes)->value('id');
     }
 

@@ -45,6 +45,8 @@ class CampaniaMapaEtapasComponent extends Component
     /** Lo ya decidido, se aplica al guardar el mapa */
     public array $decisionesConfirmadas = [];
     public ?string $fechaSiembraDestino = null;
+    /** La fecha de una siembra nueva ya existe como plantación: se confirma antes de guardar */
+    public ?string $siembraExistenteMensaje = null;
 
     #[On('verMapaEtapas')]
     public function verMapaEtapas(int $campaniaId): void
@@ -289,12 +291,20 @@ class CampaniaMapaEtapasComponent extends Component
         $this->sectores[$i]['etapas'] = array_values($this->sectores[$i]['etapas']);
     }
 
-    public function guardar(): void
+    public function noEsSiembraExistente(): void
+    {
+        $this->siembraExistenteMensaje = null;
+    }
+
+    /** $unir: la persona confirmó que la plantación ya registrada en esa fecha es esta siembra. */
+    public function guardar(bool $unir = false): void
     {
         try {
             abort_unless($this->puedeEditar(), 403);
             $c = $this->campania();
-            app(CampaniaSectorProceso::class)->guardar($c, (int) $this->hileras, $this->sectores, null, 'mapa', $this->decisionesConfirmadas);
+            $unir = $unir && $this->siembraExistenteMensaje !== null;
+            $this->siembraExistenteMensaje = null;
+            app(CampaniaSectorProceso::class)->guardar($c, (int) $this->hileras, $this->sectores, null, 'mapa', $this->decisionesConfirmadas, $unir);
             $this->editando = false;
             $this->decisionesConfirmadas = [];
             $this->cargar($c);
@@ -302,6 +312,8 @@ class CampaniaMapaEtapasComponent extends Component
             $this->dispatch('campaniaInsertada');
         } catch (SiembraConEvaluaciones $e) {
             $this->abrirAviso($e->evaluaciones, null);
+        } catch (\App\Exceptions\SiembraYaRegistrada $e) {
+            $this->siembraExistenteMensaje = $e->getMessage();
         } catch (\Throwable $e) {
             $this->errorAlert($e);
         }

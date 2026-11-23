@@ -4,6 +4,7 @@ namespace App\Services\Campania\Sector;
 
 use App\Exceptions\ErrorControlado;
 use App\Exceptions\SiembraConEvaluaciones;
+use App\Exceptions\SiembraYaRegistrada;
 use App\Models\CampaniaSector;
 use App\Models\Campo;
 use App\Models\CampoCampania;
@@ -286,11 +287,19 @@ class CampaniaSectorProceso
      * @param string $origen de una siembra nueva en el registro: mapa | tarjeta | horas | evaluacion
      * @param array $decisiones qué pasa con las evaluaciones de las siembras que se quitan:
      *                          clave => ['accion' => 'eliminar'] o ['accion' => 'mover', 'destino' => clave de la siembra]
+     * @param bool $unirRegistro confirmado: la fecha ya registrada como plantación es esta siembra de la campaña
      * @throws SiembraConEvaluaciones si se quita una siembra con evaluaciones sin decidir
+     * @throws SiembraYaRegistrada si la fecha de una siembra nueva ya existe como plantación y falta confirmarlo
      */
-    public function guardar(CampoCampania $c, int $hileras, array $sectores, ?string $motivo = null, string $origen = 'mapa', array $decisiones = []): void
+    public function guardar(CampoCampania $c, int $hileras, array $sectores, ?string $motivo = null, string $origen = 'mapa', array $decisiones = [], bool $unirRegistro = false): void
     {
         $limpios = $this->validar($c, $hileras, $sectores);
+        $porUnir = $this->plantacionesPorUnir($c, $limpios, $origen);
+        // Al registrar horas la persona ya confirmó que es otra siembra (relleno)
+        if ($porUnir && !$unirRegistro && $origen !== 'horas') {
+            $fecha = array_key_first($porUnir);
+            throw new SiembraYaRegistrada($fecha, $porUnir[$fecha]);
+        }
 
         // Candado: una siembra con evaluaciones no se quita sin decidir qué pasa con ellas (en campaña cerrada, nunca)
         $quedan = array_values(array_filter(array_column($limpios, 'id')));
@@ -319,10 +328,13 @@ class CampaniaSectorProceso
                 . 'Alguna siembra debe estar en esa etapa en esas fechas (o corrige primero la labor en el registro diario).');
         }
 
-        DB::transaction(function () use ($c, $hileras, $limpios, $antes, $motivo, $quitadas, $vinculadas, $decisiones) {
+        DB::transaction(function () use ($c, $hileras, $limpios, $antes, $motivo, $quitadas, $vinculadas, $decisiones, $porUnir) {
             $campoAntes = (int) Campo::whereKey($c->campo)->value('hileras');
             if ($campoAntes !== $hileras) {
                 Campo::whereKey($c->campo)->update(['hileras' => $hileras]);
+            }
+            foreach (array_keys($porUnir) as $fecha) {
+                $this->unirPlantacion($c, $fecha);
             }
             // Cada siembra conserva su id al editarla: las evaluaciones siguen en ella aunque cambien sus hileras o fecha
             $sectorPorClave = [];
@@ -365,7 +377,7 @@ class CampaniaSectorProceso
      * Agrega una siembra (relleno) sembrada en $fecha: queda en siembra desde ese día y las hileras se reparten parejo
      * (se corrige en el mapa). Desde la tarjeta de la campaña o al registrar horas.
      */
-    public function agregarSiembra(CampoCampania $c, string $fecha, ?string $motivo = null, string $origen = 'tarjeta'): void
+    public function agregarSiembra(CampoCampania $c, string $fecha, ?string $motivo = null, string $origen = 'tarjeta', bool $unirRegistro = false): void
     {
         // Vacía no es "hoy" (Carbon::parse('') daría hoy): la fecha de siembra es obligatoria
         if (trim($fecha) === '') {
@@ -385,7 +397,69 @@ class CampaniaSectorProceso
         $hileras = CampaniaSectorConsulta::hilerasDelCampo($c->campo);
         $sectores = self::conSiembraNueva($this->consulta->sectores($c), $fecha, $hileras, $c);
         $texto = 'Relleno sembrado el ' . Carbon::parse($fecha)->format('d/m/Y') . (trim((string) $motivo) !== '' ? ': ' . trim($motivo) : '');
-        $this->guardar($c, $hileras, $sectores, $texto, $origen);
+        $this->guardar($c, $hileras, $sectores, $texto, $origen, [], $unirRegistro);
+    }
+
+    /**
+     * Siembras nuevas del mapa cuya fecha ya está como plantación completa del campo (dentro de la campaña y sin ser la
+     * base): fecha => cuántos registros tiene. Si esa plantación es la de otra campaña no se puede convertir.
+     *
+     * @return array<string, int>
+     */
+    private function plantacionesPorUnir(CampoCampania $c, array $limpios, string $origen): array
+    {
+        $fechas = array_values(array_filter(array_column($limpios, 'fecha_siembra')));
+        if (count($fechas) < 2) {
+            return [];
+        }
+        $base = min($fechas);
+        $inicio = Carbon::parse($c->fecha_inicio)->toDateString();
+        $enlaces = $c->sectores()->pluck('siembra_id', 'id');
+        $porUnir = [];
+        foreach ($limpios as $s) {
+            $fecha = $s['fecha_siembra'];
+            if (!$fecha || $fecha === $base || $fecha <= $inicio) {
+                continue;
+            }
+            $filas = Siembra::plantaciones()->where('campo_nombre', $c->campo)->whereDate('fecha_siembra', $fecha)->pluck('id');
+            if ($filas->isEmpty() || (!empty($s['id']) && $filas->contains($enlaces[$s['id']] ?? 0))) {
+                continue;
+            }
+            $otra = CampaniaSector::whereIn('siembra_id', $filas)->where('campo_campania_id', '<>', $c->id)->with('campania:id,nombre_campania')->first();
+            if ($otra) {
+                if ($origen === 'horas') {
+                    continue;
+                }
+                throw new ErrorControlado('La plantación del ' . Carbon::parse($fecha)->format('d/m/Y') . " es la siembra de la campaña {$otra->campania?->nombre_campania}: "
+                    . 'no puede ser además una siembra parcial de esta. Revisa la fecha.');
+            }
+            $porUnir[$fecha] = $filas->count();
+        }
+        return $porUnir;
+    }
+
+    /** La plantación confirmada pasa a ser una siembra parcial (relleno) de la campaña; sus duplicados se unen en uno. */
+    private function unirPlantacion(CampoCampania $c, string $fecha): void
+    {
+        $filas = Siembra::plantaciones()->where('campo_nombre', $c->campo)->whereDate('fecha_siembra', $fecha)->orderBy('id')->get();
+        $queda = $filas->shift();
+        if (!$queda) {
+            return;
+        }
+        foreach ($filas as $duplicada) {
+            CampaniaSector::where('siembra_id', $duplicada->id)->update(['siembra_id' => $queda->id]);
+            AuditoriaServicio::registrar(Siembra::class, $duplicada->id, 'eliminar', $duplicada->toArray(), null,
+                "Registro duplicado de la siembra {$fecha} del campo {$c->campo}: unido al registro {$queda->id}");
+            $duplicada->delete();
+        }
+        $antes = $queda->only(['tipo', 'campo_campania_id', 'motivo']);
+        $queda->update([
+            'tipo' => 'relleno',
+            'campo_campania_id' => $c->id,
+            'motivo' => $queda->motivo ?: "Confirmada como otra siembra de la campaña {$c->nombre_campania}",
+        ]);
+        AuditoriaServicio::registrar(Siembra::class, $queda->id, 'editar', $antes, $queda->only(['tipo', 'campo_campania_id', 'motivo']),
+            "Plantación del {$fecha} confirmada como otra siembra de {$c->nombre_campania} (campo {$c->campo})");
     }
 
     /** Las siembras con una más (relleno) en $fecha. Las anteriores sin fecha de siembra toman la del registro o el inicio. */

@@ -66,7 +66,7 @@
                         <x-td class="text-center">{{ $cosecha->fecha }}</x-td>
                         <x-td class="text-center">{{ $cosecha->ingreso->campo }}</x-td>
                         <x-td class="text-center">{{ $cosecha->ingreso->area }}</x-td>
-                        <x-td class="text-center">{{ $cosecha->ingreso->campoCampania?->nombre_campania }}</x-td>
+                        <x-td class="text-center">{{ $cosecha->ingreso->campania_duena?->nombre_campania }}</x-td>
                         <x-td class="text-center">{{ $cosecha->total_kilos }}</x-td>
                         <x-td class="text-center">{{ number_format($cosecha->kg_ha, 2) }}</x-td>
                         <x-td class="text-center">{{ $cosecha->observacion }}</x-td>

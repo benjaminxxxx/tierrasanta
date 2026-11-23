@@ -28,7 +28,9 @@ class CochinillaExcelExportarConsulta
         $ingresos = DB::table('cochinilla_ingresos')->whereYear('fecha', $anio)->orderBy('lote')->get();
         $detalles = DB::table('cochinilla_ingreso_detalles')->whereIn('cochinilla_ingreso_id', $ingresos->pluck('id'))->get()
             ->groupBy('cochinilla_ingreso_id');
-        $campanias = DB::table('campos_campanias')->whereIn('id', $ingresos->pluck('campo_campania_id')->filter())->pluck('nombre_campania', 'id');
+        // La campaña dueña: un infestador que vuelve después del cierre sigue siendo de la campaña que dio la mamá
+        $duena = fn($i) => $i->campania_origen_id ?? $i->campo_campania_id;
+        $campanias = DB::table('campos_campanias')->whereIn('id', $ingresos->map($duena)->filter())->pluck('nombre_campania', 'id');
 
         $ingreso = [];
         foreach ($ingresos as $i) {
@@ -38,7 +40,7 @@ class CochinillaExcelExportarConsulta
                     'observacion' => $obs[$d->observacion] ?? $d->observacion, 'kilos' => (float) $d->total_kilos, 'campania' => null];
             }
             $ingreso[] = ['lote' => (int) $i->lote, 'sublote' => null, 'fecha' => substr((string) $i->fecha, 0, 10), 'campo' => $i->campo,
-                'observacion' => $obs[$i->observacion] ?? $i->observacion, 'kilos' => (float) $i->total_kilos, 'campania' => $campanias[$i->campo_campania_id] ?? null];
+                'observacion' => $obs[$i->observacion] ?? $i->observacion, 'kilos' => (float) $i->total_kilos, 'campania' => $campanias[$duena($i)] ?? null];
         }
 
         // Venteado / filtrado: los de los lotes del año, y los sueltos (sin ingreso) procesados en el año
