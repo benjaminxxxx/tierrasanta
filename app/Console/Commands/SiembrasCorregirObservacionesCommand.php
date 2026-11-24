@@ -41,11 +41,16 @@ class SiembrasCorregirObservacionesCommand extends Command
             $this->unirDuplicadas(self::PRIMERA_T2024);
             $this->borrarPlantacion(self::NO_EXISTE);
 
-            $t2024 = CampoCampania::where('campo', self::CAMPO)->whereDate('fecha_inicio', '<=', self::PRIMERA_T2024)
-                ->where(fn($q) => $q->whereNull('fecha_fin')->orWhereDate('fecha_fin', '>=', self::SEGUNDA_T2024))->first();
+            // La campaña de esas dos siembras: la que corría el 18/09/2025 (servidor antiguo) o, en el sistema nuevo (que
+            // abrió las campañas el 01/09/2026), la primera que empezó después
+            $t2024 = CampoCampania::where('campo', self::CAMPO)->whereDate('fecha_inicio', '<=', self::SEGUNDA_T2024)
+                ->where(fn($q) => $q->whereNull('fecha_fin')->orWhereDate('fecha_fin', '>=', self::SEGUNDA_T2024))->first()
+                ?? CampoCampania::where('campo', self::CAMPO)->whereDate('fecha_inicio', '>', self::SEGUNDA_T2024)->orderBy('fecha_inicio')->first();
             if (!$t2024) {
-                throw new ErrorControlado('No hay campaña del campo 2 que contenga el ' . self::PRIMERA_T2024 . ' y el ' . self::SEGUNDA_T2024 . '.');
+                throw new ErrorControlado('El campo 2 no tiene una campaña que corra el ' . self::SEGUNDA_T2024 . ' ni una que empiece después.');
             }
+            $this->line("  Campaña de las siembras " . self::PRIMERA_T2024 . ' y ' . self::SEGUNDA_T2024 . ": {$t2024->nombre_campania} (desde "
+                . $t2024->fecha_inicio->toDateString() . ')');
 
             // Las demás campañas del campo: su plantación con la regla nueva (conservan sus siembras y evaluaciones)
             foreach (CampoCampania::where('campo', self::CAMPO)->where('id', '<>', $t2024->id)->whereNotNull('fecha_inicio')->orderBy('fecha_inicio')->get() as $c) {
@@ -130,18 +135,24 @@ class SiembrasCorregirObservacionesCommand extends Command
         }
         $quedan[$base] = $sectores[$base];
         $sectores = array_values(collect($quedan)->sortKeys()->all());
+        // La etapa "siembra" solo si la siembra fue dentro de la campaña (en el sistema nuevo las dos son anteriores a su inicio)
+        $inicio = $c->fecha_inicio->toDateString();
+        $etapaSiembra = fn(string $fecha) => $fecha >= $inicio ? [['etapa' => 'siembra', 'fecha_desde' => $fecha]] : [];
         $b = collect($sectores)->search(fn($s) => $s['fecha_siembra'] === self::PRIMERA_T2024);
         $sectores[$b]['etapas'] = collect($sectores[$b]['etapas'])->unique(fn($e) => "{$e['etapa']}|{$e['fecha_desde']}")
-            ->reject(fn($e) => $e['etapa'] === 'siembra')->push(['etapa' => 'siembra', 'fecha_desde' => self::PRIMERA_T2024])->values()->all();
+            ->reject(fn($e) => $e['etapa'] === 'siembra')->concat($etapaSiembra(self::PRIMERA_T2024))->values()->all();
+        $agregada = false;
         if (!in_array(self::SEGUNDA_T2024, array_column($sectores, 'fecha_siembra'), true)) {
-            $sectores = CampaniaSectorProceso::conSiembraNueva($sectores, self::SEGUNDA_T2024, CampaniaSectorConsulta::hilerasDelCampo(self::CAMPO), $c);
+            $sectores[] = ['id' => null, 'nombre' => '', 'fecha_siembra' => self::SEGUNDA_T2024, 'hilera_desde' => 1, 'hilera_hasta' => 1,
+                'etapas' => $etapaSiembra(self::SEGUNDA_T2024)];
+            $agregada = true;
         }
         foreach ($sectores as $k => $s) {
             $sectores[$k]['nombre'] = CampaniaSectorReglas::nombreSiembra($s['fecha_siembra'] === self::PRIMERA_T2024 ? 1 : 2);
         }
         $sectores = collect($sectores)->sortBy('fecha_siembra')->values()->all();
         $hileras = CampaniaSectorConsulta::hilerasDelCampo(self::CAMPO);
-        if (count($quedan) < count($consulta->sectores($c)) || collect($sectores)->max('hilera_hasta') < $hileras) {
+        if ($agregada || count($quedan) < count($consulta->sectores($c)) || collect($sectores)->max('hilera_hasta') < $hileras) {
             foreach (CampaniaSectorReglas::repartirHileras($hileras, count($sectores)) as $k => [$desde, $hasta]) {
                 $sectores[$k]['hilera_desde'] = $desde;
                 $sectores[$k]['hilera_hasta'] = $hasta;
