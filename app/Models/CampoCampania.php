@@ -588,14 +588,9 @@ class CampoCampania extends Model
     // atributos para el detalle final de la campaña
     public function getFechaSiembraAttribute()
     {
-        $date = Carbon::parse($this->fecha_inicio);
-
-        // La plantación más reciente antes del inicio (registro de siembras); si no hay, la 1ª siembra del mapa de
-        // etapas (misma fuente). Siempre Carbon o null: antes devolvía texto y "->format()" fallaba en población.
-        $fecha = Siembra::plantaciones()->where('fecha_siembra', '<=', $date)
-            ->where('campo_nombre', $this->campo)
-            ->latest('fecha_siembra')
-            ->value('fecha_siembra')
+        // La plantación de la campaña (Siembra::deCampania: la plantada dentro de ella o la de la campaña pasada); si no
+        // hay, la 1ª siembra del mapa de etapas. Siempre Carbon o null: antes devolvía texto y "->format()" fallaba.
+        $fecha = Siembra::deCampania($this)?->fecha_siembra
             ?? $this->sectores()->whereNotNull('fecha_siembra')->orderBy('hilera_desde')->value('fecha_siembra');
 
         return $fecha ? Carbon::parse($fecha) : null;

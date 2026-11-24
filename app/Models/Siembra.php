@@ -28,6 +28,7 @@ class Siembra extends Model
         'mapa' => 'Agregada en el mapa de etapas',
         'horas' => 'Aceptada al registrar horas',
         'evaluacion' => 'Agregada al registrar una evaluación',
+        'correccion' => 'Corrección de datos (observaciones del ingeniero)',
     ];
 
     public const ORIGENES_CORTO = [
@@ -37,6 +38,7 @@ class Siembra extends Model
         'mapa' => 'agregada en el mapa de etapas',
         'horas' => 'aceptada al registrar horas',
         'evaluacion' => 'agregada al registrar una evaluación',
+        'correccion' => 'corregida por observaciones del ingeniero',
     ];
 
     protected $fillable = [
@@ -70,6 +72,31 @@ class Siembra extends Model
     public function scopePlantaciones(Builder $q): Builder
     {
         return $q->where('tipo', 'siembra');
+    }
+
+    /**
+     * Plantación de una campaña (Ing. Lucio, 24/11/2026): la que se plantó dentro de la campaña antes de infestarla
+     * (se mató el campo y se volvió a plantar); si no hubo, la última plantación anterior a su inicio (la campaña
+     * pasada). La que se planta el mismo día del cierre ya es de la campaña siguiente.
+     */
+    public static function deCampania(CampoCampania $c): ?self
+    {
+        if (!$c->fecha_inicio) {
+            return null;
+        }
+        $inicio = \Illuminate\Support\Carbon::parse($c->fecha_inicio)->toDateString();
+        $fin = $c->fecha_fin ? \Illuminate\Support\Carbon::parse($c->fecha_fin)->toDateString() : null;
+        $infestada = collect([
+            $c->infestacion_fecha,
+            $c->id ? \Illuminate\Support\Facades\DB::table('cochinilla_infestaciones')->where('campo_campania_id', $c->id)->min('fecha') : null,
+        ])->filter()->map(fn($f) => \Illuminate\Support\Carbon::parse($f)->toDateString())->min();
+
+        return self::plantaciones()->where('campo_nombre', $c->campo)->whereDate('fecha_siembra', '>=', $inicio)
+            ->when($fin, fn($q) => $q->whereDate('fecha_siembra', '<', $fin))
+            ->when($infestada, fn($q) => $q->whereDate('fecha_siembra', '<', $infestada))
+            ->orderBy('fecha_siembra')->orderBy('id')->first()
+            ?? self::plantaciones()->where('campo_nombre', $c->campo)->whereDate('fecha_siembra', '<=', $inicio)
+                ->orderByDesc('fecha_siembra')->orderBy('id')->first();
     }
 
     public static function masProximaAntesDe($fecha, $campo)
@@ -126,11 +153,10 @@ class Siembra extends Model
                 if ($this->tipo === 'relleno') {
                     return null;
                 }
-                return CampoCampania::where('campo', $this->campo_nombre)
-                    ->whereDate('fecha_inicio', '>=', $this->fecha_siembra)
-                    ->when($this->fecha_renovacion, function ($q) {
-                        $q->whereDate('fecha_inicio', '<=', $this->fecha_renovacion);
-                    })
+                // Campañas cuya plantación es esta (la misma regla que la fecha de siembra de la campaña)
+                $fecha = $this->fecha_siembra?->toDateString();
+                return CampoCampania::where('campo', $this->campo_nombre)->get()
+                    ->filter(fn($c) => self::deCampania($c)?->fecha_siembra?->toDateString() === $fecha)
                     ->count();
             }
         );

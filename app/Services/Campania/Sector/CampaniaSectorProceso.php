@@ -100,9 +100,12 @@ class CampaniaSectorProceso
         $tandasRelleno = [];
         // Labores de siembra después de infestar: replantes o rellenos sin confirmar, no mueven la etapa
         $fechasRelleno = $primeraInfestacionOCosecha ? array_values(array_filter($diasSiembra, fn($f) => $f > $primeraInfestacionOCosecha)) : [];
-        $registrada = Siembra::plantaciones()->where('campo_nombre', $c->campo)->whereDate('fecha_siembra', '<=', $inicioCampania)
-            ->max('fecha_siembra');
-        $base = $baseTanda['desde'] ?? ($registrada ? Carbon::parse($registrada)->toDateString() : null);
+        // Plantación registrada de la campaña (Siembra::deCampania): si se plantó dentro de la campaña manda el registro
+        $registrada = Siembra::deCampania($c)?->fecha_siembra?->toDateString();
+        $base = ($registrada && $registrada >= $inicioCampania ? $registrada : null) ?? $baseTanda['desde'] ?? $registrada;
+        if ($baseTanda && $base !== $baseTanda['desde']) {
+            $baseTanda = null; // el motivo de las labores no es el de esta plantación
+        }
 
         $fechasSiembra = array_merge([$base], array_map(fn($t) => $t['desde'], $tandasRelleno));
         $fechasSiembra = array_slice($fechasSiembra, 0, max(1, min(CampaniaSectorReglas::MAX_GRUPOS, $hileras)));
