@@ -68,6 +68,15 @@
                                 placeholder="00123" error="numero" />
                         </div>
                     </div>
+                    @if ($compraDuplicada)
+                        <div class="-mt-2 flex flex-wrap items-center gap-2 text-xs text-red-700 dark:text-red-400">
+                            <span>Esa compra ya existe (n.° interno {{ $compraDuplicada['id'] }}).</span>
+                            <button type="button" class="font-semibold underline" wire:click="abrirFormularioEditarCompra({{ $compraDuplicada['id'] }})"
+                                wire:confirm="Se abrirá la compra {{ $compraDuplicada['comprobante'] }} ya registrada y se descartará lo que estás llenando. ¿Continuar?">
+                                Abrir esa compra
+                            </button>
+                        </div>
+                    @endif
                     {{-- Serie y número son opcionales (compras antiguas con datos perdidos); factura o boleta sin serie: solo aviso --}}
                     <p x-show="['01', '03'].includes(String($wire.tipo_comprobante_codigo)) && !String($wire.serie ?? '').trim()" x-cloak
                         class="text-xs text-amber-700 dark:text-amber-400 -mt-2">

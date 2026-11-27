@@ -68,7 +68,9 @@ class InsumoKardexImportarServicio
         $hoja = $spreadsheet->getActiveSheet();
         $filas = $hoja->toArray();
 
-        $this->validarEstructuraBasica($filas);
+        // La hoja se elige por el código de existencia: si el kardex tiene otro código, se leería otro producto
+        $this->validarProductoDeHoja($hoja, $filas, $insumoKardex, $ruta, $codigoExistencia);
+        $this->validarEstructuraBasica($filas, $codigoExistencia);
 
         $saldoInicialPropuesto = $this->extraerSaldoInicialPropuesto($hoja, $filas);
 
@@ -318,21 +320,75 @@ class InsumoKardexImportarServicio
             throw new Exception("No se encontró la hoja con el nombre: **$codigoExistencia**");
         }
     }
-    private function validarEstructuraBasica(array $filas): void
+    private function validarEstructuraBasica(array $filas, string $codigoHoja): void
     {
-        $indiceInicio = self::INDICE_INICIO_DATOS;
-        $colFecha = self::COLUMNA_FECHA;
-        $colTipoOperacion = self::COLUMNA_TIPO_OPERACION;
+        $fila = self::INDICE_INICIO_DATOS + 1;
 
-        if (!isset($filas[$indiceInicio])) {
-            throw new Exception("El archivo no tiene el formato correcto, la información debe iniciar en la fila: " . ($indiceInicio + 1));
+        if (!isset($filas[self::INDICE_INICIO_DATOS])) {
+            throw new Exception("La hoja **{$codigoHoja}** no tiene datos: el primer registro (saldo inicial o primer movimiento) debe estar en la fila {$fila}.");
         }
-        if (!isset($filas[$indiceInicio][$colFecha])) {
-            throw new Exception("El archivo no tiene el formato correcto, no existe la columna " . ($colFecha + 1) . " para fechas");
+        if (!isset($filas[self::INDICE_INICIO_DATOS][self::COLUMNA_FECHA])) {
+            throw new Exception("La hoja **{$codigoHoja}** no tiene fecha en la celda **A{$fila}**. El primer registro (saldo inicial o primer movimiento) "
+                . "debe estar en la fila {$fila}, con su fecha en la columna A. Si los datos empiezan en otra fila, se insertó o borró una fila arriba.");
         }
-        if (!isset($filas[$indiceInicio][$colTipoOperacion])) {
-            throw new Exception("El archivo no tiene el formato correcto, no existe la columna " . ($colTipoOperacion + 1));
+        if (!isset($filas[self::INDICE_INICIO_DATOS][self::COLUMNA_TIPO_OPERACION])) {
+            throw new Exception("La hoja **{$codigoHoja}** no tiene el tipo de operación (Tabla 12) en la celda **E{$fila}**.");
         }
+    }
+
+    /**
+     * La hoja debe ser del producto del kardex: su DESCRIPCIÓN (B9) no puede ser otro producto del sistema ni estar
+     * vacía si la hoja no tiene datos. Si no coincide, dice en qué hoja está el producto según el ÍNDICE del Excel.
+     */
+    private function validarProductoDeHoja($hoja, array $filas, InsKardex $insumoKardex, string $ruta, string $codigoHoja): void
+    {
+        $producto = $insumoKardex->producto;
+        $normalizar = fn($t) => \App\Support\FormatoHelper::normalizarNombre($t);
+        $descripcion = trim((string) $hoja->getCell('B9')->getValue());
+        $sinDatos = !isset($filas[self::INDICE_INICIO_DATOS][self::COLUMNA_FECHA]);
+        if ($descripcion !== '' && $normalizar($descripcion) === $normalizar($producto->nombre_comercial)) {
+            return;
+        }
+
+        $otro = $descripcion !== '' ? Producto::get(['id', 'nombre_comercial'])
+            ->first(fn($p) => $p->id !== $producto->id && $normalizar($p->nombre_comercial) === $normalizar($descripcion)) : null;
+        if (!$otro && !($descripcion === '' && $sinDatos)) {
+            if ($descripcion !== '') {
+                $this->advertencias[] = "La hoja **{$codigoHoja}** dice **{$descripcion}** y el kardex es de **{$producto->nombre_comercial}**: revisa que sea el mismo producto.";
+            }
+            return;
+        }
+
+        $correcta = $this->hojaDelProductoEnIndice($ruta, $producto->nombre_comercial);
+        throw new Exception("El kardex es de **{$producto->nombre_comercial}** y tiene el código de existencia **{$codigoHoja}**, pero en este Excel la hoja **{$codigoHoja}** "
+            . ($otro ? "es de **{$descripcion}**" : 'está vacía (sin producto ni datos)') . '. No se importó nada. '
+            . ($correcta
+                ? "Según el índice del Excel, {$producto->nombre_comercial} está en la hoja **{$correcta}**: corrige el código de existencia del kardex ({$codigoHoja} → {$correcta}) o súbelo desde la carga del macro."
+                : "{$producto->nombre_comercial} no aparece en el índice del Excel: revisa el nombre del producto o el código de existencia."));
+    }
+
+    /** Código de la hoja de un producto según la hoja ÍNDICE del macro (columna B código, C nombre). */
+    private function hojaDelProductoEnIndice(string $ruta, string $nombre): ?string
+    {
+        try {
+            $lector = IOFactory::createReaderForFile($ruta);
+            $hojaIndice = collect($lector->listWorksheetNames($ruta))
+                ->first(fn($h) => in_array(\App\Support\FormatoHelper::normalizarNombre($h), ['indice'], true));
+            if (!$hojaIndice) {
+                return null;
+            }
+            $lector->setReadDataOnly(true);
+            $lector->setLoadSheetsOnly([$hojaIndice]);
+            $clave = \App\Support\FormatoHelper::normalizarNombre($nombre);
+            foreach ($lector->load($ruta)->getActiveSheet()->toArray(null, true, false, false) as $fila) {
+                if (filled($fila[1] ?? null) && \App\Support\FormatoHelper::normalizarNombre((string) ($fila[2] ?? '')) === $clave) {
+                    return trim((string) $fila[1]);
+                }
+            }
+        } catch (\Throwable) {
+            // Sin índice legible: el mensaje lo dice sin sugerir hoja
+        }
+        return null;
     }
     /**
      * Extrae los nombres de campo/lote del Excel y los valida con el servicio correspondiente.

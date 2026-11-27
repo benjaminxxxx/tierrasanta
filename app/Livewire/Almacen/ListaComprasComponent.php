@@ -36,6 +36,10 @@ class ListaComprasComponent extends Component
     #[Url]
     public string $tipoComprobante = '';
 
+    /** blanco | negro | '' (todos) */
+    #[Url]
+    public string $tipoKardex = '';
+
     // Nullable: x-fecha manda null al borrar la fecha (con string, Livewire desarmaba la propiedad: tickets #5/#6)
     #[Url]
     public ?string $fechaDesde = null;
@@ -102,7 +106,7 @@ class ListaComprasComponent extends Component
 
     public function updated($propiedad): void
     {
-        if (in_array($propiedad, ['search', 'producto', 'tipoComprobante', 'fechaDesde', 'fechaHasta', 'verEliminadas', 'vista'], true)) {
+        if (in_array($propiedad, ['search', 'producto', 'tipoComprobante', 'tipoKardex', 'fechaDesde', 'fechaHasta', 'verEliminadas', 'vista'], true)) {
             $this->resetPage();
         }
     }
@@ -119,7 +123,7 @@ class ListaComprasComponent extends Component
 
     public function clearFilters(): void
     {
-        $this->reset('search', 'producto', 'tipoComprobante', 'fechaDesde', 'fechaHasta', 'proveedorId', 'proveedorLabel');
+        $this->reset('search', 'producto', 'tipoComprobante', 'tipoKardex', 'fechaDesde', 'fechaHasta', 'proveedorId', 'proveedorLabel');
         $this->resetPage();
     }
 
@@ -137,6 +141,7 @@ class ListaComprasComponent extends Component
             'buscar' => $this->search,
             'producto' => $this->producto,
             'tipoComprobante' => $this->tipoComprobante,
+            'tipoKardex' => $this->tipoKardex,
             'proveedorId' => $this->proveedorId,
             'fechaDesde' => $this->fechaDesde,
             'fechaHasta' => $this->fechaHasta,

@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
  * Lista de compras y su detalle por producto.
  *
  * Filtros: buscar (serie, número, proveedor o producto), producto (solo nombre de producto), tipoComprobante,
- * proveedorId, fechaDesde, fechaHasta. El producto se busca sin espacios: "ULTRAFERRO" también encuentra
+ * tipoKardex (blanco | negro), proveedorId, fechaDesde, fechaHasta. El producto se busca sin espacios: "ULTRAFERRO" también encuentra
  * "ULTRA FERRO", así se ven juntos los productos duplicados.
  */
 class AlmacenCompraConsulta
@@ -129,6 +129,7 @@ class AlmacenCompraConsulta
             ->when($producto !== '', fn($q) => $q->whereHas('detalles.producto', fn($p) => $p->withTrashed()
                 ->whereRaw(self::NOMBRE_SIN_ESPACIOS . ' LIKE ?', ['%' . self::textoSinEspacios($producto) . '%'])))
             ->when($f['tipoComprobante'] ?? null, fn($q, $v) => $q->where('tipo_comprobante_codigo', $v))
+            ->when($f['tipoKardex'] ?? null, fn($q, $v) => $q->where('tipo_kardex', $v))
             ->when($f['proveedorId'] ?? null, fn($q, $v) => $q->where('proveedor_id', $v))
             ->when($f['fechaDesde'] ?? null, fn($q, $v) => $q->whereDate('fecha_emision', '>=', $v))
             ->when($f['fechaHasta'] ?? null, fn($q, $v) => $q->whereDate('fecha_emision', '<=', $v));

@@ -38,6 +38,15 @@
                 </x-select>
             </x-group-field>
 
+            <x-group-field>
+                <label class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Kardex</label>
+                <x-select wire:model.live="filtros.tipoKardex">
+                    <option value="">Todos</option>
+                    <option value="blanco">Blanco</option>
+                    <option value="negro">Negro</option>
+                </x-select>
+            </x-group-field>
+
             <button wire:click="limpiarFiltros"
                 class="h-8 px-3 text-sm rounded border border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-1.5">
                 <i class="fa fa-times text-xs"></i>

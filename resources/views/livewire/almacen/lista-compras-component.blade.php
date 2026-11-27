@@ -15,7 +15,7 @@
         ? '<span class="rounded-[6px] border border-hairline px-1.5 py-0.5 text-[11px] font-medium text-graphite">Blanco</span>'
         : '<span class="rounded-[6px] bg-fog px-1.5 py-0.5 text-[11px] font-medium text-graphite">Negro</span>';
     $puedeGestionar = auth()->user()->can(App\Constants\Permisos::INSUMO_COMPRA_GESTIONAR);
-    $hayFiltros = $search || $producto || $tipoComprobante || $fechaDesde || $fechaHasta || $proveedorId;
+    $hayFiltros = $search || $producto || $tipoComprobante || $tipoKardex || $fechaDesde || $fechaHasta || $proveedorId;
     $buscado = mb_strtoupper(str_replace(' ', '', trim($producto)));
 @endphp
 
@@ -56,6 +56,13 @@
                 <option value="01">Factura (01)</option>
                 <option value="03">Boleta (03)</option>
                 <option value="00">Nota de venta (00)</option>
+            </x-select>
+        </div>
+        <div class="w-36">
+            <x-select wire:model.live="tipoKardex" label="Kardex">
+                <option value="">Todos</option>
+                <option value="blanco">Blanco</option>
+                <option value="negro">Negro</option>
             </x-select>
         </div>
         <div class="w-40"><x-selector-dia wire:model.live="fechaDesde" label="Desde" /></div>

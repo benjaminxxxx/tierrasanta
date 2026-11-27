@@ -28,6 +28,7 @@ class AlmacenSalidaListaComponent extends Component
         'productoId' => '',
         'destinoId' => '',
         'categoria' => '',
+        'tipoKardex' => '', // blanco | negro | '' (todos)
     ];
 
     public bool $modalAuditoriaSalida = false;
@@ -68,7 +69,7 @@ class AlmacenSalidaListaComponent extends Component
 
     public function limpiarFiltros(): void
     {
-        $this->filtros = ['dia' => '', 'productoId' => '', 'destinoId' => '', 'categoria' => ''];
+        $this->filtros = ['dia' => '', 'productoId' => '', 'destinoId' => '', 'categoria' => '', 'tipoKardex' => ''];
         $this->resetPage();
     }
 
@@ -100,15 +101,23 @@ class AlmacenSalidaListaComponent extends Component
     }
 
     /**
-     * El formulario avisa con qué mes/año quedó el registro guardado —
-     * saltamos automáticamente a ese periodo para que el usuario vea
-     * de inmediato lo que acaba de guardar, aunque estuviera viendo otro mes.
+     * El formulario avisa con qué mes/año quedó el registro guardado. Si es otro periodo se salta a él (página 1);
+     * si es el mismo, se queda en la página en que estaba (para seguir editando la misma fecha), salvo que ya no exista.
      */
     public function alSalidaGuardada($mes, $anio): void
     {
-        $this->mes = $mes;
-        $this->anio = $anio;
-        $this->resetPage();
+        if ((int) $mes !== (int) $this->mes || (int) $anio !== (int) $this->anio) {
+            $this->mes = $mes;
+            $this->anio = $anio;
+            $this->resetPage();
+            return;
+        }
+        $ultima = max(1, $this->obtenerSalidasPaginadas()->lastPage());
+        if ($this->getPage() > $ultima) {
+            $this->setPage($ultima);
+            return;
+        }
+        $this->notificarTabla();
     }
 
     public function verHistorialSalida(int $id): void
@@ -166,7 +175,7 @@ class AlmacenSalidaListaComponent extends Component
             $this->mes,
             $this->anio,
             $this->tipo,
-            null,               // $tipoKardex
+            in_array($this->filtros['tipoKardex'] ?? '', ['blanco', 'negro'], true) ? $this->filtros['tipoKardex'] : null,
             $this->filtros      // Pass los filtros dinámicos
         );
     }

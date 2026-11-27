@@ -64,9 +64,13 @@ class CompraFormComponent extends Component
     /**
      * Limpia todas las propiedades del formulario a sus valores por defecto.
      */
+    /** La compra ya registrada con el mismo comprobante (para mostrarla y abrirla desde el aviso) */
+    public ?array $compraDuplicada = null;
+
     public function resetearFormulario(): void
     {
         $this->reset([
+            'compraDuplicada',
             'compraId',
             'proveedorId',
             'almacenId',
@@ -85,6 +89,35 @@ class CompraFormComponent extends Component
         $this->detalles = [];
         $this->obtenerAlmacenes();
         $this->resetValidation(); // Limpia los mensajes de error de validación previo si existen
+    }
+
+    /**
+     * Otra compra vigente con el mismo comprobante (serie y número) del mismo proveedor, o sin proveedor (las que crea
+     * la importación del kardex). Las compras eliminadas no cuentan: eliminar una compra permite volver a registrarla.
+     */
+    private function buscarCompraDuplicada(): ?array
+    {
+        if (!filled($this->numero)) {
+            return null;
+        }
+        $compra = Compra::with(['proveedor', 'detalles.producto'])
+            ->where('numero', trim($this->numero))
+            ->where(fn($q) => filled($this->serie) ? $q->where('serie', trim($this->serie)) : $q->whereNull('serie')->orWhere('serie', ''))
+            ->where(fn($q) => $q->where('proveedor_id', $this->proveedorId)->orWhereNull('proveedor_id'))
+            ->when($this->compraId, fn($q) => $q->where('id', '<>', $this->compraId))
+            ->first();
+        if (!$compra) {
+            return null;
+        }
+        $productos = $compra->detalles->map(fn($d) => ($d->producto?->nombre_comercial ?? '?') . ' ' . rtrim(rtrim(number_format((float) $d->cantidad, 3), '0'), '.'));
+        return [
+            'id' => $compra->id,
+            'comprobante' => trim(($compra->serie ? "{$compra->serie}-" : '') . $compra->numero),
+            'fecha' => $compra->fecha_emision?->format('d/m/Y'),
+            'tipo' => $compra->tipo_kardex,
+            'proveedor' => $compra->proveedor ? $compra->proveedor->nombre_mostrar : 'sin proveedor (creada al importar un kardex)',
+            'productos' => $productos->take(4)->implode(', ') . ($productos->count() > 4 ? ' y ' . ($productos->count() - 4) . ' más' : '') ?: 'sin productos',
+        ];
     }
 
     public function abrirFormularioNuevaCompra(): void
@@ -239,17 +272,15 @@ class CompraFormComponent extends Component
                 'nullable',
                 'string',
                 'max:20',
-                Rule::unique('compras', 'numero')
-                    ->where(function ($query) {
-                        return $query
-                            ->where('proveedor_id', $this->proveedorId)
-                            ->where('serie', $this->serie);
-                    })
-                    ->ignore($this->compraId),
+                function ($atributo, $valor, $fallar) {
+                    $this->compraDuplicada = $this->buscarCompraDuplicada();
+                    if ($this->compraDuplicada) {
+                        $d = $this->compraDuplicada;
+                        $fallar("Ya está registrada la compra {$d['comprobante']} del {$d['fecha']} (kardex {$d['tipo']}, {$d['proveedor']}): {$d['productos']}.");
+                    }
+                },
             ],
             'tipoKardex' => ['required', 'in:blanco,negro'],
-        ], [
-            'numero.unique' => 'Ya existe una compra registrada con ese proveedor, serie y número de comprobante.',
         ]);
 
         if (empty($this->detalles)) {
